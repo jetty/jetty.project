@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * A {@link HttpServletResponse} wrapped as a core {@link Response}.
@@ -133,7 +133,7 @@ public class ServletCoreResponse implements org.eclipse.jetty.server.Response
     }
 
     @Override
-    public void write(boolean last, ReadableBuffer buffer, Callback callback)
+    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
         if (_included)
             last = false;
@@ -148,7 +148,7 @@ public class ServletCoreResponse implements org.eclipse.jetty.server.Response
             else
             {
                 // Write the byteBuffer via the HttpOutput stream or writer wrapping the stream
-                if (buffer != null && buffer.remaining() > 0L)
+                if (buffer != null && buffer.hasRemaining())
                 {
                     if (isWriting())
                     {

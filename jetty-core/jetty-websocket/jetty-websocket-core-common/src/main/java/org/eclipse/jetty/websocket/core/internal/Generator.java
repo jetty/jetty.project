@@ -15,7 +15,7 @@ package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.Frame;
 
 /**
@@ -54,7 +54,7 @@ public class Generator
      * @param frame the frame to generate.
      * @param buffer the buffer to output the generated frame to.
      */
-    public void generateWholeFrame(Frame frame, ByteBuffer buffer)
+    public void generateWholeFrame(Frame frame, RetainableByteBuffer.Mutable buffer)
     {
         generateHeader(frame, buffer);
         generatePayload(frame, buffer);
@@ -65,51 +65,37 @@ public class Generator
      * @param frame the frame to generate.
      * @param buffer the buffer to output the generated frame to.
      */
-    public void generateHeader(Frame frame, ByteBuffer buffer)
+    public void generateHeader(Frame frame, RetainableByteBuffer.Mutable buffer)
     {
-        int pos = BufferUtil.flipToFill(buffer);
-
-        /*
-         * start the generation process
-         */
+        // Start the generation process.
         byte b = 0x00;
 
-        // Setup fin thru opcode
+        // Setup fin through opcode.
         if (frame.isFin())
-        {
             b |= 0x80; // 1000_0000
-        }
 
         // Set the flags
         if (frame.isRsv1())
-        {
             b |= 0x40; // 0100_0000
-        }
         if (frame.isRsv2())
-        {
             b |= 0x20; // 0010_0000
-        }
         if (frame.isRsv3())
-        {
             b |= 0x10; // 0001_0000
-        }
 
         byte opcode = frame.getOpCode();
         b |= opcode & 0x0F;
         buffer.put(b);
 
-        // is masked
+        // Masking.
         b = (frame.isMasked() ? (byte)0x80 : (byte)0x00);
 
-        // payload lengths
+        // Payload length.
         int payloadLength = frame.getPayloadLength();
 
-        /*
-         * if length is over 65535 then its a 7 + 64 bit length
-         */
+        // If length is over 65535 then it is a 7 + 64 bit length.
         if (payloadLength > 0xFF_FF)
         {
-            // we have a 64 bit length
+            // We have a 64 bit length.
             b |= 0x7F;
             buffer.put(b); // indicate 8 byte length
             buffer.put((byte)0); //
@@ -121,9 +107,7 @@ public class Generator
             buffer.put((byte)((payloadLength >> 8) & 0xFF));
             buffer.put((byte)(payloadLength & 0xFF));
         }
-        /*
-         * if payload is greater that 126 we have a 7 + 16 bit length
-         */
+        // If payload is greater than 126 then it is a 7 + 16 bit length.
         else if (payloadLength >= 0x7E)
         {
             b |= 0x7E;
@@ -131,20 +115,16 @@ public class Generator
             buffer.put((byte)(payloadLength >> 8));
             buffer.put((byte)(payloadLength & 0xFF));
         }
-        /*
-         * we have a 7 bit length
-         */
+        // It is a 7 bit length.
         else
         {
             b |= (payloadLength & 0x7F);
             buffer.put(b);
         }
 
-        // masking key
+        // Masking key.
         if (frame.isMasked())
             buffer.put(frame.getMask());
-
-        BufferUtil.flipToFlush(buffer, pos);
     }
 
     /**
@@ -153,21 +133,19 @@ public class Generator
      * @param frame the frame to generate.
      * @param buffer the buffer to output the generated frame to.
      */
-    public void generatePayload(Frame frame, ByteBuffer buffer)
+    public void generatePayload(Frame frame, RetainableByteBuffer.Mutable buffer)
     {
         ByteBuffer payload = frame.getPayload();
-        if (!BufferUtil.hasContent(payload))
+        if (payload == null || !payload.hasRemaining())
             return;
 
-        int pos = BufferUtil.flipToFill(buffer);
         if (frame.isMasked())
-            maskPayload(buffer, frame);
+            maskPayload(frame, buffer);
         else
             buffer.put(payload);
-        BufferUtil.flipToFlush(buffer, pos);
     }
 
-    private void maskPayload(ByteBuffer buffer, Frame frame)
+    private void maskPayload(Frame frame, RetainableByteBuffer.Mutable buffer)
     {
         byte[] mask = frame.getMask();
         int maskInt = 0;
@@ -176,9 +154,9 @@ public class Generator
             maskInt = (maskInt << 8) + (maskByte & 0xFF);
         }
 
-        // perform data masking here
+        // Perform data masking here.
         ByteBuffer payload = frame.getPayload();
-        if ((payload != null) && (payload.remaining() > 0))
+        if (payload != null && payload.hasRemaining())
         {
             int maskOffset = 0;
             int start = payload.position();

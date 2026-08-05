@@ -17,10 +17,10 @@ import org.eclipse.jetty.util.IO;
 
 public interface WritableBufferPool
 {
-    WritableBufferPool NON_POOLING = WritableBuffer::allocate;
+    WritableBufferPool NON_POOLING = RetainableByteBuffer.Mutable::allocate;
     Sized SIZED_NON_POOLING = new Sized(IO.DEFAULT_BUFFER_SIZE, false, NON_POOLING);
 
-    WritableBuffer acquire(int size, boolean direct);
+    RetainableByteBuffer.Mutable acquire(int size, boolean direct);
 
     class Sized implements WritableBufferPool
     {
@@ -45,23 +45,23 @@ public interface WritableBufferPool
             return direct;
         }
 
-        public WritableBuffer acquire()
+        public RetainableByteBuffer.Mutable acquire()
         {
             return delegate.acquire(size, direct);
         }
 
-        public WritableBuffer acquire(int size)
+        public RetainableByteBuffer.Mutable acquire(int size)
         {
             return delegate.acquire(size, direct);
         }
 
-        public WritableBuffer acquire(boolean direct)
+        public RetainableByteBuffer.Mutable acquire(boolean direct)
         {
             return delegate.acquire(size, direct);
         }
 
         @Override
-        public WritableBuffer acquire(int size, boolean direct)
+        public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
         {
             return delegate.acquire(size, direct);
         }

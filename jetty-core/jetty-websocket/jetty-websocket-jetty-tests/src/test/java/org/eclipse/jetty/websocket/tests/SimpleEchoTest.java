@@ -74,16 +74,16 @@ public class SimpleEchoTest
 
         URI uri = new URI("ws://localhost:" + _connector.getLocalPort());
         EventSocket clientEndpoint = new EventSocket();
-        Session session = _client.connect(clientEndpoint, uri).get(timeout, TimeUnit.SECONDS);
+        Session session = _client.connect(clientEndpoint, uri).get(timeout, TimeUnit.MILLISECONDS);
         session.setIdleTimeout(Duration.ofSeconds(timeout));
 
         String message = "hello world 1234";
         session.sendText(message, Callback.NOOP);
-        String received = clientEndpoint.textMessages.poll(timeout, TimeUnit.SECONDS);
+        String received = clientEndpoint.textMessages.poll(timeout, TimeUnit.MILLISECONDS);
         assertThat(received, equalTo(message));
 
         session.close();
-        assertTrue(clientEndpoint.closeLatch.await(timeout, TimeUnit.SECONDS));
+        assertTrue(clientEndpoint.closeLatch.await(timeout, TimeUnit.MILLISECONDS));
         assertThat(clientEndpoint.closeCode, equalTo(StatusCode.NORMAL));
     }
 }

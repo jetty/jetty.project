@@ -35,7 +35,7 @@ import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HttpSenderOverFCGI extends HttpSender
 {
@@ -102,19 +102,19 @@ public class HttpSenderOverFCGI extends HttpSender
         HttpClientTransportOverFCGI transport = (HttpClientTransportOverFCGI)httpClient.getHttpClientTransport();
         transport.customize(request, fcgiHeaders);
 
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         int id = getHttpChannel().getRequest();
         if (contentBuffer.hasRemaining() || lastContent)
         {
             generator.generateRequestHeaders(accumulator, id, fcgiHeaders);
-            generator.generateRequestContent(accumulator, id, ReadableBuffer.wrap(contentBuffer), lastContent);
+            generator.generateRequestContent(accumulator, id, RetainableByteBuffer.wrap(contentBuffer), lastContent);
         }
         else
         {
             generator.generateRequestHeaders(accumulator, id, fcgiHeaders);
         }
-        ReadableBuffer buffer = ReadableBuffer.accumulate(accumulator);
-        accumulator.forEach(ReadableBuffer::release);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        accumulator.forEach(RetainableByteBuffer::release);
         getHttpChannel().flush(buffer, callback);
         buffer.release();
     }
@@ -124,11 +124,11 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         if (contentBuffer.hasRemaining() || lastContent)
         {
-            List<ReadableBuffer> accumulator = new ArrayList<>();
+            List<RetainableByteBuffer> accumulator = new ArrayList<>();
             int request = getHttpChannel().getRequest();
-            generator.generateRequestContent(accumulator, request, ReadableBuffer.wrap(contentBuffer), lastContent);
-            ReadableBuffer buffer = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            generator.generateRequestContent(accumulator, request, RetainableByteBuffer.wrap(contentBuffer), lastContent);
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             getHttpChannel().flush(buffer, callback);
             buffer.release();
         }

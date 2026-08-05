@@ -226,8 +226,8 @@ public class LocalAsyncContextTest
     {
         LocalConnector connector = (LocalConnector)_connector;
         LocalConnector.LocalEndPoint endp = connector.executeRequest(request);
-        endp.waitUntilClosed();
-        return endp.takeOutputString();
+        endp.awaitRemoteClose();
+        return endp.readResponseString();
     }
 
     private class SuspendHandler extends HandlerWrapper

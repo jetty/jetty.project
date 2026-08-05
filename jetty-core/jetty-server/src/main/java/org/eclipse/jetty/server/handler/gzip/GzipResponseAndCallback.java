@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler.gzip;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
@@ -28,8 +29,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -72,7 +73,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
     private final int _bufferSize;
     private final boolean _syncFlush;
     private DeflaterPool.Entry _deflaterEntry;
-    private ReadableBuffer _buffer;
+    private RetainableByteBuffer.Mutable _buffer;
     private boolean _last;
 
     public GzipResponseAndCallback(GzipHandler handler, Request request, Response response, Callback callback)
@@ -108,18 +109,18 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
     }
 
     @Override
-    public void write(boolean last, ReadableBuffer content, Callback callback)
+    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
         _last = last;
         switch (_state.get())
         {
-            case MIGHT_COMPRESS -> commit(last, callback, content);
-            case NOT_COMPRESSING -> super.write(last, content, callback);
+            case MIGHT_COMPRESS -> commit(last, callback, buffer);
+            case NOT_COMPRESSING -> super.write(last, buffer, callback);
             case COMMITTING -> callback.failed(new WritePendingException());
-            case COMPRESSING -> gzip(last, callback, content);
+            case COMPRESSING -> gzip(last, callback, buffer);
             default ->
             {
-                if (content == null || content.remaining() == 0L)
+                if (buffer == null || !buffer.hasRemaining())
                     callback.succeeded();
                 else
                     callback.failed(new IllegalStateException("state=" + _state.get()));
@@ -127,7 +128,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         }
     }
 
-    private void addTrailer(WritableBuffer outputBuffer)
+    private void addTrailer(RetainableByteBuffer.Mutable outputBuffer)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("addTrailer: _crc={}, _totalIn={})", _crc.getValue(), _deflaterEntry.get().getTotalIn());
@@ -135,7 +136,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         outputBuffer.putInt(_deflaterEntry.get().getTotalIn());
     }
 
-    private void gzip(boolean complete, final Callback callback, ReadableBuffer content)
+    private void gzip(boolean complete, final Callback callback, RetainableByteBuffer content)
     {
         if (content != null || complete)
             new GzipBufferCB(complete, callback, content).iterate();
@@ -143,7 +144,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             callback.succeeded();
     }
 
-    protected void commit(boolean last, Callback callback, ReadableBuffer content)
+    protected void commit(boolean last, Callback callback, RetainableByteBuffer content)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("commit(last={}, callback={}, content={})", last, callback, content);
@@ -203,7 +204,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         }
 
         // If there is nothing to write, don't compress.
-        if (last && (content == null || content.remaining() == 0))
+        if (last && (content == null || !content.hasRemaining()))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} exclude by nothing to write", this);
@@ -242,7 +243,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                 LOG.debug("{} compressing {}", this, _deflaterEntry);
             _state.set(GZState.COMPRESSING);
 
-            if (content == null || content.remaining() == 0L)
+            if (content == null || !content.hasRemaining())
             {
                 // We are committing, but have no content to compress, so flush empty buffer to write headers.
                 super.write(last, content, callback);
@@ -285,13 +286,13 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
 
     private class GzipBufferCB extends IteratingNestedCallback
     {
-        private final ReadableBuffer _content;
+        private final RetainableByteBuffer _content;
         private final boolean _last;
 
-        public GzipBufferCB(boolean complete, Callback callback, ReadableBuffer content)
+        public GzipBufferCB(boolean complete, Callback callback, RetainableByteBuffer content)
         {
             super(callback);
-            _content = content == null ? ReadableBuffer.EMPTY : content;
+            _content = content == null ? RetainableByteBuffer.empty() : content;
             _last = complete;
             if (LOG.isDebugEnabled())
                 LOG.debug("GzipBufferCB(complete={}, callback={}, content={})", complete, callback, content);
@@ -315,34 +316,28 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                 return Action.SUCCEEDED;
             }
 
-            // If we have no buffer
-            WritableBuffer wb;
             if (_buffer == null)
             {
-                wb = WritableBufferPool.wrap(getRequest().getComponents().getByteBufferPool()).acquire(_bufferSize, false);
-                // Per RFC-1952, GZIP is LITTLE_ENDIAN
-                wb.byteOrder(true);
-                // Add GZIP Header
-                wb.put(GZIP_HEADER, 0, GZIP_HEADER.length);
+                _buffer = WritableBufferPool.wrap(getRequest().getComponents().getByteBufferPool()).acquire(_bufferSize, false);
+                // Per RFC-1952, GZIP is LITTLE_ENDIAN.
+                _buffer.byteOrder(ByteOrder.LITTLE_ENDIAN);
+                // Add GZIP Header.
+                _buffer.put(GZIP_HEADER);
             }
             else
             {
-                // otherwise clear the buffer as previous writes will always fully consume.
-                wb = _buffer.toWritable();
-                wb.position(0L);
-                _buffer = null;
+                // Clear the buffer as previous writes will always fully consume.
+                _buffer.clear();
             }
 
             Deflater deflater = _deflaterEntry.get();
 
-            Action action = switch (gzstate)
+            return switch (gzstate)
             {
-                case COMPRESSING -> compressing(deflater, wb);
-                case FINISHING -> finishing(deflater, wb);
+                case COMPRESSING -> compressing(deflater, _buffer);
+                case FINISHING -> finishing(deflater, _buffer);
                 default -> throw new IllegalStateException("Unexpected state [" + _state.get() + "]");
             };
-            _buffer = wb.toReadable();
-            return action;
         }
 
         @Override
@@ -360,12 +355,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                 _deflaterEntry.release();
                 _deflaterEntry = null;
             }
-
-            if (_buffer != null)
-            {
-                _buffer.release();
-                _buffer = null;
-            }
+            _buffer = Retainable.dispose(_buffer);
         }
 
         private int getFlushMode()
@@ -377,7 +367,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
          * This method is called directly from {@link #process()} to perform the compressing of
          * the content this {@link GzipBufferCB} represents.
          */
-        private Action compressing(Deflater deflater, WritableBuffer outputBuffer) throws IOException
+        private Action compressing(Deflater deflater, RetainableByteBuffer.Mutable outputBuffer) throws IOException
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("compressing() deflater={}, outputBuffer={}", deflater, outputBuffer);
@@ -393,7 +383,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                         return Action.SCHEDULED;
                     }
                 }
-                while (_content.remaining() > 0L);
+                while (_content.hasRemaining());
             }
 
             if (_last)
@@ -403,14 +393,14 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                 return finishing(deflater, outputBuffer);
             }
 
-            if (outputBuffer.position() > 0L)
+            if (outputBuffer.hasRemaining())
             {
                 write(false, outputBuffer);
                 return Action.SCHEDULED;
             }
 
             // the content held by GzipBufferCB is fully consumed as input to the Deflater instance, we are done
-            if (_content.remaining() == 0L)
+            if (!_content.hasRemaining())
                 return Action.SUCCEEDED;
 
             // No progress made on deflate, but the _content wasn't consumed, we shouldn't be able to reach this.
@@ -418,10 +408,10 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         }
 
         /**
-         * This method is called by {@link #compressing(Deflater, WritableBuffer)}, once the last chunk is compressed;
+         * This method is called by {@link #compressing(Deflater, RetainableByteBuffer.Mutable)}, once the last chunk is compressed;
          * or directly from {@link #process()} if an earlier call to this method was unable to complete.
          */
-        private Action finishing(Deflater deflater, WritableBuffer outputBuffer) throws IOException
+        private Action finishing(Deflater deflater, RetainableByteBuffer.Mutable outputBuffer) throws IOException
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("finishing() deflater={}, outputBuffer={}", deflater, outputBuffer);
@@ -432,7 +422,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                     long len = deflateContent(deflater, outputBuffer);
 
                     // try to preserve single write if possible (header + compressed content + trailer)
-                    if (deflater.finished() && outputBuffer.remaining() >= GZIP_TRAILER_SIZE)
+                    if (deflater.finished() && outputBuffer.space() >= GZIP_TRAILER_SIZE)
                     {
                         _state.set(GZState.FINISHED);
                         addTrailer(outputBuffer);
@@ -446,7 +436,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                         return Action.SCHEDULED;
                     }
                 }
-                while (_content.remaining() > 0L);
+                while (_content.hasRemaining());
 
                 // No progress made on deflate, deflater not finished, we shouldn't be able to reach this.
                 throw new AssertionError("No progress on deflate made for " + this);
@@ -460,10 +450,11 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             }
         }
 
-        private long deflateContent(Deflater deflater, WritableBuffer outputBuffer) throws IOException
+        private long deflateContent(Deflater deflater, RetainableByteBuffer.Mutable outputBuffer) throws IOException
         {
             return outputBuffer.readFrom(output ->
             {
+                int p = output.position();
                 _content.writeTo(input ->
                 {
                     int startPosition = input.position();
@@ -475,24 +466,17 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                     input.position(startPosition);
                     _crc.update(input);
                     input.position(endPosition);
+                    return endPosition - startPosition;
                 });
-                return false;
+                return output.position() - p;
             });
         }
 
-        private void write(boolean last, WritableBuffer outputBuffer)
+        private void write(boolean last, RetainableByteBuffer outputBuffer)
         {
-            ReadableBuffer rb = outputBuffer.toReadable();
-            try
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("write() last={}, outputBuffer={}", last, rb);
-                GzipResponseAndCallback.super.write(last, rb, this);
-            }
-            finally
-            {
-                rb.toWritable();
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("write() last={}, outputBuffer={}", last, outputBuffer);
+            GzipResponseAndCallback.super.write(last, outputBuffer, this);
         }
 
         @Override

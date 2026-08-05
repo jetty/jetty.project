@@ -85,10 +85,10 @@ public class ConditionalHandlerTest
         startServer(testHandler);
         Expected expected = (Expected)testHandler;
 
-        String response = _connector.getResponse("GET / HTTP/1.0\n\n");
+        String response = _connector.getResponseAsString("GET / HTTP/1.0\n\n");
         expected.testDoHandle(response);
 
-        response = _connector.getResponse("POST /foo HTTP/1.0\n\n");
+        response = _connector.getResponseAsString("POST /foo HTTP/1.0\n\n");
         expected.testDoHandle(response);
     }
 
@@ -100,10 +100,10 @@ public class ConditionalHandlerTest
         testHandler.excludeMethod("POST");
         startServer(testHandler);
 
-        String response = _connector.getResponse("GET / HTTP/1.0\n\n");
+        String response = _connector.getResponseAsString("GET / HTTP/1.0\n\n");
         _expected.testDoHandle(response);
 
-        response = _connector.getResponse("POST /foo HTTP/1.0\n\n");
+        response = _connector.getResponseAsString("POST /foo HTTP/1.0\n\n");
         _expected.testDoNotHandle(response);
     }
 
@@ -114,10 +114,10 @@ public class ConditionalHandlerTest
         testHandler.includePath("/foo/*");
         testHandler.excludePath("/foo/bar");
         startServer(testHandler);
-        String response = _connector.getResponse("GET /foo HTTP/1.0\n\n");
+        String response = _connector.getResponseAsString("GET /foo HTTP/1.0\n\n");
         _expected.testDoHandle(response);
 
-        response = _connector.getResponse("POST /foo/bar HTTP/1.0\n\n");
+        response = _connector.getResponseAsString("POST /foo/bar HTTP/1.0\n\n");
         _expected.testDoNotHandle(response);
     }
 
@@ -128,14 +128,14 @@ public class ConditionalHandlerTest
         testHandler.includeInetAddressPattern("192.168.128.0-192.168.128.128");
         testHandler.excludeInetAddressPattern("192.168.128.30-192.168.128.39");
         startServer(testHandler);
-        String response = _connector.getResponse("""
+        String response = _connector.getResponseAsString("""
             GET /foo HTTP/1.0
             Forwarded: for=192.168.128.1
             
             """);
         _expected.testDoHandle(response);
 
-        response = _connector.getResponse("""
+        response = _connector.getResponseAsString("""
             GET /foo HTTP/1.0
             Forwarded: for=192.168.128.31
             
@@ -152,16 +152,16 @@ public class ConditionalHandlerTest
         testHandler.includePath("/foo/*");
         testHandler.excludePath("/foo/bar");
         startServer(testHandler);
-        String response = _connector.getResponse("GET /foo HTTP/1.0\n\n");
+        String response = _connector.getResponseAsString("GET /foo HTTP/1.0\n\n");
         _expected.testDoHandle(response);
 
-        response = _connector.getResponse("GET /foo/bar HTTP/1.0\n\n");
+        response = _connector.getResponseAsString("GET /foo/bar HTTP/1.0\n\n");
         _expected.testDoNotHandle(response);
 
-        response = _connector.getResponse("POST /foo HTTP/1.0\n\n");
+        response = _connector.getResponseAsString("POST /foo HTTP/1.0\n\n");
         _expected.testDoNotHandle(response);
 
-        response = _connector.getResponse("POST /foo/bar HTTP/1.0\n\n");
+        response = _connector.getResponseAsString("POST /foo/bar HTTP/1.0\n\n");
         _expected.testDoNotHandle(response);
     }
 

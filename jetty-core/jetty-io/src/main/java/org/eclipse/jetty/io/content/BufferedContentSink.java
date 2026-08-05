@@ -21,7 +21,7 @@ import java.util.List;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,20 +30,20 @@ import org.slf4j.LoggerFactory;
  * <p>A {@link Content.Sink} backed by another {@link Content.Sink}.
  * Any content written to this {@link Content.Sink} is buffered,
  * then written to the delegate using
- * {@link Content.Sink#write(boolean, ReadableBuffer, Callback)}. </p>
+ * {@link Content.Sink#write(boolean, RetainableByteBuffer, Callback)}. </p>
  */
 public class BufferedContentSink implements Content.Sink
 {
     /**
-     * An empty {@link ReadableBuffer}, which if {@link #write(boolean, ReadableBuffer, Callback) written}
+     * An empty {@link RetainableByteBuffer}, which if {@link #write(boolean, RetainableByteBuffer, Callback) written}
      * will invoke a {@link #flush(Callback)} operation.
      */
-    public static final ReadableBuffer FLUSH_BUFFER = ReadableBuffer.wrap(new byte[0]);
+    public static final RetainableByteBuffer FLUSH_BUFFER = RetainableByteBuffer.wrap(new byte[0]);
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedContentSink.class);
 
     private final Content.Sink _delegate;
-    private final List<ReadableBuffer> _aggregator;
+    private final List<RetainableByteBuffer> _aggregator;
     private final SerializedInvoker _serializer = new SerializedInvoker(BufferedContentSink.class);
     private final int _maxSize;
     private final int _aggregationSize;
@@ -71,7 +71,7 @@ public class BufferedContentSink implements Content.Sink
     }
 
     @Override
-    public void write(boolean last, ReadableBuffer buffer, Callback callback)
+    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("writing last={} {}", last, buffer);
@@ -93,7 +93,7 @@ public class BufferedContentSink implements Content.Sink
             }
         }
 
-        ReadableBuffer current = buffer != null ? buffer : ReadableBuffer.EMPTY;
+        RetainableByteBuffer current = buffer != null ? buffer : RetainableByteBuffer.empty();
         if (current.remaining() <= _aggregationSize && !last && buffer != FLUSH_BUFFER)
         {
             // current buffer can be aggregated
@@ -119,7 +119,7 @@ public class BufferedContentSink implements Content.Sink
      * Flushes the aggregated buffer if something was aggregated, then flushes the
      * given buffer, bypassing the aggregator.
      */
-    private void flush(boolean last, ReadableBuffer currentBuffer, Callback callback)
+    private void flush(boolean last, RetainableByteBuffer currentBuffer, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("given buffer is greater than _maxBufferSize");
@@ -130,30 +130,30 @@ public class BufferedContentSink implements Content.Sink
                 LOG.debug("nothing aggregated, flushing current buffer {}", currentBuffer);
             _delegate.write(last, currentBuffer, callback);
         }
-        else if (currentBuffer.remaining() == 0L)
+        else if (!currentBuffer.hasRemaining())
         {
-            ReadableBuffer accumulated = ReadableBuffer.accumulate(_aggregator);
+            RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(_aggregator);
             if (LOG.isDebugEnabled())
                 LOG.debug("flushing aggregate {}", accumulated);
             _delegate.write(last, accumulated, callback);
             accumulated.release();
-            _aggregator.forEach(ReadableBuffer::release);
+            _aggregator.forEach(RetainableByteBuffer::release);
             _aggregator.clear();
         }
         else if (last && currentBuffer.remaining() <= Math.min(_aggregationSize, aggregatorSpace()) && aggregatorAppend(currentBuffer))
         {
             currentBuffer.retain();
-            ReadableBuffer accumulated = ReadableBuffer.accumulate(_aggregator);
+            RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(_aggregator);
             if (LOG.isDebugEnabled())
                 LOG.debug("flushing aggregated {}", accumulated);
             _delegate.write(last, accumulated, callback);
             accumulated.release();
-            _aggregator.forEach(ReadableBuffer::release);
+            _aggregator.forEach(RetainableByteBuffer::release);
             _aggregator.clear();
         }
         else
         {
-            ReadableBuffer accumulated = ReadableBuffer.accumulate(_aggregator);
+            RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(_aggregator);
             if (LOG.isDebugEnabled())
                 LOG.debug("flushing aggregate {} and buffer {}", accumulated, currentBuffer);
             _delegate.write(false, accumulated, new Callback() 
@@ -177,15 +177,15 @@ public class BufferedContentSink implements Content.Sink
                 }
             });
             accumulated.release();
-            _aggregator.forEach(ReadableBuffer::release);
+            _aggregator.forEach(RetainableByteBuffer::release);
             _aggregator.clear();
         }
     }
 
-    private boolean aggregatorAppend(ReadableBuffer buffer)
+    private boolean aggregatorAppend(RetainableByteBuffer buffer)
     {
         long totalRemaining = 0L;
-        for (ReadableBuffer readableBuffer : _aggregator)
+        for (RetainableByteBuffer readableBuffer : _aggregator)
         {
             totalRemaining += readableBuffer.remaining();
         }
@@ -196,8 +196,8 @@ public class BufferedContentSink implements Content.Sink
         if (totalRemaining + buffer.remaining() > _maxSize)
         {
             long sliceLength = _maxSize - totalRemaining;
-            ReadableBuffer slice = buffer.slice(buffer.position(), sliceLength);
-            buffer.position(buffer.position() + sliceLength);
+            RetainableByteBuffer slice = buffer.slice(buffer.readPosition(), sliceLength);
+            buffer.readPosition(buffer.readPosition() + sliceLength);
             _aggregator.add(slice);
             return false;
         }
@@ -210,7 +210,7 @@ public class BufferedContentSink implements Content.Sink
     private long aggregatorSpace()
     {
         long totalRemaining = 0L;
-        for (ReadableBuffer readableBuffer : _aggregator)
+        for (RetainableByteBuffer readableBuffer : _aggregator)
         {
             totalRemaining += readableBuffer.remaining();
         }
@@ -220,7 +220,7 @@ public class BufferedContentSink implements Content.Sink
     /**
      * Aggregates the given buffer, flushing the aggregated buffer if necessary.
      */
-    private void aggregateAndFlush(ReadableBuffer currentBuffer, Callback callback)
+    private void aggregateAndFlush(RetainableByteBuffer currentBuffer, Callback callback)
     {
         if (aggregatorAppend(currentBuffer))
         {
@@ -228,7 +228,7 @@ public class BufferedContentSink implements Content.Sink
             return;
         }
 
-        ReadableBuffer accumulated = ReadableBuffer.accumulate(_aggregator);
+        RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(_aggregator);
         _delegate.write(false, accumulated, new Callback()
         {
             @Override
@@ -253,7 +253,7 @@ public class BufferedContentSink implements Content.Sink
             }
         });
         accumulated.release();
-        _aggregator.forEach(ReadableBuffer::release);
+        _aggregator.forEach(RetainableByteBuffer::release);
         _aggregator.clear();
     }
 }

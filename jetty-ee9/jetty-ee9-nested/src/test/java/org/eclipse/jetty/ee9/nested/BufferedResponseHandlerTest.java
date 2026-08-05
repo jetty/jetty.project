@@ -90,7 +90,7 @@ public class BufferedResponseHandlerTest
             Connection: close
             
             """;
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertEquals(400, response.getStatus());
@@ -132,7 +132,7 @@ public class BufferedResponseHandlerTest
             Connection: close
             
             """;
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertEquals(200, response.getStatus());
@@ -178,7 +178,7 @@ public class BufferedResponseHandlerTest
             Connection: close
             
             """;
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertEquals(200, response.getStatus());

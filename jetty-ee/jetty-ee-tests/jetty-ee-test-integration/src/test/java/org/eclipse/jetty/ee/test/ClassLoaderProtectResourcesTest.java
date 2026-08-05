@@ -106,7 +106,7 @@ public class ClassLoaderProtectResourcesTest
             Connection: close\r
             \r
             """;
-        String rawResponse = connector.getResponse(rawRequest);
+        String rawResponse = connector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("Service Count: %s%s".formatted(expectedHitsFromServlet, System.lineSeparator())));
     }
@@ -149,7 +149,7 @@ public class ClassLoaderProtectResourcesTest
             Connection: close\r
             \r
             """.formatted(resourceName);
-        String rawResponse = connector.getResponse(rawRequest);
+        String rawResponse = connector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("Hits: 0" + System.lineSeparator()));
     }

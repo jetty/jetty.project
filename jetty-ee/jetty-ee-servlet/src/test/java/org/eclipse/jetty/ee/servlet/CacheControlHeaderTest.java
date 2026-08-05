@@ -28,8 +28,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Disabled;
@@ -87,8 +85,7 @@ public class CacheControlHeaderTest
     {
         server = new Server();
 
-        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(new HttpConfiguration());
-        connector = new LocalConnector(server, null, null, null, -1, httpConnectionFactory);
+        connector = new LocalConnector(server, null, null, null);
 
         ServletContextHandler context = new ServletContextHandler();
 
@@ -130,7 +127,7 @@ public class CacheControlHeaderTest
             req1.append("Connection: close\r\n");
             req1.append("\r\n");
 
-            String response = connector.getResponse(req1.toString());
+            String response = connector.getResponseAsString(req1.toString());
             assertThat("Response status",
                        response,
                        containsString("HTTP/1.1 200 OK"));
@@ -157,7 +154,7 @@ public class CacheControlHeaderTest
             req1.append("Connection: close\r\n");
             req1.append("\r\n");
 
-            String response = connector.getResponse(req1.toString());
+            String response = connector.getResponseAsString(req1.toString());
             assertThat("Response status",
                        response,
                        containsString("HTTP/1.1 200 OK"));
@@ -184,7 +181,7 @@ public class CacheControlHeaderTest
             req1.append("Connection: close\r\n");
             req1.append("\r\n");
 
-            String response = connector.getResponse(req1.toString());
+            String response = connector.getResponseAsString(req1.toString());
             assertThat("Response status",
                        response,
                        containsString("HTTP/1.1 200 OK"));

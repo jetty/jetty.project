@@ -74,7 +74,7 @@ public class RewritePatternRuleTest extends AbstractRuleTest
                         
             """.replace("$U", inputURI);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(expectURI, response.get("X-URI"), "X-URI response header value");
     }
@@ -93,7 +93,7 @@ public class RewritePatternRuleTest extends AbstractRuleTest
                         
             """.replace("$Q", query);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(replacement + "?" + query, response.get("X-URI"));
     }
@@ -113,7 +113,7 @@ public class RewritePatternRuleTest extends AbstractRuleTest
                         
             """.replace("$Q", query);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(replacementPath + "?" + query + "&" + replacementQuery, response.get("X-URI"));
     }

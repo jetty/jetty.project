@@ -17,7 +17,7 @@ import java.util.EnumMap;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ClientParser extends Parser
 {
@@ -70,7 +70,7 @@ public class ClientParser extends Parser
         }
 
         @Override
-        public boolean onContent(int request, FCGI.StreamType stream, ReadableBuffer buffer)
+        public boolean onContent(int request, FCGI.StreamType stream, RetainableByteBuffer buffer)
         {
             return listener.onContent(request, stream, buffer);
         }

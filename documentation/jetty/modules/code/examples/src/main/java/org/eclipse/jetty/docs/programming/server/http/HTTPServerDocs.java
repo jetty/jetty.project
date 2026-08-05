@@ -117,7 +117,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.KeyStoreScanner;
@@ -1021,7 +1021,7 @@ public class HTTPServerDocs
                     .whenComplete((ignored, failure) ->
                     {
                         if (failure == null)
-                            response.write(true, ReadableBuffer.wrap(UTF_8.encode("HELLO")), callback);
+                            response.write(true, RetainableByteBuffer.wrap(UTF_8.encode("HELLO")), callback);
                         else
                             callback.failed(failure);
                     });
@@ -1064,7 +1064,7 @@ public class HTTPServerDocs
                 responseHeaders.put(HttpHeader.CONTENT_LENGTH, contentLength);
 
                 // Commit the response.
-                response.write(true, ReadableBuffer.wrap(bytes), callback);
+                response.write(true, RetainableByteBuffer.wrap(bytes), callback);
 
                 // Return true because the callback will eventually be completed.
                 return true;

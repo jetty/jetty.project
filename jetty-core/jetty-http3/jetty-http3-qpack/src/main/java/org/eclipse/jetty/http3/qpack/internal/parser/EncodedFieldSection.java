@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.qpack.internal.parser;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +27,7 @@ import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
 import org.eclipse.jetty.http3.qpack.internal.metadata.MetaDataBuilder;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +48,7 @@ public class EncodedFieldSection
     private final QpackDecoder.Handler _handler;
     private final long _beginNanoTime;
 
-    public EncodedFieldSection(long streamId, QpackDecoder.Handler handler, int requiredInsertCount, int base, ByteBuffer content, long beginNanoTime) throws QpackException
+    public EncodedFieldSection(long streamId, QpackDecoder.Handler handler, int requiredInsertCount, int base, RetainableByteBuffer content, long beginNanoTime) throws QpackException
     {
         _streamId = streamId;
         _requiredInsertCount = requiredInsertCount;
@@ -62,7 +61,7 @@ public class EncodedFieldSection
             while (content.hasRemaining())
             {
                 EncodedField encodedField;
-                byte firstByte = content.get(content.position());
+                byte firstByte = content.get(content.readPosition());
                 if ((firstByte & 0x80) != 0)
                     encodedField = parseIndexedField(content);
                 else if ((firstByte & 0x40) != 0)
@@ -143,9 +142,9 @@ public class EncodedFieldSection
         }
     }
 
-    private EncodedField parseIndexedField(ByteBuffer buffer) throws EncodingException
+    private EncodedField parseIndexedField(RetainableByteBuffer buffer) throws EncodingException
     {
-        byte firstByte = buffer.get(buffer.position());
+        byte firstByte = buffer.get(buffer.readPosition());
         boolean dynamicTable = (firstByte & 0x40) == 0;
         _integerDecoder.setPrefix(6);
         int index = _integerDecoder.decodeInt(buffer);
@@ -154,7 +153,7 @@ public class EncodedFieldSection
         return new IndexedField(dynamicTable, index);
     }
 
-    private EncodedField parseIndexedFieldPostBase(ByteBuffer buffer) throws EncodingException
+    private EncodedField parseIndexedFieldPostBase(RetainableByteBuffer buffer) throws EncodingException
     {
         _integerDecoder.setPrefix(4);
         int index = _integerDecoder.decodeInt(buffer);
@@ -164,12 +163,12 @@ public class EncodedFieldSection
         return new PostBaseIndexedField(index);
     }
 
-    private EncodedField parseNameReference(ByteBuffer buffer) throws EncodingException
+    private EncodedField parseNameReference(RetainableByteBuffer buffer) throws EncodingException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("parseLiteralFieldLineWithNameReference: {}", BufferUtil.toDetailString(buffer));
+            LOG.debug("parseLiteralFieldLineWithNameReference: {}", buffer);
 
-        byte firstByte = buffer.get(buffer.position());
+        byte firstByte = buffer.get(buffer.readPosition());
         boolean allowEncoding = (firstByte & 0x20) != 0;
         boolean dynamicTable = (firstByte & 0x10) == 0;
 
@@ -186,9 +185,9 @@ public class EncodedFieldSection
         return new IndexedNameField(allowEncoding, dynamicTable, nameIndex, value);
     }
 
-    private EncodedField parseNameReferencePostBase(ByteBuffer buffer) throws EncodingException
+    private EncodedField parseNameReferencePostBase(RetainableByteBuffer buffer) throws EncodingException
     {
-        byte firstByte = buffer.get(buffer.position());
+        byte firstByte = buffer.get(buffer.readPosition());
         boolean allowEncoding = (firstByte & 0x08) != 0;
 
         _integerDecoder.setPrefix(3);
@@ -204,9 +203,9 @@ public class EncodedFieldSection
         return new PostBaseIndexedNameField(allowEncoding, nameIndex, value);
     }
 
-    private EncodedField parseLiteralField(ByteBuffer buffer) throws EncodingException
+    private EncodedField parseLiteralField(RetainableByteBuffer buffer) throws EncodingException
     {
-        byte firstByte = buffer.get(buffer.position());
+        byte firstByte = buffer.get(buffer.readPosition());
         boolean allowEncoding = (firstByte & 0x10) != 0;
 
         _stringDecoder.setPrefix(4);

@@ -114,7 +114,7 @@ public class DispatcherTest
         _contextHandler.addServlet(DefaultServlet.class, "/");
         _server.start();
 
-        String responses = _connector.getResponse("""
+        String responses = _connector.getResponseAsString("""
             GET /context/ForwardServlet?do=req.echo&uri=/subdir HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -130,7 +130,7 @@ public class DispatcherTest
         _contextHandler.addServlet(new ServletHolder("ForwardServlet", ForwardServlet.class), "/ForwardServlet/*");
         _contextHandler.addServlet(AssertForwardServlet.class, "/AssertForwardServlet/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/ForwardServlet?do=assertforward&do=more&test=1 HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -156,7 +156,7 @@ public class DispatcherTest
         _contextHandler.addServlet(forwardServlet, "/ForwardServlet/*");
         _contextHandler.addServlet(AssertMultiPartForwardServlet.class, "/AssertMultiPartForwardServlet/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/ForwardServlet?do=assertmultipart&do=more&test=1 HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -186,7 +186,7 @@ public class DispatcherTest
         _contextHandler.addServlet(holder, "/echo/*");
 
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/ForwardServlet?do=always HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -222,7 +222,7 @@ public class DispatcherTest
         _contextHandler.addServlet(new ServletHolder("ForwardNonUTF8Servlet", ForwardNonUTF8Servlet.class), "/ForwardServlet/*");
         _contextHandler.addServlet(AssertNonUTF8ForwardServlet.class, "/AssertForwardServlet/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/ForwardServlet?do=assertforward&foreign=%d2%e5%ec%ef%e5%f0%e0%f2%f3%f0%e0&test=1 HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -245,7 +245,7 @@ public class DispatcherTest
         _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
         _contextHandler.addServlet(EchoURIServlet.class, "/EchoURI/*");
 
-        String responses = _connector.getResponse("""
+        String responses = _connector.getResponseAsString("""
             GET /context/ForwardServlet;ignore=true?do=req.echo&uri=EchoURI%2Fx%2520x%3Ba=1%3Fb=2 HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -275,7 +275,7 @@ public class DispatcherTest
         _contextHandler.addServlet(holder, "/forward/*");
         String echo = _contextHandler.addServlet(ForwardEchoURIServlet.class, "/echo/*").getName();
 
-        String rawResponse = _connector.getResponse(("""
+        String rawResponse = _connector.getResponseAsString(("""
             GET /context/forward/info;param=value?name=@ECHO@ HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -311,7 +311,7 @@ public class DispatcherTest
         _contextHandler.addServlet(NamedIncludeServlet.class, "/include/*");
         String echo = _contextHandler.addServlet(IncludeEchoURIServlet.class, "/echo/*").getName();
 
-        String responses = _connector.getResponse("""
+        String responses = _connector.getResponseAsString("""
             GET /context/include/info;param=value?name=@ECHO@ HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -350,7 +350,7 @@ public class DispatcherTest
 
             String rawResponse;
 
-            rawResponse = _connector.getResponse("""
+            rawResponse = _connector.getResponseAsString("""
                 GET /context/forward/?echo=allgood HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -359,7 +359,7 @@ public class DispatcherTest
             assertThat(rawResponse, containsString(" 200 OK"));
             assertThat(rawResponse, containsString("allgood"));
 
-            rawResponse = _connector.getResponse("""
+            rawResponse = _connector.getResponseAsString("""
                 GET /context/forward/params?echo=allgood HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -369,7 +369,7 @@ public class DispatcherTest
             assertThat(rawResponse, containsString("allgood"));
             assertThat(rawResponse, containsString("forward"));
 
-            rawResponse = _connector.getResponse("""
+            rawResponse = _connector.getResponseAsString("""
                 GET /context/forward/badparams?echo=badparams HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -377,7 +377,7 @@ public class DispatcherTest
                 """);
             assertThat(rawResponse, containsString(" 500 "));
 
-            rawResponse = _connector.getResponse("""
+            rawResponse = _connector.getResponseAsString("""
                 GET /context/forward/?echo=badclient&bad=%88%A4 HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -385,7 +385,7 @@ public class DispatcherTest
                 """);
             assertThat(rawResponse, containsString(" 400 "));
 
-            rawResponse = _connector.getResponse("""
+            rawResponse = _connector.getResponseAsString("""
                 GET /context/forward/params?echo=badclient&bad=%88%A4 HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -393,7 +393,7 @@ public class DispatcherTest
                 """);
             assertThat(rawResponse, containsString(" 400 "));
 
-            rawResponse = _connector.getResponse("""
+            rawResponse = _connector.getResponseAsString("""
                 GET /context/forward/badparams?echo=badclientandparam&bad=%88%A4 HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
@@ -411,7 +411,7 @@ public class DispatcherTest
 
         //test include, along with special extension to include that allows headers to
         //be set during an include
-        String responses = _connector.getResponse("""
+        String responses = _connector.getResponseAsString("""
             GET /context/IncludeServlet?do=assertinclude&do=more&test=1&headers=true HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -443,7 +443,7 @@ public class DispatcherTest
         _contextHandler.addServlet(RogerThatServlet.class, "*.x");
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/r/ HTTP/1.0\r
             Host: localhost\r
             Connection: close\r
@@ -460,7 +460,7 @@ public class DispatcherTest
 
 
         // direct include
-        rawResponse = _connector.getResponse("""
+        rawResponse = _connector.getResponseAsString("""
             GET /context/dispatch/test?include=/index.x HTTP/1.0\r
             Host: localhost\r
             Connection: close\r
@@ -476,7 +476,7 @@ public class DispatcherTest
         assertEquals(expected, rawResponse);
 
         // include through welcome file based on servlet mapping
-        rawResponse = _connector.getResponse("""
+        rawResponse = _connector.getResponseAsString("""
             GET /context/dispatch/test?include=/r/ HTTP/1.0\r
             Host: localhost\r
             Connection: close\r
@@ -512,7 +512,7 @@ public class DispatcherTest
 
         //test include, along with special extension to include that allows headers to
         //be set during an include
-        String responses = _connector.getResponse("""
+        String responses = _connector.getResponseAsString("""
             GET /context/IncludeServlet?do=hello HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -541,7 +541,7 @@ public class DispatcherTest
 
         //test include, along with special extension to include that allows headers to
         //be set during an include
-        String responses = _connector.getResponse("""
+        String responses = _connector.getResponseAsString("""
             GET /context/IncludeServlet?do=assertinclude&do=more&test=1&headers=true HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -569,7 +569,7 @@ public class DispatcherTest
         _contextHandler.addServlet(new ServletHolder("default", DefaultServlet.class), "/");
         _server.start();
 
-        String responses = _connector.getResponse("""
+        String responses = _connector.getResponseAsString("""
             GET /context/IncludeServlet?do=static HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -597,7 +597,7 @@ public class DispatcherTest
         _contextHandler.addServlet(new ServletHolder("default", DefaultServlet.class), "/");
         _server.start();
 
-        String responses = _connector.getResponse("""
+        String responses = _connector.getResponseAsString("""
             GET /context/IncludeServlet?do=static HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -623,7 +623,7 @@ public class DispatcherTest
         _contextHandler.addServlet(DefaultServlet.class, "/");
         _server.start();
 
-        String responses = _connector.getResponse("""
+        String responses = _connector.getResponseAsString("""
             GET /context/ForwardServlet?do=req.echo&uri=/test.txt HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -653,7 +653,7 @@ public class DispatcherTest
         _contextHandler.addServlet(ForwardServlet.class, "/forward/*");
         _contextHandler.addServlet(SendErrorServlet.class, "/senderr/*");
 
-        String forwarded = _connector.getResponse("""
+        String forwarded = _connector.getResponseAsString("""
             GET /context/forward?do=ctx.echo&uri=/senderr HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -670,7 +670,7 @@ public class DispatcherTest
         _contextHandler.addServlet(RelativeDispatch2Servlet.class, "/RelDispatchServlet/*");
         _contextHandler.addServlet(ThrowServlet.class, "/include/throw/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/RelDispatchServlet?path=include/throw HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -696,7 +696,7 @@ public class DispatcherTest
         _contextHandler.addServlet(RelativeDispatch2Servlet.class, "/RelDispatchServlet/*");
         _contextHandler.addServlet(ThrowServlet.class, "/include/throw/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/RelDispatchServlet?include=true&path=include/throw HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -727,7 +727,7 @@ public class DispatcherTest
         _contextHandler.addServlet(IncludeServlet.class, "/IncludeServlet/*");
         _contextHandler.addServlet(new ServletHolder("AssertForwardIncludeServlet", AssertForwardIncludeServlet.class), "/AssertForwardIncludeServlet/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/ForwardServlet/forwardpath?do=include HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -753,7 +753,7 @@ public class DispatcherTest
         _contextHandler.addServlet(ForwardServlet.class, "/ForwardServlet/*");
         _contextHandler.addServlet(AssertIncludeForwardServlet.class, "/AssertIncludeForwardServlet/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/IncludeServlet/includepath?do=forward HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -777,7 +777,7 @@ public class DispatcherTest
         _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
         _contextHandler.addServlet(RogerThatServlet.class, "/roger/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/dispatch/test?forward=/roger/that HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -807,7 +807,7 @@ public class DispatcherTest
             \r
             """;
 
-        String rawResponse = _connector.getResponse(rawRequest);
+        String rawResponse = _connector.getResponseAsString(rawRequest);
 
         assertThat(rawResponse, startsWith("HTTP/1.1 404 "));
     }
@@ -825,7 +825,7 @@ public class DispatcherTest
             \r
             """;
 
-        String rawResponse = _connector.getResponse(rawRequest);
+        String rawResponse = _connector.getResponseAsString(rawRequest);
 
         assertThat(rawResponse, startsWith("HTTP/1.1 404 "));
     }
@@ -836,7 +836,7 @@ public class DispatcherTest
         _contextHandler.addServlet(DispatchServletServlet.class, "/dispatch/*");
         _contextHandler.addServlet(RogerThatServlet.class, "/roger/*");
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/dispatch/test?include=/roger/that HTTP/1.0\r
             Host: localhost\r
             Connection: close\r
@@ -863,7 +863,7 @@ public class DispatcherTest
         HttpTester.Response response;
         String rawResponse;
 
-        rawResponse = _connector.getResponse("""
+        rawResponse = _connector.getResponseAsString("""
             GET /context/ HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -873,7 +873,7 @@ public class DispatcherTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("Roger That!"));
 
-        rawResponse = _connector.getResponse("""
+        rawResponse = _connector.getResponseAsString("""
             GET /context/foo?echo=echoText HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -883,7 +883,7 @@ public class DispatcherTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getContent(), containsString("echoText"));
 
-        rawResponse = _connector.getResponse("""
+        rawResponse = _connector.getResponseAsString("""
             GET /context/?echo=echoText HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -911,7 +911,7 @@ public class DispatcherTest
         HttpTester.Response response;
         String rawResponse;
 
-        rawResponse = _connector.getResponse("""
+        rawResponse = _connector.getResponseAsString("""
             GET /context/DispatchServlet HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -935,7 +935,7 @@ public class DispatcherTest
         String rawResponse;
 
         // Test not found
-        rawResponse = _connector.getResponse("""
+        rawResponse = _connector.getResponseAsString("""
             GET /context/DispatchServlet?target=/DoesNotExist HTTP/1.1\r
             Host: local\r
             Connection: close\r

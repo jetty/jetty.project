@@ -171,7 +171,7 @@ public class DefaultServletInitTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponseAsString(rawRequest));
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), containsString("Content from testServlet with pathInfo[]"));
     }

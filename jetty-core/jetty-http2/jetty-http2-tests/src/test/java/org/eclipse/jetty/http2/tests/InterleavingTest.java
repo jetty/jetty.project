@@ -40,7 +40,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +88,7 @@ public class InterleavingTest extends AbstractTest
             public void onDataAvailable(Stream stream)
             {
                 Content.Chunk chunk = stream.read();
-                DataFrame dataFrame = new DataFrame(stream.getId(), ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast());
+                DataFrame dataFrame = new DataFrame(stream.getId(), RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast());
                 // Do not release.
                 dataQueue.offer(dataFrame);
                 if (!chunk.isLast())
@@ -129,10 +129,10 @@ public class InterleavingTest extends AbstractTest
             {
                 // Write data for both streams from within the callback so that they get queued together.
 
-                ReadableBuffer buffer1 = ReadableBuffer.wrap(content1);
+                RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(content1);
                 serverStream1.data(buffer1, true, NOOP);
 
-                ReadableBuffer buffer2 = ReadableBuffer.wrap(content2);
+                RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(content2);
                 serverStream2.data(buffer2, true, NOOP);
             }
         });
@@ -159,7 +159,7 @@ public class InterleavingTest extends AbstractTest
             if (dataFrame.isEndStream())
                 ++finished;
 
-            ReadableBuffer rb = dataFrame.acquire();
+            RetainableByteBuffer rb = dataFrame.acquire();
             BufferUtil.writeTo(rb, contents.get(streamId));
             rb.release();
 

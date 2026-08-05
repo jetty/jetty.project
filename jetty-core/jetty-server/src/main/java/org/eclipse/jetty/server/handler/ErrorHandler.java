@@ -44,7 +44,6 @@ import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -57,7 +56,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -241,7 +240,7 @@ public class ErrorHandler implements Request.Handler
 
         int bufferSize = getBufferSize() <= 0 ? computeBufferSize(request) : getBufferSize();
         ByteBufferPool byteBufferPool = request.getComponents().getByteBufferPool();
-        RetainableByteBuffer buffer = byteBufferPool.acquire(bufferSize, false);
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = byteBufferPool.acquire(bufferSize, false);
 
         try
         {
@@ -294,7 +293,7 @@ public class ErrorHandler implements Request.Handler
             }
 
             response.getHeaders().put(type.getContentTypeField(charset));
-            response.write(true, ReadableBuffer.wrap(buffer.getByteBuffer()), new WriteErrorCallback(callback, buffer));
+            response.write(true, RetainableByteBuffer.wrap(buffer.getByteBuffer()), new WriteErrorCallback(callback, buffer));
 
             return true;
         }
@@ -685,14 +684,14 @@ public class ErrorHandler implements Request.Handler
      * The callback used by
      * {@link ErrorHandler#generateAcceptableResponse(Request, Response, Callback, String, List, int, String, Throwable)}
      * when calling {@link Response#write(boolean, ByteBuffer, Callback)} to wrap the passed in {@link Callback}
-     * so that the {@link RetainableByteBuffer} used can be released.
+     * so that the {@link org.eclipse.jetty.io.RetainableByteBuffer} used can be released.
      */
     private static class WriteErrorCallback implements Callback
     {
         private final AtomicReference<Callback> _callback;
-        private final RetainableByteBuffer _buffer;
+        private final org.eclipse.jetty.io.RetainableByteBuffer _buffer;
 
-        public WriteErrorCallback(Callback callback, RetainableByteBuffer retainable)
+        public WriteErrorCallback(Callback callback, org.eclipse.jetty.io.RetainableByteBuffer retainable)
         {
             _callback = new AtomicReference<>(callback);
             _buffer = retainable;

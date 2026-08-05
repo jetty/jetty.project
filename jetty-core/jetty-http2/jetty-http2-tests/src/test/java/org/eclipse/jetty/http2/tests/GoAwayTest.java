@@ -52,7 +52,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -481,7 +481,7 @@ public class GoAwayTest extends AbstractTest
 
         MetaData.Request request1 = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame headersFrame1 = new HeadersFrame(request1, null, false);
-        DataFrame dataFrame1 = new DataFrame(ReadableBuffer.allocate(flowControlWindow / 2, false), false);
+        DataFrame dataFrame1 = new DataFrame(RetainableByteBuffer.allocate(flowControlWindow / 2, false), false);
         ((HTTP2Session)clientSession).newStream(new HTTP2Stream.FrameList(headersFrame1, dataFrame1, null), new Promise<>() {}, new Stream.Listener()
         {
             @Override
@@ -496,7 +496,7 @@ public class GoAwayTest extends AbstractTest
                 // this stream, so that the first stream can send more data.
                 MetaData.Request request2 = newRequest("POST", HttpFields.EMPTY);
                 HeadersFrame headersFrame2 = new HeadersFrame(request2, null, false);
-                DataFrame dataFrame2 = new DataFrame(ReadableBuffer.allocate(flowControlWindow / 2, false), true);
+                DataFrame dataFrame2 = new DataFrame(RetainableByteBuffer.allocate(flowControlWindow / 2, false), true);
                 ((HTTP2Session)clientStream1.getSession()).newStream(new HTTP2Stream.FrameList(headersFrame2, dataFrame2, null), new Promise<>()
                 {
                     @Override
@@ -505,7 +505,7 @@ public class GoAwayTest extends AbstractTest
                         // After the in-flight stream is sent, try to complete the first stream.
                         // The client should receive the window update from
                         // the server and be able to complete this stream.
-                        clientStream1.data(ReadableBuffer.allocate(flowControlWindow / 2, false), true, Callback.NOOP);
+                        clientStream1.data(RetainableByteBuffer.allocate(flowControlWindow / 2, false), true, Callback.NOOP);
                     }
                 }, AUTO_DISCARD);
             }
@@ -794,7 +794,7 @@ public class GoAwayTest extends AbstractTest
         assertTrue(clientGracefulGoAwayLatch.await(5, TimeUnit.SECONDS));
 
         // Complete the stream.
-        clientStream.data(ReadableBuffer.EMPTY, true, Callback.NOOP);
+        clientStream.data(RetainableByteBuffer.empty(), true, Callback.NOOP);
 
         // Both client and server should send a non-graceful GOAWAY.
         assertTrue(serverGoAwayLatch.await(5, TimeUnit.SECONDS));

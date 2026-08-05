@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.servlets;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -36,7 +37,6 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -175,7 +175,7 @@ public class QoSFilterTest
                 request.setURI("/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY));
                 request.setHeader("num", _num + "");
 
-                String responseString = _connectors[_num].getResponse(BufferUtil.toString(request.generate()));
+                String responseString = _connectors[_num].getResponseAsString(request.generate().getString(StandardCharsets.UTF_8));
 
                 assertThat("Response contains", responseString, containsString("HTTP"));
             }

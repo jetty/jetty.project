@@ -58,8 +58,9 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+import org.eclipse.jetty.util.internal.SingleMutableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -154,7 +155,7 @@ public class PrefaceTest extends AbstractTest
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             Generator generator = new Generator(bufferPool);
-            List<ReadableBuffer> accumulator = new ArrayList<>();
+            List<RetainableByteBuffer> accumulator = new ArrayList<>();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 0);
@@ -162,8 +163,8 @@ public class PrefaceTest extends AbstractTest
             // The PING frame just to make sure the client stops reading.
             generator.control(accumulator, new PingFrame(true));
 
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
@@ -191,7 +192,7 @@ public class PrefaceTest extends AbstractTest
                 int read = socket.getInputStream().read(buffer);
                 if (read < 0)
                     break;
-                parser.parse(ReadableBuffer.wrap(buffer, 0, read));
+                parser.parse(RetainableByteBuffer.wrap(buffer, 0, read));
                 if (closed.get())
                     break;
             }
@@ -265,19 +266,19 @@ public class PrefaceTest extends AbstractTest
             assertTrue(serverSettingsLatch.get().await(5, TimeUnit.SECONDS));
 
             // The 101 response is the reply to the client preface SETTINGS frame.
-            ByteBuffer buffer;
+            ByteBuffer byteBuffer;
             http1:
             while (true)
             {
                 byte[] bytes = new byte[1024];
                 int read = socket.getInputStream().read(bytes);
                 assertThat(read, greaterThanOrEqualTo(0));
-                buffer = ByteBuffer.wrap(bytes, 0, read);
+                byteBuffer = ByteBuffer.wrap(bytes, 0, read);
 
                 int crlfs = 0;
-                while (buffer.hasRemaining())
+                while (byteBuffer.hasRemaining())
                 {
-                    byte b = buffer.get();
+                    byte b = byteBuffer.get();
                     if (b == '\r' || b == '\n')
                         ++crlfs;
                     else
@@ -293,13 +294,13 @@ public class PrefaceTest extends AbstractTest
 
             // After the 101, the client must send the connection preface.
             Generator generator = new Generator(bufferPool);
-            List<ReadableBuffer> accumulator = new ArrayList<>();
+            List<RetainableByteBuffer> accumulator = new ArrayList<>();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 1);
             generator.control(accumulator, new SettingsFrame(clientSettings, false));
-            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-            accumulator.forEach(ReadableBuffer::release);
+            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
@@ -331,22 +332,23 @@ public class PrefaceTest extends AbstractTest
             });
 
             // HTTP/2 parsing.
-            ReadableBuffer readableBuffer = ReadableBuffer.wrap(buffer);
+            RetainableByteBuffer.Mutable buffer = new SingleMutableBuffer(byteBuffer, Retainable.NON_RETAINABLE, false);
             while (true)
             {
-                parser.parse(readableBuffer);
+                parser.parse(buffer);
                 if (responded.get())
                     break;
 
-                WritableBuffer wb = readableBuffer.toWritable();
-                long read = wb.readFrom(output ->
+                assertFalse(buffer.hasRemaining());
+                buffer.clear();
+
+                long read = buffer.readFrom(output ->
                 {
-                    int r = socket.getInputStream().read(output.array(), output.arrayOffset(), output.remaining());
+                    int r = socket.getInputStream().read(output.array(), output.arrayOffset(), output.capacity());
                     if (r > 0)
                         output.position(output.position() + r);
-                    return r == -1;
+                    return r;
                 });
-                wb.toReadable();
                 assertThat(read, greaterThanOrEqualTo(0L));
             }
 

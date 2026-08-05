@@ -17,7 +17,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.security.authentication.SPNEGOAuthenticator;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -39,8 +38,7 @@ public class SPNEGOAuthenticatorTest
     {
         _server = new Server();
 
-        HttpConnectionFactory http = new HttpConnectionFactory();
-        _connector = new LocalConnector(_server, http);
+        _connector = new LocalConnector(_server);
         _connector.setIdleTimeout(300000);
 
         _server.addConnector(_connector);
@@ -75,7 +73,7 @@ public class SPNEGOAuthenticatorTest
     @Test
     public void testChallengeSentWithNoAuthorization() throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("GET /ctx/any/thing HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("GET /ctx/any/thing HTTP/1.0\r\n\r\n"));
 
         assertThat(response.getStatus(), is(HttpStatus.UNAUTHORIZED_401));
         assertThat(response.get(HttpHeader.WWW_AUTHENTICATE), is(HttpHeader.NEGOTIATE.asString()));
@@ -84,7 +82,7 @@ public class SPNEGOAuthenticatorTest
     @Test
     public void testChallengeSentWithUnhandledAuthorization() throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx/any/thing HTTP/1.0\r
             %s: Basic asdf\r
             \r
@@ -98,7 +96,7 @@ public class SPNEGOAuthenticatorTest
     @Disabled // TODO this test needs a lot of work
     public void testChallengeBadResponse() throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx/any/thing HTTP/1.0\r
             %s: %s badtokenT\r
             \r

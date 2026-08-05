@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>A Trie String lookup data structure using a fixed size array.</p>
@@ -391,11 +391,11 @@ class ArrayTrie<V> extends AbstractTrie<V>
     {
         if (b.hasArray())
             return getBest(0, b.array(), b.arrayOffset() + b.position() + offset, Math.toIntExact(len));
-        return getBest(0, ReadableBuffer.wrap(b), offset, len);
+        return getBest(0, RetainableByteBuffer.wrap(b), offset, len);
     }
 
     @Override
-    public V getBest(ReadableBuffer b, long offset, long len)
+    public V getBest(RetainableByteBuffer b, long offset, long len)
     {
         return getBest(0, b, offset, len);
     }
@@ -459,12 +459,12 @@ class ArrayTrie<V> extends AbstractTrie<V>
         return node == null ? null : node._value;
     }
 
-    private V getBest(int row, ReadableBuffer b, long offset, long len)
+    private V getBest(int row, RetainableByteBuffer b, long offset, long len)
     {
-        long pos = b.position() + offset;
+        long pos = b.readPosition() + offset;
         for (int i = 0; i < len; i++)
         {
-            long limit = b.position() + b.remaining();
+            long limit = b.readPosition() + b.remaining();
             if (pos >= limit)
                 return null;
 

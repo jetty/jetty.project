@@ -17,8 +17,7 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,28 +39,26 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
     }
 
     @Override
-    public int fill(WritableBuffer buffer) throws IOException
+    public int fill(RetainableByteBuffer.Mutable buffer) throws IOException
     {
         int read = super.fill(buffer);
-        ReadableBuffer rb = buffer.toReadable();
-        ReadableBuffer view = rb.slice();
+        RetainableByteBuffer view = buffer.slice();
         notifyIncoming(view, read);
         view.release();
-        rb.toWritable();
         return read;
     }
 
     @Override
-    public boolean flush(ReadableBuffer buffer) throws IOException
+    public boolean flush(RetainableByteBuffer buffer) throws IOException
     {
         boolean flushed = true;
-        if (buffer.remaining() > 0L)
+        if (buffer.hasRemaining())
         {
-            long position = buffer.position();
-            ReadableBuffer dupe = buffer.slice();
+            long position = buffer.readPosition();
+            RetainableByteBuffer dupe = buffer.slice();
             flushed = super.flush(buffer);
-            long l = buffer.position() - position;
-            ReadableBuffer view = dupe.slice(dupe.position(), l);
+            long l = buffer.readPosition() - position;
+            RetainableByteBuffer view = dupe.slice(dupe.readPosition(), l);
             notifyOutgoing(view);
             view.release();
             dupe.release();
@@ -103,7 +100,7 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
         }
     }
 
-    public void notifyIncoming(ReadableBuffer buffer, int read)
+    public void notifyIncoming(RetainableByteBuffer buffer, int read)
     {
         if (listener != null && read > 0)
         {
@@ -118,9 +115,9 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
         }
     }
 
-    public void notifyOutgoing(ReadableBuffer view)
+    public void notifyOutgoing(RetainableByteBuffer view)
     {
-        if (listener != null && view.remaining() > 0L)
+        if (listener != null && view.hasRemaining())
         {
             try
             {

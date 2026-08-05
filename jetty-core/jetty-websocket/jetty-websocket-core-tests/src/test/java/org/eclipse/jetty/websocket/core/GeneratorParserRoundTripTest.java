@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GeneratorParserRoundTripTest
 {
-    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
+    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
 
     @Test
     public void testParserAndGenerator() throws Exception
@@ -39,17 +38,16 @@ public class GeneratorParserRoundTripTest
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
-        RetainableByteBuffer out = bufferPool.acquire(8192, false);
+        RetainableByteBuffer.Mutable out = bufferPool.acquire(8192, false);
         try
         {
             // Generate Buffer
-            ByteBuffer byteBuffer = out.getByteBuffer();
             Frame frame = new Frame(OpCode.TEXT).setPayload(message);
-            gen.generateHeader(frame, byteBuffer);
-            gen.generatePayload(frame, byteBuffer);
+            gen.generateHeader(frame, out);
+            gen.generatePayload(frame, out);
 
             // Parse Buffer
-            capture.parse(byteBuffer);
+            capture.parse(out);
         }
         finally
         {
@@ -69,11 +67,9 @@ public class GeneratorParserRoundTripTest
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
-        RetainableByteBuffer out = bufferPool.acquire(8192, false);
+        RetainableByteBuffer.Mutable out = bufferPool.acquire(8192, false);
         try
         {
-            ByteBuffer byteBuffer = out.getByteBuffer();
-
             // Setup Frame
             Frame frame = new Frame(OpCode.TEXT).setPayload(message);
 
@@ -83,11 +79,11 @@ public class GeneratorParserRoundTripTest
             frame.setMask(mask);
 
             // Generate Buffer
-            gen.generateHeader(frame, byteBuffer);
-            gen.generatePayload(frame, byteBuffer);
+            gen.generateHeader(frame, out);
+            gen.generatePayload(frame, out);
 
             // Parse Buffer
-            capture.parse(byteBuffer);
+            capture.parse(out);
         }
         finally
         {

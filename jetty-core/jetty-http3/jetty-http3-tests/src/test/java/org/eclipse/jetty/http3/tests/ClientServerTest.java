@@ -33,7 +33,6 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
@@ -43,7 +42,7 @@ import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -267,7 +266,7 @@ public class ClientServerTest extends AbstractClientServerTest
             }
         };
         Stream stream1 = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, streamListener, p));
-        stream1.data(new DataFrame(ReadableBuffer.allocate(8192, false), true), Promise.Invocable.noop());
+        stream1.data(RetainableByteBuffer.allocate(8192, false), true, Promise.Invocable.noop());
 
         assertTrue(clientLatch.get().await(5, TimeUnit.SECONDS));
         assertTrue(serverLatch.get().await(5, TimeUnit.SECONDS));
@@ -276,10 +275,10 @@ public class ClientServerTest extends AbstractClientServerTest
         serverLatch.set(new CountDownLatch(1));
         clientLatch.set(new CountDownLatch(1));
         Stream stream2 = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, streamListener, p));
-        stream2.data(new DataFrame(ReadableBuffer.allocate(3 * 1024, false), false), Promise.Invocable.noop());
+        stream2.data(RetainableByteBuffer.allocate(3 * 1024, false), false, Promise.Invocable.noop());
         // Wait some time before sending the second chunk.
         Thread.sleep(500);
-        stream2.data(new DataFrame(ReadableBuffer.allocate(5 * 1024, false), true), Promise.Invocable.noop());
+        stream2.data(RetainableByteBuffer.allocate(5 * 1024, false), true, Promise.Invocable.noop());
 
         assertTrue(clientLatch.get().await(5, TimeUnit.SECONDS));
         assertTrue(serverLatch.get().await(5, TimeUnit.SECONDS));
@@ -324,7 +323,7 @@ public class ClientServerTest extends AbstractClientServerTest
                             return;
                         }
                         // Echo it back, then release, then demand only when the write is finished.
-                        stream.data(new DataFrame(ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast()), Promise.Invocable.from(chunk::release, new Promise.Invocable.NonBlocking<>()
+                        stream.data(RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), Promise.Invocable.from(chunk::release, new Promise.Invocable.NonBlocking<>()
                         {
                             @Override
                             public void succeeded(Stream result)
@@ -376,7 +375,7 @@ public class ClientServerTest extends AbstractClientServerTest
                     stream.demand();
             }
         }, p));
-        stream.data(new DataFrame(ReadableBuffer.wrap(bytesSent), true), Promise.Invocable.noop());
+        stream.data(RetainableByteBuffer.wrap(bytesSent), true, Promise.Invocable.noop());
 
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientDataLatch.await(15, TimeUnit.SECONDS));
@@ -689,10 +688,10 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
 
         Thread.sleep(500);
-        clientStream.data(new DataFrame(ReadableBuffer.allocate(1024, false), false), Promise.Invocable.noop());
+        clientStream.data(RetainableByteBuffer.allocate(1024, false), false, Promise.Invocable.noop());
 
         Thread.sleep(500);
-        clientStream.data(new DataFrame(ReadableBuffer.allocate(512, false), true), Promise.Invocable.noop());
+        clientStream.data(RetainableByteBuffer.allocate(512, false), true, Promise.Invocable.noop());
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }

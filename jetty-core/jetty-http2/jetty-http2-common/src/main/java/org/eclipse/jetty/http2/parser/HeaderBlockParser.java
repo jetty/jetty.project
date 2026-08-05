@@ -19,8 +19,7 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +32,7 @@ public class HeaderBlockParser
     private final boolean directness;
     private final HpackDecoder hpackDecoder;
     private final BodyParser notifier;
-    private ReadableBuffer blockBuffer;
+    private RetainableByteBuffer.Mutable blockBuffer;
 
     public HeaderBlockParser(HeaderParser headerParser, WritableBufferPool bufferPool, boolean directness, HpackDecoder hpackDecoder, BodyParser notifier)
     {
@@ -58,7 +57,7 @@ public class HeaderBlockParser
      * an instance of {@link MetaData.Failed} if parsing the HPACK block produced a failure;
      * an instance of {@link MetaData} if the parsing was successful.
      */
-    public MetaData parse(ReadableBuffer buffer, int blockLength)
+    public MetaData parse(RetainableByteBuffer buffer, int blockLength)
     {
         // We must wait for the all the bytes of the header block to arrive.
         // If they are not all available, accumulate them.
@@ -69,32 +68,26 @@ public class HeaderBlockParser
 
         if (buffer.remaining() < remaining)
         {
-            WritableBuffer wb = blockBuffer == null ? bufferPool.acquire(blockLength, directness) : blockBuffer.toWritable();
-            blockBuffer = null;
-            wb.put(buffer);
-            blockBuffer = wb.toReadable();
+            if (blockBuffer == null)
+                blockBuffer = bufferPool.acquire(blockLength, directness);
+            blockBuffer.put(buffer);
             return null;
         }
         else
         {
-            ReadableBuffer toDecode;
+            RetainableByteBuffer toDecode;
             if (blockBuffer != null)
             {
-                WritableBuffer wb = blockBuffer.toWritable();
-                blockBuffer = null;
-                // TODO: add ReadableBuffer.limit(long) method to avoid slicing + advancing position?
-                ReadableBuffer slice = buffer.slice(buffer.position(), remaining);
-                buffer.position(buffer.position() + remaining);
-                wb.put(slice);
+                RetainableByteBuffer slice = buffer.sliceAndConsume(remaining);
+                blockBuffer.put(slice);
                 slice.release();
-                toDecode = wb.toReadable();
+                toDecode = blockBuffer;
+                blockBuffer = null;
             }
             else
             {
                 long min = Math.min(buffer.remaining(), blockLength);
-                // TODO: add ReadableBuffer.limit(long) method to avoid slicing + advancing position?
-                toDecode = buffer.slice(buffer.position(), min);
-                buffer.position(buffer.position() + min);
+                toDecode = buffer.sliceAndConsume(min);
             }
 
             try

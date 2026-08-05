@@ -109,7 +109,7 @@ public class MultiPartByteRangesTest
             request.put(HttpHeader.HOST, "localhost");
             request.put(HttpHeader.ACCEPT_RANGES, "bytes");
             request.put(HttpHeader.RANGE, "bytes=1-2,4-6,-4");
-            socket.write(request.generate());
+            request.generate().writeTo(socket::write);
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);

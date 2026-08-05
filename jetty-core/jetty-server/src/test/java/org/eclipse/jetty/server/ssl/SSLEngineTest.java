@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -377,7 +377,7 @@ public class SSLEngineTest
                 {
                     buf[i] = (byte)('0' + (i % 10));
                 }
-                response.write(true, ReadableBuffer.wrap(buf), callback);
+                response.write(true, RetainableByteBuffer.wrap(buf), callback);
             }
             else
             {

@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
-import java.nio.ByteBuffer;
-
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.internal.Generator;
@@ -33,7 +32,7 @@ public class UnitGenerator extends Generator
         applyMask = (behavior == Behavior.CLIENT);
     }
 
-    public void generate(ByteBuffer buffer, Frame frame)
+    public void generate(RetainableByteBuffer.Mutable buffer, Frame frame)
     {
         if (applyMask)
             frame.setMask(MASK);

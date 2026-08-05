@@ -13,29 +13,27 @@
 
 package org.eclipse.jetty.http3;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class InstructionStreamConnection extends AbstractConnection.NonBlocking implements Connection.UpgradeTo
 {
     private static final Logger LOG = LoggerFactory.getLogger(InstructionStreamConnection.class);
-    private final ByteBufferPool bufferPool;
+    private final WritableBufferPool bufferPool;
     private final ParserListener listener;
     private boolean useInputDirectByteBuffers = true;
-    private RetainableByteBuffer buffer;
+    private RetainableByteBuffer.Mutable buffer;
 
-    public InstructionStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ParserListener listener)
+    public InstructionStreamConnection(EndPoint endPoint, Executor executor, WritableBufferPool bufferPool, ParserListener listener)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
@@ -53,14 +51,10 @@ public abstract class InstructionStreamConnection extends AbstractConnection.Non
     }
 
     @Override
-    public void onUpgradeTo(ByteBuffer upgrade)
+    public void onUpgradeTo(RetainableByteBuffer.Mutable upgrade)
     {
-        int capacity = Math.max(upgrade.remaining(), getInputBufferSize());
-        buffer = bufferPool.acquire(capacity, isUseInputDirectByteBuffers());
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        int position = BufferUtil.flipToFill(byteBuffer);
-        byteBuffer.put(upgrade);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        upgrade.retain();
+        buffer = upgrade;
     }
 
     @Override
@@ -80,14 +74,13 @@ public abstract class InstructionStreamConnection extends AbstractConnection.Non
         {
             if (buffer == null)
                 buffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
             while (true)
             {
                 // Parse first in case of bytes from the upgrade.
-                parseInstruction(byteBuffer);
+                parseInstruction(buffer);
 
                 // Then read from the EndPoint.
-                int filled = getEndPoint().fill(byteBuffer);
+                int filled = getEndPoint().fill(buffer.clear());
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled {} on {}", filled, this);
 
@@ -138,5 +131,5 @@ public abstract class InstructionStreamConnection extends AbstractConnection.Non
         }
     }
 
-    protected abstract void parseInstruction(ByteBuffer buffer) throws QpackException;
+    protected abstract void parseInstruction(RetainableByteBuffer buffer) throws QpackException;
 }

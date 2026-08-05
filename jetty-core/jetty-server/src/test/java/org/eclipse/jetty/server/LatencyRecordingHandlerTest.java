@@ -44,7 +44,7 @@ public class LatencyRecordingHandlerTest
     public void setUp() throws Exception
     {
         _server = new Server();
-        _local = new LocalConnector(_server, new HttpConnectionFactory());
+        _local = new LocalConnector(_server);
         _server.addConnector(_local);
 
         Handler handler = new Handler.Abstract()
@@ -97,7 +97,7 @@ public class LatencyRecordingHandlerTest
     {
         for (int i = 0; i < 100; i++)
         {
-            String response = _local.getResponse("GET /ctx/succeed HTTP/1.1\r\nHost: localhost\r\n\r\n");
+            String response = _local.getResponseAsString("GET /ctx/succeed HTTP/1.1\r\nHost: localhost\r\n\r\n");
             assertThat(response, containsString(" 200 OK"));
         }
         Awaitility.await().atMost(5, TimeUnit.SECONDS).until(_latencies::size, is(100));
@@ -112,7 +112,7 @@ public class LatencyRecordingHandlerTest
     {
         for (int i = 0; i < 100; i++)
         {
-            String response = _local.getResponse("GET /ctx/fail HTTP/1.1\r\nHost: localhost\r\n\r\n");
+            String response = _local.getResponseAsString("GET /ctx/fail HTTP/1.1\r\nHost: localhost\r\n\r\n");
             assertThat(response, containsString(" 500 Server Error"));
         }
         Awaitility.await().atMost(5, TimeUnit.SECONDS).until(_latencies::size, is(100));

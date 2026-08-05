@@ -35,7 +35,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -127,7 +127,7 @@ public class HttpChannelStateTest
                     response = new org.eclipse.jetty.server.Response.Wrapper(request, response)
                     {
                         @Override
-                        public void write(boolean last, ReadableBuffer byteBuffer, Callback writeCallback)
+                        public void write(boolean last, RetainableByteBuffer byteBuffer, Callback writeCallback)
                         {
                             if (!last)
                             {
@@ -200,7 +200,7 @@ public class HttpChannelStateTest
                 response = new org.eclipse.jetty.server.Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ReadableBuffer byteBuffer, Callback writeCallback)
+                    public void write(boolean last, RetainableByteBuffer byteBuffer, Callback writeCallback)
                     {
                         if (!last)
                         {
@@ -284,7 +284,7 @@ public class HttpChannelStateTest
         server.setHandler(contextHandler);
         server.start();
 
-        connector.executeRequest("""
+        LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
             GET / HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -299,6 +299,9 @@ public class HttpChannelStateTest
         await().atMost(5, TimeUnit.SECONDS).until(() -> httpChannel.getCoreRequest() == null);
         assertThat(onCompleteCount.get(), is(1));
         assertThrows(IllegalStateException.class, () -> asyncContextRef.get().complete());
+
+        // The response is not read, close the client side to release it.
+        endPoint.close();
     }
 
     @Test

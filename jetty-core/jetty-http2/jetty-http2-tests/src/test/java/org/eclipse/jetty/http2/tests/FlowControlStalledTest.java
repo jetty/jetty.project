@@ -44,7 +44,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -144,7 +144,7 @@ public class FlowControlStalledTest
                         public void succeeded()
                         {
                             // Send a large chunk of data so the stream gets stalled.
-                            ReadableBuffer data = ReadableBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1, false);
+                            RetainableByteBuffer data = RetainableByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1, false);
                             stream.data(data, true, NOOP);
                         }
                     });
@@ -240,7 +240,7 @@ public class FlowControlStalledTest
                         public void succeeded()
                         {
                             // Send a large chunk of data so the session gets stalled.
-                            ReadableBuffer data = ReadableBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1, false);
+                            RetainableByteBuffer data = RetainableByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1, false);
                             stream.data(data, true, NOOP);
                         }
                     });

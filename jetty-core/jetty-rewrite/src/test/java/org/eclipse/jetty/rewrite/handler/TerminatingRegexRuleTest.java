@@ -59,7 +59,7 @@ public class TerminatingRegexRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.CREATED_201, response.getStatus());
         assertNull(response.get(HttpHeader.LOCATION));
     }
@@ -74,7 +74,7 @@ public class TerminatingRegexRuleTest extends AbstractRuleTest
                         
             """.replace("$U", uri);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         assertEquals("http://login.company.com/", response.get(HttpHeader.LOCATION));
     }

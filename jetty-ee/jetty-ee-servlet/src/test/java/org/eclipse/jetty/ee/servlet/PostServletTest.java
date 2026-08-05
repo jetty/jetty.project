@@ -131,7 +131,7 @@ public class PostServletTest
         req.append("0\r\n");
         req.append("\r\n");
 
-        String resp = connector.getResponse(req.toString());
+        String resp = connector.getResponseAsString(req.toString());
 
         assertThat("resp", resp, containsString("HTTP/1.1 200 OK"));
         assertThat("resp", resp, containsString("chunked"));
@@ -160,7 +160,7 @@ public class PostServletTest
         req.append("\r\n");
         req.append("\r\n");
 
-        String resp = connector.getResponse(req.toString());
+        String resp = connector.getResponseAsString(req.toString());
         assertThat(resp, startsWith("HTTP/1.1 200 OK")); // exception eaten by handler
         assertTrue(complete.await(5, TimeUnit.SECONDS));
         assertThat(ex0.get(), not(nullValue()));
@@ -190,10 +190,9 @@ public class PostServletTest
         req.append("\r\n");
         req.append("\r\n");
 
-        endp.addInput(req.toString());
+        endp.writeRequestString(req.toString());
 
-        endp.waitUntilClosedOrIdleFor(1, TimeUnit.SECONDS);
-        String resp = endp.takeOutputString();
+        String resp = endp.getResponse();
 
         assertThat(resp, startsWith("HTTP/1.1 200 OK")); // exception eaten by handler
         assertTrue(complete.await(5, TimeUnit.SECONDS));
@@ -204,37 +203,39 @@ public class PostServletTest
     @Test
     public void testBadSplitPost() throws Exception
     {
-        StringBuilder req = new StringBuilder();
-        req.append("POST /post HTTP/1.1\r\n");
-        req.append("Host: localhost\r\n");
-        req.append("Connection: close\r\n");
-        req.append("Transfer-Encoding: chunked\r\n");
-        req.append("\r\n");
-        req.append("6\r\n");
-        req.append("Hello ");
-        req.append("\r\n");
+        String req = """
+            POST /post HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            Transfer-Encoding: chunked\r
+            \r
+            6\r
+            Hello \r
+            """;
 
         try (StacklessLogging scope = new StacklessLogging(ServletHandler.class))
         {
-            LocalConnector.LocalEndPoint endp = connector.executeRequest(req.toString());
-            req.setLength(0);
-
-            while (!posted.get())
+            try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(req))
             {
+                while (!posted.get())
+                {
+                    Thread.sleep(100);
+                }
                 Thread.sleep(100);
-            }
-            Thread.sleep(100);
-            req.append("x\r\n");
-            req.append("World\n");
-            req.append("\r\n");
-            req.append("0\r\n");
-            req.append("\r\n");
-            endp.addInput(req.toString());
 
-            endp.waitUntilClosedOrIdleFor(1, TimeUnit.SECONDS);
-            String resp = endp.takeOutputString();
-            assertThat("resp", resp, containsString("HTTP/1.1 200 "));
-            assertThat("resp", resp, not(containsString("\r\n0\r\n"))); // aborted
+                // Bad chunk length.
+                req = """
+                    x\r
+                    World
+                    0\r
+                    \r
+                    """;
+                endPoint.writeRequestString(req);
+
+                String response = endPoint.getResponse();
+                assertThat(response, containsString("HTTP/1.1 200 "));
+                assertThat(response, not(containsString("\r\n0\r\n"))); // aborted
+            }
         }
         assertTrue(complete.await(5, TimeUnit.SECONDS));
         assertThat(ex0.get(), not(nullValue()));

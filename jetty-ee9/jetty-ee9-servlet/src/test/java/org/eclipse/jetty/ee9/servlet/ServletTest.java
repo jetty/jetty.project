@@ -31,10 +31,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletTest
@@ -78,7 +78,7 @@ public class ServletTest
 
         _server.start();
 
-        String response = _connector.getResponse("""
+        String response = _connector.getResponseAsString("""
             GET /ctx/get HTTP/1.0
             
             """);
@@ -110,7 +110,7 @@ public class ServletTest
         _connector.setIdleTimeout(idleTimeout);
         _server.start();
 
-        String response = _connector.getResponse("""
+        String response = _connector.getResponseAsString("""
             GET /ctx/get HTTP/1.0
             
             """, 5 * idleTimeout, TimeUnit.MILLISECONDS);
@@ -135,7 +135,7 @@ public class ServletTest
         _connector.setIdleTimeout(idleTimeout);
         _server.start();
 
-        try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
+        try (LocalConnector.LocalEndPoint endPoint = _connector.connectToServer())
         {
             String request = """
                 POST /ctx/post HTTP/1.1
@@ -143,19 +143,19 @@ public class ServletTest
                 Content-Length: 10
                 
                 """;
-            endPoint.addInput(request);
-            endPoint.addInput("1234567890");
+            endPoint.writeRequestString(request);
+            endPoint.writeRequestString("1234567890");
             HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse(false, 5, TimeUnit.SECONDS));
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), is("Hello 1234567890"));
 
-            endPoint.addInputAndExecute(request);
-            endPoint.addInput("1234567890");
+            endPoint.writeRequestString(request);
+            endPoint.writeRequestString("1234567890");
             response = HttpTester.parseResponse(endPoint.getResponse(false, 5, TimeUnit.SECONDS));
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), is("Hello 1234567890"));
 
-            endPoint.addInputAndExecute(request);
+            endPoint.writeRequestString(request);
             // Do not send the content.
             response = HttpTester.parseResponse(endPoint.getResponse(false, 2 * idleTimeout, TimeUnit.MILLISECONDS));
             assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
@@ -179,25 +179,23 @@ public class ServletTest
         _connector.setIdleTimeout(idleTimeout);
         _server.start();
 
-        try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
+        try (LocalConnector.LocalEndPoint endPoint = _connector.connectToServer())
         {
             String request = """
                 GET /ctx/get HTTP/1.1
                 Host: local
                             
                 """;
-            endPoint.addInput(request);
+            endPoint.writeRequestString(request);
             String response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
             assertThat(response, containsString(" 200 OK"));
             assertThat(response, containsString("Hello!"));
-            endPoint.addInput(request);
+            endPoint.writeRequestString(request);
             response = endPoint.getResponse(false, 5, TimeUnit.SECONDS);
             assertThat(response, containsString(" 200 OK"));
             assertThat(response, containsString("Hello!"));
 
-            Thread.sleep(2 * idleTimeout);
-
-            assertFalse(endPoint.isOpen());
+            await().atMost(2 * idleTimeout, TimeUnit.MILLISECONDS).until(() -> endPoint.getRemoteEndPoint().isOutputShutdown());
         }
     }
 }

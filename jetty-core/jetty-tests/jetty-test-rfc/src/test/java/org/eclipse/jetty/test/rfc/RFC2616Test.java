@@ -156,7 +156,7 @@ public class RFC2616Test
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("value over many lines"));
@@ -193,14 +193,14 @@ public class RFC2616Test
     {
         try
         {
-            String get = connector.getResponse("GET /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
+            String get = connector.getResponseAsString("GET /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
             checkContains(get, 0, "HTTP/1.1 200", "GET");
             checkContains(get, 0, "Content-Type: text/html", "GET _content");
             checkContains(get, 0, "<html>", "GET body");
             int cli = get.indexOf("Content-Length");
             String contentLength = get.substring(cli, get.indexOf("\r", cli));
 
-            String head = connector.getResponse("HEAD /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
+            String head = connector.getResponseAsString("HEAD /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
             checkContains(head, 0, "HTTP/1.1 200", "HEAD");
             checkContains(head, 0, "Content-Type: text/html", "HEAD _content");
             assertEquals(-1, head.indexOf("<html>"), "HEAD no body");
@@ -218,7 +218,7 @@ public class RFC2616Test
     {
         int offset = 0;
         // Chunk last
-        String response = connector.getResponse(
+        String response = connector.getResponseAsString(
             "GET /R1 HTTP/1.1\n" +
                 "Host: localhost\n" +
                 "Transfer-Encoding: chunked,identity\n" +
@@ -503,7 +503,7 @@ public class RFC2616Test
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
     }
@@ -517,7 +517,7 @@ public class RFC2616Test
     {
         // Default Host
         int offset = 0;
-        String response = connector.getResponse(
+        String response = connector.getResponseAsString(
             "GET http://VirtualHost:8888/path/R1 HTTP/1.1\n" +
             "Host: wronghost\n" +
             "Connection: close\n" + "\n");
@@ -532,14 +532,14 @@ public class RFC2616Test
     {
         // Default Host
         int offset = 0;
-        String response = connector.getResponse("GET /path/R1 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
+        String response = connector.getResponseAsString("GET /path/R1 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "Default host") + 1;
         offset = checkContains(response, offset, "Dump Handler", "Default host") + 1;
         offset = checkContains(response, offset, "pathInContext=/path/R1", "Default host") + 1;
 
         // Virtual Host
         offset = 0;
-        response = connector.getResponse("GET /path/R2 HTTP/1.1\n" + "Host: VirtualHost\n" + "Connection: close\n" + "\n");
+        response = connector.getResponseAsString("GET /path/R2 HTTP/1.1\n" + "Host: VirtualHost\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "Default host") + 1;
         offset = checkContains(response, offset, "Virtual Dump", "virtual host") + 1;
         offset = checkContains(response, offset, "pathInContext=/path/R2", "Default host") + 1;
@@ -550,21 +550,21 @@ public class RFC2616Test
     {
         // Virtual Host
         int offset = 0;
-        String response = connector.getResponse("GET /path/R1 HTTP/1.1\n" + "Host: VirtualHost\n" + "Connection: close\n" + "\n");
+        String response = connector.getResponseAsString("GET /path/R1 HTTP/1.1\n" + "Host: VirtualHost\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "2. virtual host field") + 1;
         offset = checkContains(response, offset, "Virtual Dump", "2. virtual host field") + 1;
         offset = checkContains(response, offset, "pathInContext=/path/R1", "2. virtual host field") + 1;
 
         // Virtual Host case insensitive
         offset = 0;
-        response = connector.getResponse("GET /path/R1 HTTP/1.1\n" + "Host: ViRtUalhOst\n" + "Connection: close\n" + "\n");
+        response = connector.getResponseAsString("GET /path/R1 HTTP/1.1\n" + "Host: ViRtUalhOst\n" + "Connection: close\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "2. virtual host field") + 1;
         offset = checkContains(response, offset, "Virtual Dump", "2. virtual host field") + 1;
         offset = checkContains(response, offset, "pathInContext=/path/R1", "2. virtual host field") + 1;
 
         // Virtual Host
         offset = 0;
-        response = connector.getResponse("GET /path/R1 HTTP/1.1\n" + "\n");
+        response = connector.getResponseAsString("GET /path/R1 HTTP/1.1\n" + "\n");
         offset = checkContains(response, offset, "HTTP/1.1 400", "3. no host") + 1;
     }
 
@@ -572,7 +572,7 @@ public class RFC2616Test
     public void test81() throws Exception
     {
         int offset = 0;
-        String response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n", 250, TimeUnit.MILLISECONDS);
+        String response = connector.getResponseAsString("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n", 250, TimeUnit.MILLISECONDS);
         offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "8.1.2 default") + 10;
         checkContains(response, offset, "Content-Length: ", "8.1.2 default");
 
@@ -706,7 +706,7 @@ public class RFC2616Test
         String response = endp.getResponse();
         assertThat(response, startsWith("HTTP/1.1 100 Continue"));
 
-        endp.addInput("6543210");
+        endp.writeRequestString("6543210");
 
         response = endp.getResponse();
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
@@ -718,7 +718,7 @@ public class RFC2616Test
     {
         // Expect with body: client sends the content right away, we should not send 100-Continue
         int offset = 0;
-        String response = connector.getResponse(
+        String response = connector.getResponseAsString(
             "GET /R1 HTTP/1.1\n" +
                 "Host: localhost\n" +
                 "Expect: 100-continue\n" +
@@ -746,7 +746,7 @@ public class RFC2616Test
         String infomational = endp.getResponse();
         offset = checkContains(infomational, offset, "HTTP/1.1 100 ", "8.2.3 expect 100") + 1;
         checkNotContained(infomational, offset, "HTTP/1.1 200", "8.2.3 expect 100");
-        endp.addInput("654321\r\n");
+        endp.writeRequestString("654321\r\n");
         String response = endp.getResponse();
         offset = 0;
         offset = checkContains(response, offset, "HTTP/1.1 200", "8.2.3 expect 100") + 1;
@@ -758,7 +758,7 @@ public class RFC2616Test
     {
         // Expect 100 not sent
         int offset = 0;
-        String response = connector.getResponse("GET /R1?error=401 HTTP/1.1\n" +
+        String response = connector.getResponseAsString("GET /R1?error=401 HTTP/1.1\n" +
             "Host: localhost\n" +
             "Expect: 100-continue\n" +
             "Content-Type: text/plain\n" +
@@ -774,14 +774,14 @@ public class RFC2616Test
     {
         int offset = 0;
 
-        String response = connector.getResponse("OPTIONS * HTTP/1.1\n" +
+        String response = connector.getResponseAsString("OPTIONS * HTTP/1.1\n" +
             "Connection: close\n" +
             "Host: localhost\n" +
             "\n");
         offset = checkContains(response, offset, "HTTP/1.1 200", "200") + 1;
 
         offset = 0;
-        response = connector.getResponse("GET * HTTP/1.1\n" +
+        response = connector.getResponseAsString("GET * HTTP/1.1\n" +
             "Connection: close\n" +
             "Host: localhost\n" +
             "\n");
@@ -822,14 +822,14 @@ public class RFC2616Test
     @Test
     public void test94() throws Exception
     {
-        String get = connector.getResponse("GET /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
+        String get = connector.getResponseAsString("GET /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
 
         checkContains(get, 0, "HTTP/1.1 200", "GET");
         checkContains(get, 0, "Content-Type: text/html", "GET _content");
         checkContains(get, 0, "<html>", "GET body");
         get = get.replaceAll("Date: .* GMT\r\n", "Date: GMT\r\n");
 
-        String head = connector.getResponse("HEAD /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
+        String head = connector.getResponseAsString("HEAD /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
         checkContains(head, 0, "HTTP/1.1 200", "HEAD");
         checkContains(head, 0, "Content-Type: text/html", "HEAD _content");
         assertEquals(-1, head.indexOf("<html>"), "HEAD no body");
@@ -858,7 +858,7 @@ public class RFC2616Test
         req1.append("Connection: close\n");
         req1.append("\n");
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req1.toString()));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req1.toString()));
         assertThat(response.getContent(), not(emptyString()));
 
         boolean noRangeHasContentLocation = (response.get("Content-Location") != null);
@@ -872,7 +872,7 @@ public class RFC2616Test
         req2.append("Range: bytes=1-3\n"); // request first 3 bytes
         req2.append("\n");
 
-        response = HttpTester.parseResponse(connector.getResponse(req2.toString()));
+        response = HttpTester.parseResponse(connector.getResponseAsString(req2.toString()));
 
         assertThat("10.2.7 Partial Content", response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
 
@@ -934,7 +934,7 @@ public class RFC2616Test
         req1.append("Connection: Close\n");
         req1.append("\n");
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req1.toString()));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req1.toString()));
 
         specId = "10.3 Redirection HTTP/1.0 - basic";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
@@ -992,7 +992,7 @@ public class RFC2616Test
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req3));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req3));
 
         String specId = "10.3 Redirection HTTP/1.0 w/content";
         assertThat(specId, response.getStatus(), is(HttpStatus.FOUND_302));
@@ -1016,7 +1016,7 @@ public class RFC2616Test
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req4));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req4));
 
         String specId = "10.3 Redirection HTTP/1.1 w/content";
         assertThat(specId + " [status]", response.getStatus(), is(HttpStatus.FOUND_302));
@@ -1029,7 +1029,7 @@ public class RFC2616Test
     {
         // Expect Failure
         int offset = 0;
-        String response = connector.getResponse(
+        String response = connector.getResponseAsString(
             "GET /R1 HTTP/1.1\n" +
                 "Host: localhost\n" +
                 "Expect: unknown\n" +
@@ -1059,7 +1059,7 @@ public class RFC2616Test
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req1));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req1));
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("ABCDEFGHIJKLMNOPQRSTUVWXYZ\n"));
@@ -1076,7 +1076,7 @@ public class RFC2616Test
             "Connection: close\n" +
             "\n";
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req1));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req1));
 
         String specId = "Partial Range: '" + rangedef + "'";
         assertThat(specId, response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
@@ -1135,7 +1135,7 @@ public class RFC2616Test
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req1));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req1));
 
         String specId = "Partial Range (Mixed): 'bytes=a-b,5-8'";
         assertThat(specId, response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
@@ -1175,7 +1175,7 @@ public class RFC2616Test
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req1));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req1));
 
         String specId = "Partial Range (Mixed): 'bytes=a-b,bytes=5-8'";
         assertThat(specId, response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
@@ -1216,7 +1216,7 @@ public class RFC2616Test
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req1));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req1));
 
         String specId = "Partial Range (Mixed): 'bytes=a-b' 'bytes=5-8'";
         assertThat(specId, response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
@@ -1230,19 +1230,19 @@ public class RFC2616Test
         try (StacklessLogging stackless = new StacklessLogging(HttpParser.class))
         {
             int offset = 0;
-            String response = connector.getResponse("GET /R1 HTTP/1.0\n" + "Connection: close\n" + "\n");
+            String response = connector.getResponseAsString("GET /R1 HTTP/1.0\n" + "Connection: close\n" + "\n");
             offset = checkContains(response, offset, "HTTP/1.1 200", "200") + 1;
 
             offset = 0;
-            response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Connection: close\n" + "\n");
+            response = connector.getResponseAsString("GET /R1 HTTP/1.1\n" + "Connection: close\n" + "\n");
             offset = checkContains(response, offset, "HTTP/1.1 400", "400") + 1;
 
             offset = 0;
-            response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
+            response = connector.getResponseAsString("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "Connection: close\n" + "\n");
             offset = checkContains(response, offset, "HTTP/1.1 200", "200") + 1;
 
             offset = 0;
-            response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Host:\n" + "Connection: close\n" + "\n");
+            response = connector.getResponseAsString("GET /R1 HTTP/1.1\n" + "Host:\n" + "Connection: close\n" + "\n");
             offset = checkContains(response, offset, "HTTP/1.1 400", "400") + 1;
         }
     }
@@ -1258,7 +1258,7 @@ public class RFC2616Test
             "Connection: close\n" +
             "\n";
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req1));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req1));
 
         String specId = "Partial (Byte) Range: '" + rangedef + "'";
         assertThat(specId, response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
@@ -1314,7 +1314,7 @@ public class RFC2616Test
             "Connection: close\n" +
             "\n";
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req1));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req1));
 
         String specId = "Partial (Byte) Range: '" + rangedef + "'";
         assertThat(specId, response.getStatus(), is(HttpStatus.PARTIAL_CONTENT_206));
@@ -1385,7 +1385,7 @@ public class RFC2616Test
             "Connection: close\n" +
             "\n";
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req1));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req1));
 
         assertThat("BadByteRange: '" + rangedef + "'", response.getStatus(), is(HttpStatus.RANGE_NOT_SATISFIABLE_416));
     }
@@ -1428,7 +1428,7 @@ public class RFC2616Test
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req2));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req2));
         specId = "14.39 TE Header";
         assertThat(specId, response.getStatus(), is(HttpStatus.NOT_IMPLEMENTED_501)); // Error on TE (deflate not supported)
     }
@@ -1439,7 +1439,7 @@ public class RFC2616Test
         try
         {
             int offset = 0;
-            String response = connector.getResponse("GET /R1 HTTP/1.0\n" + "\n");
+            String response = connector.getResponseAsString("GET /R1 HTTP/1.0\n" + "\n");
             offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "19.6.2 default close") + 10;
             checkNotContained(response, offset, "Connection: close", "19.6.2 not assumed");
 

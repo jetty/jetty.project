@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -130,7 +130,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
             {
                 sendCB.set(callback);
                 super.send(request, response, last, content, NOOP);
@@ -358,7 +358,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
             {
                 sendCB.set(callback);
                 super.send(request, response, last, content, NOOP);
@@ -609,7 +609,7 @@ public class HttpChannelTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponseAsString(rawRequest));
         assertEquals(500, response.getStatus());
         assertFalse(response.contains(HttpHeader.CONNECTION, "close"));
         assertThat(response.getContent(), containsString("5 &lt; 10"));
@@ -781,7 +781,7 @@ public class HttpChannelTest
             
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         assertThat(rawResponse, startsWith("HTTP/1.1 200 OK"));
 
         HttpStreamCaptureFailure capture = HttpStreamCaptureFailure.captureRef.get();
@@ -979,7 +979,7 @@ public class HttpChannelTest
             }
 
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
             {
                 sendCB.set(callback);
                 super.send(request, response, last, content, NOOP);
@@ -1019,7 +1019,7 @@ public class HttpChannelTest
                 }
 
                 @Override
-                public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
+                public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
                 {
                     history.add(String.format("send %d l=%b %d %s",
                         response == null ? 0 : response.getStatus(),
@@ -1415,7 +1415,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
             {
                 committing.countDown();
                 super.send(request, response, last, content, callback);
@@ -1542,7 +1542,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
             {
                 sendCallback.set(callback);
                 super.send(request, response, last, content, NOOP);

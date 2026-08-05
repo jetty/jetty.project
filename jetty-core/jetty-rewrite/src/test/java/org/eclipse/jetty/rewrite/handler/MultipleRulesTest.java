@@ -52,7 +52,7 @@ public class MultipleRulesTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(200, response.getStatus());
         assertEquals("value1", response.get("name1"));
         assertEquals("value2", response.get("name2"));
@@ -148,7 +148,7 @@ public class MultipleRulesTest extends AbstractRuleTest
                         
             """.formatted(requestHeaderName);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(200, response.getStatus());
         assertEquals("Rule1, Rule3", response.get(responseHeaderName));
     }

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -21,6 +20,7 @@ import java.util.Locale;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,7 +33,7 @@ import static org.hamcrest.Matchers.lessThan;
 public class OutgoingNetworkBytesCapture implements OutgoingFrames
 {
     private final Generator generator;
-    private final List<ByteBuffer> captured;
+    private final List<RetainableByteBuffer> captured;
 
     public OutgoingNetworkBytesCapture(Generator generator)
     {
@@ -44,12 +44,12 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
     public void assertBytes(int idx, String expectedHex)
     {
         assertThat("Capture index does not exist", idx, lessThan(captured.size()));
-        ByteBuffer buf = captured.get(idx);
-        String actualHex = StringUtil.toHexString(BufferUtil.toArray(buf)).toUpperCase(Locale.ENGLISH);
+        RetainableByteBuffer buffer = captured.get(idx);
+        String actualHex = StringUtil.toHexString(BufferUtil.toArray(buffer)).toUpperCase(Locale.ENGLISH);
         assertThat("captured[" + idx + "]", actualHex, is(expectedHex.toUpperCase(Locale.ENGLISH)));
     }
 
-    public List<ByteBuffer> getCaptured()
+    public List<RetainableByteBuffer> getCaptured()
     {
         return captured;
     }
@@ -59,9 +59,9 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
     {
         Frame frame = entry.getFrame();
         Callback callback = entry.getCallback();
-        ByteBuffer buf = BufferUtil.allocate(Generator.MAX_HEADER_LENGTH + frame.getPayloadLength());
-        generator.generateWholeFrame(frame, buf);
-        captured.add(buf);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(Generator.MAX_HEADER_LENGTH + frame.getPayloadLength(), false);
+        generator.generateWholeFrame(frame, buffer);
+        captured.add(buffer);
         callback.succeeded();
     }
 }

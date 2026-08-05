@@ -28,7 +28,7 @@ import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -285,9 +285,9 @@ public class ContinuationParseTest
             .put("User-Agent", "Jetty".repeat(256));
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-        List<ReadableBuffer> accumulator = new ArrayList<>();
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.generateHeaders(accumulator, streamId, metaData, null, true);
-        assertThat(accumulator.stream().mapToLong(ReadableBuffer::remaining).sum(), greaterThan((long)maxHeadersSize));
+        assertThat(accumulator.stream().mapToLong(RetainableByteBuffer::remaining).sum(), greaterThan((long)maxHeadersSize));
 
         AtomicBoolean failed = new AtomicBoolean();
         parser.init(new Parser.Listener()
@@ -302,8 +302,8 @@ public class ContinuationParseTest
         // the failure is due to accumulation, not decoding.
         parser.getHpackDecoder().setMaxHeaderListSize(10 * maxHeadersSize);
 
-        ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
-        accumulator.forEach(ReadableBuffer::release);
+        RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+        accumulator.forEach(RetainableByteBuffer::release);
         parser.parse(rb);
         rb.release();
 

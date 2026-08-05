@@ -20,7 +20,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.UnixDomainSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.nio.charset.StandardCharsets;
@@ -30,13 +29,12 @@ import java.util.Map;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +102,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
 
         @Override
-        public Detection detect(ByteBuffer buffer)
+        public Detection detect(RetainableByteBuffer buffer)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Proxy v1 attempting detection with {} bytes", buffer.remaining());
@@ -115,10 +113,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 return Detection.NEED_MORE_BYTES;
             }
 
-            for (int i = 0; i < SIGNATURE.length; i++)
+            for (byte signatureByte : SIGNATURE)
             {
-                byte signatureByte = SIGNATURE[i];
-                byte byteInBuffer = buffer.get(i);
+                byte byteInBuffer = buffer.get();
                 if (byteInBuffer != signatureByte)
                 {
                     if (LOG.isDebugEnabled())
@@ -149,18 +146,17 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
             private final Connector _connector;
             private final ConnectionFactory _next;
-            private final RetainableByteBuffer _buffer;
             private final StringBuilder _builder = new StringBuilder();
             private final String[] _fields = new String[6];
+            private RetainableByteBuffer.Mutable _buffer;
             private int _index;
-            private int _length;
+            private long _length;
 
             private ProxyProtocolV1Connection(EndPoint endp, Connector connector, ConnectionFactory next)
             {
                 super(endp, connector.getExecutor());
                 _connector = connector;
                 _next = next;
-                _buffer = _connector.getByteBufferPool().acquire(getInputBufferSize(), true);
             }
 
             @Override
@@ -170,16 +166,18 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     LOG.debug("Proxy v1 onFillable current index = {}", _index);
                 try
                 {
+                    if (_buffer == null)
+                        _buffer = WritableBufferPool.wrap(_connector.getByteBufferPool()).acquire(getInputBufferSize(), true);
+
                     while (_index < LF_INDEX)
                     {
                         // Read data
-                        int fill = getEndPoint().fill(_buffer.getByteBuffer());
+                        int fill = getEndPoint().fill(_buffer);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Proxy v1 filled buffer with {} bytes", fill);
                         if (fill < 0)
                         {
-                            _buffer.release();
-                            getEndPoint().shutdownOutput();
+                            releaseAndClose();
                             return;
                         }
                         if (fill == 0)
@@ -194,6 +192,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
                     if (LOG.isDebugEnabled())
                         LOG.debug("Proxy v1 onFillable parsing done, now upgrading");
+
+                    // TODO: release after successful upgrade.
                     upgrade();
                 }
                 catch (Throwable x)
@@ -229,34 +229,27 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 }
                 catch (Throwable x)
                 {
-                    LOG.warn("Proxy v1 error for {} {}", getEndPoint(), x.toString());
-                    if (LOG.isDebugEnabled())
-                        LOG.warn("Proxy v1 error", x);
+                    LOG.warn("Proxy v1 error for {}", getEndPoint(), x);
                     releaseAndClose();
                 }
             }
 
             @Override
-            public ByteBuffer onUpgradeFrom()
+            public RetainableByteBuffer.Mutable onUpgradeFrom()
             {
-                if (_buffer.hasRemaining())
-                {
-                    ByteBuffer unconsumed = ByteBuffer.allocateDirect(_buffer.remaining());
-                    unconsumed.put(_buffer.getByteBuffer());
-                    unconsumed.flip();
-                    _buffer.release();
-                    return unconsumed;
-                }
-                _buffer.release();
-                return null;
+                if (!_buffer.hasRemaining())
+                    return null;
+                _buffer.retain();
+                return _buffer;
             }
 
             @Override
-            public void onUpgradeTo(ByteBuffer buffer)
+            public void onUpgradeTo(RetainableByteBuffer.Mutable buffer)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Proxy v1 copying unconsumed buffer {}", BufferUtil.toDetailString(buffer));
-                _buffer.asMutable().append(buffer);
+                    LOG.debug("Proxy v1 copying unconsumed buffer {}", buffer);
+                buffer.retain();
+                _buffer = buffer;
             }
 
             /**
@@ -266,12 +259,16 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v1 parsing {}", _buffer);
+
+                if (_buffer == null)
+                    return false;
+
                 _length += _buffer.remaining();
 
                 // Parse fields
                 while (_buffer.hasRemaining())
                 {
-                    byte b = _buffer.getByteBuffer().get();
+                    byte b = _buffer.get();
                     if (_index < CR_INDEX)
                     {
                         if (b == ' ' || b == '\r')
@@ -314,13 +311,13 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v1 releasing buffer and closing");
-                _buffer.release();
+                _buffer = Retainable.dispose(_buffer);
                 close();
             }
 
             private void upgrade()
             {
-                int proxyLineLength = _length - _buffer.remaining();
+                long proxyLineLength = _length - _buffer.remaining();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v1 pre-upgrade packet length (including CRLF) is {}", proxyLineLength);
                 if (proxyLineLength >= 110)
@@ -361,6 +358,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     LOG.debug("Proxy v1 next protocol '{}' for {} -> {}", _next, getEndPoint(), proxyEndPoint);
 
                 upgradeToConnectionFactory(_next, _connector, proxyEndPoint);
+
+                _buffer = Retainable.dispose(_buffer);
             }
         }
     }
@@ -409,7 +408,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
 
         @Override
-        public Detection detect(ByteBuffer buffer)
+        public Detection detect(RetainableByteBuffer buffer)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Proxy v2 attempting detection with {} bytes", buffer.remaining());
@@ -420,10 +419,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 return Detection.NEED_MORE_BYTES;
             }
 
-            for (int i = 0; i < SIGNATURE.length; i++)
+            for (byte signatureByte : SIGNATURE)
             {
-                byte signatureByte = SIGNATURE[i];
-                byte byteInBuffer = buffer.get(i);
+                byte byteInBuffer = buffer.get();
                 if (byteInBuffer != signatureByte)
                 {
                     if (LOG.isDebugEnabled())
@@ -460,26 +458,35 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
             private final Connector _connector;
             private final ConnectionFactory _next;
-            private final RetainableByteBuffer _buffer;
+            private RetainableByteBuffer.Mutable _buffer;
             private boolean _local;
             private Family _family;
             private int _length;
             private boolean _headerParsed;
 
-            protected ProxyProtocolV2Connection(EndPoint endp, Connector connector, ConnectionFactory next)
+            protected ProxyProtocolV2Connection(EndPoint endPoint, Connector connector, ConnectionFactory next)
             {
-                super(endp, connector.getExecutor());
+                super(endPoint, connector.getExecutor());
                 _connector = connector;
                 _next = next;
-                _buffer = _connector.getByteBufferPool().acquire(getInputBufferSize(), true);
             }
 
             @Override
-            public void onUpgradeTo(ByteBuffer buffer)
+            public void onUpgradeTo(RetainableByteBuffer.Mutable buffer)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Proxy v2 copying unconsumed buffer {}", BufferUtil.toDetailString(buffer));
-                BufferUtil.append(_buffer.getByteBuffer(), buffer);
+                    LOG.debug("Proxy v2 copying unconsumed buffer {}", buffer);
+                buffer.retain();
+                _buffer = buffer;
+            }
+
+            @Override
+            public RetainableByteBuffer.Mutable onUpgradeFrom()
+            {
+                if (!_buffer.hasRemaining())
+                    return null;
+                _buffer.retain();
+                return _buffer;
             }
 
             @Override
@@ -505,9 +512,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 }
                 catch (Exception x)
                 {
-                    LOG.warn("Proxy v2 error for {} {}", getEndPoint(), x.toString());
-                    if (LOG.isDebugEnabled())
-                        LOG.warn("Proxy v2 error", x);
+                    LOG.warn("Proxy v2 error for {}", getEndPoint(), x);
                     releaseAndClose();
                 }
             }
@@ -522,13 +527,12 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     while (!_headerParsed)
                     {
                         // Read data
-                        int fill = getEndPoint().fill(_buffer.getByteBuffer());
+                        int fill = getEndPoint().fill(_buffer);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Proxy v2 filled buffer with {} bytes", fill);
                         if (fill < 0)
                         {
-                            _buffer.release();
-                            getEndPoint().shutdownOutput();
+                            releaseAndClose();
                             return;
                         }
                         if (fill == 0)
@@ -546,13 +550,12 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     while (_buffer.remaining() < _length)
                     {
                         // Read data
-                        int fill = getEndPoint().fill(_buffer.getByteBuffer());
+                        int fill = getEndPoint().fill(_buffer);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Proxy v2 filled buffer with {} bytes", fill);
                         if (fill < 0)
                         {
-                            _buffer.release();
-                            getEndPoint().shutdownOutput();
+                            releaseAndClose();
                             return;
                         }
                         if (fill == 0)
@@ -566,31 +569,14 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 }
                 catch (Throwable x)
                 {
-                    LOG.warn("Proxy v2 error for {} {}", getEndPoint(), x.toString());
-                    if (LOG.isDebugEnabled())
-                        LOG.warn("Proxy v2 error", x);
+                    LOG.warn("Proxy v2 error for {}", getEndPoint(), x);
                     releaseAndClose();
                 }
             }
 
-            @Override
-            public ByteBuffer onUpgradeFrom()
-            {
-                if (_buffer.hasRemaining())
-                {
-                    ByteBuffer unconsumed = ByteBuffer.allocateDirect(_buffer.remaining());
-                    unconsumed.put(_buffer.getByteBuffer());
-                    unconsumed.flip();
-                    _buffer.release();
-                    return unconsumed;
-                }
-                _buffer.release();
-                return null;
-            }
-
             private void parseBodyAndUpgrade() throws IOException
             {
-                int nonProxyRemaining = _buffer.remaining() - _length;
+                long nonProxyRemaining = _buffer.remaining() - _length;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 parsing body, length = {}, buffer = {}", _length, _buffer);
 
@@ -598,12 +584,11 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     LOG.debug("Proxy v2 body {} from {} for {}", _next, _buffer, this);
 
                 // Do we need to wrap the endpoint?
-                ByteBuffer byteBuffer = _buffer.getByteBuffer();
                 ProxyEndPoint proxyEndPoint;
                 EndPoint endPoint = getEndPoint();
                 if (_local)
                 {
-                    byteBuffer.position(byteBuffer.position() + _length);
+                    _buffer.consume(_length);
                     proxyEndPoint = new ProxyEndPoint(endPoint, endPoint.getLocalSocketAddress(), endPoint.getRemoteSocketAddress());
                 }
                 else
@@ -615,33 +600,33 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         case INET ->
                         {
                             byte[] addr = new byte[4];
-                            byteBuffer.get(addr);
+                            _buffer.get(addr);
                             InetAddress srcAddr = Inet4Address.getByAddress(addr);
-                            byteBuffer.get(addr);
+                            _buffer.get(addr);
                             InetAddress dstAddr = Inet4Address.getByAddress(addr);
-                            int srcPort = byteBuffer.getChar();
-                            int dstPort = byteBuffer.getChar();
+                            int srcPort = _buffer.getShortAsInt();
+                            int dstPort = _buffer.getShortAsInt();
                             local = new InetSocketAddress(dstAddr, dstPort);
                             remote = new InetSocketAddress(srcAddr, srcPort);
                         }
                         case INET6 ->
                         {
                             byte[] addr = new byte[16];
-                            byteBuffer.get(addr);
+                            _buffer.get(addr);
                             InetAddress srcAddr = Inet6Address.getByAddress(addr);
-                            byteBuffer.get(addr);
+                            _buffer.get(addr);
                             InetAddress dstAddr = Inet6Address.getByAddress(addr);
-                            int srcPort = byteBuffer.getChar();
-                            int dstPort = byteBuffer.getChar();
+                            int srcPort = _buffer.getShortAsInt();
+                            int dstPort = _buffer.getShortAsInt();
                             local = new InetSocketAddress(dstAddr, dstPort);
                             remote = new InetSocketAddress(srcAddr, srcPort);
                         }
                         case UNIX ->
                         {
                             byte[] addr = new byte[108];
-                            byteBuffer.get(addr);
+                            _buffer.get(addr);
                             String src = toUnixDomainPath(addr);
-                            byteBuffer.get(addr);
+                            _buffer.get(addr);
                             String dst = toUnixDomainPath(addr);
                             local = UnixDomainSocketAddress.of(dst);
                             remote = UnixDomainSocketAddress.of(src);
@@ -654,12 +639,12 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     Map<Integer, byte[]> tlvs = null;
 
                     // Any additional info?
-                    while (byteBuffer.remaining() > nonProxyRemaining)
+                    while (_buffer.remaining() > nonProxyRemaining)
                     {
-                        int type = 0xff & byteBuffer.get();
-                        int length = byteBuffer.getChar();
+                        int type = _buffer.getByteAsInt();
+                        int length = _buffer.getShortAsInt();
                         byte[] value = new byte[length];
-                        byteBuffer.get(value);
+                        _buffer.get(value);
 
                         if (LOG.isDebugEnabled())
                             LOG.debug(String.format("Proxy v2 T=%x L=%d V=%s for %s", type, length, StringUtil.toHexString(value), this));
@@ -700,19 +685,20 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 parsing dynamic packet part is now done, upgrading to {}", _nextProtocol);
                 upgradeToConnectionFactory(_next, _connector, proxyEndPoint);
+
+                _buffer = Retainable.dispose(_buffer);
             }
 
             private void parseHeader() throws IOException
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 parsing fixed length packet part, buffer = {}", _buffer);
-                if (_buffer.remaining() < HEADER_LENGTH)
+
+                if (_buffer == null || _buffer.remaining() < HEADER_LENGTH)
                     return;
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 header {} for {}", _buffer, this);
-
-                ByteBuffer byteBuffer = _buffer.getByteBuffer();
 
                 // struct proxy_hdr_v2 {
                 //     uint8_t sig[12];  /* hex 0D 0A 0D 0A 00 0D 0A 51 55 49 54 0A */
@@ -722,16 +708,16 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 // };
                 for (byte signatureByte : SIGNATURE)
                 {
-                    if (byteBuffer.get() != signatureByte)
+                    if (_buffer.get() != signatureByte)
                         throw new IOException("Proxy v2 bad PROXY signature");
                 }
 
-                int versionAndCommand = 0xFF & byteBuffer.get();
+                int versionAndCommand = _buffer.getByteAsInt();
                 if ((versionAndCommand & 0xF0) != 0x20)
                     throw new IOException("Proxy v2 bad PROXY version");
                 _local = (versionAndCommand & 0xF) == 0x00;
 
-                int transportAndFamily = 0xFF & byteBuffer.get();
+                int transportAndFamily = _buffer.getByteAsInt();
                 switch (transportAndFamily >> 4)
                 {
                     case 0 -> _family = Family.UNSPEC;
@@ -749,7 +735,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     default -> throw new IOException("Proxy v2 bad PROXY family");
                 };
 
-                _length = byteBuffer.getChar();
+                _length = _buffer.getShortAsInt();
 
                 if (!_local && (_family == Family.UNSPEC || transport != Transport.STREAM))
                     throw new IOException(String.format("Proxy v2 unsupported PROXY mode 0x%x,0x%x", versionAndCommand, transportAndFamily));
@@ -784,7 +770,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
     }
 
-    public static class ProxyEndPoint implements EndPoint, EndPoint.Wrapper
+    public static class ProxyEndPoint implements EndPoint, EndPoint.Wrapped
     {
         private final EndPoint _endPoint;
         private final SocketAddress _local;
@@ -841,7 +827,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
 
         @Override
-        public int fill(WritableBuffer buffer) throws IOException
+        public int fill(RetainableByteBuffer.Mutable buffer) throws IOException
         {
             return _endPoint.fill(buffer);
         }
@@ -853,7 +839,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
 
         @Override
-        public boolean flush(ReadableBuffer buffer) throws IOException
+        public boolean flush(RetainableByteBuffer buffer) throws IOException
         {
             return _endPoint.flush(buffer);
         }
@@ -972,7 +958,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
 
         @Override
-        public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
+        public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
         {
             _endPoint.write(buffer, callback);
         }

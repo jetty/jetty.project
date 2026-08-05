@@ -110,7 +110,7 @@ public class DeploymentDefaultContextPathTest
             Connection: close
             
             """;
-        String rawResponse = connector.getResponse(rawRequest);
+        String rawResponse = connector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), containsString("<body>Test</body>"));
@@ -155,7 +155,7 @@ public class DeploymentDefaultContextPathTest
             Connection: close
             
             """;
-        String rawResponse = connector.getResponse(rawRequest);
+        String rawResponse = connector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), containsString("<body>Test</body>"));

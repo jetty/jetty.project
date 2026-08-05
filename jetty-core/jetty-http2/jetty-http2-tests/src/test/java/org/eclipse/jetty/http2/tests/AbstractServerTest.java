@@ -35,7 +35,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 
@@ -105,7 +105,7 @@ public class AbstractServerTest
                 int read = input.read(buffer);
                 if (read < 0)
                     return true;
-                parser.parse(ReadableBuffer.wrap(buffer, 0, read));
+                parser.parse(RetainableByteBuffer.wrap(buffer, 0, read));
                 if (client.isClosed())
                     return true;
             }

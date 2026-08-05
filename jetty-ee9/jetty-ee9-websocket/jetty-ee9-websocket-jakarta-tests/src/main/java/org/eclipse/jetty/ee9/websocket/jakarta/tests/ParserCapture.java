@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.Parser;
@@ -32,7 +32,7 @@ public class ParserCapture
         this.parser = parser;
     }
 
-    public void parse(ByteBuffer buffer)
+    public void parse(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {

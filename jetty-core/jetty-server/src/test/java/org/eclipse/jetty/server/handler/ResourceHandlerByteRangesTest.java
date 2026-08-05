@@ -278,7 +278,7 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(request.generate());
+            request.generate().writeTo(socket::write);
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);
@@ -297,7 +297,7 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(request.generate());
+            request.generate().writeTo(socket::write);
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);
@@ -318,7 +318,7 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(request.generate());
+            request.generate().writeTo(socket::write);
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);
@@ -346,7 +346,7 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(request.generate());
+            request.generate().writeTo(socket::write);
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);

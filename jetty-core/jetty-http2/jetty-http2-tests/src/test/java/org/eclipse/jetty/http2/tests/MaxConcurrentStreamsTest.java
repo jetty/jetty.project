@@ -65,7 +65,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -373,7 +373,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ReadableBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });

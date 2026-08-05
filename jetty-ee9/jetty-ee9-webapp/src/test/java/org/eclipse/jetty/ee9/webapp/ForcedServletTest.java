@@ -37,7 +37,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +44,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ForcedServletTest
@@ -130,7 +128,7 @@ public class ForcedServletTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = connector.getResponse(rawRequest.toString());
+        String rawResponse = connector.getResponseAsString(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         // Since this was a request to a resource ending in `*.jsp`, the RejectUncompiledJspServlet responded
         assertEquals(555, response.getStatus());
@@ -148,7 +146,7 @@ public class ForcedServletTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = connector.getResponse(rawRequest.toString());
+        String rawResponse = connector.getResponseAsString(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         // Since this was a request to a resource ending in `*.jsp`, the RejectUncompiledJspServlet responded
         assertEquals(555, response.getStatus());
@@ -166,7 +164,7 @@ public class ForcedServletTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = connector.getResponse(rawRequest.toString());
+        String rawResponse = connector.getResponseAsString(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         // status code 555 is from RejectUncompiledJspServlet
         assertEquals(555, response.getStatus());
@@ -184,7 +182,7 @@ public class ForcedServletTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = connector.getResponse(rawRequest.toString());
+        String rawResponse = connector.getResponseAsString(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
 

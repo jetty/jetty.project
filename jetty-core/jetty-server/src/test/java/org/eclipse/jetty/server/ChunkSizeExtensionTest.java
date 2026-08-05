@@ -101,7 +101,7 @@ public class ChunkSizeExtensionTest
             0\r
             \r
             """.replace("$W", bws ? "\t" : "");
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertNull(_violationListener.poll());
@@ -131,7 +131,7 @@ public class ChunkSizeExtensionTest
             0\r
             \r
             """.replace("$W", bws ? "\t" : "");
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertNull(_violationListener.poll());
@@ -161,7 +161,7 @@ public class ChunkSizeExtensionTest
             0\r
             \r
             """.replace("$W", bws ? "\t" : "");
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertNull(_violationListener.poll());
@@ -192,7 +192,7 @@ public class ChunkSizeExtensionTest
             \r
             """.replace("$W", bws ? "\t" : "");
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertNull(_violationListener.poll());
     }
@@ -222,7 +222,7 @@ public class ChunkSizeExtensionTest
             \r
             """.replace("$W", bws ? "\t" : "");
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertNull(_violationListener.poll());
     }
@@ -252,7 +252,7 @@ public class ChunkSizeExtensionTest
             \r
             """.replace("$W", bws ? "\t" : "");
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertNull(_violationListener.poll());
     }
@@ -282,7 +282,7 @@ public class ChunkSizeExtensionTest
             \r
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.BAD_REQUEST_400));
         assertNull(_violationListener.poll());
     }
@@ -311,7 +311,7 @@ public class ChunkSizeExtensionTest
             0\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertNull(_violationListener.poll());
     }
@@ -340,7 +340,7 @@ public class ChunkSizeExtensionTest
             0;ext=$Q1$Q\r
             \r
             """.replace("$Q", quoted ? "\"" : "");
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertNull(_violationListener.poll());
     }
@@ -368,7 +368,7 @@ public class ChunkSizeExtensionTest
             0;ext\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertNull(_violationListener.poll());
     }
@@ -397,7 +397,7 @@ public class ChunkSizeExtensionTest
             Trailer: value\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertNull(_violationListener.poll());
     }

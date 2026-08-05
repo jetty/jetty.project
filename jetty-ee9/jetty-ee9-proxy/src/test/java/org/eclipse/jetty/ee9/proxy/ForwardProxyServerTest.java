@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.proxy;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
@@ -44,9 +43,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.Net;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
@@ -163,15 +161,13 @@ public class ForwardProxyServerTest
                         try
                         {
                             // When using TLS, multiple reads are required.
-                            ByteBuffer buffer = BufferUtil.allocate(1024);
+                            RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
                             int filled = 0;
                             while (filled == 0)
                             {
                                 filled = getEndPoint().fill(buffer);
                             }
-                            Utf8StringBuilder builder = new Utf8StringBuilder();
-                            builder.append(buffer);
-                            String request = builder.toCompleteString();
+                            String request = buffer.getString(StandardCharsets.UTF_8);
 
                             // ProxyServlet will receive an absolute URI from
                             // the client, and convert it to a relative URI.
@@ -188,7 +184,7 @@ public class ForwardProxyServerTest
                                 Content-Length: 0
                                 
                                 """;
-                            getEndPoint().write(Callback.NOOP, ByteBuffer.wrap(response.getBytes(StandardCharsets.UTF_8)));
+                            getEndPoint().write(RetainableByteBuffer.wrap(response, StandardCharsets.UTF_8), Callback.NOOP);
                         }
                         catch (Throwable x)
                         {

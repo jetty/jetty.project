@@ -83,7 +83,7 @@ public class DefaultServletRangesTest
     {
         String response;
 
-        response = connector.getResponse(
+        response = connector.getResponseAsString(
             "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
@@ -98,7 +98,7 @@ public class DefaultServletRangesTest
     {
         String response;
 
-        response = connector.getResponse(
+        response = connector.getResponseAsString(
             "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
@@ -115,7 +115,7 @@ public class DefaultServletRangesTest
     {
         String response;
 
-        response = connector.getResponse(
+        response = connector.getResponseAsString(
             "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
@@ -131,7 +131,7 @@ public class DefaultServletRangesTest
     public void testMultipleRangeRequests() throws Exception
     {
         String response;
-        response = connector.getResponse(
+        response = connector.getResponseAsString(
             "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
@@ -177,7 +177,7 @@ public class DefaultServletRangesTest
         }
 
         String response;
-        response = connector.getResponse(
+        response = connector.getResponseAsString(
             "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
@@ -206,7 +206,7 @@ public class DefaultServletRangesTest
         }
 
         String response;
-        response = connector.getResponse(
+        response = connector.getResponseAsString(
             "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
@@ -221,7 +221,7 @@ public class DefaultServletRangesTest
     public void testOpenEndRange() throws Exception
     {
         String response;
-        response = connector.getResponse(
+        response = connector.getResponseAsString(
             "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
@@ -237,7 +237,7 @@ public class DefaultServletRangesTest
     public void testOpenStartRange() throws Exception
     {
         String response;
-        response = connector.getResponse(
+        response = connector.getResponseAsString(
             "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
@@ -253,7 +253,7 @@ public class DefaultServletRangesTest
     public void testUnsatisfiableRanges() throws Exception
     {
         String response;
-        response = connector.getResponse(
+        response = connector.getResponseAsString(
             "GET /context/data.txt HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +

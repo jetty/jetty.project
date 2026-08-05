@@ -140,7 +140,7 @@ public class ServerTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("Hello"));
     }
@@ -219,7 +219,7 @@ public class ServerTest
                 Host: hostname\r
                 \r
                 """;
-        String rawResponse = _connector.getResponse(request);
+        String rawResponse = _connector.getResponseAsString(request);
 
         if (succeeded || written)
             assertThat(rawResponse, containsString("HTTP/1.1 200 OK"));

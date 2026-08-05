@@ -19,10 +19,10 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.internal.Generator;
@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class GeneratorTest
@@ -74,12 +75,11 @@ public class GeneratorTest
 
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(bb);
 
-        ByteBuffer actual = generate(binaryFrame);
+        RetainableByteBuffer actual = generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
-        expected.put(new byte[]
-            {(byte)0x82});
+        expected.put(new byte[]{(byte)0x82});
 
         byte b = 0x00; // no masking
         b |= length & 0x7F;
@@ -90,9 +90,7 @@ public class GeneratorTest
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(expected, 0);
-
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -117,9 +115,9 @@ public class GeneratorTest
 
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(bb);
 
-        ByteBuffer actual = generate(binaryFrame);
+        RetainableByteBuffer actual = generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x82});
@@ -135,9 +133,8 @@ public class GeneratorTest
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(expected, 0);
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -162,9 +159,9 @@ public class GeneratorTest
 
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(bb);
 
-        ByteBuffer actual = generate(binaryFrame);
+        RetainableByteBuffer actual = generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x82});
@@ -180,9 +177,8 @@ public class GeneratorTest
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(expected, 0);
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -206,9 +202,9 @@ public class GeneratorTest
         bb.flip();
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(bb);
 
-        ByteBuffer actual = generate(binaryFrame);
+        RetainableByteBuffer actual = generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x82});
@@ -225,9 +221,8 @@ public class GeneratorTest
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(expected, 0);
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -252,9 +247,9 @@ public class GeneratorTest
 
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(bb);
 
-        ByteBuffer actual = generate(binaryFrame);
+        RetainableByteBuffer actual = generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x82});
@@ -269,9 +264,8 @@ public class GeneratorTest
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(expected, 0);
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -296,9 +290,9 @@ public class GeneratorTest
 
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(bb);
 
-        ByteBuffer actual = generate(binaryFrame);
+        RetainableByteBuffer actual = generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 11);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 11, false);
 
         expected.put(new byte[]
             {(byte)0x82});
@@ -313,9 +307,8 @@ public class GeneratorTest
             expected.put("*".getBytes());
         }
 
-        BufferUtil.flipToFlush(expected, 0);
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -326,16 +319,15 @@ public class GeneratorTest
     {
         Frame binaryFrame = new Frame(OpCode.BINARY).setPayload(new byte[]{});
 
-        ByteBuffer actual = generate(binaryFrame);
+        RetainableByteBuffer actual = generate(binaryFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(5, false);
 
         expected.put(new byte[]
             {(byte)0x82, (byte)0x00});
 
-        BufferUtil.flipToFlush(expected, 0);
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -408,16 +400,15 @@ public class GeneratorTest
     {
         CloseStatus close = new CloseStatus(1000);
 
-        ByteBuffer actual = generate(close.toFrame());
+        RetainableByteBuffer actual = generate(close.toFrame());
 
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(5, false);
 
         expected.put(new byte[]
             {(byte)0x88, (byte)0x02, 0x03, (byte)0xe8});
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -434,8 +425,8 @@ public class GeneratorTest
 
         CloseStatus close = new CloseStatus(1000, message.toString());
 
-        ByteBuffer actual = generate(close.toFrame());
-        ByteBuffer expected = ByteBuffer.allocate(132);
+        RetainableByteBuffer actual = generate(close.toFrame());
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(132, false);
 
         byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
 
@@ -449,9 +440,8 @@ public class GeneratorTest
 
         expected.put(messageBytes);
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -465,9 +455,9 @@ public class GeneratorTest
 
         CloseStatus close = new CloseStatus(1000, message);
 
-        ByteBuffer actual = generate(close.toFrame());
+        RetainableByteBuffer actual = generate(close.toFrame());
 
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(32, false);
 
         expected.put(new byte[]
             {(byte)0x88});
@@ -478,9 +468,8 @@ public class GeneratorTest
         expected.putShort((short)1000);
         expected.put(messageBytes);
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -535,9 +524,9 @@ public class GeneratorTest
 
         Frame pingFrame = new Frame(OpCode.PING).setPayload(bytes);
 
-        ByteBuffer actual = generate(pingFrame);
+        RetainableByteBuffer actual = generate(pingFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(bytes.length + 32, false);
 
         expected.put(new byte[]
             {(byte)0x89});
@@ -547,9 +536,8 @@ public class GeneratorTest
         expected.put(b);
         expected.put(bytes);
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -562,9 +550,9 @@ public class GeneratorTest
 
         Frame pingFrame = new Frame(OpCode.PING).setPayload(bytes);
 
-        ByteBuffer actual = generate(pingFrame);
+        RetainableByteBuffer actual = generate(pingFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(32, false);
 
         expected.put(new byte[]
             {(byte)0x89});
@@ -574,9 +562,8 @@ public class GeneratorTest
         expected.put(b);
         expected.put(bytes);
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -587,16 +574,15 @@ public class GeneratorTest
     {
         Frame pingFrame = new Frame(OpCode.PING);
 
-        ByteBuffer actual = generate(pingFrame);
+        RetainableByteBuffer actual = generate(pingFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(5, false);
 
         expected.put(new byte[]
             {(byte)0x89, (byte)0x00});
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -610,9 +596,9 @@ public class GeneratorTest
 
         Frame pingFrame = new Frame(OpCode.PING).setPayload(messageBytes);
 
-        ByteBuffer actual = generate(pingFrame);
+        RetainableByteBuffer actual = generate(pingFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(32, false);
 
         expected.put(new byte[]
             {(byte)0x89});
@@ -622,9 +608,8 @@ public class GeneratorTest
         expected.put(b);
         expected.put(messageBytes);
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -667,24 +652,22 @@ public class GeneratorTest
         Frame text1 = new Frame(OpCode.TEXT).setPayload("Hel").setFin(false);
         Frame text2 = new Frame(OpCode.CONTINUATION).setPayload("lo");
 
-        ByteBuffer actual1 = generate(text1);
-        ByteBuffer actual2 = generate(text2);
+        RetainableByteBuffer actual1 = generate(text1);
+        RetainableByteBuffer actual2 = generate(text2);
 
-        ByteBuffer expected1 = ByteBuffer.allocate(5);
+        RetainableByteBuffer.Mutable expected1 = RetainableByteBuffer.Mutable.allocate(5, false);
 
         expected1.put(new byte[]
             {(byte)0x01, (byte)0x03, (byte)0x48, (byte)0x65, (byte)0x6c});
 
-        ByteBuffer expected2 = ByteBuffer.allocate(4);
+        RetainableByteBuffer.Mutable expected2 = RetainableByteBuffer.Mutable.allocate(4, false);
 
         expected2.put(new byte[]
             {(byte)0x80, (byte)0x02, (byte)0x6c, (byte)0x6f});
 
-        expected1.flip();
-        expected2.flip();
 
-        assertThat("t1 buffers", Hex.asHex(actual1), is(Hex.asHex(expected1)));
-        assertThat("t2 buffers", Hex.asHex(actual2), is(Hex.asHex(expected2)));
+        assertThat("t1 buffers", Hex.asHex(actual1.getArray()), is(Hex.asHex(expected1.getArray())));
+        assertThat("t2 buffers", Hex.asHex(actual2.getArray()), is(Hex.asHex(expected2.getArray())));
     }
 
     /**
@@ -700,16 +683,15 @@ public class GeneratorTest
         pong.setMask(new byte[]
             {0x37, (byte)0xfa, 0x21, 0x3d});
 
-        ByteBuffer actual = generate(pong);
+        RetainableByteBuffer actual = generate(pong);
 
-        ByteBuffer expected = ByteBuffer.allocate(11);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(11, false);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // Unmasked Pong request
         expected.put(new byte[]
             {(byte)0x8a, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
-        expected.flip(); // make readable
 
-        ByteBufferAssert.assertEquals("pong buffers are not equal", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -725,16 +707,15 @@ public class GeneratorTest
         text.setMask(new byte[]
             {0x37, (byte)0xfa, 0x21, 0x3d});
 
-        ByteBuffer actual = generate(text);
+        RetainableByteBuffer actual = generate(text);
 
-        ByteBuffer expected = ByteBuffer.allocate(11);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(11, false);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A single-frame masked text message
         expected.put(new byte[]
             {(byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
-        expected.flip(); // make readable
 
-        ByteBufferAssert.assertEquals("masked text buffers are not equal", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -753,9 +734,9 @@ public class GeneratorTest
         Arrays.fill(payload, (byte)0x44);
         binary.setPayload(ByteBuffer.wrap(payload));
 
-        ByteBuffer actual = generate(binary);
+        RetainableByteBuffer actual = generate(binary);
 
-        ByteBuffer expected = ByteBuffer.allocate(dataSize + Generator.MAX_HEADER_LENGTH);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(dataSize + Generator.MAX_HEADER_LENGTH, false);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 256 bytes binary message in a single unmasked frame
         expected.put(new byte[]
@@ -767,9 +748,8 @@ public class GeneratorTest
             expected.put((byte)0x44);
         }
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("binary buffers are not equal", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -788,9 +768,9 @@ public class GeneratorTest
         Arrays.fill(payload, (byte)0x44);
         binary.setPayload(ByteBuffer.wrap(payload));
 
-        ByteBuffer actual = generate(binary);
+        RetainableByteBuffer actual = generate(binary);
 
-        ByteBuffer expected = ByteBuffer.allocate(dataSize + 10);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(dataSize + 10, false);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 64k bytes binary message in a single unmasked frame
         expected.put(new byte[]
@@ -803,9 +783,8 @@ public class GeneratorTest
             expected.put((byte)0x44);
         }
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("binary buffers are not equal", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -819,14 +798,13 @@ public class GeneratorTest
     {
         Frame ping = new Frame(OpCode.PING).setPayload("Hello");
 
-        ByteBuffer actual = generate(ping);
+        RetainableByteBuffer actual = generate(ping);
 
-        ByteBuffer expected = ByteBuffer.allocate(10);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(10, false);
         expected.put(new byte[]
             {(byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
-        expected.flip(); // make readable
 
-        ByteBufferAssert.assertEquals("Ping buffers", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -840,16 +818,15 @@ public class GeneratorTest
     {
         Frame text = new Frame(OpCode.TEXT).setPayload("Hello");
 
-        ByteBuffer actual = generate(text);
+        RetainableByteBuffer actual = generate(text);
 
-        ByteBuffer expected = ByteBuffer.allocate(10);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(10, false);
 
         expected.put(new byte[]
             {(byte)0x81, (byte)0x05, (byte)0x48, (byte)0x65, (byte)0x6c, (byte)0x6c, (byte)0x6f});
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("t1 buffers are not equal", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -865,9 +842,9 @@ public class GeneratorTest
 
         Frame textFrame = new Frame(OpCode.TEXT).setPayload(text);
 
-        ByteBuffer actual = generate(textFrame);
+        RetainableByteBuffer actual = generate(textFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x81});
@@ -881,9 +858,8 @@ public class GeneratorTest
             expected.put("*".getBytes());
         }
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -903,9 +879,9 @@ public class GeneratorTest
 
         Frame textFrame = new Frame(OpCode.TEXT).setPayload(builder.toString());
 
-        ByteBuffer actual = generate(textFrame);
+        RetainableByteBuffer actual = generate(textFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x81});
@@ -921,9 +897,8 @@ public class GeneratorTest
             expected.put("*".getBytes());
         }
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -943,9 +918,9 @@ public class GeneratorTest
 
         Frame textFrame = new Frame(OpCode.TEXT).setPayload(builder.toString());
 
-        ByteBuffer actual = generate(textFrame);
+        RetainableByteBuffer actual = generate(textFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x81});
@@ -961,9 +936,8 @@ public class GeneratorTest
             expected.put("*".getBytes());
         }
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -983,9 +957,9 @@ public class GeneratorTest
 
         Frame textFrame = new Frame(OpCode.TEXT).setPayload(builder.toString());
 
-        ByteBuffer actual = generate(textFrame);
+        RetainableByteBuffer actual = generate(textFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x81});
@@ -1003,9 +977,8 @@ public class GeneratorTest
             expected.put("*".getBytes());
         }
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -1025,9 +998,9 @@ public class GeneratorTest
 
         Frame textFrame = new Frame(OpCode.TEXT).setPayload(builder.toString());
 
-        ByteBuffer actual = generate(textFrame);
+        RetainableByteBuffer actual = generate(textFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x81});
@@ -1043,9 +1016,8 @@ public class GeneratorTest
             expected.put("*".getBytes());
         }
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -1065,9 +1037,9 @@ public class GeneratorTest
 
         Frame textFrame = new Frame(OpCode.TEXT).setPayload(builder.toString());
 
-        ByteBuffer actual = generate(textFrame);
+        RetainableByteBuffer actual = generate(textFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 11);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 11, false);
 
         expected.put(new byte[]
             {(byte)0x81});
@@ -1083,9 +1055,8 @@ public class GeneratorTest
             expected.put("*".getBytes());
         }
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     /**
@@ -1096,16 +1067,15 @@ public class GeneratorTest
     {
         Frame textFrame = new Frame(OpCode.TEXT).setPayload("");
 
-        ByteBuffer actual = generate(textFrame);
+        RetainableByteBuffer actual = generate(textFrame);
 
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(5, false);
 
         expected.put(new byte[]
             {(byte)0x81, (byte)0x00});
 
-        expected.flip();
 
-        ByteBufferAssert.assertEquals("buffers do not match", expected, actual);
+        assertArrayEquals(expected.getArray(), actual.getArray());
     }
 
     @Test
@@ -1174,7 +1144,7 @@ public class GeneratorTest
         // Generate
         int windowSize = 1024;
         Helper helper = new Helper();
-        ByteBuffer completeBuffer = helper.generate(frame);
+        RetainableByteBuffer completeBuffer = helper.generate(frame);
 
         // Validate
         int expectedHeaderSize = 4;
@@ -1184,7 +1154,7 @@ public class GeneratorTest
         helper.assertTotalParts(expectedParts);
         helper.assertTotalBytes(payload.length + expectedHeaderSize);
 
-        assertThat("Generated Buffer", completeBuffer.remaining(), is(expectedSize));
+        assertThat("Generated Buffer", completeBuffer.remaining(), is((long)expectedSize));
     }
 
     /**
@@ -1205,7 +1175,7 @@ public class GeneratorTest
 
         // Generate
         Helper helper = new Helper();
-        ByteBuffer completeBuffer = helper.generate(frame);
+        RetainableByteBuffer completeBuffer = helper.generate(frame);
 
         // Validate
         int expectedHeaderSize = 8;
@@ -1215,7 +1185,7 @@ public class GeneratorTest
         helper.assertTotalParts(expectedParts);
         helper.assertTotalBytes(expectedSize);
 
-        assertThat("Generated Buffer", completeBuffer.remaining(), is(expectedSize));
+        assertThat("Generated Buffer", completeBuffer.remaining(), is((long)expectedSize));
 
         // Parse complete buffer.
         ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
@@ -1239,7 +1209,7 @@ public class GeneratorTest
     public static class Helper
     {
         int totalParts;
-        int totalBytes;
+        long totalBytes;
 
         public Helper()
         {
@@ -1249,7 +1219,7 @@ public class GeneratorTest
 
         public void assertTotalBytes(int expectedBytes)
         {
-            assertThat("Generated Bytes", totalBytes, is(expectedBytes));
+            assertThat("Generated Bytes", totalBytes, is((long)expectedBytes));
         }
 
         public void assertTotalParts(int expectedParts)
@@ -1257,7 +1227,7 @@ public class GeneratorTest
             assertThat("Generated Parts", totalParts, is(expectedParts));
         }
 
-        public ByteBuffer generate(Frame... frames)
+        public RetainableByteBuffer generate(Frame... frames)
         {
             // Create Buffer to hold all generated frames in a single buffer
             int completeBufSize = 0;
@@ -1266,12 +1236,12 @@ public class GeneratorTest
                 completeBufSize += Generator.MAX_HEADER_LENGTH + f.getPayloadLength();
             }
 
-            ByteBuffer completeBuf = BufferUtil.allocate(completeBufSize);
+            RetainableByteBuffer.Mutable completeBuf = RetainableByteBuffer.Mutable.allocate(completeBufSize, false);
 
             // Generate from all frames
             for (Frame f : frames)
             {
-                int remaining = completeBuf.remaining();
+                long remaining = completeBuf.remaining();
                 generator.generateHeader(f, completeBuf);
                 totalBytes += completeBuf.remaining() - remaining;
 
@@ -1293,9 +1263,9 @@ public class GeneratorTest
     private void assertGeneratedBytes(CharSequence expectedBytes, Frame... frames)
     {
         // collect up all frames as single ByteBuffer
-        ByteBuffer buffer = generate(frames);
+        RetainableByteBuffer buffer = generate(frames);
         // Get hex String form of all frames buffer.
-        String actual = Hex.asHex(buffer);
+        String actual = Hex.asHex(buffer.getArray());
         // Validate
         assertThat("Buffer", actual, is(expectedBytes.toString()));
     }
@@ -1316,10 +1286,10 @@ public class GeneratorTest
         }
     }
 
-    private static ByteBuffer generate(Frame... frames)
+    private static RetainableByteBuffer generate(Frame... frames)
     {
         int length = Arrays.stream(frames).mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
-        ByteBuffer buffer = BufferUtil.allocate(length);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(length, false);
         Arrays.stream(frames).forEach(frame -> generator.generateWholeFrame(frame, buffer));
         return buffer;
     }

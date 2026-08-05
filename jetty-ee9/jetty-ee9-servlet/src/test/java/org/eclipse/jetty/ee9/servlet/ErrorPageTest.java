@@ -161,7 +161,7 @@ public class ErrorPageTest
         rawRequest.append("Accept-Charset: *\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
         if (LOG.isDebugEnabled())
             LOG.debug(rawResponse);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -184,7 +184,7 @@ public class ErrorPageTest
     @Test
     public void testErrorOverridesStatus() throws Exception
     {
-        String response = _connector.getResponse("GET /error-and-status/anything HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /error-and-status/anything HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 594 594"));
         assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
         assertThat(response, Matchers.containsString("ERROR_MESSAGE: custom get error"));
@@ -198,7 +198,7 @@ public class ErrorPageTest
     @Test
     public void testHttp204CannotHaveBody() throws Exception
     {
-        String response = _connector.getResponse("GET /fail/code?code=204 HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /fail/code?code=204 HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 204 No Content"));
         assertThat(response, not(Matchers.containsString("DISPATCH: ")));
         assertThat(response, not(Matchers.containsString("ERROR_PAGE: ")));
@@ -212,7 +212,7 @@ public class ErrorPageTest
     @Test
     public void testDeleteCannotHaveBody() throws Exception
     {
-        String response = _connector.getResponse("DELETE /delete/anything HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("DELETE /delete/anything HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 595 595"));
         assertThat(response, not(Matchers.containsString("DISPATCH: ")));
         assertThat(response, not(Matchers.containsString("ERROR_PAGE: ")));
@@ -232,7 +232,7 @@ public class ErrorPageTest
         // no global error page here
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
 
-        String response = _connector.getResponse("GET /fail/code?code=598 HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /fail/code?code=598 HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 598 598"));
         assertThat(response, Matchers.containsString("<title>Error 598"));
         assertThat(response, Matchers.containsString("<h2>HTTP ERROR 598"));
@@ -246,7 +246,7 @@ public class ErrorPageTest
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
 
         // even when text/html is not the 1st content type, a html error page should still be generated
-        String response = _connector.getResponse("GET /fail/code?code=598 HTTP/1.0\r\n" +
+        String response = _connector.getResponseAsString("GET /fail/code?code=598 HTTP/1.0\r\n" +
             "Accept: application/bytes,text/html\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 598 598"));
         assertThat(response, Matchers.containsString("<title>Error 598"));
@@ -260,7 +260,7 @@ public class ErrorPageTest
         // no global error page here
         _errorPageErrorHandler.getErrorPages().remove(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE);
 
-        String response = _connector.getResponse("GET /fail/code?code=598 HTTP/1.0\r\n" +
+        String response = _connector.getResponseAsString("GET /fail/code?code=598 HTTP/1.0\r\n" +
             "Accept: application/bytes\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 598 598"));
         assertThat(response, not(Matchers.containsString("<title>Error 598")));
@@ -271,7 +271,7 @@ public class ErrorPageTest
     @Test
     public void testNestedSendErrorDoesNotLoop() throws Exception
     {
-        String response = _connector.getResponse("GET /fail/code?code=597 HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /fail/code?code=597 HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 597 597"));
         assertThat(response, not(Matchers.containsString("time this error page is being accessed")));
     }
@@ -279,7 +279,7 @@ public class ErrorPageTest
     @Test
     public void testSendErrorClosedResponse() throws Exception
     {
-        String response = _connector.getResponse("GET /fail-closed/ HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /fail-closed/ HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
         assertThat(response, Matchers.containsString("DISPATCH: ERROR"));
         assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
@@ -295,7 +295,7 @@ public class ErrorPageTest
     @Test
     public void testErrorCode() throws Exception
     {
-        String response = _connector.getResponse("GET /fail/code?code=599 HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /fail/code?code=599 HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
         assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
         assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
@@ -339,7 +339,7 @@ public class ErrorPageTest
         _errorPageErrorHandler.setUnwrapServletException(false);
         try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            String response = _connector.getResponse("GET /fail/exception HTTP/1.0\r\n\r\n");
+            String response = _connector.getResponseAsString("GET /fail/exception HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
@@ -347,7 +347,7 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
             assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
-            response = _connector.getResponse("GET /fail-double-wrap/exception HTTP/1.0\r\n\r\n");
+            response = _connector.getResponseAsString("GET /fail-double-wrap/exception HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
@@ -360,7 +360,7 @@ public class ErrorPageTest
         _errorPageErrorHandler.setUnwrapServletException(true);
         try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            String response = _connector.getResponse("GET /fail/exception HTTP/1.0\r\n\r\n");
+            String response = _connector.getResponseAsString("GET /fail/exception HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
@@ -368,7 +368,7 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
             assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.ee9.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
-            response = _connector.getResponse("GET /fail-double-wrap/exception HTTP/1.0\r\n\r\n");
+            response = _connector.getResponseAsString("GET /fail-double-wrap/exception HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
@@ -382,7 +382,7 @@ public class ErrorPageTest
     @Test
     public void testGlobalErrorCode() throws Exception
     {
-        String response = _connector.getResponse("GET /fail/global?code=598 HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /fail/global?code=598 HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 598 598"));
         assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
         assertThat(response, Matchers.containsString("ERROR_CODE: 598"));
@@ -397,7 +397,7 @@ public class ErrorPageTest
     {
         try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
-            String response = _connector.getResponse("GET /fail/global?code=NAN HTTP/1.0\r\n\r\n");
+            String response = _connector.getResponseAsString("GET /fail/global?code=NAN HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
@@ -413,7 +413,7 @@ public class ErrorPageTest
     {
         try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
         {
-            String response = _connector.getResponse("GET /app?baa=%88%A4 HTTP/1.0\r\n\r\n");
+            String response = _connector.getResponseAsString("GET /app?baa=%88%A4 HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 400 Bad Request"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
             assertThat(response, Matchers.containsString("ERROR_MESSAGE: Bad query encoding"));
@@ -431,7 +431,7 @@ public class ErrorPageTest
     {
         try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
         {
-            String response = _connector.getResponse("GET /async/info?mode=DSC HTTP/1.0\r\n\r\n");
+            String response = _connector.getResponseAsString("GET /async/info?mode=DSC HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
@@ -448,7 +448,7 @@ public class ErrorPageTest
     {
         try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
         {
-            String response = _connector.getResponse("GET /async/info?mode=SDC HTTP/1.0\r\n\r\n");
+            String response = _connector.getResponseAsString("GET /async/info?mode=SDC HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
@@ -465,7 +465,7 @@ public class ErrorPageTest
     {
         try (StacklessLogging ignore = new StacklessLogging(Dispatcher.class))
         {
-            String response = _connector.getResponse("GET /async/info?mode=SCD HTTP/1.0\r\n\r\n");
+            String response = _connector.getResponseAsString("GET /async/info?mode=SCD HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 599 599"));
             assertThat(response, Matchers.containsString("ERROR_PAGE: /599"));
             assertThat(response, Matchers.containsString("ERROR_CODE: 599"));
@@ -480,7 +480,7 @@ public class ErrorPageTest
     @Test
     public void testNoop() throws Exception
     {
-        String response = _connector.getResponse("GET /noop/info HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /noop/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
         assertThat(response, Matchers.containsString("DISPATCH: ERROR"));
         assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
@@ -494,7 +494,7 @@ public class ErrorPageTest
     @Test
     public void testNotEnough() throws Exception
     {
-        String response = _connector.getResponse("GET /notenough/info HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /notenough/info HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
         assertThat(response, Matchers.containsString("DISPATCH: ERROR"));
         assertThat(response, Matchers.containsString("ERROR_PAGE: /GlobalErrorPage"));
@@ -508,7 +508,7 @@ public class ErrorPageTest
     @Test
     public void testNotEnoughCommitted() throws Exception
     {
-        String response = _connector.getResponse("GET /notenough/info?commit=true HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /notenough/info?commit=true HTTP/1.0\r\n\r\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
         assertThat(response, Matchers.containsString("Content-Length: 1000"));
         assertThat(response, Matchers.endsWith("SomeBytes"));
@@ -522,7 +522,7 @@ public class ErrorPageTest
             try (StacklessLogging ignore2 = new StacklessLogging(HttpChannel.class))
             {
                 __destroyed = new AtomicBoolean(false);
-                String response = _connector.getResponse("GET /unavailable/info HTTP/1.0\r\n\r\n");
+                String response = _connector.getResponseAsString("GET /unavailable/info HTTP/1.0\r\n\r\n");
                 assertThat(response, Matchers.containsString("HTTP/1.1 404 "));
                 _server.stop();
                 assertTrue(__destroyed.get());
@@ -538,17 +538,17 @@ public class ErrorPageTest
             try (StacklessLogging ignore2 = new StacklessLogging(HttpChannel.class))
             {
                 __destroyed = new AtomicBoolean(false);
-                String response = _connector.getResponse("GET /unavailable/info?for=1 HTTP/1.0\r\n\r\n");
+                String response = _connector.getResponseAsString("GET /unavailable/info?for=1 HTTP/1.0\r\n\r\n");
                 assertThat(response, Matchers.containsString("HTTP/1.1 503 "));
                 assertFalse(__destroyed.get());
 
-                response = _connector.getResponse("GET /unavailable/info?ok=true HTTP/1.0\r\n\r\n");
+                response = _connector.getResponseAsString("GET /unavailable/info?ok=true HTTP/1.0\r\n\r\n");
                 assertThat(response, Matchers.containsString("HTTP/1.1 503 "));
                 assertFalse(__destroyed.get());
 
                 Thread.sleep(1500);
 
-                response = _connector.getResponse("GET /unavailable/info?ok=true HTTP/1.0\r\n\r\n");
+                response = _connector.getResponseAsString("GET /unavailable/info?ok=true HTTP/1.0\r\n\r\n");
                 assertThat(response, Matchers.containsString("HTTP/1.1 200 "));
                 assertFalse(__destroyed.get());
             }
@@ -560,7 +560,7 @@ public class ErrorPageTest
     {
         try (StacklessLogging stackless = new StacklessLogging(_context.getLogger()))
         {
-            String response = _connector.getResponse("GET /exception-servlet HTTP/1.0\r\n\r\n");
+            String response = _connector.getResponseAsString("GET /exception-servlet HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.ee9.servlet.ErrorPageTest$TestServletException"));
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.ee9.servlet.ErrorPageTest$TestServletException"));

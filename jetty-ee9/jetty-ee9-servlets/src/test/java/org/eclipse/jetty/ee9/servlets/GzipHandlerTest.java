@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.servlets;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
@@ -29,7 +28,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -79,10 +78,10 @@ public class GzipHandlerTest extends AbstractGzipTest
         request.setURI("/context/xxx");
 
         // Issue request
-        ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -147,10 +146,10 @@ public class GzipHandlerTest extends AbstractGzipTest
         request.setURI("/context/xxx");
 
         // Issue request
-        ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.NO_CONTENT_204));
 
@@ -197,10 +196,10 @@ public class GzipHandlerTest extends AbstractGzipTest
         request.setURI("/context/xxx");
 
         // Issue request
-        ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
 

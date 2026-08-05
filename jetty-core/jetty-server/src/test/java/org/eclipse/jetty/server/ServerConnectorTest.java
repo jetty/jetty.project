@@ -41,7 +41,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -93,7 +93,7 @@ public class ServerConnectorTest
             }
             out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
             out.flush();
-            response.write(true, ReadableBuffer.wrap(buffer.toByteArray()), callback);
+            response.write(true, RetainableByteBuffer.wrap(buffer.toByteArray()), callback);
             return true;
         }
     }
@@ -256,7 +256,7 @@ public class ServerConnectorTest
             {
                 HttpTester.Request request = HttpTester.newRequest();
                 request.put(HttpHeader.HOST, "localhost");
-                client.write(request.generate());
+                request.generate().writeTo(client::write);
                 HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
                 assertNotNull(response);
                 assertEquals(HttpStatus.OK_200, response.getStatus());

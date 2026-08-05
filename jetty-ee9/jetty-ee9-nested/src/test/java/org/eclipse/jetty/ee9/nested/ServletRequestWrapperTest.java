@@ -21,7 +21,6 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +41,7 @@ public class ServletRequestWrapperTest
     {
         _server = new Server();
         _context = new ContextHandler(_server);
-        _connector = new LocalConnector(_server, new HttpConnectionFactory());
+        _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
         _handler = new RequestHandler();
@@ -57,7 +56,7 @@ public class ServletRequestWrapperTest
             "Host: whatever\r\n" +
             "\n";
 
-        String response = _connector.getResponse(request);
+        String response = _connector.getResponseAsString(request);
         assertThat("Response", response, containsString("200"));
     }
 

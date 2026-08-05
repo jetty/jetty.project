@@ -14,7 +14,7 @@
 package org.eclipse.jetty.http.compression;
 
 import org.eclipse.jetty.util.CharsetStringBuilder;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static org.eclipse.jetty.http.compression.Huffman.rowbits;
 import static org.eclipse.jetty.http.compression.Huffman.rowsym;
@@ -47,11 +47,11 @@ public class HuffmanDecoder
      * @return the decoded String or null if more data is needed.
      * @throws EncodingException if the huffman encoding is invalid.
      */
-    public String decode(ReadableBuffer buffer) throws EncodingException
+    public String decode(RetainableByteBuffer buffer) throws EncodingException
     {
         for (; _count < _length; _count++)
         {
-            if (buffer.remaining() == 0L)
+            if (!buffer.hasRemaining())
                 return null;
 
             int b = buffer.get() & 0xFF;

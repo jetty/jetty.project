@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * A Trie String lookup data structure using a tree
@@ -355,19 +355,19 @@ class TreeTrie<V> extends AbstractTrie<V>
     {
         if (b.hasArray())
             return getBest(b.array(), b.arrayOffset() + b.position() + offset, len);
-        return getBest(_root, ReadableBuffer.wrap(b), offset, len);
+        return getBest(_root, RetainableByteBuffer.wrap(b), offset, len);
     }
 
     @Override
-    public V getBest(ReadableBuffer b, long offset, long len)
+    public V getBest(RetainableByteBuffer b, long offset, long len)
     {
         return getBest(_root, b, offset, len);
     }
 
-    private V getBest(Node<V> node, ReadableBuffer b, long offset, long len)
+    private V getBest(Node<V> node, RetainableByteBuffer b, long offset, long len)
     {
         Node<V> next;
-        long pos = b.position() + offset;
+        long pos = b.readPosition() + offset;
         for (int i = 0; i < len; i++)
         {
             byte c = b.get(pos++);

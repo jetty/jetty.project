@@ -157,7 +157,7 @@ public class DeferredAuthenticationTest
 
         // Authenticator is invoked twice, first time for deferred auth on getUserPrincipal() which tries to write and fails,
         // the second time for authenticate() which returns false and sends a 401 response.
-        String response = _connector.getResponse("GET /public/foo HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponseAsString("GET /public/foo HTTP/1.0\r\n\r\n");
         await().atMost(5, TimeUnit.SECONDS).until(() -> serviceCount.get() == 1);
         assertThat(response, containsString("401 Unauthorized"));
         assertThat(response, containsString("this is a challenge"));
@@ -171,7 +171,7 @@ public class DeferredAuthenticationTest
         // Authenticator is invoked twice, first time for deferred auth on getUserPrincipal() which tries to write and fails,
         // the second time for authenticate() which returns true and sends a 200 response.
 /*
-        response = _connector.getResponse("GET /public/foo?authenticate HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /public/foo?authenticate HTTP/1.0\r\n\r\n");
         await().atMost(5, TimeUnit.SECONDS).until(() -> serviceCount.get() == 2);
         assertThat(response, containsString("200 OK"));
         assertThat(response, containsString("success"));

@@ -13,18 +13,17 @@
 
 package org.eclipse.jetty.http3.internal;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.parser.ControlParser;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,12 +31,12 @@ public class ControlStreamConnection extends AbstractConnection.NonBlocking impl
 {
     private static final Logger LOG = LoggerFactory.getLogger(ControlStreamConnection.class);
 
-    private final ByteBufferPool bufferPool;
+    private final WritableBufferPool bufferPool;
     private final ControlParser parser;
     private boolean useInputDirectByteBuffers = true;
-    private RetainableByteBuffer buffer;
+    private RetainableByteBuffer.Mutable buffer;
 
-    public ControlStreamConnection(StreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ControlParser parser)
+    public ControlStreamConnection(StreamEndPoint endPoint, Executor executor, WritableBufferPool bufferPool, ControlParser parser)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
@@ -61,14 +60,10 @@ public class ControlStreamConnection extends AbstractConnection.NonBlocking impl
     }
 
     @Override
-    public void onUpgradeTo(ByteBuffer upgrade)
+    public void onUpgradeTo(RetainableByteBuffer.Mutable upgrade)
     {
-        int capacity = Math.max(upgrade.remaining(), getInputBufferSize());
-        buffer = bufferPool.acquire(capacity, isUseInputDirectByteBuffers());
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        int position = BufferUtil.flipToFill(byteBuffer);
-        byteBuffer.put(upgrade);
-        BufferUtil.flipToFlush(byteBuffer, position);
+        upgrade.retain();
+        buffer = upgrade;
     }
 
     @Override
@@ -88,28 +83,25 @@ public class ControlStreamConnection extends AbstractConnection.NonBlocking impl
         {
             if (buffer == null)
                 buffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
             while (true)
             {
                 // Parse first in case of bytes from the upgrade.
-                parser.parse(byteBuffer);
+                parser.parse(buffer);
 
                 // Then read from the EndPoint.
-                int filled = getEndPoint().fill(byteBuffer);
+                int filled = getEndPoint().fill(buffer.clear());
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled {} on {}", filled, this);
 
                 if (filled == 0)
                 {
-                    buffer.release();
-                    buffer = null;
+                    buffer = Retainable.dispose(buffer);
                     fillInterested();
                     break;
                 }
                 else if (filled < 0)
                 {
-                    buffer.release();
-                    buffer = null;
+                    buffer = Retainable.dispose(buffer);
                     getEndPoint().disconnect(HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code(), null, true, Promise.Invocable.noop());
                     break;
                 }
@@ -119,8 +111,7 @@ public class ControlStreamConnection extends AbstractConnection.NonBlocking impl
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("could not process control stream {}", getEndPoint(), x);
-            buffer.release();
-            buffer = null;
+            buffer = Retainable.dispose(buffer);
             getEndPoint().disconnect(HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code(), x, true, Promise.Invocable.noop());
         }
     }

@@ -35,6 +35,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -616,8 +617,8 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
                 String line = builder.toString();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Writing PROXY bytes: {}", line.trim());
-                ByteBuffer buffer = ByteBuffer.wrap(line.getBytes(StandardCharsets.US_ASCII));
-                endPoint.write(callback, buffer);
+                RetainableByteBuffer buffer = RetainableByteBuffer.wrap(line, StandardCharsets.US_ASCII);
+                endPoint.write(buffer, callback);
             }
             catch (Throwable x)
             {
@@ -654,7 +655,7 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
                     .mapToInt(tlv -> 1 + 2 + tlv.getValue().length)
                     .sum();
                 capacity += vectorsLength;
-                ByteBuffer buffer = ByteBuffer.allocateDirect(capacity);
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(capacity, true);
 
                 buffer.put(MAGIC);
 
@@ -739,21 +740,21 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
                     }
                     case UNIX ->
                     {
-                        int position = buffer.position();
+                        int len = 0;
                         if (srcAddr != null)
                         {
                             byte[] bytes = srcAddr.getBytes(StandardCharsets.US_ASCII);
-                            buffer.put(bytes, 0, Math.min(bytes.length, UNIX_ADDRESS_MAX_LENGTH));
+                            len = Math.min(bytes.length, UNIX_ADDRESS_MAX_LENGTH);
+                            buffer.put(bytes, 0, len);
                         }
-                        position = position + UNIX_ADDRESS_MAX_LENGTH;
-                        buffer.position(position);
+                        buffer.pad(UNIX_ADDRESS_MAX_LENGTH - len);
                         if (dstAddr != null)
                         {
                             byte[] bytes = dstAddr.getBytes(StandardCharsets.US_ASCII);
-                            buffer.put(bytes, 0, Math.min(bytes.length, UNIX_ADDRESS_MAX_LENGTH));
+                            len = Math.min(bytes.length, UNIX_ADDRESS_MAX_LENGTH);
+                            buffer.put(bytes, 0, len);
                         }
-                        position = position + UNIX_ADDRESS_MAX_LENGTH;
-                        buffer.position(position);
+                        buffer.pad(UNIX_ADDRESS_MAX_LENGTH - len);
                     }
                     default -> throw new IllegalStateException();
                 }
@@ -769,8 +770,7 @@ public abstract class ProxyProtocolClientConnectionFactory extends ClientConnect
                     }
                 }
 
-                buffer.flip();
-                endPoint.write(callback, buffer);
+                endPoint.write(buffer, callback);
             }
             catch (Throwable x)
             {

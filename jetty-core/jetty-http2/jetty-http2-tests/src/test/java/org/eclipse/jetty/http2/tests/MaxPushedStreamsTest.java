@@ -36,7 +36,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -95,7 +95,7 @@ public class MaxPushedStreamsTest extends AbstractTest
                     // ... then send the data for the valid pushed streams...
                     .thenAccept(streams -> streams.forEach(pushedStream ->
                     {
-                        pushedStream.data(ReadableBuffer.EMPTY, true);
+                        pushedStream.data(RetainableByteBuffer.empty(), true);
                     }))
                     // ... then send the response.
                     .thenRun(() ->

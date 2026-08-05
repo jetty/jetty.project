@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -179,7 +179,7 @@ public class TrailersTest extends AbstractTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
 
         // Send some data.
-        CompletableFuture<Stream> completable = stream.data(ReadableBuffer.allocate(16, false), false);
+        CompletableFuture<Stream> completable = stream.data(RetainableByteBuffer.allocate(16, false), false);
 
         assertTrue(trailerLatch.await(5, TimeUnit.SECONDS));
 
@@ -296,7 +296,7 @@ public class TrailersTest extends AbstractTest
             public void onDataAvailable(Stream stream)
             {
                 Content.Chunk chunk = stream.read();
-                DataFrame frame = new DataFrame(stream.getId(), ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast());
+                DataFrame frame = new DataFrame(stream.getId(), RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast());
                 frames.add(frame);
                 chunk.release();
                 if (frame.isEndStream())
@@ -339,7 +339,7 @@ public class TrailersTest extends AbstractTest
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(requestFrame, promise, null);
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ReadableBuffer data = ReadableBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
+        RetainableByteBuffer data = RetainableByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
         CountDownLatch failureLatch = new CountDownLatch(1);
         stream.data(data, false)
             .thenAccept(s ->
@@ -395,7 +395,7 @@ public class TrailersTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ReadableBuffer data = ReadableBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
+        RetainableByteBuffer data = RetainableByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
         stream.data(data, false)
             .thenAccept(s ->
             {

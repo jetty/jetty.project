@@ -73,7 +73,7 @@ import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -672,7 +672,7 @@ public class ForwardProxyWithDynamicTransportTest
         String h1 = "GET / HTTP/1.1\r\n" +
                     "Host: " + serverAddress + "\r\n" +
                     "\r\n";
-        stream.data(ReadableBuffer.wrap(h1.getBytes(StandardCharsets.UTF_8)), false, Callback.NOOP);
+        stream.data(RetainableByteBuffer.wrap(h1.getBytes(StandardCharsets.UTF_8)), false, Callback.NOOP);
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
 
         // Now reset the stream, tunnel must be closed.
@@ -766,7 +766,7 @@ public class ForwardProxyWithDynamicTransportTest
         String h1 = "GET / HTTP/1.1\r\n" +
                     "Host: " + serverAddress + "\r\n" +
                     "\r\n";
-        stream.data(ReadableBuffer.wrap(h1.getBytes(StandardCharsets.UTF_8)), false, Callback.NOOP);
+        stream.data(RetainableByteBuffer.wrap(h1.getBytes(StandardCharsets.UTF_8)), false, Callback.NOOP);
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
 
         // Wait until the proxy stream idle times out.

@@ -159,7 +159,7 @@ public class JAASLoginServiceTest
         _server.addBean(ls, true);
         _server.start();
         
-        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
+        String response = _connector.getResponseAsString("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
             Base64.getEncoder().encodeToString("aaardvaark:aaa".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         
@@ -173,7 +173,7 @@ public class JAASLoginServiceTest
         _server.addBean(ls, true);
         _server.start();
         
-        response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
+        response = _connector.getResponseAsString("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
             Base64.getEncoder().encodeToString("aaardvaark:aaa".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
