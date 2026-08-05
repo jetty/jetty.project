@@ -113,6 +113,8 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1821,5 +1823,109 @@ public class ProxyServletTest
             .map(HttpField::getValue)
             .toList();
         assertEquals(List.of("resp1", "resp2"), responseValues);
+    }
+
+    @ParameterizedTest
+    @MethodSource("impls")
+    public void testFilterServerResponseHeaderReplacesAndDrops(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    {
+        // Override of the deprecated String filter must replace (not append) and honor null (see #15548).
+        final String originalLocation = "http://backend.example/redirect";
+        final String filteredLocation = "http://localhost/proxy";
+        final String keepHeader = "X-Keep";
+        final String keepValue = "keep-me";
+
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            {
+                resp.setStatus(HttpServletResponse.SC_FOUND);
+                resp.setHeader(HttpHeader.LOCATION.asString(), originalLocation);
+                resp.setHeader(HttpHeader.DATE.asString(), "Wed, 01 Jan 2020 00:00:00 GMT");
+                resp.setHeader(keepHeader, keepValue);
+            }
+        });
+        startProxy(newFilteringProxyServlet(proxyServletClass, filteredLocation), new HashMap<>());
+        startClient();
+        client.setFollowRedirects(false);
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.FOUND_302, response.getStatus());
+        assertEquals(List.of(filteredLocation), response.getHeaders().getValuesList(HttpHeader.LOCATION));
+        assertFalse(response.getHeaders().contains(HttpHeader.DATE));
+        assertEquals(keepValue, response.getHeaders().get(keepHeader));
+    }
+
+    @Test
+    public void testFilterServerResponseHeaderHttpFieldOverload()
+    {
+        final String filteredLocation = "http://localhost/proxy";
+        AbstractProxyServlet servlet = newFilteringProxyServlet(ProxyServlet.class, filteredLocation);
+
+        HttpField location = new HttpField(HttpHeader.LOCATION, "http://backend.example/redirect");
+        HttpField filtered = servlet.filterServerResponseHeader(null, null, location);
+        assertEquals(filteredLocation, filtered.getValue());
+        assertEquals(List.of(filteredLocation), filtered.getValueList());
+
+        HttpField date = new HttpField(HttpHeader.DATE, "Wed, 01 Jan 2020 00:00:00 GMT");
+        assertNull(servlet.filterServerResponseHeader(null, null, date));
+
+        HttpField keep = new HttpField("X-Keep", "keep-me");
+        assertSame(keep, servlet.filterServerResponseHeader(null, null, keep));
+    }
+
+    @SuppressWarnings("deprecation")
+    private static AbstractProxyServlet newFilteringProxyServlet(Class<?> proxyServletClass, String filteredLocation)
+    {
+        if (proxyServletClass == ProxyServlet.class)
+        {
+            return new ProxyServlet()
+            {
+                @Override
+                protected String filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
+                {
+                    if (HttpHeader.LOCATION.is(headerName))
+                        return filteredLocation;
+                    if (HttpHeader.DATE.is(headerName))
+                        return null;
+                    return super.filterServerResponseHeader(clientRequest, serverResponse, headerName, headerValue);
+                }
+            };
+        }
+        if (proxyServletClass == AsyncProxyServlet.class)
+        {
+            return new AsyncProxyServlet()
+            {
+                @Override
+                protected String filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
+                {
+                    if (HttpHeader.LOCATION.is(headerName))
+                        return filteredLocation;
+                    if (HttpHeader.DATE.is(headerName))
+                        return null;
+                    return super.filterServerResponseHeader(clientRequest, serverResponse, headerName, headerValue);
+                }
+            };
+        }
+        if (proxyServletClass == AsyncMiddleManServlet.class)
+        {
+            return new AsyncMiddleManServlet()
+            {
+                @Override
+                protected String filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
+                {
+                    if (HttpHeader.LOCATION.is(headerName))
+                        return filteredLocation;
+                    if (HttpHeader.DATE.is(headerName))
+                        return null;
+                    return super.filterServerResponseHeader(clientRequest, serverResponse, headerName, headerValue);
+                }
+            };
+        }
+        throw new IllegalArgumentException(proxyServletClass.getName());
     }
 }
