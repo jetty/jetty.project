@@ -43,7 +43,7 @@ public interface ReadableBuffer extends Retainable
     /**
      * An empty ReadableBuffer that cannot be flipped to write-only mode.
      */
-    ReadableBuffer EMPTY = FixedSizeBuffer.Empty.READ_ONLY_INSTANCE;
+    ReadableBuffer EMPTY = new FixedSizeBuffer.Empty(false);
 
     /**
      * Wraps the given NIO ByteBuffer that is in flush mode, using a {@link ReferenceCounter} for retainability.

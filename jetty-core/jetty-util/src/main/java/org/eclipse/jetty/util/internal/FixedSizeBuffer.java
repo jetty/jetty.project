@@ -381,10 +381,7 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
 
     public static class Empty extends FixedSizeBuffer
     {
-        public static final Empty READ_ONLY_INSTANCE = new Empty(false);
-        public static final Empty WRITE_ONLY_INSTANCE = new Empty(true);
-
-        private Empty(boolean writeMode)
+        public Empty(boolean writeMode)
         {
             super(writeMode ? BufferUtil.EMPTY_BUFFER : BufferUtil.EMPTY_BUFFER.asReadOnlyBuffer(), Retainable.NON_RETAINABLE, writeMode);
         }
@@ -392,7 +389,7 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
         @Override
         public ReadableBuffer toReadable()
         {
-            if (this != READ_ONLY_INSTANCE)
+            if (!getByteBuffer().isReadOnly())
                 throw new UnsupportedOperationException("Write-only");
             return super.toReadable();
         }
@@ -400,7 +397,7 @@ public class FixedSizeBuffer implements WritableBuffer, ReadableBuffer
         @Override
         public WritableBuffer toWritable()
         {
-            if (this != WRITE_ONLY_INSTANCE)
+            if (getByteBuffer().isReadOnly())
                 throw new ReadOnlyBufferException();
             return super.toWritable();
         }

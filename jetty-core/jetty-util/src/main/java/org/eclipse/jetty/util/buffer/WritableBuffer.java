@@ -33,7 +33,7 @@ public interface WritableBuffer
     /**
      * An empty WritableBuffer that cannot be flipped to read-only mode.
      */
-    WritableBuffer EMPTY = FixedSizeBuffer.Empty.WRITE_ONLY_INSTANCE;
+    WritableBuffer EMPTY = new FixedSizeBuffer.Empty(true);
 
     /**
      * Wraps the given NIO ByteBuffer that already is in fill node, using a new {@link Retainable.ReferenceCounter} for
