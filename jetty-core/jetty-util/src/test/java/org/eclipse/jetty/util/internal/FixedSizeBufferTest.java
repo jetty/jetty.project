@@ -227,7 +227,7 @@ public class FixedSizeBufferTest
         assertEquals(2, rb.getInt());
         assertEquals(0L, rb.remaining());
 
-        assertThrows(IllegalStateException.class, rb::toWritable);
+        assertThrows(ReadOnlyBufferException.class, rb::toWritable);
     }
 
     @Test
