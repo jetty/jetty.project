@@ -55,7 +55,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.FOUND_302, response.getStatus());
         assertEquals("http://www.mortbay.org/", response.get(HttpHeader.LOCATION));
     }
@@ -72,7 +72,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.FOUND_302, response.getStatus());
         assertEquals("/docs/top.html", response.get(HttpHeader.LOCATION));
     }
@@ -89,7 +89,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.FOUND_302, response.getStatus());
         assertEquals("http://www.mortbay.org/image.png", response.get(HttpHeader.LOCATION));
     }
@@ -107,7 +107,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_PERMANENTLY_301, response.getStatus());
         assertEquals("http://www.mortbay.org/api/rest/foo?id=100&sort=date", response.get(HttpHeader.LOCATION));
     }
@@ -126,7 +126,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_PERMANENTLY_301, response.getStatus());
         // This configuration, with RedirectRegexRule.isAddQueries(false), will drop the input query section
         assertEquals("http://www.mortbay.org/api/rest/foo", response.get(HttpHeader.LOCATION));
@@ -147,7 +147,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_PERMANENTLY_301, response.getStatus());
         assertEquals("http://www.mortbay.org/api/rest/foo?id=100&sort=date&v=old", response.get(HttpHeader.LOCATION));
     }
@@ -164,7 +164,7 @@ public class RedirectRegexRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.FOUND_302, response.getStatus());
         assertEquals("https://example/%0A.evil.com", response.get(HttpHeader.LOCATION));
     }

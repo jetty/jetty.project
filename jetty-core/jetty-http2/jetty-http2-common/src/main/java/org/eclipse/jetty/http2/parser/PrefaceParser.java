@@ -15,7 +15,7 @@ package org.eclipse.jetty.http2.parser;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,14 +44,14 @@ public class PrefaceParser
         cursor = PrefaceFrame.PREFACE_PREAMBLE_BYTES.length;
     }
 
-    public boolean parse(ReadableBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
-        while (buffer.remaining() > 0L)
+        while (buffer.hasRemaining())
         {
             int currByte = buffer.get();
             if (currByte != PrefaceFrame.PREFACE_BYTES[cursor])
             {
-                buffer.position(buffer.position() + buffer.remaining());
+                buffer.readPosition(buffer.readPosition() + buffer.remaining());
                 notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_preface");
                 return false;
             }

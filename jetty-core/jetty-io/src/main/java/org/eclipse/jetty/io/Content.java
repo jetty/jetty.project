@@ -17,6 +17,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousByteChannel;
 import java.nio.channels.ByteChannel;
@@ -50,8 +51,9 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -340,14 +342,14 @@ public class Content
             new ContentSourceByteBuffer(source, promise).run();
         }
 
-        static void asReadableBuffer(Source source, Promise<ReadableBuffer> promise)
+        static void asReadableBuffer(Source source, Promise<RetainableByteBuffer> promise)
         {
             new ContentSourceByteBuffer(source, new Promise<>()
             {
                 @Override
                 public void succeeded(ByteBuffer result)
                 {
-                    promise.succeeded(ReadableBuffer.wrap(result));
+                    promise.succeeded(RetainableByteBuffer.wrap(result));
                 }
 
                 @Override
@@ -381,11 +383,11 @@ public class Content
             }
         }
 
-        static ReadableBuffer asReadableBuffer(Source source) throws IOException
+        static RetainableByteBuffer asReadableBuffer(Source source) throws IOException
         {
             try
             {
-                try (Blocker.Promise<ReadableBuffer> promise = Blocker.promise())
+                try (Blocker.Promise<RetainableByteBuffer> promise = Blocker.promise())
                 {
                     asReadableBuffer(source, promise);
                     return promise.block();
@@ -427,7 +429,7 @@ public class Content
          */
         static void asByteArrayAsync(Source source, int maxSize, Promise.Invocable<byte[]> promise)
         {
-            asRetainableByteBuffer(source, null, false, maxSize, Promise.Invocable.toPromise(promise, RetainableByteBuffer::takeByteArray));
+            asRetainableByteBuffer(source, null, false, maxSize, Promise.Invocable.toPromise(promise, org.eclipse.jetty.io.RetainableByteBuffer::takeByteArray));
         }
 
         /**
@@ -463,7 +465,7 @@ public class Content
         }
 
         /**
-         * <p>Reads, non-blocking, the whole content source into a {@link RetainableByteBuffer}.</p>
+         * <p>Reads, non-blocking, the whole content source into a {@link org.eclipse.jetty.io.RetainableByteBuffer}.</p>
          *
          * @param source The {@link Content.Source} to read
          * @param pool The {@link ByteBufferPool} to acquire the buffer from, or null for a non {@link Retainable} buffer
@@ -474,12 +476,12 @@ public class Content
          * @deprecated no replacement
          */
         @Deprecated(forRemoval = true, since = "12.0.15")
-        static CompletableFuture<RetainableByteBuffer> asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize)
+        static CompletableFuture<org.eclipse.jetty.io.RetainableByteBuffer> asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize)
         {
-            Promise.Completable<RetainableByteBuffer> promise = new Promise.Completable<>()
+            Promise.Completable<org.eclipse.jetty.io.RetainableByteBuffer> promise = new Promise.Completable<>()
             {
                 @Override
-                public void succeeded(RetainableByteBuffer result)
+                public void succeeded(org.eclipse.jetty.io.RetainableByteBuffer result)
                 {
                     result.retain();
                     super.succeeded(result);
@@ -490,7 +492,7 @@ public class Content
         }
 
         /**
-         * <p>Reads, non-blocking, the whole content source into a {@link RetainableByteBuffer}.</p>
+         * <p>Reads, non-blocking, the whole content source into a {@link org.eclipse.jetty.io.RetainableByteBuffer}.</p>
          *
          * @param source the source to read
          * @param pool The {@link ByteBufferPool} to acquire the buffer from, or null for a non {@link Retainable} buffer
@@ -498,7 +500,7 @@ public class Content
          * @param maxSize The maximum size to read, or -1 for no limit
          * @param promise the promise to notify when the whole content has been read into a RetainableByteBuffer.
          */
-        static void asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize, Promise<RetainableByteBuffer> promise)
+        static void asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize, Promise<org.eclipse.jetty.io.RetainableByteBuffer> promise)
         {
             new ContentSourceRetainableByteBuffer(source, pool, direct, maxSize, promise).run();
         }
@@ -760,7 +762,7 @@ public class Content
                 boolean closed;
 
                 @Override
-                public void write(boolean last, ReadableBuffer buffer, Callback callback)
+                public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
                 {
                     if (closed)
                     {
@@ -797,7 +799,7 @@ public class Content
                 boolean closed;
 
                 @Override
-                public void write(boolean last, ReadableBuffer buffer, Callback callback)
+                public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
                 {
                     if (closed)
                     {
@@ -810,7 +812,7 @@ public class Content
                         int tries = 0;
                         while (remaining > 0L)
                         {
-                            long written = buffer.writeTo(channel::write);
+                            long written = buffer.writeTo(src -> channel.write(src));
                             if (written > 0L)
                                 remaining -= written;
                             else if (tries++ > 2)
@@ -844,7 +846,7 @@ public class Content
                 boolean closed;
 
                 @Override
-                public void write(boolean last, ReadableBuffer buffer, Callback callback)
+                public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
                 {
                     if (closed)
                     {
@@ -853,31 +855,62 @@ public class Content
                     }
                     try
                     {
-                        buffer.writeTo(input ->
-                            channel.write(input, input, new CompletionHandler<>()
+                        buffer.retain();
+                        buffer.writeTo(new RetainableByteBuffer.Target()
+                        {
+                            @Override
+                            public long write(ByteBuffer input)
                             {
-                                @Override
-                                public void completed(Integer written, ByteBuffer buffer)
-                                {
-                                    if (buffer.hasRemaining())
-                                        channel.write(buffer, buffer, this);
-                                    else
-                                    {
-                                        if (last)
-                                        {
-                                            closed = true;
-                                            IO.close(channel);
-                                        }
-                                        callback.succeeded();
-                                    }
-                                }
+                                return write(channel, input, this);
+                            }
 
-                                @Override
-                                public void failed(Throwable x, ByteBuffer buffer)
+                            private long write(AsynchronousByteChannel channel, ByteBuffer input, RetainableByteBuffer.Target target)
+                            {
+                                channel.write(input, input, new CompletionHandler<>()
                                 {
-                                    callback.failed(x);
-                                }
-                            }));
+                                    @Override
+                                    public void completed(Integer written, ByteBuffer byteBuffer)
+                                    {
+                                        if (byteBuffer.hasRemaining())
+                                        {
+                                            channel.write(byteBuffer, byteBuffer, this);
+                                        }
+                                        else
+                                        {
+                                            if (buffer.hasRemaining())
+                                            {
+                                                try
+                                                {
+                                                    buffer.writeTo(target);
+                                                }
+                                                catch (IOException e)
+                                                {
+                                                    callback.failed(e);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                buffer.release();
+                                                if (last)
+                                                {
+                                                    closed = true;
+                                                    IO.close(channel);
+                                                }
+                                                callback.succeeded();
+                                            }
+                                        }
+                                    }
+
+                                    @Override
+                                    public void failed(Throwable x, ByteBuffer buffer1)
+                                    {
+                                        buffer.release();
+                                        callback.failed(x);
+                                    }
+                                });
+                                return 0;
+                            }
+                        });
                     }
                     catch (Throwable t)
                     {
@@ -927,7 +960,7 @@ public class Content
         }
 
         /**
-         * <p>Blocking version of {@link #write(boolean, ReadableBuffer, Callback)}.</p>
+         * <p>Blocking version of {@link #write(boolean, RetainableByteBuffer, Callback)}.</p>
          *
          * @param sink the sink to write to
          * @param last whether the ByteBuffers are the last to write
@@ -938,7 +971,7 @@ public class Content
         {
             try (Blocker.Callback callback = Blocker.callback())
             {
-                sink.write(last, ReadableBuffer.wrap(byteBuffer), callback);
+                sink.write(last, RetainableByteBuffer.wrap(byteBuffer), callback);
                 callback.block();
             }
         }
@@ -951,11 +984,11 @@ public class Content
          * @param utf8Content the String to write
          * @param callback the callback to notify when the write operation is complete.
          *                 Implementations have the same guarantees for invocation of this
-         *                 callback as for {@link #write(boolean, ReadableBuffer, Callback)}.
+         *                 callback as for {@link #write(boolean, RetainableByteBuffer, Callback)}.
          */
         static void write(Sink sink, boolean last, String utf8Content, Callback callback)
         {
-            sink.write(last, ReadableBuffer.wrap(utf8Content.getBytes(StandardCharsets.UTF_8)), callback);
+            sink.write(last, RetainableByteBuffer.wrap(utf8Content, StandardCharsets.UTF_8), callback);
         }
 
         /**
@@ -969,7 +1002,7 @@ public class Content
          * @param buffer the ReadableBuffer to write
          * @param callback the callback to notify when the write operation is complete
          */
-        void write(boolean last, ReadableBuffer buffer, Callback callback);
+        void write(boolean last, RetainableByteBuffer buffer, Callback callback);
     }
 
     /**
@@ -978,7 +1011,7 @@ public class Content
      * to release the {@code ByteBuffer} back into a pool), or the
      * {@link #release()} method overridden.</p>
      */
-    public interface Chunk extends RetainableByteBuffer
+    public interface Chunk extends org.eclipse.jetty.io.RetainableByteBuffer
     {
         /**
          * <p>An empty chunk implementation.</p>
@@ -995,7 +1028,7 @@ public class Content
             }
 
             @Override
-            public RetainableByteBuffer slice(long length)
+            public org.eclipse.jetty.io.RetainableByteBuffer slice(long length)
             {
                 return this;
             }
@@ -1060,14 +1093,14 @@ public class Content
          * @param last whether the Chunk is the last one
          * @return a buffer as a Chunk
          */
-        static Chunk from(RetainableByteBuffer buffer, boolean last)
+        static Chunk from(org.eclipse.jetty.io.RetainableByteBuffer buffer, boolean last)
         {
             return new ByteBufferChunk.WithRetainableByteBuffer(buffer, last);
         }
 
-        static Chunk from(ReadableBuffer buffer, boolean last)
+        static Chunk from(RetainableByteBuffer buffer, boolean last)
         {
-            if (buffer.remaining() == 0)
+            if (!buffer.hasRemaining())
                 return last ? EOF : EMPTY;
 
             // TODO: do not copy but link the chunk and the buffer.
@@ -1139,9 +1172,14 @@ public class Content
             return last ? EOF : EMPTY;
         }
 
-        static Chunk asChunk(ReadableBuffer buffer, boolean last, Retainable retainable)
+        static Chunk asChunk(RetainableByteBuffer buffer, boolean last, org.eclipse.jetty.io.Retainable retainable)
         {
-            if (buffer.remaining() > 0L)
+            return asChunk(buffer, last, (Retainable)retainable);
+        }
+
+        static Chunk asChunk(RetainableByteBuffer buffer, boolean last, Retainable retainable)
+        {
+            if (buffer.hasRemaining())
             {
                 // TODO retain instead of copy
                 ByteBuffer byteBuffer = BufferUtil.toBuffer(buffer, false);
@@ -1333,6 +1371,9 @@ public class Content
          * @return whether this is the last Chunk
          */
         boolean isLast();
+
+        @Override
+        ByteBuffer getByteBuffer() throws BufferOverflowException;
 
         /**
          * @return an immutable version of this Chunk

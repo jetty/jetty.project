@@ -14,7 +14,7 @@
 package org.eclipse.jetty.fcgi.parser;
 
 import org.eclipse.jetty.fcgi.FCGI;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +51,7 @@ public class HeaderParser
      * @param buffer the bytes to parse
      * @return whether there were enough bytes for a FastCGI header
      */
-    public boolean parse(ReadableBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
         while (buffer.remaining() > 0)
         {
@@ -59,13 +59,13 @@ public class HeaderParser
             {
                 case VERSION:
                 {
-                    version = buffer.getAsInt();
+                    version = buffer.getByteAsInt();
                     state = State.TYPE;
                     break;
                 }
                 case TYPE:
                 {
-                    type = buffer.getAsInt();
+                    type = buffer.getByteAsInt();
                     state = State.REQUEST;
                     break;
                 }
@@ -85,7 +85,7 @@ public class HeaderParser
                 }
                 case REQUEST_BYTES:
                 {
-                    int halfShort = buffer.getAsInt();
+                    int halfShort = buffer.getByteAsInt();
                     request = (request << 8) + halfShort;
                     if (++cursor == 2)
                         state = State.LENGTH;
@@ -107,7 +107,7 @@ public class HeaderParser
                 }
                 case LENGTH_BYTES:
                 {
-                    int halfShort = buffer.getAsInt();
+                    int halfShort = buffer.getByteAsInt();
                     length = (length << 8) + halfShort;
                     if (++cursor == 2)
                         state = State.PADDING;
@@ -115,7 +115,7 @@ public class HeaderParser
                 }
                 case PADDING:
                 {
-                    padding = buffer.getAsInt();
+                    padding = buffer.getByteAsInt();
                     state = State.RESERVED;
                     break;
                 }

@@ -18,7 +18,6 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +29,6 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.quiche.PemPaths;
@@ -42,9 +40,9 @@ import org.eclipse.jetty.quic.quiche.QuicheSession;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -169,15 +167,13 @@ public class ClientQuicheConnection extends QuicheConnection
     {
         connectTask.cancel();
 
-        RetainableByteBuffer buffer = getByteBufferPool().acquire(getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
-        ByteBuffer cipherBuffer = buffer.getByteBuffer();
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
         try
         {
             while (true)
             {
-                BufferUtil.clear(cipherBuffer);
-                SocketAddress remoteAddress = getEndPoint().receive(cipherBuffer);
-                int filled = remoteAddress == EndPoint.EOF ? -1 : cipherBuffer.remaining();
+                SocketAddress remoteAddress = getEndPoint().receive(buffer.clear());
+                long filled = remoteAddress == EndPoint.EOF ? -1 : buffer.remaining();
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled cipher buffer with {} byte(s)", filled);
                 if (filled < 0)
@@ -194,9 +190,15 @@ public class ClientQuicheConnection extends QuicheConnection
                 }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("peer ip address: {}, ciphertext packet size: {}", remoteAddress, cipherBuffer.remaining());
+                    LOG.debug("peer ip address: {}, ciphertext packet size: {}", remoteAddress, buffer.remaining());
 
-                QuicheConnectionId connectionId = QuicheConnectionId.fromPacket(cipherBuffer);
+                QuicheConnectionId[] result = new QuicheConnectionId[1];
+                buffer.writeTo(b ->
+                {
+                    result[0] = QuicheConnectionId.fromPacket(b);
+                    return 0;
+                });
+                QuicheConnectionId connectionId = result[0];
                 if (connectionId == null)
                 {
                     if (LOG.isDebugEnabled())
@@ -208,7 +210,7 @@ public class ClientQuicheConnection extends QuicheConnection
 
                 session.setConnectionId(connectionId);
                 InetSocketAddress inetRemoteAddress = Quiche.toInetSocketAddress(remoteAddress, false);
-                session.feed(inetRemoteAddress, cipherBuffer);
+                session.feed(inetRemoteAddress, buffer);
 
                 if (session.isConnectionEstablished())
                 {
@@ -243,9 +245,9 @@ public class ClientQuicheConnection extends QuicheConnection
     }
 
     @Override
-    public void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers)
+    public void write(Callback callback, SocketAddress remoteAddress, RetainableByteBuffer buffer)
     {
-        getEndPoint().write(callback, remoteAddress, buffers);
+        getEndPoint().write(buffer, remoteAddress, callback);
     }
 
     @Override

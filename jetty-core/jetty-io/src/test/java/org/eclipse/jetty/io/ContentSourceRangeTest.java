@@ -18,7 +18,7 @@ import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.internal.ContentSourceRange;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -57,7 +57,7 @@ public class ContentSourceRangeTest
 
         asyncContent.write(false, BufferUtil.toReadableBuffer("A"), Callback.NOOP);
         asyncContent.write(false, BufferUtil.toReadableBuffer("B"), Callback.NOOP);
-        asyncContent.write(true, ReadableBuffer.EMPTY, Callback.NOOP);
+        asyncContent.write(true, RetainableByteBuffer.empty(), Callback.NOOP);
 
         Content.Chunk c1 = source.read();
         assertThat(c1.getByteBuffer(), equalTo(BufferUtil.toBuffer("A")));
@@ -84,7 +84,7 @@ public class ContentSourceRangeTest
         asyncContent.write(false, BufferUtil.toReadableBuffer("12"), Callback.NOOP);
         asyncContent.write(false, BufferUtil.toReadableBuffer("345"), Callback.NOOP);
         asyncContent.write(false, BufferUtil.toReadableBuffer("XYZ"), Callback.NOOP);
-        asyncContent.write(true, ReadableBuffer.EMPTY, Callback.NOOP);
+        asyncContent.write(true, RetainableByteBuffer.empty(), Callback.NOOP);
 
         Content.Chunk c1 = source.read();
         assertThat(c1.getByteBuffer(), equalTo(BufferUtil.toBuffer("XYZ")));
@@ -145,7 +145,7 @@ public class ContentSourceRangeTest
 
         asyncContent.write(false, BufferUtil.toReadableBuffer("foo"), Callback.NOOP);
         asyncContent.write(false, BufferUtil.toReadableBuffer("bar"), Callback.NOOP);
-        asyncContent.write(true, ReadableBuffer.EMPTY, Callback.NOOP);
+        asyncContent.write(true, RetainableByteBuffer.empty(), Callback.NOOP);
 
         Content.Chunk c1 = source.read();
         assertTrue(c1.isLast());
@@ -161,7 +161,7 @@ public class ContentSourceRangeTest
 
         asyncContent.write(false, BufferUtil.toReadableBuffer("hello"), Callback.NOOP);
         asyncContent.write(false, BufferUtil.toReadableBuffer("world"), Callback.NOOP);
-        asyncContent.write(true, ReadableBuffer.EMPTY, Callback.NOOP);
+        asyncContent.write(true, RetainableByteBuffer.empty(), Callback.NOOP);
 
         Content.Chunk c1 = source.read();
         assertTrue(c1.isLast());

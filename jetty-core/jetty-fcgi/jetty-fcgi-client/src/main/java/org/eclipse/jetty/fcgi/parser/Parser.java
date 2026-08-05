@@ -16,7 +16,7 @@ package org.eclipse.jetty.fcgi.parser;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +72,7 @@ public abstract class Parser
      * @param buffer the bytes to parse
      * @return true if the caller should stop parsing, false if the caller should continue parsing
      */
-    public boolean parse(ReadableBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
         try
         {
@@ -127,7 +127,7 @@ public abstract class Parser
                     {
                         if (buffer.remaining() >= padding)
                         {
-                            buffer.position(buffer.position() + padding);
+                            buffer.readPosition(buffer.readPosition() + padding);
                             reset();
                             if (buffer.remaining() == 0)
                                 return true;
@@ -135,7 +135,7 @@ public abstract class Parser
                         else
                         {
                             padding -= buffer.remaining();
-                            buffer.position(buffer.position() + buffer.remaining());
+                            buffer.readPosition(buffer.readPosition() + buffer.remaining());
                             return false;
                         }
                     }
@@ -145,7 +145,7 @@ public abstract class Parser
         }
         catch (Throwable x)
         {
-            buffer.position(buffer.position() + buffer.remaining());
+            buffer.readPosition(buffer.readPosition() + buffer.remaining());
             listener.onFailure(headerParser.getRequest(), x);
             return true;
         }
@@ -189,9 +189,9 @@ public abstract class Parser
          * @param stream the stream type
          * @param buffer the content bytes
          * @return true to signal to the parser to stop parsing, false to continue parsing
-         * @see Parser#parse(ReadableBuffer)
+         * @see Parser#parse(RetainableByteBuffer)
          */
-        public default boolean onContent(int request, FCGI.StreamType stream, ReadableBuffer buffer)
+        public default boolean onContent(int request, FCGI.StreamType stream, RetainableByteBuffer buffer)
         {
             return false;
         }

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.test.client.transport;
 
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
@@ -42,17 +41,18 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -70,6 +70,8 @@ import static org.hamcrest.Matchers.is;
  */
 public class CustomTransportTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(CustomTransportTest.class);
+
     private static final String CONTENT = "CONTENT";
 
     private Server server;
@@ -136,7 +138,7 @@ public class CustomTransportTest
                         // Remove Content-Encoding, as the content has already been decoded.
                         response.getHeaders().remove(HttpHeader.CONTENT_ENCODING);
                         // Copy the response content.
-                        response.write(true, ReadableBuffer.wrap(r.getContent()), callback);
+                        response.write(true, RetainableByteBuffer.wrap(r.getContent()), callback);
                     }
                     else
                     {
@@ -150,11 +152,15 @@ public class CustomTransportTest
         server.start();
 
         // Make a request to the server, it will be forwarded to the external system in bytes.
-        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(httpClient.newRequest("localhost", connector.getLocalPort())
+        var request = httpClient.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
             .body(new StringRequestContent("REQUEST"))
-            .timeout(5, TimeUnit.SECONDS)
-        ).send();
+            .timeout(5, TimeUnit.SECONDS);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Sending request {}", request);
+
+        CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         // After a while, simulate that the Gateway sends back data on Channel 1.
         Thread.sleep(500);
@@ -185,17 +191,17 @@ public class CustomTransportTest
             {
                 // Create the Pipe to connect client and server.
                 MemoryEndPointPipe pipe = new MemoryEndPointPipe(scheduler, Runnable::run, socketAddress);
+                EndPoint localEndPoint = pipe.getLocalEndPoint();
+                EndPoint remoteEndPoint = pipe.getRemoteEndPoint();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Connected to {}, local={}, remote={}", socketAddress, localEndPoint, remoteEndPoint);
 
                 // Set up the server-side.
-                EndPoint remoteEndPoint = pipe.getRemoteEndPoint();
                 gateway.onConnect(remoteEndPoint);
 
                 // Set up the client-side.
-                EndPoint localEndPoint = pipe.getLocalEndPoint();
-
                 ClientConnector clientConnector = (ClientConnector)context.get(ClientConnector.CONTEXT_KEY);
                 localEndPoint.setIdleTimeout(clientConnector.getIdleTimeout().toMillis());
-
                 Transport transport = (Transport)context.get(Transport.CONTEXT_KEY);
                 Connection connection = transport.newConnection(localEndPoint, context);
                 localEndPoint.setConnection(connection);
@@ -238,20 +244,23 @@ public class CustomTransportTest
             channels.put(channel.id, channel);
 
             // Register for read interest with the EndPoint.
-            EndPointToChannelCallback endPointToChannelCallback = new EndPointToChannelCallback(channel);
-            endPoint.fillInterested(Callback.from(endPointToChannelCallback::iterate));
+            RemoteFillCallback remoteFillCallback = new RemoteFillCallback(channel);
+            endPoint.fillInterested(Callback.from(remoteFillCallback::iterate));
         }
 
-        // Called when there data to read from the Gateway on the given Channel.
+        // Called when there is data to read from the Gateway on the given Channel.
         public void onData(int id)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("received S->G data on channel {}", id);
+
             Channel channel = channels.get(id);
             // Simulate the data to read.
-            channel.data = StandardCharsets.UTF_8.encode("""
+            channel.data = RetainableByteBuffer.wrap("""
                 HTTP/1.1 200 OK
                 Content-Length: %d
-                                    
-                """.formatted(CONTENT.length()) + CONTENT);
+                
+                """.formatted(CONTENT.length()) + CONTENT, StandardCharsets.UTF_8);
             new ChannelToEndPointCallback(channel).iterate();
         }
 
@@ -261,7 +270,7 @@ public class CustomTransportTest
             // hard-coding the id just for the test.
             private final int id = 1;
             private final EndPoint endPoint;
-            private ByteBuffer data;
+            private RetainableByteBuffer data;
 
             public Channel(EndPoint endPoint)
             {
@@ -281,32 +290,32 @@ public class CustomTransportTest
                 // when there is data to read from the Gateway.
             }
 
-            public int read(ByteBuffer buffer)
+            public long read(RetainableByteBuffer.Mutable buffer)
             {
                 // This simulates response data arriving from the Gateway.
                 if (data == null)
                     return 0;
-                ByteBuffer received = data;
+                RetainableByteBuffer received = data;
                 data = null;
-                int length = received.remaining();
-                buffer.put(received).flip();
+                long length = received.remaining();
+                buffer.put(received);
                 return length;
             }
 
-            public void write(Callback callback, ByteBuffer byteBuffer)
+            public void write(RetainableByteBuffer buffer, Callback callback)
             {
-                // Write the buffer and simulate that the write succeeded.
-                byteBuffer.position(byteBuffer.limit());
+                // Consume the buffer and simulate that the write operation succeeded.
+                buffer.consume(buffer.remaining());
                 callback.succeeded();
             }
         }
 
         // Reads from the EndPoint, and writes to the Gateway Channel.
-        private static class EndPointToChannelCallback extends IteratingCallback
+        private static class RemoteFillCallback extends IteratingCallback
         {
             private final Channel channel;
 
-            private EndPointToChannelCallback(Channel channel)
+            private RemoteFillCallback(Channel channel)
             {
                 this.channel = channel;
             }
@@ -315,8 +324,12 @@ public class CustomTransportTest
             protected Action process() throws Throwable
             {
                 EndPoint endPoint = channel.endPoint;
-                ByteBuffer buffer = BufferUtil.allocate(1024);
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
                 int filled = endPoint.fill(buffer);
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("filled C->G {} bytes from {}", filled, endPoint);
+
                 if (filled < 0)
                     return Action.SUCCEEDED;
                 if (filled == 0)
@@ -324,7 +337,11 @@ public class CustomTransportTest
                     endPoint.fillInterested(this);
                     return Action.IDLE;
                 }
-                channel.write(Callback.from(this::iterate), buffer);
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("writing G->S {} bytes on channel {}", filled, channel.id);
+
+                channel.write(buffer, Callback.from(this::iterate));
                 return Action.SCHEDULED;
             }
 
@@ -356,9 +373,13 @@ public class CustomTransportTest
             @Override
             protected Action process()
             {
-                ByteBuffer buffer = ByteBuffer.allocate(1024);
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
                 // Read from the Gateway Channel.
-                int read = channel.read(buffer);
+                long read = channel.read(buffer);
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("read S->G {} bytes from channel {}", read, channel.id);
+
                 if (read < 0)
                     return Action.SUCCEEDED;
                 if (read == 0)
@@ -366,8 +387,12 @@ public class CustomTransportTest
                     channel.demand();
                     return Action.IDLE;
                 }
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("writing G->C {} bytes to {}", read, channel.endPoint);
+
                 // Write to the EndPoint.
-                channel.endPoint.write(this, buffer);
+                channel.endPoint.write(buffer, this);
                 return Action.SCHEDULED;
             }
 

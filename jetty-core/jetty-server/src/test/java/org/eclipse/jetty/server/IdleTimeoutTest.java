@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -65,7 +65,7 @@ public class IdleTimeoutTest
                 SocketChannelEndPoint endpoint = new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
                     @Override
-                    public boolean flush(ReadableBuffer buffer)
+                    public boolean flush(RetainableByteBuffer buffer)
                     {
                         // Fake TCP congestion.
                         return false;
@@ -92,7 +92,7 @@ public class IdleTimeoutTest
             client.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
 
             HttpTester.Request request = HttpTester.newRequest();
-            client.write(request.generate());
+            request.generate().writeTo(client::write);
 
             // The server never writes back anything, but should close the connection.
             client.configureBlocking(false);

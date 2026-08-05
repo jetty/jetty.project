@@ -16,7 +16,7 @@ package org.eclipse.jetty.http2.generator;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HeaderGenerator
 {
@@ -45,9 +45,9 @@ public class HeaderGenerator
         return useDirectByteBuffers;
     }
 
-    public WritableBuffer generate(FrameType frameType, int capacity, int length, int flags, int streamId)
+    public RetainableByteBuffer.Mutable generate(FrameType frameType, int capacity, int length, int flags, int streamId)
     {
-        WritableBuffer wb = bufferPool.acquire(capacity, useDirectByteBuffers);
+        RetainableByteBuffer.Mutable wb = bufferPool.acquire(capacity, useDirectByteBuffers);
 
         wb.putInt((length & 0x00_FF_FF_FF) << 8 | (frameType.getType() & 0xFF));
         wb.put((byte)flags);

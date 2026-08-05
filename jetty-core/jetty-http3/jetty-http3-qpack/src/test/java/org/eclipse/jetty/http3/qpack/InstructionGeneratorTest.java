@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.http3.qpack;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,13 +28,13 @@ import static org.hamcrest.Matchers.equalToIgnoringCase;
 
 public class InstructionGeneratorTest
 {
-    private final ByteBufferPool _bufferPool = ByteBufferPool.NON_POOLING;
+    private final WritableBufferPool _bufferPool = WritableBufferPool.NON_POOLING;
 
     private String toHexString(Instruction instruction)
     {
-        RetainableByteBuffer.DynamicCapacity lease = new RetainableByteBuffer.DynamicCapacity();
-        instruction.encode(_bufferPool, lease);
-        return BufferUtil.toHexString(lease.getByteBuffer());
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        instruction.encode(_bufferPool, accumulator);
+        return StringUtil.toHexString(RetainableByteBuffer.wrap(accumulator).getArray());
     }
 
     @Test

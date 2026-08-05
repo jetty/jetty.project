@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -40,14 +39,14 @@ import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
@@ -58,6 +57,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -97,8 +97,6 @@ public class SocketChannelEndPointTest
     private SelectorManager _manager;
     private volatile EndPoint _lastEndPoint;
     private CountDownLatch _lastEndPointLatch;
-
-    // Must be volatile or the test may fail spuriously
     private final AtomicInteger _blockAt = new AtomicInteger(0);
     private final AtomicInteger _writeCount = new AtomicInteger(1);
 
@@ -106,7 +104,7 @@ public class SocketChannelEndPointTest
     {
         _scenario = scenario;
         _threadPool = new QueuedThreadPool();
-        _scheduler = new TimerScheduler();
+        _scheduler = new ScheduledExecutorScheduler();
         _manager = new ScenarioSelectorManager(_threadPool, _scheduler);
 
         _lastEndPointLatch = new CountDownLatch(1);
@@ -142,10 +140,10 @@ public class SocketChannelEndPointTest
                 OutputStream clientOutputStream = client.getOutputStream();
                 InputStream clientInputStream = client.getInputStream();
 
-                // Write client to server
-                clientOutputStream.write("HelloWorld".getBytes(StandardCharsets.UTF_8));
+                // Write client to server.
+                clientOutputStream.write("HelloWorld".getBytes(UTF_8));
 
-                // Verify echo server to client
+                // Verify echo server to client.
                 for (char c : "HelloWorld".toCharArray())
                 {
                     int b = clientInputStream.read();
@@ -153,17 +151,17 @@ public class SocketChannelEndPointTest
                     assertEquals(c, (char)b);
                 }
 
-                // wait for read timeout
+                // Wait for read timeout.
                 client.setSoTimeout(500);
                 long start = NanoTime.now();
-                //noinspection ResultOfMethodCallIgnored
+
                 assertThrows(SocketTimeoutException.class, clientInputStream::read);
                 assertThat(NanoTime.millisSince(start), greaterThanOrEqualTo(400L));
 
-                // write then shutdown
-                clientOutputStream.write("Goodbye Cruel TLS".getBytes(StandardCharsets.UTF_8));
+                // Write then shutdown.
+                clientOutputStream.write("Goodbye Cruel TLS".getBytes(UTF_8));
 
-                // Verify echo server to client
+                // Verify echo server to client.
                 for (char c : "Goodbye Cruel TLS".toCharArray())
                 {
                     int b = clientInputStream.read();
@@ -202,7 +200,7 @@ public class SocketChannelEndPointTest
                 InputStream clientInputStream = client.getInputStream();
 
                 // Write client to server
-                clientOutputStream.write("HelloWorld".getBytes(StandardCharsets.UTF_8));
+                clientOutputStream.write("HelloWorld".getBytes(UTF_8));
 
                 // Verify echo server to client
                 for (char c : "HelloWorld".toCharArray())
@@ -214,12 +212,12 @@ public class SocketChannelEndPointTest
 
                 // wait for read timeout
                 long start = NanoTime.now();
-                //noinspection ResultOfMethodCallIgnored
+
                 assertThrows(SocketTimeoutException.class, clientInputStream::read);
                 assertThat(NanoTime.millisSince(start), greaterThanOrEqualTo(400L));
 
                 // write then shutdown
-                clientOutputStream.write("Goodbye Cruel TLS".getBytes(StandardCharsets.UTF_8));
+                clientOutputStream.write("Goodbye Cruel TLS".getBytes(UTF_8));
                 client.shutdownOutput();
 
                 // Verify echo server to client
@@ -255,7 +253,7 @@ public class SocketChannelEndPointTest
 
             // Write 8 and cause block waiting for 10
             _blockAt.set(10);
-            clientOutputStream.write("12345678".getBytes(StandardCharsets.UTF_8));
+            clientOutputStream.write("12345678".getBytes(UTF_8));
             clientOutputStream.flush();
 
             assertTrue(_lastEndPointLatch.await(1, TimeUnit.SECONDS));
@@ -263,12 +261,12 @@ public class SocketChannelEndPointTest
             Thread.sleep((11 * specifiedTimeout) / 10);
 
             long start = NanoTime.now();
-            //noinspection ResultOfMethodCallIgnored
+
             assertThrows(SocketTimeoutException.class, clientInputStream::read);
             assertThat(NanoTime.millisSince(start), greaterThanOrEqualTo(3L * specifiedTimeout / 4));
 
             // write remaining characters
-            clientOutputStream.write("90ABCDEF".getBytes(StandardCharsets.UTF_8));
+            clientOutputStream.write("90ABCDEF".getBytes(UTF_8));
             clientOutputStream.flush();
 
             // Verify echo server to client
@@ -296,8 +294,8 @@ public class SocketChannelEndPointTest
                 _manager.accept(server);
                 final int writes = 200000;
 
-                final byte[] bytes = "HelloWorld-".getBytes(StandardCharsets.UTF_8);
-                byte[] count = "0\n".getBytes(StandardCharsets.UTF_8);
+                final byte[] bytes = "HelloWorld-".getBytes(UTF_8);
+                byte[] count = "0\n".getBytes(UTF_8);
                 BufferedOutputStream out = new BufferedOutputStream(client.getOutputStream());
                 final CountDownLatch latch = new CountDownLatch(writes);
                 final InputStream in = new BufferedInputStream(client.getInputStream());
@@ -397,7 +395,7 @@ public class SocketChannelEndPointTest
                 // Write client to server
                 _writeCount.set(10000);
                 String data = "Now is the time for all good men to come to the aid of the party";
-                client.getOutputStream().write(data.getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write(data.getBytes(UTF_8));
                 BufferedInputStream in = new BufferedInputStream(client.getInputStream());
 
                 int byteNum = 0;
@@ -483,7 +481,7 @@ public class SocketChannelEndPointTest
                         _manager.accept(server);
 
                         // Write client to server
-                        client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
+                        client.getOutputStream().write("HelloWorld".getBytes(UTF_8));
                         client.getOutputStream().flush();
                         client.shutdownOutput();
 
@@ -552,7 +550,7 @@ public class SocketChannelEndPointTest
                 _manager.accept(server);
 
                 // Write client to server
-                client.getOutputStream().write("HelloWorld".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("HelloWorld".getBytes(UTF_8));
                 client.getOutputStream().flush();
                 client.shutdownOutput();
 
@@ -661,18 +659,15 @@ public class SocketChannelEndPointTest
     {
         private static final Logger LOG = LoggerFactory.getLogger(TestConnection.class);
 
-        volatile FutureCallback _blockingRead;
-        final AtomicInteger _blockAt;
-        final AtomicInteger _writeCount;
-        // volatile int _blockAt = 0;
-        ByteBuffer _in = BufferUtil.allocate(32 * 1024);
-        ByteBuffer _out = BufferUtil.allocate(32 * 1024);
-        final CountDownLatch _latch;
+        private final AtomicInteger _blockAt;
+        private final AtomicInteger _writeCount;
+        private final RetainableByteBuffer.Mutable _in = RetainableByteBuffer.Mutable.allocate(32 * 1024, false);
+        private final RetainableByteBuffer.Mutable _out = RetainableByteBuffer.Mutable.allocate(32 * 1024, false);
+        private volatile FutureCallback _blockingRead;
 
-        public TestConnection(EndPoint endp, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
+        public TestConnection(EndPoint endPoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
         {
-            super(endp, executor);
-            _latch = null;
+            super(endPoint, executor);
             this._blockAt = blockAt;
             this._writeCount = writeCount;
         }
@@ -700,18 +695,6 @@ public class SocketChannelEndPointTest
         @Override
         public void onFillable()
         {
-            if (_latch != null)
-            {
-                try
-                {
-                    _latch.await();
-                }
-                catch (InterruptedException e)
-                {
-                    e.printStackTrace();
-                }
-            }
-
             Callback blocking = _blockingRead;
             if (blocking != null)
             {
@@ -728,10 +711,11 @@ public class SocketChannelEndPointTest
                 {
                     progress = false;
 
-                    // Fill the input buffer with everything available
-                    BufferUtil.compact(_in);
-                    if (BufferUtil.isFull(_in))
-                        throw new IllegalStateException("FULL " + BufferUtil.toDetailString(_in));
+                    // Fill the input buffer with everything available.
+                    _in.compact();
+                    _out.compact();
+                    if (_in.space() == 0)
+                        throw new IllegalStateException("FULL " + _in);
                     int filled = endPoint.fill(_in);
                     if (filled > 0)
                         progress = true;
@@ -746,21 +730,23 @@ public class SocketChannelEndPointTest
                         progress |= filled > 0;
                     }
 
-                    // Copy to the out buffer
-                    if (BufferUtil.hasContent(_in) && BufferUtil.append(_out, _in) > 0)
+                    // Copy to the out buffer.
+                    if (_in.hasRemaining() && _out.append(_in) > 0)
                         progress = true;
 
-                    // Blocking writes
-                    if (BufferUtil.hasContent(_out))
+                    // Blocking writes.
+                    if (_out.hasRemaining())
                     {
-                        ByteBuffer out = _out.duplicate();
-                        BufferUtil.clear(_out);
+                        RetainableByteBuffer out = _out.sliceAndConsume(_out.remaining());
                         for (int i = 0; i < _writeCount.get(); i++)
                         {
                             FutureCallback blockingWrite = new FutureCallback();
-                            endPoint.write(blockingWrite, out.asReadOnlyBuffer());
+                            RetainableByteBuffer slice = out.slice();
+                            endPoint.write(slice, blockingWrite);
                             blockingWrite.get();
+                            slice.release();
                         }
+                        out.release();
                         progress = true;
                     }
 
@@ -774,17 +760,16 @@ public class SocketChannelEndPointTest
             }
             catch (ExecutionException e)
             {
-                // Timeout does not close, so echo exception then shutdown
+                // Timeout does not close, so echo the exception then shutdown.
                 try
                 {
                     FutureCallback blockingWrite = new FutureCallback();
-                    endPoint.write(blockingWrite, BufferUtil.toBuffer("EE: " + BufferUtil.toString(_in)));
+                    endPoint.write(RetainableByteBuffer.wrap("EE: " + _in, UTF_8), blockingWrite);
                     blockingWrite.get();
                     endPoint.shutdownOutput();
                 }
-                catch (Exception e2)
+                catch (Exception ignored)
                 {
-                    // e2.printStackTrace();
                 }
             }
             catch (InterruptedException | EofException e)

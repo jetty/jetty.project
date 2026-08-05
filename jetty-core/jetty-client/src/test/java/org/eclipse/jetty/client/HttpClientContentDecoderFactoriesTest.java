@@ -19,7 +19,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -27,7 +26,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -48,7 +47,7 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().add(HttpHeader.CONTENT_ENCODING, "UPPERCASE");
-                response.write(true, ReadableBuffer.wrap("**THE ANSWER IS FORTY TWO**".getBytes(US_ASCII)), callback);
+                response.write(true, RetainableByteBuffer.wrap("**THE ANSWER IS FORTY TWO**".getBytes(US_ASCII)), callback);
                 return true;
             }
         });
@@ -70,11 +69,11 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
                         byte b = byteBufferIn.get();
                         if (b == '*')
                         {
-                            RetainableByteBuffer.Mutable empty = bufferPool.acquire(0, true);
+                            org.eclipse.jetty.io.RetainableByteBuffer.Mutable empty = bufferPool.acquire(0, true);
                             return Content.Chunk.asChunk(empty.getByteBuffer(), false, empty);
                         }
 
-                        RetainableByteBuffer bufferOut = bufferPool.acquire(1, true);
+                        org.eclipse.jetty.io.RetainableByteBuffer bufferOut = bufferPool.acquire(1, true);
                         ByteBuffer byteBufferOut = bufferOut.getByteBuffer();
                         int pos = BufferUtil.flipToFill(byteBufferOut);
                         byteBufferOut.put(StringUtil.asciiToLowerCase(b));
@@ -104,7 +103,7 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().add(HttpHeader.CONTENT_ENCODING, "UPPERCASE");
-                response.write(true, ReadableBuffer.wrap("THE ANSWER IS FORTY TWO".getBytes(US_ASCII)), callback);
+                response.write(true, RetainableByteBuffer.wrap("THE ANSWER IS FORTY TWO".getBytes(US_ASCII)), callback);
                 return true;
             }
         });

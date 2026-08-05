@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
@@ -1542,7 +1542,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         }
 
         @Override
-        public void send(MetaData.Request metadataRequest, MetaData.Response metadataResponse, boolean last, ReadableBuffer content, Callback callback)
+        public void send(MetaData.Request metadataRequest, MetaData.Response metadataResponse, boolean last, RetainableByteBuffer content, Callback callback)
         {
             if (metadataResponse != null)
             {

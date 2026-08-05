@@ -77,9 +77,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -122,15 +120,14 @@ public class ResponseTest
 
         _server = new Server();
         _context = new ContextHandler(_server);
-        Scheduler scheduler = new TimerScheduler();
         HttpConfiguration config = new HttpConfiguration();
-        LocalConnector connector = new LocalConnector(_server, null, scheduler, null, 1, new HttpConnectionFactory(config));
+        LocalConnector connector = new LocalConnector(_server, new HttpConnectionFactory(config));
         _server.addConnector(connector);
         _context.setHandler(new DumpHandler());
         _server.start();
 
         SocketAddress local = InetSocketAddress.createUnresolved(HOST, PORT);
-        EndPoint endPoint = new ByteArrayEndPoint(scheduler, 5000)
+        EndPoint endPoint = new ByteArrayEndPoint(connector.getScheduler(), 5000)
         {
             @Override
             public SocketAddress getLocalSocketAddress()
@@ -2462,7 +2459,7 @@ public class ResponseTest
         }
 
         @Override
-        public void write(boolean last, ReadableBuffer content, Callback callback)
+        public void write(boolean last, RetainableByteBuffer content, Callback callback)
         {
             if (content != null)
             {

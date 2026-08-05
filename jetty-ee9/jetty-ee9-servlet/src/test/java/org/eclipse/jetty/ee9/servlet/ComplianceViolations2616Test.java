@@ -109,7 +109,7 @@ public class ComplianceViolations2616Test
         httpConfig.addComplianceViolationListener(new ComplianceViolation.CapturingListener());
 
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(httpConfig);
-        connector = new LocalConnector(server, null, null, null, -1, httpConnectionFactory);
+        connector = new LocalConnector(server, httpConnectionFactory);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();
@@ -160,7 +160,7 @@ public class ComplianceViolations2616Test
             \r
             """;
 
-        String response = connector.getResponse(request);
+        String response = connector.getResponseAsString(request);
         assertThat("Response status", response, containsString("HTTP/1.1 200 OK"));
         assertThat("Response headers", response, not(containsString("X-Http-Violation-0")));
         assertThat("Response body", response, containsString("Locale = ["));
@@ -183,7 +183,7 @@ public class ComplianceViolations2616Test
                 \r
                 """;
 
-            String response = connector.getResponse(request);
+            String response = connector.getResponseAsString(request);
             assertThat("Response status", response, containsString("HTTP/1.1 400 Bad Request"));
             assertThat("Response body", response, containsString("Invalid quoted-quality"));
         }
@@ -201,7 +201,7 @@ public class ComplianceViolations2616Test
             \r
             """;
 
-        String response = connector.getResponse(request);
+        String response = connector.getResponseAsString(request);
         assertThat("Response status", response, containsString("HTTP/1.1 200 OK"));
         assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));
         assertThat("Response body", response, containsString("[Name] = []"));
@@ -219,7 +219,7 @@ public class ComplianceViolations2616Test
             \r
             """;
 
-        String response = connector.getResponse(request);
+        String response = connector.getResponseAsString(request);
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
         assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));
         assertThat("Response body", response, containsString("[Name] = []"));
@@ -238,7 +238,7 @@ public class ComplianceViolations2616Test
             \r
             """;
 
-        String response = connector.getResponse(request);
+        String response = connector.getResponseAsString(request);
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
         assertThat("Response headers", response, containsString("X-Http-Violation-0: Line Folding not supported"));
         assertThat("Response body", response, containsString("[Name] = [Some Value]"));

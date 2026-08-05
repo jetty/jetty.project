@@ -18,7 +18,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +78,7 @@ public class ServerParser extends Parser
     }
 
     @Override
-    public void parse(ReadableBuffer buffer)
+    public void parse(RetainableByteBuffer buffer)
     {
         try
         {
@@ -104,7 +104,7 @@ public class ServerParser extends Parser
                             return;
                         if (getFrameType() != FrameType.SETTINGS.getType() || hasFlag(Flags.ACK))
                         {
-                            buffer.position(buffer.position() + buffer.remaining());
+                            buffer.readPosition(buffer.readPosition() + buffer.remaining());
                             notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_preface");
                             return;
                         }
@@ -130,7 +130,7 @@ public class ServerParser extends Parser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Parse error", x);
-            buffer.position(buffer.position() + buffer.remaining());
+            buffer.readPosition(buffer.readPosition() + buffer.remaining());
             notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "parser_error");
         }
     }

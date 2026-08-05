@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;
@@ -231,9 +231,9 @@ public abstract class WriteFlusher
     {
         private final Callback _callback;
         private final SocketAddress _address;
-        private final ReadableBuffer _buffer;
+        private final RetainableByteBuffer _buffer;
 
-        private PendingState(Callback callback, SocketAddress address, ReadableBuffer buffer)
+        private PendingState(Callback callback, SocketAddress address, RetainableByteBuffer buffer)
         {
             super(StateType.PENDING);
             _address = address;
@@ -284,12 +284,12 @@ public abstract class WriteFlusher
      * @param callback the callback to call on either failed or complete
      * @throws WritePendingException if unable to write due to prior pending write
      */
-    public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
+    public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
     {
         write(buffer, null, callback);
     }
 
-    public void write(ReadableBuffer buffer, SocketAddress address, Callback callback) throws WritePendingException
+    public void write(RetainableByteBuffer buffer, SocketAddress address, Callback callback) throws WritePendingException
     {
         Objects.requireNonNull(callback);
 
@@ -408,14 +408,14 @@ public abstract class WriteFlusher
             return; // failure already handled.
 
         Callback callback = pending._callback;
-        ReadableBuffer buffer = pending._buffer;
+        RetainableByteBuffer buffer = pending._buffer;
         try
         {
             SocketAddress address = pending._address;
 
             flush(address, buffer);
 
-            if (buffer.remaining() != 0L)
+            if (buffer.hasRemaining())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("flushed incomplete {} {}", buffer, this);
@@ -450,16 +450,16 @@ public abstract class WriteFlusher
      * @return true if the buffer was fully flushed
      * @throws IOException if unable to flush
      */
-    protected boolean flush(SocketAddress address, ReadableBuffer buffer) throws IOException
+    protected boolean flush(SocketAddress address, RetainableByteBuffer buffer) throws IOException
     {
-        if (buffer.remaining() == 0L)
+        if (!buffer.hasRemaining())
         {
             LOG.debug("Flushed=0 written=0 remaining=0 {}", this);
             return true;
         }
 
         boolean progress = true;
-        while (progress && buffer.remaining() != 0L)
+        while (progress && buffer.hasRemaining())
         {
             long before = buffer.remaining();
             boolean flushed = address == null ? _endPoint.flush(buffer) : _endPoint.send(address, buffer);

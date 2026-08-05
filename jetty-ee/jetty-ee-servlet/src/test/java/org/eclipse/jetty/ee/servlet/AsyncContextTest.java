@@ -94,7 +94,7 @@ public class AsyncContextTest
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
         String responseBody = response.getContent();
@@ -136,9 +136,9 @@ public class AsyncContextTest
                 \r
                 """;
 
-        try (LocalConnector.LocalEndPoint localEndPoint = _connector.connect())
+        try (LocalConnector.LocalEndPoint localEndPoint = _connector.connectToServer())
         {
-            localEndPoint.addInputAndExecute(request);
+            localEndPoint.writeRequestString(request);
             assertThat(localEndPoint.getResponse(false, 1, TimeUnit.SECONDS), nullValue());
 
             await().atMost(5, TimeUnit.SECONDS).until(asyncContextRef::get, not(nullValue())).complete();
@@ -189,7 +189,7 @@ public class AsyncContextTest
                 Connection: close\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
 
         // OK b/c exception was thrown after AsyncContext.dispatch() was called
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
@@ -229,7 +229,7 @@ public class AsyncContextTest
             Connection: close\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
 
         // OK b/c exception was thrown after AsyncContext.complete() was called
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
@@ -269,7 +269,7 @@ public class AsyncContextTest
             Connection: close\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
         String responseBody = response.getContent();
@@ -291,7 +291,7 @@ public class AsyncContextTest
             "Content-Type: application/x-www-form-urlencoded\r\n" +
             "Connection: close\r\n" +
             "\r\n";
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
         String responseBody = response.getContent();
@@ -326,7 +326,7 @@ public class AsyncContextTest
             Connection: close\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
         String responseBody = response.getContent();
@@ -373,7 +373,7 @@ public class AsyncContextTest
             Connection: close\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
         String responseBody = response.getContent();
@@ -438,7 +438,7 @@ public class AsyncContextTest
             "Content-Type: application/x-www-form-urlencoded\r\n" +
             "Connection: close\r\n" +
             "\r\n";
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
         String responseBody = response.getContent();
@@ -463,7 +463,7 @@ public class AsyncContextTest
             "Content-Type: application/x-www-form-urlencoded\r\n" +
             "Connection: close\r\n" +
             "\r\n";
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
         String responseBody = response.getContent();
@@ -495,7 +495,7 @@ public class AsyncContextTest
             "Connection: close\r\n" +
             "\r\n";
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
         String responseBody = response.getContent();
@@ -520,7 +520,7 @@ public class AsyncContextTest
             "Connection: close\r\n" +
             "\r\n";
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
         String responseBody = response.getContent();
@@ -554,7 +554,7 @@ public class AsyncContextTest
                 "Connection: close\r\n" +
                 "\r\n";
 
-        String responseString = _connector.getResponse(request);
+        String responseString = _connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(responseString);
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
 
@@ -577,7 +577,7 @@ public class AsyncContextTest
             "Connection: close\r\n" +
             "\r\n";
 
-        String responseString = _connector.getResponse(request);
+        String responseString = _connector.getResponseAsString(request);
 
         HttpTester.Response response = HttpTester.parseResponse(responseString);
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_OK));
@@ -663,7 +663,7 @@ public class AsyncContextTest
             "Content-Type: application/x-www-form-urlencoded\r\n" +
             "Connection: close\r\n" +
             "\r\n";
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR));
 
         String responseBody = response.getContent();
@@ -726,7 +726,7 @@ public class AsyncContextTest
             "Content-Type: application/x-www-form-urlencoded\r\n" +
             "Connection: close\r\n" +
             "\r\n";
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat("Response.status", response.getStatus(), is(HttpServletResponse.SC_INTERNAL_SERVER_ERROR));
 
         String responseBody = response.getContent();
@@ -783,7 +783,7 @@ public class AsyncContextTest
             \r
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
 
         assertThat(response, notNullValue());
         assertThat(response.getStatus(), is(488));

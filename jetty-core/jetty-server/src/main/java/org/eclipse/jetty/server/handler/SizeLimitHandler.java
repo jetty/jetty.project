@@ -26,7 +26,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>A {@link Handler} that can limit the size of message bodies in requests and responses.</p>
@@ -141,7 +141,7 @@ public class SizeLimitHandler extends Handler.Wrapper
         }
 
         @Override
-        public void write(boolean last, ReadableBuffer content, Callback callback)
+        public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
             if (_failure != null)
             {
@@ -149,19 +149,19 @@ public class SizeLimitHandler extends Handler.Wrapper
                 return;
             }
 
-            if (content != null && content.remaining() > 0)
+            if (buffer != null && buffer.hasRemaining())
             {
-                if (_responseLimit >= 0 && (_written + content.remaining())  > _responseLimit)
+                if (_responseLimit >= 0 && (_written + buffer.remaining())  > _responseLimit)
                 {
                     _failure = new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500,
-                        "Response body is too large: %d>%d".formatted(_written + content.remaining(), _responseLimit));
+                        "Response body is too large: %d>%d".formatted(_written + buffer.remaining(), _responseLimit));
                     callback.failed(_failure);
                     return;
                 }
-                _written += content.remaining();
+                _written += buffer.remaining();
             }
 
-            super.write(last, content, callback);
+            super.write(last, buffer, callback);
         }
     }
 }

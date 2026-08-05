@@ -13,12 +13,9 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -46,7 +43,7 @@ public class Parser
 
     private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
-    private final ByteBufferPool bufferPool;
+    private final WritableBufferPool bufferPool;
     private final Configuration configuration;
 
     // State specific
@@ -55,20 +52,20 @@ public class Parser
     private int cursor;
     private byte[] mask;
     private int payloadLength;
-    private RetainableByteBuffer aggregate;
+    private RetainableByteBuffer.Mutable aggregate;
 
-    public Parser(ByteBufferPool bufferPool)
+    public Parser(WritableBufferPool bufferPool)
     {
         this(bufferPool, new Configuration.ConfigurationCustomizer());
     }
 
-    public Parser(ByteBufferPool bufferPool, Configuration configuration)
+    public Parser(WritableBufferPool bufferPool, Configuration configuration)
     {
         this.bufferPool = bufferPool;
         this.configuration = configuration;
     }
 
-    public int getPayloadLength()
+    public long getPayloadLength()
     {
         return payloadLength;
     }
@@ -90,7 +87,7 @@ public class Parser
      * @return Frame or null if not enough data for a complete frame.
      * @throws WebSocketException if unable to parse properly
      */
-    public Frame.Parsed parse(ByteBuffer buffer) throws WebSocketException
+    public Frame.Parsed parse(org.eclipse.jetty.util.buffer.RetainableByteBuffer buffer) throws WebSocketException
     {
         try
         {
@@ -98,7 +95,7 @@ public class Parser
             while (buffer.hasRemaining())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} Parsing {}", this, BufferUtil.toDetailString(buffer));
+                    LOG.debug("{} Parsing {}", this, buffer);
 
                 switch (state)
                 {
@@ -234,9 +231,9 @@ public class Parser
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} Parse Error {}", this, BufferUtil.toDetailString(buffer), t);
+                LOG.debug("{} Parse Error {}", this, buffer, t);
 
-            buffer.position(buffer.limit()); // consume remaining
+            buffer.consume(buffer.remaining());
 
             // let session know
             WebSocketException wse;
@@ -293,12 +290,21 @@ public class Parser
         }
     }
 
-    protected Frame.Parsed newFrame(byte firstByte, byte[] mask, ByteBuffer payload, Runnable releaser)
+    protected Frame.Parsed newFrame(byte firstByte, byte[] mask, RetainableByteBuffer payload, Runnable releaser)
     {
-        return new Frame.Parsed(firstByte, mask, payload, releaser);
+        if (payload == null)
+            return new Frame.Parsed(firstByte, mask, null, releaser);
+
+        Frame.Parsed[] result = new Frame.Parsed[1];
+        payload.quietWriteTo(b ->
+        {
+            result[0] = new Frame.Parsed(firstByte, mask, b, releaser);
+            return b.remaining();
+        });
+        return result[0];
     }
 
-    private Frame.Parsed autoFragment(ByteBuffer buffer, int fragmentSize)
+    private Frame.Parsed autoFragment(RetainableByteBuffer buffer, int fragmentSize)
     {
         payloadLength -= fragmentSize;
 
@@ -313,26 +319,24 @@ public class Parser
             nextMask[3] = mask[(3 + shift) % 4];
         }
 
-        ByteBuffer content = buffer.slice();
-        content.limit(fragmentSize);
-        buffer.position(buffer.position() + fragmentSize);
+        RetainableByteBuffer content = buffer.sliceAndConsume(fragmentSize);
+        Frame.Parsed frame = newFrame((byte)(firstByte & 0x7F), mask, content, content::release);
 
-        final Frame.Parsed frame = newFrame((byte)(firstByte & 0x7F), mask, content, null);
         mask = nextMask;
         firstByte = (byte)((firstByte & 0x80) | OpCode.CONTINUATION);
         state = State.FRAGMENT;
         return frame;
     }
 
-    private Frame.Parsed parsePayload(ByteBuffer buffer)
+    private Frame.Parsed parsePayload(RetainableByteBuffer buffer)
     {
         if (payloadLength == 0)
             return null;
 
-        if (BufferUtil.isEmpty(buffer))
+        if (!buffer.hasRemaining())
             return null;
 
-        int available = buffer.remaining();
+        int available = (int)buffer.remaining();
         boolean isDataFrame = OpCode.isDataFrame(OpCode.getOpCode(firstByte));
 
         // Always autoFragment data frames if payloadLength is greater than maxFrameSize.
@@ -345,69 +349,66 @@ public class Parser
         {
             if (available < payloadLength)
             {
-                // Not enough data to complete this frame, can we auto-fragment?
+                // Not enough payload to complete this frame, can we auto-fragment?
                 if (configuration.isAutoFragment() && isDataFrame)
-                    return autoFragment(buffer, available);
+                    return autoFragment(buffer, (int)available);
 
-                // No space in the buffer, so we have to copy the partial payload.
+                // Not enough payload, so we have to copy the partial payload.
                 // The size of this allocation is limited by the maxFrameSize.
                 aggregate = bufferPool.acquire(payloadLength, false);
-                BufferUtil.append(aggregate.getByteBuffer(), buffer);
+                aggregate.put(buffer);
                 return null;
             }
 
             if (available == payloadLength)
             {
-                // All the available data is for this frame and completes it.
-                Frame.Parsed frame = newFrame(firstByte, mask, buffer.slice(), null);
-                buffer.position(buffer.limit());
+                // All the available payload is for this frame and completes it.
+                RetainableByteBuffer slice = buffer.sliceAndConsume(payloadLength);
+                Frame.Parsed frame = newFrame(firstByte, mask, slice, null);
+                slice.release();
                 state = State.START;
                 return frame;
             }
 
-            // The buffer contains all the data for this frame and for subsequent frames.
+            // The buffer contains data for this frame and for subsequent frames.
             // Copy just the first part of the buffer as the frame payload.
-            int limit = buffer.limit();
-            int end = buffer.position() + payloadLength;
-            buffer.limit(end);
-            final Frame.Parsed frame = newFrame(firstByte, mask, buffer.slice(), null);
-            buffer.position(end);
-            buffer.limit(limit);
+            RetainableByteBuffer slice = buffer.sliceAndConsume(payloadLength);
+            Frame.Parsed frame = newFrame(firstByte, mask, slice, null);
+            slice.release();
             state = State.START;
             return frame;
         }
         else
         {
-            int aggregated = aggregate.remaining();
+            int aggregated = (int)aggregate.remaining();
             int expecting = payloadLength - aggregated;
 
             if (available < expecting)
             {
-                // not enough data to complete this frame, just copy it
-                BufferUtil.append(aggregate.getByteBuffer(), buffer);
+                // Not enough payload to complete this frame, just copy it.
+                aggregate.put(buffer);
                 return null;
             }
 
             if (available == expecting)
             {
-                // All the available data is for this frame and completes it
-                BufferUtil.append(aggregate.getByteBuffer(), buffer);
+                // All the available payload is for this frame and completes it.
+                aggregate.put(buffer);
                 state = State.START;
                 // Capture the current aggregate to release it.
                 RetainableByteBuffer aggregate = this.aggregate;
-                return newFrame(firstByte, mask, aggregate.getByteBuffer(), aggregate::release);
+                return newFrame(firstByte, mask, aggregate, aggregate::release);
             }
 
-            // The buffer contains data for this frame and subsequent frames
-            // Copy the first part of the buffer to the frame and complete it
-            int limit = buffer.limit();
-            buffer.limit(buffer.position() + expecting);
-            BufferUtil.append(aggregate.getByteBuffer(), buffer);
-            buffer.limit(limit);
+            // The buffer contains data for this frame and subsequent frames.
+            // Copy just the first part of the buffer as the frame payload.
+            RetainableByteBuffer slice = buffer.sliceAndConsume(expecting);
+            aggregate.put(slice);
+            slice.release();
             state = State.START;
             // Capture the current aggregate to release it.
             RetainableByteBuffer aggregate = this.aggregate;
-            return newFrame(firstByte, mask, aggregate.getByteBuffer(), aggregate::release);
+            return newFrame(firstByte, mask, aggregate, aggregate::release);
         }
     }
 

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,7 +36,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,7 +88,6 @@ public class ResponseTest
         @Override
         public void setStatus(int code)
         {
-
         }
 
         @Override
@@ -107,7 +105,6 @@ public class ResponseTest
         @Override
         public void setTrailersSupplier(Supplier<HttpFields> trailers)
         {
-
         }
 
         @Override
@@ -131,7 +128,6 @@ public class ResponseTest
         @Override
         public void reset()
         {
-
         }
 
         @Override
@@ -141,9 +137,8 @@ public class ResponseTest
         }
 
         @Override
-        public void write(boolean last, ReadableBuffer byteBuffer, Callback callback)
+        public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
-
         }
     }
 
@@ -231,7 +226,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
@@ -308,7 +303,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.get(HttpHeader.SERVER), notNullValue());
         assertThat(response.get(HttpHeader.DATE), notNullValue());
@@ -374,8 +369,8 @@ public class ResponseTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat(response.getStatus(), is(code == 0 ? HttpStatus.FOUND_302 : code));
 
@@ -442,7 +437,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
 
@@ -452,7 +447,7 @@ public class ResponseTest
                 Connection: close\r
                 \r
                 """;
-        response = HttpTester.parseResponse(connector.getResponse(request));
+        response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
     }
@@ -480,7 +475,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
         assertThat(response.get(HttpHeader.CONTENT_TYPE), is("exotic"));
@@ -511,7 +506,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
         assertThat(response.get(HttpHeader.CONTENT_TYPE), equalToIgnoringCase(MimeTypes.Type.TEXT_HTML_8859_1.asString()));
@@ -539,7 +534,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/p%61th/somewh%65r%65?else+entirely"));
     }
@@ -565,7 +560,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
 
@@ -575,7 +570,7 @@ public class ResponseTest
                 Connection: close\r
                 \r
                 """;
-        response = HttpTester.parseResponse(connector.getResponse(request));
+        response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
     }
@@ -601,7 +596,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
 
@@ -611,7 +606,7 @@ public class ResponseTest
                 Connection: close\r
                 \r
                 """;
-        response = HttpTester.parseResponse(connector.getResponse(request));
+        response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/path/somewhere/else"));
 
@@ -621,7 +616,7 @@ public class ResponseTest
                 Connection: close\r
                 \r
                 """;
-        response = HttpTester.parseResponse(connector.getResponse(request));
+        response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/path/somewhere/else"));
 
@@ -631,7 +626,7 @@ public class ResponseTest
                 Connection: close\r
                 \r
                 """;
-        response = HttpTester.parseResponse(connector.getResponse(request));
+        response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/path/to/somewhere/else"));
     }
@@ -657,7 +652,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
 
@@ -667,7 +662,7 @@ public class ResponseTest
                 Connection: close\r
                 \r
                 """;
-        response = HttpTester.parseResponse(connector.getResponse(request));
+        response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("http://hostname/somewhere/else"));
     }
@@ -693,7 +688,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
 
@@ -703,7 +698,7 @@ public class ResponseTest
                 Connection: close\r
                 \r
                 """;
-        response = HttpTester.parseResponse(connector.getResponse(request));
+        response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("/somewhere/else"));
     }
@@ -747,7 +742,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-            HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+            HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
             assertThat(response.getStatus(), is(status));
             if (HttpStatus.isRedirection(status))
                 assertThat(response.get(HttpHeader.LOCATION), is(location));
@@ -778,7 +773,7 @@ public class ResponseTest
                 Host: hostname:8888\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.MOVED_TEMPORARILY_302, response.getStatus());
         assertThat(response.get(HttpHeader.LOCATION), is("http://hostname:8888/somewhere/else"));
     }
@@ -804,7 +799,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         // ensure there are only 1 entry for each of these headers
@@ -842,7 +837,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         // ensure there are only 1 entry for each of these headers
@@ -902,7 +897,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.getValuesList(HttpHeader.SET_COOKIE), containsInAnyOrder(
             "name=test1; Domain=customized; SameSite=Lax",
@@ -930,7 +925,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.get("X-Te.st"), is("value"));
     }
@@ -956,7 +951,7 @@ public class ResponseTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.get("X-Test"), is("val ue"));
     }

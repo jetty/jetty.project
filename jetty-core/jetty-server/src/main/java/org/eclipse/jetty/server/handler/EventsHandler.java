@@ -23,7 +23,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,11 +152,11 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void notifyOnResponseWrite(Request request, boolean last, ReadableBuffer content)
+    private void notifyOnResponseWrite(Request request, boolean last, RetainableByteBuffer content)
     {
         try
         {
-            onResponseWrite(request, last, ReadableBuffer.asReadOnly(content));
+            onResponseWrite(request, last, content);
         }
         catch (Throwable x)
         {
@@ -163,7 +164,7 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
     }
 
-    private void notifyOnResponseWriteComplete(Request request, boolean last, ReadableBuffer content, Throwable failure)
+    private void notifyOnResponseWriteComplete(Request request, boolean last, RetainableByteBuffer content, Throwable failure)
     {
         try
         {
@@ -253,12 +254,12 @@ public abstract class EventsHandler extends Handler.Wrapper
 
     /**
      * Invoked just before the response is line written to the network (i.e. from
-     * within the first call to {@link Response#write(boolean, ReadableBuffer, Callback)}).
+     * within the first call to {@link Response#write(boolean, RetainableByteBuffer, Callback)}).
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
      * @param status the response status
      * @param headers the immutable fields of the response object
-     * @see Response#write(boolean, ReadableBuffer, Callback)
+     * @see Response#write(boolean, RetainableByteBuffer, Callback)
      */
     protected void onResponseBegin(Request request, int status, HttpFields headers)
     {
@@ -268,14 +269,14 @@ public abstract class EventsHandler extends Handler.Wrapper
 
     /**
      * Invoked before each response content chunk has been written (i.e. from
-     * within the call to {@link Response#write(boolean, ReadableBuffer, Callback)}).
+     * within the call to {@link Response#write(boolean, RetainableByteBuffer, Callback)}).
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
      * @param last indicating last write
-     * @param content The {@link ReadableBuffer} of the response content chunk.
-     * @see Response#write(boolean, ReadableBuffer, Callback)
+     * @param content The {@link RetainableByteBuffer} of the response content chunk.
+     * @see Response#write(boolean, RetainableByteBuffer, Callback)
      */
-    protected void onResponseWrite(Request request, boolean last, ReadableBuffer content)
+    protected void onResponseWrite(Request request, boolean last, RetainableByteBuffer content)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onResponseWrite of {} last={} content={}", request, last, content);
@@ -284,16 +285,16 @@ public abstract class EventsHandler extends Handler.Wrapper
     /**
      * Invoked after each response content chunk has been written
      * (i.e. immediately before calling the {@link Callback} passed to
-     * {@link Response#write(boolean, ReadableBuffer, Callback)}).
+     * {@link Response#write(boolean, RetainableByteBuffer, Callback)}).
      * This will always fire <em>before</em> {@link #onResponseTrailersComplete(Request, HttpFields)} is fired.
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
      * @param last indicating last write
-     * @param content The {@link ReadableBuffer} of the response content chunk (read-only).
+     * @param content The {@link RetainableByteBuffer} of the response content chunk (read-only).
      * @param failure if there was a failure to write the given content
-     * @see Response#write(boolean, ReadableBuffer, Callback)
+     * @see Response#write(boolean, RetainableByteBuffer, Callback)
      */
-    protected void onResponseWriteComplete(Request request, boolean last, ReadableBuffer content, Throwable failure)
+    protected void onResponseWriteComplete(Request request, boolean last, RetainableByteBuffer content, Throwable failure)
     {
         onResponseWriteComplete(request, failure);
     }
@@ -301,7 +302,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     /**
      * @param request the request object
      * @param failure the write failure, or {@code null} if the write operation succeeded
-     * @deprecated use {@link #onResponseWriteComplete(Request, boolean, ReadableBuffer, Throwable)} instead
+     * @deprecated use {@link #onResponseWriteComplete(Request, boolean, RetainableByteBuffer, Throwable)} instead
      */
     @Deprecated(since = "12.1.11", forRemoval = true)
     protected void onResponseWriteComplete(Request request, Throwable failure)
@@ -311,7 +312,7 @@ public abstract class EventsHandler extends Handler.Wrapper
     }
 
     /**
-     * Invoked after the response trailers have been written <em>and</em> the final {@link #onResponseWriteComplete(Request, boolean, ReadableBuffer, Throwable)} event was fired.
+     * Invoked after the response trailers have been written <em>and</em> the final {@link #onResponseWriteComplete(Request, boolean, RetainableByteBuffer, Throwable)} event was fired.
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
      * @param trailers the written trailers.
@@ -368,22 +369,20 @@ public abstract class EventsHandler extends Handler.Wrapper
         }
 
         @Override
-        public void write(boolean last, ReadableBuffer buffer, Callback callback)
+        public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
             notifyOnResponseBegin(getRequest(), this);
             notifyOnResponseWrite(getRequest(), last, buffer);
-            ReadableBuffer copy = buffer == null ? null : buffer.slice();
+            RetainableByteBuffer copy = buffer == null ? null : buffer.slice();
             super.write(last, buffer, Callback.from(callback.getInvocationType(), () ->
             {
                 notifyOnResponseWriteComplete(getRequest(), last, copy, null);
-                if (copy != null)
-                    copy.release();
+                Retainable.dispose(copy);
                 callback.succeeded();
             }, x ->
             {
                 notifyOnResponseWriteComplete(getRequest(), last, copy, x);
-                if (copy != null)
-                    copy.release();
+                Retainable.dispose(copy);
                 callback.failed(x);
             }));
         }

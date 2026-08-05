@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HttpSenderOverHTTP2 extends HttpSender
 {
@@ -96,13 +96,13 @@ public class HttpSenderOverHTTP2 extends HttpSender
                 {
                     HttpFields trailers = retrieveTrailers(request);
                     boolean hasTrailers = trailers != null;
-                    dataFrame = new DataFrame(ReadableBuffer.wrap(contentBuffer), !hasTrailers);
+                    dataFrame = new DataFrame(RetainableByteBuffer.wrap(contentBuffer), !hasTrailers);
                     if (hasTrailers)
                         trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_2, trailers), null, true);
                 }
                 else
                 {
-                    dataFrame = new DataFrame(ReadableBuffer.wrap(contentBuffer), false);
+                    dataFrame = new DataFrame(RetainableByteBuffer.wrap(contentBuffer), false);
                 }
             }
             else
@@ -147,23 +147,23 @@ public class HttpSenderOverHTTP2 extends HttpSender
             if (hasContent)
             {
                 if (hasTrailers)
-                    stream.data(ReadableBuffer.wrap(contentBuffer), !hasTrailers, Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed));
+                    stream.data(RetainableByteBuffer.wrap(contentBuffer), !hasTrailers, Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed));
                 else
-                    stream.data(ReadableBuffer.wrap(contentBuffer), !hasTrailers, callback);
+                    stream.data(RetainableByteBuffer.wrap(contentBuffer), !hasTrailers, callback);
             }
             else
             {
                 if (hasTrailers)
                     sendTrailers(stream, trailers, callback);
                 else
-                    stream.data(ReadableBuffer.wrap(contentBuffer), true, callback);
+                    stream.data(RetainableByteBuffer.wrap(contentBuffer), true, callback);
             }
         }
         else
         {
             if (hasContent)
             {
-                stream.data(ReadableBuffer.wrap(contentBuffer), false, callback);
+                stream.data(RetainableByteBuffer.wrap(contentBuffer), false, callback);
             }
             else
             {

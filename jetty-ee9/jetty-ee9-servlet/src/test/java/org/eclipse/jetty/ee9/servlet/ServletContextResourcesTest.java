@@ -117,7 +117,7 @@ public class ServletContextResourcesTest
             \r
             """;
 
-        String response = connector.getResponse(req1);
+        String response = connector.getResponseAsString(req1);
         assertThat("Response", response, containsString("Resource '/': <null>"));
     }
 
@@ -141,7 +141,7 @@ public class ServletContextResourcesTest
             \r
             """;
 
-        String response = connector.getResponse(req1);
+        String response = connector.getResponseAsString(req1);
         assertThat("Response", response, containsString("Resource '/content.txt': content goes here"));
     }
 
@@ -211,7 +211,7 @@ public class ServletContextResourcesTest
             \r
             """;
 
-        String rawResponse = connector.getResponse(req1);
+        String rawResponse = connector.getResponseAsString(req1);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         switch (response.getStatus())
         {

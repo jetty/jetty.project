@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.internal;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -24,11 +23,10 @@ import org.eclipse.jetty.http3.generator.MessageGenerator;
 import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -40,7 +38,7 @@ public class DataGenerateParseTest
     @Test
     public void testGenerateParseEmpty()
     {
-        testGenerateParse(BufferUtil.EMPTY_BUFFER);
+        testGenerateParse(BufferUtil.EMPTY_BYTES);
     }
 
     @Test
@@ -48,21 +46,19 @@ public class DataGenerateParseTest
     {
         byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
-        testGenerateParse(ByteBuffer.wrap(bytes));
+        testGenerateParse(bytes);
     }
 
-    private void testGenerateParse(ByteBuffer byteBuffer)
+    private void testGenerateParse(byte[] inputBytes)
     {
-        byte[] inputBytes = new byte[byteBuffer.remaining()];
-        byteBuffer.get(inputBytes);
-        DataFrame input = new DataFrame(ReadableBuffer.wrap(inputBytes), true);
+        DataFrame input = new DataFrame(RetainableByteBuffer.wrap(inputBytes), true);
 
-        ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1, 0, 0);
+        WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
         new MessageGenerator(bufferPool, null, true).generate(accumulator, 0, input, null);
 
         List<DataFrame> frames = new ArrayList<>();
-        QpackDecoder decoder = new QpackDecoder(instructions -> {});
+        QpackDecoder decoder = new QpackDecoder(_ -> {});
         decoder.setBeginNanoTimeSupplier(NanoTime::now);
         MessageParser parser = new MessageParser(new ParserListener()
         {
@@ -73,13 +69,13 @@ public class DataGenerateParseTest
             }
         }, decoder, 13);
         parser.init(UnaryOperator.identity());
-        parser.parse(accumulator.getByteBuffer(), false);
-        assertFalse(accumulator.hasRemaining());
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        parser.parse(buffer, false);
+        assertFalse(buffer.hasRemaining());
 
         assertEquals(1, frames.size());
-        DataFrame output = frames.get(0);
-        byte[] outputBytes = new byte[Math.toIntExact(output.getByteBuffer().remaining())];
-        output.getByteBuffer().get(outputBytes);
+        DataFrame output = frames.getFirst();
+        byte[] outputBytes = output.acquire().getArray();
         assertArrayEquals(inputBytes, outputBytes);
     }
 }

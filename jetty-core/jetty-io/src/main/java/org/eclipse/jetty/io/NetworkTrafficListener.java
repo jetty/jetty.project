@@ -15,7 +15,7 @@ package org.eclipse.jetty.io;
 
 import java.net.Socket;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>A listener for raw network traffic within Jetty.</p>
@@ -51,7 +51,7 @@ public interface NetworkTrafficListener
      * @param socket the socket associated with the remote client
      * @param bytes the read-only buffer containing the incoming bytes
      */
-    default void incoming(Socket socket, ReadableBuffer bytes)
+    default void incoming(Socket socket, RetainableByteBuffer bytes)
     {
     }
 
@@ -62,7 +62,7 @@ public interface NetworkTrafficListener
      * @param socket the socket associated with the remote client
      * @param bytes the read-only buffer containing the outgoing bytes
      */
-    default void outgoing(Socket socket, ReadableBuffer bytes)
+    default void outgoing(Socket socket, RetainableByteBuffer bytes)
     {
     }
 

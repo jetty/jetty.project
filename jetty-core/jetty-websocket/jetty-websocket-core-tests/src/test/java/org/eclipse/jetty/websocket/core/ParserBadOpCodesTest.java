@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,15 +55,13 @@ public class ParserBadOpCodesTest
     {
         ParserCapture capture = new ParserCapture();
 
-        ByteBuffer raw = BufferUtil.allocate(256);
-        BufferUtil.flipToFill(raw);
+        RetainableByteBuffer.Mutable raw = RetainableByteBuffer.Mutable.allocate(256, false);
 
         // add bad opcode frame
         RawFrameBuilder.putOpFin(raw, opcode, true);
         RawFrameBuilder.putLength(raw, 0, false);
 
         // parse buffer
-        BufferUtil.flipToFlush(raw, 0);
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
             Exception e = assertThrows(ProtocolException.class, () -> capture.parse(raw));
@@ -78,14 +75,13 @@ public class ParserBadOpCodesTest
     {
         ParserCapture capture = new ParserCapture();
 
-        ByteBuffer raw = BufferUtil.allocate(256);
-        BufferUtil.flipToFill(raw);
+        RetainableByteBuffer.Mutable raw = RetainableByteBuffer.Mutable.allocate(256, false);
 
         // adding text frame
-        ByteBuffer msg = BufferUtil.toBuffer("hello", UTF_8);
+        RetainableByteBuffer msg = RetainableByteBuffer.wrap("hello", UTF_8);
         RawFrameBuilder.putOpFin(raw, OpCode.TEXT, true);
-        RawFrameBuilder.putLength(raw, msg.remaining(), false);
-        BufferUtil.put(msg, raw);
+        RawFrameBuilder.putLength(raw, (int)msg.remaining(), false);
+        raw.put(msg);
 
         // adding bad opcode frame
         RawFrameBuilder.putOpFin(raw, opcode, true);
@@ -96,7 +92,6 @@ public class ParserBadOpCodesTest
         RawFrameBuilder.putLength(raw, 0, false);
 
         // parse provided buffer
-        BufferUtil.flipToFlush(raw, 0);
         try (StacklessLogging ignore = new StacklessLogging(Parser.class))
         {
             Exception e = assertThrows(ProtocolException.class, () -> capture.parse(raw));

@@ -25,11 +25,10 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,10 +86,10 @@ public class CancelWriteTest
                 SocketChannelEndPoint serverEndPoint = (SocketChannelEndPoint)request.getConnectionMetaData().getConnection().getEndPoint();
 
                 // Large write, it blocks due to TCP congestion.
-                RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(128 * 1024 * 1024, true);
+                org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(128 * 1024 * 1024, true);
                 ByteBuffer byteBuffer = buffer.getByteBuffer();
                 byteBuffer.clear();
-                response.write(true, ReadableBuffer.wrap(byteBuffer), Callback.from(callback::succeeded, x ->
+                response.write(true, RetainableByteBuffer.wrap(byteBuffer), Callback.from(callback::succeeded, x ->
                 {
                     // Check that the WriteFlusher won't access the
                     // buffer anymore, so that it can be released.
@@ -114,9 +113,9 @@ public class CancelWriteTest
             request.setMethod("GET");
             request.setHeader("Host", "localhost");
             request.setURI("/");
-            ByteBuffer buffer = request.generate();
+            RetainableByteBuffer buffer = request.generate();
 
-            client.write(buffer);
+            buffer.writeTo(client::write);
 
             assertTrue(serverWriteFailureLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
@@ -149,7 +148,7 @@ public class CancelWriteTest
                 SocketChannelEndPoint endpoint = new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
                     @Override
-                    public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
+                    public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
                     {
                         HttpConnection connection = (HttpConnection)getConnection();
                         Runnable runnable = connection.getHttpChannel().onFailure(new ArithmeticException());
@@ -179,10 +178,10 @@ public class CancelWriteTest
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(1024, true);
+                org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(1024, true);
                 ByteBuffer byteBuffer = buffer.getByteBuffer();
                 byteBuffer.clear();
-                response.write(true, ReadableBuffer.wrap(byteBuffer), Callback.from(callback::succeeded, x ->
+                response.write(true, RetainableByteBuffer.wrap(byteBuffer), Callback.from(callback::succeeded, x ->
                 {
                     if (serverEndPointWriteFailureLatch.getCount() == 0L)
                         serverWriteFailureLatch.countDown();
@@ -204,9 +203,9 @@ public class CancelWriteTest
             request.setMethod("GET");
             request.setHeader("Host", "localhost");
             request.setURI("/");
-            ByteBuffer buffer = request.generate();
+            RetainableByteBuffer buffer = request.generate();
 
-            client.write(buffer);
+            buffer.writeTo(client::write);
 
             assertTrue(serverWriteFailureLatch.await(5, TimeUnit.SECONDS));
             assertTrue(serverEndPointWriteFailureLatch.await(5, TimeUnit.SECONDS));
@@ -241,7 +240,7 @@ public class CancelWriteTest
                 SocketChannelEndPoint endpoint = new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
                     @Override
-                    public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
+                    public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
                     {
                         super.write(buffer, Callback.from(() ->
                         {
@@ -270,10 +269,10 @@ public class CancelWriteTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(1024, true);
+                org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(1024, true);
                 ByteBuffer byteBuffer = buffer.getByteBuffer();
                 byteBuffer.clear();
-                response.write(true, ReadableBuffer.wrap(byteBuffer), Callback.from(() ->
+                response.write(true, RetainableByteBuffer.wrap(byteBuffer), Callback.from(() ->
                     {
                         serverWriteSuccessLatch.countDown();
 
@@ -304,9 +303,9 @@ public class CancelWriteTest
             request.setMethod("GET");
             request.setHeader("Host", "localhost");
             request.setURI("/");
-            ByteBuffer buffer = request.generate();
+            RetainableByteBuffer buffer = request.generate();
 
-            client.write(buffer);
+            buffer.writeTo(client::write);
 
             assertTrue(serverEndPointWriteSuccessLatch.await(5, TimeUnit.SECONDS));
             assertFalse(serverWriteSuccessLatch.await(1, TimeUnit.SECONDS));

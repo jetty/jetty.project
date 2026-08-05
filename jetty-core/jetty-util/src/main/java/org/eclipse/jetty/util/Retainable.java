@@ -52,6 +52,32 @@ public interface Retainable
     {
     };
 
+    /// Convenience method that replaces code like:
+    ///
+    /// ```
+    /// if (buffer != null)
+    /// {
+    ///     buffer.release();
+    ///     buffer = null;
+    /// }
+    /// ```
+    ///
+    /// with:
+    ///
+    /// ```
+    /// buffer = Retainable.dispose(buffer);
+    /// ```
+    ///
+    /// @param retainable The [Retainable] to release, if not `null`.
+    /// @param <R> The type of the [Retainable]
+    /// @return always returns `null`
+    static <R extends Retainable> R dispose(R retainable)
+    {
+        if (retainable != null)
+            retainable.release();
+        return null;
+    }
+
     /**
      * <p>Returns whether this resource is referenced counted by calls to {@link #retain()}
      * and {@link #release()}.</p>

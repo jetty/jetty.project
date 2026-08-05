@@ -24,8 +24,7 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -84,12 +83,12 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
             {
                 String line = String.format("%05d\n", i);
                 byte[] lineBytes = line.getBytes(UTF_8);
-                WritableBuffer wb = WritableBuffer.allocate(lineBytes.length, useDirect);
-                wb.put(lineBytes);
+                RetainableByteBuffer.Mutable b = RetainableByteBuffer.Mutable.allocate(lineBytes.length, useDirect);
+                b.put(lineBytes);
 
                 boolean isLast = (i == lineCount);
                 Callback.Completable callback = new Callback.Completable();
-                encoderSink.write(isLast, wb.toReadable(), callback);
+                encoderSink.write(isLast, b, callback);
                 callback.get();
             }
             compressed = baos.toByteArray();
@@ -136,12 +135,12 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
             Content.Sink encoderSink = zstd.newEncoderSink(fileSink);
 
             Callback.Completable callback1 = new Callback.Completable();
-            encoderSink.write(true, ReadableBuffer.wrap("Hello World!".getBytes(UTF_8)), callback1);
+            encoderSink.write(true, RetainableByteBuffer.wrap("Hello World!".getBytes(UTF_8)), callback1);
             callback1.get();
             assertThat(new String(decompress(baos.toByteArray()), UTF_8), is("Hello World!"));
 
             Callback.Completable callback2 = new Callback.Completable();
-            encoderSink.write(true, ReadableBuffer.wrap("Hello again!".getBytes(UTF_8)), callback2);
+            encoderSink.write(true, RetainableByteBuffer.wrap("Hello again!".getBytes(UTF_8)), callback2);
             ExecutionException thrown = assertThrows(ExecutionException.class, callback2::get);
             assertInstanceOf(IllegalStateException.class, thrown.getCause());
         }
@@ -168,12 +167,11 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
         byte[] originalData = new byte[dataSize];
         new Random(42).nextBytes(originalData);
 
-        WritableBuffer directBuffer = WritableBuffer.allocate(dataSize + startOffset, true);
+        RetainableByteBuffer.Mutable directBuffer = RetainableByteBuffer.Mutable.allocate(dataSize + startOffset, true);
         for (int i = 0; i < startOffset; i++)
             directBuffer.put((byte)0xFF);
         directBuffer.put(originalData);
-        ReadableBuffer rb = directBuffer.toReadable();
-        rb.position(startOffset);
+        directBuffer.readPosition(startOffset);
 
         byte[] compressed;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
@@ -184,11 +182,11 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
             Content.Sink encoderSink = zstd.newEncoderSink(fileSink, config);
 
             Callback.Completable callback = new Callback.Completable();
-            encoderSink.write(true, rb, callback);
+            encoderSink.write(true, directBuffer, callback);
             callback.get();
             compressed = baos.toByteArray();
 
-            assertThat(rb.remaining(), is(0L));
+            assertThat(directBuffer.remaining(), is(0L));
         }
 
         byte[] decompressed = decompress(compressed);

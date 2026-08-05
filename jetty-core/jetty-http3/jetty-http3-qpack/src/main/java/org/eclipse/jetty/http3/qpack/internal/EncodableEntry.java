@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.qpack.internal;
 
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpField;
@@ -22,6 +21,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http.compression.NBitStringEncoder;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public abstract class EncodableEntry
 {
@@ -45,7 +45,7 @@ public abstract class EncodableEntry
         return new PreEncodedEntry(httpField);
     }
 
-    public abstract void encode(ByteBuffer buffer, int base);
+    public abstract void encode(RetainableByteBuffer.Mutable buffer, int base);
 
     public abstract int getRequiredSize(int base);
 
@@ -61,7 +61,7 @@ public abstract class EncodableEntry
         }
 
         @Override
-        public void encode(ByteBuffer buffer, int base)
+        public void encode(RetainableByteBuffer.Mutable buffer, int base)
         {
             boolean isStatic = _entry.isStatic();
             if (isStatic)
@@ -132,7 +132,7 @@ public abstract class EncodableEntry
         }
 
         @Override
-        public void encode(ByteBuffer buffer, int base)
+        public void encode(RetainableByteBuffer.Mutable buffer, int base)
         {
             // TODO: when should this be set?
             boolean allowIntermediary = false;
@@ -213,7 +213,7 @@ public abstract class EncodableEntry
         }
 
         @Override
-        public void encode(ByteBuffer buffer, int base)
+        public void encode(RetainableByteBuffer.Mutable buffer, int base)
         {
             byte allowIntermediary = 0x00; // TODO: this is 0x10 bit, when should this be set?
 
@@ -260,7 +260,7 @@ public abstract class EncodableEntry
         }
 
         @Override
-        public void encode(ByteBuffer buffer, int base)
+        public void encode(RetainableByteBuffer.Mutable buffer, int base)
         {
             _httpField.putTo(buffer, HttpVersion.HTTP_3);
         }

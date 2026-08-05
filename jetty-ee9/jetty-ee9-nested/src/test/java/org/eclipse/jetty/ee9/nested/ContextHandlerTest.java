@@ -103,7 +103,7 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new HelloHandler());
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET / HTTP/1.0
             
             """);
@@ -121,7 +121,7 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new HelloHandler());
         _server.start();
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET / HTTP/1.0
             
             """));
@@ -134,7 +134,7 @@ public class ContextHandlerTest
         _contextHandler.setContextPath("/ctx");
         _contextHandler.start();
 
-        response = HttpTester.parseResponse(_connector.getResponse("""
+        response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx/ HTTP/1.0
             
             """));
@@ -150,7 +150,7 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new HelloHandler());
         _server.start();
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET http://localhost:8080 HTTP/1.0
             
             """));
@@ -163,7 +163,7 @@ public class ContextHandlerTest
         _contextHandler.setContextPath("/ctx");
         _contextHandler.start();
 
-        response = HttpTester.parseResponse(_connector.getResponse("""
+        response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx HTTP/1.0
             
             """));
@@ -172,7 +172,7 @@ public class ContextHandlerTest
 
         _contextHandler.setAllowNullPathInfo(true);
 
-        response = HttpTester.parseResponse(_connector.getResponse("""
+        response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx HTTP/1.0
             
             """));
@@ -188,7 +188,7 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new DumpHandler());
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/path/info HTTP/1.0
             
             """);
@@ -236,7 +236,7 @@ public class ContextHandlerTest
         });
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET /context/test HTTP/1.0
             
             """);
@@ -256,7 +256,7 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new DumpHandler());
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             POST /context/path/info?A=1&B=2 HTTP/1.0
             Host: localhost
             HeaderName: headerValue
@@ -313,9 +313,9 @@ public class ContextHandlerTest
         });
         _server.start();
 
-        try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
+        try (LocalConnector.LocalEndPoint endPoint = _connector.connectToServer())
         {
-            endPoint.addInput("""
+            endPoint.writeRequestString("""
                 GET /one HTTP/1.1
                 Host: localhost
                             
@@ -379,7 +379,7 @@ public class ContextHandlerTest
         });
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET / HTTP/1.0
             
             """);
@@ -432,7 +432,7 @@ public class ContextHandlerTest
         });
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET / HTTP/1.0
             
             """);
@@ -474,7 +474,7 @@ public class ContextHandlerTest
         });
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET / HTTP/1.0
             
             """);
@@ -533,7 +533,7 @@ public class ContextHandlerTest
         });
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET / HTTP/1.0
             
             """);
@@ -571,7 +571,7 @@ public class ContextHandlerTest
         });
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET / HTTP/1.0
             
             """);
@@ -620,7 +620,7 @@ public class ContextHandlerTest
         });
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET / HTTP/1.0
             
             """);
@@ -656,7 +656,7 @@ public class ContextHandlerTest
 
         try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
-            String rawResponse = _connector.getResponse("""
+            String rawResponse = _connector.getResponseAsString("""
                 GET / HTTP/1.0
                             
                 """);
@@ -691,7 +691,7 @@ public class ContextHandlerTest
         });
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET / HTTP/1.0
             
             """);
@@ -739,9 +739,9 @@ public class ContextHandlerTest
         _server.setHandler(contexts);
         _server.start();
 
-        try (LocalConnector.LocalEndPoint endp = _connector.connect())
+        try (LocalConnector.LocalEndPoint endp = _connector.connectToServer())
         {
-            endp.addInput("""
+            endp.writeRequestString("""
                 GET /ctxA/ HTTP/1.1
                 Host: localhost
                             
@@ -752,7 +752,7 @@ public class ContextHandlerTest
             assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
             assertThat(response.getContent(), containsString("Hello /ctxA"));
 
-            endp.addInput("""
+            endp.writeRequestString("""
                 GET /ctxB/ HTTP/1.1
                 Host: localhost
                             
@@ -816,7 +816,7 @@ public class ContextHandlerTest
         });
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET / HTTP/1.0
             
             """);
@@ -829,11 +829,12 @@ public class ContextHandlerTest
 
         assertThat(history, contains(
             // Enter for handle(request, response, callback)
-            "Core enter http://0.0.0.0/",
+            "Core enter http://%s/".formatted(_connector.getLocalSocketAddress()),
             "EE9 enter /",
             "Handling",
             "EE9 exit /",
-            "Core exit http://0.0.0.0/"));
+            "Core exit http://%s/".formatted(_connector.getLocalSocketAddress())
+        ));
     }
 
     @Test
@@ -870,7 +871,7 @@ public class ContextHandlerTest
 
         _server.start();
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET / HTTP/1.0
             
             """);

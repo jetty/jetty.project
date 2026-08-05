@@ -24,7 +24,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -93,7 +93,7 @@ public class SlowClientWithPipelinedRequestTest
                     // Since the test is via localhost, we need a really big buffer to stall the write
                     byte[] bytes = new byte[contentLength];
                     Arrays.fill(bytes, (byte)'9');
-                    ReadableBuffer buffer = ReadableBuffer.wrap(bytes);
+                    RetainableByteBuffer buffer = RetainableByteBuffer.wrap(bytes);
                     // Do a non blocking write
                     response.write(true, buffer, callback);
                 }

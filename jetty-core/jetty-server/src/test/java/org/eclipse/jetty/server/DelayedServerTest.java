@@ -19,7 +19,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 
 /**
@@ -56,7 +56,7 @@ public class DelayedServerTest extends HttpServerTestBase
             return new HttpStreamOverHTTP1(method, uri, version)
             {
                 @Override
-                public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
+                public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
                 {
                     DelayedCallback delay = new DelayedCallback(callback);
                     super.send(request, response, last, content, delay);

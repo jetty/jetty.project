@@ -25,7 +25,7 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -86,7 +86,7 @@ public class UnexpectedFrameTest extends AbstractClientServerTest
         ProtocolSession protocolSession = clientSession.getProtocolSession();
         var quicStream = protocolSession.getSession().newStream(0, null);
         StreamEndPoint streamEndPoint = protocolSession.createStreamEndPoint(quicStream, protocolSession::openStreamEndPoint);
-        clientSession.writeMessageFrame(streamEndPoint, new DataFrame(ReadableBuffer.allocate(128, false), false), Callback.NOOP);
+        clientSession.writeMessageFrame(streamEndPoint, new DataFrame(RetainableByteBuffer.allocate(128, false), false), Callback.NOOP);
 
         assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));

@@ -102,7 +102,7 @@ public class SecurityHandlerTest
     public void testNoConstraints() throws Exception
     {
         String response;
-        response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Unauthenticated"));
     }
@@ -113,11 +113,11 @@ public class SecurityHandlerTest
         _securityHandler.put("/secret/*", Constraint.FORBIDDEN);
 
         String response;
-        response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Unauthenticated"));
 
-        response = _connector.getResponse("GET /ctx/secret/thing HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/secret/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
         assertThat(response, not(containsString("OK")));
     }
@@ -128,17 +128,17 @@ public class SecurityHandlerTest
         _securityHandler.put("/confidential/*", Constraint.SECURE_TRANSPORT);
 
         String response;
-        response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Unauthenticated"));
 
-        response = _connector.getResponse("GET /ctx/confidential/info HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/confidential/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: bwtp://"));
         assertThat(response, containsString(":9999"));
         assertThat(response, not(containsString("OK")));
 
-        response = _connectorS.getResponse("GET /ctx/confidential/info HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
+        response = _connectorS.getResponseAsString("GET /ctx/confidential/info HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Unauthenticated"));
     }
@@ -151,25 +151,25 @@ public class SecurityHandlerTest
         _securityHandler.put("*.hidden", Constraint.FORBIDDEN);
 
         String response;
-        response = _connector.getResponse("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/some/thing HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Unauthenticated"));
 
-        response = _connector.getResponse("GET /ctx/something.hidden HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/something.hidden HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
         assertThat(response, not(containsString("OK")));
 
-        response = _connector.getResponse("GET /ctx/confidential/info HTTP/1.0\r\n\r\n");
+        response = _connector.getResponseAsString("GET /ctx/confidential/info HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: bwtp://"));
         assertThat(response, containsString(":9999"));
         assertThat(response, not(containsString("OK")));
 
-        response = _connectorS.getResponse("GET /ctx/confidential/info HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
+        response = _connectorS.getResponseAsString("GET /ctx/confidential/info HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Unauthenticated"));
 
-        response = _connectorS.getResponse("GET /ctx/confidential/info.hidden HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
+        response = _connectorS.getResponseAsString("GET /ctx/confidential/info.hidden HTTP/1.0\r\nForwarded: proto=https\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 403 Forbidden"));
         assertThat(response, not(containsString("OK")));
     }

@@ -25,7 +25,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HttpChannelOverFCGI extends HttpChannel
 {
@@ -167,7 +167,7 @@ public class HttpChannelOverFCGI extends HttpChannel
             release();
     }
 
-    protected void flush(ReadableBuffer buffer, Callback callback)
+    protected void flush(RetainableByteBuffer buffer, Callback callback)
     {
         connection.getFlusher().flush(buffer, callback);
     }

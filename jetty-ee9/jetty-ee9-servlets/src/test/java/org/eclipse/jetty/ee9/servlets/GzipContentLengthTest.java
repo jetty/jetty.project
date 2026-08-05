@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,7 +29,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.Sha1Sum;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matcher;
@@ -182,10 +181,10 @@ public class GzipContentLengthTest extends AbstractGzipTest
         request.setURI("/context/" + file.getFileName().toString());
 
         // Issue request
-        ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 

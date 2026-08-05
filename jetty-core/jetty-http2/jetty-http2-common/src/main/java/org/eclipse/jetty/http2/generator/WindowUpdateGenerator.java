@@ -19,8 +19,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class WindowUpdateGenerator extends FrameGenerator
 {
@@ -30,20 +29,20 @@ public class WindowUpdateGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(List<ReadableBuffer> accumulator, Frame frame)
+    public int generate(List<RetainableByteBuffer> accumulator, Frame frame)
     {
         WindowUpdateFrame windowUpdateFrame = (WindowUpdateFrame)frame;
         return generateWindowUpdate(accumulator, windowUpdateFrame.getStreamId(), windowUpdateFrame.getWindowDelta());
     }
 
-    public int generateWindowUpdate(List<ReadableBuffer> accumulator, int streamId, int windowUpdate)
+    public int generateWindowUpdate(List<RetainableByteBuffer> accumulator, int streamId, int windowUpdate)
     {
         if (windowUpdate < 0)
             throw new IllegalArgumentException("Invalid window update: " + windowUpdate);
 
-        WritableBuffer wb = generateHeader(FrameType.WINDOW_UPDATE, WindowUpdateFrame.WINDOW_UPDATE_LENGTH, Flags.NONE, streamId);
-        wb.putInt(windowUpdate);
-        accumulator.add(wb.toReadable());
+        RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.WINDOW_UPDATE, WindowUpdateFrame.WINDOW_UPDATE_LENGTH, Flags.NONE, streamId);
+        buffer.putInt(windowUpdate);
+        accumulator.add(buffer);
 
         return Frame.HEADER_LENGTH + WindowUpdateFrame.WINDOW_UPDATE_LENGTH;
     }

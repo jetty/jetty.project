@@ -49,7 +49,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -447,7 +447,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
             try
             {
                 process(formData.parse(request).join()); // May block waiting for multipart form data.
-                response.write(true, ReadableBuffer.EMPTY, callback);
+                response.write(true, RetainableByteBuffer.empty(), callback);
             }
             catch (Exception x)
             {

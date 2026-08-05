@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,7 +131,7 @@ public class FileMappingHttpContentFactory extends ContainerLifeCycle implements
             {
                 length = TypeUtil.checkOffsetLengthSize(offset, length, _buffer.remaining());
                 ByteBuffer slice = BufferUtil.slice(_buffer, Math.toIntExact(offset), Math.toIntExact(length));
-                sink.write(true, ReadableBuffer.wrap(slice), callback);
+                sink.write(true, RetainableByteBuffer.wrap(slice), callback);
             }
             catch (Throwable x)
             {
@@ -218,7 +218,7 @@ public class FileMappingHttpContentFactory extends ContainerLifeCycle implements
                         boolean last = index == endIndex;
                         index++;
                         ByteBuffer slice = BufferUtil.slice(currentBuffer, offset, len);
-                        sink.write(last, ReadableBuffer.wrap(slice), this);
+                        sink.write(last, RetainableByteBuffer.wrap(slice), this);
                         return Action.SCHEDULED;
                     }
                 }.iterate();

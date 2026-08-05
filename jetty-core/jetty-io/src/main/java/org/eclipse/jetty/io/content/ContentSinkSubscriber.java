@@ -19,13 +19,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>A {@link Flow.Subscriber} that wraps a {@link Content.Sink}.</p>
  * <p>Content delivered to the {@link #onNext(Content.Chunk)} method is
- * written to {@link Content.Sink#write(boolean, org.eclipse.jetty.util.buffer.ReadableBuffer, Callback)}
+ * written to {@link Content.Sink#write(boolean, RetainableByteBuffer, Callback)}
  * and the chunk is released once the write callback is succeeded or failed.</p>
  */
 public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
@@ -54,7 +54,7 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
     {
         // Retain the chunk because the write may not complete immediately.
         chunk.retain();
-        sink.write(chunk.isLast(), ReadableBuffer.wrap(chunk.getByteBuffer()), new Callback()
+        sink.write(chunk.isLast(), RetainableByteBuffer.wrap(chunk.getByteBuffer()), new Callback()
         {
             public void succeeded()
             {

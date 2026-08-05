@@ -20,13 +20,15 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
-import org.eclipse.jetty.util.buffer.WritableBuffer;
+import org.eclipse.jetty.util.buffer.Aggregator;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * <p>HTTP Testing helper class.</p>
@@ -59,27 +61,14 @@ public class HttpTester
 {
     public abstract static class Input
     {
-        protected final ReadableBuffer _buffer;
         protected boolean _eof = false;
         protected HttpParser _parser;
 
         public Input()
         {
-            this(WritableBuffer.allocate(IO.DEFAULT_BUFFER_SIZE, false).toReadable());
-            _buffer.release();
         }
 
-        Input(ReadableBuffer buffer)
-        {
-            buffer.retain();
-            _buffer = buffer;
-        }
-
-        public ReadableBuffer acquireBuffer()
-        {
-            _buffer.retain();
-            return _buffer;
-        }
+        public abstract boolean parse(HttpParser parser);
 
         public void setHttpParser(HttpParser parser)
         {
@@ -95,7 +84,7 @@ public class HttpTester
 
         public boolean isEOF()
         {
-            return _buffer != null && _buffer.remaining() == 0L && _eof;
+            return _eof;
         }
 
         public abstract int fillBuffer() throws IOException;
@@ -106,10 +95,16 @@ public class HttpTester
         return from(BufferUtil.toReadableBuffer(string));
     }
 
-    public static Input from(ReadableBuffer data)
+    public static Input from(RetainableByteBuffer data)
     {
-        return new Input(data)
+        return new Input()
         {
+            @Override
+            public boolean parse(HttpParser parser)
+            {
+                return parser.parseNext(data);
+            }
+
             @Override
             public int fillBuffer()
             {
@@ -123,27 +118,27 @@ public class HttpTester
     {
         return new Input()
         {
+            private final RetainableByteBuffer.Mutable _buffer = RetainableByteBuffer.Mutable.allocate(IO.DEFAULT_BUFFER_SIZE, false);
+
+            @Override
+            public boolean parse(HttpParser parser)
+            {
+                return parser.parseNext(_buffer);
+            }
+
             @Override
             public int fillBuffer() throws IOException
             {
-                WritableBuffer wb = _buffer.compact();
-                try
+                int len = (int)_buffer.compact().readFrom(output ->
                 {
-                    int len = (int)wb.readFrom(output ->
-                    {
-                        int read = stream.read(output.array(), output.arrayOffset(), output.limit() - output.arrayOffset());
-                        if (read > 0)
-                            output.position(output.position() + read);
-                        return read == -1;
-                    });
-                    if (len < 0)
-                        _eof = true;
-                    return len;
-                }
-                finally
-                {
-                    wb.toReadable();
-                }
+                    int read = stream.read(output.array(), output.arrayOffset(), output.remaining());
+                    if (read > 0)
+                        output.position(output.position() + read);
+                    return read;
+                });
+                if (len < 0)
+                    _eof = true;
+                return len;
             }
         };
     }
@@ -152,21 +147,21 @@ public class HttpTester
     {
         return new Input()
         {
+            private final RetainableByteBuffer.Mutable _buffer = RetainableByteBuffer.Mutable.allocate(IO.DEFAULT_BUFFER_SIZE, false);
+
+            @Override
+            public boolean parse(HttpParser parser)
+            {
+                return parser.parseNext(_buffer);
+            }
+
             @Override
             public int fillBuffer() throws IOException
             {
-                WritableBuffer wb = _buffer.compact();
-                try
-                {
-                    int len = (int)wb.readFrom(output -> channel.read(output) == -1);
-                    if (len < 0)
-                        _eof = true;
-                    return len;
-                }
-                finally
-                {
-                    wb.toReadable();
-                }
+                int len = (int)_buffer.compact().readFrom(channel::read);
+                if (len < 0)
+                    _eof = true;
+                return len;
             }
         };
     }
@@ -186,7 +181,7 @@ public class HttpTester
         return parseRequest(BufferUtil.toReadableBuffer(request));
     }
 
-    public static Request parseRequest(ReadableBuffer buffer)
+    public static Request parseRequest(RetainableByteBuffer buffer)
     {
         try
         {
@@ -237,7 +232,7 @@ public class HttpTester
     {
         Response r = new Response();
         HttpParser parser = new HttpParser(r);
-        parser.parseNext(BufferUtil.toReadableBuffer(response));
+        parser.parseNext(RetainableByteBuffer.wrap(response, ISO_8859_1));
         return r;
     }
 
@@ -246,17 +241,17 @@ public class HttpTester
         return parseResponse(BufferUtil.toReadableBuffer(response), head);
     }
 
-    public static Response parseHeadResponse(ReadableBuffer response)
+    public static Response parseHeadResponse(RetainableByteBuffer response)
     {
         return parseResponse(response, true);
     }
 
-    public static Response parseResponse(ReadableBuffer response)
+    public static Response parseResponse(RetainableByteBuffer response)
     {
         return parseResponse(response, false);
     }
 
-    public static Response parseResponse(ReadableBuffer response, boolean head)
+    public static Response parseResponse(RetainableByteBuffer response, boolean head)
     {
         try
         {
@@ -297,13 +292,9 @@ public class HttpTester
     {
         HttpParser parser = input.takeHttpParser();
         if (parser != null)
-        {
             response = (Response)parser.getHandler();
-        }
         else
-        {
             parser = new HttpParser(response);
-        }
         parser.setHeadResponse(head);
         parse(input, parser);
         if (response.isComplete())
@@ -314,30 +305,19 @@ public class HttpTester
 
     private static void parse(Input input, HttpParser parser) throws IOException
     {
-        ReadableBuffer buffer = input.acquireBuffer();
-        try
+        while (true)
         {
-            while (true)
+            if (input.parse(parser))
+                break;
+            int len = input.fillBuffer();
+            if (len == 0)
+                break;
+            if (len < 0)
             {
-                if (buffer.remaining() > 0L)
-                {
-                    if (parser.parseNext(buffer))
-                        break;
-                }
-                int len = input.fillBuffer();
-                if (len == 0)
-                    break;
-                if (len < 0)
-                {
-                    parser.atEOF();
-                    parser.parseNext(buffer);
-                    break;
-                }
+                parser.atEOF();
+                parser.parseNext(RetainableByteBuffer.empty());
+                break;
             }
-        }
-        finally
-        {
-            buffer.release();
         }
     }
 
@@ -430,7 +410,7 @@ public class HttpTester
 
             String contentType = get(HttpHeader.CONTENT_TYPE);
             String encoding = MimeTypes.getCharsetFromContentType(contentType);
-            Charset charset = encoding == null ? StandardCharsets.UTF_8 : Charset.forName(encoding);
+            Charset charset = encoding == null ? UTF_8 : Charset.forName(encoding);
 
             return _content.toString(charset);
         }
@@ -473,7 +453,7 @@ public class HttpTester
         }
 
         @Override
-        public boolean content(ReadableBuffer ref)
+        public boolean content(RetainableByteBuffer ref)
         {
             try
             {
@@ -492,94 +472,76 @@ public class HttpTester
             HttpException.throwAsUnchecked(failure);
         }
 
-        public ByteBuffer generate()
+        public RetainableByteBuffer generate()
         {
-            try
+            HttpGenerator generator = new HttpGenerator();
+            MetaData info = getMetaData();
+            RetainableByteBuffer.Mutable header = null;
+            RetainableByteBuffer.Mutable chunk = null;
+            RetainableByteBuffer content = _content == null ? null : RetainableByteBuffer.wrap(_content.toByteArray());
+
+            try (Aggregator aggregator = new Aggregator(true, 1024))
             {
-                HttpGenerator generator = new HttpGenerator();
-                MetaData info = getMetaData();
-
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                ByteBuffer header = null;
-                ByteBuffer chunk = null;
-                ByteBuffer content = _content == null ? null : ByteBuffer.wrap(_content.toByteArray());
-
-                loop:
-                while (!generator.isEnd())
+                boolean complete = false;
+                while (!generator.isEnd() && !complete)
                 {
-                    HttpGenerator.Result result;
-                    {
-                        WritableBuffer wbHeader = header == null ? null : ReadableBuffer.wrap(header).toWritable();
-                        WritableBuffer wbChunk = chunk == null ? null : ReadableBuffer.wrap(chunk).toWritable();
-                        result = info instanceof MetaData.Request
-                            ? generator.generateRequest((MetaData.Request)info, wbHeader, wbChunk, ReadableBuffer.wrap(content), true)
-                            : generator.generateResponse((MetaData.Response)info, false, wbHeader, wbChunk, ReadableBuffer.wrap(content), true);
-                        if (wbHeader != null)
-                            wbHeader.toReadable();
-                        if (wbChunk != null)
-                            wbChunk.toReadable();
-                    }
+                    HttpGenerator.Result result = info instanceof MetaData.Request
+                        ? generator.generateRequest((MetaData.Request)info, header, chunk, content, true)
+                        : generator.generateResponse((MetaData.Response)info, false, header, chunk, content, true);
                     switch (result)
                     {
-                        case NEED_HEADER:
-                            header = BufferUtil.allocate(IO.DEFAULT_BUFFER_SIZE);
-                            continue;
-
-                        case HEADER_OVERFLOW:
-                            if (header.capacity() >= 32 * 1024)
-                                throw new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, "Header too large");
-                            header = BufferUtil.allocate(32 * 1024);
-                            continue;
-
-                        case NEED_CHUNK:
-                            chunk = BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
-                            continue;
-
-                        case NEED_CHUNK_TRAILER:
-                            chunk = BufferUtil.allocate(IO.DEFAULT_BUFFER_SIZE);
-                            continue;
-
-                        case NEED_INFO:
+                        case NEED_INFO ->
                             throw new IllegalStateException();
 
-                        case FLUSH:
-                            if (BufferUtil.hasContent(header))
+                        case NEED_HEADER ->
+                            header = RetainableByteBuffer.Mutable.allocate(IO.DEFAULT_BUFFER_SIZE, false);
+
+                        case HEADER_OVERFLOW ->
+                        {
+                            int max = 32 * 1024;
+                            if (header != null && header.capacity() >= max)
                             {
-                                out.write(BufferUtil.toArray(header));
-                                BufferUtil.clear(header);
+                                throw new HttpException.RuntimeException(HttpStatus.INTERNAL_SERVER_ERROR_500, "Header too large");
                             }
-                            if (BufferUtil.hasContent(chunk))
-                            {
-                                out.write(BufferUtil.toArray(chunk));
-                                BufferUtil.clear(chunk);
-                            }
-                            if (BufferUtil.hasContent(content))
+                            header = RetainableByteBuffer.Mutable.allocate(max, false);
+                        }
+
+                        case NEED_CHUNK ->
+                            chunk = RetainableByteBuffer.Mutable.allocate(HttpGenerator.CHUNK_SIZE, false);
+
+                        case NEED_CHUNK_TRAILER ->
+                            chunk = RetainableByteBuffer.Mutable.allocate(IO.DEFAULT_BUFFER_SIZE, false);
+
+                        case FLUSH ->
+                        {
+                            if (header != null && header.hasRemaining())
+                                aggregator.append(header);
+                            if (chunk != null && chunk.hasRemaining())
+                                aggregator.append(chunk);
+                            if (content != null && content.hasRemaining())
                             {
                                 int chunkMaxLength = generator.getChunkMaxLength();
                                 if (generator.isChunking() && content.remaining() > chunkMaxLength)
-                                {
-                                    ByteBuffer slice = content.slice(content.position(), chunkMaxLength);
-                                    content.position(content.position() + chunkMaxLength);
-                                    content = slice;
-                                }
-                                out.write(BufferUtil.toArray(content));
-                                BufferUtil.clear(content);
+                                    content = content.sliceAndConsume(chunkMaxLength);
+                                aggregator.append(content);
                             }
-                            break;
+                        }
 
-                        case SHUTDOWN_OUT:
-                            break loop;
+                        case CONTINUE ->
+                        {
+                        }
 
-                        default:
-                            break; // TODO verify if this should be ISE
+                        case SHUTDOWN_OUT, DONE ->
+                        {
+                            complete = true;
+                        }
                     }
                 }
-
-                return ByteBuffer.wrap(out.toByteArray());
+                return aggregator.take();
             }
-            catch (IOException e)
+            catch (IOException x)
             {
-                throw new RuntimeException(e);
+                throw new UncheckedIOException(x);
             }
         }
 

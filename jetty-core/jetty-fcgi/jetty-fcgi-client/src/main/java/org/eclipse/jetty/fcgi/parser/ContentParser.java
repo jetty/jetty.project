@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
-import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>Parser for FastCGI frame content.</p>
@@ -47,7 +47,7 @@ public abstract class ContentParser
      * @param buffer the bytes to parse
      * @return the result of the parsing
      */
-    public abstract Result parse(ReadableBuffer buffer);
+    public abstract Result parse(RetainableByteBuffer buffer);
 
     /**
      * <p>Invoked by the {@link Parser} when the frame content length is zero.</p>
@@ -76,7 +76,7 @@ public abstract class ContentParser
     {
         /**
          * <p>Not enough bytes have been provided to the parser
-         * with a call to {@link ContentParser#parse(ReadableBuffer)}.</p>
+         * with a call to {@link ContentParser#parse(RetainableByteBuffer)}.</p>
          */
         PENDING,
         /**
