@@ -27,14 +27,15 @@ public class ImageOSAmazonCorretto17 extends ImageOS
         super("amazoncorretto-jdk17-jetty12",
             builder ->
                 builder
-                    .from("amazoncorretto:17-al2023")
+                    .from("amazoncorretto:17")
                     // Notes: amazoncorretto now uses dnf, not yum
                     .run("dnf update -y ; " +
                         // Notes:
                         // `curl-minimal` ships with `amazoncorretto:17-al2023`.
                         // `findutils` provides `xargs`, which is needed by `jetty.sh`.
                         // `tar` and `gzip` needed by this Dockerfile for managing the jetty-home tarball.
-                        "dnf install -y findutils tar gzip")
+                        // `shadow-utils` is needed for `useradd` (done by ImageUserChange)
+                        "dnf install -y findutils tar gzip shadow-utils")
                     .env("TEST_DIR", "/var/test")
                     .env("JETTY_HOME", "$TEST_DIR/jetty-home")
                     .env("JETTY_BASE", "$TEST_DIR/jetty-base")
