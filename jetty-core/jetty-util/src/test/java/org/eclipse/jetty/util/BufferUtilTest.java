@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -251,6 +252,44 @@ public class BufferUtilTest
             BufferUtil.flipToFlush(buffer, 0);
             assertEquals(str[i], BufferUtil.toString(buffer), "t" + i);
         }
+    }
+
+    @Test
+    public void testPutFromReadableBufferIntoLargeEnoughBuffer()
+    {
+        ReadableBuffer from = ReadableBuffer.wrap(BufferUtil.toBuffer("012345"));
+        ByteBuffer to = ByteBuffer.allocate(10);
+
+        BufferUtil.put(from, to);
+        BufferUtil.flipToFlush(to, 0);
+        assertEquals(0, from.remaining());
+        assertEquals(6, to.remaining());
+        assertEquals("012345", BufferUtil.toString(to));
+    }
+
+    @Test
+    public void testPutFromReadableBufferIntoTooSmallBuffer()
+    {
+        ReadableBuffer from = ReadableBuffer.wrap(BufferUtil.toBuffer("1234567890A"));
+        ByteBuffer to = ByteBuffer.allocate(10);
+
+        BufferUtil.put(from, to);
+        BufferUtil.flipToFlush(to, 0);
+        assertEquals(1, from.remaining());
+        assertEquals(10, to.remaining());
+        assertEquals("1234567890", BufferUtil.toString(to));
+        assertEquals('A', from.get());
+    }
+
+    @Test
+    public void testToBuffer()
+    {
+        ReadableBuffer from = ReadableBuffer.wrap(BufferUtil.toBuffer("1234567890A"));
+        ByteBuffer buffer = BufferUtil.toBuffer(from, false);
+
+        assertEquals(0, from.remaining());
+        assertEquals(11, buffer.remaining());
+        assertEquals("1234567890A", BufferUtil.toString(buffer));
     }
 
     @Test

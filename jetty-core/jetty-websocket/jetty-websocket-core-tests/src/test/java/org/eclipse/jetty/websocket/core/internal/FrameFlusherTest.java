@@ -28,8 +28,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
@@ -244,18 +246,16 @@ public class FrameFlusherTest
         }
 
         @Override
-        public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+        public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
         {
             Objects.requireNonNull(callback);
             try
             {
-                for (ByteBuffer buffer : buffers)
+                ByteBuffer b = BufferUtil.toBuffer(buffer, false);
+                Frame.Parsed frame = parser.parse(b);
+                if (frame != null)
                 {
-                    Frame.Parsed frame = parser.parse(buffer);
-                    if (frame != null)
-                    {
-                        incomingFrames.offer(frame);
-                    }
+                    incomingFrames.offer(frame);
                 }
                 callback.succeeded();
             }
@@ -289,12 +289,12 @@ public class FrameFlusherTest
         }
 
         @Override
-        public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+        public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
         {
             try
             {
                 Thread.sleep(blockTime);
-                super.write(callback, buffers);
+                super.write(buffer, callback);
             }
             catch (InterruptedException e)
             {

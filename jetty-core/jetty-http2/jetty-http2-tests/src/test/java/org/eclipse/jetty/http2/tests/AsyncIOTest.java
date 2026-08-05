@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.io.InterruptedIOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,7 +23,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.Content;
@@ -33,9 +31,9 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -81,7 +79,7 @@ public class AsyncIOTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.NOOP);
+        stream.data(ReadableBuffer.allocate(16, false), true, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -119,7 +117,7 @@ public class AsyncIOTest extends AbstractTest
 
         // Wait until service() returns.
         Thread.sleep(1000);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.NOOP);
+        stream.data(ReadableBuffer.allocate(16, false), true, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -309,7 +307,7 @@ public class AsyncIOTest extends AbstractTest
                 return failure;
             }
         };
-        responseRef.get().write(true, BufferUtil.EMPTY_BUFFER, cb);
+        responseRef.get().write(true, ReadableBuffer.EMPTY, cb);
         await().atMost(5, TimeUnit.SECONDS).until(cb::failure, instanceOf(EofException.class));
     }
 

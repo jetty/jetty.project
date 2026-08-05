@@ -37,6 +37,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -247,7 +249,7 @@ public class StreamEndPoint implements EndPoint
     }
 
     @Override
-    public int fill(ByteBuffer sink) throws IOException
+    public int fill(WritableBuffer sink) throws IOException
     {
         Content.Chunk current;
         try (AutoLock ignored = lock.lock())
@@ -265,7 +267,7 @@ public class StreamEndPoint implements EndPoint
                 ByteBuffer source = current.getByteBuffer();
                 if (source.hasRemaining())
                 {
-                    int filled = copy(current, sink);
+                    int filled = BufferUtil.put(current.getByteBuffer(), sink);
 
                     boolean release = true;
                     if (source.hasRemaining())
@@ -362,30 +364,12 @@ public class StreamEndPoint implements EndPoint
         return current;
     }
 
-    private int copy(Content.Chunk chunk, ByteBuffer sink)
-    {
-        int length = 0;
-        ByteBuffer source = chunk.getByteBuffer();
-        if (source.hasRemaining())
-        {
-            int sinkPosition = BufferUtil.flipToFill(sink);
-            int sourceLength = source.remaining();
-            length = Math.min(sourceLength, sink.remaining());
-            int sourceLimit = source.limit();
-            source.limit(source.position() + length);
-            sink.put(source);
-            source.limit(sourceLimit);
-            BufferUtil.flipToFlush(sink, sinkPosition);
-        }
-        return length;
-    }
-
     @Override
-    public boolean flush(ByteBuffer... buffers) throws IOException
+    public boolean flush(ReadableBuffer buffer) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("flushing {} on {}", BufferUtil.toDetailString(buffers), this);
-        if (buffers == null || buffers.length == 0 || BufferUtil.remaining(buffers) == 0)
+            LOG.debug("flushing {} on {}", buffer, this);
+        if (buffer == null || buffer.remaining() == 0L)
             return true;
 
         // Differently from other EndPoint implementations, where write() calls
@@ -407,29 +391,24 @@ public class StreamEndPoint implements EndPoint
     }
 
     @Override
-    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
-    {
-        write(false, List.of(buffers), callback);
-    }
-
-    @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-    {
-        write(last, List.of(byteBuffer), callback);
-    }
-
-    @Override
     public Callback cancelWrite(Throwable cause)
     {
         // TODO
         throw new UnsupportedOperationException();
     }
 
-    public void write(boolean last, List<ByteBuffer> buffers, Callback callback)
+    @Override
+    public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
+    {
+        write(false, buffer, callback);
+    }
+
+    @Override
+    public void write(boolean last, ReadableBuffer buffer, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("writing last={} {} on {}", last, BufferUtil.toDetailString(buffers.toArray(ByteBuffer[]::new)), this);
-        if (last || remaining(buffers) > 0)
+            LOG.debug("writing last={} {} on {}", last, buffer, this);
+        if (last || buffer.remaining() > 0L)
         {
             while (true)
             {
@@ -440,7 +419,7 @@ public class StreamEndPoint implements EndPoint
                     {
                         if (!writeState.compareAndSet(current, WriteState.PENDING))
                             continue;
-                        stream.data(last, buffers, new Promise.Invocable.Abstract<>(callback.getInvocationType())
+                        stream.data(last, List.of(BufferUtil.toBuffer(buffer, true)), new Promise.Invocable.Abstract<>(callback.getInvocationType())
                         {
                             @Override
                             public void succeeded(Stream result)

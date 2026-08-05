@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +29,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.proxy.ProxyHandler;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -162,7 +163,7 @@ public class ReverseProxyTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(content), Callback.from(() ->
+                response.write(true, ReadableBuffer.wrap(content), Callback.from(() ->
                 {
                     callback.succeeded();
                     serverLatch.countDown();
@@ -186,9 +187,9 @@ public class ReverseProxyTest
                 try
                 {
                     TimeUnit.MILLISECONDS.sleep(1);
-                    Stream.Data data = stream.readData();
-                    data.release();
-                    if (data.frame().isEndStream())
+                    Content.Chunk chunk = stream.read();
+                    chunk.release();
+                    if (chunk.isLast())
                         clientLatch.countDown();
                     else
                         stream.demand();

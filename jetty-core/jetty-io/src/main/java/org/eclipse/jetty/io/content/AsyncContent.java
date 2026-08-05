@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.internal.ByteBufferChunk;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
@@ -70,11 +71,11 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
      * </ul>
      */
     @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void write(boolean last, ReadableBuffer buffer, Callback callback)
     {
-        ByteBuffer slice = byteBuffer.slice();
-        BufferUtil.clear(byteBuffer);
-        offer(new AsyncChunk(last, slice, callback));
+        // TODO: do not copy but link the chunk and the buffer.
+        ByteBuffer copy = BufferUtil.toBuffer(buffer, true/*TODO do not hardcode directness*/);
+        offer(new AsyncChunk(last, copy, callback));
     }
 
     /**
@@ -295,7 +296,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         {
             super(byteBuffer.hasRemaining() ? byteBuffer : BufferUtil.EMPTY_BUFFER, last);
             this.callback = callback;
-            referenceCounter = getByteBuffer() == BufferUtil.EMPTY_BUFFER ? null : new ReferenceCounter();
+            referenceCounter = getByteBuffer() == BufferUtil.EMPTY_BUFFER ? null : new Retainable.ReferenceCounter();
         }
 
         @Override

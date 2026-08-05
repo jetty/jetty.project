@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -45,6 +44,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -179,7 +179,7 @@ public class TrailersTest extends AbstractTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
 
         // Send some data.
-        CompletableFuture<Stream> completable = stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), false));
+        CompletableFuture<Stream> completable = stream.data(ReadableBuffer.allocate(16, false), false);
 
         assertTrue(trailerLatch.await(5, TimeUnit.SECONDS));
 
@@ -295,10 +295,10 @@ public class TrailersTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                DataFrame frame = data.frame();
+                Content.Chunk chunk = stream.read();
+                DataFrame frame = new DataFrame(stream.getId(), ReadableBuffer.wrap(chunk.getByteBuffer()), chunk.isLast());
                 frames.add(frame);
-                data.release();
+                chunk.release();
                 if (frame.isEndStream())
                     latch.countDown();
             }
@@ -339,9 +339,9 @@ public class TrailersTest extends AbstractTest
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(requestFrame, promise, null);
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
+        ReadableBuffer data = ReadableBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
         CountDownLatch failureLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, false))
+        stream.data(data, false)
             .thenAccept(s ->
             {
                 // Invalid trailer: cannot contain pseudo headers.
@@ -395,8 +395,8 @@ public class TrailersTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
-        stream.data(new DataFrame(stream.getId(), data, false))
+        ReadableBuffer data = ReadableBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
+        stream.data(data, false)
             .thenAccept(s ->
             {
                 // Disable checks for invalid headers.

@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.Sha1Sum;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
@@ -115,7 +116,7 @@ public class GzipDefaultServletDeferredContentTypeTest extends AbstractGzipTest
         ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(ReadableBuffer.wrap(rawResponse));
 
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 

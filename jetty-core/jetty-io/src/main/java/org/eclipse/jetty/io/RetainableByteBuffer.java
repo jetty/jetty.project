@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -496,24 +497,24 @@ public interface RetainableByteBuffer extends Retainable
      * @param sink the destination sink.
      * @param last true if this is the last write.
      * @param callback the callback to call upon the write completion.
-     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)
+     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, org.eclipse.jetty.util.buffer.ReadableBuffer, Callback)
      */
     default void writeTo(Content.Sink sink, boolean last, Callback callback)
     {
-        sink.write(last, getByteBuffer(), callback);
+        sink.write(last, ReadableBuffer.wrap(getByteBuffer()), callback);
     }
 
     /**
      * Writes and consumes the contents of this retainable byte buffer into the given sink.
      * @param sink the destination sink.
      * @param last true if this is the last write.
-     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)
+     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ReadableBuffer, Callback)
      */
     default void writeTo(Content.Sink sink, boolean last) throws IOException
     {
         try (Blocker.Callback callback = Blocker.callback())
         {
-            sink.write(last, getByteBuffer(), callback);
+            sink.write(last, ReadableBuffer.wrap(getByteBuffer()), callback);
             callback.block();
         }
     }
@@ -892,7 +893,7 @@ public interface RetainableByteBuffer extends Retainable
     {
         public Abstract()
         {
-            this(new ReferenceCounter());
+            this(new Retainable.ReferenceCounter());
         }
 
         public Abstract(Retainable retainable)
@@ -987,7 +988,7 @@ public interface RetainableByteBuffer extends Retainable
 
         public FixedCapacity(ByteBuffer byteBuffer)
         {
-            this(byteBuffer, new ReferenceCounter());
+            this(byteBuffer, new Retainable.ReferenceCounter());
         }
 
         public FixedCapacity(ByteBuffer byteBuffer, Retainable retainable)
@@ -1366,7 +1367,7 @@ public interface RetainableByteBuffer extends Retainable
     {
         public NonRetainableByteBuffer(ByteBuffer byteBuffer)
         {
-            super(byteBuffer, NON_RETAINABLE);
+            super(byteBuffer, Retainable.NON_RETAINABLE);
         }
     }
 

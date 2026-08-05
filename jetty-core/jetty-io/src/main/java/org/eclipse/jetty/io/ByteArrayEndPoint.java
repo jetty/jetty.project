@@ -30,6 +30,8 @@ import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -54,12 +56,12 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     private static final Logger LOG = LoggerFactory.getLogger(ByteArrayEndPoint.class);
     private static final SocketAddress NO_SOCKET_ADDRESS = noSocketAddress();
-    private static final ByteBuffer EOF = BufferUtil.allocate(0);
+    private static final ReadableBuffer EOF = ReadableBuffer.wrap(BufferUtil.allocate(0));
 
     private final Runnable _runFillable = () -> getFillInterest().fillable();
     private final AutoLock _lock = new AutoLock();
     private final Condition _hasOutput = _lock.newCondition();
-    private final Queue<ByteBuffer> _inQ = new ArrayDeque<>();
+    private final Queue<ReadableBuffer> _inQ = new ArrayDeque<>();
     private final RetainableByteBuffer.DynamicCapacity _buffer;
 
     public ByteArrayEndPoint()
@@ -184,10 +186,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             if (!isOpen())
                 throw new ClosedChannelException();
 
-            ByteBuffer in = _inQ.peek();
+            ReadableBuffer in = _inQ.peek();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} needsFillInterest EOF={} {}", this, in == EOF, BufferUtil.toDetailString(in));
-            if (BufferUtil.hasContent(in) || isEOF(in))
+                LOG.debug("{} needsFillInterest EOF={} {}", this, in == EOF, in);
+            if ((in != null && in.remaining() > 0L) || isEOF(in))
                 execute(_runFillable);
         }
     }
@@ -205,6 +207,11 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void addInput(ByteBuffer in)
     {
+        addInput(in == null ? null : ReadableBuffer.wrap(in));
+    }
+
+    public void addInput(ReadableBuffer in)
+    {
         boolean fillable = false;
         try (AutoLock ignored = _lock.lock())
         {
@@ -218,10 +225,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                 _inQ.add(EOF);
                 fillable = true;
             }
-            if (BufferUtil.hasContent(in))
+            if (in != null && in.remaining() > 0L)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} addInputAndRun={} {}", this, wasEmpty, BufferUtil.toDetailString(in));
+                    LOG.debug("{} addInputAndRun={} {}", this, wasEmpty, in);
                 _inQ.add(in);
                 fillable = wasEmpty;
             }
@@ -232,20 +239,20 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     public void addInput(String s)
     {
-        addInput(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
+        addInput(BufferUtil.toReadableBuffer(s, StandardCharsets.UTF_8));
     }
 
     public void addInput(String s, Charset charset)
     {
-        addInput(BufferUtil.toBuffer(s, charset));
+        addInput(BufferUtil.toReadableBuffer(s, charset));
     }
 
     public void addInputAndExecute(String s)
     {
-        addInputAndExecute(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
+        addInputAndExecute(BufferUtil.toReadableBuffer(s, StandardCharsets.UTF_8));
     }
 
-    public void addInputAndExecute(ByteBuffer in)
+    public void addInputAndExecute(ReadableBuffer in)
     {
         boolean fillable = false;
         try (AutoLock ignored = _lock.lock())
@@ -260,10 +267,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                 _inQ.add(EOF);
                 fillable = true;
             }
-            if (BufferUtil.hasContent(in))
+            if (in != null && in.remaining() > 0L)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} addInputAndExecute={} {}", this, wasEmpty, BufferUtil.toDetailString(in));
+                    LOG.debug("{} addInputAndExecute={} {}", this, wasEmpty, in);
                 _inQ.add(in);
                 fillable = wasEmpty;
             }
@@ -376,7 +383,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     }
 
     @Override
-    public int fill(ByteBuffer buffer) throws IOException
+    public int fill(WritableBuffer buffer) throws IOException
     {
         int filled = 0;
         try (AutoLock ignored = _lock.lock())
@@ -392,17 +399,17 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                 if (_inQ.isEmpty())
                     break;
 
-                ByteBuffer in = _inQ.peek();
+                ReadableBuffer in = _inQ.peek();
                 if (isEOF(in))
                 {
                     filled = -1;
                     break;
                 }
 
-                if (BufferUtil.hasContent(in))
+                if (in != null && in.remaining() > 0L)
                 {
-                    filled = BufferUtil.append(buffer, in);
-                    if (BufferUtil.isEmpty(in))
+                    filled = (int)BufferUtil.put(in, buffer);
+                    if (in.remaining() == 0L)
                         _inQ.poll();
                     break;
                 }
@@ -418,9 +425,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     }
 
     @Override
-    public boolean flush(ByteBuffer... buffers) throws IOException
+    public boolean flush(ReadableBuffer buffer) throws IOException
     {
-        boolean flushed = true;
         try (AutoLock ignored = _lock.lock())
         {
             if (!isOpen())
@@ -428,16 +434,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             if (isOutputShutdown())
                 throw new IOException("OSHUT");
 
-            boolean notIdle = false;
-
-            for (ByteBuffer b : buffers)
-            {
-                int remaining = b.remaining();
-                flushed = _buffer.append(b);
-                notIdle |= b.remaining() < remaining;
-                if (!flushed)
-                    break;
-            }
+            long remaining = buffer.remaining();
+            buffer.writeTo(_buffer::append);
+            boolean flushed = buffer.remaining() == 0L;
+            boolean notIdle = buffer.remaining() < remaining;
 
             if (notIdle)
             {
@@ -507,7 +507,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      * @param buffer the input ByteBuffer to be compared to EOF
      * @return Whether the reference buffer is equal to that of EOF
      */
-    private static boolean isEOF(ByteBuffer buffer)
+    private static boolean isEOF(ReadableBuffer buffer)
     {
         @SuppressWarnings("ReferenceEquality")
         boolean isEof = (buffer == EOF);

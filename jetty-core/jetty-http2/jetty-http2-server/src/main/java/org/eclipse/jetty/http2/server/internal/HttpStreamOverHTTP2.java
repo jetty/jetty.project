@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.server.internal;
 
 import java.io.EOFException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,10 +46,10 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.TunnelSupport;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -168,12 +167,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (chunk != null)
             return chunk;
 
-        Stream.Data data = _stream.readData();
+        Content.Chunk data = _stream.read();
         if (data == null)
             return null;
 
         // Check if the trailers must be returned.
-        if (data.frame().isEndStream())
+        if (data.isLast())
         {
             Content.Chunk trailer;
             try (AutoLock ignored = _lock.lock())
@@ -192,6 +191,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         // the chunk is stored below for later use, so should be retained;
         // the two actions cancel each other, no need to further retain or release.
         chunk = createChunk(data);
+        data.release();
 
         try (AutoLock ignored = _lock.lock())
         {
@@ -265,15 +265,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         return _httpChannel.onContentAvailable();
     }
 
-    private Content.Chunk createChunk(Stream.Data data)
+    private Content.Chunk createChunk(Content.Chunk chunk)
     {
-        DataFrame frame = data.frame();
-        if (frame.isEndStream() && frame.remaining() == 0)
-        {
-            data.release();
+        if (chunk.isLast() && chunk.getByteBuffer().remaining() == 0)
             return Content.Chunk.EOF;
-        }
-        return Content.Chunk.asChunk(frame.getByteBuffer(), frame.isEndStream(), data);
+        chunk.retain();
+        return chunk;
     }
 
     @Override
@@ -283,16 +280,16 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer byteBuffer, Callback callback)
     {
-        ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
+        ReadableBuffer content = byteBuffer != null ? byteBuffer : ReadableBuffer.EMPTY;
         if (response != null)
             sendHeaders(request, response, content, last, callback);
         else
             sendContent(request, content, last, callback);
     }
 
-    private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
+    private void sendHeaders(MetaData.Request request, MetaData.Response response, ReadableBuffer content, boolean last, Callback callback)
     {
         _responseMetaData = response;
 
@@ -301,7 +298,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         HeadersFrame trailersFrame = null;
 
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
+        boolean hasContent = content.remaining() > 0L && !isHeadRequest;
         int streamId = _stream.getId();
         if (HttpStatus.isInterim(response.getStatus()))
         {
@@ -320,7 +317,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             _committed = true;
             if (last)
             {
-                long realContentLength = BufferUtil.length(content);
+                long realContentLength = content.remaining();
                 long contentLength = response.getContentLength();
                 if (contentLength < 0)
                 {
@@ -397,16 +394,18 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
 
         _stream.send(new HTTP2Stream.FrameList(headersFrame, dataFrame, trailersFrame), callback);
+        if (dataFrame != null)
+            dataFrame.release();
     }
 
-    private void sendContent(MetaData.Request request, ByteBuffer content, boolean last, Callback callback)
+    private void sendContent(MetaData.Request request, ReadableBuffer content, boolean last, Callback callback)
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
+        boolean hasContent = content.remaining() > 0L && !isHeadRequest;
         if (hasContent || (last && !isTunnel(request, _responseMetaData)))
         {
             if (!hasContent)
-                content = BufferUtil.EMPTY_BUFFER;
+                content = ReadableBuffer.EMPTY;
             if (last)
             {
                 HttpFields trailers = retrieveTrailers();
@@ -538,7 +537,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         }
     }
 
-    private void sendDataFrame(ByteBuffer content, boolean lastContent, boolean endStream, Callback callback)
+    private void sendDataFrame(ReadableBuffer content, boolean lastContent, boolean endStream, Callback callback)
     {
         if (LOG.isDebugEnabled())
         {
@@ -546,8 +545,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
                 content.remaining(), lastContent ? " (last chunk)" : "");
         }
-        DataFrame frame = new DataFrame(_stream.getId(), content, endStream);
-        _stream.data(frame, callback);
+        _stream.data(content, endStream, callback);
     }
 
     private void sendTrailersFrame(MetaData metaData, Callback callback)

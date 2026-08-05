@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.RateControl;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 
 /**
  * <p>The parser for the frame header of HTTP/2 frames.</p>
@@ -70,9 +69,9 @@ public class HeaderParser
      * @return true if the whole header bytes were parsed, false if not enough
      * header bytes were present in the buffer
      */
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(ReadableBuffer buffer)
     {
-        while (buffer.hasRemaining())
+        while (buffer.remaining() > 0L)
         {
             switch (state)
             {

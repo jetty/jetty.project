@@ -38,6 +38,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -392,6 +394,15 @@ public class BufferUtil
      * @param buffer The buffer to convert in flush mode. The buffer is not altered.
      * @return An array of bytes duplicated from the buffer.
      */
+    public static byte[] toArray(ReadableBuffer buffer)
+    {
+        byte[] to = new byte[Math.toIntExact(buffer.remaining())];
+        ReadableBuffer slice = buffer.slice();
+        slice.get(to);
+        slice.release();
+        return to;
+    }
+
     public static byte[] toArray(ByteBuffer buffer)
     {
         if (buffer.hasArray())
@@ -562,6 +573,44 @@ public class BufferUtil
         }
 
         return space;
+    }
+
+    /**
+     * Put data from a {@link ReadableBuffer} into a NIO buffer, avoiding over/under flows
+     *
+     * @param from ReadableBuffer to take bytes from, whose position is modified with the bytes taken.
+     * @param to Buffer to put bytes to in fill mode.
+     * @return number of bytes moved
+     * @throws ReadOnlyBufferException if the to buffer is read only
+     */
+    public static int put(ReadableBuffer from, ByteBuffer to)
+    {
+        WritableBuffer wb = WritableBuffer.wrap(to);
+        return (int)put(from, wb);
+    }
+
+    public static int put(ByteBuffer from, WritableBuffer to)
+    {
+        return (int)put(ReadableBuffer.wrap(from), to);
+    }
+
+    public static long put(ReadableBuffer from, WritableBuffer to)
+    {
+        long filled;
+        if (to.remaining() >= from.remaining())
+        {
+            filled = from.remaining();
+            to.put(from);
+        }
+        else
+        {
+            filled = to.remaining();
+            ReadableBuffer slice = from.slice(from.position(), filled);
+            to.put(slice);
+            slice.release();
+            from.position(from.position() + filled);
+        }
+        return filled;
     }
 
     /**
@@ -796,6 +845,11 @@ public class BufferUtil
      * @param out The output stream
      * @throws IOException if there was a problem writing.
      */
+    public static void writeTo(ReadableBuffer buffer, OutputStream out) throws IOException
+    {
+        buffer.writeTo(input -> writeTo(input, out));
+    }
+
     public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
         if (buffer.hasArray())
@@ -827,6 +881,11 @@ public class BufferUtil
         return toString(buffer, StandardCharsets.ISO_8859_1);
     }
 
+    public static String toString(ReadableBuffer buffer)
+    {
+        return toString(buffer, StandardCharsets.ISO_8859_1);
+    }
+
     /**
      * Convert buffer to a String with specified Charset
      *
@@ -846,6 +905,17 @@ public class BufferUtil
             return new String(to, 0, to.length, charset);
         }
         return new String(array, buffer.arrayOffset() + buffer.position(), buffer.remaining(), charset);
+    }
+
+    public static String toString(ReadableBuffer buffer, Charset charset)
+    {
+        if (buffer == null)
+            return null;
+        byte[] to = new byte[Math.toIntExact(buffer.remaining())];
+        long positionBefore = buffer.position();
+        buffer.get(to);
+        buffer.position(positionBefore);
+        return new String(to, charset);
     }
 
     /**
@@ -874,6 +944,17 @@ public class BufferUtil
         return new String(array, buffer.arrayOffset() + position, length, charset);
     }
 
+    public static String toString(ReadableBuffer buffer, long position, int length, Charset charset)
+    {
+        if (buffer == null)
+            return null;
+        byte[] to = new byte[length];
+        ReadableBuffer slice = buffer.slice(position, length);
+        slice.get(to);
+        slice.release();
+        return new String(to, charset);
+    }
+
     /**
      * Convert the buffer to an UTF-8 String
      *
@@ -881,6 +962,11 @@ public class BufferUtil
      * @return The buffer as a string.
      */
     public static String toUTF8String(ByteBuffer buffer)
+    {
+        return toString(buffer, StandardCharsets.UTF_8);
+    }
+
+    public static String toUTF8String(ReadableBuffer buffer)
     {
         return toString(buffer, StandardCharsets.UTF_8);
     }
@@ -1023,6 +1109,11 @@ public class BufferUtil
 
     public static void putHexInt(ByteBuffer buffer, int n)
     {
+        putHexInt(WritableBuffer.wrap(buffer), n);
+    }
+
+    public static void putHexInt(WritableBuffer buffer, int n)
+    {
         if (n < 0)
         {
             buffer.put((byte)'-');
@@ -1110,6 +1201,11 @@ public class BufferUtil
 
     public static void putDecLong(ByteBuffer buffer, long n)
     {
+        putDecLong(WritableBuffer.wrap(buffer), n);
+    }
+
+    public static void putDecLong(WritableBuffer buffer, long n)
+    {
         if (n < 0)
         {
             buffer.put((byte)'-');
@@ -1167,11 +1263,21 @@ public class BufferUtil
         return toBuffer(s, StandardCharsets.ISO_8859_1);
     }
 
+    public static ReadableBuffer toReadableBuffer(String s)
+    {
+        return ReadableBuffer.wrap(toBuffer(s, StandardCharsets.ISO_8859_1));
+    }
+
     public static ByteBuffer toBuffer(String s, Charset charset)
     {
         if (s == null)
             return EMPTY_BUFFER;
         return toBuffer(s.getBytes(charset));
+    }
+
+    public static ReadableBuffer toReadableBuffer(String s, Charset charset)
+    {
+        return ReadableBuffer.wrap(toBuffer(s, charset));
     }
 
     /**
@@ -1224,6 +1330,18 @@ public class BufferUtil
         BufferUtil.flipToFlush(buffer, pos);
 
         return buffer;
+    }
+
+    public static ByteBuffer toBuffer(ReadableBuffer buffer, boolean direct)
+    {
+        long capacity = buffer.remaining();
+        if (capacity > Integer.MAX_VALUE)
+            throw new BufferOverflowException();
+        ByteBuffer result = allocate((int)capacity, direct);
+        flipToFill(result);
+        put(buffer, result);
+        flipToFlush(result, 0);
+        return result;
     }
 
     public static ByteBuffer toDirectBuffer(String s)
@@ -1503,6 +1621,23 @@ public class BufferUtil
      * @param buffer the buffer to generate a hex byte summary from
      * @return A hex string
      */
+    public static String toHexString(ReadableBuffer buffer)
+    {
+        if (buffer == null)
+            return "null";
+        ReadableBuffer slice = buffer.slice();
+        try
+        {
+            byte[] b = new byte[Math.toIntExact(slice.remaining())];
+            slice.get(b);
+            return StringUtil.toHexString(b);
+        }
+        finally
+        {
+            slice.release();
+        }
+    }
+
     public static String toHexString(ByteBuffer buffer)
     {
         if (buffer == null)
@@ -1529,6 +1664,12 @@ public class BufferUtil
     };
 
     public static void putCRLF(ByteBuffer buffer)
+    {
+        buffer.put((byte)13);
+        buffer.put((byte)10);
+    }
+
+    public static void putCRLF(WritableBuffer buffer)
     {
         buffer.put((byte)13);
         buffer.put((byte)10);

@@ -65,6 +65,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -101,7 +102,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.allocate(1024), callback);
+                response.write(true, ReadableBuffer.allocate(1024, false), callback);
                 return true;
             }
         });
@@ -129,7 +130,7 @@ public class HttpClientStreamTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws IOException
             {
                 Content.Sink.write(response, false, ByteBuffer.allocate(16));
-                response.write(true, ByteBuffer.allocate(8), callback);
+                response.write(true, ReadableBuffer.allocate(8, false), callback);
                 return true;
             }
         });
@@ -210,7 +211,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -253,7 +254,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -409,7 +410,7 @@ public class HttpClientStreamTest extends AbstractTest
             input.close();
 
             HandlerContext handlerContext = contextRef.get();
-            handlerContext.response().write(true, ByteBuffer.allocate(1024), handlerContext.callback());
+            handlerContext.response().write(true, ReadableBuffer.allocate(1024, false), handlerContext.callback());
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -431,7 +432,7 @@ public class HttpClientStreamTest extends AbstractTest
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, chunk1.length + chunk2.length);
                 Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
-                response.write(true, ByteBuffer.wrap(chunk2), callback);
+                response.write(true, ReadableBuffer.wrap(chunk2), callback);
                 return true;
             }
         });
@@ -486,7 +487,7 @@ public class HttpClientStreamTest extends AbstractTest
             {
                 byte[] data = new byte[1024];
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -608,7 +609,7 @@ public class HttpClientStreamTest extends AbstractTest
                     throw new InterruptedIOException();
                 }
 
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -660,7 +661,7 @@ public class HttpClientStreamTest extends AbstractTest
                     throw new InterruptedIOException();
                 }
 
-                response.write(true, ByteBuffer.wrap(data2), callback);
+                response.write(true, ReadableBuffer.wrap(data2), callback);
                 return true;
             }
         });
@@ -699,7 +700,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -1248,7 +1249,7 @@ public class HttpClientStreamTest extends AbstractTest
 
             byte[] chunk = new byte[64];
             random.nextBytes(chunk);
-            context.response().write(false, ByteBuffer.wrap(chunk), Callback.NOOP);
+            context.response().write(false, ReadableBuffer.wrap(chunk), Callback.NOOP);
 
             // Use a buffer larger than the data
             // written to test that the read returns.
@@ -1263,7 +1264,7 @@ public class HttpClientStreamTest extends AbstractTest
             }
             assertEquals(chunk.length, totalRead);
 
-            context.response().write(true, BufferUtil.EMPTY_BUFFER, context.callback());
+            context.response().write(true, ReadableBuffer.EMPTY, context.callback());
 
             Result result = listener.await(5, TimeUnit.SECONDS);
             assertEquals(200, result.getResponse().getStatus());

@@ -17,7 +17,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import javax.net.ssl.SSLContext;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -301,7 +301,7 @@ public class ConnectHandlerSSLTest extends AbstractConnectHandlerTest
                             if (x != null)
                                 callback.failed(x);
                             else
-                                response.write(true, ByteBuffer.wrap(bytes), callback);
+                                response.write(true, ReadableBuffer.wrap(bytes), callback);
                         });
                 }
 

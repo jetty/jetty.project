@@ -35,6 +35,8 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -839,7 +841,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
 
         @Override
-        public int fill(ByteBuffer buffer) throws IOException
+        public int fill(WritableBuffer buffer) throws IOException
         {
             return _endPoint.fill(buffer);
         }
@@ -851,7 +853,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
 
         @Override
-        public boolean flush(ByteBuffer... buffer) throws IOException
+        public boolean flush(ReadableBuffer buffer) throws IOException
         {
             return _endPoint.flush(buffer);
         }
@@ -970,9 +972,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
 
         @Override
-        public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+        public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
         {
-            _endPoint.write(callback, buffers);
+            _endPoint.write(buffer, callback);
         }
     }
 }

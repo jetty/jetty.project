@@ -18,7 +18,6 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Objects;
@@ -27,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;
@@ -231,14 +231,15 @@ public abstract class WriteFlusher
     {
         private final Callback _callback;
         private final SocketAddress _address;
-        private final ByteBuffer[] _buffers;
+        private final ReadableBuffer _buffer;
 
-        private PendingState(Callback callback, SocketAddress address, ByteBuffer[] buffers)
+        private PendingState(Callback callback, SocketAddress address, ReadableBuffer buffer)
         {
             super(StateType.PENDING);
-            _callback = callback;
             _address = address;
-            _buffers = buffers;
+            _buffer = buffer;
+            _callback = Callback.from(callback, _buffer::release);
+            buffer.retain();
         }
 
         InvocationType getCallbackInvocationType()
@@ -279,16 +280,16 @@ public abstract class WriteFlusher
      *
      * If all buffers have been written it calls callback.complete().
      *
+     * @param buffer the buffer to flush to the endpoint
      * @param callback the callback to call on either failed or complete
-     * @param buffers the buffers to flush to the endpoint
      * @throws WritePendingException if unable to write due to prior pending write
      */
-    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    public void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
     {
-        write(callback, null, buffers);
+        write(buffer, null, callback);
     }
 
-    public void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
+    public void write(ReadableBuffer buffer, SocketAddress address, Callback callback) throws WritePendingException
     {
         Objects.requireNonNull(callback);
 
@@ -299,20 +300,19 @@ public abstract class WriteFlusher
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("write: {} {}", this, BufferUtil.toDetailString(buffers));
+            LOG.debug("write: {} {}", this, buffer);
 
         if (!updateState(__IDLE, __FLUSHING))
             throw new WritePendingException();
 
         try
         {
-            buffers = flush(address, buffers);
-
-            if (buffers != null)
+            boolean fullyFlushed = flush(address, buffer);
+            if (!fullyFlushed)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("flush incomplete {}", this);
-                PendingState pending = new PendingState(callback, address, buffers);
+                PendingState pending = new PendingState(callback, address, buffer);
                 if (updateState(__FLUSHING, pending))
                     onIncompleteFlush();
                 else
@@ -408,19 +408,17 @@ public abstract class WriteFlusher
             return; // failure already handled.
 
         Callback callback = pending._callback;
+        ReadableBuffer buffer = pending._buffer;
         try
         {
-            ByteBuffer[] buffers = pending._buffers;
             SocketAddress address = pending._address;
 
-            buffers = flush(address, buffers);
+            flush(address, buffer);
 
-            if (buffers != null)
+            if (buffer.remaining() != 0L)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("flushed incomplete {} {}", BufferUtil.toDetailString(buffers), this);
-                if (buffers != pending._buffers)
-                    pending = new PendingState(callback, address, buffers);
+                    LOG.debug("flushed incomplete {} {}", buffer, this);
                 if (updateState(__COMPLETING, pending))
                     onIncompleteFlush();
                 else
@@ -448,58 +446,42 @@ public abstract class WriteFlusher
      * Flushes the buffers iteratively until no progress is made.
      *
      * @param address the datagram channel to send the buffers to (used by QUIC and HTTP/3)
-     * @param buffers The buffers to flush
-     * @return The unflushed buffers, or null if all flushed
+     * @param buffer The buffer to flush
+     * @return true if the buffer was fully flushed
      * @throws IOException if unable to flush
      */
-    protected ByteBuffer[] flush(SocketAddress address, ByteBuffer[] buffers) throws IOException
+    protected boolean flush(SocketAddress address, ReadableBuffer buffer) throws IOException
     {
-        boolean progress = true;
-        while (progress && buffers != null)
+        if (buffer.remaining() == 0L)
         {
-            long before = BufferUtil.remaining(buffers);
-            boolean flushed = address == null ? _endPoint.flush(buffers) : _endPoint.send(address, buffers);
-            long after = BufferUtil.remaining(buffers);
+            LOG.debug("Flushed=0 written=0 remaining=0 {}", this);
+            return true;
+        }
+
+        boolean progress = true;
+        while (progress && buffer.remaining() != 0L)
+        {
+            long before = buffer.remaining();
+            boolean flushed = address == null ? _endPoint.flush(buffer) : _endPoint.send(address, buffer);
+            long after = buffer.remaining();
             long written = before - after;
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Flushed={} written={} remaining={} {}", flushed, written, after, this);
 
             if (flushed)
-                return null;
+                return true;
 
             progress = written > 0;
-
-            int index = 0;
-            while (true)
-            {
-                if (index == buffers.length)
-                {
-                    // All buffers consumed.
-                    buffers = null;
-                    index = 0;
-                    break;
-                }
-                else
-                {
-                    int remaining = buffers[index].remaining();
-                    if (remaining > 0)
-                        break;
-                    ++index;
-                    progress = true;
-                }
-            }
-            if (index > 0)
-                buffers = Arrays.copyOfRange(buffers, index, buffers.length);
         }
 
         if (LOG.isDebugEnabled())
             LOG.debug("!fully flushed {}", this);
 
-        // If buffers is null, then flush has returned false but has consumed all the data!
-        // This is probably SSL being unable to flush the encrypted buffer, so return EMPTY_BUFFERS
+        // If we reach here, then flush has returned false but has consumed all the data!
+        // This is probably SSL being unable to flush the encrypted buffer, so return false
         // and that will keep this WriteFlusher pending.
-        return buffers == null ? EMPTY_BUFFERS : buffers;
+        return false;
     }
 
     /**

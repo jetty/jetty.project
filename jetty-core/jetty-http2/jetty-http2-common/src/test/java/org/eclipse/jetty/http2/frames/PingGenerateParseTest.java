@@ -21,9 +21,9 @@ import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.PingGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PingGenerateParseTest
 {
-    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
+    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
 
     @Test
     public void testGenerateParse() throws Exception
@@ -56,12 +56,14 @@ public class PingGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            List<ReadableBuffer> accumulator = new ArrayList<>();
             generator.generatePing(accumulator, payload, true);
 
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+            accumulator.forEach(ReadableBuffer::release);
+            UnknownParseTest.parse(parser, rb);
+            rb.release();
         }
 
         assertEquals(1, frames.size());
@@ -92,12 +94,14 @@ public class PingGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            List<ReadableBuffer> accumulator = new ArrayList<>();
             generator.generatePing(accumulator, payload, true);
 
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+            accumulator.forEach(ReadableBuffer::release);
+            UnknownParseTest.parse(parser, rb);
+            rb.release();
 
             assertEquals(1, frames.size());
             PingFrame frame = frames.get(0);
@@ -122,12 +126,14 @@ public class PingGenerateParseTest
             }
         });
 
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        List<ReadableBuffer> accumulator = new ArrayList<>();
         PingFrame ping = new PingFrame(NanoTime.now(), true);
         generator.generate(accumulator, ping);
 
-        UnknownParseTest.parse(parser, accumulator);
-        accumulator.release();
+        ReadableBuffer rb = ReadableBuffer.accumulate(accumulator);
+        accumulator.forEach(ReadableBuffer::release);
+        UnknownParseTest.parse(parser, rb);
+        rb.release();
 
         assertEquals(1, frames.size());
         PingFrame pong = frames.get(0);

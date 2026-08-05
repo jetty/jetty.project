@@ -25,6 +25,8 @@ import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable;
 
@@ -34,19 +36,19 @@ import org.eclipse.jetty.util.thread.Invocable;
  * bytes read, and flushes/writes may write {@code 0} bytes.</p>
  * <p>Applications are notified of read readiness by registering a
  * {@link Callback} via {@link #fillInterested(Callback)}, and then
- * using {@link #fill(ByteBuffer)} to read the available bytes.</p>
- * <p>Application may use {@link #flush(ByteBuffer...)} to transmit bytes;
+ * using {@link #fill(WritableBuffer)} to read the available bytes.</p>
+ * <p>Application may use {@link #flush(ReadableBuffer)} to transmit bytes;
  * if the flush does not transmit all the bytes, applications must
  * arrange to resume flushing when it will be possible to transmit more
  * bytes.
- * Alternatively, applications may use {@link #write(Callback, ByteBuffer...)}
+ * Alternatively, applications may use {@link #write(ReadableBuffer, Callback)}
  * and be notified via the {@link Callback} when the write completes
  * (i.e. all the buffers have been flushed), either successfully or
  * with a failure.</p>
- * <p>Connection-less reads are performed using {@link #receive(ByteBuffer)}.
+ * <p>Connection-less reads are performed using {@link #receive(WritableBuffer)}.
  * Similarly, connection-less flushes are performed using
- * {@link #send(SocketAddress, ByteBuffer...)} and connection-less writes
- * using {@link #write(Callback, SocketAddress, ByteBuffer...)}.</p>
+ * {@link #send(SocketAddress, ReadableBuffer)} and connection-less writes
+ * using {@link #write(ReadableBuffer, SocketAddress, Callback)}.</p>
  * <p>While all the I/O methods are non-blocking, they can be easily
  * converted to blocking using either {@link org.eclipse.jetty.util.Blocker}
  * or {@link Callback.Completable}:</p>
@@ -69,7 +71,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 public interface EndPoint extends Closeable, Content.Sink
 {
     /**
-     * <p>Constant returned by {@link #receive(ByteBuffer)} to indicate the end-of-file.</p>
+     * <p>Constant returned by {@link #receive(WritableBuffer)} to indicate the end-of-file.</p>
      */
     SocketAddress EOF = InetSocketAddress.createUnresolved("", 0);
 
@@ -173,7 +175,21 @@ public interface EndPoint extends Closeable, Content.Sink
      * filled or -1 if EOF is read or the input is shutdown.
      * @throws IOException if the endpoint is closed.
      */
+    @Deprecated
     default int fill(ByteBuffer buffer) throws IOException
+    {
+        WritableBuffer wb = ReadableBuffer.wrap(buffer).toWritable();
+        try
+        {
+            return fill(wb);
+        }
+        finally
+        {
+            wb.toReadable();
+        }
+    }
+
+    default int fill(WritableBuffer buffer) throws IOException
     {
         throw new UnsupportedOperationException();
     }
@@ -186,7 +202,21 @@ public interface EndPoint extends Closeable, Content.Sink
      * @return the peer address that sent the data, or {@link #EOF}
      * @throws IOException if the receive fails
      */
+    @Deprecated
     default SocketAddress receive(ByteBuffer buffer) throws IOException
+    {
+        WritableBuffer wb = ReadableBuffer.wrap(buffer).toWritable();
+        try
+        {
+            return receive(wb);
+        }
+        finally
+        {
+            wb.toReadable();
+        }
+    }
+
+    default SocketAddress receive(WritableBuffer buffer) throws IOException
     {
         int filled = fill(buffer);
         if (filled < 0)
@@ -203,12 +233,18 @@ public interface EndPoint extends Closeable, Content.Sink
      * The header/buffers position is updated to indicate how many bytes
      * have been consumed.</p>
      *
-     * @param buffer the buffers to flush
+     * @param buffers the buffers to flush
      * @return True IFF all the buffers have been consumed and the endpoint has flushed the data to its
      * destination (ie is not buffering any data).
      * @throws IOException If the endpoint is closed or output is shutdown.
      */
-    default boolean flush(ByteBuffer... buffer) throws IOException
+    @Deprecated
+    default boolean flush(ByteBuffer... buffers) throws IOException
+    {
+        return flush(buffers == null ? null : ReadableBuffer.wrap(buffers));
+    }
+
+    default boolean flush(ReadableBuffer buffer) throws IOException
     {
         throw new UnsupportedOperationException();
     }
@@ -223,9 +259,15 @@ public interface EndPoint extends Closeable, Content.Sink
      * @throws IOException if the send fails
      * @see #write(Callback, SocketAddress, ByteBuffer...)
      */
+    @Deprecated
     default boolean send(SocketAddress address, ByteBuffer... buffers) throws IOException
     {
         return flush(buffers);
+    }
+
+    default boolean send(SocketAddress address, ReadableBuffer buffer) throws IOException
+    {
+        return flush(buffer);
     }
 
     /**
@@ -283,7 +325,13 @@ public interface EndPoint extends Closeable, Content.Sink
      * @param buffers one or more {@link ByteBuffer}s that will be flushed.
      * @throws WritePendingException if another write operation is concurrent.
      */
+    @Deprecated
     default void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    {
+        write(ReadableBuffer.wrap(buffers), callback);
+    }
+
+    default void write(ReadableBuffer buffer, Callback callback) throws WritePendingException
     {
         throw new UnsupportedOperationException();
     }
@@ -298,38 +346,42 @@ public interface EndPoint extends Closeable, Content.Sink
      * @throws WritePendingException if a previous write was initiated but was not yet completed
      * @see #send(SocketAddress, ByteBuffer...)
      */
+    @Deprecated
     default void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
     {
-        write(callback, buffers);
+        write(ReadableBuffer.wrap(buffers), address, callback);
     }
 
-    @Override
-    default void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    default void write(ReadableBuffer buffer, SocketAddress address, Callback callback) throws WritePendingException
+    {
+        write(buffer, callback);
+    }
+
+    default void write(boolean last, ReadableBuffer buffer, Callback callback)
     {
         if (last)
         {
-            write(Callback.from(() ->
-                {
-                    try
+            write(buffer, Callback.from(() ->
                     {
-                        close();
-                        callback.succeeded();
-                    }
-                    catch (Throwable t)
+                        try
+                        {
+                            close();
+                            callback.succeeded();
+                        }
+                        catch (Throwable t)
+                        {
+                            callback.failed(t);
+                        }
+                    },
+                    x ->
                     {
-                        callback.failed(t);
-                    }
-                },
-                x ->
-                {
-                    IO.close(this);
-                    callback.failed(x);
-                }),
-                byteBuffer);
+                        IO.close(this);
+                        callback.failed(x);
+                    }));
         }
         else
         {
-            write(callback, byteBuffer);
+            write(buffer, callback);
         }
     }
 

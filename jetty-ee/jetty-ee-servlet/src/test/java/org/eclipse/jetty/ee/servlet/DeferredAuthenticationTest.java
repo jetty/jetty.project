@@ -112,7 +112,7 @@ public class DeferredAuthenticationTest
                 {
                     // Send 401 response as a challenge.
                     response.setStatus(HttpStatus.UNAUTHORIZED_401);
-                    response.write(true, BufferUtil.toBuffer("this is a challenge"), callback);
+                    response.write(true, BufferUtil.toReadableBuffer("this is a challenge"), callback);
                     return AuthenticationState.CHALLENGE;
                 }
 

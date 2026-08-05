@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -29,9 +27,10 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RateControl;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +43,7 @@ public class Parser
 {
     private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
-    private final ByteBufferPool bufferPool;
+    private final WritableBufferPool bufferPool;
     private final HeaderParser headerParser;
     private final HpackDecoder hpackDecoder;
     private final BodyParser[] bodyParsers;
@@ -57,12 +56,12 @@ public class Parser
     private long beginNanoTime;
     private boolean nanoTimeStored;
 
-    public Parser(ByteBufferPool bufferPool, int maxHeaderSize)
+    public Parser(WritableBufferPool bufferPool, int maxHeaderSize)
     {
         this(bufferPool, maxHeaderSize, RateControl.NO_RATE_CONTROL);
     }
 
-    public Parser(ByteBufferPool bufferPool, int maxHeaderSize, RateControl rateControl)
+    public Parser(WritableBufferPool bufferPool, int maxHeaderSize, RateControl rateControl)
     {
         this.bufferPool = bufferPool;
         this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);
@@ -76,8 +75,10 @@ public class Parser
             throw new IllegalStateException("Invalid parser initialization");
         this.listener = listener;
         unknownBodyParser = new UnknownBodyParser(headerParser, listener);
-        HeaderBlockParser headerBlockParser = new HeaderBlockParser(headerParser, bufferPool, hpackDecoder, unknownBodyParser);
-        HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments(bufferPool, hpackDecoder.getMaxHeaderListSize());
+        // TODO directness of buffers
+        boolean directness = true;
+        HeaderBlockParser headerBlockParser = new HeaderBlockParser(headerParser, bufferPool, directness, hpackDecoder, unknownBodyParser);
+        HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments(bufferPool, directness, hpackDecoder.getMaxHeaderListSize());
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
         bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
@@ -141,7 +142,7 @@ public class Parser
      *
      * @param buffer the buffer to parse
      */
-    public void parse(ByteBuffer buffer)
+    public void parse(ReadableBuffer buffer)
     {
         try
         {
@@ -151,7 +152,7 @@ public class Parser
                 {
                     case HEADER:
                     {
-                        if (buffer.hasRemaining())
+                        if (buffer.remaining() > 0L)
                             storeBeginNanoTime();
                         if (!parseHeader(buffer))
                             return;
@@ -180,7 +181,7 @@ public class Parser
         }
     }
 
-    protected boolean parseHeader(ByteBuffer buffer)
+    protected boolean parseHeader(ReadableBuffer buffer)
     {
         if (!headerParser.parse(buffer))
             return false;
@@ -211,7 +212,7 @@ public class Parser
         return true;
     }
 
-    protected boolean parseBody(ByteBuffer buffer)
+    protected boolean parseBody(ReadableBuffer buffer)
     {
         int type = getFrameType();
         if (type < 0 || type >= bodyParsers.length)
@@ -241,7 +242,7 @@ public class Parser
         return true;
     }
 
-    private boolean connectionFailure(ByteBuffer buffer, ErrorCode error, String reason)
+    private boolean connectionFailure(ReadableBuffer buffer, ErrorCode error, String reason)
     {
         return unknownBodyParser.connectionFailure(buffer, error.code, reason);
     }

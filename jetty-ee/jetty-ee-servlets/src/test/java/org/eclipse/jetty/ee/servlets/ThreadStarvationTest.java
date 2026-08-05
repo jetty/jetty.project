@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -60,6 +59,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -449,9 +449,12 @@ public class ThreadStarvationTest
                 return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
                     @Override
-                    public boolean flush(ByteBuffer... buffers) throws IOException
+                    public boolean flush(ReadableBuffer buffer) throws IOException
                     {
-                        super.flush(buffers[0]);
+                        ReadableBuffer slice = buffer.slice(0, 100);
+                        super.flush(slice);
+                        slice.release();
+                        buffer.position(slice.position());
                         throw new IOException("TEST FAILURE");
                     }
                 };
@@ -481,7 +484,7 @@ public class ThreadStarvationTest
 
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 13L);
-                response.write(true, BufferUtil.toBuffer("Hello World!\n"), callback);
+                response.write(true, BufferUtil.toReadableBuffer("Hello World!\n"), callback);
                 return true;
             }
         }

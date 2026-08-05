@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.HuffmanDecoder;
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class HpackContextTest
 {
-    public static String decode(ByteBuffer buffer, int length) throws EncodingException
+    public static String decode(ReadableBuffer buffer, long length) throws EncodingException
     {
         HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
         huffmanDecoder.setLength(length);
@@ -47,7 +46,7 @@ public class HpackContextTest
         return decoded;
     }
 
-    public static int decodeInt(ByteBuffer buffer, int prefix) throws EncodingException
+    public static int decodeInt(ReadableBuffer buffer, int prefix) throws EncodingException
     {
         // This is a fix for HPACK as it already takes the first byte of the encoded integer.
         if (prefix != 8)
@@ -448,7 +447,7 @@ public class HpackContextTest
             Entry entry = ctx.get(i);
             assertTrue(entry.isStatic());
 
-            ByteBuffer buffer = ByteBuffer.wrap(entry.getStaticHuffmanValue());
+            ReadableBuffer buffer = ReadableBuffer.wrap(entry.getStaticHuffmanValue());
             int huff = 0xff & buffer.get();
             assertTrue((0x80 & huff) == 0x80);
 

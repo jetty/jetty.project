@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -339,6 +340,24 @@ public class Content
             new ContentSourceByteBuffer(source, promise).run();
         }
 
+        static void asReadableBuffer(Source source, Promise<ReadableBuffer> promise)
+        {
+            new ContentSourceByteBuffer(source, new Promise<>()
+            {
+                @Override
+                public void succeeded(ByteBuffer result)
+                {
+                    promise.succeeded(ReadableBuffer.wrap(result));
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    promise.failed(x);
+                }
+            }).run();
+        }
+
         /**
          * <p>Reads, blocking if necessary, the whole content source into a {@link ByteBuffer}.</p>
          *
@@ -353,6 +372,22 @@ public class Content
                 try (Blocker.Promise<ByteBuffer> promise = Blocker.promise())
                 {
                     asByteBuffer(source, promise);
+                    return promise.block();
+                }
+            }
+            catch (Throwable x)
+            {
+                throw IO.rethrow(x);
+            }
+        }
+
+        static ReadableBuffer asReadableBuffer(Source source) throws IOException
+        {
+            try
+            {
+                try (Blocker.Promise<ReadableBuffer> promise = Blocker.promise())
+                {
+                    asReadableBuffer(source, promise);
                     return promise.block();
                 }
             }
@@ -725,7 +760,7 @@ public class Content
                 boolean closed;
 
                 @Override
-                public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                public void write(boolean last, ReadableBuffer buffer, Callback callback)
                 {
                     if (closed)
                     {
@@ -734,7 +769,7 @@ public class Content
                     }
                     try
                     {
-                        BufferUtil.writeTo(byteBuffer, out);
+                        buffer.writeTo(input -> BufferUtil.writeTo(input, out));
                         if (last)
                         {
                             closed = true;
@@ -762,7 +797,7 @@ public class Content
                 boolean closed;
 
                 @Override
-                public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                public void write(boolean last, ReadableBuffer buffer, Callback callback)
                 {
                     if (closed)
                     {
@@ -771,12 +806,12 @@ public class Content
                     }
                     try
                     {
-                        int remaining = byteBuffer.remaining();
+                        long remaining = buffer.remaining();
                         int tries = 0;
-                        while (remaining > 0)
+                        while (remaining > 0L)
                         {
-                            int written = channel.write(byteBuffer);
-                            if (written > 0)
+                            long written = buffer.writeTo(channel::write);
+                            if (written > 0L)
                                 remaining -= written;
                             else if (tries++ > 2)
                                 throw new IllegalStateException("ByteChannel in async mode");
@@ -809,7 +844,7 @@ public class Content
                 boolean closed;
 
                 @Override
-                public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                public void write(boolean last, ReadableBuffer buffer, Callback callback)
                 {
                     if (closed)
                     {
@@ -818,30 +853,31 @@ public class Content
                     }
                     try
                     {
-                        channel.write(byteBuffer, byteBuffer, new CompletionHandler<>()
-                        {
-                            @Override
-                            public void completed(Integer written, ByteBuffer buffer)
+                        buffer.writeTo(input ->
+                            channel.write(input, input, new CompletionHandler<>()
                             {
-                                if (buffer.hasRemaining())
-                                    channel.write(buffer, buffer, this);
-                                else
+                                @Override
+                                public void completed(Integer written, ByteBuffer buffer)
                                 {
-                                    if (last)
+                                    if (buffer.hasRemaining())
+                                        channel.write(buffer, buffer, this);
+                                    else
                                     {
-                                        closed = true;
-                                        IO.close(channel);
+                                        if (last)
+                                        {
+                                            closed = true;
+                                            IO.close(channel);
+                                        }
+                                        callback.succeeded();
                                     }
-                                    callback.succeeded();
                                 }
-                            }
 
-                            @Override
-                            public void failed(Throwable x, ByteBuffer buffer)
-                            {
-                                callback.failed(x);
-                            }
-                        });
+                                @Override
+                                public void failed(Throwable x, ByteBuffer buffer)
+                                {
+                                    callback.failed(x);
+                                }
+                            }));
                     }
                     catch (Throwable t)
                     {
@@ -891,7 +927,7 @@ public class Content
         }
 
         /**
-         * <p>Blocking version of {@link #write(boolean, ByteBuffer, Callback)}.</p>
+         * <p>Blocking version of {@link #write(boolean, ReadableBuffer, Callback)}.</p>
          *
          * @param sink the sink to write to
          * @param last whether the ByteBuffers are the last to write
@@ -902,7 +938,7 @@ public class Content
         {
             try (Blocker.Callback callback = Blocker.callback())
             {
-                sink.write(last, byteBuffer, callback);
+                sink.write(last, ReadableBuffer.wrap(byteBuffer), callback);
                 callback.block();
             }
         }
@@ -915,11 +951,11 @@ public class Content
          * @param utf8Content the String to write
          * @param callback the callback to notify when the write operation is complete.
          *                 Implementations have the same guarantees for invocation of this
-         *                 callback as for {@link #write(boolean, ByteBuffer, Callback)}.
+         *                 callback as for {@link #write(boolean, ReadableBuffer, Callback)}.
          */
         static void write(Sink sink, boolean last, String utf8Content, Callback callback)
         {
-            sink.write(last, ByteBuffer.wrap(utf8Content.getBytes(StandardCharsets.UTF_8)), callback);
+            sink.write(last, ReadableBuffer.wrap(utf8Content.getBytes(StandardCharsets.UTF_8)), callback);
         }
 
         /**
@@ -930,10 +966,10 @@ public class Content
          * the {@code Callback} and a call to this method.</p>
          *
          * @param last whether the ByteBuffer is the last to write
-         * @param byteBuffer the ByteBuffer to write
+         * @param buffer the ReadableBuffer to write
          * @param callback the callback to notify when the write operation is complete
          */
-        void write(boolean last, ByteBuffer byteBuffer, Callback callback);
+        void write(boolean last, ReadableBuffer buffer, Callback callback);
     }
 
     /**
@@ -1029,6 +1065,16 @@ public class Content
             return new ByteBufferChunk.WithRetainableByteBuffer(buffer, last);
         }
 
+        static Chunk from(ReadableBuffer buffer, boolean last)
+        {
+            if (buffer.remaining() == 0)
+                return last ? EOF : EMPTY;
+
+            // TODO: do not copy but link the chunk and the buffer.
+            ByteBuffer copy = BufferUtil.toBuffer(buffer, true/*TODO do not hardcode directness*/);
+            return from(copy, last);
+        }
+
         /**
          * <p>Creates a Chunk with the given ByteBuffer.</p>
          * <p>The returned Chunk must be {@link #release() released}.</p>
@@ -1090,6 +1136,19 @@ public class Content
                 }
             }
             retainable.release();
+            return last ? EOF : EMPTY;
+        }
+
+        static Chunk asChunk(ReadableBuffer buffer, boolean last, Retainable retainable)
+        {
+            if (buffer.remaining() > 0L)
+            {
+                // TODO retain instead of copy
+                ByteBuffer byteBuffer = BufferUtil.toBuffer(buffer, false);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Copying buffer because could not retain");
+                return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
+            }
             return last ? EOF : EMPTY;
         }
 

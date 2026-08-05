@@ -65,14 +65,14 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -492,7 +492,7 @@ public class HttpClientTLSTest
                 return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected int networkFill(ByteBuffer input) throws IOException
+                    protected int networkFill(WritableBuffer input) throws IOException
                     {
                         int n = super.networkFill(input);
                         if (n > 0)
@@ -525,7 +525,7 @@ public class HttpClientTLSTest
                         return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             @Override
-                            protected int networkFill(ByteBuffer input) throws IOException
+                            protected int networkFill(WritableBuffer input) throws IOException
                             {
                                 int n = super.networkFill(input);
                                 if (n > 0)
@@ -582,7 +582,7 @@ public class HttpClientTLSTest
                 return new SslConnection(bufferPool, connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected int networkFill(ByteBuffer input) throws IOException
+                    protected int networkFill(WritableBuffer input) throws IOException
                     {
                         int n = super.networkFill(input);
                         if (n > 0)
@@ -659,7 +659,7 @@ public class HttpClientTLSTest
                 return new SslConnection(bufferPool, connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected boolean networkFlush(ByteBuffer output) throws IOException
+                    protected boolean networkFlush(ReadableBuffer output) throws IOException
                     {
                         throw new IOException("bang");
                     }
@@ -730,7 +730,7 @@ public class HttpClientTLSTest
                 return new SslConnection(bufferPool, connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected boolean networkFlush(ByteBuffer output) throws IOException
+                    protected boolean networkFlush(ReadableBuffer output) throws IOException
                     {
                         if (failFlush.get())
                             return false;
@@ -815,7 +815,7 @@ public class HttpClientTLSTest
                 return new SslConnection(bufferPool, connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected boolean networkFlush(ByteBuffer output) throws IOException
+                    protected boolean networkFlush(ReadableBuffer output) throws IOException
                     {
                         if (failFlush.get())
                             throw new IOException();
@@ -877,7 +877,7 @@ public class HttpClientTLSTest
                 return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected int networkFill(ByteBuffer input) throws IOException
+                    protected int networkFill(WritableBuffer input) throws IOException
                     {
                         int n = super.networkFill(input);
                         if (n > 0)
@@ -911,7 +911,7 @@ public class HttpClientTLSTest
                         return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             @Override
-                            protected int networkFill(ByteBuffer input) throws IOException
+                            protected int networkFill(WritableBuffer input) throws IOException
                             {
                                 int n = super.networkFill(input);
                                 if (n > 0)
@@ -975,6 +975,12 @@ public class HttpClientTLSTest
                             {
                                 sslEngine.closeOutbound();
                                 return super.wrap(sslEngine, input, output);
+                            }
+
+                            @Override
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                            {
+                                return wrap(sslEngine, new ByteBuffer[]{input}, output);
                             }
                         };
                     }
@@ -1061,6 +1067,12 @@ public class HttpClientTLSTest
                                 {
                                     throw new SSLException(x);
                                 }
+                            }
+
+                            @Override
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                            {
+                                return wrap(sslEngine, new ByteBuffer[]{input}, output);
                             }
                         };
                     }

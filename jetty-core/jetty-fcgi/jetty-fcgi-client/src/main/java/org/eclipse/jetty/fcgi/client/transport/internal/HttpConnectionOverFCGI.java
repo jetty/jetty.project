@@ -14,7 +14,6 @@
 package org.eclipse.jetty.fcgi.client.transport.internal;
 
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Collections;
 import java.util.Iterator;
@@ -43,25 +42,28 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class HttpConnectionOverFCGI extends AbstractConnection implements IConnection, Attachable, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverFCGI.class);
 
     private final Callback fillableCallback = new FillableCallback();
-    private final ByteBufferPool networkByteBufferPool;
+    private final WritableBufferPool networkBufferPool;
     private final AtomicInteger requests = new AtomicInteger();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final HttpDestination destination;
@@ -71,11 +73,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private final ClientParser parser;
     private final HttpChannelOverFCGI channel;
     private final InvocationType invocationType;
-    private RetainableByteBuffer networkBuffer;
+    private ReadableBuffer networkBuffer;
     private Object attachment;
-    private State state = State.STATUS;
+    private State state = State.IDLE;
     private long idleTimeout;
     private boolean shutdown;
+    private Throwable failure;
 
     public HttpConnectionOverFCGI(EndPoint endPoint, Destination destination, Promise<Connection> promise)
     {
@@ -87,7 +90,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.parser = new ClientParser(new ResponseListener());
         this.channel = newHttpChannel();
         HttpClient client = destination.getHttpClient();
-        this.networkByteBufferPool = client.getByteBufferPool();
+        this.networkBufferPool = WritableBufferPool.wrap(client.getByteBufferPool());
         this.invocationType = client.getHttpClientTransport().getInvocationType();
     }
 
@@ -157,112 +160,36 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         channel.receive();
     }
 
-    private void reacquireNetworkBuffer()
-    {
-        if (networkBuffer == null)
-            throw new IllegalStateException();
-        if (networkBuffer.hasRemaining())
-            throw new IllegalStateException();
-        networkBuffer.release();
-        networkBuffer = newNetworkBuffer();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Reacquired {}", networkBuffer);
-    }
-
-    private RetainableByteBuffer newNetworkBuffer()
+    private WritableBuffer newNetworkBuffer()
     {
         HttpClient client = destination.getHttpClient();
-        return networkByteBufferPool.acquire(client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
-    }
-
-    private void releaseNetworkBuffer()
-    {
-        if (networkBuffer == null)
-            throw new IllegalStateException();
-        if (networkBuffer.hasRemaining())
-            throw new IllegalStateException();
-        networkBuffer.release();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Released {}", networkBuffer);
-        this.networkBuffer = null;
+        return networkBufferPool.acquire(client.getResponseBufferSize(), client.isUseInputDirectByteBuffers());
     }
 
     private void disposeNetworkBuffer()
     {
         if (networkBuffer == null)
             return;
-        networkBuffer.clear();
         networkBuffer.release();
         if (LOG.isDebugEnabled())
             LOG.debug("Disposed {}", networkBuffer);
         networkBuffer = null;
     }
 
-    boolean parseAndFill(boolean notifyContentAvailable)
+    boolean process(boolean notifyContentAvailable)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("parseAndFill {}", networkBuffer);
-        if (networkBuffer == null)
-            networkBuffer = newNetworkBuffer();
-        EndPoint endPoint = getEndPoint();
-        try
-        {
-            while (true)
-            {
-                if (parse(networkBuffer.getByteBuffer(), notifyContentAvailable))
-                    return false;
-
-                // Disposed by a parser callback.
-                if (networkBuffer == null)
-                    return false;
-
-                if (networkBuffer.isRetained())
-                    reacquireNetworkBuffer();
-
-                // The networkBuffer may have been reacquired.
-                int read = endPoint.fill(networkBuffer.getByteBuffer());
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Read {} bytes from {}", read, endPoint);
-
-                if (read == 0)
-                {
-                    releaseNetworkBuffer();
-                    return true;
-                }
-                else if (read < 0)
-                {
-                    releaseNetworkBuffer();
-                    shutdown();
-                    return false;
-                }
-            }
-        }
-        catch (Exception x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to fill from endpoint {}", endPoint, x);
-            close(x);
-            return false;
-        }
-    }
-
-    private boolean parse(ByteBuffer buffer, boolean notifyContentAvailable)
-    {
-        boolean handle = parser.parse(buffer);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Parse state={} result={} {} {} on {}", state, handle, BufferUtil.toDetailString(buffer), parser, this);
-
-        if (!handle)
-            return false;
+        boolean setFillInterested = parseAndFill();
 
         switch (state)
         {
-            case STATUS ->
+            case IDLE ->
             {
-                // Nothing to do.
             }
-            case HEADERS -> channel.responseHeaders();
+            case HEADERS ->
+            {
+                state = State.CONTENT;
+                channel.responseHeaders();
+            }
             case CONTENT ->
             {
                 if (notifyContentAvailable)
@@ -270,13 +197,110 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             }
             case COMPLETE ->
             {
-                // Do not call channel.responseSuccess() here to give HttpReceiverOverFCGI.read(boolean) a chance to read
-                // the chunk field before channel.responseSuccess() resets it to null.
+                channel.end();
+                // Do not call channel.responseSuccess() here to give HttpReceiverOverFCGI.read(boolean)
+                // a chance to read the chunk field before channel.responseSuccess() resets it to null.
+            }
+            case FAILED ->
+            {
+                failAndClose(failure);
             }
             default -> throw new IllegalStateException("Invalid state " + state);
         }
 
-        return true;
+        return setFillInterested;
+    }
+
+    private boolean parseAndFill()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("parseAndFill {}", networkBuffer);
+
+        ReadableBuffer readable = null;
+        WritableBuffer writable = null;
+        if (networkBuffer != null)
+        {
+            readable = networkBuffer;
+            networkBuffer = null;
+        }
+        else
+        {
+            writable = newNetworkBuffer();
+        }
+
+        EndPoint endPoint = getEndPoint();
+        try
+        {
+            while (true)
+            {
+                if (writable != null)
+                {
+                    int read = endPoint.fill(writable);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Read {} bytes from {}", read, endPoint);
+
+                    if (read <= 0)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Releasing {}", writable);
+                        writable.release();
+
+                        if (read == 0)
+                            return true;
+
+                        shutdown();
+                        return false;
+                    }
+
+                    readable = writable.toReadable();
+                }
+
+                assert readable != null;
+
+                if (parse(readable))
+                {
+                    if (readable.remaining() == 0)
+                        readable.release();
+                    else
+                        networkBuffer = readable;
+                    return false;
+                }
+
+                if (readable.isRetained())
+                {
+                    readable.release();
+                    writable = newNetworkBuffer();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Reacquired {}", writable);
+                }
+                else
+                {
+                    writable = readable.toWritable();
+                }
+            }
+        }
+        catch (Exception x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to fill from endpoint {}", endPoint, x);
+            if (writable != null)
+                writable.release();
+            else
+                readable.release();
+            close(x);
+            return false;
+        }
+    }
+
+    private boolean parse(ReadableBuffer buffer)
+    {
+        while (buffer.remaining() > 0)
+        {
+            boolean result = parser.parse(buffer);
+            if (result)
+                return true;
+        }
+        return false;
     }
 
     boolean isComplete()
@@ -287,6 +311,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     void complete()
     {
         channel.responseSuccess();
+        state = State.IDLE;
     }
 
     private void shutdown()
@@ -382,7 +407,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (failed)
                 close(failure);
-        }, x -> close(failure)));
+        }, _ -> close(failure)));
     }
 
     protected HttpChannelOverFCGI newHttpChannel()
@@ -486,7 +511,6 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onBegin r={},c={},reason={}", request, code, reason);
-            state = State.STATUS;
             channel.responseBegin(code, reason);
         }
 
@@ -502,26 +526,26 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         public boolean onHeaders(int request)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onHeaders r={} {}", request, networkBuffer);
+                LOG.debug("onHeaders r={}", request);
             state = State.HEADERS;
             return true;
         }
 
         @Override
-        public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+        public boolean onContent(int request, FCGI.StreamType stream, ReadableBuffer buffer)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onContent r={},t={},b={} {}", request, stream, BufferUtil.toDetailString(buffer), networkBuffer);
+                LOG.debug("onContent r={},t={},b={}", request, stream, buffer);
             switch (stream)
             {
                 case STD_OUT ->
                 {
-                    Content.Chunk chunk = Content.Chunk.asChunk(buffer, false, networkBuffer);
+                    Content.Chunk chunk = Content.Chunk.from(buffer, false);
                     channel.content(chunk);
                     state = State.CONTENT;
                     return true;
                 }
-                case STD_ERR -> LOG.info(BufferUtil.toUTF8String(buffer));
+                case STD_ERR -> LOG.info(BufferUtil.toString(buffer, UTF_8));
                 default -> throw new IllegalArgumentException();
             }
             return false;
@@ -532,23 +556,27 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onEnd r={}", request);
-            channel.end();
             state = State.COMPLETE;
             return true;
         }
 
         @Override
-        public void onFailure(int request, Throwable failure)
+        public void onFailure(int request, Throwable cause)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onFailure request={}", request, failure);
-            failAndClose(failure);
+                LOG.debug("onFailure request={}", request, cause);
+            state = State.FAILED;
+            failure = cause;
         }
     }
 
     private enum State
     {
-        STATUS, HEADERS, CONTENT, COMPLETE
+        IDLE,
+        HEADERS,
+        CONTENT,
+        COMPLETE,
+        FAILED
     }
 
     private class FillableCallback implements Callback

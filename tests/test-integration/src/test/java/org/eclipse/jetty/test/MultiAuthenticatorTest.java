@@ -269,7 +269,7 @@ public class MultiAuthenticatorTest
                         <a href="/logout">Logout</a><br>
                         <b>authType: %s</b><br>
                         """.formatted(authType);
-            response.write(true, BufferUtil.toBuffer(content), callback);
+            response.write(true, BufferUtil.toReadableBuffer(content), callback);
             return true;
         }
 
@@ -306,7 +306,7 @@ public class MultiAuthenticatorTest
                     <p>Username: user or admin<br>
                     Password: password</p>
                     """;
-            response.write(true, BufferUtil.toBuffer(content), callback);
+            response.write(true, BufferUtil.toReadableBuffer(content), callback);
             return true;
         }
 
@@ -331,7 +331,7 @@ public class MultiAuthenticatorTest
         {
             Fields parameters = Request.getParameters(request);
             String errorDescription = parameters.getValue("error_description_jetty");
-            response.write(true, BufferUtil.toBuffer("error: " + errorDescription), callback);
+            response.write(true, BufferUtil.toReadableBuffer("error: " + errorDescription), callback);
             return true;
         }
     }

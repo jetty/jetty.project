@@ -15,27 +15,27 @@ package org.eclipse.jetty.http2.generator;
 
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.WritableBuffer;
 
 public class HeaderGenerator
 {
     private int maxFrameSize = Frame.DEFAULT_MAX_SIZE;
-    private final ByteBufferPool bufferPool;
+    private final WritableBufferPool bufferPool;
     private final boolean useDirectByteBuffers;
 
-    public HeaderGenerator(ByteBufferPool bufferPool)
+    public HeaderGenerator(WritableBufferPool bufferPool)
     {
         this(bufferPool, true);
     }
 
-    public HeaderGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
+    public HeaderGenerator(WritableBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         this.bufferPool = bufferPool;
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
-    public ByteBufferPool getByteBufferPool()
+    public WritableBufferPool getBufferPool()
     {
         return bufferPool;
     }
@@ -45,11 +45,15 @@ public class HeaderGenerator
         return useDirectByteBuffers;
     }
 
-    public void generate(RetainableByteBuffer.Mutable accumulator, FrameType frameType, int capacity, int length, int flags, int streamId)
+    public WritableBuffer generate(FrameType frameType, int capacity, int length, int flags, int streamId)
     {
-        accumulator.putInt((length & 0x00_FF_FF_FF) << 8 | (frameType.getType() & 0xFF))
-            .put((byte)flags)
-            .putInt(streamId);
+        WritableBuffer wb = bufferPool.acquire(capacity, useDirectByteBuffers);
+
+        wb.putInt((length & 0x00_FF_FF_FF) << 8 | (frameType.getType() & 0xFF));
+        wb.put((byte)flags);
+        wb.putInt(streamId);
+
+        return wb;
     }
 
     public int getMaxFrameSize()

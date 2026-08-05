@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +24,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -115,7 +115,7 @@ public class ReadWriteFailuresTest
                 request.addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
                 {
                     @Override
-                    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+                    public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
                     {
                         callback.failed(writeFailure);
                     }
@@ -172,7 +172,7 @@ public class ReadWriteFailuresTest
                 request.addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
                 {
                     @Override
-                    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+                    public void send(MetaData.Request request, MetaData.Response response, boolean last, ReadableBuffer content, Callback callback)
                     {
                         // Do nothing to make the write pending.
                     }

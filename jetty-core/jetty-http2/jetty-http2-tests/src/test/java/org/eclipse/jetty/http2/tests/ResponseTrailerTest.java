@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -30,12 +29,14 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,7 +67,7 @@ public class ResponseTrailerTest extends AbstractTest
                 // Send empty response trailers.
                 response.setTrailersSupplier(() -> HttpFields.EMPTY);
                 if (data != null)
-                    response.write(true, ByteBuffer.wrap(data.getBytes(StandardCharsets.US_ASCII)), callback);
+                    response.write(true, ReadableBuffer.wrap(data.getBytes(StandardCharsets.US_ASCII)), callback);
                 else
                     callback.succeeded();
                 return true;
@@ -102,9 +103,9 @@ public class ResponseTrailerTest extends AbstractTest
                 @Override
                 public void onDataAvailable(Stream stream)
                 {
-                    Stream.Data data = stream.readData();
-                    data.release();
-                    if (data.frame().isEndStream())
+                    Content.Chunk chunk = stream.read();
+                    chunk.release();
+                    if (chunk.isLast())
                         latch.countDown();
                 }
             });

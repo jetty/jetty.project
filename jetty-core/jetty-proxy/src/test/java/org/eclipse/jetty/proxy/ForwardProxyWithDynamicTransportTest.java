@@ -51,7 +51,6 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -74,6 +73,7 @@ import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -658,9 +658,9 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                String response = BufferUtil.toString(data.frame().getByteBuffer(), StandardCharsets.UTF_8);
-                data.release();
+                Content.Chunk chunk = stream.read();
+                String response = BufferUtil.toString(chunk.getByteBuffer(), StandardCharsets.UTF_8);
+                chunk.release();
                 if (response.startsWith("HTTP/1.1 200"))
                     responseLatch.countDown();
             }
@@ -672,7 +672,7 @@ public class ForwardProxyWithDynamicTransportTest
         String h1 = "GET / HTTP/1.1\r\n" +
                     "Host: " + serverAddress + "\r\n" +
                     "\r\n";
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(h1.getBytes(StandardCharsets.UTF_8)), false), Callback.NOOP);
+        stream.data(ReadableBuffer.wrap(h1.getBytes(StandardCharsets.UTF_8)), false, Callback.NOOP);
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
 
         // Now reset the stream, tunnel must be closed.
@@ -745,9 +745,9 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                String response = BufferUtil.toString(data.frame().getByteBuffer(), StandardCharsets.UTF_8);
-                data.release();
+                Content.Chunk chunk = stream.read();
+                String response = BufferUtil.toString(chunk.getByteBuffer(), StandardCharsets.UTF_8);
+                chunk.release();
                 if (response.startsWith("HTTP/1.1 200"))
                     responseLatch.countDown();
             }
@@ -766,7 +766,7 @@ public class ForwardProxyWithDynamicTransportTest
         String h1 = "GET / HTTP/1.1\r\n" +
                     "Host: " + serverAddress + "\r\n" +
                     "\r\n";
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(h1.getBytes(StandardCharsets.UTF_8)), false), Callback.NOOP);
+        stream.data(ReadableBuffer.wrap(h1.getBytes(StandardCharsets.UTF_8)), false, Callback.NOOP);
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
 
         // Wait until the proxy stream idle times out.

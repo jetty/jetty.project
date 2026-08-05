@@ -37,6 +37,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -60,8 +61,7 @@ public class SslConnectionTest
 
     private static final int TIMEOUT = 1000000;
 
-    // TODO: track leaks
-    private final ByteBufferPool _bufferPool = new ArrayByteBufferPool();
+    private final ArrayByteBufferPool.Tracking _bufferPool = new ArrayByteBufferPool.Tracking();
     private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
     protected volatile EndPoint _lastEndp;
     private volatile boolean _testFill = true;
@@ -124,7 +124,7 @@ public class SslConnectionTest
         }
 
         @Override
-        public boolean flush(ByteBuffer... buffers) throws IOException
+        public boolean flush(ReadableBuffer buffer) throws IOException
         {
             __onIncompleteFlush.set(false);
             if (__startBlocking.get() == 0 || __startBlocking.decrementAndGet() == 0)
@@ -134,7 +134,7 @@ public class SslConnectionTest
                     return false;
                 }
             }
-            return super.flush(buffers);
+            return super.flush(buffer);
         }
     }
 
@@ -171,6 +171,7 @@ public class SslConnectionTest
     {
         stopManager();
         _sslCtxFactory.stop();
+        assertThat("leaks: " + _bufferPool.dumpLeaks(), _bufferPool.getLeaks().size(), is(0));
     }
 
     private void stopManager() throws Exception

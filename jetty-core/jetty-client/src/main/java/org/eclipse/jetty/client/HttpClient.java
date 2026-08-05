@@ -56,6 +56,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Transport;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -242,7 +243,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         if (decoderFactories.isEmpty())
         {
             TypeUtil.serviceStream(ServiceLoader.load(Compression.class))
-                .peek(c -> c.setByteBufferPool(getByteBufferPool()))
+                .peek(c -> c.setBufferPool(WritableBufferPool.wrap(getByteBufferPool())))
                 .forEach(c -> decoderFactories.put(new CompressionContentDecoderFactory(c)));
         }
 

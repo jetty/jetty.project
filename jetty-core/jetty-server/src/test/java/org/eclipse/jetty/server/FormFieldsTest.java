@@ -80,7 +80,7 @@ public class FormFieldsTest
         FutureCallback eof = new FutureCallback();
         for (int i = 0; i <= last; i++)
         {
-            source.write(i == last, BufferUtil.toBuffer(chunks.get(i), charset), i == last ? eof : Callback.NOOP);
+            source.write(i == last, BufferUtil.toReadableBuffer(chunks.get(i), charset), i == last ? eof : Callback.NOOP);
         }
 
         try
@@ -144,7 +144,7 @@ public class FormFieldsTest
         int last = chunks.size() - 1;
         for (int i = 0; i <= last; i++)
         {
-            source.write(i == last, BufferUtil.toBuffer(chunks.get(i)), Callback.NOOP);
+            source.write(i == last, BufferUtil.toReadableBuffer(chunks.get(i)), Callback.NOOP);
         }
         Throwable cause = assertThrows(ExecutionException.class, futureFields::get).getCause();
         assertThat(cause, instanceOf(expectedException));

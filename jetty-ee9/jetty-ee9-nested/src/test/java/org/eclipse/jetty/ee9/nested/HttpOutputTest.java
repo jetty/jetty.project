@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
@@ -227,7 +228,7 @@ public class HttpOutputTest
         _handler._contentResource = big;
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, not(containsString("Content-Length")));
+        assertThat(response, containsString("Content-Length: " + big.length()));
         assertThat(response, endsWith(toUTF8String(big)));
     }
 
@@ -743,10 +744,10 @@ public class HttpOutputTest
             HttpOutput.Interceptor _next;
 
             @Override
-            public void write(ByteBuffer content, boolean complete, Callback callback)
+            public void write(ReadableBuffer content, boolean complete, Callback callback)
             {
                 String s = BufferUtil.toString(content).toUpperCase().replaceAll("BIG", "BIGGER");
-                _next.write(BufferUtil.toBuffer(s), complete, callback);
+                _next.write(BufferUtil.toReadableBuffer(s), complete, callback);
             }
 
             @Override
@@ -988,7 +989,7 @@ public class HttpOutputTest
         }
 
         @Override
-        public void write(ByteBuffer content, boolean last, Callback callback)
+        public void write(ReadableBuffer content, boolean last, Callback callback)
         {
             if (content.remaining() <= MAX_SIZE)
                 throw new IllegalStateException("Not Aggregated!");
@@ -1123,7 +1124,7 @@ public class HttpOutputTest
                 out.setInterceptor(new HttpOutput.Interceptor()
                 {
                     @Override
-                    public void write(ByteBuffer content, boolean last, Callback callback)
+                    public void write(ReadableBuffer content, boolean last, Callback callback)
                     {
                         interceptor.write(content, last, callback);
                     }

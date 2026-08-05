@@ -37,7 +37,7 @@ public class ZstandardDecoderConfig implements DecoderConfig
     /**
      * Set Decoder input buffer size.
      *
-     * <p>Make sure that the {@link ZstandardCompression#getByteBufferPool()} instance can pool
+     * <p>Make sure that the {@link ZstandardCompression#getBufferPool()} instance can pool
      * the specified value otherwise direct buffers have to be allocated then left to be
      * collected by the GC, which may have serious performance implications.</p>
      * @param size size of input buffer.

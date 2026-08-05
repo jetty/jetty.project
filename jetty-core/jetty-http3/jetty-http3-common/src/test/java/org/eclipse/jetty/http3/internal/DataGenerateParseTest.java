@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -54,7 +55,7 @@ public class DataGenerateParseTest
     {
         byte[] inputBytes = new byte[byteBuffer.remaining()];
         byteBuffer.get(inputBytes);
-        DataFrame input = new DataFrame(ByteBuffer.wrap(inputBytes), true);
+        DataFrame input = new DataFrame(ReadableBuffer.wrap(inputBytes), true);
 
         ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
         RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1, 0, 0);
@@ -77,7 +78,7 @@ public class DataGenerateParseTest
 
         assertEquals(1, frames.size());
         DataFrame output = frames.get(0);
-        byte[] outputBytes = new byte[output.getByteBuffer().remaining()];
+        byte[] outputBytes = new byte[Math.toIntExact(output.getByteBuffer().remaining())];
         output.getByteBuffer().get(outputBytes);
         assertArrayEquals(inputBytes, outputBytes);
     }

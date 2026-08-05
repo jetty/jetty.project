@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +22,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.Content;
@@ -32,6 +30,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -75,7 +74,7 @@ public class ContentLengthTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -116,7 +115,7 @@ public class ContentLengthTest extends AbstractTest
                 resetLatch.countDown();
                 callback.succeeded();
             }
-        }).thenAccept(stream -> stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(data), true)));
+        }).thenAccept(stream -> stream.data(ReadableBuffer.wrap(data), true));
 
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
@@ -137,7 +136,7 @@ public class ContentLengthTest extends AbstractTest
             {
                 // Write a single buffer, with a Content-Length
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, ReadableBuffer.wrap(data), callback);
                 return true;
             }
         });

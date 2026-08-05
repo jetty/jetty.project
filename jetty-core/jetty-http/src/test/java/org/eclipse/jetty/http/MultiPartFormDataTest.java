@@ -37,6 +37,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -943,7 +944,7 @@ public class MultiPartFormDataTest
             Content-Type: text/plain\r
             \r
             """;
-        ByteBuffer isoCedilla = ISO_8859_1.encode("ç");
+        ReadableBuffer isoCedilla = ReadableBuffer.wrap(ISO_8859_1.encode("ç"));
         String body2 = """
             \r
             --AaB03x\r
@@ -951,7 +952,7 @@ public class MultiPartFormDataTest
             Content-Type: text/plain; charset="UTF-8"\r
             \r
             """;
-        ByteBuffer utfCedilla = UTF_8.encode("ç");
+        ReadableBuffer utfCedilla = ReadableBuffer.wrap(UTF_8.encode("ç"));
         String terminator = """
             \r
             --AaB03x--\r
@@ -1224,9 +1225,9 @@ public class MultiPartFormDataTest
             ByteBuffer buf = UTF_8.encode(form);
             while (buf.hasRemaining())
             {
-                source.write(false, ByteBuffer.wrap(new byte[]{buf.get()}), Callback.NOOP);
+                source.write(false, ReadableBuffer.wrap(new byte[]{buf.get()}), Callback.NOOP);
             }
-            source.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+            source.write(true, ReadableBuffer.EMPTY, Callback.NOOP);
         }).start();
 
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))

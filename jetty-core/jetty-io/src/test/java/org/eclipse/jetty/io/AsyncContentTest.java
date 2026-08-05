@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -23,8 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.content.AsyncContent;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ReadableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -50,7 +49,7 @@ public class AsyncContentTest
             async.demand(latch::countDown);
             assertFalse(latch.await(250, TimeUnit.MILLISECONDS));
 
-            async.write(false, UTF_8.encode("one"), Callback.NOOP);
+            async.write(false, ReadableBuffer.wrap(UTF_8.encode("one")), Callback.NOOP);
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -84,7 +83,7 @@ public class AsyncContentTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            async.write(false, UTF_8.encode("one"), Callback.NOOP);
+            async.write(false, ReadableBuffer.wrap(UTF_8.encode("one")), Callback.NOOP);
 
             Content.Chunk chunk = async.read();
             assertNotNull(chunk);
@@ -104,7 +103,7 @@ public class AsyncContentTest
 
             // Offering more should fail.
             CountDownLatch failLatch = new CountDownLatch(1);
-            async.write(false, BufferUtil.EMPTY_BUFFER, Callback.from(Callback.NOOP::succeeded, x -> failLatch.countDown()));
+            async.write(false, ReadableBuffer.EMPTY, Callback.from(Callback.NOOP::succeeded, x -> failLatch.countDown()));
             assertTrue(failLatch.await(5, TimeUnit.SECONDS));
         }
     }
@@ -117,7 +116,7 @@ public class AsyncContentTest
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-            async.write(false, ByteBuffer.wrap(new byte[1]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+            async.write(false, ReadableBuffer.wrap(new byte[1]), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
             assertThat(successCounter.get(), is(0));
@@ -138,7 +137,7 @@ public class AsyncContentTest
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-            async.write(false, ByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+            async.write(false, ReadableBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
             assertThat(successCounter.get(), is(1));
@@ -158,7 +157,7 @@ public class AsyncContentTest
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-            async.write(true, ByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+            async.write(true, ReadableBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
             assertThat(successCounter.get(), is(1));
@@ -196,11 +195,11 @@ public class AsyncContentTest
         try (AsyncContent async = new AsyncContent())
         {
             AssertingCallback callback1 = new AssertingCallback();
-            async.write(false, ByteBuffer.wrap(new byte[1]), callback1);
+            async.write(false, ReadableBuffer.wrap(new byte[1]), callback1);
             AssertingCallback callback2 = new AssertingCallback();
-            async.write(false, ByteBuffer.wrap(new byte[2]), callback2);
+            async.write(false, ReadableBuffer.wrap(new byte[2]), callback2);
             AssertingCallback callback3 = new AssertingCallback();
-            async.write(false, ByteBuffer.wrap(new byte[3]), callback3);
+            async.write(false, ReadableBuffer.wrap(new byte[3]), callback3);
 
             Content.Chunk chunk = async.read();
             callback1.assertNoFailureNoSuccess();
@@ -228,7 +227,7 @@ public class AsyncContentTest
             async.fail(error);
 
             AssertingCallback callback = new AssertingCallback();
-            async.write(false, ByteBuffer.wrap(new byte[1]), callback);
+            async.write(false, ReadableBuffer.wrap(new byte[1]), callback);
             callback.assertSingleFailureSameInstanceNoSuccess(error);
         }
     }

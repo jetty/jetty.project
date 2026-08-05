@@ -13,11 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.jetty.util.TypeUtil;
-
 /**
  * <p>A reference counted resource, for example one that is borrowed from a pool,
  * that may be retained an additional number of times, and released a correspondent
@@ -48,206 +43,43 @@ import org.eclipse.jetty.util.TypeUtil;
  * </ol>
  * </ol>
  */
-public interface Retainable
+public interface Retainable extends org.eclipse.jetty.util.Retainable
 {
     Retainable NON_RETAINABLE = new Retainable()
     {
     };
 
     /**
-     * <p>Returns whether this resource is referenced counted by calls to {@link #retain()}
-     * and {@link #release()}.</p>
-     * <p>Implementations may decide that special resources are not not referenced counted (for example,
-     * {@code static} constants) so calling {@link #retain()} is a no-operation, and
-     * calling {@link #release()} on those special resources is a no-operation that always returns true.</p>
-     *
-     * @return true if calls to {@link #retain()} are reference counted.
-     */
-    default boolean canRetain()
-    {
-        return false;
-    }
-
-    /**
-     * <p>Returns whether {@link #retain()} has been called at least one more time than {@link #release()}.</p>
-     * @return whether this buffer is retained
-     */
-    default boolean isRetained()
-    {
-        return false;
-    }
-
-    /**
-     * <p>Retains this resource, potentially incrementing a reference count if there are resources that will be released.</p>
-     */
-    default void retain()
-    {
-    }
-
-    /**
-     * <p>Releases this resource, potentially decrementing a reference count (if any).</p>
-     *
-     * @return {@code true} when the reference count goes to zero or if there was no reference count,
-     *         {@code false} otherwise.
-     */
-    default boolean release()
-    {
-        return true;
-    }
-
-    /**
-     * <p>Get the retained count. This value is volatile and should only be used for informational/debugging purposes.</p>
-     * @return the retained count
-     */
-    default int getRetained()
-    {
-        return -1;
-    }
-
-    /**
      * A wrapper of {@link Retainable} instances.
      */
-    class Wrapper implements Retainable
+    class Wrapper extends org.eclipse.jetty.util.Retainable.Wrapper implements Retainable
     {
-        private final Retainable wrapped;
-
         public Wrapper(Retainable wrapped)
         {
-            this.wrapped = Objects.requireNonNull(wrapped);
+            super(wrapped);
         }
 
         public Retainable getWrapped()
         {
-            return wrapped;
-        }
-
-        @Override
-        public boolean canRetain()
-        {
-            return getWrapped().canRetain();
-        }
-
-        @Override
-        public int getRetained()
-        {
-            return getWrapped().getRetained();
-        }
-
-        @Override
-        public boolean isRetained()
-        {
-            return getWrapped().isRetained();
-        }
-
-        @Override
-        public void retain()
-        {
-            getWrapped().retain();
-        }
-
-        @Override
-        public boolean release()
-        {
-            return getWrapped().release();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getWrapped());
+            return (Retainable)super.getWrapped();
         }
     }
 
-    /**
-     * <p>A reference count implementation for a {@link Retainable} resource.</p>
-     * <p>The reference count is initialized to 1 when the resource is created,
-     * and therefore it is implicitly retained and needs a call to {@link #release()}.</p>
-     * <p>Additional calls to {@link #retain()} must be matched by correspondent
-     * calls to {@link #release()}.</p>
-     * <p>When the reference count goes to zero, the resource may be pooled.
-     * When the resource is acquired from the pool, {@link #acquire()} should be
-     * called to set the reference count to {@code 1}.</p>
-     */
-    class ReferenceCounter implements Retainable
+    class ReferenceCounter extends org.eclipse.jetty.util.Retainable.ReferenceCounter implements Retainable
     {
-        private final AtomicInteger references;
-
         public ReferenceCounter()
         {
-            this(1);
+            super();
         }
 
         protected ReferenceCounter(int initialCount)
         {
-            references = new AtomicInteger(initialCount);
+            super(initialCount);
         }
+    }
 
-        /**
-         * @return the current reference count
-         */
-        public int get()
-        {
-            return references.get();
-        }
-
-        /**
-         * <p>Updates the reference count from {@code 0} to {@code 1}.</p>
-         * <p>This method should only be used when this resource is acquired
-         * from a pool.</p>
-         */
-        public void acquire()
-        {
-            if (references.getAndUpdate(c -> c == 0 ? 1 : c) != 0)
-                throw new IllegalStateException("acquired while in use " + this);
-        }
-
-        @Override
-        public boolean canRetain()
-        {
-            return get() > 0;
-        }
-
-        @Override
-        public void retain()
-        {
-            if (!tryRetain())
-                throw new IllegalStateException("released " + this);
-        }
-
-        public boolean tryRetain()
-        {
-            return references.getAndUpdate(c -> c == 0 ? 0 : c + 1) != 0;
-        }
-
-        @Override
-        public boolean release()
-        {
-            int ref = references.updateAndGet(c ->
-            {
-                if (c == 0)
-                    throw new IllegalStateException("already released " + this);
-                return c - 1;
-            });
-            return ref == 0;
-        }
-
-        @Override
-        public boolean isRetained()
-        {
-            return references.get() > 1;
-        }
-
-        @Override
-        public int getRetained()
-        {
-            return references.get();
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x[rc=%d]", TypeUtil.toShortName(getClass()), hashCode(), get());
-        }
+    class Tracking extends TrackingRetainable implements Retainable
+    {
     }
 
     /**
