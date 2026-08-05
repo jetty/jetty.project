@@ -250,7 +250,9 @@
     <module name="LocalVariableName" />
 
     <!-- Method Name Format -->
-    <module name="MethodName" />
+    <module name="MethodName">
+      <property name="format" value="^[a-z][a-zA-Z0-9]*[_0-9]*$" />
+    </module>
 
     <!-- Checks the padding between the identifier of a method definition, constructor definition,
          method call, or constructor invocation: nospace -->
