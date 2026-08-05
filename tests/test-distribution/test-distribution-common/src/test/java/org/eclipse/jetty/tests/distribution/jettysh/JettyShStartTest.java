@@ -17,7 +17,7 @@ import java.net.URI;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.Period;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -57,7 +57,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class JettyShStartTest extends AbstractJettyHomeTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyShStartTest.class);
-    private static final ImagePullPolicy DEFAULT_PULL_POLICY = PullPolicy.ageBased(Duration.from(Period.ofMonths(3)));
+    // Establish a 3 month expiration for older pulled image
+    private static final ImagePullPolicy DEFAULT_PULL_POLICY = PullPolicy.ageBased(Duration.of(30 * 3, ChronoUnit.DAYS));
 
     public static Stream<Arguments> jettyImages()
     {
