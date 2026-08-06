@@ -15,10 +15,10 @@ package org.eclipse.jetty.tests.distribution.jettysh;
 
 /**
  * An OS Image of linux specific for running on Amazon AWS.
- * This is based on Amazon Linux 2 (which is based on Alpine 3).
+ * This is based on Amazon Linux 2023.
  * Amazon Corretto JDK 17 is installed.
  * This image does NOT come with start-stop-daemon installed.
- * Instead of apt, it uses yum (the redhat package manager)
+ * Instead of apt, it uses dnf (the redhat package manager)
  */
 public class ImageOSAmazonCorretto17 extends ImageOS
 {
@@ -27,16 +27,24 @@ public class ImageOSAmazonCorretto17 extends ImageOS
         super("amazoncorretto-jdk17-jetty12",
             builder ->
                 builder
-                    .from("amazoncorretto:17")
-                    .run("yum update -y ; " +
-                        "yum install -y curl tar gzip vim shadow-utils net-tools")
+                    .from("amazoncorretto:17.0.20-al2023")
+                    // Notes: amazoncorretto now uses dnf, not yum
+                    .run("dnf update -y ; " +
+                        // Notes:
+                        // `curl-minimal` ships with `amazoncorretto:17-al2023`.
+                        // `findutils` provides `xargs`, which is needed by `jetty.sh`.
+                        // `tar` and `gzip` needed by this Dockerfile for managing the jetty-home tarball.
+                        // `shadow-utils` is needed for `useradd` (done by ImageUserChange)
+                        "dnf install -y findutils tar gzip shadow-utils")
                     .env("TEST_DIR", "/var/test")
                     .env("JETTY_HOME", "$TEST_DIR/jetty-home")
                     .env("JETTY_BASE", "$TEST_DIR/jetty-base")
                     .env("PATH", "$PATH:${JETTY_HOME}/bin/")
                     .user("root")
                     // Configure /etc/default/jetty
-                    .run("echo \"JETTY_HOME=${JETTY_HOME}\" > /etc/default/jetty ; " +
+                    .run(
+                        "mkdir /etc/default ; " +
+                        "echo \"JETTY_HOME=${JETTY_HOME}\" > /etc/default/jetty ; " +
                         "echo \"JETTY_BASE=${JETTY_BASE}\" >> /etc/default/jetty ; " +
                         "echo \"JETTY_RUN=${JETTY_BASE}\" >> /etc/default/jetty ")
                     // setup Jetty Home
