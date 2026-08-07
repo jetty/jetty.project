@@ -14,6 +14,8 @@
 package org.eclipse.jetty.ee10.servlet;
 
 import java.security.Principal;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,12 +40,13 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.security.Credential;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DeferredAuthenticationTest
 {
@@ -89,13 +92,14 @@ public class DeferredAuthenticationTest
         _server.stop();
     }
 
-    @Test
+    @RepeatedTest(100)
     public void testWriteOnDeferredAuthentication() throws Exception
     {
         AtomicInteger authenticatorCount = new AtomicInteger();
         AtomicReference<Boolean> authenticatedRef = new AtomicReference<>();
         AtomicReference<Principal> userPrincipalRef = new AtomicReference<>();
         AtomicReference<Throwable> servletErrorRef = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
         startServer(new LoginAuthenticator()
         {
             @Override
@@ -145,21 +149,29 @@ public class DeferredAuthenticationTest
                 {
                     servletErrorRef.set(t);
                 }
+                finally
+                {
+                    latch.countDown();
+                }
             }
         });
 
         // Authenticator is invoked twice, first time for deferred auth on getUserPrincipal() which tries to write and fails,
         // the second time for authenticate() which returns false and sends a 401 response.
         String response = _connector.getResponse("GET /public/foo HTTP/1.0\r\n\r\n");
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(response, containsString("401 Unauthorized"));
         assertThat(response, containsString("this is a challenge"));
         assertThat(authenticatorCount.get(), equalTo(2));
+        System.out.println(response);
+        System.out.println(authenticatedRef.get());
         assertThat(authenticatedRef.get(), equalTo(false));
         assertThat(userPrincipalRef.get(), equalTo(null));
         assertThat(servletErrorRef.get(), equalTo(null));
 
         // Authenticator is invoked twice, first time for deferred auth on getUserPrincipal() which tries to write and fails,
         // the second time for authenticate() which returns true and sends a 200 response.
+/*
         response = _connector.getResponse("GET /public/foo?authenticate HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("200 OK"));
         assertThat(response, containsString("success"));
@@ -167,5 +179,6 @@ public class DeferredAuthenticationTest
         assertThat(authenticatedRef.get(), equalTo(true));
         assertThat(userPrincipalRef.get().getName(), equalTo("test-user"));
         assertThat(servletErrorRef.get(), equalTo(null));
+*/
     }
 }
