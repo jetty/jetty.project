@@ -337,6 +337,15 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                 if (maxDurationNanos > 0L)
                 {
                     EntryHolder holder = (EntryHolder)((Attachable)connection).getAttachment();
+                    if (holder == null)
+                    {
+                        // The connection has been concurrently removed, for example
+                        // by a server-side close processed while the connection
+                        // is being activated, so try the next entry.
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Connection concurrently removed {} {}", entry, pool);
+                        continue;
+                    }
                     if (holder.isExpired(maxDurationNanos))
                     {
                         boolean canClose = remove(connection);
@@ -354,6 +363,13 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                 if (maxUsage > 0)
                 {
                     EntryHolder holder = (EntryHolder)((Attachable)connection).getAttachment();
+                    if (holder == null)
+                    {
+                        // The connection has been concurrently removed, see above.
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Connection concurrently removed {} {}", entry, pool);
+                        continue;
+                    }
                     if (!holder.use(maxUsage))
                     {
                         boolean canClose = remove(connection);
