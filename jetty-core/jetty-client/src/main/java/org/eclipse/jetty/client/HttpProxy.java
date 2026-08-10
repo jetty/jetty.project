@@ -247,9 +247,18 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                 // since this request is to "connect" to the server.
                 .timeout(connectTimeout, TimeUnit.MILLISECONDS);
 
-            Destination proxyDestination = httpClient.resolveDestination(destination.getProxy().getOrigin());
-            connect.attribute(Connection.class.getName(), new ProxyConnection(proxyDestination, connection, promise));
-            connection.send(connect, new TunnelListener(connect));
+            try
+            {
+                Destination proxyDestination = httpClient.resolveDestination(destination.getProxy().getOrigin());
+                connect.attribute(Connection.class.getName(), new ProxyConnection(proxyDestination, connection, promise));
+                connection.send(connect, new TunnelListener(connect));
+            }
+            catch (Throwable e)
+            {
+                HttpConversation conversation = ((HttpRequest)connect).getConversation();
+                EndPoint endPoint = (EndPoint)conversation.getAttribute(EndPoint.class.getName());
+                tunnelFailed(endPoint, e);
+            }
         }
 
         private void tunnelSucceeded(EndPoint endPoint)
