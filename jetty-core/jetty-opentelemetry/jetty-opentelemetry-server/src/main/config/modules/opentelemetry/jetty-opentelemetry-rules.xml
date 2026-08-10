@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+<Configure id="OpenTelemetryHandler">
+  <!-- Add OpenTelemetry attribute with a different exported name.
+  <Call name="addAttribute">
+    <Arg>http.request.method</Arg>
+    <Arg>method</Arg>
+  </Call>
+  -->
+
+  <!-- Add OpenTelemetry attribute.
+  <Call name="addAttribute">
+    <Arg>http.request.method</Arg>
+  </Call>
+  -->
+
+  <!-- Add OpenTelemetry metric with a different exported name.
+  <Call name="addMetric">
+    <Arg>http.server.request.duration</Arg>
+    <Arg>duration</Arg>
+  </Call>
+  -->
+
+  <!-- Add OpenTelemetry metric.
+  <Call name="addMetric">
+    <Arg>http.server.request.duration</Arg>
+  </Call>
+  -->
+</Configure>

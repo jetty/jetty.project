@@ -59,6 +59,18 @@ public enum HttpVersion
         return _version;
     }
 
+    public String getShortVersion()
+    {
+        return switch (this)
+        {
+            case HTTP_0_9 -> "0.9";
+            case HTTP_1_0 -> "1.0";
+            case HTTP_1_1 -> "1.1";
+            case HTTP_2 -> "2";
+            case HTTP_3 -> "3";
+        };
+    }
+
     public boolean is(String s)
     {
         return _string.equalsIgnoreCase(s);
