@@ -320,7 +320,7 @@ public class TestQuickStart
         quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
         quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
-        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        quickstart.setDescriptor(MavenTestingUtils.getTargetPath("test-classes/web.xml").toString());
         server.setHandler(quickstart);
         server.setDryRun(true);
         server.start();
