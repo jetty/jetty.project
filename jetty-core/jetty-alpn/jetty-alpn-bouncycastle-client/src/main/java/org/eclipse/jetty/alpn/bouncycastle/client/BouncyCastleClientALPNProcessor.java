@@ -76,7 +76,10 @@ public class BouncyCastleClientALPNProcessor implements ALPNProcessor.Client
                 String protocol = sslEngine.getApplicationProtocol();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Selected {} for {}", protocol, alpnConnection);
-                alpnConnection.selected(protocol);
+                if (protocol != null && !protocol.isEmpty())
+                    alpnConnection.selected(protocol);
+                else
+                    alpnConnection.selected(null);
             }
             catch (Throwable e)
             {

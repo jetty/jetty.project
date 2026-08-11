@@ -586,7 +586,7 @@ public class DoSFilter implements Filter
             }
             else
             {
-                if (address.equals(candidate))
+                if (address.equalsIgnoreCase(candidate))
                     return true;
             }
         }

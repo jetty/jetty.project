@@ -16,11 +16,9 @@ package org.eclipse.jetty.ee9.proxy;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -50,6 +48,8 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.util.AsciiLowerCaseSet;
+import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -98,8 +98,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         "upgrade"
     );
 
-    private final Set<String> _whiteList = new HashSet<>();
-    private final Set<String> _blackList = new HashSet<>();
+    private final IncludeExclude<String> _hosts = new IncludeExclude<>(AsciiLowerCaseSet.class);
     protected Logger _log;
     private boolean _preserveHost;
     private String _hostHeader;
@@ -131,11 +130,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
             String whiteList = config.getInitParameter("whiteList");
             if (whiteList != null)
-                getWhiteListHosts().addAll(parseList(whiteList));
+                parseList(whiteList).forEach(hostPort -> getHostIncludeExclude().include(hostPort));
 
             String blackList = config.getInitParameter("blackList");
             if (blackList != null)
-                getBlackListHosts().addAll(parseList(blackList));
+                parseList(blackList).forEach(hostPort -> getHostIncludeExclude().exclude(hostPort));
         }
         catch (Exception e)
         {
@@ -191,14 +190,38 @@ public abstract class AbstractProxyServlet extends HttpServlet
         this._timeout = timeout;
     }
 
-    public Set<String> getWhiteListHosts()
+    /**
+     * Get the {@link IncludeExclude} used for host whitelists and blacklists
+     *
+     * @return the {@link IncludeExclude} used for host matching
+     */
+    public IncludeExclude<String> getHostIncludeExclude()
     {
-        return _whiteList;
+        return _hosts;
     }
 
+    /**
+     * The set of whitelisted hosts.
+     *
+     * @return the set of whitelisted hosts.
+     * @deprecated use {@link #getHostIncludeExclude()} and its {@link IncludeExclude#include(Object)} method instead.
+     */
+    @Deprecated(since = "12.1.12", forRemoval = true)
+    public Set<String> getWhiteListHosts()
+    {
+        return _hosts.getIncluded();
+    }
+
+    /**
+     * The set of blacklisted hosts.
+     *
+     * @return the set of blacklisted hosts.
+     * @deprecated use {@link #getHostIncludeExclude()} and its {@link IncludeExclude#exclude(Object)} method instead.
+     */
+    @Deprecated(since = "12.1.12", forRemoval = true)
     public Set<String> getBlackListHosts()
     {
-        return _blackList;
+        return _hosts.getExcluded();
     }
 
     /**
@@ -406,7 +429,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         for (String host : hosts)
         {
             host = host.trim();
-            if (host.length() == 0)
+            if (host.isEmpty())
                 continue;
             result.add(host);
         }
@@ -423,25 +446,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
     public boolean validateDestination(String host, int port)
     {
         String hostPort = host + ":" + port;
-        if (!_whiteList.isEmpty())
-        {
-            if (!_whiteList.contains(hostPort))
-            {
-                if (_log.isDebugEnabled())
-                    _log.debug("Host {}:{} not whitelisted", host, port);
-                return false;
-            }
-        }
-        if (!_blackList.isEmpty())
-        {
-            if (_blackList.contains(hostPort))
-            {
-                if (_log.isDebugEnabled())
-                    _log.debug("Host {}:{} blacklisted", host, port);
-                return false;
-            }
-        }
-        return true;
+        boolean allowed = _hosts.test(hostPort);
+        if (_log.isDebugEnabled())
+            _log.debug("Host {} is {}", hostPort, allowed ? "allowed" : "denied");
+        return allowed;
     }
 
     protected String rewriteTarget(HttpServletRequest clientRequest)
@@ -522,8 +530,12 @@ public abstract class AbstractProxyServlet extends HttpServlet
             if (headersToRemove != null && headersToRemove.contains(lowerHeaderName))
                 continue;
 
-            List<String> values = Collections.list(clientRequest.getHeaders(headerName));
-            newHeaders.put(headerName, values);
+            for (Enumeration<String> headerValues = clientRequest.getHeaders(headerName); headerValues.hasMoreElements(); )
+            {
+                String headerValue = headerValues.nextElement();
+                if (headerValue != null)
+                    newHeaders.add(headerName, headerValue);
+            }
         }
 
         // Force the Host header if configured
@@ -673,6 +685,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected void onServerResponseHeaders(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
     {
+        Set<String> seenResponseHeaders = new HashSet<>();
         for (HttpField field : serverResponse.getHeaders())
         {
             String headerName = field.getName();
@@ -684,7 +697,13 @@ public abstract class AbstractProxyServlet extends HttpServlet
             if (newHttpField == null)
                 continue;
 
-            proxyResponse.setHeader(headerName, String.join(", ", newHttpField.getValueList()));
+            String newHeaderValue = String.join(", ", newHttpField.getValueList());
+            // Replace any container-generated header (e.g. Server, Date) on the first
+            // occurrence, then add to preserve genuinely repeated response headers.
+            if (seenResponseHeaders.add(lowerHeaderName))
+                proxyResponse.setHeader(headerName, newHeaderValue);
+            else
+                proxyResponse.addHeader(headerName, newHeaderValue);
         }
 
         if (_log.isDebugEnabled())

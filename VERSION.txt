@@ -1,4 +1,11 @@
-jetty-12.1.12-SNAPSHOT
+jetty-12.1.13-SNAPSHOT
+
+12.1.12 - 04 August 2026
+ + 577   AbstractProxyServlet onServerResponseHeaders addHeader rather than setHeader
+ + 13970 ForwardedRequestCustomizer uses connection port instead of proto default when host lacks port (@zenios)
+ + 15453 HttpServletResponse: setHeader("Content-Length", N) should be treated like setContentLengthLong(N)
+ + 15456 Fragments in redirects not supported by default in standalone Jetty installation
+ + 15496 mime-type filtering by IncludeExclude should always be case-insensitive
 
 12.1.11 - 02 July 2026
  + 15156 Injecting authentication headers using request filters?
@@ -11,8 +18,6 @@ jetty-12.1.12-SNAPSHOT
  + 15308 CachingWebAppClassLoader is not registering as parallel capable
  + 15333 Upgrade to Quiche version 0.29.2
  + 15345 Move RateControl to jetty-io
-
-jetty-12.1.11-SNAPSHOT
 
 12.1.10 - 29 May 2026
  + 9799 Declare EncodingException for HPACK/QPACK encoders and decoders
