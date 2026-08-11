@@ -42,7 +42,7 @@ The following checklist is used to handle security issues:
 - [ ] Open a [GitLab @ Eclipse CVE Assignment Issue](https://gitlab.eclipse.org/security/cve-assignment/-/issues/new) to have a CVE allocated.   
       The issue should be opened under the "Eclipse Projects Security" > "cve-assignment" > "Issues" section, with the "This issue is confidential" checkbox checked.   
       Follow the template for what details are necessary to file the CVE Assignment.
-- [ ] Add a comment in the issue asking the Eclipse team to add @jerdfelt, @jmcconnell, @lrobertsa2f, @olamy and @sbordet as assignees (otherwise only the issue opener will be able to see the issue).
+- [ ] Add a comment in the GitLab issue asking the Eclipse team to add `@jerdfelt, @jmcconnell, @lrobertsa2f, @olamy and @sbordet` as assignees (otherwise only the issue opener will be able to see the issue).
 - [ ] Once the CVE is allocated, update the Security Advisory with the number.
 - [ ] Build and test fix(es) locally and in the CI environment.
 - [ ] Merge tests and fix - ensure description does not mention vulnerability directly. Do not merge directly from the security advisory as it can be traced back before publication.
@@ -59,7 +59,7 @@ The following checklist is used to handle security issues:
 - [ ] Open a [GitLab @ Eclipse CVE Publication Issue](https://gitlab.eclipse.org/security/cve-assignment/-/issues/new?description_template=CVE%20Publication%20Request) to request CVE publication.
       This issue uses the "CVE Publication Request" template available in the "Description" drop-down list.   
       Follow the template for what details are necessary to file the CVE Publication Request.
-- [ ] Add a comment in the issue asking the Eclipse team to add @jerdfelt, @jmcconnell, @lrobertsa2f, @olamy and @sbordet as assignees (otherwise only the issue opener will be able to see the issue).
+- [ ] Add a comment in the GitLab issue asking the Eclipse team to add `@jerdfelt, @jmcconnell, @lrobertsa2f, @olamy and @sbordet` as assignees (otherwise only the issue opener will be able to see the issue).
 - [ ] Edit VERSION.txt and so that the CVE number is now recorded against merged PR.
 - [ ] Edit the release(s) on GitHub to identify the CVE number that was addressed/resolved.
 - [ ] Update downstream images (Docker, etc.).
