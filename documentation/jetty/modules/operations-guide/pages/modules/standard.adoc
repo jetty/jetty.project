@@ -600,6 +600,8 @@ The module properties are:
 include::{jetty-home}/modules/loginservice-hash.mod[tags=documentation]
 ----
 
+See also xref:programming-guide:security/index.adoc[this section] for more information about Jetty's security features.
+
 [[min-data-rate]]
 == Module `min-data-rate`
 
