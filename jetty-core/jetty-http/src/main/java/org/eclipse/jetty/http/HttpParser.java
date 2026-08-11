@@ -374,33 +374,25 @@ public class HttpParser
 
     protected void checkViolation(Violation violation) throws HttpException.RuntimeException
     {
-        if (!checkAndReportViolation(violation, violation.getDescription()))
+        boolean allowed = violation.isAllowedBy(_complianceMode);
+        reportComplianceViolation(violation, violation.getDescription());
+
+        if (!allowed)
             throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, violation.getDescription());
     }
 
-    protected boolean checkAndReportViolation(Violation violation, String reason)
-    {
-        boolean allowed = _complianceMode.allows(violation);
-        reportComplianceViolation(violation, reason, allowed);
-        return allowed;
-    }
-
-    @Deprecated
     protected void reportComplianceViolation(Violation violation)
     {
-        checkAndReportViolation(violation, violation.getDescription());
+        reportComplianceViolation(violation, violation.getDescription());
     }
 
-    @Deprecated
     protected void reportComplianceViolation(Violation violation, String reason)
     {
-        checkAndReportViolation(violation, reason);
-    }
-
-    protected void reportComplianceViolation(Violation violation, String reason, boolean allowed)
-    {
         if (_requestParser)
+        {
+            boolean allowed = _complianceMode.allows(violation);
             _requestHandler.onViolation(new ComplianceViolation.Event(_complianceMode, violation, reason, allowed));
+        }
     }
 
     protected String caseInsensitiveHeader(String orig, String normative)
@@ -408,7 +400,7 @@ public class HttpParser
         if (CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode))
             return normative;
         if (!orig.equals(normative))
-            reportComplianceViolation(CASE_SENSITIVE_FIELD_NAME, orig, false);
+            reportComplianceViolation(CASE_SENSITIVE_FIELD_NAME, orig);
         return orig;
     }
 
@@ -799,7 +791,8 @@ public class HttpParser
                             }
                             else
                             {
-                                if (checkAndReportViolation(Violation.CASE_INSENSITIVE_METHOD, _methodString))
+                                reportComplianceViolation(Violation.CASE_INSENSITIVE_METHOD, _methodString);
+                                if (_complianceMode.allows(Violation.CASE_INSENSITIVE_METHOD))
                                 {
                                     method = HttpMethod.INSENSITIVE_CACHE.get(_methodString);
                                     if (method != null)
@@ -967,9 +960,9 @@ public class HttpParser
                             break;
 
                         case EOL:
-                        {
                             // HTTP/0.9
-                            if (checkAndReportViolation(Violation.HTTP_0_9, HTTP_0_9.getDescription()))
+                            reportComplianceViolation(HTTP_0_9, HTTP_0_9.getDescription());
+                            if (Violation.HTTP_0_9.isAllowedBy(_complianceMode))
                             {
                                 _requestHandler.startRequest(_methodString, _uri.toCompleteString(), HttpVersion.HTTP_0_9);
                                 setState(State.CONTENT);
@@ -982,7 +975,6 @@ public class HttpParser
                                 throw new HttpException.RuntimeException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "HTTP/0.9 not supported");
                             }
                             break;
-                        }
 
                         case ALPHA:
                         case DIGIT:
@@ -1473,7 +1465,7 @@ public class HttpParser
                                             String en = BufferUtil.toString(buffer, buffer.position() - 1, n.length(), StandardCharsets.US_ASCII);
                                             if (!n.equals(en))
                                             {
-                                                reportComplianceViolation(CASE_SENSITIVE_FIELD_NAME, en, true);
+                                                reportComplianceViolation(CASE_SENSITIVE_FIELD_NAME, en);
                                                 n = en;
                                                 cachedField = newHttpField(cachedField.getHeader(), n, v);
                                             }
@@ -1553,10 +1545,11 @@ public class HttpParser
                     {
                         case SPACE:
                         case HTAB:
-                            //Ignore trailing whitespaces?
-                            if (checkAndReportViolation(WHITESPACE_AFTER_FIELD_NAME, _headerString))
+                            //Ignore trailing whitespaces ?
+                            if (WHITESPACE_AFTER_FIELD_NAME.isAllowedBy(_complianceMode))
                             {
                                 _headerString = takeString();
+                                reportComplianceViolation(WHITESPACE_AFTER_FIELD_NAME, "Space after " + _headerString);
                                 _header = HttpHeader.CACHE.get(_headerString);
                                 _length = -1;
                                 setState(FieldState.WS_AFTER_NAME);
@@ -1578,7 +1571,8 @@ public class HttpParser
                             _valueString = "";
                             _length = -1;
 
-                            if (checkAndReportViolation(NO_COLON_AFTER_FIELD_NAME, _headerString))
+                            reportComplianceViolation(NO_COLON_AFTER_FIELD_NAME, "Field " + _headerString);
+                            if (NO_COLON_AFTER_FIELD_NAME.isAllowedBy(_complianceMode))
                             {
                                 setState(FieldState.FIELD);
                                 break;
@@ -1609,8 +1603,9 @@ public class HttpParser
                             break;
 
                         case EOL:
-                            if (checkAndReportViolation(NO_COLON_AFTER_FIELD_NAME, _headerString))
+                            if (NO_COLON_AFTER_FIELD_NAME.isAllowedBy(_complianceMode))
                             {
+                                reportComplianceViolation(NO_COLON_AFTER_FIELD_NAME, "Field " + _headerString);
                                 setState(FieldState.FIELD);
                                 break;
                             }

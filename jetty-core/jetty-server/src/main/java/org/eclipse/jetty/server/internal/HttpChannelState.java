@@ -156,11 +156,10 @@ public class HttpChannelState implements HttpChannel, Components
                 case 1 -> listeners.get(0).initialize();
                 default -> new InitializedCompositeComplianceViolationListener(listeners);
             };
-
-            if (_complianceViolationListener != ComplianceViolation.Listener.NOOP &&
-                !_connectionMetaData.getHttpConfiguration().isNotifyForbiddenComplianceViolations())
-                _complianceViolationListener = new AllowedOnlyComplianceListener(_complianceViolationListener);
         }
+
+        if (!_connectionMetaData.getHttpConfiguration().isNotifyForbiddenComplianceViolations())
+            _complianceViolationListener = new AllowedOnlyComplianceListener(_complianceViolationListener);
     }
 
     private static class AllowedOnlyComplianceListener implements ComplianceViolation.Listener
