@@ -79,4 +79,10 @@ public class WrappedAuthConfiguration implements AuthConfiguration
     {
         return _configuration.getSessionMaxInactiveIntervalOnAuthentication();
     }
+
+    @Override
+    public boolean isPersistAuthenticationCredentials()
+    {
+        return _configuration.isPersistAuthenticationCredentials();
+    }
 }

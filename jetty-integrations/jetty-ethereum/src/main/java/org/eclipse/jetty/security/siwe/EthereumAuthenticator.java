@@ -307,7 +307,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
         if (user != null)
         {
             Session session = request.getSession(true);
-            AuthenticationState cached = new SessionAuthentication(getAuthenticationType(), user, credentials);
+            AuthenticationState cached = newSessionAuthentication(getAuthenticationType(), user, credentials);
             synchronized (session)
             {
                 session.setAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE, cached);

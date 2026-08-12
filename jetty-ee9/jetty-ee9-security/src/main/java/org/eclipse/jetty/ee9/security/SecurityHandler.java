@@ -72,6 +72,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     private IdentityService _identityService;
     private boolean _renewSessionOnAuthentication = true;
     private int _sessionMaxInactiveIntervalOnAuthentication = 0;
+    private boolean _persistAuthenticationCredentials;
 
     static
     {
@@ -469,6 +470,19 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     public void setSessionMaxInactiveIntervalOnAuthentication(int seconds)
     {
         _sessionMaxInactiveIntervalOnAuthentication = seconds;
+    }
+
+    @Override
+    public boolean isPersistAuthenticationCredentials()
+    {
+        return _persistAuthenticationCredentials;
+    }
+
+    public void setPersistAuthenticationCredentials(boolean persistAuthenticationCredentials)
+    {
+        if (isStarted())
+            throw new IllegalStateException("Started");
+        _persistAuthenticationCredentials = persistAuthenticationCredentials;
     }
 
     /*
