@@ -17,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -32,7 +31,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.opentest4j.TestAbortedException;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Symlinks not supported on Windows")
@@ -74,23 +73,23 @@ public class SymlinkAllowedResourceAliasCheckerTest
     }
 
     @Test
-    public void testBaseResourceResolvedAfterStart() throws Exception
+    public void testBaseResourceSetBeforeStartAllowsSymlink() throws Exception
     {
-        AtomicReference<Resource> baseRef = new AtomicReference<>();
         ContextHandler context = new ContextHandler();
         context.setContextPath("/");
         context.clearAliasChecks();
+        Resource base = resourceFactory.newResource(rootPath);
+        context.setBaseResource(base);
+
+        SymlinkAllowedResourceAliasChecker checker = new SymlinkAllowedResourceAliasChecker(context);
+        context.addAliasCheck(checker);
 
         Server server = new Server();
         server.setHandler(context);
         server.start();
 
-        SymlinkAllowedResourceAliasChecker checker = new SymlinkAllowedResourceAliasChecker(context, baseRef::get);
-        context.addAliasCheck(checker);
         assertTrue(checker.isStarted());
-        assertNull(checker.getBaseResource());
-
-        baseRef.set(resourceFactory.newResource(rootPath));
+        assertNotNull(checker.getBaseResource());
 
         Resource resource = resourceFactory.newResource(symlinkPath);
         assertTrue(resource.isAlias());
@@ -102,16 +101,47 @@ public class SymlinkAllowedResourceAliasCheckerTest
     @Test
     public void testNullBaseResourceNotAllowed() throws Exception
     {
-        AtomicReference<Resource> baseRef = new AtomicReference<>();
         ContextHandler context = new ContextHandler();
         context.setContextPath("/");
         context.clearAliasChecks();
 
-        SymlinkAllowedResourceAliasChecker checker = new SymlinkAllowedResourceAliasChecker(context, baseRef::get);
-        checker.start();
+        SymlinkAllowedResourceAliasChecker checker = new SymlinkAllowedResourceAliasChecker(context);
+        context.addAliasCheck(checker);
+
+        Server server = new Server();
+        server.setHandler(context);
+        server.start();
+
+        assertTrue(checker.isStarted());
 
         Resource resource = resourceFactory.newResource(symlinkPath);
         assertTrue(resource.isAlias());
         assertFalse(checker.checkAlias("/link.txt", resource));
+
+        server.stop();
+    }
+
+    @Test
+    public void testNullPathInCombinedResourceIsSkipped() throws Exception
+    {
+        // Regression for NPE when iterating combined resources and a path is null.
+        ContextHandler context = new ContextHandler();
+        context.setContextPath("/");
+        context.clearAliasChecks();
+        context.setBaseResource(resourceFactory.newResource(rootPath));
+
+        SymlinkAllowedResourceAliasChecker checker = new SymlinkAllowedResourceAliasChecker(context);
+        context.addAliasCheck(checker);
+
+        Server server = new Server();
+        server.setHandler(context);
+        server.start();
+
+        Resource resource = resourceFactory.newResource(symlinkPath);
+        assertTrue(resource.isAlias());
+        // Should not throw; allows the symlink under the base.
+        assertTrue(checker.checkAlias("/link.txt", resource));
+
+        server.stop();
     }
 }

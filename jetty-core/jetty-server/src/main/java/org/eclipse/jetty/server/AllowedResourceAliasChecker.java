@@ -83,22 +83,23 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         return _contextHandler.getProtectedTargets();
     }
 
+    /**
+     * @return the base resource captured at initialization, or {@code null} if none was available
+     */
     public Resource getBaseResource()
     {
-        if (_baseResource == null)
-            extractBaseResourceFromContext();
         return _baseResource;
     }
 
     private void extractBaseResourceFromContext()
     {
+        _protected.clear();
         _baseResource = _resourceBaseSupplier.get();
         if (_baseResource == null)
             return;
 
         try
         {
-            _protected.clear();
             String[] protectedTargets = getProtectedTargets();
             if (protectedTargets != null)
                 _protected.addAll(Arrays.asList(protectedTargets));
@@ -111,8 +112,16 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
         }
     }
 
+    /**
+     * Resolve and freeze the base resource (and protected targets) once.
+     * Must run during startup, not from concurrent request threads.
+     * The base resource is not expected to change after the context has started
+     * ({@link ContextHandler#setBaseResource(Resource)} rejects that).
+     */
     protected void initialize()
     {
+        if (_initialized)
+            return;
         extractBaseResourceFromContext();
         _initialized = true;
     }
@@ -120,8 +129,8 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
     @Override
     protected void doStart() throws Exception
     {
-        // We can only initialize if ContextHandler in started state, the baseResource can be changed even in starting state.
-        // If the ContextHandler is not started add a listener to delay initialization until fully started.
+        // Initialize once the ContextHandler is fully started so the base resource is final.
+        // If the ContextHandler is not started yet, delay until lifeCycleStarted.
         if (_contextHandler.isStarted())
             initialize();
         else
@@ -140,8 +149,9 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Al
     @Override
     public boolean checkAlias(String pathInContext, Resource resource)
     {
-        if (!_initialized || _baseResource == null)
-            extractBaseResourceFromContext();
+        // If somehow invoked before lifecycle start, initialize once (still fail closed if no base).
+        if (!_initialized)
+            initialize();
         if (_baseResource == null)
             return false;
 
