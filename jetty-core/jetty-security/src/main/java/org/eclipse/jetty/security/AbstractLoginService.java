@@ -116,19 +116,16 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
     public boolean validate(UserIdentity user)
     {
         if (!isFullValidate())
-            return true; //if we have a user identity it must be valid
+            return true; // If we have a user identity it must be valid.
 
-        //Do a full validation back against the user store     
+        // Do a full validation back against the user store.
         UserPrincipal fresh = loadUserInfo(user.getUserPrincipal().getName());
         if (fresh == null)
-            return false; //user no longer exists
+            return false; // User no longer exists.
 
-        if (user.getUserPrincipal() instanceof UserPrincipal)
-        {
-            return fresh.authenticate(((UserPrincipal)user.getUserPrincipal()));
-        }
-
-        throw new IllegalStateException("UserPrincipal not known"); //can't validate
+        if (user.getUserPrincipal() instanceof UserPrincipal userPrincipal)
+            return fresh.authenticate(userPrincipal);
+        return false; // Unable to validate credentials without a UserPrincipal.
     }
 
     @Override

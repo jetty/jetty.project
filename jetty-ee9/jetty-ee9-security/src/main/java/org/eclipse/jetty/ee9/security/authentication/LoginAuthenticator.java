@@ -40,6 +40,7 @@ public abstract class LoginAuthenticator implements Authenticator
     protected IdentityService _identityService;
     private boolean _sessionRenewedOnAuthentication;
     private int _sessionMaxInactiveIntervalOnAuthentication;
+    private boolean _persistAuthenticationCredentials;
 
     protected LoginAuthenticator()
     {
@@ -100,11 +101,22 @@ public abstract class LoginAuthenticator implements Authenticator
             throw new IllegalStateException("No IdentityService for " + this + " in " + configuration);
         _sessionRenewedOnAuthentication = configuration.isSessionRenewedOnAuthentication();
         _sessionMaxInactiveIntervalOnAuthentication = configuration.getSessionMaxInactiveIntervalOnAuthentication();
+        _persistAuthenticationCredentials = configuration.isPersistAuthenticationCredentials();
+    }
+
+    public boolean isPersistAuthenticationCredentials()
+    {
+        return _persistAuthenticationCredentials;
     }
 
     public LoginService getLoginService()
     {
         return _loginService;
+    }
+
+    public SessionAuthentication newSessionAuthentication(String method, UserIdentity userIdentity, Object credentials)
+    {
+        return new SessionAuthentication(method, userIdentity, credentials, _persistAuthenticationCredentials);
     }
 
     /**

@@ -164,7 +164,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (user != null)
         {
             Session session = request.getSession(true);
-            AuthenticationState cached = new SessionAuthentication(getAuthenticationType(), user, password);
+            AuthenticationState cached = newSessionAuthentication(getAuthenticationType(), user, password);
             session.setAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE, cached);
         }
         return user;

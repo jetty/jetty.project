@@ -68,6 +68,7 @@ import org.slf4j.LoggerFactory;
 public abstract class SecurityHandler extends Handler.Wrapper implements Configuration
 {
     public static String SESSION_AUTHENTICATED_ATTRIBUTE = "org.eclipse.jetty.security.sessionAuthenticated";
+    public static final String KNOWN_ROLES_ATTRIBUTE = "org.eclipse.jetty.security.knownRoles";
 
     private static final Logger LOG = LoggerFactory.getLogger(SecurityHandler.class);
     private static final List<Authenticator.Factory> __knownAuthenticatorFactories = new ArrayList<>();
@@ -82,6 +83,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     private boolean _renewSessionOnAuthentication = true;
     private int _sessionMaxInactiveIntervalOnAuthentication = 0;
     private AuthenticationState.Deferred _deferred;
+    private boolean _persistAuthenticationCredentials;
 
     static
     {
@@ -649,6 +651,19 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
     protected Set<String> getKnownRoles()
     {
         return Collections.emptySet();
+    }
+
+    @Override
+    public boolean isPersistAuthenticationCredentials()
+    {
+        return _persistAuthenticationCredentials;
+    }
+
+    public void setPersistAuthenticationCredentials(boolean persistAuthenticationCredentials)
+    {
+        if (isStarted())
+            throw new IllegalStateException("Started");
+        _persistAuthenticationCredentials = persistAuthenticationCredentials;
     }
 
     public class NotChecked implements Principal
