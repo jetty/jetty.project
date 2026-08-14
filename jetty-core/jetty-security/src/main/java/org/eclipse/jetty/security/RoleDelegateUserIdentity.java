@@ -50,6 +50,8 @@ public class RoleDelegateUserIdentity implements UserIdentity
     @Override
     public String[] getRoles()
     {
+        if (_roleDelegate == null)
+            return new String[0];
         return _roleDelegate.getRoles();
     }
 
