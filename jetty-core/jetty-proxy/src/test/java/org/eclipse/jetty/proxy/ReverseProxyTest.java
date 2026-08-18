@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.proxy;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -25,6 +26,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -49,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReverseProxyTest extends AbstractProxyTest
 {
-    public static Stream<Arguments> httpVersionsAndThreadPools()
+    public static Stream<Arguments> httpVersionsAndProxySendServerHeaders()
     {
         return Stream.of(
             Arguments.of(HttpVersion.HTTP_1_1, false),
@@ -60,11 +62,15 @@ public class ReverseProxyTest extends AbstractProxyTest
     }
 
     @ParameterizedTest
-    @MethodSource("httpVersionsAndThreadPools")
-    public void testSimple(HttpVersion httpVersion, boolean useServerThreadPool) throws Exception
+    @MethodSource("httpVersionsAndProxySendServerHeaders")
+    public void testSimple(HttpVersion httpVersion, boolean proxySendServerHeaders) throws Exception
     {
         String clientContent = "hello";
         String serverContent = "world";
+
+        serverHttpConfig.setSendServerVersion(true);
+        serverHttpConfig.setSendDateHeader(true);
+
         startServer(new Handler.Abstract()
         {
             @Override
@@ -76,6 +82,9 @@ public class ReverseProxyTest extends AbstractProxyTest
                 return true;
             }
         });
+
+        proxyHttpConfig.setSendServerVersion(proxySendServerHeaders);
+        proxyHttpConfig.setSendDateHeader(proxySendServerHeaders);
 
         ProxyHandler.Reverse proxyHandler = new ProxyHandler.Reverse(clientToProxyRequest ->
             HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
@@ -89,12 +98,11 @@ public class ReverseProxyTest extends AbstractProxyTest
             @Override
             protected org.eclipse.jetty.client.Request newProxyToServerRequest(Request clientToProxyRequest, HttpURI newHttpURI)
             {
-                // Use the client to proxy protocol also from the proxy to server.
+                // Use the client-to-proxy protocol also for proxy-to-server communication.
                 return super.newProxyToServerRequest(clientToProxyRequest, newHttpURI)
                     .version(httpVersion);
             }
         };
-        proxyHandler.setUseServerThreadPool(useServerThreadPool);
         startProxy(proxyHandler);
 
         startClient();
@@ -104,7 +112,80 @@ public class ReverseProxyTest extends AbstractProxyTest
             .body(new StringRequestContent(clientContent))
             .timeout(5, TimeUnit.SECONDS)
             .send();
+
+        assertEquals(200, response.getStatus());
         assertEquals(serverContent, response.getContentAsString());
+
+        assertEquals(1, response.getHeaders().getValuesList("Server").size());
+        assertEquals(1, response.getHeaders().getValuesList("Date").size());
+    }
+
+    @ParameterizedTest
+    @MethodSource("httpVersions")
+    public void testMultiLineHeadersArePreserved(HttpVersion httpVersion) throws Exception
+    {
+        // Repeated request/response headers must be forwarded as distinct values,
+        // while proxy-owned headers (Server, Date) must not be duplicated.
+        serverHttpConfig.setSendServerVersion(true);
+        serverHttpConfig.setSendDateHeader(true);
+
+        startServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                List<String> requestValues = request.getHeaders().stream()
+                    .filter(field -> field.getName().equalsIgnoreCase("X-Request"))
+                    .map(HttpField::getValue)
+                    .toList();
+                assertEquals(List.of("req1", "req2"), requestValues);
+
+                response.getHeaders().add("X-Response", "resp1");
+                response.getHeaders().add("X-Response", "resp2");
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        proxyHttpConfig.setSendServerVersion(true);
+        proxyHttpConfig.setSendDateHeader(true);
+
+        startProxy(new ProxyHandler.Reverse(clientToProxyRequest ->
+            HttpURI.build(clientToProxyRequest.getHttpURI()).port(serverConnector.getLocalPort()))
+        {
+            @Override
+            protected HttpClient newHttpClient()
+            {
+                return newProxyHttpClient();
+            }
+
+            @Override
+            protected org.eclipse.jetty.client.Request newProxyToServerRequest(Request clientToProxyRequest, HttpURI newHttpURI)
+            {
+                // Use the client-to-proxy protocol also for proxy-to-server communication.
+                return super.newProxyToServerRequest(clientToProxyRequest, newHttpURI)
+                    .version(httpVersion);
+            }
+        });
+
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+            .version(httpVersion)
+            .headers(headers -> headers.add("X-Request", "req1").add("X-Request", "req2"))
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(200, response.getStatus());
+
+        List<String> responseValues = response.getHeaders().stream()
+            .filter(field -> field.getName().equalsIgnoreCase("X-Response"))
+            .map(HttpField::getValue)
+            .toList();
+        assertEquals(List.of("resp1", "resp2"), responseValues);
+
+        assertEquals(1, response.getHeaders().getValuesList("Server").size());
+        assertEquals(1, response.getHeaders().getValuesList("Date").size());
     }
 
     @ParameterizedTest

@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>12.1.12-SNAPSHOT</version>
+  <version>12.1.13-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
@@ -213,7 +213,7 @@
 
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
-    <flatten.maven.plugin.version>1.7.3</flatten.maven.plugin.version>
+    <flatten.maven.plugin.version>1.8.0</flatten.maven.plugin.version>
     <grpc.version>1.82.1</grpc.version>
     <gson.version>2.14.0</gson.version>
     <guava.version>33.6.0-jre</guava.version>
@@ -223,8 +223,8 @@
     <hibernate.search.version>8.4.0.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
     <infinispan.docker.image.version>15.2.1.Final</infinispan.docker.image.version>
-    <infinispan.protostream.version>6.0.9</infinispan.protostream.version>
-    <infinispan.version>16.2.1</infinispan.version>
+    <infinispan.protostream.version>6.0.10</infinispan.protostream.version>
+    <infinispan.version>16.2.2</infinispan.version>
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
@@ -237,7 +237,7 @@
     <jboss.logging.processor.version>3.0.4.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.6.3.Final</jboss.logging.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
-    <jetty-quiche-native.version>0.29.2</jetty-quiche-native.version>
+    <jetty-quiche-native.version>0.29.3</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
@@ -289,7 +289,7 @@
     <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.10.1</maven.invoker.plugin.version>
-    <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
+    <maven.jar.plugin.version>3.5.1</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
     <maven.plugin-tools.version>3.15.2</maven.plugin-tools.version>
     <maven.release.plugin.version>3.3.1</maven.release.plugin.version>
@@ -304,7 +304,7 @@
     <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <modify-sources-plugin.version>1.0.14</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
-    <mongodb.version>5.8.0</mongodb.version>
+    <mongodb.version>5.10.0</mongodb.version>
     <netty.version>4.2.16.Final</netty.version>
     <njord.version>0.9.9</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
@@ -332,7 +332,7 @@
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
     <plexus-utils.version>4.0.3</plexus-utils.version>
     <plexus-xml.version>4.1.1</plexus-xml.version>
-    <project.build.outputTimestamp>2026-07-02T21:12:17Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-08-03T22:50:59Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <settings.path/>
@@ -1225,7 +1225,7 @@
       <dependency>
         <groupId>org.hibernate.models</groupId>
         <artifactId>hibernate-models</artifactId>
-        <version>1.2.0</version>
+        <version>1.3.0</version>
       </dependency>
       <dependency>
         <groupId>org.infinispan.protostream</groupId>
@@ -1657,6 +1657,7 @@
           <configuration>
             <archive>
               <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+              <pomPropertiesFile>${project.build.directory}/git-sha.properties</pomPropertiesFile>
               <manifestEntries>
                 <Implementation-Version>${project.version}</Implementation-Version>
                 <Implementation-Vendor>Eclipse Jetty Project</Implementation-Vendor>
@@ -2110,6 +2111,32 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-git-sha-properties</id>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <phase>prepare-package</phase>
+            <configuration>
+              <encoding>UTF-8</encoding>
+              <outputDirectory>${project.build.directory}</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${maven.multiModuleProjectDirectory}/build</directory>
+                  <includes>
+                    <include>git-sha.properties</include>
+                  </includes>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
         <inherited>true</inherited>
         <executions>
@@ -2138,6 +2165,28 @@
               <goal>parse-version</goal>
             </goals>
             <phase>validate</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>create-git-sha</id>
+            <goals>
+              <goal>create</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <doCheck>false</doCheck>
+              <doUpdate>false</doUpdate>
+              <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
+              <revisionOnScmFailure>unknown</revisionOnScmFailure>
+              <providerImplementations>
+                <git>git</git>
+              </providerImplementations>
+            </configuration>
           </execution>
         </executions>
       </plugin>

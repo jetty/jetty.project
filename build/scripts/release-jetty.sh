@@ -18,6 +18,7 @@ requiredExecutable "sed"
 requiredExecutable "gpg"
 requiredExecutable "egrep"
 requiredExecutable "mvn"
+requiredExecutable "dot"
 
 proceedyn() {
     while true; do

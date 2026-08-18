@@ -285,7 +285,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
     public static final UriCompliance UNSAFE = new UriCompliance("UNSAFE", allOf(Violation.class));
 
     private static final AtomicInteger __custom = new AtomicInteger();
-    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, JETTY_11, LEGACY, RFC3986, UNAMBIGUOUS, UNSAFE);
+    private static final List<UriCompliance> KNOWN_MODES = List.of(DEFAULT, DEFAULT_REDIRECT, JETTY_11, LEGACY, RFC3986, UNAMBIGUOUS, UNSAFE);
 
     public static boolean isAmbiguous(Set<Violation> violations)
     {

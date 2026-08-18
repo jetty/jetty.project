@@ -581,6 +581,27 @@ However, the RMI server is configured to bind to `localhost`, i.e. `127.0.0.1`.
 
 If the system property `java.rmi.server.hostname` is not specified, the RMI client will try to connect to `127.0.1.1` (because that's what in the RMI stub) and fail because nothing is listening on that address.
 
+[[loginservice-hash]]
+== Module `loginservice-hash`
+
+The `loginservice-hash` module creates a `HashLoginService` and adds it as a bean on the `Server`.
+A ``SecurityHandler`` uses it by matching its configured realm name.
+
+The `HashLoginService` reads users, their credentials and their roles from a properties file, where each line has the format `<username>: <password>[,<rolename>...]`.
+Enabling the module copies a template `etc/realm.properties` file into the `$JETTY_BASE` directory that you can edit to define your users.
+
+The `jetty.hashLoginService.name` property sets the realm name, which must match the realm name expected by the ``Authenticator``.
+It defaults to `default`, the realm name used by web applications that declare a `<login-config>` without an explicit `<realm-name>`.
+Set it to match the `<realm-name>` in a web application's `web.xml` when a specific realm is used.
+
+The module properties are:
+
+----
+include::{jetty-home}/modules/loginservice-hash.mod[tags=documentation]
+----
+
+See also xref:programming-guide:security/index.adoc[this section] for more information about Jetty's security features.
+
 [[min-data-rate]]
 == Module `min-data-rate`
 

@@ -150,6 +150,11 @@ public interface Authenticator
          */
         int getSessionMaxInactiveIntervalOnAuthentication();
 
+        default boolean isPersistAuthenticationCredentials()
+        {
+            return false;
+        }
+
         class Wrapper implements Configuration
         {
             private final Configuration _configuration;
@@ -205,6 +210,12 @@ public interface Authenticator
             public int getSessionMaxInactiveIntervalOnAuthentication()
             {
                 return _configuration.getSessionMaxInactiveIntervalOnAuthentication();
+            }
+
+            @Override
+            public boolean isPersistAuthenticationCredentials()
+            {
+                return _configuration.isPersistAuthenticationCredentials();
             }
         }
     }
