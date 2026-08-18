@@ -47,6 +47,14 @@ public class RoleDelegateUserIdentity implements UserIdentity
         return _roleDelegate != null && _roleDelegate.isUserInRole(role);
     }
 
+    @Override
+    public String[] getRoles()
+    {
+        if (_roleDelegate == null)
+            return new String[0];
+        return _roleDelegate.getRoles();
+    }
+
     public boolean isEstablished()
     {
         return _roleDelegate != null;

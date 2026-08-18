@@ -50,6 +50,8 @@ import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.security.SecurityHandler.KNOWN_ROLES_ATTRIBUTE;
+
 /**
  * ConstraintSecurityHandler
  * <p>
@@ -419,6 +421,12 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         rebuildMappings();
 
         super.doStart();
+
+        // Set the known roles as an attribute on the jetty-core context handler to make it externally available.
+        // This is used to implement the default UserIdentity.getRoles() in jetty-core.
+        ContextHandler contextHandler = ContextHandler.getCurrentContextHandler();
+        if (contextHandler != null)
+            contextHandler.getCoreContextHandler().setAttribute(KNOWN_ROLES_ATTRIBUTE, _roles);
     }
 
     @Override

@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Creates a HashLoginService and adds it as a bean on the Server. -->
+<!-- Users, passwords and roles are read from a properties file. A   -->
+<!-- SecurityHandler uses it by matching its realm name.             -->
+<!-- =============================================================== -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <Call id="ResourceFactory" class="org.eclipse.jetty.util.resource.ResourceFactory" name="of">
+    <Arg><Ref refid="Server" /></Arg>
+    <Call id="hashLoginServiceConfig" name="newResource">
+      <Arg><Property name="jetty.hashLoginService.config" default="etc/realm.properties" /></Arg>
+    </Call>
+  </Call>
+
+  <Call name="addBean">
+    <Arg>
+      <New class="org.eclipse.jetty.security.HashLoginService">
+        <Set name="name"><Property name="jetty.hashLoginService.name" default="default"/></Set>
+        <Set name="config"><Ref refid="hashLoginServiceConfig"/></Set>
+        <Set name="reloadInterval" type="int"><Property name="jetty.hashLoginService.reloadInterval" default="0"/></Set>
+        <Set name="fullValidate" type="boolean"><Property name="jetty.hashLoginService.fullValidate" default="false"/></Set>
+      </New>
+    </Arg>
+  </Call>
+
+</Configure>
