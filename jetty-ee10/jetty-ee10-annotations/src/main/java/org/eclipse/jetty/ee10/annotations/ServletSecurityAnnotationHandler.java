@@ -132,7 +132,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
      * @return true if constraint exists
      * @deprecated not used, no replacement
      */
-    @Deprecated(since = "12.1.12", forRemoval = true)
+    @Deprecated(since = "12.0.39", forRemoval = true)
     protected boolean constraintsExist(List<ServletMapping> servletMappings, List<ConstraintMapping> constraintMappings)
     {
         boolean exists = false;
