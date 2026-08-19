@@ -178,7 +178,7 @@
     <bouncycastle.version>1.84</bouncycastle.version>
     <brotli4j.version>1.23.0</brotli4j.version>
     <build-helper.maven.plugin.version>3.6.1</build-helper.maven.plugin.version>
-    <build-support.version>1.5</build-support.version>
+    <build-support.version>1.6</build-support.version>
     <buildnumber.maven.plugin.version>3.3.0</buildnumber.maven.plugin.version>
     <built-by>${user.name}</built-by>
     <checkstyle.version>10.26.1</checkstyle.version>
@@ -2055,7 +2055,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>enforce-java</id>
+            <id>enforce-versions</id>
             <goals>
               <goal>enforce</goal>
             </goals>
@@ -2070,12 +2070,9 @@
                   <version>[17,)</version>
                   <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 17 or newer</message>
                 </requireJavaVersion>
-                <!-- do not support alphax as a version number -->
-
-                <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule"/>
-                <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule"/>
-                <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule"/>
-
+                <requireCompatibleVersionRedhat/>
+                <requireCompatibleVersionDebian/>
+                <requireCompatibleVersionOSGI/>
                 <requireUpperBoundDeps/>
               </rules>
             </configuration>

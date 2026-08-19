@@ -82,6 +82,11 @@
         </exclusion>
         <!-- comes from Jetty Environment runtime classloader -->
         <exclusion>
+          <groupId>jakarta.persistence</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <!-- comes from Jetty Environment runtime classloader -->
+        <exclusion>
           <groupId>jakarta.xml.bind</groupId>
           <artifactId>*</artifactId>
         </exclusion>
