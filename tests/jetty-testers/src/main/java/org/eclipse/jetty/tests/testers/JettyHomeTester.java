@@ -264,6 +264,7 @@ public class JettyHomeTester
         }
     }
 
+    // Serialize unzips to avoid FileSystemAlreadyExistsException when unzips are executed concurrently.
     public static synchronized void unzip(Path archive, Path outputDir) throws IOException
     {
         if (Files.notExists(outputDir))
