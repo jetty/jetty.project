@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private static final Logger LOG = LoggerFactory.getLogger(ServerFCGIConnection.class);
 
     private final Callback fillableCallback = new FillableCallback();
+    private final AutoLock lock = new AutoLock();
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Lazy();
     private final Connector connector;
@@ -171,6 +173,14 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     @Override
     public void onFillable()
     {
+        try (AutoLock ignored = lock.lock())
+        {
+            onFillableLocked();
+        }
+    }
+
+    private void onFillableLocked()
+    {
         if (LOG.isDebugEnabled())
             LOG.debug(">>onFillable enter {} {} {}", this, stream, inputBuffer);
         acquireInputBuffer();
@@ -229,6 +239,14 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
      * for the current request.
      */
     void parseAndFill()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            parseAndFillLocked();
+        }
+    }
+
+    private void parseAndFillLocked()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("parseAndFill {}", this);
@@ -307,11 +325,14 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
 
     void onCompleted(Throwable failure)
     {
-        releaseInputBuffer();
-        if (failure == null)
-            fillInterested(fillableCallback);
-        else
-            getFlusher().shutdown();
+        try (AutoLock ignored = lock.lock())
+        {
+            releaseInputBuffer();
+            if (failure == null)
+                fillInterested(fillableCallback);
+            else
+                getFlusher().shutdown();
+        }
     }
 
     @Override
