@@ -300,28 +300,51 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         boolean removed;
         boolean destroy;
+        boolean runZeroChannelAction;
         try (AutoLock ignored = lock.lock())
         {
             removed = activeChannels.remove(channel);
-            destroy = closed || !removed || channel.isFailed();
-            // Recycle only non-failed channels.
-            if (isRecycleHttpChannels() && !destroy)
-                idleChannels.offer(channel);
+            if (activeChannels.isEmpty())
+            {
+                destroy = false;
+                runZeroChannelAction = true;
+            }
+            else
+            {
+                runZeroChannelAction = false;
+                destroy = closed || !removed || channel.isFailed();
+                // Recycle only non-failed channels.
+                if (isRecycleHttpChannels() && !destroy)
+                    idleChannels.offer(channel);
+            }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("released={} destroy={} {}", removed, destroy, channel);
-        if (destroy)
-            channel.destroy();
-        getHttpDestination().release(this);
+            LOG.debug("released={} destroy={} runZeroChannelAction={} {}", removed, destroy, runZeroChannelAction, channel);
+
+        if (runZeroChannelAction)
+        {
+            zeroChannelAction();
+        }
+        else
+        {
+            if (destroy)
+                channel.destroy();
+            getHttpDestination().release(this);
+        }
     }
 
     private void destroyHttpChannel(HttpChannelOverHTTP2 channel)
     {
+        boolean runZeroChannelAction;
         try (AutoLock ignored = lock.lock())
         {
             activeChannels.remove(channel);
+            runZeroChannelAction = activeChannels.isEmpty();
         }
-        channel.destroy();
+        if (runZeroChannelAction)
+            zeroChannelAction();
+        else
+            channel.destroy();
     }
 
     void remove()
@@ -335,9 +358,28 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
             LOG.debug("Failure {}", this, failure);
         if (ensureClosedOrAbortActiveChannels(() -> failure))
             return;
+        zeroChannelAction();
+        callback.succeeded();
+    }
+
+    public void upwardClose()
+    {
+        boolean runZeroChannelAction;
+        try (AutoLock ignored = lock.lock())
+        {
+            if (closed)
+                return;
+            closed = true;
+            runZeroChannelAction = activeChannels.isEmpty();
+        }
+        if (runZeroChannelAction)
+            zeroChannelAction();
+    }
+
+    private void zeroChannelAction()
+    {
         remove();
         destroy();
-        callback.succeeded();
     }
 
     @Override
@@ -347,11 +389,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
             LOG.debug("Close {}", this);
         if (ensureClosedOrAbortActiveChannels(ClosedChannelException::new))
             return;
-        session.close(ErrorCode.NO_ERROR.code, "close", Callback.from(() ->
-        {
-            remove();
-            destroy();
-        }));
+        session.close(ErrorCode.NO_ERROR.code, "close", Callback.from(this::zeroChannelAction));
     }
 
     /**
