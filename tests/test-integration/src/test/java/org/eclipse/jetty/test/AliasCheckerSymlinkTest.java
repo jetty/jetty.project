@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.ContentResponse;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -44,6 +46,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
 {
@@ -211,9 +216,10 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
 
     public static Stream<Arguments> testCases(ContextHandler context)
     {
-        AllowedResourceAliasChecker allowedResource = new AllowedResourceAliasChecker(context);
-        SymlinkAllowedResourceAliasChecker symlinkAllowedResource = new SymlinkAllowedResourceAliasChecker(context);
-        ApproveAliases approveAliases = new ApproveAliases();
+        Function<ContextHandler, AliasCheck> allowedResource = AllowedResourceAliasChecker::new;
+        Function<ContextHandler, AliasCheck> symlinkAllowedResource = SymlinkAllowedResourceAliasChecker::new;
+        Function<ContextHandler, AliasCheck> approveAliases = contextHandler -> new ApproveAliases();
+        Function<ContextHandler, AliasCheck> noAliasChecker = contextHandler -> null;
 
         return Stream.of(
             // AllowedResourceAliasChecker that checks the target of symlinks.
@@ -244,24 +250,24 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
             Arguments.of(approveAliases, "/webInfSymlink/web.xml", HttpStatus.OK_200, "This is the web.xml file."),
 
             // No alias checker (any symlink should be an alias).
-            Arguments.of(null, "/symlinkFile", HttpStatus.NOT_FOUND_404, null),
-            Arguments.of(null, "/symlinkExternalFile", HttpStatus.NOT_FOUND_404, null),
-            Arguments.of(null, "/symlinkDir/file", HttpStatus.NOT_FOUND_404, null),
-            Arguments.of(null, "/symlinkParentDir/webroot/file", HttpStatus.NOT_FOUND_404, null),
-            Arguments.of(null, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.NOT_FOUND_404, null),
-            Arguments.of(null, "/symlinkSiblingDir/file", HttpStatus.NOT_FOUND_404, null),
-            Arguments.of(null, "/webInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(noAliasChecker, "/symlinkFile", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(noAliasChecker, "/symlinkExternalFile", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(noAliasChecker, "/symlinkDir/file", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(noAliasChecker, "/symlinkParentDir/webroot/file", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(noAliasChecker, "/symlinkParentDir/webroot/WEB-INF/web.xml", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(noAliasChecker, "/symlinkSiblingDir/file", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(noAliasChecker, "/webInfSymlink/web.xml", HttpStatus.NOT_FOUND_404, null),
 
             // We should only be able to list contents of a symlinked directory if the alias checker is installed.
-            Arguments.of(null, "/symlinkDir", HttpStatus.NOT_FOUND_404, null),
+            Arguments.of(noAliasChecker, "/symlinkDir", HttpStatus.NOT_FOUND_404, null),
             Arguments.of(allowedResource, "/symlinkDir", HttpStatus.OK_200, null)
         );
     }
 
     public static Stream<Arguments> combinedResourceTestCases()
     {
-        AllowedResourceAliasChecker allowedResource = new AllowedResourceAliasChecker(_context2);
-        SymlinkAllowedResourceAliasChecker symlinkAllowedResource = new SymlinkAllowedResourceAliasChecker(_context2);
+        Function<ContextHandler, AliasCheck> allowedResource = AllowedResourceAliasChecker::new;
+        Function<ContextHandler, AliasCheck> symlinkAllowedResource = SymlinkAllowedResourceAliasChecker::new;
 
         Stream<Arguments> combinedResourceTests = Stream.of(
             Arguments.of(allowedResource, "/file", HttpStatus.OK_200, "This file is inside webroot."),
@@ -285,8 +291,8 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
 
     public static Stream<Arguments> combinedBaseResourceTestCases()
     {
-        AllowedResourceAliasChecker allowedResource = new AllowedResourceAliasChecker(_context3);
-        SymlinkAllowedResourceAliasChecker symlinkAllowedResource = new SymlinkAllowedResourceAliasChecker(_context3);
+        Function<ContextHandler, AliasCheck> allowedResource = AllowedResourceAliasChecker::new;
+        Function<ContextHandler, AliasCheck> symlinkAllowedResource = SymlinkAllowedResourceAliasChecker::new;
 
         Stream<Arguments> combinedResourceTests = Stream.of(
             Arguments.of(allowedResource, "/file", HttpStatus.OK_200, "This file is inside webroot."),
@@ -310,8 +316,9 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
 
     @ParameterizedTest
     @MethodSource("testCases")
-    public void test(AliasCheck aliasChecker, String path, int httpStatus, String responseContent) throws Exception
+    public void test(Function<ContextHandler, AliasCheck> aliasCheckSupplier, String path, int httpStatus, String responseContent) throws Exception
     {
+        AliasCheck aliasChecker = aliasCheckSupplier.apply(_context1);
         init(_context1, aliasChecker);
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + path);
         ContentResponse response = _client.GET(uri);
@@ -322,8 +329,9 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
 
     @ParameterizedTest
     @MethodSource("combinedResourceTestCases")
-    public void testCombinedResource(AliasCheck aliasChecker, String path, int httpStatus, String responseContent) throws Exception
+    public void testCombinedResource(Function<ContextHandler, AliasCheck> aliasCheckSupplier, String path, int httpStatus, String responseContent) throws Exception
     {
+        AliasCheck aliasChecker = aliasCheckSupplier.apply(_context2);
         init(_context2, aliasChecker);
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + path);
         ContentResponse response = _client.GET(uri);
@@ -347,8 +355,9 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
 
     @ParameterizedTest
     @MethodSource("combinedBaseResourceTestCases")
-    public void testCombinedBaseResource(AliasCheck aliasChecker, String path, int httpStatus, String responseContent) throws Exception
+    public void testCombinedBaseResource(Function<ContextHandler, AliasCheck> aliasCheckSupplier, String path, int httpStatus, String responseContent) throws Exception
     {
+        AliasCheck aliasChecker = aliasCheckSupplier.apply(_context3);
         init(_context3, aliasChecker);
         URI uri = URI.create("http://localhost:" + _connector.getLocalPort() + path);
         ContentResponse response = _client.GET(uri);
@@ -367,6 +376,35 @@ public class AliasCheckerSymlinkTest extends AliasCheckerTestBase
             {
                 assertThat(response.getContentAsString(), equalTo(responseContent));
             }
+        }
+    }
+
+    @Test
+    public void testNullBaseResourceNotAllowed() throws Exception
+    {
+        ContextHandler context = new ContextHandler();
+        context.setContextPath("/");
+        context.clearAliasChecks();
+
+        SymlinkAllowedResourceAliasChecker checker = new SymlinkAllowedResourceAliasChecker(context);
+        context.addAliasCheck(checker);
+
+        Server server = new Server();
+        server.setHandler(context);
+        server.start();
+        try
+        {
+            assertTrue(checker.isStarted());
+            assertNull(checker.getBaseResource());
+
+            Resource symlink = toResource(getResource("webroot").resolve("symlinkFile"));
+            assertTrue(symlink.exists());
+            assertTrue(symlink.isAlias());
+            assertFalse(checker.checkAlias("/symlinkFile", symlink));
+        }
+        finally
+        {
+            server.stop();
         }
     }
 }
