@@ -15,12 +15,13 @@ package org.eclipse.jetty.client;
 
 import java.net.URI;
 
-import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.internal.TunnelRequest;
+import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 
 /**
- * <p>A protocol handler that handles the 401 response code
+ * <p>A protocol handler that handles the {@code 407} response code
  * in association with the {@code Proxy-Authenticate} header.</p>
  *
  * @see WWWAuthenticationProtocolHandler
@@ -49,7 +50,14 @@ public class ProxyAuthenticationProtocolHandler extends AuthenticationProtocolHa
     @Override
     public boolean accept(Request request, Response response)
     {
-        return response.getStatus() == HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407;
+        return response.getStatus() == HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407 && isSentToProxy(request);
+    }
+
+    private boolean isSentToProxy(Request request)
+    {
+        if (request instanceof TunnelRequest)
+            return true;
+        return ((HttpRequest)request).getHttpProxy() != null;
     }
 
     @Override
@@ -67,8 +75,7 @@ public class ProxyAuthenticationProtocolHandler extends AuthenticationProtocolHa
     @Override
     protected URI getAuthenticationURI(Request request)
     {
-        HttpDestination destination = (HttpDestination)getHttpClient().resolveDestination(request);
-        ProxyConfiguration.Proxy proxy = destination.getProxy();
+        HttpProxy proxy = ((HttpRequest)request).getHttpProxy();
         return proxy != null ? proxy.getURI() : request.getURI();
     }
 
