@@ -160,20 +160,24 @@ public abstract class HttpConnection implements IConnection, Attachable
         if (proxy instanceof HttpProxy httpProxy)
         {
             boolean tunnelled = httpProxy.requiresTunnel(destination.getOrigin());
-
-            // RFC 9112, section 3.2.2: when making a request to a proxy other than CONNECT,
-            // the client must send the target URI in absolute-form as the request target.
-            // In practice, this is only valid for HTTP/1.1 requests that are not tunnelled.
-            if (http1 && !tunnelled)
+            if (!tunnelled)
             {
-                URI uri = request.getURI();
-                if (uri != null)
-                    request.path(uri.toString());
-            }
+                // RFC 9112, section 3.2.2: when making a request to a proxy other than CONNECT,
+                // the client must send the target URI in absolute-form as the request target.
+                // In practice, this is only valid for HTTP/1.1 requests that are not tunnelled.
+                if (http1)
+                {
+                    URI uri = request.getURI();
+                    if (uri != null)
+                        request.path(uri.toString());
+                }
 
-            // Do not send proxy authentication headers when tunnelled,
-            // otherwise proxy credentials arrive to the server.
-            applyProxyAuthentication = !tunnelled;
+                request.httpProxy(httpProxy);
+
+                // Send the proxy credentials only when not tunnelled,
+                // otherwise proxy credentials are leaked to the server.
+                applyProxyAuthentication = true;
+            }
         }
 
         // If we are HTTP 1.1, add the Host header.

@@ -44,6 +44,7 @@ import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.Request;
@@ -96,6 +97,7 @@ public class HttpRequest implements Request
     private Supplier<HttpFields> trailers;
     private Object tag;
     private boolean normalized;
+    private HttpProxy httpProxy;
 
     public HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -822,6 +824,16 @@ public class HttpRequest implements Request
         boolean result = normalized;
         normalized = true;
         return result;
+    }
+
+    public HttpProxy getHttpProxy()
+    {
+        return httpProxy;
+    }
+
+    void httpProxy(HttpProxy httpProxy)
+    {
+        this.httpProxy = httpProxy;
     }
 
     private String buildQuery()
