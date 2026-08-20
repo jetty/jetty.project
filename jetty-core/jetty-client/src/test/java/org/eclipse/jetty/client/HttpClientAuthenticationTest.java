@@ -45,8 +45,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.eclipse.jetty.client.Authentication.ANY_REALM;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -78,6 +76,11 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         start(scenario, new DigestAuthenticator(), handler);
     }
 
+    protected int getServerPort()
+    {
+        return connector.getLocalPort();
+    }
+
     private void start(Scenario scenario, Authenticator authenticator, Handler handler) throws Exception
     {
         server = new Server();
@@ -95,66 +98,66 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         start(scenario, securityHandler);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testBasicAuthentication(Scenario scenario) throws Exception
+    @Test
+    public void testBasicAuthentication() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startBasic(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
         testAuthentication(scenario, new BasicAuthentication(uri, realm, "basic", "basic"));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testBasicEmptyRealm(Scenario scenario) throws Exception
+    @Test
+    public void testBasicEmptyRealm() throws Exception
     {
         realm = "";
+        Scenario scenario = new NormalScenario();
         startBasic(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
         testAuthentication(scenario, new BasicAuthentication(uri, realm, "basic", "basic"));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testBasicAnyRealm(Scenario scenario) throws Exception
+    @Test
+    public void testBasicAnyRealm() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startBasic(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
         testAuthentication(scenario, new BasicAuthentication(uri, ANY_REALM, "basic", "basic"));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testBasicWithUTF8Password(Scenario scenario) throws Exception
+    @Test
+    public void testBasicWithUTF8Password() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startBasic(scenario, new EmptyServerHandler(), StandardCharsets.UTF_8);
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         testAuthentication(scenario, new BasicAuthentication(uri, realm, "basic_utf8", "\u20AC"));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testDigestAuthentication(Scenario scenario) throws Exception
+    @Test
+    public void testDigestAuthentication() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startDigest(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
         testAuthentication(scenario, new DigestAuthentication(uri, realm, "digest", "digest"));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testDigestAnyRealm(Scenario scenario) throws Exception
+    @Test
+    public void testDigestAnyRealm() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startDigest(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
         testAuthentication(scenario, new DigestAuthentication(uri, ANY_REALM, "digest", "digest"));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testDigestCharset(Scenario scenario) throws Exception
+    @Test
+    public void testDigestCharset() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startDigest(scenario, new EmptyServerHandler());
         URI uri = URI.create(scenario.getScheme() + "://localhost:" + connector.getLocalPort());
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
@@ -177,7 +180,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().addListener(requestListener);
 
         // Request without Authentication causes a 401
-        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
+        Request request = client.newRequest("localhost", getServerPort()).scheme(scenario.getScheme()).path("/secure");
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
         assertEquals(401, response.getStatus());
@@ -198,7 +201,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().addListener(requestListener);
 
         // Request with authentication causes a 401 (no previous successful authentication) + 200
-        request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
+        request = client.newRequest("localhost", getServerPort()).scheme(scenario.getScheme()).path("/secure");
         response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -218,7 +221,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         // Further requests do not trigger 401 because there is a previous successful authentication
         // Remove existing header to be sure it's added by the implementation
-        request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
+        request = client.newRequest("localhost", getServerPort()).scheme(scenario.getScheme()).path("/secure");
         response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -226,10 +229,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().removeListener(requestListener);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testBasicAuthenticationThenRedirect(Scenario scenario) throws Exception
+    @Test
+    public void testBasicAuthenticationThenRedirect() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startBasic(scenario, new Handler.Abstract()
         {
             private final AtomicInteger requests = new AtomicInteger();
@@ -265,7 +268,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         };
         client.getRequestListeners().addListener(requestListener);
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = client.newRequest("localhost", getServerPort())
             .scheme(scenario.getScheme())
             .path("/secure")
             .timeout(5, TimeUnit.SECONDS)
@@ -276,10 +279,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().removeListener(requestListener);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testRedirectThenBasicAuthentication(Scenario scenario) throws Exception
+    @Test
+    public void testRedirectThenBasicAuthentication() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startBasic(scenario, new Handler.Abstract()
         {
             @Override
@@ -312,7 +315,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         };
         client.getRequestListeners().addListener(requestListener);
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = client.newRequest("localhost", getServerPort())
             .scheme(scenario.getScheme())
             .path("/redirect")
             .timeout(5, TimeUnit.SECONDS)
@@ -323,10 +326,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.getRequestListeners().removeListener(requestListener);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testBasicAuthenticationWithAuthenticationRemoved(Scenario scenario) throws Exception
+    @Test
+    public void testBasicAuthenticationWithAuthenticationRemoved() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startBasic(scenario, new EmptyServerHandler());
 
         AtomicReference<CountDownLatch> requests = new AtomicReference<>(new CountDownLatch(2));
@@ -345,7 +348,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         BasicAuthentication authentication = new BasicAuthentication(uri, realm, "basic", "basic");
         authenticationStore.addAuthentication(authentication);
 
-        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
+        Request request = client.newRequest("localhost", getServerPort()).scheme(scenario.getScheme()).path("/secure");
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -354,28 +357,28 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         authenticationStore.removeAuthentication(authentication);
 
         requests.set(new CountDownLatch(1));
-        request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
+        request = client.newRequest("localhost", getServerPort()).scheme(scenario.getScheme()).path("/secure");
         response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertTrue(requests.get().await(5, TimeUnit.SECONDS));
 
-        Authentication.Result result = authenticationStore.findAuthenticationResult(request.getURI());
+        Authentication.Result result = authenticationStore.findAuthenticationResult(uri);
         assertNotNull(result);
         authenticationStore.removeAuthenticationResult(result);
 
         requests.set(new CountDownLatch(1));
-        request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
+        request = client.newRequest("localhost", getServerPort()).scheme(scenario.getScheme()).path("/secure");
         response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
         assertEquals(401, response.getStatus());
         assertTrue(requests.get().await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testBasicAuthenticationWithWrongPassword(Scenario scenario) throws Exception
+    @Test
+    public void testBasicAuthenticationWithWrongPassword() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startBasic(scenario, new EmptyServerHandler());
 
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
@@ -383,7 +386,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         BasicAuthentication authentication = new BasicAuthentication(uri, realm, "basic", "wrong");
         authenticationStore.addAuthentication(authentication);
 
-        Request request = client.newRequest("localhost", connector.getLocalPort()).scheme(scenario.getScheme()).path("/secure");
+        Request request = client.newRequest("localhost", getServerPort()).scheme(scenario.getScheme()).path("/secure");
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
         assertNotNull(response);
         assertEquals(401, response.getStatus());
@@ -392,10 +395,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertNull(authenticationResult);
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testAuthenticationThrowsException(Scenario scenario) throws Exception
+    @Test
+    public void testAuthenticationThrowsException() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startBasic(scenario, new EmptyServerHandler());
 
         // Request without Authentication would cause a 401,
@@ -418,7 +421,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest("localhost", getServerPort())
             .scheme(scenario.getScheme())
             .path("/secure")
             .timeout(5, TimeUnit.SECONDS)
@@ -432,10 +435,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testPreemptedAuthentication(Scenario scenario) throws Exception
+    @Test
+    public void testPreemptedAuthentication() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startBasic(scenario, new EmptyServerHandler());
 
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
@@ -452,7 +455,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = client.newRequest("localhost", getServerPort())
             .scheme(scenario.getScheme())
             .path("/secure")
             .timeout(5, TimeUnit.SECONDS)
@@ -462,10 +465,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertEquals(1, requests.get());
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testNonReproducibleContent(Scenario scenario) throws Exception
+    @Test
+    public void testNonReproducibleContent() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startBasic(scenario, new EmptyServerHandler());
 
         AuthenticationStore authenticationStore = client.getAuthenticationStore();
@@ -490,10 +493,10 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testRequestFailsAfterResponse(Scenario scenario) throws Exception
+    @Test
+    public void testRequestFailsAfterResponse() throws Exception
     {
+        Scenario scenario = new NormalScenario();
         startBasic(scenario, new Handler.Abstract()
         {
             @Override
@@ -573,7 +576,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             }
         });
         CountDownLatch resultLatch = new CountDownLatch(1);
-        client.newRequest("localhost", connector.getLocalPort())
+        client.newRequest("localhost", getServerPort())
             .scheme(scenario.getScheme())
             .path("/secure")
             .body(content)
@@ -587,11 +590,11 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    public void testInfiniteAuthentication(Scenario scenario) throws Exception
+    @Test
+    public void testInfiniteAuthentication() throws Exception
     {
         String authType = "Authenticate";
+        Scenario scenario = new NormalScenario();
         start(scenario, new Handler.Abstract()
         {
             @Override
@@ -635,7 +638,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+        ContentResponse response = client.newRequest("localhost", getServerPort())
             .scheme(scenario.getScheme())
             .send();
 
