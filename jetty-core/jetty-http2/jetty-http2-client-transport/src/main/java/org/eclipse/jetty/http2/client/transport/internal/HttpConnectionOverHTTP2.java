@@ -304,7 +304,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         try (AutoLock ignored = lock.lock())
         {
             removed = activeChannels.remove(channel);
-            if (activeChannels.isEmpty())
+            if (closed && activeChannels.isEmpty())
             {
                 destroy = false;
                 runZeroChannelAction = true;
@@ -339,7 +339,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         try (AutoLock ignored = lock.lock())
         {
             activeChannels.remove(channel);
-            runZeroChannelAction = activeChannels.isEmpty();
+            runZeroChannelAction = closed && activeChannels.isEmpty();
         }
         if (runZeroChannelAction)
             zeroChannelAction();
