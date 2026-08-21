@@ -700,6 +700,69 @@ public class GracefulHandlerTest
         client0.close();
     }
 
+    /**
+     * A subclass can override {@link GracefulHandler#handleShutdownRejection(Request, Response, Callback)}
+     * to tweak the response for requests rejected during graceful shutdown, e.g. to add a header
+     * telling a load balancer to retry elsewhere.
+     */
+    @Test
+    public void testCustomShutdownRejection() throws Exception
+    {
+        GracefulHandler gracefulHandler = new GracefulHandler()
+        {
+            @Override
+            protected void handleShutdownRejection(Request request, Response response, Callback callback)
+            {
+                response.getHeaders().put("X-Retry-On-Another-Instance", "true");
+                Response.writeError(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503);
+            }
+        };
+        gracefulHandler.setHandler(new BlockingReadHandler());
+        server = createServer(gracefulHandler);
+        server.setStopTimeout(10000);
+        server.start();
+
+        String rawRequest = """
+            POST /?num=%d HTTP/1.1\r
+            Host: localhost\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            \r
+            1234567890""";
+
+        Socket client0 = newSocketToServer("client0");
+        OutputStream output0 = client0.getOutputStream();
+        HttpTester.Response response;
+
+        // Normal request before shutdown: no custom header.
+        output0.write(rawRequest.formatted(1).getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        response = HttpTester.parseResponse(client0.getInputStream());
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get("X-Retry-On-Another-Instance"), is(nullValue()));
+
+        CompletableFuture<Long> stopFuture = runAsyncServerStop();
+
+        // Wait until graceful shutdown has started.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> gracefulHandler.isShutdown());
+
+        // Same connection, now rejected: 503 with our custom header.
+        output0.write(rawRequest.formatted(2).getBytes(StandardCharsets.UTF_8));
+        output0.flush();
+
+        response = HttpTester.parseResponse(client0.getInputStream());
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(HttpStatus.SERVICE_UNAVAILABLE_503));
+        assertThat(response.get("X-Retry-On-Another-Instance"), is("true"));
+
+        long stopDuration = stopFuture.get();
+        assertThat(stopDuration, lessThan(5000L));
+
+        client0.close();
+    }
+
     @Test
     public void testGracefulAlsoWaitsForStreamWrappers() throws Exception
     {
