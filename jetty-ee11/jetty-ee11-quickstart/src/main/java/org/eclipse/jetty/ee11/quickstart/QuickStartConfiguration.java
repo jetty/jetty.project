@@ -109,7 +109,7 @@ public class QuickStartConfiguration extends AbstractConfiguration
         //check that webapp is suitable for quick start - it is not a packed war
         Resource baseResource = context.getBaseResource();
         if (!Resources.isReadableDirectory(baseResource))
-            throw new IllegalStateException("Invalid Quickstart location");
+            throw new IllegalStateException("Invalid Quickstart location, base resource is not a readable directory: " + baseResource);
 
         //look for quickstart-web.xml in WEB-INF of webapp
         Path quickStartWebXml = getQuickStartWebXml(context);
