@@ -109,6 +109,8 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
         ShutdownTrackingCallback shutdownCallback = new ShutdownTrackingCallback(request, response, callback);
         if (isShutdown())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Service Unavailable: {}", request.getHttpURI());
             handleShutdownRejection(request, response, shutdownCallback);
             return true;
         }
@@ -145,8 +147,6 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
      */
     protected void handleShutdownRejection(Request request, Response response, Callback callback)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Service Unavailable: {}", request.getHttpURI());
         Response.writeError(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503);
     }
 

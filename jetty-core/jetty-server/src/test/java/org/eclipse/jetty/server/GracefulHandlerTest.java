@@ -714,7 +714,7 @@ public class GracefulHandlerTest
             protected void handleShutdownRejection(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put("X-Retry-On-Another-Instance", "true");
-                Response.writeError(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503);
+                Response.writeError(request, response, callback, HttpStatus.GATEWAY_TIMEOUT_504);
             }
         };
         gracefulHandler.setHandler(new BlockingReadHandler());
@@ -754,7 +754,7 @@ public class GracefulHandlerTest
 
         response = HttpTester.parseResponse(client0.getInputStream());
         assertNotNull(response);
-        assertThat(response.getStatus(), is(HttpStatus.SERVICE_UNAVAILABLE_503));
+        assertThat(response.getStatus(), is(HttpStatus.GATEWAY_TIMEOUT_504));
         assertThat(response.get("X-Retry-On-Another-Instance"), is("true"));
 
         long stopDuration = stopFuture.get();
