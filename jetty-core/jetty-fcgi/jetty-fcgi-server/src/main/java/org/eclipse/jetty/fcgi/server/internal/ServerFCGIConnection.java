@@ -15,6 +15,7 @@ package org.eclipse.jetty.fcgi.server.internal;
 
 import java.nio.ByteBuffer;
 import java.util.Set;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.fcgi.FCGI;
@@ -59,6 +60,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private boolean useOutputDirectByteBuffers;
     private RetainableByteBuffer inputBuffer;
     private HttpStreamOverFCGI stream;
+    private Runnable onRequest;
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
@@ -191,7 +193,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                     {
                         if (stream == null && inputBuffer.isEmpty())
                             releaseInputBuffer();
-                        return;
+                        break;
                     }
                 }
                 else if (read == 0)
@@ -205,6 +207,24 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                     releaseInputBuffer();
                     shutdown();
                     return;
+                }
+            }
+
+            // Dispatch only after the parser has returned and input buffer bookkeeping is complete.
+            Runnable task = onRequest;
+            onRequest = null;
+            if (task != null)
+            {
+                try
+                {
+                    getExecutor().execute(task);
+                }
+                catch (RejectedExecutionException x)
+                {
+                    HttpStreamOverFCGI stream = this.stream;
+                    Runnable failureTask = stream.getHttpChannel().onFailure(x);
+                    this.stream = null;
+                    ThreadPool.executeImmediately(getExecutor(), failureTask);
                 }
             }
         }
@@ -359,9 +379,8 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 LOG.debug("Request {} headers on {}", request, stream);
             if (stream != null)
             {
-                stream.onHeaders();
-                // We have dispatched to the application,
-                // so we must stop the fill & parse loop.
+                onRequest = stream.onHeaders();
+                // Return to onFillable() before dispatching to the application.
                 return true;
             }
             return false;
