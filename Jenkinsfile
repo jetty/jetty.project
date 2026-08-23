@@ -14,7 +14,7 @@ pipeline {
     stage("Parallel Stage") {
       parallel {
         stage("Build / Test - JDK21") {
-          agent { node { label 'linux' } }
+          agent { node { label 'linux-dind' } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               script{
@@ -30,7 +30,7 @@ pipeline {
         }
 
         stage("Build / Test - JDK25") {
-          agent { node { label 'linux' } }
+          agent { node { label 'linux-dind' } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
@@ -41,7 +41,7 @@ pipeline {
         }
 
         stage("Build / Test - JDK26") {
-          agent { node { label 'linux' } }
+          agent { node { label 'linux-dind' } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
@@ -71,7 +71,7 @@ pipeline {
         }
 
         stage("Build / Test - JDK17") {
-          agent { node { label 'linux' } }
+          agent { node { label 'linux-dind' } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
