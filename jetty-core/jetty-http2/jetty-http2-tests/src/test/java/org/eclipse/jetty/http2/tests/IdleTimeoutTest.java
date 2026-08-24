@@ -934,7 +934,6 @@ public class IdleTimeoutTest extends AbstractTest
         httpClient.start();
         Session client = newClientSession(new Session.Listener() {});
 
-        // Send one more request to consume the whole session flow control window.
         CountDownLatch resetLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -948,7 +947,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.allocate(((HTTP2Session)client).updateSendWindow(0));
+        ByteBuffer data = ByteBuffer.allocate(1024);
         stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
         assertTrue(resetLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
     }
