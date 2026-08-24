@@ -313,6 +313,29 @@ public final class URIUtil
     }
 
     /**
+     * Encodes a canonical URI path to be used in a URI query.
+     *
+     * @param path the canonical path to encode
+     * @return the query encoded path
+     */
+    public static String encodePathForQuery(String path)
+    {
+        if (StringUtil.isEmpty(path))
+            return path;
+        byte[] bytes = path.getBytes(StandardCharsets.UTF_8);
+        StringBuilder builder = new StringBuilder(bytes.length + 8);
+        for (byte b : bytes)
+        {
+            // Characters that are allowed in path but need escaping in query.
+            if (b < 0 || b == '&' || b == '+' || b == '=')
+                TypeUtil.toHex(b, builder.append('%'));
+            else
+                builder.append((char)b);
+        }
+        return builder.toString();
+    }
+
+    /**
      * Encode a raw String and convert any specific characters to their URI encoded equivalent.
      *
      * @param str input raw string
