@@ -897,6 +897,62 @@ public class IdleTimeoutTest extends AbstractTest
         await().atMost(Duration.ofMillis(5 * idleTimeout)).until(() -> connector.getConnectedEndPoints().size(), is(0));
     }
 
+    @Test
+    public void testServerIdleTimeoutIsRescheduled() throws Exception
+    {
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(new HttpConfiguration());
+        h2.setStreamIdleTimeout(idleTimeout);
+        prepareServer(h2);
+        connector.setIdleTimeout(idleTimeout);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Add a listener to force notIdle to run in a separate thread after cycle timeout rescheduling.
+                request.addIdleTimeoutListener(e ->
+                {
+                    try
+                    {
+                        Thread.sleep(idleTimeout / 4);
+                    }
+                    catch (InterruptedException ex)
+                    {
+                        throw new RuntimeException(ex);
+                    }
+                    return false;
+                });
+
+                // Hold the dispatched requests long enough for the idle requests to idle timeout twice.
+                sleep(3 * idleTimeout);
+                return true;
+            }
+        });
+        server.start();
+
+        prepareClient();
+        httpClient.start();
+        Session client = newClientSession(new Session.Listener() {});
+
+        // Send one more request to consume the whole session flow control window.
+        CountDownLatch resetLatch = new CountDownLatch(1);
+        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, false);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        client.newStream(frame, promise, new Stream.Listener()
+        {
+            @Override
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
+            {
+                resetLatch.countDown();
+                Stream.Listener.super.onReset(stream, frame, callback);
+            }
+        });
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        ByteBuffer data = ByteBuffer.allocate(((HTTP2Session)client).updateSendWindow(0));
+        stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
+        assertTrue(resetLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
+    }
+
     private void sleep(long value)
     {
         try
