@@ -42,6 +42,52 @@ public abstract class DownloadFileInitializer extends FileInitializer
 
     protected abstract boolean allowInsecureHttpDownloads();
 
+    public interface DownloadHandler
+    {
+        void handleDownload(InputStream inputStream) throws IOException;
+    }
+
+    @Override
+    public boolean exists(URI uri) throws IOException
+    {
+        if ("http".equalsIgnoreCase(uri.getScheme()) && !allowInsecureHttpDownloads())
+            throw new IOException("Insecure HTTP download not allowed (use " + StartArgs.ARG_ALLOW_INSECURE_HTTP_DOWNLOADS + " to bypass): " + uri);
+
+        // A cheap HEAD request: existence is a 200 response; anything else (404, 405, a 3xx
+        // redirect, ...) is treated as "does not exist" rather than downloading the whole
+        // body with a GET.
+        return existsViaHead(uri);
+    }
+
+    /**
+     * Check for the existence of a remote resource with a HEAD request, without downloading it.
+     *
+     * @param uri the resource to check
+     * @return true if the server answered the HEAD with a 200 status, false otherwise
+     * @throws IOException if the request could not be performed
+     */
+    protected boolean existsViaHead(URI uri) throws IOException
+    {
+        HttpClient httpClient = getHttpClient();
+        try
+        {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(uri)
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build();
+
+            HttpResponse<Void> response =
+                httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+
+            return response.statusCode() == 200;
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            throw new IOException("Failed to HEAD: " + uri, e);
+        }
+    }
+
     protected void download(URI uri, Path destination) throws IOException
     {
         if ("http".equalsIgnoreCase(uri.getScheme()) && !allowInsecureHttpDownloads())
@@ -65,6 +111,12 @@ public abstract class DownloadFileInitializer extends FileInitializer
 
         StartLog.info("download %s to %s", uri, _basehome.toShortForm(destination));
 
+        download(uri, (inputStream) ->
+            Files.copy(inputStream, destination, StandardCopyOption.REPLACE_EXISTING));
+    }
+
+    private void download(URI uri, DownloadHandler downloadHandler) throws IOException
+    {
         HttpClient httpClient = getHttpClient();
 
         try
@@ -99,7 +151,7 @@ public abstract class DownloadFileInitializer extends FileInitializer
 
             try (InputStream in = response.body())
             {
-                Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
+                downloadHandler.handleDownload(in);
             }
         }
         catch (InterruptedException e)
@@ -108,7 +160,7 @@ public abstract class DownloadFileInitializer extends FileInitializer
         }
     }
 
-    private HttpClient getHttpClient()
+    protected HttpClient getHttpClient()
     {
         if (httpClient == null)
         {

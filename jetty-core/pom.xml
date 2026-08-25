@@ -18,6 +18,7 @@
     <module>jetty-bom</module>
     <module>jetty-client</module>
     <module>jetty-compression</module>
+    <module>jetty-core-home</module>
     <module>jetty-coreapp</module>
     <module>jetty-deploy</module>
     <module>jetty-ee</module>

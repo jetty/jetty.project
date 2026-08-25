@@ -18,8 +18,8 @@ logging|default
 basehome:modules/logging/jetty
 
 [lib]
-lib/logging/jetty-slf4j-impl-${jetty.version}.jar
+lib/jetty-slf4j-impl-${jetty.version}.jar
 
 [ini]
 jetty.webapp.addHiddenClasses+=,org.eclipse.jetty.logging.
-jetty.webapp.addHiddenClasses+=,${jetty.home.uri}/lib/logging/
+jetty.webapp.addHiddenClasses+=,${jetty.home.uri}/lib/jetty-slf4j-impl-${jetty.version}.jar
