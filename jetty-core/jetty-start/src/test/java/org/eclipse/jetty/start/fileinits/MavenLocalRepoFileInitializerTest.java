@@ -306,4 +306,26 @@ public class MavenLocalRepoFileInitializerTest
 
         assertThat(baseDir.resolve("modules/eeX-demo.mod"), isRegularFile());
     }
+
+    @Test
+    public void testSkipDownloadWhenHomeProvidesFile()
+        throws Exception
+    {
+        // The distribution already ships this jar.
+        String location = "lib/ee10/jetty-ee10-webapp-12.99.9.jar";
+        Path homeFile = baseHome.getHomePath().resolve(location);
+        FS.ensureDirExists(homeFile.getParent());
+        Files.writeString(homeFile, "not really a jar", UTF_8);
+
+        // Offline with an empty repo, so any download attempt would fail.
+        Path emptyLocalRepoDir = testdir.resolve("empty-repo");
+        FS.ensureEmpty(emptyLocalRepoDir);
+
+        MavenLocalRepoFileInitializer repo =
+            new MavenLocalRepoFileInitializer(baseHome, emptyLocalRepoDir, false).offline(true);
+        String ref = "maven://org.eclipse.jetty.ee10/jetty-ee10-webapp/12.99.9/jar";
+
+        assertThat("nothing to do", repo.create(URI.create(ref), location), is(false));
+        assertThat("not copied into base", Files.exists(baseHome.getBasePath().resolve(location)), is(false));
+    }
 }

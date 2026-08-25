@@ -15,6 +15,7 @@ package org.eclipse.jetty.start.fileinits;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -30,6 +31,7 @@ import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartArgs;
 import org.eclipse.jetty.start.StartLog;
+import org.eclipse.jetty.util.IO;
 
 public abstract class DownloadFileInitializer extends FileInitializer
 {
@@ -41,6 +43,23 @@ public abstract class DownloadFileInitializer extends FileInitializer
     }
 
     protected abstract boolean allowInsecureHttpDownloads();
+
+    public interface DownloadHandler
+    {
+        void handleDownload(InputStream inputStream) throws IOException;
+    }
+
+    @Override
+    public boolean exists(URI uri) throws IOException
+    {
+        if ("http".equalsIgnoreCase(uri.getScheme()) && !allowInsecureHttpDownloads())
+            throw new IOException("Insecure HTTP download not allowed (use " + StartArgs.ARG_ALLOW_INSECURE_HTTP_DOWNLOADS + " to bypass): " + uri);
+
+        download(uri, (inputStream) ->
+            IO.copy(inputStream, OutputStream.nullOutputStream()));
+
+        return true;
+    }
 
     protected void download(URI uri, Path destination) throws IOException
     {
@@ -65,6 +84,12 @@ public abstract class DownloadFileInitializer extends FileInitializer
 
         StartLog.info("download %s to %s", uri, _basehome.toShortForm(destination));
 
+        download(uri, (inputStream) ->
+            Files.copy(inputStream, destination, StandardCopyOption.REPLACE_EXISTING));
+    }
+
+    private void download(URI uri, DownloadHandler downloadHandler) throws IOException
+    {
         HttpClient httpClient = getHttpClient();
 
         try
@@ -99,7 +124,7 @@ public abstract class DownloadFileInitializer extends FileInitializer
 
             try (InputStream in = response.body())
             {
-                Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
+                downloadHandler.handleDownload(in);
             }
         }
         catch (InterruptedException e)

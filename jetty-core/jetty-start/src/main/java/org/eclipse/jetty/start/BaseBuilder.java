@@ -67,46 +67,54 @@ public class BaseBuilder
     {
         this.baseHome = baseHome;
         this.startArgs = args;
-        this.fileInitializers = new ArrayList<>();
+        this.fileInitializers = startArgs.isTestingModeEnabled()
+            ? getTestInitializers(this.baseHome) : startArgs.isCreateFiles()
+            ? getDefaultInitializers(this.baseHome, this.startArgs) : List.of();
+    }
 
-        // Establish FileInitializers
-        if (args.isTestingModeEnabled())
+    protected static List<FileInitializer> getTestInitializers(BaseHome baseHome)
+    {
+        List<FileInitializer> initializers = new ArrayList<>();
+
+        // Copy from basehome
+        initializers.add(new BaseHomeFileInitializer(baseHome));
+
+        // Handle local directories
+        initializers.add(new LocalFileInitializer(baseHome));
+
+        // No downloads performed
+        initializers.add(new TestFileInitializer(baseHome));
+
+        return initializers;
+    }
+
+    protected static List<FileInitializer> getDefaultInitializers(BaseHome baseHome, StartArgs startArgs)
+    {
+        List<FileInitializer> initializers = new ArrayList<>();
+        // Handle local directories
+        initializers.add(new LocalFileInitializer(baseHome));
+
+        // Setup Maven Local Repo
+        Path localRepoDir = startArgs.findMavenLocalRepoDir();
+        if (localRepoDir != null)
         {
-            // Copy from basehome
-            fileInitializers.add(new BaseHomeFileInitializer(baseHome));
-
-            // Handle local directories
-            fileInitializers.add(new LocalFileInitializer(baseHome));
-
-            // No downloads performed
-            fileInitializers.add(new TestFileInitializer(baseHome));
+            // Use provided local repo directory
+            initializers.add(new MavenLocalRepoFileInitializer(baseHome, localRepoDir,
+                startArgs.getMavenLocalRepoDir() == null,
+                startArgs.getMavenBaseUri()).offline(startArgs.useMavenOffline()));
         }
-        else if (args.isCreateFiles())
+        else
         {
-            // Handle local directories
-            fileInitializers.add(new LocalFileInitializer(baseHome));
-
-            // Setup Maven Local Repo
-            Path localRepoDir = args.findMavenLocalRepoDir();
-            if (localRepoDir != null)
-            {
-                // Use provided local repo directory
-                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome, localRepoDir,
-                    args.getMavenLocalRepoDir() == null,
-                    startArgs.getMavenBaseUri()).offline(args.useMavenOffline()));
-            }
-            else
-            {
-                // No no local repo directory (direct downloads)
-                fileInitializers.add(new MavenLocalRepoFileInitializer(baseHome));
-            }
-
-            // Copy from basehome
-            fileInitializers.add(new BaseHomeFileInitializer(baseHome));
-
-            // Normal URL downloads
-            fileInitializers.add(new UriFileInitializer(startArgs, baseHome));
+            // No no local repo directory (direct downloads)
+            initializers.add(new MavenLocalRepoFileInitializer(baseHome));
         }
+
+        // Copy from basehome
+        initializers.add(new BaseHomeFileInitializer(baseHome));
+
+        // Normal URL downloads
+        initializers.add(new UriFileInitializer(startArgs, baseHome));
+        return initializers;
     }
 
     /**
@@ -284,6 +292,7 @@ public class BaseBuilder
                 String ini = null;
                 try
                 {
+                    StartEnvironment environment = startArgs.getEnvironment(module);
                     if (module.isSkipFilesValidation())
                     {
                         StartLog.debug("Skipping [files] validation on %s", module.getName());
@@ -296,13 +305,16 @@ public class BaseBuilder
                         // Modules that are transitive and have an ini-template
                         if (explicitlyAdded || (module.isTransitive() && module.hasIniTemplate()))
                         {
-                            ini = builder.get().addModule(module, startArgs.getJettyEnvironment().getProperties());
+                            ini = builder.get().addModule(module, environment.getProperties());
                             if (ini != null)
                                 modified.set(true);
                         }
                         for (String file : module.getFiles())
                         {
-                            files.add(new FileArg(module, startArgs.getJettyEnvironment().getProperties().expand(file)));
+                            String expandedFile = environment.getProperties().expand(file);
+                            if (expandedFile.contains("${"))
+                                throw new IllegalStateException("Unable to expand [file] argument: " + file);
+                            files.add(new FileArg(module, file));
                         }
                     }
                 }
@@ -354,7 +366,7 @@ public class BaseBuilder
      */
     private boolean processFileResource(FileArg arg) throws IOException
     {
-        URI uri = arg.uri == null ? null : URI.create(arg.uri);
+        URI uri = arg.toSafeURI();
 
         if (startArgs.isCreateFiles())
         {

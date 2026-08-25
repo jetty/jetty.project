@@ -9,7 +9,15 @@ ee10
 [depends]
 ee10-apache-jsp
 
-# The prefix is necessary because Glassfish jars do not have JPMS metadata, see #9301.
+[ini]
+ee10.jakarta.servlet.jsp.jstl.impl.version?=3.0.1
+
+# The group id prefix on the jar names is necessary because the
+# Glassfish jars have no JPMS metadata, see #9301.
+[files]
+maven://jakarta.servlet.jsp.jstl/jakarta.servlet.jsp.jstl-api/3.0.0/jar|lib/ee10/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-3.0.0.jar
+maven://org.glassfish.web/jakarta.servlet.jsp.jstl/${ee10.jakarta.servlet.jsp.jstl.impl.version}/jar|lib/ee10/support/org.glassfish.web.jakarta.servlet.jsp.jstl-${ee10.jakarta.servlet.jsp.jstl.impl.version}.jar
+
 [lib]
-lib/ee10-glassfish-jstl/jakarta.servlet.jsp.jstl.@jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api@
-lib/ee10-glassfish-jstl/org.glassfish.web.@org.glassfish.web:jakarta.servlet.jsp.jstl@
+lib/ee10/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-3.0.0.jar
+lib/ee10/support/org.glassfish.web.jakarta.servlet.jsp.jstl-${ee10.jakarta.servlet.jsp.jstl.impl.version}.jar
