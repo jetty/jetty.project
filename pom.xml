@@ -1921,6 +1921,10 @@
             <includeRuntimeScope>true</includeRuntimeScope>
             <includeSystemScope>true</includeSystemScope>
             <includeTestScope>false</includeTestScope>
+            <!-- The CycloneDX BOMs are not deployed as Maven artifacts; they are
+                 bundled inside the home distributions (as <artifactId>-<version>-sbom.zip)
+                 and aggregated into jetty-home's sbom.zip instead. -->
+            <skipAttach>true</skipAttach>
           </configuration>
         </plugin>
         <plugin>

@@ -6,10 +6,14 @@ Enables Annotation scanning for deployed web applications.
 [environment]
 ee10
 
-[depend]
+[depends]
 ee10-plus
 annotations
 
+[files]
+maven://jakarta.annotation/jakarta.annotation-api/2.1.1/jar|lib/ee10/support/jakarta.annotation.jakarta.annotation-api-2.1.1.jar
+maven://org.eclipse.jetty.ee10/jetty-ee10-annotations/${jetty.version}/jar|lib/ee10/jetty-ee10-annotations-${jetty.version}.jar
+
 [lib]
-lib/jetty-ee10-annotations-${jetty.version}.jar
-lib/ee10-annotations/@jakarta.annotation:jakarta.annotation-api@
+lib/ee10/jetty-ee10-annotations-${jetty.version}.jar
+lib/ee10/support/jakarta.annotation.jakarta.annotation-api-2.1.1.jar
