@@ -181,257 +181,70 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <id>copy-ee8-annotations-deps</id>
+            <id>copy-ee8-jetty-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeGroupIds>
+                org.eclipse.jetty.toolchain,
+                org.eclipse.jetty.ee8,
+                org.eclipse.jetty.ee8.websocket
+              </includeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.ee8.demos</excludeGroupIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee8-annotations</outputDirectory>
+              <outputDirectory>${assembly-directory}/lib/ee8</outputDirectory>
+              <includeScope>runtime</includeScope>
+              <useRepositoryLayout>false</useRepositoryLayout>
+              <copySignatures>true</copySignatures>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee8-annotations-src-deps</id>
+            <id>copy-ee8-support-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>jakarta.annotation,org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api,asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
+              <includeGroupIds>
+                jakarta.annotation,
+                jakarta.security.auth.message,
+                jakarta.servlet.jsp.jstl,
+                jakarta.transaction,
+                org.eclipse.jdt,
+                org.glassfish.web,
+                org.mortbay.jasper
+              </includeGroupIds>
               <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee8-annotations</outputDirectory>
+              <includeScope>runtime</includeScope>
+              <outputDirectory>${assembly-directory}/lib/ee8/support</outputDirectory>
+              <!-- this is true to make sure that non-jpms artifacts use a full identifiable name -->
+              <prependGroupId>true</prependGroupId>
+              <copySignatures>true</copySignatures>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee8-deps</id>
+            <id>copy-ee8-support-src-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee8</includeGroupIds>
-              <excludeArtifactIds>jetty-websocket-core-client,jetty-websocket-core-common,jetty-websocket-core-server</excludeArtifactIds>
-              <excludeGroupIds>org.eclipse.jetty.ee8.demos,org.eclipse.jetty.ee8.websocket</excludeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee8-jaspi-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.security.auth.message</includeGroupIds>
-              <includeArtifactIds>jakarta.security.auth.message-api</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee8-jaspi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee8-jaspi-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.security.auth.message</includeGroupIds>
-              <includeArtifactIds>jakarta.security.auth.message-api</includeArtifactIds>
+              <includeGroupIds>
+                jakarta.annotation,
+                jakarta.security.auth.message,
+                jakarta.servlet.jsp.jstl,
+                jakarta.transaction,
+                org.eclipse.jdt,
+                org.glassfish.web,
+                org.mortbay.jasper
+              </includeGroupIds>
               <includeTypes>jar</includeTypes>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee8-jaspi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee8-jsp-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>mortbay-apache-jsp,mortbay-apache-el,ecj</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee8-apache-jsp</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee8-jsp-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>mortbay-apache-jsp,mortbay-apache-el,ecj</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee8-apache-jsp</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee8-jstl-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,javax.servlet.jsp.jstl</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee8-glassfish-jstl</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee8-jstl-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,javax.servlet.jsp.jstl</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee8-glassfish-jstl</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee8-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee8</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <excludeGroupIds>org.eclipse.jetty.ee8.demos,org.eclipse.jetty.ee8.websocket</excludeGroupIds>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-core-websocket-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket</includeGroupIds>
-              <excludeArtifactIds>jetty-schemas,jetty-servlet-api,jetty-test-helper,jetty-websocket-core*</excludeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-core-websocket-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-ee8-websocket-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain,org.eclipse.jetty.ee8.websocket</includeGroupIds>
-              <excludeArtifactIds>jetty-schemas,jetty-servlet-api,jetty-test-helper,jetty-websocket-core*</excludeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee8-websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-ee8-websocket-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee8.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee8-websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-servlet-api-deps</id>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.toolchain</groupId>
-                  <artifactId>jetty-servlet-api</artifactId>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-servlet-api-src-deps</id>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.toolchain</groupId>
-                  <artifactId>jetty-servlet-api</artifactId>
-                  <classifier>sources</classifier>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-transaction-api-deps</id>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>jakarta.transaction</groupId>
-                  <artifactId>jakarta.transaction-api</artifactId>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-transaction-api-src-deps</id>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>jakarta.transaction</groupId>
-                  <artifactId>jakarta.transaction-api</artifactId>
-                  <classifier>sources</classifier>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee8/support</outputDirectory>
+              <!-- this is true to make sure the names match their non-source locations -->
+              <prependGroupId>true</prependGroupId>
             </configuration>
           </execution>
           <execution>
@@ -441,8 +254,10 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee8, org.eclipse.jetty.ee8.demos</includeGroupIds>
-              <excludeArtifactIds/>
+              <includeGroupIds>
+                org.eclipse.jetty.ee8,
+                org.eclipse.jetty.ee8.demos
+              </includeGroupIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
