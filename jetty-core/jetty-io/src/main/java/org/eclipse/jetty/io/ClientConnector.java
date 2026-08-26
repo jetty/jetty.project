@@ -465,7 +465,7 @@ public class ClientConnector extends ContainerLifeCycle
         catch (Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Could not accept {}", selectable);
+                LOG.debug("Could not accept {}", selectable, failure);
             IO.close(selectable);
             acceptFailed(failure, selectable, context);
         }
