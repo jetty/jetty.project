@@ -164,302 +164,111 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <id>copy-ee10-annotations-deps</id>
+            <id>copy-ee10-jetty-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>jakarta.annotation</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api</includeArtifactIds>
+              <includeGroupIds>
+                org.eclipse.jetty.toolchain,
+                org.eclipse.jetty.ee10,
+                org.eclipse.jetty.ee10.websocket
+              </includeGroupIds>
+              <excludeGroupIds>
+                org.eclipsejetty.ee10.demos
+              </excludeGroupIds>
+              <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee10-annotations</outputDirectory>
+              <includeScope>runtime</includeScope>
+              <outputDirectory>${assembly-directory}/lib/ee10</outputDirectory>
+              <useRepositoryLayout>false</useRepositoryLayout>
+              <copySignatures>true</copySignatures>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee10-annotations-src-deps</id>
+            <id>copy-ee10-jetty-src-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>jakarta.annotation</includeGroupIds>
-              <includeArtifactIds>jakarta.annotation-api</includeArtifactIds>
+              <includeGroupIds>
+                org.eclipse.jetty.toolchain,
+                org.eclipse.jetty.ee10,
+                org.eclipse.jetty.ee10.websocket
+              </includeGroupIds>
+              <excludeGroupIds>
+                org.eclipsejetty.ee10.demos
+              </excludeGroupIds>
               <includeTypes>jar</includeTypes>
+              <includeScope>runtime</includeScope>
               <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee10-annotations</outputDirectory>
+              <outputDirectory>${source-assembly-directory}/lib/ee10</outputDirectory>
             </configuration>
           </execution>
-
           <execution>
-            <id>copy-ee10-deps</id>
+            <id>copy-ee10-support-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee10</includeGroupIds>
-              <excludeArtifactIds>jetty-websocket-core-client,jetty-websocket-core-common,jetty-websocket-core-server,jetty-websocket-jetty-api,jetty-websocket-jetty-client,jetty-websocket-jetty-common,jetty-websocket-jetty-server</excludeArtifactIds>
-              <excludeGroupIds>org.eclipse.jetty.ee10.demos,org.eclipse.jetty.ee10.websocket</excludeGroupIds>
+              <includeGroupIds>
+                jakarta.annotation,
+                jakarta.authentication,
+                jakarta.el,
+                jakarta.enterprise,
+                jakarta.inject,
+                jakarta.interceptor,
+                jakarta.servlet,
+                jakarta.servlet.jsp,
+                jakarta.servlet.jsp.jstl,
+                jakarta.transaction,
+                jakarta.websocket,
+                jakarta.websocket.client,
+                org.eclipse.jdt,
+                org.glassfish.web,
+                org.mortbay.jasper
+              </includeGroupIds>
               <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee10-jaspi-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.authentication</includeGroupIds>
-              <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee10-jaspi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee10-jaspi-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.authentication</includeGroupIds>
-              <includeArtifactIds>jakarta.authentication-api</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee10-jaspi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee10-jsp-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.servlet.jsp,jakarta.el,org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp-api,jakarta.el-api,mortbay-apache-el,mortbay-apache-jsp,ecj</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee10-apache-jsp</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee10-jsp-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.servlet.jsp,jakart.el,org.mortbay.jasper,org.eclipse.jdt</includeGroupIds>
-              <includeArtifactIds>jakart.servlet.jsp-api,jakarta.el-api,mortbay-apache-el,mortbay-apache-jsp,ecj</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee10-apache-jsp</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee10-jstl-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <!-- Prepending the groupId is necessary because Glassfish jars do not have JPMS metadata, see #9301 -->
+              <includeScope>runtime</includeScope>
+              <outputDirectory>${assembly-directory}/lib/ee10/support</outputDirectory>
+              <!-- this is true to make sure that non-jpms artifacts use a full identifiable name -->
               <prependGroupId>true</prependGroupId>
-              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee10-glassfish-jstl</outputDirectory>
+              <copySignatures>true</copySignatures>
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee10-jstl-src-deps</id>
+            <id>copy-ee10-support-src-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <!-- Prepending the groupId is necessary because Glassfish jars do not have JPMS metadata, see #9301 -->
+              <includeGroupIds>
+                jakarta.annotation,
+                jakarta.authentication,
+                jakarta.el,
+                jakarta.enterprise,
+                jakarta.inject,
+                jakarta.interceptor,
+                jakarta.servlet,
+                jakarta.servlet.jsp,
+                jakarta.servlet.jsp.jstl,
+                jakarta.transaction,
+                jakarta.websocket,
+                jakarta.websocket.client,
+                org.eclipse.jdt,
+                org.glassfish.web,
+                org.mortbay.jasper
+              </includeGroupIds>
+              <includeTypes>jar</includeTypes>
+              <includeScope>runtime</includeScope>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/ee10/support</outputDirectory>
+              <!-- this is true to make sure that non-jpms artifacts use a full identifiable name -->
               <prependGroupId>true</prependGroupId>
-              <includeGroupIds>jakarta.servlet.jsp.jstl,org.glassfish.web</includeGroupIds>
-              <includeArtifactIds>jakarta.servlet.jsp.jstl-api,jakarta.servlet.jsp.jstl</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee10-glassfish-jstl</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee10-lib-jakarta-websocket-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee10-websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee10-lib-jakarta-websocket-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee10-websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee10-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee10</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <excludeGroupIds>org.eclipse.jetty.ee10.demos,org.eclipse.jetty.ee10.websocket</excludeGroupIds>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-core-websocket-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-core-websocket-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-ee10-websocket-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee10.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/ee10-websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-ee10-websocket-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee10.websocket</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee10-websocket</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-servlet-api-deps</id>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>jakarta.servlet</groupId>
-                  <artifactId>jakarta.servlet-api</artifactId>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-servlet-api-src-deps</id>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>jakarta.servlet</groupId>
-                  <artifactId>jakarta.servlet-api</artifactId>
-                  <classifier>sources</classifier>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-transaction-api-deps</id>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>jakarta.transaction</groupId>
-                  <artifactId>jakarta.transaction-api</artifactId>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>jakarta.interceptor</groupId>
-                  <artifactId>jakarta.interceptor-api</artifactId>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>jakarta.enterprise</groupId>
-                  <artifactId>jakarta.enterprise.cdi-api</artifactId>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>jakarta.inject</groupId>
-                  <artifactId>jakarta.inject-api</artifactId>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>jakarta.enterprise</groupId>
-                  <artifactId>jakarta.enterprise.lang-model</artifactId>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-
-          <execution>
-            <id>copy-lib-transaction-api-src-deps</id>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>jakarta.transaction</groupId>
-                  <artifactId>jakarta.transaction-api</artifactId>
-                  <classifier>sources</classifier>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -469,9 +278,12 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee10, org.eclipse.jetty.ee10.demos</includeGroupIds>
-              <excludeArtifactIds/>
+              <includeGroupIds>
+                org.eclipse.jetty.ee10,
+                org.eclipse.jetty.ee10.demos
+              </includeGroupIds>
               <classifier>config</classifier>
+              <includeScope>runtime</includeScope>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
               <outputDirectory>${assembly-directory}</outputDirectory>
@@ -481,5 +293,4 @@
       </plugin>
     </plugins>
   </build>
-
 </project>
