@@ -859,7 +859,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             _key = newKey;
         }
 
-        void run()
+        void cancelAccept()
         {
             // Implements AbstractConnector.setAccepting(boolean),
             // where accepting may be suspended and then resumed.

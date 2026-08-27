@@ -247,7 +247,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         {
             ManagedSelector.Acceptor acceptor = selector.new Acceptor(server);
             selector.submit(acceptor);
-            return acceptor::run;
+            return acceptor::cancelAccept;
         }
         else
         {
