@@ -12,7 +12,7 @@ security
 ee9-servlet
 
 [files]
-maven://org.eclipse.jetty.ee9/jetty-ee9-security/${project.version}/jar|lib/ee9/jetty-ee9-security-${project.version}.jar
+maven://org.eclipse.jetty.ee9/jetty-ee9-security/${jetty.version}/jar|lib/ee9/jetty-ee9-security-${jetty.version}.jar
 
 [lib]
-lib/ee9/jetty-ee9-security-${project.version}.jar
+lib/ee9/jetty-ee9-security-${jetty.version}.jar

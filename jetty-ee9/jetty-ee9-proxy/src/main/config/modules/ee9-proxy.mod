@@ -14,10 +14,10 @@ ee9-servlet
 etc/jetty-ee9-proxy.xml
 
 [files]
-maven://org.eclipse.jetty.ee9/jetty-ee9-proxy/${project.version}/jar|lib/ee9/jetty-ee9-proxy-${project.version}.jar
+maven://org.eclipse.jetty.ee9/jetty-ee9-proxy/${jetty.version}/jar|lib/ee9/jetty-ee9-proxy-${jetty.version}.jar
 
 [lib]
-lib/ee9/jetty-ee9-proxy-${project.version}.jar
+lib/ee9/jetty-ee9-proxy-${jetty.version}.jar
 
 [ini-template]
 ## The proxy contextPath.

@@ -13,7 +13,7 @@ jndi
 jetty.webapp.addHiddenClasses+=,-org.eclipse.jetty.ee8.jndi.factories.
 
 [files]
-maven://org.eclipse.jetty.ee8/jetty-ee8-jndi/${project.version}/jar|lib/ee8/jetty-ee8-jndi-${project.version}.jar
+maven://org.eclipse.jetty.ee8/jetty-ee8-jndi/${jetty.version}/jar|lib/ee8/jetty-ee8-jndi-${jetty.version}.jar
 
 [lib]
-lib/ee8/jetty-ee8-jndi-${project.version}.jar
+lib/ee8/jetty-ee8-jndi-${jetty.version}.jar

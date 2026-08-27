@@ -15,10 +15,10 @@ ee10-security
 etc/jetty-ee10-webapp.xml
 
 [files]
-maven://org.eclipse.jetty.ee10/jetty-ee10-webapp/${project.version}/jar|lib/ee10/jetty-ee10-webapp-${project.version}.jar
+maven://org.eclipse.jetty.ee10/jetty-ee10-webapp/${jetty.version}/jar|lib/ee10/jetty-ee10-webapp-${jetty.version}.jar
 
 [lib]
-lib/ee10/jetty-ee10-webapp-${project.version}.jar
+lib/ee10/jetty-ee10-webapp-${jetty.version}.jar
 
 [ini-template]
 ## Customize protected and hidden classes for this web application context.

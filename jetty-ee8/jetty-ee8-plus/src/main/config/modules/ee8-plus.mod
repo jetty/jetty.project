@@ -18,8 +18,8 @@ ee8.jakarta.transaction-api.version?=@ee8.jakarta.transaction-api.version@
 
 [files]
 maven://jakarta.transaction/jakarta.transaction-api/${ee8.jakarta.transaction-api.version}/jar|lib/ee8/support/jakarta.transaction.jakarta.transaction-api-${ee8.jakarta.transaction-api.version}.jar
-maven://org.eclipse.jetty.ee8/jetty-ee8-plus/${project.version}/jar|lib/ee8/jetty-ee8-plus-${project.version}.jar
+maven://org.eclipse.jetty.ee8/jetty-ee8-plus/${jetty.version}/jar|lib/ee8/jetty-ee8-plus-${jetty.version}.jar
 
 [lib]
-lib/ee8/jetty-ee8-plus-${project.version}.jar
+lib/ee8/jetty-ee8-plus-${jetty.version}.jar
 lib/ee8/support/jakarta.transaction.jakarta.transaction-api-${ee8.jakarta.transaction-api.version}.jar

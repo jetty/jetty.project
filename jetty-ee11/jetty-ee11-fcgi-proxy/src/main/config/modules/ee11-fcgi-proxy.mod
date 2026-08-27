@@ -14,9 +14,9 @@ proxy
 fcgi
 
 [files]
-maven://org.eclipse.jetty.ee11/jetty-ee11-fcgi-proxy/${project.version}/jar|lib/ee11/jetty-ee11-fcgi-proxy-${project.version}.jar
-maven://org.eclipse.jetty.ee11/jetty-ee11-proxy/${project.version}/jar|lib/ee11/jetty-ee11-proxy-${project.version}.jar
+maven://org.eclipse.jetty.ee11/jetty-ee11-fcgi-proxy/${jetty.version}/jar|lib/ee11/jetty-ee11-fcgi-proxy-${jetty.version}.jar
+maven://org.eclipse.jetty.ee11/jetty-ee11-proxy/${jetty.version}/jar|lib/ee11/jetty-ee11-proxy-${jetty.version}.jar
 
 [lib]
-lib/ee11/jetty-ee11-fcgi-proxy-${project.version}.jar
-lib/ee11/jetty-ee11-proxy-${project.version}.jar
+lib/ee11/jetty-ee11-fcgi-proxy-${jetty.version}.jar
+lib/ee11/jetty-ee11-proxy-${jetty.version}.jar

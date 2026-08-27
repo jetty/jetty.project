@@ -15,10 +15,10 @@ ee9-security
 etc/jetty-ee9-webapp.xml
 
 [files]
-maven://org.eclipse.jetty.ee9/jetty-ee9-webapp/${project.version}/jar|lib/ee9/jetty-ee9-webapp-${project.version}.jar
+maven://org.eclipse.jetty.ee9/jetty-ee9-webapp/${jetty.version}/jar|lib/ee9/jetty-ee9-webapp-${jetty.version}.jar
 
 [lib]
-lib/ee9/jetty-ee9-webapp-${project.version}.jar
+lib/ee9/jetty-ee9-webapp-${jetty.version}.jar
 
 [ini-template]
 ## Customize protected and hidden classes for this web application context.

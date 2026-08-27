@@ -14,10 +14,10 @@ ee10-servlet
 etc/jetty-ee10-proxy.xml
 
 [files]
-maven://org.eclipse.jetty.ee10/jetty-ee10-proxy/${project.version}/jar|lib/ee10/jetty-ee10-proxy-${project.version}.jar
+maven://org.eclipse.jetty.ee10/jetty-ee10-proxy/${jetty.version}/jar|lib/ee10/jetty-ee10-proxy-${jetty.version}.jar
 
 [lib]
-lib/ee10/jetty-ee10-proxy-${project.version}.jar
+lib/ee10/jetty-ee10-proxy-${jetty.version}.jar
 
 [ini-template]
 # tag::documentation[]

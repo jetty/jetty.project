@@ -15,8 +15,8 @@ jakarta.annotation-api.version?=@jakarta.annotation-api.version@
 
 [files]
 maven://jakarta.annotation/jakarta.annotation-api/${jakarta.annotation-api.version}/jar|lib/ee10/support/jakarta.annotation.jakarta.annotation-api-${jakarta.annotation-api.version}.jar
-maven://org.eclipse.jetty.ee10/jetty-ee10-annotations/${project.version}/jar|lib/ee10/jetty-ee10-annotations-${project.version}.jar
+maven://org.eclipse.jetty.ee10/jetty-ee10-annotations/${jetty.version}/jar|lib/ee10/jetty-ee10-annotations-${jetty.version}.jar
 
 [lib]
-lib/ee10/jetty-ee10-annotations-${project.version}.jar
+lib/ee10/jetty-ee10-annotations-${jetty.version}.jar
 lib/ee10/support/jakarta.annotation.jakarta.annotation-api-${jakarta.annotation-api.version}.jar

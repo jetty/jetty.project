@@ -29,7 +29,7 @@ deploy
 etc/cdi/jetty-ee8-cdi.xml
 
 [files]
-maven://org.eclipse.jetty.ee8/jetty-ee8-cdi/${project.version}/jar|lib/ee8/jetty-ee8-cdi-${project.version}.jar
+maven://org.eclipse.jetty.ee8/jetty-ee8-cdi/${jetty.version}/jar|lib/ee8/jetty-ee8-cdi-${jetty.version}.jar
 
 [lib]
-lib/ee8/jetty-ee8-cdi-${project.version}.jar
+lib/ee8/jetty-ee8-cdi-${jetty.version}.jar

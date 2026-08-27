@@ -16,10 +16,10 @@ ee8-security
 etc/jetty-ee8-webapp.xml
 
 [files]
-maven://org.eclipse.jetty.ee8/jetty-ee8-webapp/${project.version}/jar|lib/ee8/jetty-ee8-webapp-${project.version}.jar
+maven://org.eclipse.jetty.ee8/jetty-ee8-webapp/${jetty.version}/jar|lib/ee8/jetty-ee8-webapp-${jetty.version}.jar
 
 [lib]
-lib/ee8/jetty-ee8-webapp-${project.version}.jar
+lib/ee8/jetty-ee8-webapp-${jetty.version}.jar
 
 [ini-template]
 ## Add to the environment wide default jars and packages protected or hidden from webapps.

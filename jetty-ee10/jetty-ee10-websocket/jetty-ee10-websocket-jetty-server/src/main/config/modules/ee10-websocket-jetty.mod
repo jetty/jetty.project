@@ -14,9 +14,9 @@ ee10-annotations
 websocket-jetty
 
 [files]
-maven://org.eclipse.jetty.ee10.websocket/jetty-ee10-websocket-jetty-server/${project.version}/jar|lib/ee10/jetty-ee10-websocket-jetty-server-${project.version}.jar
-maven://org.eclipse.jetty.ee10.websocket/jetty-ee10-websocket-servlet/${project.version}/jar|lib/ee10/jetty-ee10-websocket-servlet-${project.version}.jar
+maven://org.eclipse.jetty.ee10.websocket/jetty-ee10-websocket-jetty-server/${jetty.version}/jar|lib/ee10/jetty-ee10-websocket-jetty-server-${jetty.version}.jar
+maven://org.eclipse.jetty.ee10.websocket/jetty-ee10-websocket-servlet/${jetty.version}/jar|lib/ee10/jetty-ee10-websocket-servlet-${jetty.version}.jar
 
 [lib]
-lib/ee10/jetty-ee10-websocket-jetty-server-${project.version}.jar
-lib/ee10/jetty-ee10-websocket-servlet-${project.version}.jar
+lib/ee10/jetty-ee10-websocket-jetty-server-${jetty.version}.jar
+lib/ee10/jetty-ee10-websocket-servlet-${jetty.version}.jar

@@ -29,7 +29,7 @@ ee10-deploy
 etc/cdi/jetty-ee10-cdi.xml
 
 [files]
-maven://org.eclipse.jetty.ee10/jetty-ee10-cdi/${project.version}/jar|lib/ee10/jetty-ee10-cdi-${project.version}.jar
+maven://org.eclipse.jetty.ee10/jetty-ee10-cdi/${jetty.version}/jar|lib/ee10/jetty-ee10-cdi-${jetty.version}.jar
 
 [lib]
-lib/ee10/jetty-ee10-cdi-${project.version}.jar
+lib/ee10/jetty-ee10-cdi-${jetty.version}.jar

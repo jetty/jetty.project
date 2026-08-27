@@ -15,15 +15,15 @@ websocket-core-server
 ee9-annotations
 
 [files]
-maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jakarta-client/${project.version}/jar|lib/ee9/jetty-ee9-websocket-jakarta-client-${project.version}.jar
-maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jakarta-common/${project.version}/jar|lib/ee9/jetty-ee9-websocket-jakarta-common-${project.version}.jar
-maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jakarta-server/${project.version}/jar|lib/ee9/jetty-ee9-websocket-jakarta-server-${project.version}.jar
-maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-servlet/${project.version}/jar|lib/ee9/jetty-ee9-websocket-servlet-${project.version}.jar
+maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jakarta-client/${jetty.version}/jar|lib/ee9/jetty-ee9-websocket-jakarta-client-${jetty.version}.jar
+maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jakarta-common/${jetty.version}/jar|lib/ee9/jetty-ee9-websocket-jakarta-common-${jetty.version}.jar
+maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jakarta-server/${jetty.version}/jar|lib/ee9/jetty-ee9-websocket-jakarta-server-${jetty.version}.jar
+maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-servlet/${jetty.version}/jar|lib/ee9/jetty-ee9-websocket-servlet-${jetty.version}.jar
 maven://org.eclipse.jetty.toolchain/jetty-jakarta-websocket-api/${ee9.jakarta.websocket.api.version}/jar|lib/ee9/jetty-jakarta-websocket-api-${ee9.jakarta.websocket.api.version}.jar
 
 [lib]
-lib/ee9/jetty-ee9-websocket-jakarta-client-${project.version}.jar
-lib/ee9/jetty-ee9-websocket-jakarta-common-${project.version}.jar
-lib/ee9/jetty-ee9-websocket-jakarta-server-${project.version}.jar
-lib/ee9/jetty-ee9-websocket-servlet-${project.version}.jar
+lib/ee9/jetty-ee9-websocket-jakarta-client-${jetty.version}.jar
+lib/ee9/jetty-ee9-websocket-jakarta-common-${jetty.version}.jar
+lib/ee9/jetty-ee9-websocket-jakarta-server-${jetty.version}.jar
+lib/ee9/jetty-ee9-websocket-servlet-${jetty.version}.jar
 lib/ee9/jetty-jakarta-websocket-api-${ee9.jakarta.websocket.api.version}.jar

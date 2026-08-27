@@ -25,10 +25,10 @@ maven://jakarta.enterprise/jakarta.enterprise.lang-model/${jakarta.enterprise.cd
 maven://jakarta.inject/jakarta.inject-api/${jakarta.inject.version}/jar|lib/ee11/support/jakarta.inject.jakarta.inject-api-${jakarta.inject.version}.jar
 maven://jakarta.interceptor/jakarta.interceptor-api/${jakarta.interceptor-api.version}/jar|lib/ee11/support/jakarta.interceptor.jakarta.interceptor-api-${jakarta.interceptor-api.version}.jar
 maven://jakarta.transaction/jakarta.transaction-api/${jakarta.transaction-api.version}/jar|lib/ee11/support/jakarta.transaction.jakarta.transaction-api-${jakarta.transaction-api.version}.jar
-maven://org.eclipse.jetty.ee11/jetty-ee11-plus/${project.version}/jar|lib/ee11/jetty-ee11-plus-${project.version}.jar
+maven://org.eclipse.jetty.ee11/jetty-ee11-plus/${jetty.version}/jar|lib/ee11/jetty-ee11-plus-${jetty.version}.jar
 
 [lib]
-lib/ee11/jetty-ee11-plus-${project.version}.jar
+lib/ee11/jetty-ee11-plus-${jetty.version}.jar
 lib/ee11/support/jakarta.enterprise.jakarta.enterprise.cdi-api-${jakarta.enterprise.cdi-api.version}.jar
 lib/ee11/support/jakarta.enterprise.jakarta.enterprise.lang-model-${jakarta.enterprise.cdi-api.version}.jar
 lib/ee11/support/jakarta.inject.jakarta.inject-api-${jakarta.inject.version}.jar

@@ -13,7 +13,7 @@ ee9
 ee9-servlet
 
 [files]
-maven://org.eclipse.jetty.ee9/jetty-ee9-servlets/${project.version}/jar|lib/ee9/jetty-ee9-servlets-${project.version}.jar
+maven://org.eclipse.jetty.ee9/jetty-ee9-servlets/${jetty.version}/jar|lib/ee9/jetty-ee9-servlets-${jetty.version}.jar
 
 [lib]
-lib/ee9/jetty-ee9-servlets-${project.version}.jar
+lib/ee9/jetty-ee9-servlets-${jetty.version}.jar

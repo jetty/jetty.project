@@ -13,7 +13,7 @@ ee11
 ee11-servlet
 
 [files]
-maven://org.eclipse.jetty.ee11/jetty-ee11-servlets/${project.version}/jar|lib/ee11/jetty-ee11-servlets-${project.version}.jar
+maven://org.eclipse.jetty.ee11/jetty-ee11-servlets/${jetty.version}/jar|lib/ee11/jetty-ee11-servlets-${jetty.version}.jar
 
 [lib]
-lib/ee11/jetty-ee11-servlets-${project.version}.jar
+lib/ee11/jetty-ee11-servlets-${jetty.version}.jar

@@ -13,7 +13,7 @@ ee8
 ee8-servlet
 
 [files]
-maven://org.eclipse.jetty.ee8/jetty-ee8-servlets/${project.version}/jar|lib/ee8/jetty-ee8-servlets-${project.version}.jar
+maven://org.eclipse.jetty.ee8/jetty-ee8-servlets/${jetty.version}/jar|lib/ee8/jetty-ee8-servlets-${jetty.version}.jar
 
 [lib]
-lib/ee8/jetty-ee8-servlets-${project.version}.jar
+lib/ee8/jetty-ee8-servlets-${jetty.version}.jar

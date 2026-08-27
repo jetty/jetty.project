@@ -22,8 +22,8 @@ jakarta.authentication-api.version?=@jakarta.authentication-api.version@
 [files]
 basehome:etc/jaspi/jetty-ee10-jaspi-authmoduleconfig.xml|etc/jaspi/jetty-ee10-jaspi-authmoduleconfig.xml
 maven://jakarta.authentication/jakarta.authentication-api/${jakarta.authentication-api.version}/jar|lib/ee10/support/jakarta.authentication.jakarta.authentication-api-${jakarta.authentication-api.version}.jar
-maven://org.eclipse.jetty.ee10/jetty-ee10-jaspi/${project.version}/jar|lib/ee10/jetty-ee10-jaspi-${project.version}.jar
+maven://org.eclipse.jetty.ee10/jetty-ee10-jaspi/${jetty.version}/jar|lib/ee10/jetty-ee10-jaspi-${jetty.version}.jar
 
 [lib]
-lib/ee10/jetty-ee10-jaspi-${project.version}.jar
+lib/ee10/jetty-ee10-jaspi-${jetty.version}.jar
 lib/ee10/support/jakarta.authentication.jakarta.authentication-api-${jakarta.authentication-api.version}.jar

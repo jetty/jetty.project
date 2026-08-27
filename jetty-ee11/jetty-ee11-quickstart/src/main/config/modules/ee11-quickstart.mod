@@ -16,10 +16,10 @@ ee11-plus
 etc/jetty-ee11-quickstart.xml
 
 [files]
-maven://org.eclipse.jetty.ee11/jetty-ee11-quickstart/${project.version}/jar|lib/ee11/jetty-ee11-quickstart-${project.version}.jar
+maven://org.eclipse.jetty.ee11/jetty-ee11-quickstart/${jetty.version}/jar|lib/ee11/jetty-ee11-quickstart-${jetty.version}.jar
 
 [lib]
-lib/ee11/jetty-ee11-quickstart-${project.version}.jar
+lib/ee11/jetty-ee11-quickstart-${jetty.version}.jar
 
 [ini-template]
 

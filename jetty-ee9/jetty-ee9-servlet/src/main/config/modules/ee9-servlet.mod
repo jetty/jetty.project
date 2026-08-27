@@ -11,11 +11,11 @@ server
 sessions
 
 [files]
-maven://org.eclipse.jetty.ee9/jetty-ee9-nested/${project.version}/jar|lib/ee9/jetty-ee9-nested-${project.version}.jar
-maven://org.eclipse.jetty.ee9/jetty-ee9-servlet/${project.version}/jar|lib/ee9/jetty-ee9-servlet-${project.version}.jar
+maven://org.eclipse.jetty.ee9/jetty-ee9-nested/${jetty.version}/jar|lib/ee9/jetty-ee9-nested-${jetty.version}.jar
+maven://org.eclipse.jetty.ee9/jetty-ee9-servlet/${jetty.version}/jar|lib/ee9/jetty-ee9-servlet-${jetty.version}.jar
 maven://org.eclipse.jetty.toolchain/jetty-jakarta-servlet-api/${ee9.jetty.servlet.api.version}/jar|lib/ee9/jetty-jakarta-servlet-api-${ee9.jetty.servlet.api.version}.jar
 
 [lib]
-lib/ee9/jetty-ee9-nested-${project.version}.jar
-lib/ee9/jetty-ee9-servlet-${project.version}.jar
+lib/ee9/jetty-ee9-nested-${jetty.version}.jar
+lib/ee9/jetty-ee9-servlet-${jetty.version}.jar
 lib/ee9/jetty-jakarta-servlet-api-${ee9.jetty.servlet.api.version}.jar

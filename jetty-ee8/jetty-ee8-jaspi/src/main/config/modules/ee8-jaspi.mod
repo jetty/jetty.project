@@ -19,8 +19,8 @@ etc/jaspi/jetty-ee8-jaspi-authmoduleconfig.xml
 [files]
 basehome:etc/jaspi/jetty-ee8-jaspi-authmoduleconfig.xml|etc/jaspi/jetty-ee8-jaspi-authmoduleconfig.xml
 maven://jakarta.security.auth.message/jakarta.security.auth.message-api/1.1.3/jar|lib/ee8/support/jakarta.security.auth.message.jakarta.security.auth.message-api-1.1.3.jar
-maven://org.eclipse.jetty.ee8/jetty-ee8-jaspi/${project.version}/jar|lib/ee8/jetty-ee8-jaspi-${project.version}.jar
+maven://org.eclipse.jetty.ee8/jetty-ee8-jaspi/${jetty.version}/jar|lib/ee8/jetty-ee8-jaspi-${jetty.version}.jar
 
 [lib]
-lib/ee8/jetty-ee8-jaspi-${project.version}.jar
+lib/ee8/jetty-ee8-jaspi-${jetty.version}.jar
 lib/ee8/support/jakarta.security.auth.message.jakarta.security.auth.message-api-1.1.3.jar

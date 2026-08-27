@@ -13,7 +13,7 @@ ee10
 ee10-servlet
 
 [files]
-maven://org.eclipse.jetty.ee10/jetty-ee10-servlets/${project.version}/jar|lib/ee10/jetty-ee10-servlets-${project.version}.jar
+maven://org.eclipse.jetty.ee10/jetty-ee10-servlets/${jetty.version}/jar|lib/ee10/jetty-ee10-servlets-${jetty.version}.jar
 
 [lib]
-lib/ee10/jetty-ee10-servlets-${project.version}.jar
+lib/ee10/jetty-ee10-servlets-${jetty.version}.jar

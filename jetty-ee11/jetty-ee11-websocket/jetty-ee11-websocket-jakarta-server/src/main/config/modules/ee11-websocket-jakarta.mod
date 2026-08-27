@@ -20,15 +20,15 @@ jakarta.websocket-api.version?=@jakarta.websocket-api.version@
 [files]
 maven://jakarta.websocket/jakarta.websocket-api/${jakarta.websocket-api.version}/jar|lib/ee11/support/jakarta.websocket.jakarta.websocket-api-${jakarta.websocket-api.version}.jar
 maven://jakarta.websocket/jakarta.websocket-client-api/${jakarta.websocket-api.version}/jar|lib/ee11/support/jakarta.websocket.jakarta.websocket-client-api-${jakarta.websocket-api.version}.jar
-maven://org.eclipse.jetty.ee11.websocket/jetty-ee11-websocket-jakarta-client/${project.version}/jar|lib/ee11/jetty-ee11-websocket-jakarta-client-${project.version}.jar
-maven://org.eclipse.jetty.ee11.websocket/jetty-ee11-websocket-jakarta-common/${project.version}/jar|lib/ee11/jetty-ee11-websocket-jakarta-common-${project.version}.jar
-maven://org.eclipse.jetty.ee11.websocket/jetty-ee11-websocket-jakarta-server/${project.version}/jar|lib/ee11/jetty-ee11-websocket-jakarta-server-${project.version}.jar
-maven://org.eclipse.jetty.ee11.websocket/jetty-ee11-websocket-servlet/${project.version}/jar|lib/ee11/jetty-ee11-websocket-servlet-${project.version}.jar
+maven://org.eclipse.jetty.ee11.websocket/jetty-ee11-websocket-jakarta-client/${jetty.version}/jar|lib/ee11/jetty-ee11-websocket-jakarta-client-${jetty.version}.jar
+maven://org.eclipse.jetty.ee11.websocket/jetty-ee11-websocket-jakarta-common/${jetty.version}/jar|lib/ee11/jetty-ee11-websocket-jakarta-common-${jetty.version}.jar
+maven://org.eclipse.jetty.ee11.websocket/jetty-ee11-websocket-jakarta-server/${jetty.version}/jar|lib/ee11/jetty-ee11-websocket-jakarta-server-${jetty.version}.jar
+maven://org.eclipse.jetty.ee11.websocket/jetty-ee11-websocket-servlet/${jetty.version}/jar|lib/ee11/jetty-ee11-websocket-servlet-${jetty.version}.jar
 
 [lib]
-lib/ee11/jetty-ee11-websocket-jakarta-client-${project.version}.jar
-lib/ee11/jetty-ee11-websocket-jakarta-common-${project.version}.jar
-lib/ee11/jetty-ee11-websocket-jakarta-server-${project.version}.jar
-lib/ee11/jetty-ee11-websocket-servlet-${project.version}.jar
+lib/ee11/jetty-ee11-websocket-jakarta-client-${jetty.version}.jar
+lib/ee11/jetty-ee11-websocket-jakarta-common-${jetty.version}.jar
+lib/ee11/jetty-ee11-websocket-jakarta-server-${jetty.version}.jar
+lib/ee11/jetty-ee11-websocket-servlet-${jetty.version}.jar
 lib/ee11/support/jakarta.websocket.jakarta.websocket-api-${jakarta.websocket-api.version}.jar
 lib/ee11/support/jakarta.websocket.jakarta.websocket-client-api-${jakarta.websocket-api.version}.jar

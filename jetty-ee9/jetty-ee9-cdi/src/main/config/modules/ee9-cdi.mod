@@ -29,7 +29,7 @@ ee9-deploy
 etc/cdi/jetty-ee9-cdi.xml
 
 [files]
-maven://org.eclipse.jetty.ee9/jetty-ee9-cdi/${project.version}/jar|lib/ee9/jetty-ee9-cdi-${project.version}.jar
+maven://org.eclipse.jetty.ee9/jetty-ee9-cdi/${jetty.version}/jar|lib/ee9/jetty-ee9-cdi-${jetty.version}.jar
 
 [lib]
-lib/ee9/jetty-ee9-cdi-${project.version}.jar
+lib/ee9/jetty-ee9-cdi-${jetty.version}.jar

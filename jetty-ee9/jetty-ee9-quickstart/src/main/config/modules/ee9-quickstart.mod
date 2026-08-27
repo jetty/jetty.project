@@ -16,10 +16,10 @@ ee9-plus
 etc/jetty-ee9-quickstart.xml
 
 [files]
-maven://org.eclipse.jetty.ee9/jetty-ee9-quickstart/${project.version}/jar|lib/ee9/jetty-ee9-quickstart-${project.version}.jar
+maven://org.eclipse.jetty.ee9/jetty-ee9-quickstart/${jetty.version}/jar|lib/ee9/jetty-ee9-quickstart-${jetty.version}.jar
 
 [lib]
-lib/ee9/jetty-ee9-quickstart-${project.version}.jar
+lib/ee9/jetty-ee9-quickstart-${jetty.version}.jar
 
 [ini-template]
 

@@ -11,7 +11,7 @@ ee9-security
 openid
 
 [files]
-maven://org.eclipse.jetty.ee9/jetty-ee9-openid/${project.version}/jar|lib/ee9/jetty-ee9-openid-${project.version}.jar
+maven://org.eclipse.jetty.ee9/jetty-ee9-openid/${jetty.version}/jar|lib/ee9/jetty-ee9-openid-${jetty.version}.jar
 
 [lib]
-lib/ee9/jetty-ee9-openid-${project.version}.jar
+lib/ee9/jetty-ee9-openid-${jetty.version}.jar

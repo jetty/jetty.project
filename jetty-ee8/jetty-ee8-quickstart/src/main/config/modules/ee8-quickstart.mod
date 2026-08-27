@@ -16,10 +16,10 @@ ee8-plus
 etc/jetty-ee8-quickstart.xml
 
 [files]
-maven://org.eclipse.jetty.ee8/jetty-ee8-quickstart/${project.version}/jar|lib/ee8/jetty-ee8-quickstart-${project.version}.jar
+maven://org.eclipse.jetty.ee8/jetty-ee8-quickstart/${jetty.version}/jar|lib/ee8/jetty-ee8-quickstart-${jetty.version}.jar
 
 [lib]
-lib/ee8/jetty-ee8-quickstart-${project.version}.jar
+lib/ee8/jetty-ee8-quickstart-${jetty.version}.jar
 
 [ini-template]
 

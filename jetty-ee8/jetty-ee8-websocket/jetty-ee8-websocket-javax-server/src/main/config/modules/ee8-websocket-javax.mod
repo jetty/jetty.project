@@ -15,15 +15,15 @@ websocket-core-server
 ee8-annotations
 
 [files]
-maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-javax-client/${project.version}/jar|lib/ee8/jetty-ee8-websocket-javax-client-${project.version}.jar
-maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-javax-common/${project.version}/jar|lib/ee8/jetty-ee8-websocket-javax-common-${project.version}.jar
-maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-javax-server/${project.version}/jar|lib/ee8/jetty-ee8-websocket-javax-server-${project.version}.jar
-maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-servlet/${project.version}/jar|lib/ee8/jetty-ee8-websocket-servlet-${project.version}.jar
+maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-javax-client/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-javax-client-${jetty.version}.jar
+maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-javax-common/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-javax-common-${jetty.version}.jar
+maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-javax-server/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-javax-server-${jetty.version}.jar
+maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-servlet/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-servlet-${jetty.version}.jar
 maven://org.eclipse.jetty.toolchain/jetty-javax-websocket-api/${ee8.jakarta.websocket.api.version}/jar|lib/ee8/jetty-javax-websocket-api-${ee8.jakarta.websocket.api.version}.jar
 
 [lib]
-lib/ee8/jetty-ee8-websocket-javax-client-${project.version}.jar
-lib/ee8/jetty-ee8-websocket-javax-common-${project.version}.jar
-lib/ee8/jetty-ee8-websocket-javax-server-${project.version}.jar
-lib/ee8/jetty-ee8-websocket-servlet-${project.version}.jar
+lib/ee8/jetty-ee8-websocket-javax-client-${jetty.version}.jar
+lib/ee8/jetty-ee8-websocket-javax-common-${jetty.version}.jar
+lib/ee8/jetty-ee8-websocket-javax-server-${jetty.version}.jar
+lib/ee8/jetty-ee8-websocket-servlet-${jetty.version}.jar
 lib/ee8/jetty-javax-websocket-api-${ee8.jakarta.websocket.api.version}.jar

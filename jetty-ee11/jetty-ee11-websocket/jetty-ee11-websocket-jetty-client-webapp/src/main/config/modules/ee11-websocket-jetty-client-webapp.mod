@@ -15,7 +15,7 @@ ee11-annotations
 websocket-jetty-client
 
 [files]
-maven://org.eclipse.jetty.ee11.websocket/jetty-ee11-websocket-jetty-client-webapp/${project.version}/jar|lib/ee11/jetty-ee11-websocket-jetty-client-webapp-${project.version}.jar
+maven://org.eclipse.jetty.ee11.websocket/jetty-ee11-websocket-jetty-client-webapp/${jetty.version}/jar|lib/ee11/jetty-ee11-websocket-jetty-client-webapp-${jetty.version}.jar
 
 [lib]
-lib/ee11/jetty-ee11-websocket-jetty-client-webapp-${project.version}.jar
+lib/ee11/jetty-ee11-websocket-jetty-client-webapp-${jetty.version}.jar
