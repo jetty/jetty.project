@@ -38,6 +38,12 @@ public class UriFileInitializer extends DownloadFileInitializer
     }
 
     @Override
+    public boolean exists(URI uri) throws IOException
+    {
+        return false;
+    }
+
+    @Override
     public boolean create(URI uri, String location) throws IOException
     {
         Path destination = getDestination(uri, location);

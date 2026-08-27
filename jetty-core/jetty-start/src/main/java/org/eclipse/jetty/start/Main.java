@@ -369,6 +369,12 @@ public class Main
         args.getAllModules().showModules(out, args.getShowModules());
     }
 
+    public void validateModules(PrintStream out, StartArgs args) throws IOException
+    {
+        StartLog.endStartLog();
+        args.getAllModules().validateModules(out, args.getValidateModules(), args::getEnvironment);
+    }
+
     /**
      * Convenience for <code>processCommandLine(cmdLine.toArray(new String[cmdLine.size()]))</code>
      *
@@ -503,6 +509,12 @@ public class Main
         if (args.getShowModules() != null)
         {
             showModules(System.out, args);
+        }
+
+        // Validate modules
+        if (args.getValidateModules() != null)
+        {
+            validateModules(System.out, args);
         }
 
         // Generate Module Graph File

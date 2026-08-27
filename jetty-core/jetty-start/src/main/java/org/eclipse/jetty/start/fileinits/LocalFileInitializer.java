@@ -27,7 +27,22 @@ public class LocalFileInitializer extends FileInitializer
 {
     public LocalFileInitializer(BaseHome basehome)
     {
-        super(basehome);
+        super(basehome, "file");
+    }
+
+    @Override
+    public boolean exists(URI uri) throws IOException
+    {
+        if (uri.getScheme() != null)
+        {
+            if (!"file".equals(uri.getScheme()))
+            {
+                throw new IllegalArgumentException("Unexpected scheme: " + uri);
+            }
+        }
+
+        Path path = Path.of(uri);
+        return Files.exists(path);
     }
 
     @Override

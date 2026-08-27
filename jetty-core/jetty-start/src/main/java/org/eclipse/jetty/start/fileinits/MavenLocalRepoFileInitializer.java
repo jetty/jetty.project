@@ -160,6 +160,38 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
     }
 
     @Override
+    public boolean exists(URI uri) throws IOException
+    {
+        Coordinates coords = getCoordinates(uri);
+        if (coords == null)
+        {
+            // Skip, not a maven:// URI
+            return false;
+        }
+
+        // Check local repo first
+        Path localFile = localRepositoryDir.resolve(coords.toPath());
+        if (!Files.isRegularFile(localFile))
+        {
+            if (offline)
+            {
+                StartLog.warn("Maven is offline, but Local Maven Repo does not contain: %s%n", coords);
+                return false;
+            }
+            else
+            {
+                // Download from global maven repo
+                if (FS.ensureDirectoryExists(localFile.getParent()))
+                    StartLog.info("mkdir %s", _basehome.toShortForm(localFile.getParent()));
+                download(coords, localFile);
+            }
+        }
+
+        // Found in local repo
+        return Files.isRegularFile(localFile);
+    }
+
+    @Override
     public boolean create(URI uri, String location) throws IOException
     {
         Coordinates coords = getCoordinates(uri);
