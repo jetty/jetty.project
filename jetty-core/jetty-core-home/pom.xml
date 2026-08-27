@@ -443,6 +443,7 @@
                 org.eclipse.jetty.fcgi,
                 org.eclipse.jetty.toolchain.setuid
               </includeGroupIds>
+              <includeTypes>jar</includeTypes>
               <classifier>config</classifier>
               <includeScope>runtime</includeScope>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>

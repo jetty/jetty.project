@@ -19,149 +19,8 @@
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-bouncycastle-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-conscrypt-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-java-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-annotations</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-coreapp</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-deploy</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-ethereum</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-hazelcast</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-infinispan-embedded</artifactId>
-      <version>${project.version}</version>
-      <type>pom</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-infinispan-embedded-query</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-infinispan-remote</artifactId>
-      <version>${project.version}</version>
-      <type>pom</type>
-      <optional>true</optional>
-      <exclusions>
-        <exclusion>
-          <groupId>org.wildfly.common</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-infinispan-remote-query</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jmx</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-keystore</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-nosql</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-openid</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-rewrite</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-security</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-start</artifactId>
-      <version>${project.version}</version>
-      <classifier>shaded</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-staticapp</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-unixdomain-server</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util-ajax</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.compression</groupId>
-      <artifactId>jetty-compression-brotli</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.compression</groupId>
-      <artifactId>jetty-compression-gzip</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.compression</groupId>
-      <artifactId>jetty-compression-server</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.compression</groupId>
-      <artifactId>jetty-compression-zstandard</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-core-demo-handler</artifactId>
-      <version>${project.version}</version>
-      <optional>true</optional>
-    </dependency>
     <!-- Demo Servlet 5 Apps -->
+    <!-- TODO: move to appropriate places
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet5-demo-async-rest-webapp</artifactId>
@@ -247,8 +106,9 @@
       <classifier>config</classifier>
       <type>jar</type>
       <optional>true</optional>
-    </dependency>
+    </dependency> -->
     <!-- Demo Servlet 6 Apps -->
+    <!-- TODO: move to appropriate places
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet6-demo-jspc-webapp</artifactId>
@@ -273,14 +133,17 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee</groupId>
-      <artifactId>jetty-ee-webapp</artifactId>
-    </dependency>
+     -->
     <!-- EE10 -->
 
     <!-- ignore sort pom so we know which eeXX will be build first -->
     <?SORTPOM IGNORE?>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-core-home</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-home</artifactId>
@@ -309,6 +172,7 @@
     <!-- Servlet 4 Demo Apps -->
     <!-- ignore sort pom so we know which eeXX will be build first -->
     <?SORTPOM IGNORE?>
+    <!-- TODO: move to appropriate places
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>jetty-servlet4-demo-async-rest-webapp</artifactId>
@@ -387,90 +251,8 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
+    -->
     <?SORTPOM RESUME?>
-    <dependency>
-      <groupId>org.eclipse.jetty.fcgi</groupId>
-      <artifactId>jetty-fcgi-proxy</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.fcgi</groupId>
-      <artifactId>jetty-fcgi-server</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.gcloud</groupId>
-      <artifactId>jetty-gcloud-session-manager</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>jetty-http2-client-transport</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>jetty-http2-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>jetty-http3-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.memcached</groupId>
-      <artifactId>jetty-memcached-sessions</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-quiche-jna</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>jetty-quic-quiche-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain.setuid</groupId>
-      <artifactId>jetty-setuid-jna</artifactId>
-      <version>${jetty-setuid-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-jetty-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-jetty-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.logging</groupId>
-      <artifactId>jboss-logging</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-analysis</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-commons</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.ow2.asm</groupId>
-      <artifactId>asm-tree</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
@@ -515,6 +297,8 @@
               </descriptors>
             </configuration>
           </execution>
+          <!--
+          TODO: do we need this to be able to deploy to maven central?
           <execution>
             <id>sources</id>
             <goals>
@@ -527,7 +311,7 @@
               </descriptors>
               <appendAssemblyId>true</appendAssemblyId>
             </configuration>
-          </execution>
+          </execution>-->
         </executions>
       </plugin>
       <plugin>
@@ -567,233 +351,25 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-annotations-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-annotations-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.ow2.asm</includeGroupIds>
-              <includeArtifactIds>asm,asm-commons,asm-tree,asm-analysis</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/annotations</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-jetty-core-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.compression,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.ee8.websocket,org.eclipse.jetty.ee9.websocket,org.eclipse.jetty.ee11.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
-              <excludeArtifactIds>jetty-ee8-apache-jsp,jetty-ee9-apache-jsp,jetty-ee10-apache-jsp,jetty-ee11-apache-jsp,jetty-ee8-glassfish-jstl,jetty-ee9-glassfish-jstl,jetty-ee10-glassfish-jstl,jetty-ee11-glassfish-jstl,jetty-start,jetty-slf4j-impl,javadoc</excludeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <excludeClassifiers>config</excludeClassifiers>
-              <outputDirectory>${assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-jetty-core-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.compression,org.eclipse.jetty.http2,org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
-              <excludeArtifactIds>jetty-ee8-apache-jsp,jetty-ee9-apache-jsp,jetty-ee10-apache-jsp,jetty-ee11-apache-jsp,jetty-ee8-glassfish-jstl,jetty-ee9-glassfish-jstl,jetty-ee10-glassfish-jstl,jetty-ee11-glassfish-jstl,jetty-start</excludeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-compression-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.compression</includeGroupIds>
-              <includeArtifactIds>jetty-compression-common,jetty-compression-brotli,jetty-compression-gzip,jetty-compression-server,jetty-compression-zstandard</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/compression</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-fcgi-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.fcgi</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/fcgi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-fcgi-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.fcgi</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/fcgi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-http2-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.http2</includeGroupIds>
-              <includeArtifactIds>jetty-http2-hpack,jetty-http2-common,jetty-http2-server</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/http2</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-http2-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.http2</includeGroupIds>
-              <includeArtifactIds>jetty-http2-hpack,jetty-http2-common,jetty-http2-server</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/http2</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-http3-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.http3</includeGroupIds>
-              <includeArtifactIds>jetty-http3-server,jetty-http3-common,jetty-http3-qpack</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/http3</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-http3-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.http3</includeGroupIds>
-              <includeArtifactIds>jetty-http3-server</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/http3</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-logging-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty,org.slf4j</includeGroupIds>
-              <includeArtifactIds>jetty-slf4j-impl,slf4j-api</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/logging</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-logging-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty,org.slf4j</includeGroupIds>
-              <includeArtifactIds>jetty-slf4j-impl,slf4j-api</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/logging</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-lib-quic-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.quic,org.eclipse.jetty.quiche</includeGroupIds>
-              <includeArtifactIds>jetty-quic-api,jetty-quic-common,jetty-quic-server,jetty-quic-util,jetty-quic-quiche-common,jetty-quic-quiche-server,jetty-quic-quiche-jna,jetty-quic-quiche-foreign,jetty-quiche-native</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/quic</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>unpack-config-deps</id>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <!-- useful for troubleshooting the source archive of a particular file: <useSubDirectoryPerArtifact>true</useSubDirectoryPerArtifact> -->
-              <includeGroupIds>org.eclipse.jetty, org.eclipse.jetty.websocket, org.eclipse.jetty.toolchain.setuid, org.eclipse.jetty.compression</includeGroupIds>
-              <excludeArtifactIds>jetty-infinispan-embedded,jetty-infinispan-remote,jetty-test-helper,alpn-api,javax.security.auth.message,javax.activation</excludeArtifactIds>
-              <classifier>config</classifier>
-              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-              <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
-              <outputDirectory>${assembly-directory}</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>unpack-demo-deps</id>
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.demos</includeGroupIds>
-              <excludeArtifactIds/>
-              <classifier>config</classifier>
-              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-              <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
-              <outputDirectory>${assembly-directory}</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>unpack-eeX-home</id>
+            <id>unpack-env-homes</id>
             <goals>
               <goal>unpack</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
               <artifactItems>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty</groupId>
+                  <artifactId>jetty-core-home</artifactId>
+                  <version>${project.version}</version>
+                  <type>zip</type>
+                  <fileMappers>
+                    <org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
+                      <pattern>^jetty-core-home-[^/]*/(.*)$</pattern>
+                      <replacement>$1</replacement>
+                    </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
+                  </fileMappers>
+                </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.ee11</groupId>
                   <artifactId>jetty-ee11-home</artifactId>
@@ -822,33 +398,6 @@
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>
-          <execution>
-            <id>unpack-infinispan-config</id>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-infinispan-embedded</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-infinispan-remote</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                </artifactItem>
-              </artifactItems>
-              <excludes>META-INF/**</excludes>
-              <outputDirectory>${assembly-directory}</outputDirectory>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -866,7 +415,7 @@
                   <excludes combine.children="append">
                     <exclude>org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api</exclude>
                     <!--
-                        we need to exclude some libraries which are different depending on ee8/ee9/ee10/ee11
+                      we need to exclude some libraries which are different depending on ee8/ee9/ee10/ee11
                       enforcer is running at ee11/ee10/ee9/ee8 home level
                     -->
                     <exclude>jakarta.servlet:jakarta.servlet-api</exclude>
@@ -940,19 +489,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>enable-foreign</id>
-      <activation>
-        <jdk>[22,)</jdk>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.eclipse.jetty.quic</groupId>
-          <artifactId>jetty-quic-quiche-foreign</artifactId>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
 </project>

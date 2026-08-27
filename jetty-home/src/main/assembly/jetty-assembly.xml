@@ -12,6 +12,9 @@
         <include>**</include>
       </includes>
       <excludes>
+        <exclude>**/META-INF/**</exclude>
+        <exclude>*-config.jar</exclude>
+        <!-- we'll build up shell scripts with execute in separate file-set -->
         <exclude>bin/*.sh</exclude>
       </excludes>
       <!-- The archive is generated with the uid / gid of the user that
@@ -21,6 +24,7 @@
            to files, and read-execute access to directories
            in the unpacked contents. -->
       <fileMode>0444</fileMode>
+      <directoryMode>0755</directoryMode>
     </fileSet>
     <fileSet>
       <directory>${assembly-directory}</directory>
