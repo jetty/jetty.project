@@ -18,9 +18,9 @@ work
 http3-impl|default
 
 [lib]
-lib/http3/jetty-http3-common-${jetty.version}.jar
-lib/http3/jetty-http3-qpack-${jetty.version}.jar
-lib/http3/jetty-http3-server-${jetty.version}.jar
+lib/jetty-http3-common-${jetty.version}.jar
+lib/jetty-http3-qpack-${jetty.version}.jar
+lib/jetty-http3-server-${jetty.version}.jar
 
 [xml]
 etc/jetty-http3-quiche.xml

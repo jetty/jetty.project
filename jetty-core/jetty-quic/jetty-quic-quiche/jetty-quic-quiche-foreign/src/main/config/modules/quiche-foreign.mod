@@ -13,4 +13,4 @@ quiche-native
 quiche
 
 [libs]
-lib/quic/jetty-quic-quiche-foreign-${jetty.version}.jar
+lib/jetty-quic-quiche-foreign-${jetty.version}.jar

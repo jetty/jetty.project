@@ -11,5 +11,5 @@ quic-server
 quiche-native
 
 [libs]
-lib/quic/jetty-quic-quiche-common-${jetty.version}.jar
-lib/quic/jetty-quic-quiche-server-${jetty.version}.jar
+lib/jetty-quic-quiche-common-${jetty.version}.jar
+lib/jetty-quic-quiche-server-${jetty.version}.jar
