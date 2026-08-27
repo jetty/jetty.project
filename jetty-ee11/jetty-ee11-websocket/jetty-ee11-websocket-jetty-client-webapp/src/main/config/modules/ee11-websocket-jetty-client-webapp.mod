@@ -9,11 +9,13 @@ ee11
 [tags]
 websocket
 
-[depend]
+[depends]
 client
 ee11-annotations
 websocket-jetty-client
 
-[lib]
-lib/ee11-websocket/jetty-ee11-websocket-jetty-client-webapp-${jetty.version}.jar
+[files]
+maven://org.eclipse.jetty.ee11.websocket/jetty-ee11-websocket-jetty-client-webapp/${project.version}/jar|lib/ee11/jetty-ee11-websocket-jetty-client-webapp-${project.version}.jar
 
+[lib]
+lib/ee11/jetty-ee11-websocket-jetty-client-webapp-${project.version}.jar

@@ -8,8 +8,3 @@ ee10
 
 [depends]
 ee10-apache-jsp
-
-# The prefix is necessary because Glassfish jars do not have JPMS metadata, see #9301.
-[lib]
-lib/ee10-glassfish-jstl/jakarta.servlet.jsp.jstl.@jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api@
-lib/ee10-glassfish-jstl/org.glassfish.web.@org.glassfish.web:jakarta.servlet.jsp.jstl@

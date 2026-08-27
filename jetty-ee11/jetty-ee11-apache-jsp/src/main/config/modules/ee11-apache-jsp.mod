@@ -6,15 +6,28 @@ Enables use of the apache implementation of JSP.
 [environment]
 ee11
 
-[depend]
+[depends]
 ee11-servlet
 ee11-annotations
 
-[lib]
-lib/ee11-apache-jsp/@jakarta.el:jakarta.el-api@
-lib/ee11-apache-jsp/@jakarta.servlet.jsp:jakarta.servlet.jsp-api@
-lib/ee11-apache-jsp/@org.eclipse.jdt:ecj@
-lib/ee11-apache-jsp/@org.mortbay.jasper:mortbay-apache-el@
-lib/ee11-apache-jsp/@org.mortbay.jasper:mortbay-apache-jsp@
-lib/jetty-ee11-apache-jsp-${jetty.version}.jar
+[ini]
+eclipse.jdt.ecj.version?=@eclipse.jdt.ecj.version@
+ee11.jakarta.el.api.version?=@ee11.jakarta.el.api.version@
+ee11.jsp.impl.version?=@ee11.jsp.impl.version@
+jakarta.servlet.jsp-api.version?=@jakarta.servlet.jsp-api.version@
 
+[files]
+maven://jakarta.el/jakarta.el-api/${ee11.jakarta.el.api.version}/jar|lib/ee11/support/jakarta.el.jakarta.el-api-${ee11.jakarta.el.api.version}.jar
+maven://jakarta.servlet.jsp/jakarta.servlet.jsp-api/${jakarta.servlet.jsp-api.version}/jar|lib/ee11/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-${jakarta.servlet.jsp-api.version}.jar
+maven://org.eclipse.jdt/ecj/${eclipse.jdt.ecj.version}/jar|lib/ee11/support/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
+maven://org.eclipse.jetty.ee11/jetty-ee11-apache-jsp/${project.version}/jar|lib/ee11/jetty-ee11-apache-jsp-${project.version}.jar
+maven://org.mortbay.jasper/mortbay-apache-el/${ee11.jsp.impl.version}/jar|lib/ee11/support/org.mortbay.jasper.mortbay-apache-el-${ee11.jsp.impl.version}.jar
+maven://org.mortbay.jasper/mortbay-apache-jsp/${ee11.jsp.impl.version}/jar|lib/ee11/support/org.mortbay.jasper.mortbay-apache-jsp-${ee11.jsp.impl.version}.jar
+
+[lib]
+lib/ee11/jetty-ee11-apache-jsp-${project.version}.jar
+lib/ee11/support/jakarta.el.jakarta.el-api-${ee11.jakarta.el.api.version}.jar
+lib/ee11/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-${jakarta.servlet.jsp-api.version}.jar
+lib/ee11/support/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
+lib/ee11/support/org.mortbay.jasper.mortbay-apache-el-${ee11.jsp.impl.version}.jar
+lib/ee11/support/org.mortbay.jasper.mortbay-apache-jsp-${ee11.jsp.impl.version}.jar

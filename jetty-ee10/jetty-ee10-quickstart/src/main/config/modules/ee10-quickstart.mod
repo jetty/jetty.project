@@ -6,17 +6,20 @@ Enables the Jetty Quickstart module for rapid deployment of preconfigured web ap
 [environment]
 ee10
 
-[depend]
+[depends]
 server
 ee10-annotations
 ee10-webapp
 ee10-plus
 
-[lib]
-lib/jetty-ee10-quickstart-${jetty.version}.jar
-
 [xml]
 etc/jetty-ee10-quickstart.xml
+
+[files]
+maven://org.eclipse.jetty.ee10/jetty-ee10-quickstart/${project.version}/jar|lib/ee10/jetty-ee10-quickstart-${project.version}.jar
+
+[lib]
+lib/ee10/jetty-ee10-quickstart-${project.version}.jar
 
 [ini-template]
 

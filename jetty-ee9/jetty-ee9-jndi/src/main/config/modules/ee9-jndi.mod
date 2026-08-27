@@ -6,11 +6,14 @@ Adds the Jetty EE9 JNDI reference factories
 [environment]
 ee9
 
-[depend]
+[depends]
 jndi
-
-[lib]
-lib/jetty-ee9-jndi-${jetty.version}.jar
 
 [ini]
 jetty.webapp.addHiddenClasses+=,-org.eclipse.jetty.ee9.jndi.factories.
+
+[files]
+maven://org.eclipse.jetty.ee9/jetty-ee9-jndi/${project.version}/jar|lib/ee9/jetty-ee9-jndi-${project.version}.jar
+
+[lib]
+lib/ee9/jetty-ee9-jndi-${project.version}.jar

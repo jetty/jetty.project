@@ -6,9 +6,12 @@ Adds OpenId Connect authentication to the server.
 [environment]
 ee8
 
-[depend]
+[depends]
 ee8-security
 openid
 
+[files]
+maven://org.eclipse.jetty.ee8/jetty-ee8-openid/${project.version}/jar|lib/ee8/jetty-ee8-openid-${project.version}.jar
+
 [lib]
-lib/jetty-ee8-openid-${jetty.version}.jar
+lib/ee8/jetty-ee8-openid-${project.version}.jar

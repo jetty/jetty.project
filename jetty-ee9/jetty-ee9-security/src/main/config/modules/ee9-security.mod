@@ -6,10 +6,13 @@ Adds servlet standard security handling to the classpath.
 [environment]
 ee9
 
-[depend]
+[depends]
 server
 security
 ee9-servlet
 
+[files]
+maven://org.eclipse.jetty.ee9/jetty-ee9-security/${project.version}/jar|lib/ee9/jetty-ee9-security-${project.version}.jar
+
 [lib]
-lib/jetty-ee9-security-${jetty.version}.jar
+lib/ee9/jetty-ee9-security-${project.version}.jar

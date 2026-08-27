@@ -6,17 +6,20 @@ Enables the Jetty Quickstart module for rapid deployment of preconfigured web ap
 [environment]
 ee8
 
-[depend]
+[depends]
 server
 ee8-annotations
 ee8-webapp
 ee8-plus
 
-[lib]
-lib/jetty-ee8-quickstart-${jetty.version}.jar
-
 [xml]
 etc/jetty-ee8-quickstart.xml
+
+[files]
+maven://org.eclipse.jetty.ee8/jetty-ee8-quickstart/${project.version}/jar|lib/ee8/jetty-ee8-quickstart-${project.version}.jar
+
+[lib]
+lib/ee8/jetty-ee8-quickstart-${project.version}.jar
 
 [ini-template]
 

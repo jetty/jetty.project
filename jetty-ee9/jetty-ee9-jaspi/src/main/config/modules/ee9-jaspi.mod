@@ -9,17 +9,21 @@ ee9
 [tags]
 security
 
-[depend]
+[depends]
 ee9-security
 ee9-auth-config-factory
-
-[lib]
-lib/jetty-ee9-jaspi-${jetty.version}.jar
-lib/ee9-jaspi/@jakarta.authentication:jakarta.authentication-api@
 
 [xml]
 etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml
 
+[ini]
+jakarta.authentication-api.version?=@jakarta.authentication-api.version@
+
 [files]
 basehome:etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml|etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml
+maven://jakarta.authentication/jakarta.authentication-api/${jakarta.authentication-api.version}/jar|lib/ee9/support/jakarta.authentication.jakarta.authentication-api-${jakarta.authentication-api.version}.jar
+maven://org.eclipse.jetty.ee9/jetty-ee9-jaspi/${project.version}/jar|lib/ee9/jetty-ee9-jaspi-${project.version}.jar
 
+[lib]
+lib/ee9/jetty-ee9-jaspi-${project.version}.jar
+lib/ee9/support/jakarta.authentication.jakarta.authentication-api-${jakarta.authentication-api.version}.jar

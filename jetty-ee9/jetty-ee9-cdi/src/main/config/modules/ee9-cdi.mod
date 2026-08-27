@@ -12,20 +12,24 @@ CdiSpiDecorator     - Jetty will call the CDI SPI within the webapp to decorate
                       objects (default).
 CdiDecoratingLister - The webapp may register a decorator on the context attribute
                       "org.eclipse.jetty.ee9.cdi.decorator".
+
 [environment]
 ee9
 
-[tag]
+[tags]
 cdi
 
 [provides]
 cdi
 
-[depend]
+[depends]
 ee9-deploy
 
 [xml]
 etc/cdi/jetty-ee9-cdi.xml
 
+[files]
+maven://org.eclipse.jetty.ee9/jetty-ee9-cdi/${project.version}/jar|lib/ee9/jetty-ee9-cdi-${project.version}.jar
+
 [lib]
-lib/jetty-ee9-cdi-${jetty.version}.jar
+lib/ee9/jetty-ee9-cdi-${project.version}.jar

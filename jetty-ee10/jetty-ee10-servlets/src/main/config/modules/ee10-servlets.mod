@@ -9,9 +9,11 @@ for use by all web applications.
 [environment]
 ee10
 
-[depend]
+[depends]
 ee10-servlet
 
-[lib]
-lib/jetty-ee10-servlets-${jetty.version}.jar
+[files]
+maven://org.eclipse.jetty.ee10/jetty-ee10-servlets/${project.version}/jar|lib/ee10/jetty-ee10-servlets-${project.version}.jar
 
+[lib]
+lib/ee10/jetty-ee10-servlets-${project.version}.jar

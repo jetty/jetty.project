@@ -4,18 +4,21 @@
 Enables the Jetty Proxy service.
 Allows the server to act as a non-transparent proxy for browsers.
 
-[depend]
-ee8-servlet
-client
-
 [environment]
 ee8
 
-[lib]
-lib/jetty-ee8-proxy-${jetty.version}.jar
+[depends]
+ee8-servlet
+client
 
 [xml]
 etc/jetty-ee8-proxy.xml
+
+[files]
+maven://org.eclipse.jetty.ee8/jetty-ee8-proxy/${project.version}/jar|lib/ee8/jetty-ee8-proxy-${project.version}.jar
+
+[lib]
+lib/ee8/jetty-ee8-proxy-${project.version}.jar
 
 [ini-template]
 ## Proxy Configuration

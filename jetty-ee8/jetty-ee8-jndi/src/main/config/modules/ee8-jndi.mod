@@ -6,11 +6,14 @@ Adds the Jetty EE8 JNDI reference factories
 [environment]
 ee8
 
-[depend]
+[depends]
 jndi
-
-[lib]
-lib/jetty-ee8-jndi-${jetty.version}.jar
 
 [ini]
 jetty.webapp.addHiddenClasses+=,-org.eclipse.jetty.ee8.jndi.factories.
+
+[files]
+maven://org.eclipse.jetty.ee8/jetty-ee8-jndi/${project.version}/jar|lib/ee8/jetty-ee8-jndi-${project.version}.jar
+
+[lib]
+lib/ee8/jetty-ee8-jndi-${project.version}.jar

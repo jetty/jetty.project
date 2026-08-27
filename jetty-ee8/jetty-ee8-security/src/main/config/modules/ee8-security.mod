@@ -6,10 +6,13 @@ Adds servlet standard security handling to the classpath.
 [environment]
 ee8
 
-[depend]
+[depends]
 server
 security
 ee8-servlet
 
+[files]
+maven://org.eclipse.jetty.ee8/jetty-ee8-security/${project.version}/jar|lib/ee8/jetty-ee8-security-${project.version}.jar
+
 [lib]
-lib/jetty-ee8-security-${jetty.version}.jar
+lib/ee8/jetty-ee8-security-${project.version}.jar

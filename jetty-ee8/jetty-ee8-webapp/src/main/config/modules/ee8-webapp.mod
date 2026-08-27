@@ -7,7 +7,7 @@ Without this, only Jetty-specific handlers may be deployed.
 [environment]
 ee8
 
-[depend]
+[depends]
 ee-webapp
 ee8-servlet
 ee8-security
@@ -15,8 +15,11 @@ ee8-security
 [xml]
 etc/jetty-ee8-webapp.xml
 
+[files]
+maven://org.eclipse.jetty.ee8/jetty-ee8-webapp/${project.version}/jar|lib/ee8/jetty-ee8-webapp-${project.version}.jar
+
 [lib]
-lib/jetty-ee8-webapp-${jetty.version}.jar
+lib/ee8/jetty-ee8-webapp-${project.version}.jar
 
 [ini-template]
 ## Add to the environment wide default jars and packages protected or hidden from webapps.

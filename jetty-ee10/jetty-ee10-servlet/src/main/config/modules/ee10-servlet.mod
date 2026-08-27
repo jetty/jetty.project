@@ -6,10 +6,17 @@ Enables standard Servlet handling.
 [environment]
 ee10
 
-[depend]
+[depends]
 server
 sessions
 
+[ini]
+jakarta.servlet-api.version?=@jakarta.servlet-api.version@
+
+[files]
+maven://jakarta.servlet/jakarta.servlet-api/${jakarta.servlet-api.version}/jar|lib/ee10/support/jakarta.servlet.jakarta.servlet-api-${jakarta.servlet-api.version}.jar
+maven://org.eclipse.jetty.ee10/jetty-ee10-servlet/${project.version}/jar|lib/ee10/jetty-ee10-servlet-${project.version}.jar
+
 [lib]
-lib/@jakarta.servlet:jakarta.servlet-api@
-lib/jetty-ee10-servlet-${jetty.version}.jar
+lib/ee10/jetty-ee10-servlet-${project.version}.jar
+lib/ee10/support/jakarta.servlet.jakarta.servlet-api-${jakarta.servlet-api.version}.jar

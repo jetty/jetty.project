@@ -9,9 +9,11 @@ for use by all web applications.
 [environment]
 ee8
 
-[depend]
+[depends]
 ee8-servlet
 
-[lib]
-lib/jetty-ee8-servlets-${jetty.version}.jar
+[files]
+maven://org.eclipse.jetty.ee8/jetty-ee8-servlets/${project.version}/jar|lib/ee8/jetty-ee8-servlets-${project.version}.jar
 
+[lib]
+lib/ee8/jetty-ee8-servlets-${project.version}.jar

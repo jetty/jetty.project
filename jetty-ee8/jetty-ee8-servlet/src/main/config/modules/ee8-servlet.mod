@@ -6,11 +6,16 @@ Enables standard Servlet handling.
 [environment]
 ee8
 
-[depend]
+[depends]
 server
 sessions
 
+[files]
+maven://org.eclipse.jetty.ee8/jetty-ee8-nested/${project.version}/jar|lib/ee8/jetty-ee8-nested-${project.version}.jar
+maven://org.eclipse.jetty.ee8/jetty-ee8-servlet/${project.version}/jar|lib/ee8/jetty-ee8-servlet-${project.version}.jar
+maven://org.eclipse.jetty.toolchain/jetty-servlet-api/${ee8.jetty.servlet.api.version}/jar|lib/ee8/jetty-servlet-api-${ee8.jetty.servlet.api.version}.jar
+
 [lib]
-lib/@org.eclipse.jetty.toolchain:jetty-servlet-api@
-lib/jetty-ee8-nested-${jetty.version}.jar
-lib/jetty-ee8-servlet-${jetty.version}.jar
+lib/ee8/jetty-ee8-nested-${project.version}.jar
+lib/ee8/jetty-ee8-servlet-${project.version}.jar
+lib/ee8/jetty-servlet-api-${ee8.jetty.servlet.api.version}.jar

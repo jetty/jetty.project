@@ -6,15 +6,18 @@ Enables the Jetty Proxy Servlet.
 [environment]
 ee11
 
-[depend]
+[depends]
 client
 ee11-servlet
 
-[lib]
-lib/jetty-ee11-proxy-${jetty.version}.jar
-
 [xml]
 etc/jetty-ee11-proxy.xml
+
+[files]
+maven://org.eclipse.jetty.ee11/jetty-ee11-proxy/${project.version}/jar|lib/ee11/jetty-ee11-proxy-${project.version}.jar
+
+[lib]
+lib/ee11/jetty-ee11-proxy-${project.version}.jar
 
 [ini-template]
 # tag::documentation[]

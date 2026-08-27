@@ -16,17 +16,20 @@ CdiDecoratingLister - The webapp may register a decorator on the context attribu
 [environment]
 ee10
 
-[tag]
+[tags]
 cdi
 
 [provides]
 cdi
 
-[depend]
+[depends]
 ee10-deploy
 
 [xml]
 etc/cdi/jetty-ee10-cdi.xml
 
+[files]
+maven://org.eclipse.jetty.ee10/jetty-ee10-cdi/${project.version}/jar|lib/ee10/jetty-ee10-cdi-${project.version}.jar
+
 [lib]
-lib/jetty-ee10-cdi-${jetty.version}.jar
+lib/ee10/jetty-ee10-cdi-${project.version}.jar

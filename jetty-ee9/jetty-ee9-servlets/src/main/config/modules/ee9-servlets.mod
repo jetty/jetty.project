@@ -9,9 +9,11 @@ for use by all web applications.
 [environment]
 ee9
 
-[depend]
+[depends]
 ee9-servlet
 
-[lib]
-lib/jetty-ee9-servlets-${jetty.version}.jar
+[files]
+maven://org.eclipse.jetty.ee9/jetty-ee9-servlets/${project.version}/jar|lib/ee9/jetty-ee9-servlets-${project.version}.jar
 
+[lib]
+lib/ee9/jetty-ee9-servlets-${project.version}.jar

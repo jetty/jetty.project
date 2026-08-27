@@ -3,18 +3,24 @@
 [description]
 Expose the Jetty WebSocket Client classes to deployed web applications.
 
-[tags]
-websocket
-
 [environment]
 ee9
 
-[depend]
+[tags]
+websocket
+
+[depends]
 websocket-core-client
 ee9-annotations
 
+[files]
+maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jetty-api/${project.version}/jar|lib/ee9/jetty-ee9-websocket-jetty-api-${project.version}.jar
+maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jetty-client-webapp/${project.version}/jar|lib/ee9/jetty-ee9-websocket-jetty-client-webapp-${project.version}.jar
+maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jetty-client/${project.version}/jar|lib/ee9/jetty-ee9-websocket-jetty-client-${project.version}.jar
+maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jetty-common/${project.version}/jar|lib/ee9/jetty-ee9-websocket-jetty-common-${project.version}.jar
+
 [lib]
-lib/ee9-websocket/jetty-ee9-websocket-jetty-api-${jetty.version}.jar
-lib/ee9-websocket/jetty-ee9-websocket-jetty-common-${jetty.version}.jar
-lib/ee9-websocket/jetty-ee9-websocket-jetty-client-${jetty.version}.jar
-lib/ee9-websocket/jetty-ee9-websocket-jetty-client-webapp-${jetty.version}.jar
+lib/ee9/jetty-ee9-websocket-jetty-api-${project.version}.jar
+lib/ee9/jetty-ee9-websocket-jetty-client-${project.version}.jar
+lib/ee9/jetty-ee9-websocket-jetty-client-webapp-${project.version}.jar
+lib/ee9/jetty-ee9-websocket-jetty-common-${project.version}.jar

@@ -6,15 +6,18 @@ Enables the Jetty Proxy Servlet.
 [environment]
 ee10
 
-[depend]
+[depends]
 client
 ee10-servlet
 
-[lib]
-lib/jetty-ee10-proxy-${jetty.version}.jar
-
 [xml]
 etc/jetty-ee10-proxy.xml
+
+[files]
+maven://org.eclipse.jetty.ee10/jetty-ee10-proxy/${project.version}/jar|lib/ee10/jetty-ee10-proxy-${project.version}.jar
+
+[lib]
+lib/ee10/jetty-ee10-proxy-${project.version}.jar
 
 [ini-template]
 # tag::documentation[]

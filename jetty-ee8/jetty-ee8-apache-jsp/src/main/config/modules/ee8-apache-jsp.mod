@@ -6,12 +6,22 @@ Enables use of the apache implementation of JSP.
 [environment]
 ee8
 
-[depend]
+[depends]
 ee8-servlet
 ee8-annotations
 
+[ini]
+eclipse.jdt.ecj.version?=@eclipse.jdt.ecj.version@
+ee8.jsp.impl.version?=@ee8.jsp.impl.version@
+
+[files]
+maven://org.eclipse.jdt/ecj/${eclipse.jdt.ecj.version}/jar|lib/ee8/support/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
+maven://org.eclipse.jetty.ee8/jetty-ee8-apache-jsp/${project.version}/jar|lib/ee8/jetty-ee8-apache-jsp-${project.version}.jar
+maven://org.mortbay.jasper/mortbay-apache-el/${ee8.jsp.impl.version}/jar|lib/ee8/support/org.mortbay.jasper.mortbay-apache-el-${ee8.jsp.impl.version}.jar
+maven://org.mortbay.jasper/mortbay-apache-jsp/${ee8.jsp.impl.version}/jar|lib/ee8/support/org.mortbay.jasper.mortbay-apache-jsp-${ee8.jsp.impl.version}.jar
+
 [lib]
-lib/ee8-apache-jsp/@org.eclipse.jdt:ecj@
-lib/ee8-apache-jsp/@org.mortbay.jasper:mortbay-apache-el@
-lib/ee8-apache-jsp/@org.mortbay.jasper:mortbay-apache-jsp@
-lib/jetty-ee8-apache-jsp-${jetty.version}.jar
+lib/ee8/jetty-ee8-apache-jsp-${project.version}.jar
+lib/ee8/support/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
+lib/ee8/support/org.mortbay.jasper.mortbay-apache-el-${ee8.jsp.impl.version}.jar
+lib/ee8/support/org.mortbay.jasper.mortbay-apache-jsp-${ee8.jsp.impl.version}.jar

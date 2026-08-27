@@ -3,18 +3,21 @@
 [description]
 Enables the Jetty Proxy Servlet.
 
-[depend]
-client
-ee9-servlet
-
 [environment]
 ee9
 
-[lib]
-lib/jetty-ee9-proxy-${jetty.version}.jar
+[depends]
+client
+ee9-servlet
 
 [xml]
 etc/jetty-ee9-proxy.xml
+
+[files]
+maven://org.eclipse.jetty.ee9/jetty-ee9-proxy/${project.version}/jar|lib/ee9/jetty-ee9-proxy-${project.version}.jar
+
+[lib]
+lib/ee9/jetty-ee9-proxy-${project.version}.jar
 
 [ini-template]
 ## The proxy contextPath.

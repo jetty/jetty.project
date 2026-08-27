@@ -6,17 +6,20 @@ Enables the Jetty Quickstart module for rapid deployment of preconfigured web ap
 [environment]
 ee11
 
-[depend]
+[depends]
 server
 ee11-annotations
 ee11-webapp
 ee11-plus
 
-[lib]
-lib/jetty-ee11-quickstart-${jetty.version}.jar
-
 [xml]
 etc/jetty-ee11-quickstart.xml
+
+[files]
+maven://org.eclipse.jetty.ee11/jetty-ee11-quickstart/${project.version}/jar|lib/ee11/jetty-ee11-quickstart-${project.version}.jar
+
+[lib]
+lib/ee11/jetty-ee11-quickstart-${project.version}.jar
 
 [ini-template]
 
