@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -177,7 +176,7 @@ public class Modules implements Iterable<Module>
         });
     }
 
-    public void validateModules(PrintStream out, List<String> modules, Function<Module, StartEnvironment> getEnvironmentFunction) throws IOException
+    public void validateModules(PrintStream out, List<String> modules) throws IOException
     {
         List<Module> selectedModules = (modules.contains("*") || modules.isEmpty())
             ? _modules.stream().sorted().toList()
@@ -190,7 +189,21 @@ public class Modules implements Iterable<Module>
             if (module == null)
                 return;
 
-            StartEnvironment environment = getEnvironmentFunction.apply(module);
+            Props props = new Props();
+            for (String ini : module.getIniSection())
+            {
+                int equals = ini.indexOf('=');
+                if (equals >= 0)
+                {
+                    String key = ini.substring(0, equals);
+                    String value = ini.substring(equals + 1);
+
+                    if (key.endsWith("+") || key.endsWith("?"))
+                        key = key.substring(0, key.length() - 1);
+
+                    props.setProperty(key, value, "validate-modules");
+                }
+            }
 
             Set<String> provides = module.getProvides();
             provides.remove(module.getName());
@@ -202,6 +215,12 @@ public class Modules implements Iterable<Module>
             if (module.getEnvironment() != null)
             {
                 out.printf("Environment: %s%n", module.getEnvironment());
+            }
+            for (Props.Prop prop: props)
+            {
+                out.printf("       Prop: %s=%s%n", prop.key, prop.value);
+                if (prop.value.contains("$") || prop.value.contains("@"))
+                    failures.add("Bad [ini] property [%s=%s] declared in module %s".formatted(prop.key, prop.value, module.getName()));
             }
             if (!module.getTags().isEmpty())
             {
@@ -272,19 +291,26 @@ public class Modules implements Iterable<Module>
                 for (String file : module.getFiles())
                 {
                     out.printf("       FILE: %s%n", file);
-                    String fileRef = environment.getProperties().expand(file);
-                    FileArg fileArg = new FileArg(module, fileRef);
-                    URI fileURI = fileArg.uri == null ? null : URI.create(fileArg.uri);
-                    for (FileInitializer finit : fileInitializers)
+                    String fileRef = props.expand(file);
+                    if (fileRef.contains("${")) // didn't properly expand
                     {
-                        if (finit.isApplicable(fileURI))
+                        failures.add("Unable to expand [files] '%s' declared in module %s".formatted(file, module.getName()));
+                    }
+                    else
+                    {
+                        FileArg fileArg = new FileArg(module, fileRef);
+                        URI fileURI = fileArg.uri == null ? null : URI.create(fileArg.uri);
+                        for (FileInitializer finit : fileInitializers)
                         {
-                            if (!finit.exists(fileURI))
-                                failures.add("Missing [files] '%s' declared in module %s".formatted(file, module.getName()));
-                            else
+                            if (finit.isApplicable(fileURI))
                             {
-                                String destLocation = environment.getProperties().expand(fileArg.location);
-                                filesLocations.add(destLocation);
+                                if (!finit.exists(fileURI))
+                                    failures.add("Missing [files] '%s' declared in module %s".formatted(file, module.getName()));
+                                else
+                                {
+                                    String destLocation = props.expand(fileArg.location);
+                                    filesLocations.add(destLocation);
+                                }
                             }
                         }
                     }
@@ -295,7 +321,7 @@ public class Modules implements Iterable<Module>
             {
                 boolean found = false;
                 out.printf("        LIB: %s", lib);
-                lib = environment.getProperties().expand(lib);
+                lib = props.expand(lib);
                 if (filesLocations.contains(lib))
                 {
                     // Found in [files] section
@@ -322,7 +348,7 @@ public class Modules implements Iterable<Module>
             {
                 boolean found = false;
                 out.printf("        XML: %s", xml);
-                xml = environment.getProperties().expand(xml);
+                xml = props.expand(xml);
                 if (filesLocations.contains(xml))
                 {
                     // Found in [files] section
@@ -364,9 +390,9 @@ public class Modules implements Iterable<Module>
         if (!failures.isEmpty())
         {
             System.err.printf("There are %d failed module validations%n", failures.size() + 1);
-            for (int i=0; i<failures.size(); i++)
+            for (int i = 0; i < failures.size(); i++)
             {
-                System.err.printf("  %-3d: %s%n", i+1, failures.get(i));
+                System.err.printf("  %-3d: %s%n", i + 1, failures.get(i));
             }
             throw new IllegalStateException("Failed to validate modules");
         }

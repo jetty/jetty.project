@@ -372,7 +372,7 @@ public class Main
     public void validateModules(PrintStream out, StartArgs args) throws IOException
     {
         StartLog.endStartLog();
-        args.getAllModules().validateModules(out, args.getValidateModules(), args::getEnvironment);
+        args.getAllModules().validateModules(out, args.getValidateModules());
     }
 
     /**
