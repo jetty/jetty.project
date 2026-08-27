@@ -304,12 +304,19 @@ public class Modules implements Iterable<Module>
                         {
                             if (finit.isApplicable(fileURI))
                             {
-                                if (!finit.exists(fileURI))
-                                    failures.add("Missing [files] '%s' declared in module %s".formatted(file, module.getName()));
-                                else
+                                try
                                 {
-                                    String destLocation = props.expand(fileArg.location);
-                                    filesLocations.add(destLocation);
+                                    if (!finit.exists(fileURI))
+                                        failures.add("Missing [files] '%s' declared in module %s".formatted(file, module.getName()));
+                                    else
+                                    {
+                                        String destLocation = props.expand(fileArg.location);
+                                        filesLocations.add(destLocation);
+                                    }
+                                }
+                                catch (IOException e)
+                                {
+                                    failures.add("Bad [files] '%s' declared in module %s: %s".formatted(file, module.getName(), Utils.asString(e)));
                                 }
                             }
                         }
@@ -321,8 +328,8 @@ public class Modules implements Iterable<Module>
             {
                 boolean found = false;
                 out.printf("        LIB: %s", lib);
-                lib = props.expand(lib);
-                if (filesLocations.contains(lib))
+                String expandedLib = props.expand(lib);
+                if (filesLocations.contains(expandedLib))
                 {
                     // Found in [files] section
                     out.print(" [files-defined]");
@@ -330,9 +337,9 @@ public class Modules implements Iterable<Module>
                 }
                 else
                 {
-                    for (Path libPath : _baseHome.getPaths(lib))
+                    for (Path libPath : _baseHome.getPaths(expandedLib))
                     {
-                        if (Files.notExists(libPath))
+                        if (Files.exists(libPath))
                         {
                             out.printf(" [path:%s]", libPath);
                             found = true;
@@ -359,7 +366,7 @@ public class Modules implements Iterable<Module>
                 {
                     for (Path xmlPath : _baseHome.getPaths(xml))
                     {
-                        if (Files.notExists(xmlPath))
+                        if (Files.exists(xmlPath))
                         {
                             out.printf(" [path:%s]", xmlPath);
                             found = true;
