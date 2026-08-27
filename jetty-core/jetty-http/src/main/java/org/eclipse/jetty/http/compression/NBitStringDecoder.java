@@ -15,7 +15,8 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+
+import org.eclipse.jetty.util.ArrayUtil;
 
 /**
  * <p>Used to decode string literals as described in RFC7541.</p>
@@ -114,6 +115,8 @@ public class NBitStringDecoder
 
     private String stringDecode(ByteBuffer buffer)
     {
+        if (_count < _length && !buffer.hasRemaining())
+            return null;
         // An ISO-8859-1 String is byte for byte the encoded bytes, so accumulate
         // the bytes in bulk and decode them in one go, rather than appending one
         // character at a time.
@@ -121,7 +124,7 @@ public class NBitStringDecoder
         if (_bytes == null)
             _bytes = new byte[Math.min(_length, INITIAL_CAPACITY)];
         if (_count + available > _bytes.length)
-            _bytes = Arrays.copyOf(_bytes, Math.max(_count + available, Math.min(_length, _bytes.length * 2)));
+            _bytes = ArrayUtil.grow(_bytes, _count + (available - _bytes.length), _length);
         buffer.get(_bytes, _count, available);
         _count += available;
 
