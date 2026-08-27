@@ -170,14 +170,10 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>
-                org.eclipse.jetty.toolchain,
+              <includeGroupIds>org.eclipse.jetty.toolchain,
                 org.eclipse.jetty.ee11,
-                org.eclipse.jetty.ee11.websocket
-              </includeGroupIds>
-              <excludeGroupIds>
-                org.eclipsejetty.ee11.demos
-              </excludeGroupIds>
+                org.eclipse.jetty.ee11.websocket</includeGroupIds>
+              <excludeGroupIds>org.eclipsejetty.ee11.demos</excludeGroupIds>
               <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>
@@ -193,14 +189,10 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>
-                org.eclipse.jetty.toolchain,
+              <includeGroupIds>org.eclipse.jetty.toolchain,
                 org.eclipse.jetty.ee11,
-                org.eclipse.jetty.ee11.websocket
-              </includeGroupIds>
-              <excludeGroupIds>
-                org.eclipsejetty.ee11.demos
-              </excludeGroupIds>
+                org.eclipse.jetty.ee11.websocket</includeGroupIds>
+              <excludeGroupIds>org.eclipsejetty.ee11.demos</excludeGroupIds>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>
               <classifier>sources</classifier>
@@ -214,8 +206,7 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>
-                jakarta.annotation,
+              <includeGroupIds>jakarta.annotation,
                 jakarta.authentication,
                 jakarta.el,
                 jakarta.enterprise,
@@ -230,8 +221,7 @@
                 org.eclipse.jdt,
                 org.glassfish.wasp,
                 org.glassfish.web,
-                org.mortbay.jasper
-              </includeGroupIds>
+                org.mortbay.jasper</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>
               <outputDirectory>${assembly-directory}/lib/ee11/support</outputDirectory>
@@ -247,8 +237,7 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>
-                jakarta.annotation,
+              <includeGroupIds>jakarta.annotation,
                 jakarta.authentication,
                 jakarta.el,
                 jakarta.enterprise,
@@ -263,8 +252,7 @@
                 org.eclipse.jdt,
                 org.glassfish.wasp,
                 org.glassfish.web,
-                org.mortbay.jasper
-              </includeGroupIds>
+                org.mortbay.jasper</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>
               <classifier>sources</classifier>

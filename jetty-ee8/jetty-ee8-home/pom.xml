@@ -187,14 +187,10 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>
-                org.eclipse.jetty.toolchain,
+              <includeGroupIds>org.eclipse.jetty.toolchain,
                 org.eclipse.jetty.ee8,
-                org.eclipse.jetty.ee8.websocket
-              </includeGroupIds>
-              <excludeGroupIds>
-                org.eclipse.jetty.ee8.demos
-              </excludeGroupIds>
+                org.eclipse.jetty.ee8.websocket</includeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.ee8.demos</excludeGroupIds>
               <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee8</outputDirectory>
@@ -210,15 +206,13 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>
-                jakarta.annotation,
+              <includeGroupIds>jakarta.annotation,
                 jakarta.security.auth.message,
                 jakarta.servlet.jsp.jstl,
                 jakarta.transaction,
                 org.eclipse.jdt,
                 org.glassfish.web,
-                org.mortbay.jasper
-              </includeGroupIds>
+                org.mortbay.jasper</includeGroupIds>
               <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>
@@ -235,15 +229,13 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>
-                jakarta.annotation,
+              <includeGroupIds>jakarta.annotation,
                 jakarta.security.auth.message,
                 jakarta.servlet.jsp.jstl,
                 jakarta.transaction,
                 org.eclipse.jdt,
                 org.glassfish.web,
-                org.mortbay.jasper
-              </includeGroupIds>
+                org.mortbay.jasper</includeGroupIds>
               <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>
@@ -260,10 +252,8 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>
-                org.eclipse.jetty.ee8,
-                org.eclipse.jetty.ee8.demos
-              </includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.ee8,
+                org.eclipse.jetty.ee8.demos</includeGroupIds>
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
