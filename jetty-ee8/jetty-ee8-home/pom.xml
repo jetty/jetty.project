@@ -192,7 +192,10 @@
                 org.eclipse.jetty.ee8,
                 org.eclipse.jetty.ee8.websocket
               </includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.ee8.demos</excludeGroupIds>
+              <excludeGroupIds>
+                org.eclipse.jetty.ee8.demos
+              </excludeGroupIds>
+              <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee8</outputDirectory>
               <includeScope>runtime</includeScope>
@@ -216,6 +219,7 @@
                 org.glassfish.web,
                 org.mortbay.jasper
               </includeGroupIds>
+              <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>
               <outputDirectory>${assembly-directory}/lib/ee8/support</outputDirectory>
@@ -240,7 +244,9 @@
                 org.glassfish.web,
                 org.mortbay.jasper
               </includeGroupIds>
+              <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
+              <includeScope>runtime</includeScope>
               <classifier>sources</classifier>
               <outputDirectory>${source-assembly-directory}/lib/ee8/support</outputDirectory>
               <!-- this is true to make sure the names match their non-source locations -->
