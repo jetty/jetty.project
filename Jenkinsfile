@@ -165,7 +165,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
           }
           sh "mkdir ~/.mimir"
           sh "cp jenkins-mimir-daemon.properties ~/.mimir/daemon.properties"
-          sh "mvn $extraArgs $dashProfile -s $GLOBAL_MVN_SETTINGS -Dsettings.path=$GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+          sh "mvn -T3 $extraArgs $dashProfile -s $GLOBAL_MVN_SETTINGS -Dsettings.path=$GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
           }
