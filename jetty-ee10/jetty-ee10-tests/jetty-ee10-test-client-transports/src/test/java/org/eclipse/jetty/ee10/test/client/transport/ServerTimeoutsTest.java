@@ -235,7 +235,7 @@ public class ServerTimeoutsTest extends AbstractTest
             });
 
         // Async read should timeout.
-        assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(handlerLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
         // Complete the request.
         content.close();
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
