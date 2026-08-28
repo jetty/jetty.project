@@ -256,7 +256,7 @@ public class UnixDomainServerConnector extends AbstractConnector
     public void setAccepting(boolean accepting)
     {
         super.setAccepting(accepting);
-        if (getAcceptors() == 0)
+        if (getAcceptors() > 0)
             return;
         if (accepting)
         {
