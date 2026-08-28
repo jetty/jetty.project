@@ -391,7 +391,6 @@ public class MultiPartFormData
         private final PartsListener listener = new PartsListener();
         private final MultiPart.Parser parser;
         private ByteBufferPool.Sized bufferPool;
-        private MultiPartCompliance compliance;
         private ComplianceViolation.Listener complianceListener;
         private boolean useFilesForPartsWithoutFileName = true;
         private Path filesDirectory;
@@ -411,9 +410,8 @@ public class MultiPartFormData
         @Deprecated
         public Parser(String boundary, MultiPartCompliance multiPartCompliance, ComplianceViolation.Listener complianceViolationListener)
         {
-            compliance = Objects.requireNonNull(multiPartCompliance);
             complianceListener = Objects.requireNonNull(complianceViolationListener);
-            parser = new MultiPart.Parser(Objects.requireNonNull(boundary), compliance, listener);
+            parser = new MultiPart.Parser(Objects.requireNonNull(boundary), Objects.requireNonNull(multiPartCompliance), listener);
         }
 
         /**
@@ -693,7 +691,7 @@ public class MultiPartFormData
             useFilesForPartsWithoutFileName = config.isUseFilesForPartsWithoutFileName();
             filesDirectory = config.getLocation();
             complianceListener = config.getViolationListener();
-            compliance = config.getMultiPartCompliance();
+            parser.setMultiPartCompliance(config.getMultiPartCompliance());
             bufferPool = config.getBufferPool();
         }
 
@@ -899,6 +897,7 @@ public class MultiPartFormData
             @Override
             public void onViolation(MultiPartCompliance.Violation violation)
             {
+                MultiPartCompliance compliance = parser.getMultiPartCompliance();
                 boolean allowed = compliance.allows(violation);
                 ComplianceViolation.Event event = new ComplianceViolation.Event(compliance, violation, "multipart spec violation", allowed);
                 ComplianceUtils.notify(complianceListener, event);

@@ -190,7 +190,7 @@
     <compiler.release>17</compiler.release>
     <compiler.source>17</compiler.source>
     <compiler.target>17</compiler.target>
-    <conscrypt.version>2.6.2</conscrypt.version>
+    <conscrypt.version>2.6.3</conscrypt.version>
     <cyclonedx.maven.plugin.version>2.9.3</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
     <detectOfflineLinks>false</detectOfflineLinks>
@@ -328,10 +328,10 @@
     <osgi.slf4j.import.packages>org.slf4j;version="[2.0,3.0)", org.slf4j.event;version="[2.0,3.0)", org.slf4j.helpers;version="[2.0,3.0)", org.slf4j.spi;version="[2.0,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.14.0</pax.exam.version>
     <pax.url.version>3.0.3</pax.url.version>
-    <plexus-classworlds.version>2.12.0</plexus-classworlds.version>
+    <plexus-classworlds.version>2.12.1</plexus-classworlds.version>
     <plexus-component-annotations.version>2.2.0</plexus-component-annotations.version>
-    <plexus-utils.version>4.0.3</plexus-utils.version>
-    <plexus-xml.version>4.1.1</plexus-xml.version>
+    <plexus-utils.version>4.1.0</plexus-utils.version>
+    <plexus-xml.version>4.2.0</plexus-xml.version>
     <project.build.outputTimestamp>2026-08-03T22:50:59Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <reactive-streams.version>1.0.4</reactive-streams.version>
