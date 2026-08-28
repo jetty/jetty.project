@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -602,6 +603,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
 
     private class FutureConnection extends Promise.Completable<Connection>
     {
+        private final AtomicBoolean completed = new AtomicBoolean();
         private final Pool.Entry<Connection> reserved;
 
         public FutureConnection(Pool.Entry<Connection> reserved)
@@ -616,13 +618,16 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                 LOG.debug("Connection creation succeeded {}: {}", reserved, connection);
             if (connection instanceof Attachable)
             {
-                ((Attachable)connection).setAttachment(new EntryHolder(reserved));
-                onCreated(connection);
-                pending.decrementAndGet();
-                reserved.enable(connection, false);
-                idle(connection, false);
-                super.succeeded(connection);
-                proceed();
+                if (completed.compareAndSet(false, true))
+                {
+                    ((Attachable)connection).setAttachment(new EntryHolder(reserved));
+                    onCreated(connection);
+                    pending.decrementAndGet();
+                    reserved.enable(connection, false);
+                    idle(connection, false);
+                    super.succeeded(connection);
+                    proceed();
+                }
             }
             else
             {
@@ -633,12 +638,20 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         @Override
         public void failed(Throwable x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Connection creation failed {}", reserved, x);
-            pending.decrementAndGet();
-            reserved.remove();
-            super.failed(x);
-            destination.failed(x);
+            if (completed.compareAndSet(false, true))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Connection creation failed {}", reserved, x);
+                pending.decrementAndGet();
+                reserved.remove();
+                super.failed(x);
+                destination.failed(x);
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Connection creation ignored failure {}", reserved, x);
+            }
         }
     }
 

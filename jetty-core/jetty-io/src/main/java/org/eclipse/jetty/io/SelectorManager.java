@@ -17,6 +17,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -30,6 +31,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -182,9 +184,16 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public void connect(SelectableChannel channel, Object attachment)
     {
-        ManagedSelector set = chooseSelector();
-        if (set != null)
-            set.submit(set.new Connect(channel, attachment));
+        ManagedSelector selector = chooseSelector();
+        if (selector != null)
+        {
+            selector.submit(selector.new Connect(channel, attachment));
+        }
+        else
+        {
+            IO.close(channel);
+            connectionFailed(channel, new ClosedChannelException(), attachment);
+        }
     }
 
     /**
@@ -208,8 +217,17 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public void accept(SelectableChannel channel, Object attachment)
     {
+        onAccepting(channel);
         ManagedSelector selector = chooseSelector();
-        selector.submit(selector.new Accept(channel, attachment));
+        if (selector != null)
+        {
+            selector.submit(selector.new Accept(channel, attachment));
+        }
+        else
+        {
+            IO.close(channel);
+            onAcceptFailed(channel, new ClosedChannelException(), attachment);
+        }
     }
 
     /**
@@ -224,9 +242,16 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     public Closeable acceptor(SelectableChannel server)
     {
         ManagedSelector selector = chooseSelector();
-        ManagedSelector.Acceptor acceptor = selector.new Acceptor(server);
-        selector.submit(acceptor);
-        return acceptor;
+        if (selector != null)
+        {
+            ManagedSelector.Acceptor acceptor = selector.new Acceptor(server);
+            selector.submit(acceptor);
+            return acceptor::cancelAccept;
+        }
+        else
+        {
+            return server;
+        }
     }
 
     /**
@@ -477,13 +502,25 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         }
     }
 
-    protected void onAcceptFailed(SelectableChannel channel, Throwable cause)
+    protected void onAcceptFailed(SelectableChannel channel, Throwable failure, Object attachment)
+    {
+        onAcceptFailed(channel, failure);
+    }
+
+    /**
+     * Invoked when an {@link #accept(SelectableChannel, Object)} operation fails.
+     *
+     * @param channel the channel that failed to be accepted
+     * @param failure the accept operation failure
+     */
+    @Deprecated(forRemoval = true, since = "12.1.13")
+    protected void onAcceptFailed(SelectableChannel channel, Throwable failure)
     {
         for (AcceptListener l : _acceptListeners)
         {
             try
             {
-                l.onAcceptFailed(channel, cause);
+                l.onAcceptFailed(channel, failure);
             }
             catch (Throwable x)
             {
