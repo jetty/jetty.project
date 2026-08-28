@@ -280,18 +280,23 @@ public class ServerTimeoutsTest extends AbstractTest
         setStreamIdleTimeout(idleTimeout);
 
         BlockingQueue<Runnable> demanders = new LinkedBlockingQueue<>();
+        CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
             .onResponseContentAsync((response, chunk, demander) ->
             {
                 // Do not succeed the callback so the server will block writing.
                 demanders.offer(demander);
+                contentLatch.countDown();
             })
             .send(result ->
             {
                 if (result.isFailed())
                     resultLatch.countDown();
             });
+
+        // Start the idle-timeout budget from the first response byte, to exclude connection setup.
+        assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
 
         // Async write should timeout.
         assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
@@ -372,7 +377,7 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingReadWithMinimumDataRateAboveLimit(TransportType transportType) throws Exception
     {
-        assumeTrue(transportType != TransportType.H3_QUICHE && transportType != TransportType.H2C && transportType != TransportType.H2); // TODO Fix
+        assumeTrue(transportType != TransportType.H3_QUICHE); // TODO Fix
 
         int bytesPerSecond = 20;
         httpConfig.setMinRequestDataRate(bytesPerSecond);
@@ -403,10 +408,11 @@ public class ServerTimeoutsTest extends AbstractTest
                     resultLatch.countDown();
             });
 
+        // Write at twice the minimum data rate.
         for (int i = 0; i < 3; ++i)
         {
             content.write(ByteBuffer.allocate(bytesPerSecond * 2), Callback.NOOP);
-            Thread.sleep(2500);
+            Thread.sleep(1000);
         }
         content.close();
 
