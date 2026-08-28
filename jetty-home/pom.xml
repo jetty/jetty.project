@@ -336,7 +336,7 @@
                   <outputDirectory>${assembly-directory}/</outputDirectory>
                   <destFileName>VERSION.txt</destFileName>
                 </artifactItem>
-                <artifactItem>
+                <!--<artifactItem>
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-start</artifactId>
                   <version>${project.version}</version>
@@ -346,7 +346,7 @@
                   <includes>**</includes>
                   <outputDirectory>${assembly-directory}</outputDirectory>
                   <destFileName>start.jar</destFileName>
-                </artifactItem>
+                </artifactItem>-->
               </artifactItems>
             </configuration>
           </execution>

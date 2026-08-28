@@ -10,6 +10,9 @@ ee9
 server
 sessions
 
+[ini]
+ee9.jetty.servlet.api.version?=@ee9.jetty.servlet.api.version@
+
 [files]
 maven://org.eclipse.jetty.ee9/jetty-ee9-nested/${jetty.version}/jar|lib/ee9/jetty-ee9-nested-${jetty.version}.jar
 maven://org.eclipse.jetty.ee9/jetty-ee9-servlet/${jetty.version}/jar|lib/ee9/jetty-ee9-servlet-${jetty.version}.jar

@@ -14,6 +14,9 @@ websocket-core-client
 websocket-core-server
 ee9-annotations
 
+[ini]
+ee9.jakarta.websocket.api.version?=@ee9.jakarta.websocket.api.version@
+
 [files]
 maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jakarta-client/${jetty.version}/jar|lib/ee9/jetty-ee9-websocket-jakarta-client-${jetty.version}.jar
 maven://org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jakarta-common/${jetty.version}/jar|lib/ee9/jetty-ee9-websocket-jakarta-common-${jetty.version}.jar

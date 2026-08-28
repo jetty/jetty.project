@@ -190,6 +190,7 @@ public class Modules implements Iterable<Module>
                 return;
 
             Props props = new Props();
+            Main.initBaseProps(props, _baseHome, _args);
             for (String ini : module.getIniSection())
             {
                 int equals = ini.indexOf('=');
@@ -245,8 +246,11 @@ public class Modules implements Iterable<Module>
                         Module parentModule = _names.get(parent);
                         if (parentModule == null)
                         {
-                            out.print(" [MISSING]");
-                            failures.add("Missing [depends] '%s' declared in module %s".formatted(parent, module.getName()));
+                            if (!_provided.containsKey(parent))
+                            {
+                                out.print(" [MISSING]");
+                                failures.add("Missing [depends] '%s' declared in module %s".formatted(parent, module.getName()));
+                            }
                         }
                     }
                     out.println();
@@ -396,7 +400,7 @@ public class Modules implements Iterable<Module>
 
         if (!failures.isEmpty())
         {
-            System.err.printf("There are %d failed module validations%n", failures.size() + 1);
+            System.err.printf("There are %d failed module validations%n", failures.size());
             for (int i = 0; i < failures.size(); i++)
             {
                 System.err.printf("  %-3d: %s%n", i + 1, failures.get(i));

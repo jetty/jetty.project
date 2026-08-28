@@ -410,19 +410,7 @@ public class Main
         args.parse(baseHome.getConfigSources());
 
         Props props = baseHome.getConfigSources().getProps();
-        Prop home = props.getProp(BaseHome.JETTY_HOME);
-        Props argProps = args.getJettyEnvironment().getProperties();
-        if (!argProps.containsKey(BaseHome.JETTY_HOME))
-            argProps.setProperty(home);
-        argProps.setProperty(BaseHome.JETTY_HOME + ".uri",
-            normalizeURI(baseHome.getHomePath().toUri().toString()),
-            home.source);
-        Prop base = props.getProp(BaseHome.JETTY_BASE);
-        if (!argProps.containsKey(BaseHome.JETTY_BASE))
-            argProps.setProperty(base);
-        argProps.setProperty(BaseHome.JETTY_BASE + ".uri",
-            normalizeURI(baseHome.getBasePath().toUri().toString()),
-            base.source);
+        initBaseProps(props, baseHome, args);
 
         Set<String> selectedModules = args.getSelectedModules();
         List<String> sortedSelectedModules = modules.getSortedNames(selectedModules);
@@ -467,7 +455,24 @@ public class Main
         return args;
     }
 
-    private String normalizeURI(String uri)
+    public static void initBaseProps(Props props, BaseHome baseHome, StartArgs args)
+    {
+        Prop home = props.getProp(BaseHome.JETTY_HOME);
+        Props argProps = args.getJettyEnvironment().getProperties();
+        if (!argProps.containsKey(BaseHome.JETTY_HOME))
+            argProps.setProperty(home);
+        argProps.setProperty(BaseHome.JETTY_HOME + ".uri",
+            normalizeURI(baseHome.getHomePath().toUri().toString()),
+            home.source);
+        Prop base = props.getProp(BaseHome.JETTY_BASE);
+        if (!argProps.containsKey(BaseHome.JETTY_BASE))
+            argProps.setProperty(base);
+        argProps.setProperty(BaseHome.JETTY_BASE + ".uri",
+            normalizeURI(baseHome.getBasePath().toUri().toString()),
+            base.source);
+    }
+
+    private static String normalizeURI(String uri)
     {
         if (uri.endsWith("/"))
             return uri.substring(0, uri.length() - 1);

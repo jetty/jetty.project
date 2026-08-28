@@ -199,6 +199,7 @@
               <copySignatures>true</copySignatures>
             </configuration>
           </execution>
+          <!-- TODO: jetty src deps -->
           <execution>
             <id>copy-ee8-support-deps</id>
             <goals>
