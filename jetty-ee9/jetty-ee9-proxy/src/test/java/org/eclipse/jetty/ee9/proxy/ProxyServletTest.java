@@ -90,7 +90,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -113,6 +113,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -148,7 +149,7 @@ public class ProxyServletTest
         server.addConnector(serverConnector);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTargetFile("test-classes/server_keystore.p12").getAbsolutePath();
+        Path keyStorePath = MavenPaths.findTestResourceFile("server_keystore.p12");
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         tlsServerConnector = new ServerConnector(server, new SslConnectionFactory(
@@ -430,8 +431,7 @@ public class ProxyServletTest
     {
         // Create a 6 MiB file
         final int length = 6 * 1024;
-        Path targetTestsDir = MavenTestingUtils.getTargetTestingDir().toPath();
-        Files.createDirectories(targetTestsDir);
+        Path targetTestsDir = MavenPaths.targetTests();
         final Path temp = Files.createTempFile(targetTestsDir, "test_", null);
         byte[] kb = new byte[1024];
         new Random().nextBytes(kb);
@@ -684,7 +684,7 @@ public class ProxyServletTest
         startProxy(proxyServletClass);
         startClient();
         int port = serverConnector.getLocalPort();
-        proxyServlet.getWhiteListHosts().add("127.0.0.1:" + port);
+        proxyServlet.getHostIncludeExclude().include("127.0.0.1:" + port);
 
         // Try with the wrong host
         ContentResponse response = client.newRequest("localhost", port)
@@ -707,7 +707,7 @@ public class ProxyServletTest
         startProxy(proxyServletClass);
         startClient();
         int port = serverConnector.getLocalPort();
-        proxyServlet.getBlackListHosts().add("localhost:" + port);
+        proxyServlet.getHostIncludeExclude().exclude("localhost:" + port);
 
         // Try with the wrong host
         ContentResponse response = client.newRequest("localhost", port)
@@ -1821,5 +1821,48 @@ public class ProxyServletTest
             .map(HttpField::getValue)
             .toList();
         assertEquals(List.of("resp1", "resp2"), responseValues);
+    }
+
+    @Test
+    public void testFilterServerResponseHeaderReplacesAndDrops() throws Exception
+    {
+        String originalLocation = "http://backend.example/redirect";
+        String filteredLocation = "http://localhost/proxy";
+        String originalXFoo = "X-Foo";
+
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            {
+                resp.setStatus(HttpServletResponse.SC_FOUND);
+                resp.setHeader(HttpHeader.LOCATION.asString(), originalLocation);
+                resp.setHeader(originalXFoo, "X-Bar");
+            }
+        });
+        startProxy(new ProxyServlet()
+        {
+            @Override
+            protected String filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
+            {
+                // Change the Location header.
+                if (HttpHeader.LOCATION.is(headerName))
+                    return filteredLocation;
+                // Drop the X-Foo header.
+                if (originalXFoo.equalsIgnoreCase(headerName))
+                    return null;
+                return super.filterServerResponseHeader(clientRequest, serverResponse, headerName, headerValue);
+            }
+        }, Map.of());
+        startClient();
+        client.setFollowRedirects(false);
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.FOUND_302, response.getStatus());
+        assertEquals(filteredLocation, response.getHeaders().get(HttpHeader.LOCATION));
+        assertNull(response.getHeaders().get(originalXFoo));
     }
 }

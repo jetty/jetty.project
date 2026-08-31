@@ -15,6 +15,7 @@ package org.eclipse.jetty.client;
 
 import java.net.URI;
 
+import org.eclipse.jetty.client.internal.TunnelRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 
@@ -48,7 +49,7 @@ public class WWWAuthenticationProtocolHandler extends AuthenticationProtocolHand
     @Override
     public boolean accept(Request request, Response response)
     {
-        return response.getStatus() == HttpStatus.UNAUTHORIZED_401;
+        return response.getStatus() == HttpStatus.UNAUTHORIZED_401 && !(request instanceof TunnelRequest);
     }
 
     @Override
