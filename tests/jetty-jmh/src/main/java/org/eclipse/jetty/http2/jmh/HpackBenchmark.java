@@ -22,17 +22,11 @@ import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.compression.HuffmanDecoder;
-import org.eclipse.jetty.http.compression.HuffmanEncoder;
-import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.HeaderParser;
-import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.http2.parser.PrefaceParser;
 import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.StringUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -62,19 +56,14 @@ public class HpackBenchmark
     private static final int BUFFER_CAPACITY = 8 * 1024;
 
     private MetaData.Request request;
-    private HpackEncoder steadyEncoder;
-    private HpackDecoder steadyDecoder;
-    private ByteBuffer steadyEncodedRequest;
+    private ByteBuffer coldEncodedRequest;
+    private ByteBuffer coldEncodedResponse;
+    private HpackEncoder warmHpackEncoder;
+    private HpackDecoder warmHpackDecoder;
+    private ByteBuffer warmEncodedRequest;
+    private ByteBuffer warmEncodedResponse;
     private MetaData.Response response;
     private ByteBuffer encodeBuffer;
-    private ByteBuffer encodedRequest;
-    private ByteBuffer encodedResponse;
-    private ByteBuffer frameHeader;
-    private ByteBuffer preface;
-    private PrefaceParser prefaceParser;
-    private BenchmarkHeaderParser headerParser;
-    private HuffmanDecoder huffmanDecoder;
-    private ByteBuffer huffmanEncoded;
     private String[] fieldNames;
     private String[] fieldValues;
 
@@ -103,37 +92,29 @@ public class HpackBenchmark
             .put("X-Served-By", "cache-lhr7382-LHR");
         response = new MetaData.Response(200, null, HttpVersion.HTTP_2, responseFields);
 
-        encodeBuffer = ByteBuffer.allocate(BUFFER_CAPACITY);
+        encodeBuffer = ByteBuffer.allocateDirect(BUFFER_CAPACITY);
+
+        coldEncodedRequest = encode(request);
+        coldEncodedResponse = encode(response);
 
         // Warm an encoder and decoder pair the way a long lived connection
         // does, so that the dynamic table holds the request fields and they
         // are encoded as indexes rather than literals. The decoder must see
         // exactly the sequence the encoder produced for its table to match.
-        steadyEncoder = new HpackEncoder();
-        steadyDecoder = new HpackDecoder(BUFFER_CAPACITY, NanoTime::now);
+        warmHpackEncoder = new HpackEncoder();
+        warmHpackDecoder = new HpackDecoder(BUFFER_CAPACITY, NanoTime::now);
         for (int i = 0; i < 4; i++)
         {
-            ByteBuffer warm = ByteBuffer.allocate(BUFFER_CAPACITY);
-            steadyEncoder.encode(warm, request);
-            warm.flip();
-            steadyEncodedRequest = warm;
-            steadyDecoder.decode(warm.slice());
+            warmEncodedRequest = ByteBuffer.allocateDirect(BUFFER_CAPACITY);
+            warmHpackEncoder.encode(warmEncodedRequest, request);
+            warmEncodedRequest.flip();
+            warmHpackDecoder.decode(warmEncodedRequest.slice());
+
+            warmEncodedResponse = ByteBuffer.allocateDirect(BUFFER_CAPACITY);
+            warmHpackEncoder.encode(warmEncodedResponse, request);
+            warmEncodedResponse.flip();
+            warmHpackDecoder.decode(warmEncodedResponse.slice());
         }
-        encodedRequest = encode(request);
-        encodedResponse = encode(response);
-
-        // A DATA frame header: length 16384, type 0, flags 0, stream 5.
-        frameHeader = ByteBuffer.wrap(new byte[]{0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05});
-        headerParser = new BenchmarkHeaderParser();
-
-        preface = ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES);
-        prefaceParser = new PrefaceParser(new Parser.Listener() {});
-
-        String value = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-        huffmanEncoded = ByteBuffer.allocate(HuffmanEncoder.octetsNeeded(value));
-        HuffmanEncoder.encode(huffmanEncoded, value);
-        huffmanEncoded.flip();
-        huffmanDecoder = new HuffmanDecoder();
 
         fieldNames = new String[]{"content-type", "x-request-id", "accept-encoding", "cache-control", "x-forwarded-for"};
         fieldValues = new String[]{"text/html; charset=utf-8", "b3a1c9e2-4f6d-4a1b-9c3e-7d2f8a5b6c4d",
@@ -142,22 +123,38 @@ public class HpackBenchmark
 
     private ByteBuffer encode(MetaData metaData) throws Exception
     {
-        ByteBuffer buffer = ByteBuffer.allocate(BUFFER_CAPACITY);
+        ByteBuffer buffer = ByteBuffer.allocateDirect(BUFFER_CAPACITY);
         new HpackEncoder().encode(buffer, metaData);
         buffer.flip();
         return buffer;
     }
 
     @Benchmark
-    public int encodeRequestSteadyState() throws Exception
+    public MetaData decodeRequestCold() throws Exception
     {
-        encodeBuffer.clear();
-        steadyEncoder.encode(encodeBuffer, request);
-        return encodeBuffer.position();
+        return new HpackDecoder(BUFFER_CAPACITY, NanoTime::now).decode(coldEncodedRequest.slice());
     }
 
     @Benchmark
-    public int encodeRequest() throws Exception
+    public MetaData decodeResponseCold() throws Exception
+    {
+        return new HpackDecoder(BUFFER_CAPACITY, NanoTime::now).decode(coldEncodedResponse.slice());
+    }
+
+    @Benchmark
+    public MetaData decodeRequestWarm() throws Exception
+    {
+        return warmHpackDecoder.decode(warmEncodedRequest.slice());
+    }
+
+    @Benchmark
+    public MetaData decodeResponseWarm() throws Exception
+    {
+        return warmHpackDecoder.decode(warmEncodedResponse.slice());
+    }
+
+    @Benchmark
+    public int encodeRequestCold() throws Exception
     {
         encodeBuffer.clear();
         new HpackEncoder().encode(encodeBuffer, request);
@@ -165,7 +162,7 @@ public class HpackBenchmark
     }
 
     @Benchmark
-    public int encodeResponse() throws Exception
+    public int encodeResponseCold() throws Exception
     {
         encodeBuffer.clear();
         new HpackEncoder().encode(encodeBuffer, response);
@@ -173,80 +170,41 @@ public class HpackBenchmark
     }
 
     @Benchmark
-    public MetaData decodeRequestSteadyState() throws Exception
-    {
-        return steadyDecoder.decode(steadyEncodedRequest.slice());
-    }
-
-    @Benchmark
-    public MetaData decodeRequest() throws Exception
-    {
-        return new HpackDecoder(BUFFER_CAPACITY, NanoTime::now).decode(encodedRequest.slice());
-    }
-
-    @Benchmark
-    public MetaData decodeResponse() throws Exception
-    {
-        return new HpackDecoder(BUFFER_CAPACITY, NanoTime::now).decode(encodedResponse.slice());
-    }
-
-    @Benchmark
-    public int parseFrameHeader()
-    {
-        frameHeader.position(0);
-        headerParser.reset();
-        headerParser.parse(frameHeader);
-        return headerParser.getStreamId();
-    }
-
-    @Benchmark
-    public boolean parsePreface()
-    {
-        preface.position(0);
-        return prefaceParser.parse(preface);
-    }
-
-    @Benchmark
-    public String decodeHuffman() throws Exception
-    {
-        ByteBuffer buffer = huffmanEncoded.slice();
-        huffmanDecoder.reset();
-        huffmanDecoder.setLength(buffer.remaining());
-        return huffmanDecoder.decode(buffer);
-    }
-
-    @Benchmark
-    public int encodeHuffman()
+    public int encodeRequestWarm() throws Exception
     {
         encodeBuffer.clear();
-        for (String value : fieldValues)
-        {
-            HuffmanEncoder.encode(encodeBuffer, value);
-        }
+        warmHpackEncoder.encode(encodeBuffer, request);
         return encodeBuffer.position();
     }
 
     @Benchmark
-    public boolean validateFields()
+    public int encodeResponseWarm() throws Exception
+    {
+        encodeBuffer.clear();
+        warmHpackEncoder.encode(encodeBuffer, response);
+        return encodeBuffer.position();
+    }
+
+    @Benchmark
+    public boolean validateFieldNames()
     {
         boolean legal = true;
         for (int i = 0; i < fieldNames.length; i++)
         {
             legal &= HttpTokens.isLegalH2H3FieldName(fieldNames[i]);
-            legal &= HttpTokens.isLegalFieldValue(fieldValues[i]);
         }
         return legal;
     }
 
     @Benchmark
-    public int toLowerCase()
+    public boolean validateFieldValues()
     {
-        int length = 0;
-        for (String name : fieldNames)
+        boolean legal = true;
+        for (int i = 0; i < fieldNames.length; i++)
         {
-            length += StringUtil.asciiToLowerCase(name).length();
+            legal &= HttpTokens.isLegalFieldValue(fieldValues[i]);
         }
-        return length;
+        return legal;
     }
 
     /**
