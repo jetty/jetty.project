@@ -565,27 +565,20 @@ public class ServerConnector extends AbstractNetworkConnector
         if (getAcceptors() > 0)
             return;
 
-        try
+        if (accepting)
         {
-            if (accepting)
+            if (_acceptor.get() == null)
             {
-                if (_acceptor.get() == null)
-                {
-                    Closeable acceptor = _manager.acceptor(_acceptChannel);
-                    if (!_acceptor.compareAndSet(null, acceptor))
-                        acceptor.close();
-                }
-            }
-            else
-            {
-                Closeable acceptor = _acceptor.get();
-                if (acceptor != null && _acceptor.compareAndSet(acceptor, null))
-                    acceptor.close();
+                Closeable acceptor = _manager.acceptor(_acceptChannel);
+                if (!_acceptor.compareAndSet(null, acceptor))
+                    IO.close(acceptor);
             }
         }
-        catch (IOException e)
+        else
         {
-            throw new RuntimeException(e);
+            Closeable acceptor = _acceptor.get();
+            if (acceptor != null && _acceptor.compareAndSet(acceptor, null))
+                IO.close(acceptor);
         }
     }
 

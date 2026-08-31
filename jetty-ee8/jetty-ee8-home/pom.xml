@@ -50,6 +50,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
+      <artifactId>jetty-ee8-jaspi</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee8</groupId>
       <artifactId>jetty-ee8-jndi</artifactId>
       <optional>true</optional>
     </dependency>
@@ -214,6 +219,33 @@
               <excludeGroupIds>org.eclipse.jetty.ee8.demos,org.eclipse.jetty.ee8.websocket</excludeGroupIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee8-jaspi-deps</id>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <includeGroupIds>jakarta.security.auth.message</includeGroupIds>
+              <includeArtifactIds>jakarta.security.auth.message-api</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/ee8-jaspi</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-ee8-jaspi-src-deps</id>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <includeGroupIds>jakarta.security.auth.message</includeGroupIds>
+              <includeArtifactIds>jakarta.security.auth.message-api</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/ee8-jaspi</outputDirectory>
             </configuration>
           </execution>
           <execution>
