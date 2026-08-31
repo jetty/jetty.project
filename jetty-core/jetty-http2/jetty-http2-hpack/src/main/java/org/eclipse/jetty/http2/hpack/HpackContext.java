@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jetty.http.HttpField;
@@ -426,15 +427,9 @@ public class HpackContext
          */
         private int _encodeValidation;
 
-        Entry()
-        {
-            _slot = -1;
-            _field = null;
-        }
-
         Entry(HttpField field)
         {
-            _field = field;
+            _field = Objects.requireNonNull(field);
         }
 
         /**
@@ -558,7 +553,7 @@ public class HpackContext
             super(field);
             _slot = index;
             String value = field.getValue();
-            if (value != null && value.length() > 0)
+            if (value != null && !value.isEmpty())
             {
                 int huffmanLen = HuffmanEncoder.octetsNeeded(value);
                 if (huffmanLen < 0)
