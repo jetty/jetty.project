@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -223,10 +222,11 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             if (pendingEntries.isEmpty())
                 break;
 
-            Iterator<HTTP2Session.Entry> pending = pendingEntries.iterator();
-            while (pending.hasNext())
+            while (true)
             {
-                HTTP2Session.Entry entry = pending.next();
+                HTTP2Session.Entry entry = pendingEntries.peek();
+                if (entry == null)
+                    break;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Processing {} on {}", entry, this);
 
@@ -237,7 +237,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                     if (LOG.isDebugEnabled())
                         LOG.debug("Dropped {} on {}", entry, this);
                     entry.closeAndFail(new EofException("dropped"));
-                    pending.remove();
+                    pendingEntries.poll();
                     continue;
                 }
 
@@ -259,7 +259,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                         }
 
                         if (entry.getDataBytesRemaining() == 0)
-                            pending.remove();
+                            pendingEntries.poll();
                     }
                     else
                     {
@@ -277,7 +277,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                     if (LOG.isDebugEnabled())
                         LOG.debug("Failure generating {} on {}", entry, this, failure);
                     entry.resetAndFail(failure);
-                    pending.remove();
+                    pendingEntries.poll();
                 }
                 catch (HpackException.SessionException failure)
                 {
