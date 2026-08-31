@@ -27,9 +27,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>Quiche specific {@link ServerQuicConfiguration}.</p>
- * <p>The PEM working directory constructor argument is mandatory, although
- * it may be set after construction via {@link #setPemWorkDirectory(Path)}
- * before starting this instance.</p>
+ * <p>The Quiche native library cannot read a Java {@link KeyStore} directly.
+ * Before the server starts, the private key and certificate chain (and the
+ * trust store, if present) are exported as PEM files into a working directory.
+ * That directory is mandatory: pass it to the constructor, or call
+ * {@link #setPemWorkDirectory(Path)} before starting this instance.</p>
  */
 public class QuicheServerQuicConfiguration extends ServerQuicConfiguration
 {
@@ -47,11 +49,24 @@ public class QuicheServerQuicConfiguration extends ServerQuicConfiguration
         this.pemWorkDirectory = pemWorkDirectory;
     }
 
+    /**
+     * @return the directory where KeyStore material is exported as PEM files for Quiche
+     * @see #setPemWorkDirectory(Path)
+     */
     public Path getPemWorkDirectory()
     {
         return pemWorkDirectory;
     }
 
+    /**
+     * <p>Sets the directory used to export KeyStore material as PEM files for Quiche.</p>
+     * <p>Those files include the private key, so the directory must already exist
+     * and should be writable only by the process owner. Do not use a world-writable
+     * location such as {@code /tmp}.</p>
+     * <p>The directory cannot be changed after this instance has started.</p>
+     *
+     * @param pemWorkDirectory the directory for exported PEM files
+     */
     public void setPemWorkDirectory(Path pemWorkDirectory)
     {
         if (isStarted())
