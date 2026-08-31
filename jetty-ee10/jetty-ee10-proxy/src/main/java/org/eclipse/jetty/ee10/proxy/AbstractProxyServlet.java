@@ -750,14 +750,13 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected HttpField filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, HttpField field)
     {
-        // HttpField.withValue() appends; replace or drop the value instead.
-        String existingValue = field.getValue();
-        String filteredValue = filterServerResponseHeader(clientRequest, serverResponse, field.getName(), existingValue);
-        if (filteredValue == null)
+        String oldValue = field.getValue();
+        String newValue = filterServerResponseHeader(clientRequest, serverResponse, field.getName(), oldValue);
+        if (newValue == null)
             return null;
-        if (filteredValue.equals(existingValue))
+        if (newValue.equals(oldValue))
             return field;
-        return new HttpField(field.getHeader(), field.getName(), filteredValue);
+        return new HttpField(field.getHeader(), field.getName(), newValue);
     }
 
     /**

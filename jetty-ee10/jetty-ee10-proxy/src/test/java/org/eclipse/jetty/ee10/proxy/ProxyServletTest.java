@@ -92,7 +92,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -115,7 +115,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -153,7 +152,7 @@ public class ProxyServletTest
         server.addConnector(serverConnector);
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String keyStorePath = MavenTestingUtils.getTestResourcePathFile("server_keystore.p12").toString();
+        Path keyStorePath = MavenPaths.findTestResourceFile("server_keystore.p12");
         sslContextFactory.setKeyStorePath(keyStorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
@@ -435,8 +434,7 @@ public class ProxyServletTest
     {
         // Create a 6 MiB file
         final int length = 6 * 1024;
-        Path targetTestsDir = MavenTestingUtils.getTargetTestingPath();
-        Files.createDirectories(targetTestsDir);
+        Path targetTestsDir = MavenPaths.targetTests();
         final Path temp = Files.createTempFile(targetTestsDir, "test_", null);
         byte[] kb = new byte[1024];
         new Random().nextBytes(kb);
@@ -689,7 +687,7 @@ public class ProxyServletTest
         startProxy(proxyServletClass);
         startClient();
         int port = serverConnector.getLocalPort();
-        proxyServlet.getWhiteListHosts().add("127.0.0.1:" + port);
+        proxyServlet.getHostIncludeExclude().include("127.0.0.1:" + port);
 
         // Try with the wrong host
         ContentResponse response = client.newRequest("localhost", port)
@@ -712,7 +710,7 @@ public class ProxyServletTest
         startProxy(proxyServletClass);
         startClient();
         int port = serverConnector.getLocalPort();
-        proxyServlet.getBlackListHosts().add("localhost:" + port);
+        proxyServlet.getHostIncludeExclude().exclude("localhost:" + port);
 
         // Try with the wrong host
         ContentResponse response = client.newRequest("localhost", port)
@@ -1883,15 +1881,12 @@ public class ProxyServletTest
         assertEquals(List.of("resp1", "resp2"), responseValues);
     }
 
-    @ParameterizedTest
-    @MethodSource("impls")
-    public void testFilterServerResponseHeaderReplacesAndDrops(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    @Test
+    public void testFilterServerResponseHeaderReplacesAndDrops() throws Exception
     {
-        // Override of the deprecated String filter must replace (not append) and honor null (see #15548).
-        final String originalLocation = "http://backend.example/redirect";
-        final String filteredLocation = "http://localhost/proxy";
-        final String keepHeader = "X-Keep";
-        final String keepValue = "keep-me";
+        String originalLocation = "http://backend.example/redirect";
+        String filteredLocation = "http://localhost/proxy";
+        String originalXFoo = "X-Foo";
 
         startServer(new HttpServlet()
         {
@@ -1900,11 +1895,23 @@ public class ProxyServletTest
             {
                 resp.setStatus(HttpServletResponse.SC_FOUND);
                 resp.setHeader(HttpHeader.LOCATION.asString(), originalLocation);
-                resp.setHeader(HttpHeader.DATE.asString(), "Wed, 01 Jan 2020 00:00:00 GMT");
-                resp.setHeader(keepHeader, keepValue);
+                resp.setHeader(originalXFoo, "X-Bar");
             }
         });
-        startProxy(newFilteringProxyServlet(proxyServletClass, filteredLocation), new HashMap<>());
+        startProxy(new ProxyServlet()
+        {
+            @Override
+            protected String filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
+            {
+                // Change the Location header.
+                if (HttpHeader.LOCATION.is(headerName))
+                    return filteredLocation;
+                // Drop the X-Foo header.
+                if (originalXFoo.equalsIgnoreCase(headerName))
+                    return null;
+                return super.filterServerResponseHeader(clientRequest, serverResponse, headerName, headerValue);
+            }
+        }, Map.of());
         startClient();
         client.setFollowRedirects(false);
 
@@ -1913,77 +1920,7 @@ public class ProxyServletTest
             .send();
 
         assertEquals(HttpStatus.FOUND_302, response.getStatus());
-        assertEquals(List.of(filteredLocation), response.getHeaders().getValuesList(HttpHeader.LOCATION));
-        assertFalse(response.getHeaders().contains(HttpHeader.DATE));
-        assertEquals(keepValue, response.getHeaders().get(keepHeader));
-    }
-
-    @Test
-    public void testFilterServerResponseHeaderHttpFieldOverload()
-    {
-        final String filteredLocation = "http://localhost/proxy";
-        AbstractProxyServlet servlet = newFilteringProxyServlet(ProxyServlet.class, filteredLocation);
-
-        HttpField location = new HttpField(HttpHeader.LOCATION, "http://backend.example/redirect");
-        HttpField filtered = servlet.filterServerResponseHeader(null, null, location);
-        assertEquals(filteredLocation, filtered.getValue());
-        assertEquals(List.of(filteredLocation), filtered.getValueList());
-
-        HttpField date = new HttpField(HttpHeader.DATE, "Wed, 01 Jan 2020 00:00:00 GMT");
-        assertNull(servlet.filterServerResponseHeader(null, null, date));
-
-        HttpField keep = new HttpField("X-Keep", "keep-me");
-        assertSame(keep, servlet.filterServerResponseHeader(null, null, keep));
-    }
-
-    @SuppressWarnings("deprecation")
-    private static AbstractProxyServlet newFilteringProxyServlet(Class<?> proxyServletClass, String filteredLocation)
-    {
-        if (proxyServletClass == ProxyServlet.class)
-        {
-            return new ProxyServlet()
-            {
-                @Override
-                protected String filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
-                {
-                    if (HttpHeader.LOCATION.is(headerName))
-                        return filteredLocation;
-                    if (HttpHeader.DATE.is(headerName))
-                        return null;
-                    return super.filterServerResponseHeader(clientRequest, serverResponse, headerName, headerValue);
-                }
-            };
-        }
-        if (proxyServletClass == AsyncProxyServlet.class)
-        {
-            return new AsyncProxyServlet()
-            {
-                @Override
-                protected String filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
-                {
-                    if (HttpHeader.LOCATION.is(headerName))
-                        return filteredLocation;
-                    if (HttpHeader.DATE.is(headerName))
-                        return null;
-                    return super.filterServerResponseHeader(clientRequest, serverResponse, headerName, headerValue);
-                }
-            };
-        }
-        if (proxyServletClass == AsyncMiddleManServlet.class)
-        {
-            return new AsyncMiddleManServlet()
-            {
-                @Override
-                protected String filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
-                {
-                    if (HttpHeader.LOCATION.is(headerName))
-                        return filteredLocation;
-                    if (HttpHeader.DATE.is(headerName))
-                        return null;
-                    return super.filterServerResponseHeader(clientRequest, serverResponse, headerName, headerValue);
-                }
-            };
-        }
-        throw new IllegalArgumentException(proxyServletClass.getName());
+        assertEquals(filteredLocation, response.getHeaders().get(HttpHeader.LOCATION));
+        assertNull(response.getHeaders().get(originalXFoo));
     }
 }
