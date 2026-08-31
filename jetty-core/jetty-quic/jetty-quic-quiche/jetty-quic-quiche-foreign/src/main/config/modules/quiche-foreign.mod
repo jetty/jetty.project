@@ -1,5 +1,5 @@
 [description]
-Provides the native Quiche binding using Java Foreign Functions and Memory (FFM) available since Java 22.
+Provides the native Quiche binding using Java Foreign Functions and Memory (FFM).
 
 [tags]
 quiche

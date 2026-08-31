@@ -39,11 +39,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>net.java.dev.jna</groupId>
-      <artifactId>jna</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
       <version>${mariadb.version}</version>

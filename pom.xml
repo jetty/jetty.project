@@ -259,7 +259,6 @@
     <jffi.version>1.4.0</jffi.version>
     <jmh.version>1.37</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
-    <jna.version>5.19.1</jna.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.6.0</json-smart.version>
     <junit.jupiter.execution.parallel.config.dynamic.factor>0.8</junit.jupiter.execution.parallel.config.dynamic.factor>
@@ -516,16 +515,6 @@
         <groupId>io.smallrye.common</groupId>
         <artifactId>smallrye-common-cpu</artifactId>
         <version>2.20.0</version>
-      </dependency>
-      <dependency>
-        <groupId>net.java.dev.jna</groupId>
-        <artifactId>jna</artifactId>
-        <version>${jna.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>net.java.dev.jna</groupId>
-        <artifactId>jna-jpms</artifactId>
-        <version>${jna.version}</version>
       </dependency>
       <dependency>
         <groupId>net.minidev</groupId>
@@ -1153,11 +1142,6 @@
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
         <artifactId>jetty-quic-quiche-foreign</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>jetty-quic-quiche-jna</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -2498,8 +2482,8 @@
                 <configuration>
                   <rules>
                     <requireJavaVersion>
-                      <version>[22,)</version>
-                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 22 or newer</message>
+                      <version>[25,)</version>
+                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 25 or newer</message>
                     </requireJavaVersion>
                   </rules>
                 </configuration>

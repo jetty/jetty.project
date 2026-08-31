@@ -16,6 +16,7 @@ module org.eclipse.jetty.quic.quiche.client
     requires transitive org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.quic.client;
     requires transitive org.eclipse.jetty.quic.quiche.common;
+    requires org.eclipse.jetty.quic.quiche.foreign;
     requires transitive org.eclipse.jetty.util;
     requires org.slf4j;
 
