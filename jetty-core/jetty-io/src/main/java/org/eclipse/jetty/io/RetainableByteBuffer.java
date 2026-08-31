@@ -2212,7 +2212,7 @@ public interface RetainableByteBuffer extends Retainable
             if (LOG.isDebugEnabled())
                 LOG.debug("add BB {} <- {}", this, BufferUtil.toDetailString(bytes));
             checkNotReleased();
-            add(RetainableByteBuffer.wrap(bytes));
+            add(RetainableByteBuffer.wrap(bytes, Retainable.NON_RETAINABLE));
             return this;
         }
 
@@ -2391,6 +2391,38 @@ public interface RetainableByteBuffer extends Retainable
             }
         }
 
+        private ByteBuffer[] bufferArrayCache;
+        private Callback writeToCallbackDelegate;
+        private final Callback writeToCallback = new Callback()
+        {
+
+            @Override
+            public void succeeded()
+            {
+                try
+                {
+                    clear();
+                }
+                finally
+                {
+                    writeToCallbackDelegate.succeeded();
+                }
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                try
+                {
+                    clear();
+                }
+                finally
+                {
+                    writeToCallbackDelegate.failed(x);
+                }
+            }
+        };
+
         @Override
         public void writeTo(Content.Sink sink, boolean last, Callback callback)
         {
@@ -2411,11 +2443,15 @@ public interface RetainableByteBuffer extends Retainable
                     // Can we do a gather write?
                     if (!last && sink instanceof EndPoint endPoint)
                     {
-                        ByteBuffer[] buffers = new ByteBuffer[_buffers.size()];
+                        ByteBuffer[] buffers;
+                        if (bufferArrayCache == null || bufferArrayCache.length != _buffers.size())
+                            bufferArrayCache = new ByteBuffer[_buffers.size()];
+                        buffers = bufferArrayCache;
                         int i = 0;
                         for (RetainableByteBuffer rbb : _buffers)
                             buffers[i++] = rbb.getByteBuffer();
-                        endPoint.write(Callback.from(this::clear, callback), buffers);
+                        writeToCallbackDelegate = callback;
+                        endPoint.write(writeToCallback, buffers);
                         return;
                     }
 
