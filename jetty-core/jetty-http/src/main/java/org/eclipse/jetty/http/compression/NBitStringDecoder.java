@@ -124,7 +124,7 @@ public class NBitStringDecoder
         if (_bytes == null)
             _bytes = new byte[Math.min(_length, INITIAL_CAPACITY)];
         if (_count + available > _bytes.length)
-            _bytes = ArrayUtil.grow(_bytes, _count + (available - _bytes.length), _length);
+            _bytes = ArrayUtil.grow(_bytes, _count + available - _bytes.length, _length);
         buffer.get(_bytes, _count, available);
         _count += available;
 
