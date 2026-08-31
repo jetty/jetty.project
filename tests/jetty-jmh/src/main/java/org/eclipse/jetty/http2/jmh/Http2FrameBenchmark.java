@@ -14,6 +14,8 @@
 package org.eclipse.jetty.http2.jmh;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -22,15 +24,19 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.frames.DataFrame;
-import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.generator.DataGenerator;
+import org.eclipse.jetty.http2.frames.PrefaceFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.HeadersGenerator;
+import org.eclipse.jetty.http2.generator.SettingsGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
+import org.eclipse.jetty.http2.parser.HeaderParser;
 import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.parser.PrefaceParser;
+import org.eclipse.jetty.http2.parser.SettingsBodyParser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -48,7 +54,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * <p>Benchmarks of the HTTP/2 frame path, one layer above
- * {@link HpackBenchmark}: generating and parsing whole frames, so that the
+ * HpackBenchmark: generating and parsing whole frames, so that the
  * share of a frame that HPACK actually accounts for can be seen.</p>
  * <p>Both a warmed encoder and decoder pair and a cold one are covered, as the
  * dynamic table changes the balance completely.</p>
@@ -64,14 +70,14 @@ public class Http2FrameBenchmark
 
     private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
     private MetaData.Request request;
-    private HeadersGenerator steadyHeadersGenerator;
-    private DataGenerator dataGenerator;
-    private Parser steadyParser;
-    private byte[] content;
-    private ByteBuffer steadyHeadersFrame;
+    private HeaderParser warmHeaderParser;
+    private ByteBuffer warmHeadersFrame;
     private ByteBuffer coldHeadersFrame;
-    private ByteBuffer dataFrame;
-    private int framesParsed;
+    private ByteBuffer prefaceFrame;
+    private PrefaceParser prefaceParser;
+    private ByteBuffer warmSettingsFrame;
+    private SettingsBodyParser warmSettingsBodyParser;
+    private ByteBuffer coldSettingsFrame;
 
     @Setup
     public void setup() throws Exception
@@ -86,45 +92,40 @@ public class Http2FrameBenchmark
         request = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"),
             "/some/resource/path?name=value", HttpVersion.HTTP_2, fields, -1);
 
-        steadyHeadersGenerator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
-        dataGenerator = new DataGenerator(new HeaderGenerator(bufferPool));
+        HeadersGenerator warmHeadersGenerator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
-        steadyParser = newParser();
+        warmHeaderParser = new HeaderParser(RateControl.NO_RATE_CONTROL);
 
         // Warm one generator and parser pair the way a connection warms them.
         for (int i = 0; i < 4; i++)
         {
-            steadyHeadersFrame = generateHeaders(steadyHeadersGenerator);
-            steadyParser.parse(steadyHeadersFrame.slice());
+            warmHeadersFrame = generateHeaders(warmHeadersGenerator);
+            warmHeaderParser.parse(warmHeadersFrame.slice());
         }
 
         coldHeadersFrame = generateHeaders(new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder()));
 
-        // A DATA frame carrying a modest body.
-        content = new byte[1024];
-        RetainableByteBuffer.Mutable buffer = new RetainableByteBuffer.DynamicCapacity();
-        dataGenerator.generateData(buffer, STREAM_ID, ByteBuffer.wrap(content), true, content.length);
-        dataFrame = toByteBuffer(buffer);
+        prefaceFrame = ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES);
+        prefaceParser = new PrefaceParser(new Parser.Listener() {});
+
+        SettingsGenerator warmSettingsGenerator = new SettingsGenerator(new HeaderGenerator(bufferPool));
+
+        warmSettingsFrame = generateSettings(warmSettingsGenerator);
+        warmSettingsBodyParser = new SettingsBodyParser(warmHeaderParser, new Parser.Listener() {});
+
+        coldSettingsFrame = generateSettings(new SettingsGenerator(new HeaderGenerator(bufferPool)));
     }
 
-    private Parser newParser()
+    private ByteBuffer generateSettings(SettingsGenerator generator)
     {
-        Parser parser = new Parser(bufferPool, 8192);
-        parser.init(new Parser.Listener()
-        {
-            @Override
-            public void onHeaders(HeadersFrame frame)
-            {
-                ++framesParsed;
-            }
-
-            @Override
-            public void onData(DataFrame frame)
-            {
-                ++framesParsed;
-            }
-        });
-        return parser;
+        RetainableByteBuffer.Mutable buffer = new RetainableByteBuffer.DynamicCapacity();
+        Map<Integer, Integer> settings = new HashMap<>();
+        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, 32768);
+        settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, 128);
+        settings.put(SettingsFrame.MAX_FRAME_SIZE, 8192);
+        settings.put(SettingsFrame.HEADER_TABLE_SIZE, 4094);
+        generator.generateSettings(buffer, settings, true);
+        return toByteBuffer(buffer);
     }
 
     private ByteBuffer generateHeaders(HeadersGenerator generator) throws Exception
@@ -137,54 +138,45 @@ public class Http2FrameBenchmark
     private static ByteBuffer toByteBuffer(RetainableByteBuffer.Mutable buffer)
     {
         ByteBuffer slice = buffer.getByteBuffer();
-        ByteBuffer copy = ByteBuffer.allocate(slice.remaining());
+        ByteBuffer copy = ByteBuffer.allocateDirect(slice.remaining());
         copy.put(slice).flip();
         buffer.release();
         return copy;
     }
 
     @Benchmark
-    public int generateHeadersFrameSteadyState() throws Exception
+    public boolean parseHeadersFrameWarm()
     {
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
-        steadyHeadersGenerator.generateHeaders(accumulator, STREAM_ID, request, null, true);
-        int size = accumulator.remaining();
-        accumulator.release();
-        return size;
+        return warmHeaderParser.parse(warmHeadersFrame.slice());
     }
 
     @Benchmark
-    public int generateDataFrame()
-    {
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
-        dataGenerator.generateData(accumulator, STREAM_ID, ByteBuffer.wrap(content), true, content.length);
-        int size = accumulator.remaining();
-        accumulator.release();
-        return size;
-    }
-
-    @Benchmark
-    public int parseHeadersFrameSteadyState()
-    {
-        steadyParser.parse(steadyHeadersFrame.slice());
-        return framesParsed;
-    }
-
-    @Benchmark
-    public int parseHeadersFrameCold()
+    public boolean parseHeadersFrameCold()
     {
         // A fresh parser each time, so the dynamic table is empty and every
         // field arrives as a literal, as on the first message of a connection.
-        newParser().parse(coldHeadersFrame.slice());
-        return framesParsed;
+        return new HeaderParser(RateControl.NO_RATE_CONTROL).parse(coldHeadersFrame.slice());
     }
 
     @Benchmark
-    public int parseDataFrame()
+    public boolean parseSettingsFrameWarm()
     {
-        steadyParser.parse(dataFrame.slice());
-        return framesParsed;
+        return warmSettingsBodyParser.parse(warmSettingsFrame.slice());
     }
+
+    @Benchmark
+    public boolean parseSettingsFrameCold()
+    {
+        return new SettingsBodyParser(new HeaderParser(RateControl.NO_RATE_CONTROL), new Parser.Listener() {})
+            .parse(coldSettingsFrame.slice());
+    }
+
+    @Benchmark
+    public boolean parsePreface()
+    {
+        return prefaceParser.parse(prefaceFrame.slice());
+    }
+
 
     public static void main(String[] args) throws RunnerException
     {
