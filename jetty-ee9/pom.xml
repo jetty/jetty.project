@@ -41,6 +41,7 @@
 
   <properties>
     <ee9.jakarta.activation.api.version>2.0.1</ee9.jakarta.activation.api.version>
+    <ee9.jakarta.annotation.api.version>2.0.0</ee9.jakarta.annotation.api.version>
     <ee9.jakarta.enterprise.cdi.api.version>3.0.0</ee9.jakarta.enterprise.cdi.api.version>
     <ee9.jakarta.inject.api.version>2.0.1</ee9.jakarta.inject.api.version>
     <ee9.jakarta.interceptor.api.version>2.0.0</ee9.jakarta.interceptor.api.version>

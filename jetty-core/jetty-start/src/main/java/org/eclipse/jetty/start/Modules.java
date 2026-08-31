@@ -16,7 +16,6 @@ package org.eclipse.jetty.start;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -174,239 +173,6 @@ public class Modules implements Iterable<Module>
                 }
             }
         });
-    }
-
-    public void validateModules(PrintStream out, List<String> modules) throws IOException
-    {
-        List<Module> selectedModules = (modules.contains("*") || modules.isEmpty())
-            ? _modules.stream().sorted().toList()
-            : modules.stream().map(this::get).toList();
-
-        List<String> failures = new ArrayList<>();
-
-        for (Module module : selectedModules)
-        {
-            if (module == null)
-                return;
-
-            Props props = new Props();
-            Main.initBaseProps(props, _baseHome, _args);
-            for (String ini : module.getIniSection())
-            {
-                int equals = ini.indexOf('=');
-                if (equals >= 0)
-                {
-                    String key = ini.substring(0, equals);
-                    String value = ini.substring(equals + 1);
-
-                    if (key.endsWith("+") || key.endsWith("?"))
-                        key = key.substring(0, key.length() - 1);
-
-                    props.setProperty(key, value, "validate-modules");
-                }
-            }
-
-            Set<String> provides = module.getProvides();
-            provides.remove(module.getName());
-            out.printf("%n     Module: %s %s%n", module.getName(), !provides.isEmpty() ? provides : "");
-            for (String description : module.getDescription())
-            {
-                out.printf("           : %s%n", description);
-            }
-            if (module.getEnvironment() != null)
-            {
-                out.printf("Environment: %s%n", module.getEnvironment());
-            }
-            for (Props.Prop prop: props)
-            {
-                out.printf("       Prop: %s=%s%n", prop.key, prop.value);
-                if (prop.value.contains("$") || prop.value.contains("@"))
-                    failures.add("Bad [ini] property [%s=%s] declared in module %s".formatted(prop.key, prop.value, module.getName()));
-            }
-            if (!module.getTags().isEmpty())
-            {
-                String label = "       Tags: %s";
-                for (String t : module.getTags())
-                {
-                    out.printf(label, t);
-                    label = ", %s";
-                }
-                out.println();
-            }
-            if (!module.getDepends().isEmpty())
-            {
-                for (String parent : module.getDepends())
-                {
-                    parent = Module.normalizeModuleName(parent);
-                    out.printf("     Depend: %s", parent);
-                    if (Module.isConditionalDependency(parent))
-                        out.print(" [conditional]");
-                    else
-                    {
-                        Module parentModule = _names.get(parent);
-                        if (parentModule == null)
-                        {
-                            if (!_provided.containsKey(parent))
-                            {
-                                out.print(" [MISSING]");
-                                failures.add("Missing [depends] '%s' declared in module %s".formatted(parent, module.getName()));
-                            }
-                        }
-                    }
-                    out.println();
-                }
-            }
-            if (!module.getBefore().isEmpty())
-            {
-                for (String before : module.getBefore())
-                {
-                    out.printf("     Before: %s", before);
-                    Module beforeModule = _names.get(before);
-                    if (beforeModule == null)
-                    {
-                        out.print(" [MISSING]");
-                        failures.add("Missing [before] '%s' declared in module %s".formatted(before, module.getName()));
-                    }
-                    out.println();
-                }
-            }
-            if (!module.getAfter().isEmpty())
-            {
-                for (String after : module.getAfter())
-                {
-                    out.printf("      After: %s", after);
-                    Module afterModule = _names.get(after);
-                    if (afterModule == null)
-                    {
-                        out.print(" [MISSING]");
-                        failures.add("Missing [after] '%s' declared in module %s".formatted(after, module.getName()));
-                    }
-                    out.println();
-                }
-            }
-
-            // List of [files] destination locations
-            List<String> filesLocations = new ArrayList<>();
-
-            if (!module.getFiles().isEmpty())
-            {
-                List<FileInitializer> fileInitializers = BaseBuilder.getDefaultInitializers(_baseHome, _args);
-
-                for (String file : module.getFiles())
-                {
-                    out.printf("       FILE: %s%n", file);
-                    String fileRef = props.expand(file);
-                    if (fileRef.contains("${")) // didn't properly expand
-                    {
-                        failures.add("Unable to expand [files] '%s' declared in module %s".formatted(file, module.getName()));
-                    }
-                    else
-                    {
-                        FileArg fileArg = new FileArg(module, fileRef);
-                        URI fileURI = fileArg.uri == null ? null : URI.create(fileArg.uri);
-                        for (FileInitializer finit : fileInitializers)
-                        {
-                            if (finit.isApplicable(fileURI))
-                            {
-                                try
-                                {
-                                    if (!finit.exists(fileURI))
-                                        failures.add("Missing [files] '%s' declared in module %s".formatted(file, module.getName()));
-                                    else
-                                    {
-                                        String destLocation = props.expand(fileArg.location);
-                                        filesLocations.add(destLocation);
-                                    }
-                                }
-                                catch (IOException e)
-                                {
-                                    failures.add("Bad [files] '%s' declared in module %s: %s".formatted(file, module.getName(), Utils.asString(e)));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            for (String lib : module.getLibs())
-            {
-                boolean found = false;
-                out.printf("        LIB: %s", lib);
-                String expandedLib = props.expand(lib);
-                if (filesLocations.contains(expandedLib))
-                {
-                    // Found in [files] section
-                    out.print(" [files-defined]");
-                    found = true;
-                }
-                else
-                {
-                    for (Path libPath : _baseHome.getPaths(expandedLib))
-                    {
-                        if (Files.exists(libPath))
-                        {
-                            out.printf(" [path:%s]", libPath);
-                            found = true;
-                        }
-                    }
-                }
-                out.println();
-                if (!found)
-                    failures.add("Missing [lib] '%s' declared in module %s".formatted(lib, module.getName()));
-            }
-
-            for (String xml : module.getXmls())
-            {
-                boolean found = false;
-                out.printf("        XML: %s", xml);
-                xml = props.expand(xml);
-                if (filesLocations.contains(xml))
-                {
-                    // Found in [files] section
-                    out.print(" [files-defined]");
-                    found = true;
-                }
-                else
-                {
-                    for (Path xmlPath : _baseHome.getPaths(xml))
-                    {
-                        if (Files.exists(xmlPath))
-                        {
-                            out.printf(" [path:%s]", xmlPath);
-                            found = true;
-                        }
-                    }
-                }
-                out.println();
-                if (!found)
-                    failures.add("Missing [xml] '%s' declared in module %s".formatted(xml, module.getName()));
-            }
-            for (String jpms : module.getJPMS())
-            {
-                out.printf("        JPMS: %s%n", jpms);
-            }
-            for (String jvm : module.getJvmArgs())
-            {
-                out.printf("        JVM: %s%n", jvm);
-            }
-            if (module.isEnabled())
-            {
-                for (String selection : module.getEnableSources())
-                {
-                    out.printf("    Enabled: %s%n", selection);
-                }
-            }
-        }
-
-        if (!failures.isEmpty())
-        {
-            System.err.printf("There are %d failed module validations%n", failures.size());
-            for (int i = 0; i < failures.size(); i++)
-            {
-                System.err.printf("  %-3d: %s%n", i + 1, failures.get(i));
-            }
-            throw new IllegalStateException("Failed to validate modules");
-        }
     }
 
     public void listModules(PrintStream out, List<String> tags)
@@ -831,6 +597,21 @@ public class Modules implements Iterable<Module>
 
         StartLog.debug("Available providers of [%s] are %s", name, providers);
         return providers;
+    }
+
+    BaseHome getBaseHome()
+    {
+        return _baseHome;
+    }
+
+    StartArgs getStartArgs()
+    {
+        return _args;
+    }
+
+    Set<Module> getProvided(String name)
+    {
+        return _provided.get(name);
     }
 
     public Module get(String name)

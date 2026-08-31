@@ -14,16 +14,19 @@ websocket-core-client
 websocket-core-server
 ee8-annotations
 
+[ini]
+ee8.javax.websocket.api.version=@ee8.javax.websocket.api.version@
+
 [files]
 maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-javax-client/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-javax-client-${jetty.version}.jar
 maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-javax-common/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-javax-common-${jetty.version}.jar
 maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-javax-server/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-javax-server-${jetty.version}.jar
 maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-servlet/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-servlet-${jetty.version}.jar
-maven://org.eclipse.jetty.toolchain/jetty-javax-websocket-api/${ee8.jakarta.websocket.api.version}/jar|lib/ee8/jetty-javax-websocket-api-${ee8.jakarta.websocket.api.version}.jar
+maven://org.eclipse.jetty.toolchain/jetty-javax-websocket-api/${ee8.javax.websocket.api.version}/jar|lib/ee8/jetty-javax-websocket-api-${ee8.javax.websocket.api.version}.jar
 
 [lib]
 lib/ee8/jetty-ee8-websocket-javax-client-${jetty.version}.jar
 lib/ee8/jetty-ee8-websocket-javax-common-${jetty.version}.jar
 lib/ee8/jetty-ee8-websocket-javax-server-${jetty.version}.jar
 lib/ee8/jetty-ee8-websocket-servlet-${jetty.version}.jar
-lib/ee8/jetty-javax-websocket-api-${ee8.jakarta.websocket.api.version}.jar
+lib/ee8/jetty-javax-websocket-api-${ee8.javax.websocket.api.version}.jar

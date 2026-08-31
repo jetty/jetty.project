@@ -372,7 +372,7 @@ public class Main
     public void validateModules(PrintStream out, StartArgs args) throws IOException
     {
         StartLog.endStartLog();
-        args.getAllModules().validateModules(out, args.getValidateModules());
+        ModulesValidation.validateModules(args.getAllModules(), out, args.getValidateModules());
     }
 
     /**
@@ -410,7 +410,14 @@ public class Main
         args.parse(baseHome.getConfigSources());
 
         Props props = baseHome.getConfigSources().getProps();
-        initBaseProps(props, baseHome, args);
+        Prop home = props.getProp(BaseHome.JETTY_HOME);
+        Props argProps = args.getJettyEnvironment().getProperties();
+        if (!argProps.containsKey(BaseHome.JETTY_HOME))
+            argProps.setProperty(home);
+        Prop base = props.getProp(BaseHome.JETTY_BASE);
+        if (!argProps.containsKey(BaseHome.JETTY_BASE))
+            argProps.setProperty(base);
+        initBaseProps(argProps, baseHome, home.source, base.source);
 
         Set<String> selectedModules = args.getSelectedModules();
         List<String> sortedSelectedModules = modules.getSortedNames(selectedModules);
@@ -455,21 +462,14 @@ public class Main
         return args;
     }
 
-    public static void initBaseProps(Props props, BaseHome baseHome, StartArgs args)
+    public static void initBaseProps(Props props, BaseHome baseHome, String homeSource, String baseSource)
     {
-        Prop home = props.getProp(BaseHome.JETTY_HOME);
-        Props argProps = args.getJettyEnvironment().getProperties();
-        if (!argProps.containsKey(BaseHome.JETTY_HOME))
-            argProps.setProperty(home);
-        argProps.setProperty(BaseHome.JETTY_HOME + ".uri",
+        props.setProperty(BaseHome.JETTY_HOME + ".uri",
             normalizeURI(baseHome.getHomePath().toUri().toString()),
-            home.source);
-        Prop base = props.getProp(BaseHome.JETTY_BASE);
-        if (!argProps.containsKey(BaseHome.JETTY_BASE))
-            argProps.setProperty(base);
-        argProps.setProperty(BaseHome.JETTY_BASE + ".uri",
+            homeSource);
+        props.setProperty(BaseHome.JETTY_BASE + ".uri",
             normalizeURI(baseHome.getBasePath().toUri().toString()),
-            base.source);
+            baseSource);
     }
 
     private static String normalizeURI(String uri)

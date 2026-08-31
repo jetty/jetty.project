@@ -12,7 +12,7 @@ ee8-plus
 annotations
 
 [ini]
-ee8.jakarta.annotation.api.version?=@jakarta.annotation.api.version@
+ee8.jakarta.annotation.api.version?=@ee8.jakarta.annotation.api.version@
 
 [files]
 maven://jakarta.annotation/jakarta.annotation-api/${ee8.jakarta.annotation.api.version}/jar|lib/ee8/support/jakarta.annotation.jakarta.annotation-api-${ee8.jakarta.annotation.api.version}.jar

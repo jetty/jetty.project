@@ -11,12 +11,12 @@ ee9-plus
 annotations
 
 [ini]
-jakarta.annotation-api.version?=@jakarta.annotation-api.version@
+ee9.jakarta.annotation.api.version?=@ee9.jakarta.annotation.api.version@
 
 [files]
-maven://jakarta.annotation/jakarta.annotation-api/${jakarta.annotation-api.version}/jar|lib/ee9/support/jakarta.annotation.jakarta.annotation-api-${jakarta.annotation-api.version}.jar
+maven://jakarta.annotation/jakarta.annotation-api/${ee9.jakarta.annotation.api.version}/jar|lib/ee9/support/jakarta.annotation.jakarta.annotation-api-${ee9.jakarta.annotation.api.version}.jar
 maven://org.eclipse.jetty.ee9/jetty-ee9-annotations/${jetty.version}/jar|lib/ee9/jetty-ee9-annotations-${jetty.version}.jar
 
 [lib]
 lib/ee9/jetty-ee9-annotations-${jetty.version}.jar
-lib/ee9/support/jakarta.annotation.jakarta.annotation-api-${jakarta.annotation-api.version}.jar
+lib/ee9/support/jakarta.annotation.jakarta.annotation-api-${ee9.jakarta.annotation.api.version}.jar
