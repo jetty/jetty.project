@@ -104,45 +104,17 @@
     </dependency>
   </dependencies>
 
-  <profiles>
-    <profile>
-      <id>enable-jna</id>
-      <activation>
-        <jdk>[17,22)</jdk>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.eclipse.jetty.quic</groupId>
-          <artifactId>jetty-quic-quiche-jna</artifactId>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>enable-foreign</id>
-      <activation>
-        <jdk>[22,)</jdk>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.eclipse.jetty.quic</groupId>
-          <artifactId>jetty-quic-quiche-foreign</artifactId>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <argLine>@{argLine}
-                ${jetty.surefire.argLine}
-                --enable-native-access=org.eclipse.jetty.quic.quiche.foreign</argLine>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>@{argLine}
+            ${jetty.surefire.argLine}
+            --enable-native-access=org.eclipse.jetty.quic.quiche.foreign</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

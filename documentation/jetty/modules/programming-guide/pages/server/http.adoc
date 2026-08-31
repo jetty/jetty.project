@@ -519,7 +519,7 @@ You can customize the SSL/TLS provider as explained in <<connector-protocol-tls-
 The HTTP/3 protocol is layered on top of the https://datatracker.ietf.org/doc/html/rfc9000[QUIC] protocol, which is based on UDP.
 This is rather different with respect to HTTP/1 and HTTP/2, that are based on TCP.
 
-Jetty only implements the HTTP/3 layer in Java; the QUIC implementation is provided by the https://github.com/cloudflare/quiche[Quiche] native library, that Jetty calls via https://github.com/java-native-access/jna[JNA] (and possibly, in the future, via the https://openjdk.org/jeps/454[Foreign APIs]).
+Jetty only implements the HTTP/3 layer in Java; the QUIC implementation is provided by the https://github.com/cloudflare/quiche[Quiche] native library, that Jetty calls via the https://openjdk.org/jeps/454[Foreign APIs]).
 
 NOTE: Jetty's HTTP/3 support can only be used on the platforms (OS and CPU) supported by the Quiche native library.
 
@@ -972,7 +972,7 @@ For example with Java 25:
 
 ----
 WARNING: A restricted method in java.lang.System has been called
-WARNING: java.lang.System::loadLibrary has been called by com.aayushatharva.brotli4j.Brotli4jLoader in an unnamed module (file:/home/simon/.m2/repository/com/aayushatharva/brotli4j/brotli4j/1.17.0/brotli4j-1.17.0.jar)
+WARNING: java.lang.System::loadLibrary has been called by com.aayushatharva.brotli4j.Brotli4jLoader in an unnamed module (file:/home/user/.m2/repository/com/aayushatharva/brotli4j/brotli4j/1.17.0/brotli4j-1.17.0.jar)
 WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
 WARNING: Restricted methods will be blocked in a future release unless native access is enabled
 ----

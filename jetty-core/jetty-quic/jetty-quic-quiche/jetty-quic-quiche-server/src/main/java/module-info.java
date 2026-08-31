@@ -14,6 +14,7 @@
 module org.eclipse.jetty.quic.quiche.server
 {
     requires transitive org.eclipse.jetty.quic.quiche.common;
+    requires org.eclipse.jetty.quic.quiche.foreign;
     requires transitive org.eclipse.jetty.quic.server;
     requires transitive org.eclipse.jetty.server;
     requires org.eclipse.jetty.quic.util;

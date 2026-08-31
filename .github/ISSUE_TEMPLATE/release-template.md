@@ -33,8 +33,8 @@ labels: Build
   - [ ] Create and use branches `release/<ver>` to perform version specific release work from.
   - [ ] Ensure `git fetch --tags` (as we potentially rewrite tag when re staging local tag can be out of sync and this command will fail and so fail the release script)
   - [ ] Ensure `VERSION.txt` additions for each release will be meaningful, descriptive, correct text.
-  - [ ] Deploy 12 release with Java 22 to central.sonatype.com
-  - [ ] Deploy 12 release to Nexus on CI system to help with testing of release (shows up on release-staging repo)
+  - [ ] Deploy the Jetty 13.0.x release with Java 25 to central.sonatype.com
+  - [ ] Deploy the Jetty 13.0.x release to Nexus on CI system to help with testing of release (shows up on release-staging repo)
   - [ ] Push release branches `release/<ver>` to to https://github.com/jetty/jetty.project
   - [ ] Push release tags `jetty-<ver>` to https://github.com/jetty/jetty.project
   - [ ] Edit a draft release (for each Jetty release) in GitHub (https://github.com/jetty/jetty.project/releases). Content is generated with the "changelog tool".

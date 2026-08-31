@@ -48,27 +48,7 @@ The QUIC protocol implementation underlying HTTP/3 is provided by Jetty classes 
 </dependency>
 ----
 
-Furthermore, the binding to the Quiche native library has two implementations: one based on link:https://github.com/java-native-access/jna[JNA] that works with Java 17 or later, and one based on JDK's https://openjdk.org/jeps/454[Foreign Function & Memory (FFM)] APIs that works with Java 22 or later.
-
-You must choose the binding you want to use (depending on the Java version you are using), with either of the following artifacts:
-
-[,xml,subs=attributes+]
-----
-<dependency>
-  <groupId>org.eclipse.jetty.quic</groupId>
-  <artifactId>jetty-quic-quiche-jna</artifactId>
-  <version>{jetty-version}</version>
-</dependency>
-----
-
-[,xml,subs=attributes+]
-----
-<dependency>
-  <groupId>org.eclipse.jetty.quic</groupId>
-  <artifactId>jetty-quic-quiche-foreign</artifactId>
-  <version>{jetty-version}</version>
-</dependency>
-----
+The binding to the Quiche native library is based on JDK's https://openjdk.org/jeps/454[Foreign Function & Memory (FFM)] APIs.
 
 [NOTE]
 ====
@@ -77,7 +57,7 @@ For example with Java 25:
 
 ----
 WARNING: A restricted method in java.lang.foreign.AddressLayout has been called
-WARNING: java.lang.foreign.AddressLayout::withTargetLayout has been called by org.eclipse.jetty.quic.quiche.foreign.NativeHelper in an unnamed module (file:/home/simon/opensource/jetty/12.1.x/jetty-core/jetty-quic/jetty-quic-quiche/jetty-quic-quiche-foreign/target/classes/)
+WARNING: java.lang.foreign.AddressLayout::withTargetLayout has been called by org.eclipse.jetty.quic.quiche.foreign.NativeHelper in an unnamed module (file:/home/user/jetty/12.1.x/jetty-core/jetty-quic/jetty-quic-quiche/jetty-quic-quiche-foreign/target/classes/)
 WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
 WARNING: Restricted methods will be blocked in a future release unless native access is enabled
 ----

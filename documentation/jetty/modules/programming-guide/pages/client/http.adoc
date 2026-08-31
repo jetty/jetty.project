@@ -496,7 +496,7 @@ For example with Java 25:
 
 ----
 WARNING: A restricted method in java.lang.System has been called
-WARNING: java.lang.System::loadLibrary has been called by com.aayushatharva.brotli4j.Brotli4jLoader in an unnamed module (file:/home/simon/.m2/repository/com/aayushatharva/brotli4j/brotli4j/1.17.0/brotli4j-1.17.0.jar)
+WARNING: java.lang.System::loadLibrary has been called by com.aayushatharva.brotli4j.Brotli4jLoader in an unnamed module (file:/home/user/.m2/repository/com/aayushatharva/brotli4j/brotli4j/1.17.0/brotli4j-1.17.0.jar)
 WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
 WARNING: Restricted methods will be blocked in a future release unless native access is enabled
 ----
