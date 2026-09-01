@@ -388,7 +388,6 @@ public class MultiPartFormData
     {
         private final PartsListener listener = new PartsListener();
         private final MultiPart.Parser parser;
-        private MultiPartCompliance compliance;
         private ComplianceViolation.Listener complianceListener;
         private boolean useFilesForPartsWithoutFileName = true;
         private Path filesDirectory;
@@ -408,9 +407,8 @@ public class MultiPartFormData
         @Deprecated
         public Parser(String boundary, MultiPartCompliance multiPartCompliance, ComplianceViolation.Listener complianceViolationListener)
         {
-            compliance = Objects.requireNonNull(multiPartCompliance);
             complianceListener = Objects.requireNonNull(complianceViolationListener);
-            parser = new MultiPart.Parser(Objects.requireNonNull(boundary), compliance, listener);
+            parser = new MultiPart.Parser(Objects.requireNonNull(boundary), Objects.requireNonNull(multiPartCompliance), listener);
         }
 
         /**
@@ -690,7 +688,7 @@ public class MultiPartFormData
             useFilesForPartsWithoutFileName = config.isUseFilesForPartsWithoutFileName();
             filesDirectory = config.getLocation();
             complianceListener = config.getViolationListener();
-            compliance = config.getMultiPartCompliance();
+            parser.setMultiPartCompliance(config.getMultiPartCompliance());
         }
 
         // Only used for testing.
@@ -823,6 +821,7 @@ public class MultiPartFormData
                     String value = headers.get(HttpHeader.CONTENT_TRANSFER_ENCODING);
                     if (value != null)
                     {
+                        MultiPartCompliance compliance = parser.getMultiPartCompliance();
                         switch (StringUtil.asciiToLowerCase(value))
                         {
                             case "base64" ->
@@ -912,6 +911,7 @@ public class MultiPartFormData
             {
                 try
                 {
+                    MultiPartCompliance compliance = parser.getMultiPartCompliance();
                     ComplianceViolation.Event event = new ComplianceViolation.Event(compliance, violation, "multipart spec violation");
                     complianceListener.onComplianceViolation(event);
                 }
