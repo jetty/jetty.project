@@ -19,11 +19,14 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 public class ModulesValidation
 {
+    public static final String VALIDATE_ORIGIN = "validate-modules";
+
     public static void validateModules(Modules modules, PrintStream out, List<String> moduleSelection) throws IOException
     {
         List<Module> selectedModules = (moduleSelection.contains("*") || moduleSelection.isEmpty())
@@ -31,29 +34,18 @@ public class ModulesValidation
             : moduleSelection.stream().map(modules::get).toList();
 
         List<String> failures = new ArrayList<>();
-        final String validateOrigin = "validate-modules";
 
         for (Module module : selectedModules)
         {
             if (module == null)
                 return;
 
-            Props props = new Props();
-            Main.initBaseProps(props, modules.getBaseHome(), validateOrigin, validateOrigin);
-            for (String ini : module.getIniSection())
-            {
-                int equals = ini.indexOf('=');
-                if (equals >= 0)
-                {
-                    String key = ini.substring(0, equals);
-                    String value = ini.substring(equals + 1);
+            Props moduleProps = asProps(module);
+            Main.initBaseProps(moduleProps, modules.getBaseHome(), VALIDATE_ORIGIN, VALIDATE_ORIGIN);
 
-                    if (key.endsWith("+") || key.endsWith("?"))
-                        key = key.substring(0, key.length() - 1);
-
-                    props.setProperty(key, value, validateOrigin);
-                }
-            }
+            Props fullProps = new Props();
+            fullProps.addAll(moduleProps);
+            loadDependentProps(modules, module, fullProps);
 
             Set<String> provides = module.getProvides();
             provides.remove(module.getName());
@@ -66,10 +58,10 @@ public class ModulesValidation
             {
                 out.printf("Environment: %s%n", module.getEnvironment());
             }
-            for (Props.Prop prop: props)
+            for (Props.Prop prop: moduleProps)
             {
                 out.printf("       Prop: %s=%s%n", prop.key, prop.value);
-                String expandedValue = props.expand(prop.value);
+                String expandedValue = fullProps.expand(prop.value);
                 if (expandedValue.contains("$") || expandedValue.contains("@"))
                     failures.add("%s - [ini] Bad/Unexpandable property [%s=%s]".formatted(module.getName(), prop.key, prop.value));
             }
@@ -136,7 +128,7 @@ public class ModulesValidation
                 for (String file : module.getFiles())
                 {
                     out.printf("       FILE: %s%n", file);
-                    String fileRef = props.expand(file);
+                    String fileRef = fullProps.expand(file);
                     if (fileRef.contains("${") || fileRef.contains("@")) // didn't properly expand
                     {
                         failures.add("%s - [files] Unable to expand property '%s'".formatted(module.getName(), file));
@@ -155,7 +147,7 @@ public class ModulesValidation
                                         failures.add("%s - [files] Does not exist '%s'".formatted(module.getName(), file));
                                     else
                                     {
-                                        String destLocation = props.expand(fileArg.location);
+                                        String destLocation = moduleProps.expand(fileArg.location);
                                         filesLocations.add(destLocation);
                                     }
                                 }
@@ -173,7 +165,7 @@ public class ModulesValidation
             {
                 boolean found = false;
                 out.printf("        LIB: %s", lib);
-                String expandedLib = props.expand(lib);
+                String expandedLib = fullProps.expand(lib);
                 if (expandedLib.endsWith("**.jar"))
                 {
                     out.print(" [glob]");
@@ -210,7 +202,7 @@ public class ModulesValidation
             {
                 boolean found = false;
                 out.printf("        XML: %s", xml);
-                xml = props.expand(xml);
+                xml = fullProps.expand(xml);
                 if (filesLocations.contains(xml))
                 {
                     // Found in [files] section
@@ -251,12 +243,57 @@ public class ModulesValidation
 
         if (!failures.isEmpty())
         {
+            Collections.sort(failures);
             System.err.printf("%n%nThere are %d failed module validations%n", failures.size());
             for (int i = 0; i < failures.size(); i++)
             {
                 System.err.printf("  %-3d: %s%n", i + 1, failures.get(i));
             }
             throw new IllegalStateException("Failed to validate modules");
+        }
+    }
+
+    private static Props asProps(Module module)
+    {
+        Props props = new Props();
+
+        for (String ini : module.getIniSection())
+        {
+            int equals = ini.indexOf('=');
+            if (equals >= 0)
+            {
+                String key = ini.substring(0, equals);
+                String value = ini.substring(equals + 1);
+
+                if (key.endsWith("+") || key.endsWith("?"))
+                    key = key.substring(0, key.length() - 1);
+
+                props.setProperty(key, value, VALIDATE_ORIGIN);
+            }
+        }
+
+        return props;
+    }
+
+    private static void loadDependentProps(Modules modules, Module module, Props fullProps)
+    {
+        for (String dependent: module.getDepends())
+        {
+            try
+            {
+                Module depModule = modules.find(dependent);
+                if (depModule != null)
+                {
+                    Props modProps = asProps(depModule);
+                    fullProps.addAll(modProps);
+                    // Recurse
+                    loadDependentProps(modules, depModule, fullProps);
+                }
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -272,8 +309,8 @@ public class ModulesValidation
         {
             for (Module module : modules)
             {
-                if (module.getTags().contains(name))
-                    return true;
+//                if (module.getTags().contains(name))
+//                    return true;
                 if (module.getName().equals(name))
                     return true;
                 Set<Module> provided = modules.getProvided(name);

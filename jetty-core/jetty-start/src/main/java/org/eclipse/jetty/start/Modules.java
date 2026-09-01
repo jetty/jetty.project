@@ -614,6 +614,28 @@ public class Modules implements Iterable<Module>
         return _provided.get(name);
     }
 
+    Module find(String name) throws IOException
+    {
+        if (name.contains("/"))
+        {
+            Path file = getBaseHome().getPath("modules/" + name + ".mod");
+            if (Files.exists(file))
+                return new Module(_baseHome, file);
+        }
+
+        Module module = _names.get(name);
+        if (module != null)
+            return module;
+
+        String defaultProvider = _providedDefaults.get(name);
+        if (Utils.isNotBlank(defaultProvider))
+        {
+            return find(defaultProvider);
+        }
+
+        return null;
+    }
+
     public Module get(String name)
     {
         Module module = _names.get(name);
