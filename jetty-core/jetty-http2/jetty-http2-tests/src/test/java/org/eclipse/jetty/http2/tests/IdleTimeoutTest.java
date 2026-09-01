@@ -57,9 +57,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -755,7 +758,7 @@ public class IdleTimeoutTest extends AbstractTest
         assertTrue(extraLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
         // Wait for WINDOW_UPDATEs to be processed by the client.
-        await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Session)client).updateSendWindow(0), greaterThan(0));
 
         // Wait for the server to finish serving requests.
         await().atMost(5, TimeUnit.SECONDS).until(handled::get, is(0));
@@ -898,33 +901,39 @@ public class IdleTimeoutTest extends AbstractTest
     }
 
     @Test
-    public void testServerIdleTimeoutIsRescheduled() throws Exception
+    public void testStreamIdleTimeoutIsRescheduled() throws Exception
     {
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(new HttpConfiguration());
         h2.setStreamIdleTimeout(idleTimeout);
         prepareServer(h2);
-        connector.setIdleTimeout(idleTimeout);
+        connector.setIdleTimeout(-1);
+        CountDownLatch handlerLatch = new CountDownLatch(1);
+        AtomicInteger listenerCounter = new AtomicInteger();
         server.setHandler(new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                // Add a listener to force notIdle to run in a separate thread after cycle timeout rescheduling.
                 request.addIdleTimeoutListener(e ->
                 {
-                    try
-                    {
-                        Thread.sleep(idleTimeout / 4);
-                    }
-                    catch (InterruptedException ex)
-                    {
-                        throw new RuntimeException(ex);
-                    }
-                    return false;
+                    int count = listenerCounter.getAndIncrement();
+                    // Returning true marks the request as failed, but the handling goes on.
+                    return count > 0;
                 });
 
-                // Hold the dispatched requests long enough for the idle requests to idle timeout twice.
-                sleep(3 * idleTimeout);
+                // Content must be EOF after the timeout listener fired once since it returned false.
+                await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(2 * idleTimeout, TimeUnit.MILLISECONDS).until(listenerCounter::get, is(1));
+                Content.Chunk read = request.read();
+                assertThat(read.getFailure(), nullValue());
+                assertThat(read.isLast(), is(true));
+                assertThat(read.getByteBuffer().remaining(), is(0));
+
+                // Content must be TimeoutException after the timeout listener fired twice since it returned true.
+                await().atMost(3 * idleTimeout, TimeUnit.MILLISECONDS).until(listenerCounter::get, is(2));
+                assertInstanceOf(TimeoutException.class, request.read().getFailure());
+
+                callback.succeeded();
+                handlerLatch.countDown();
                 return true;
             }
         });
@@ -934,22 +943,19 @@ public class IdleTimeoutTest extends AbstractTest
         httpClient.start();
         Session client = newClientSession(new Session.Listener() {});
 
-        CountDownLatch resetLatch = new CountDownLatch(1);
-        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, false);
-        FuturePromise<Stream> promise = new FuturePromise<>();
-        client.newStream(frame, promise, new Stream.Listener()
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
+        client.newStream(frame, new Stream.Listener()
         {
             @Override
-            public void onReset(Stream stream, ResetFrame frame, Callback callback)
+            public void onClosed(Stream stream)
             {
-                resetLatch.countDown();
-                Stream.Listener.super.onReset(stream, frame, callback);
+                closeLatch.countDown();
+                Stream.Listener.super.onClosed(stream);
             }
         });
-        Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.allocate(1024);
-        stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
-        assertTrue(resetLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(closeLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     private void sleep(long value)
