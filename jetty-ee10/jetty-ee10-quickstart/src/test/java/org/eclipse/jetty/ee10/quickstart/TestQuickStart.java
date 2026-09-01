@@ -14,8 +14,11 @@
 package org.eclipse.jetty.ee10.quickstart;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ListenerHolder;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -23,6 +26,8 @@ import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.CombinedResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.hamcrest.Matchers;
@@ -284,5 +289,59 @@ public class TestQuickStart
         assertNotNull(listeners);
         assertEquals(1,
             Arrays.stream(listeners).filter(l -> "org.eclipse.jetty.ee10.quickstart.FooContextListener".equals(l.getClassName())).count());
+    }
+
+    @Test
+    public void testQuickStartWithCombinedBaseResource() throws Exception
+    {
+        // Split the web content across two directories, presented to the webapp
+        // as a single combined base resource:
+        //   contentDir - holds the generated WEB-INF/quickstart-web.xml
+        //   overlayDir - holds an extra static resource
+        Path testDir = MavenTestingUtils.getTargetTestingPath("combinedbase");
+        FS.ensureEmpty(testDir);
+        Path contentDir = testDir.resolve("content");
+        Path overlayDir = testDir.resolve("overlay");
+        FS.ensureDirExists(contentDir.resolve("WEB-INF"));
+        FS.ensureDirExists(overlayDir);
+        Files.writeString(overlayDir.resolve("hello.txt"), "Hello");
+
+        // One combined resource used as the base resource for both generation and quickstart.
+        Resource base = ResourceFactory.combine(
+            ResourceFactory.root().newResource(contentDir),
+            ResourceFactory.root().newResource(overlayDir));
+
+        Path quickstartXml = contentDir.resolve("WEB-INF/quickstart-web.xml");
+        assertFalse(Files.exists(quickstartXml));
+
+        // Generate quickstart-web.xml from web.xml; it is written into contentDir/WEB-INF.
+        WebAppContext quickstart = new WebAppContext();
+        quickstart.setBaseResource(base);
+        quickstart.addConfiguration(new QuickStartConfiguration());
+        quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
+        quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
+        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        server.setHandler(quickstart);
+        server.setDryRun(true);
+        server.start();
+        assertTrue(Files.exists(quickstartXml));
+
+        // Run in QUICKSTART mode using the same combined base resource.
+        WebAppContext webapp = new WebAppContext();
+        webapp.setBaseResource(base);
+        webapp.addConfiguration(new QuickStartConfiguration());
+        webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
+        server.setHandler(webapp);
+        server.setDryRun(false);
+        server.start();
+
+        // The base resource is a combined resource.
+        assertThat(webapp.getBaseResource(), Matchers.instanceOf(CombinedResource.class));
+        // The quickstart-web.xml was applied (default-context-path comes from web.xml).
+        assertEquals("/thisIsTheDefault", webapp.getContextPath());
+        // Content from both overlayed directories is visible through the combined base.
+        ServletContext servletContext = webapp.getServletContext();
+        assertNotNull(servletContext.getResource("/WEB-INF/quickstart-web.xml"));
+        assertNotNull(servletContext.getResource("/hello.txt"));
     }
 }
