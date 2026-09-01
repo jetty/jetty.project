@@ -294,19 +294,6 @@
               </descriptors>
             </configuration>
           </execution>
-          <execution>
-            <id>sources</id>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/jetty-source-assembly.xml</descriptor>
-              </descriptors>
-              <appendAssemblyId>true</appendAssemblyId>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -369,28 +356,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-jetty-core-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty,
-                org.eclipse.jetty.compression,
-                org.eclipse.jetty.http2,
-                org.eclipse.jetty.http3,
-                org.eclipse.jetty.quic,
-                org.eclipse.jetty.websocket,
-                org.eclipse.jetty.fcgi,
-                org.eclipse.jetty.toolchain.setuid</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit</excludeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <includeScope>runtime</includeScope>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
             <id>copy-support-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
@@ -402,21 +367,6 @@
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>
               <outputDirectory>${assembly-directory}/lib/support</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-support-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.ow2.asm,
-                org.slf4j</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <includeScope>runtime</includeScope>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/support</outputDirectory>
             </configuration>
           </execution>
           <execution>

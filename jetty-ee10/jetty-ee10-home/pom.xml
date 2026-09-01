@@ -171,7 +171,6 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
-    <!-- Demo EE10 Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>jetty-ee10-demo-proxy-webapp</artifactId>
@@ -220,19 +219,6 @@
               </descriptors>
             </configuration>
           </execution>
-          <execution>
-            <id>sources</id>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/jetty-source-assembly.xml</descriptor>
-              </descriptors>
-              <appendAssemblyId>true</appendAssemblyId>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -256,23 +242,6 @@
               <outputDirectory>${assembly-directory}/lib/ee10</outputDirectory>
               <useRepositoryLayout>false</useRepositoryLayout>
               <copySignatures>true</copySignatures>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee10-jetty-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain,
-                org.eclipse.jetty.ee10,
-                org.eclipse.jetty.ee10.websocket</includeGroupIds>
-              <excludeGroupIds>org.eclipsejetty.ee10.demos</excludeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <includeScope>runtime</includeScope>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee10</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -306,36 +275,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee10-support-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.annotation,
-                jakarta.authentication,
-                jakarta.el,
-                jakarta.enterprise,
-                jakarta.inject,
-                jakarta.interceptor,
-                jakarta.servlet,
-                jakarta.servlet.jsp,
-                jakarta.servlet.jsp.jstl,
-                jakarta.transaction,
-                jakarta.websocket,
-                jakarta.websocket.client,
-                org.eclipse.jdt,
-                org.glassfish.web,
-                org.mortbay.jasper</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <includeScope>runtime</includeScope>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee10/support</outputDirectory>
-              <!-- this is true to make sure that non-jpms artifacts use a full identifiable name -->
-              <prependGroupId>true</prependGroupId>
-            </configuration>
-          </execution>
-          <execution>
             <id>unpack-config-deps</id>
             <goals>
               <goal>unpack-dependencies</goal>
@@ -366,7 +305,7 @@
               <classifier>config</classifier>
               <includeTypes>jar</includeTypes>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-              <includes>**/ee10-demo-*</includes>
+              <includes>**/ee10-demo-*,**/demo.d/override-web.xml</includes>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>

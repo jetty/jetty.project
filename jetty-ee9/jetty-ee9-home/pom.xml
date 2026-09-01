@@ -224,19 +224,6 @@
               </descriptors>
             </configuration>
           </execution>
-          <execution>
-            <id>sources</id>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/jetty-source-assembly.xml</descriptor>
-              </descriptors>
-              <appendAssemblyId>true</appendAssemblyId>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -263,23 +250,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee9-jetty-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain,
-                org.eclipse.jetty.ee9,
-                org.eclipse.jetty.ee9.websocket</includeGroupIds>
-              <excludeGroupIds>org.eclipsejetty.ee9.demos</excludeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <includeScope>runtime</includeScope>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee9</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
             <id>copy-ee9-support-deps</id>
             <goals>
               <goal>copy-dependencies</goal>
@@ -301,30 +271,6 @@
               <!-- this is true to make sure that non-jpms artifacts use a full identifiable name -->
               <prependGroupId>true</prependGroupId>
               <copySignatures>true</copySignatures>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee9-support-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.annotation,
-                jakarta.authentication,
-                jakarta.enterprise,
-                jakarta.inject,
-                jakarta.interceptor,
-                jakarta.transaction,
-                org.eclipse.jdt,
-                org.glassfish.web,
-                org.mortbay.jasper</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <includeScope>runtime</includeScope>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee9/support</outputDirectory>
-              <!-- this is true to make sure that non-jpms artifacts use a full identifiable name -->
-              <prependGroupId>true</prependGroupId>
             </configuration>
           </execution>
           <execution>
@@ -354,7 +300,7 @@
               <classifier>config</classifier>
               <includeTypes>jar</includeTypes>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-              <includes>**/ee9-demo-*</includes>
+              <includes>**/ee9-demo-*,**/demo.d/override-web.xml</includes>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>

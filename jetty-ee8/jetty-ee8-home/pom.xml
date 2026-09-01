@@ -18,6 +18,84 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-async-rest-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-jaas-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-jetty-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.el</groupId>
+          <artifactId>el-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-jndi-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-jsp-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-jspc-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-mock-resources</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-simple-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.demos</groupId>
+      <artifactId>jetty-servlet4-demo-spec-webapp</artifactId>
+      <version>${project.version}</version>
+      <classifier>config</classifier>
+      <type>jar</type>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee8</groupId>
       <artifactId>jetty-ee8-annotations</artifactId>
     </dependency>
@@ -91,8 +169,6 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
-
-    <!-- Demo ee8 Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee8.demos</groupId>
       <artifactId>jetty-ee8-demo-proxy-webapp</artifactId>
@@ -161,19 +237,6 @@
               </descriptors>
             </configuration>
           </execution>
-          <execution>
-            <id>sources</id>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/jetty-source-assembly.xml</descriptor>
-              </descriptors>
-              <appendAssemblyId>true</appendAssemblyId>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -199,7 +262,6 @@
               <copySignatures>true</copySignatures>
             </configuration>
           </execution>
-          <!-- TODO: jetty src deps -->
           <execution>
             <id>copy-ee8-support-deps</id>
             <goals>
@@ -224,29 +286,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee8-support-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.annotation,
-                jakarta.security.auth.message,
-                jakarta.servlet.jsp.jstl,
-                jakarta.transaction,
-                org.eclipse.jdt,
-                org.glassfish.web,
-                org.mortbay.jasper</includeGroupIds>
-              <excludeClassifiers>config</excludeClassifiers>
-              <includeTypes>jar</includeTypes>
-              <includeScope>runtime</includeScope>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee8/support</outputDirectory>
-              <!-- this is true to make sure the names match their non-source locations -->
-              <prependGroupId>true</prependGroupId>
-            </configuration>
-          </execution>
-          <execution>
             <id>unpack-config-deps</id>
             <goals>
               <goal>unpack-dependencies</goal>
@@ -258,6 +297,21 @@
               <classifier>config</classifier>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
               <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
+              <outputDirectory>${assembly-directory}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>unpack-demo-deps</id>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.demos</includeGroupIds>
+              <classifier>config</classifier>
+              <includeTypes>jar</includeTypes>
+              <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+              <includes>**/ee8-demo-*,**/demo.d/override-web.xml</includes>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>

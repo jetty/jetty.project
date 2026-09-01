@@ -183,8 +183,6 @@
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-proxy</artifactId>
     </dependency>
-
-    <!-- ee11 specific dependencies -->
     <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-quickstart</artifactId>
@@ -205,7 +203,6 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
-    <!-- Demo EE11 Apps -->
     <dependency>
       <groupId>org.eclipse.jetty.ee11.demos</groupId>
       <artifactId>jetty-ee11-demo-proxy-webapp</artifactId>
@@ -254,19 +251,6 @@
               </descriptors>
             </configuration>
           </execution>
-          <execution>
-            <id>sources</id>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/jetty-source-assembly.xml</descriptor>
-              </descriptors>
-              <appendAssemblyId>true</appendAssemblyId>
-            </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -290,23 +274,6 @@
               <outputDirectory>${assembly-directory}/lib/ee11</outputDirectory>
               <useRepositoryLayout>false</useRepositoryLayout>
               <copySignatures>true</copySignatures>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy-ee11-jetty-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain,
-                org.eclipse.jetty.ee11,
-                org.eclipse.jetty.ee11.websocket</includeGroupIds>
-              <excludeGroupIds>org.eclipsejetty.ee11.demos</excludeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <includeScope>runtime</includeScope>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee11</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -341,48 +308,22 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-ee11-support-src-deps</id>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <includeGroupIds>jakarta.annotation,
-                jakarta.authentication,
-                jakarta.el,
-                jakarta.enterprise,
-                jakarta.inject,
-                jakarta.interceptor,
-                jakarta.servlet,
-                jakarta.servlet.jsp,
-                jakarta.servlet.jsp.jstl,
-                jakarta.transaction,
-                jakarta.websocket,
-                jakarta.websocket.client,
-                org.eclipse.jdt,
-                org.glassfish.wasp,
-                org.glassfish.web,
-                org.mortbay.jasper</includeGroupIds>
-              <includeTypes>jar</includeTypes>
-              <includeScope>runtime</includeScope>
-              <classifier>sources</classifier>
-              <outputDirectory>${source-assembly-directory}/lib/ee11/support</outputDirectory>
-              <!-- this is true to make sure that non-jpms artifacts use a full identifiable name -->
-              <prependGroupId>true</prependGroupId>
-            </configuration>
-          </execution>
-          <execution>
             <id>unpack-config-deps</id>
             <goals>
               <goal>unpack-dependencies</goal>
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.ee11, org.eclipse.jetty.ee11.demos</includeGroupIds>
-              <excludeArtifactIds/>
+              <includeGroupIds>org.eclipse.jetty.ee11,
+                org.eclipse.jetty.ee11.demos</includeGroupIds>
               <classifier>config</classifier>
+              <includeTypes>jar</includeTypes>
+              <includeScope>runtime</includeScope>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-              <excludes>META-INF/**,webapps/**,start.d/**,start.ini</excludes>
+              <excludes>META-INF/**,
+                webapps/**,
+                start.d/**,
+                start.ini</excludes>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>
@@ -397,7 +338,7 @@
               <classifier>config</classifier>
               <includeTypes>jar</includeTypes>
               <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
-              <includes>**/ee11-demo-*</includes>
+              <includes>**/ee11-demo-*,**/demo.d/override-web.xml</includes>
               <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>
@@ -405,5 +346,4 @@
       </plugin>
     </plugins>
   </build>
-
 </project>
