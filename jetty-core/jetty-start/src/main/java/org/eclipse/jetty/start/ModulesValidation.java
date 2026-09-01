@@ -262,16 +262,24 @@ public class ModulesValidation
 
     private static boolean hasDependency(Modules modules, String name)
     {
-        // Check tags
-        for (Module module: modules)
+        // Dynamic Module Name
+        if (name.contains("/"))
         {
-            if (module.getTags().contains(name))
-                return true;
-            if (module.getName().equals(name))
-                return true;
-            Set<Module> provided = modules.getProvided(name);
-            if (provided != null && !provided.isEmpty())
-                return true;
+            Path file = modules.getBaseHome().getPath("modules/" + name + ".mod");
+            return Files.exists(file);
+        }
+        else
+        {
+            for (Module module : modules)
+            {
+                if (module.getTags().contains(name))
+                    return true;
+                if (module.getName().equals(name))
+                    return true;
+                Set<Module> provided = modules.getProvided(name);
+                if (provided != null && !provided.isEmpty())
+                    return true;
+            }
         }
         return false;
     }
