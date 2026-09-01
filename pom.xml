@@ -1912,7 +1912,7 @@
                   <version>[17,)</version>
                   <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 17 or newer</message>
                 </requireJavaVersion>
-                <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule"/>
+                <requireCompatibleVersionOSGI/>
                 <!-- do not support alphax as a version number -->
                 <!--
                             <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
