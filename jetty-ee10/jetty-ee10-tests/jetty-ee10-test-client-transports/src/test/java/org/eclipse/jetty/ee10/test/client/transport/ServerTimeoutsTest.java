@@ -184,6 +184,7 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testAsyncReadIdleTimeoutFires(TransportType transportType) throws Exception
     {
+        CountDownLatch readLatch = new CountDownLatch(1);
         CountDownLatch handlerLatch = new CountDownLatch(1);
         start(transportType, new HttpServlet()
         {
@@ -200,6 +201,7 @@ public class ServerTimeoutsTest extends AbstractTest
                     {
                         assertEquals(0, input.read());
                         assertFalse(input.isReady());
+                        readLatch.countDown();
                     }
 
                     @Override
@@ -234,8 +236,11 @@ public class ServerTimeoutsTest extends AbstractTest
                     resultLatch.countDown();
             });
 
+        // Wait until the server has read the content and is not ready, so that
+        // the idle timeout is measured from there, not from before connect.
+        assertTrue(readLatch.await(5, TimeUnit.SECONDS));
         // Async read should timeout.
-        assertTrue(handlerLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         // Complete the request.
         content.close();
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
@@ -245,8 +250,6 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testAsyncWriteIdleTimeoutFires(TransportType transportType) throws Exception
     {
-        // TODO fix for h3
-        assumeTrue(transportType != TransportType.H3_QUICHE);
         CountDownLatch handlerLatch = new CountDownLatch(1);
         start(transportType, new HttpServlet()
         {
@@ -377,8 +380,6 @@ public class ServerTimeoutsTest extends AbstractTest
     @MethodSource("transportsNoFCGI")
     public void testBlockingReadWithMinimumDataRateAboveLimit(TransportType transportType) throws Exception
     {
-        assumeTrue(transportType != TransportType.H3_QUICHE); // TODO Fix
-
         int bytesPerSecond = 20;
         httpConfig.setMinRequestDataRate(bytesPerSecond);
         CountDownLatch handlerLatch = new CountDownLatch(1);
@@ -408,11 +409,11 @@ public class ServerTimeoutsTest extends AbstractTest
                     resultLatch.countDown();
             });
 
-        // Write at twice the minimum data rate.
+        // Write at 4 times the minimum data rate.
         for (int i = 0; i < 3; ++i)
         {
             content.write(ByteBuffer.allocate(bytesPerSecond * 2), Callback.NOOP);
-            Thread.sleep(1000);
+            Thread.sleep(500);
         }
         content.close();
 
