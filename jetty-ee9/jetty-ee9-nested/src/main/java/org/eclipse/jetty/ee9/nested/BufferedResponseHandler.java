@@ -64,6 +64,7 @@ public class BufferedResponseHandler extends HandlerWrapper
     public BufferedResponseHandler()
     {
         _methods.include(HttpMethod.GET.asString());
+        _methods.include(HttpMethod.QUERY.asString());
         for (String type : MimeTypes.DEFAULTS.getMimeMap().values())
         {
             if (type.startsWith("image/") ||

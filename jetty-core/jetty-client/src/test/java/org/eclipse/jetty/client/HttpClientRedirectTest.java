@@ -439,6 +439,41 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    public void testQUERY301(Scenario scenario) throws Exception
+    {
+        testSameMethodRedirect(scenario, HttpMethod.QUERY, HttpStatus.MOVED_PERMANENTLY_301);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testQUERY302(Scenario scenario) throws Exception
+    {
+        testSameMethodRedirect(scenario, HttpMethod.QUERY, HttpStatus.FOUND_302);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testQUERY303(Scenario scenario) throws Exception
+    {
+        testGETRedirect(scenario, HttpMethod.QUERY, HttpStatus.SEE_OTHER_303);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testQUERY307(Scenario scenario) throws Exception
+    {
+        testSameMethodRedirect(scenario, HttpMethod.QUERY, HttpStatus.TEMPORARY_REDIRECT_307);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testQUERY308(Scenario scenario) throws Exception
+    {
+        testSameMethodRedirect(scenario, HttpMethod.QUERY, HttpStatus.PERMANENT_REDIRECT_308);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
     public void testHttpRedirector(Scenario scenario) throws Exception
     {
         start(scenario, new RedirectHandler());
