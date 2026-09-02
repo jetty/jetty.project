@@ -209,7 +209,7 @@ updates:
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
       - dependency-name: "org.glassfish.jersey:*"
-        versions: [ ">=3.1.0" ]
+        versions: [ ">3.1.0" ]
       - dependency-name: "jakarta.activation:jakarta.activation-api"
         versions:  [ ">= 2.1.0"]
       - dependency-name: "jakarta.annotation:jakarta.annotation-api"
@@ -226,6 +226,7 @@ updates:
         versions: [ ">= 2.0.1" ]
       - dependency-name: "org.glassfish.jersey.*:*"
         versions: [ ">3.1.0"]
+      -
 
   - package-ecosystem: maven
     directory: "/jetty-ee10"
