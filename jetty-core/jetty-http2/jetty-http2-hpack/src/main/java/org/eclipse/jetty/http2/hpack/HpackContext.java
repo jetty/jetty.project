@@ -18,12 +18,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http2.hpack.internal.StaticTableHttpField;
@@ -407,18 +409,110 @@ public class HpackContext
 
     public static class Entry
     {
+        private static final int VALIDATED = 0x01;
+        private static final int ILLEGAL_NAME = 0x02;
+        private static final int ILLEGAL_VALUE = 0x04;
+
         final HttpField _field;
         int _slot; // The index within it's array
-
-        Entry()
-        {
-            _slot = -1;
-            _field = null;
-        }
+        /**
+         * The memoized outcome of validating {@link #_field} for decoding; see {@link #validation()}.
+         */
+        private int _validation;
+        /**
+         * The memoized outcome of validating {@link #_field} for encoding; see {@link #encodeValidation()}.
+         * <p>Kept apart from {@link #_validation} because the two apply different
+         * rules, and because an entry belongs to either an encoder's context or a
+         * decoder's, never both.</p>
+         */
+        private int _encodeValidation;
 
         Entry(HttpField field)
         {
-            _field = field;
+            _field = Objects.requireNonNull(field);
+        }
+
+        /**
+         * <p>Validate the field once, and remember the outcome.</p>
+         * <p>An entry of the dynamic table is referenced by index by every
+         * message that uses it, and deriving the outcome again each time is two
+         * full scans of the name and of the value. The field is immutable, so
+         * the outcome cannot change.</p>
+         * <p>Note that the outcome is remembered rather than assumed: a field
+         * that failed validation is still added to the dynamic table, because
+         * the failure only fails its own stream, so a later message referencing
+         * that index must still be told about it.</p>
+         *
+         * @return the validation bits for this entry's field
+         */
+        private int validation()
+        {
+            int validation = _validation;
+            if (validation == 0)
+            {
+                validation = VALIDATED;
+                if (!HttpTokens.isLegalH2H3FieldName(_field.getName()))
+                    validation |= ILLEGAL_NAME;
+                if (!HttpTokens.isLegalFieldValue(_field.getValue()))
+                    validation |= ILLEGAL_VALUE;
+                _validation = validation;
+            }
+            return validation;
+        }
+
+        /**
+         * @return whether this entry's field has an illegal name
+         */
+        public boolean hasIllegalName()
+        {
+            return (validation() & ILLEGAL_NAME) != 0;
+        }
+
+        /**
+         * @return whether this entry's field has an illegal value
+         */
+        public boolean hasIllegalValue()
+        {
+            return (validation() & ILLEGAL_VALUE) != 0;
+        }
+
+        /**
+         * <p>As {@link #validation()}, but applying the rules an encoder uses:
+         * the name is matched in lowercase, and a pseudo header is rejected
+         * because the encoder writes those itself from the metadata.</p>
+         *
+         * @return the encoding validation bits for this entry's field
+         */
+        private int encodeValidation()
+        {
+            int validation = _encodeValidation;
+            if (validation == 0)
+            {
+                validation = VALIDATED;
+                String name = _field.getLowerCaseName();
+                if (!HttpTokens.isLegalH2H3FieldName(name) || name.charAt(0) == ':')
+                    validation |= ILLEGAL_NAME;
+                if (!HttpTokens.isLegalFieldValue(_field.getValue()))
+                    validation |= ILLEGAL_VALUE;
+                _encodeValidation = validation;
+            }
+            return validation;
+        }
+
+        /**
+         * @return whether this entry's field has a name an encoder must reject
+         */
+        public boolean hasIllegalNameForEncoding()
+        {
+            return (encodeValidation() & ILLEGAL_NAME) != 0;
+        }
+
+        /**
+         * @return whether this entry's field has a value an encoder must reject
+         */
+        public boolean hasIllegalValueForEncoding()
+        {
+            return (encodeValidation() & ILLEGAL_VALUE) != 0;
         }
 
         public int getSize()
@@ -459,7 +553,7 @@ public class HpackContext
             super(field);
             _slot = index;
             String value = field.getValue();
-            if (value != null && value.length() > 0)
+            if (value != null && !value.isEmpty())
             {
                 int huffmanLen = HuffmanEncoder.octetsNeeded(value);
                 if (huffmanLen < 0)
