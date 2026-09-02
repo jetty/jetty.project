@@ -17,6 +17,11 @@
     <dependencies>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-acme</artifactId>
+        <version>12.1.11-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-alpn-bouncycastle-client</artifactId>
         <version>12.1.13-SNAPSHOT</version>
       </dependency>
