@@ -226,7 +226,6 @@ updates:
         versions: [ ">= 2.0.1" ]
       - dependency-name: "org.glassfish.jersey.*:*"
         versions: [ ">3.1.0"]
-      -
 
   - package-ecosystem: maven
     directory: "/jetty-ee10"
