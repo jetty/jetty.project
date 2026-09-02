@@ -30,6 +30,132 @@ The standard Jetty modules that Jetty provides out-of-the-box are under `$JETTY_
 
 xref:modules/custom.adoc[Custom Jetty modules] should be put under `$JETTY_BASE/modules/`.
 
+[[remote]]
+== Installing Modules from a Remote URL
+
+In addition to enabling modules that are already present on the filesystem, you can install modules by downloading a _config JAR_ from a remote URL.
+
+A config JAR is a JAR (or ZIP) archive whose contents are extracted directly into `$JETTY_BASE`.
+It typically contains:
+
+* `modules/*.mod` -- module definition files
+* `etc/*.xml` -- XML configuration files
+* `lib/*.jar` -- library files
+* `resources/` -- resource files
+
+To install modules from a remote config JAR, pass the full URL as the value of `--add-modules`:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=https://repo.example.com/org/acme/jetty-acme-config/1.0.0/jetty-acme-config-1.0.0.jar
+----
+
+When a URL is detected in `--add-modules`, Jetty will:
+
+. Download the config JAR from the URL.
+. Extract its contents into `$JETTY_BASE` (the `META-INF/` directory is excluded).
+. Register any new `+*.mod+` files found under `$JETTY_BASE/modules/`.
+. Enable all newly discovered modules and their transitive dependencies.
+
+If the config JAR contains multiple `+*.mod+` files, all of them are registered and enabled.
+
+You can combine remote URLs with regular module names in the same `--add-modules` option:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,https://repo.example.com/acme-config-1.0.jar
+----
+
+[NOTE]
+====
+By default, only `https://` URLs are allowed.
+To permit downloads over plain `http://`, you must also pass the `--allow-insecure-http-downloads` option:
+
+----
+$ java -jar $JETTY_HOME/start.jar --allow-insecure-http-downloads --add-modules=http://internal-server/acme-config.jar
+----
+====
+
+[[remote-auth]]
+=== Authenticated Downloads
+
+If the remote server requires authentication, you can provide credentials via command-line options.
+
+==== HTTP Basic Authentication
+
+Use `--download-username` and `--download-password` to authenticate with HTTP Basic Auth:
+
+----
+$ java -jar $JETTY_HOME/start.jar \
+    --download-username=myuser \
+    --download-password=mypassword \
+    --add-modules=https://private-repo.example.com/acme-config-1.0.jar
+----
+
+==== Custom Authorization Header
+
+For other authentication schemes (such as Bearer tokens), use `--download-auth-header` to set the `Authorization` header directly:
+
+----
+$ java -jar $JETTY_HOME/start.jar \
+    --download-auth-header="Bearer eyJhbGciOi..." \
+    --add-modules=https://private-repo.example.com/acme-config-1.0.jar
+----
+
+If `--download-auth-header` is provided, it takes precedence over `--download-username` / `--download-password`.
+
+NOTE: These authentication options apply to all HTTP downloads performed during the session, including files referenced in the `<<directive-files,[files]>>` sections of modules.
+
+[[remote-security]]
+=== Download URL Allowlist
+
+For security, Jetty restricts which URLs are accepted for remote module downloads.
+By default, only URLs starting with `https://repo1.maven.org/maven2/` are allowed.
+
+To add additional trusted URL prefixes, use one of the following options:
+
+==== URL Prefixes (Comma-Separated)
+
+----
+$ java -jar $JETTY_HOME/start.jar \
+    --download-allowed-urls=https://repo-a.example.com/,https://repo-b.example.com/ \
+    --add-modules=https://repo-a.example.com/acme-config-1.0.jar
+----
+
+==== URL Prefixes from a File
+
+----
+$ java -jar $JETTY_HOME/start.jar \
+    --download-allowed-urls-file=etc/download-allowlist.txt \
+    --add-modules=https://private-repo.example.com/artifacts/acme-config-1.0.jar
+----
+
+The file should contain one URL prefix per line.
+Lines starting with `#` are treated as comments, and blank lines are ignored:
+
+.etc/download-allowlist.txt
+----
+# Allowed download sources for remote modules
+
+# Maven Central (already included by default)
+# https://repo1.maven.org/maven2/
+
+# Corporate artifact repository
+https://private-repo.example.com/artifacts/
+
+# Staging repository
+https://staging.example.com/releases/
+----
+
+[IMPORTANT]
+====
+URL prefixes should end with `/` to prevent partial domain matching.
+For example, `https://repo.example.com/` will not match `https://repo.example.com.evil.org/`.
+
+Redirect targets are also validated against the allowlist -- a trusted server cannot redirect the download to an untrusted destination.
+
+The `--allow-insecure-http-downloads` option bypasses the allowlist entirely.
+This should only be used for testing purposes.
+====
+
 [[names]]
 == Module Names
 
