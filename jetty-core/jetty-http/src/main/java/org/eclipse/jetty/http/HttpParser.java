@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -246,10 +245,6 @@ public class HttpParser
         EXT_VALUE_CLOSE_QUOTE,
     }
 
-    private static final EnumSet<State> __idleStates = EnumSet.of(State.START, State.END, State.CLOSE, State.CLOSED);
-    private static final EnumSet<State> __completeStates = EnumSet.of(State.END, State.CLOSE, State.CLOSED);
-    private static final EnumSet<State> __terminatedStates = EnumSet.of(State.CLOSE, State.CLOSED);
-
     private final boolean debugEnabled = LOG.isDebugEnabled(); // Cache debug to help branch prediction
     private final HttpHandler _handler;
     private final RequestHandler _requestHandler;
@@ -269,9 +264,9 @@ public class HttpParser
     private int _headerBytes;
     private String _parsedHost;
     private boolean _headerComplete;
-    private volatile State _state = State.START;
-    private volatile FieldState _fieldState = FieldState.FIELD;
-    private volatile boolean _eof;
+    private State _state = State.START;
+    private FieldState _fieldState = FieldState.FIELD;
+    private boolean _eof;
     private HttpMethod _method;
     private String _methodString;
     private HttpVersion _version;
@@ -481,17 +476,18 @@ public class HttpParser
 
     public boolean isIdle()
     {
-        return __idleStates.contains(_state);
+        int ordinal = _state.ordinal();
+        return ordinal == State.START.ordinal() || ordinal >= State.END.ordinal();
     }
 
     public boolean isComplete()
     {
-        return __completeStates.contains(_state);
+        return _state.ordinal() >= State.END.ordinal();
     }
 
     public boolean isTerminated()
     {
-        return __terminatedStates.contains(_state);
+        return _state.ordinal() >= State.CLOSE.ordinal();
     }
 
     public boolean isState(State state)
@@ -1287,7 +1283,7 @@ public class HttpParser
                     _fieldCache.add(_field);
                 }
             }
-            if (LOG.isDebugEnabled())
+            if (debugEnabled)
                 LOG.debug("parsedHeader({}) header={}, headerString=[{}], valueString=[{}]", _field, _header, _headerString, _valueString);
             _handler.parsedHeader(_field != null ? _field : newHttpField(_header, _headerString, _valueString));
         }
@@ -1460,7 +1456,8 @@ public class HttpParser
                                     String n = cachedField.getName();
                                     String v = cachedField.getValue();
 
-                                    if (!Objects.equals(v, UNMATCHED_VALUE))
+                                    boolean unmatchedValue = Objects.equals(v, UNMATCHED_VALUE);
+                                    if (!unmatchedValue)
                                     {
                                         if (CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode))
                                         {
@@ -1492,7 +1489,7 @@ public class HttpParser
                                     int delta = n.length() + 1;
                                     int posAfterName = position + delta;
 
-                                    if (Objects.equals(v, UNMATCHED_VALUE) || (posAfterName + v.length()) >= buffer.limit())
+                                    if (unmatchedValue || (posAfterName + v.length()) >= buffer.limit())
                                     {
                                         // Header only
                                         setState(FieldState.VALUE);
@@ -2529,8 +2526,12 @@ public class HttpParser
             }
             else if (!_cache.put(field))
             {
-                _cache.clear();
-                _cache.put(field);
+                // clear the cache only if the field is small and still cannot fit in the cache.
+                if ((field.getName().length() + field.getValue().length()) < _cache.size() / 4)
+                {
+                    _cache.clear();
+                    _cache.put(field);
+                }
             }
         }
 
@@ -2546,7 +2547,7 @@ public class HttpParser
                 _cache = Index.buildMutableVisibleAsciiAlphabet(_caseSensitive, _size);
                 for (HttpField f : _cacheableFields)
                 {
-                    if (!_cache.put(f))
+                    if (!_cache.put(f) && (f.getName().length() + f.getValue().length()) < _size / 4)
                         break;
                 }
                 _cacheableFields.clear();
