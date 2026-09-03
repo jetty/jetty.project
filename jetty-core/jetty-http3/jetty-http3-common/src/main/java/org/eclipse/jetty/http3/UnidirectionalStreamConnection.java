@@ -24,6 +24,7 @@ import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.util.VarLenInt;
@@ -39,17 +40,19 @@ public class UnidirectionalStreamConnection extends AbstractConnection.NonBlocki
     private final QpackEncoder encoder;
     private final QpackDecoder decoder;
     private final ParserListener listener;
+    private final RateControl rateControl;
     private final VarLenInt parser = new VarLenInt();
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer buffer;
 
-    public UnidirectionalStreamConnection(StreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
+    public UnidirectionalStreamConnection(StreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener, RateControl rateControl)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
         this.encoder = encoder;
         this.decoder = decoder;
         this.listener = listener;
+        this.rateControl = rateControl;
     }
 
     @Override
@@ -148,7 +151,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection.NonBlocki
             {
                 case CONTROL_STREAM ->
                 {
-                    ControlParser parser = new ControlParser(listener);
+                    ControlParser parser = new ControlParser(rateControl, listener);
                     ControlStreamConnection newConnection = new ControlStreamConnection(getEndPoint(), getExecutor(), bufferPool, parser);
                     newConnection.setInputBufferSize(getInputBufferSize());
                     newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());

@@ -27,6 +27,7 @@ import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -159,8 +160,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                                 // Now the listener drives fill interest via Stream.demand().
                                 drivesFillInterest = interim;
 
-                                tryReleaseData(false);
-
                                 // Notify the listener via onRequest()/onResponse().
                                 action.task().run();
 
@@ -264,25 +263,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
                     Frame frame = action.frame();
                     if (frame instanceof DataFrame dataFrame)
-                    {
-                        if (dataFrame.isLast() && !dataFrame.getByteBuffer().hasRemaining())
-                        {
-                            tryReleaseData(true);
-                            yield Content.Chunk.EOF;
-                        }
-                        else
-                        {
-                            // Retain because multiple frames can be parsed from the same QUIC chunk.
-                            quicChunk.retain();
-                            Content.Chunk h3Chunk = Content.Chunk.asChunk(dataFrame.getByteBuffer(), dataFrame.isLast(), quicChunk);
-                            if (h3Chunk.isLast())
-                                tryReleaseData(true);
-                            yield h3Chunk;
-                        }
-                    }
+                        yield Content.Chunk.asChunk(dataFrame.getByteBuffer(), dataFrame.isLast(), action.retainable());
 
                     // It is a trailer HEADERS frame.
-                    tryReleaseData(true);
                     yield Content.Chunk.EOF;
                 }
                 case EOF ->
@@ -301,56 +284,55 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("failure reading data on {}", this, x);
             tryReleaseData(true);
+            if (x instanceof HTTP3Exception.SessionException h3x)
+                parser.getListener().onSessionFailure(h3x.getErrorCode(), h3x.getReason(), x);
             return Content.Chunk.from(x);
         }
     }
 
     private ParseResult parseAndFill()
     {
-        try
+        if (LOG.isDebugEnabled())
+            LOG.debug("parse+fill on {}", this);
+
+        while (true)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("parse+fill on {}", this);
-
-            while (true)
+            if (quicChunk != null)
             {
-                if (quicChunk != null)
+                MessageParser.Result result = parser.parse(quicChunk.getByteBuffer(), quicChunk.isLast());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("parsed {} from {} on {}", result, quicChunk, this);
+
+                if (result == MessageParser.Result.FRAME)
                 {
-                    MessageParser.Result result = parser.parse(quicChunk.getByteBuffer(), quicChunk.isLast());
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("parsed {} from {} on {}", result, quicChunk, this);
-
-                    if (result == MessageParser.Result.FRAME)
-                        return ParseResult.FRAME;
-                    if (result == MessageParser.Result.BLOCKED_FRAME)
-                        return ParseResult.BLOCKED_FRAME;
-
-                    tryReleaseData(true);
+                    tryReleaseData(false);
+                    return ParseResult.FRAME;
+                }
+                if (result == MessageParser.Result.BLOCKED_FRAME)
+                {
+                    tryReleaseData(false);
+                    return ParseResult.BLOCKED_FRAME;
                 }
 
-                quicChunk = getEndPoint().fill();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("filled {} on {}", quicChunk, this);
-
-                if (quicChunk == null)
-                    return ParseResult.NO_FRAME;
-
-                if (quicChunk.hasRemaining())
-                    continue;
-
-                if (Content.Chunk.isFailure(quicChunk))
-                    throw new UncheckedIOException(IO.rethrow(quicChunk.getFailure()));
-
-                ParseResult result = quicChunk.isLast() ? ParseResult.EOF : ParseResult.NO_FRAME;
                 tryReleaseData(true);
-                return result;
             }
-        }
-        catch (Throwable x)
-        {
+
+            quicChunk = getEndPoint().fill();
             if (LOG.isDebugEnabled())
-                LOG.debug("parse+fill failure on {}", this, x);
-            throw x;
+                LOG.debug("filled {} on {}", quicChunk, this);
+
+            if (quicChunk == null)
+                return ParseResult.NO_FRAME;
+
+            if (quicChunk.hasRemaining())
+                continue;
+
+            if (Content.Chunk.isFailure(quicChunk))
+                throw new UncheckedIOException(IO.rethrow(quicChunk.getFailure()));
+
+            ParseResult result = quicChunk.isLast() ? ParseResult.EOF : ParseResult.NO_FRAME;
+            tryReleaseData(true);
+            return result;
         }
     }
 
@@ -367,9 +349,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 frame = new HeadersFrame(metaData, true);
         }
 
-        if (frame.isLast())
-            shutdownInput();
-
         delegate.run();
     }
 
@@ -377,9 +356,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("processing {} on {}", frame, this);
-
-        if (frame.isLast())
-            shutdownInput();
 
         delegate.run();
     }
@@ -435,7 +411,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 LOG.debug("received {}#{} wasBlocked={}", frame, streamId, wasBlocked);
             Runnable delegate = () -> super.onHeaders(streamId, frame, wasBlocked);
             Runnable task = () -> processHeaders(frame, wasBlocked, delegate);
-            if (!frameAction.compareAndSet(null, new FrameAction(frame, task)))
+            if (!frameAction.compareAndSet(null, new FrameAction(frame, task, null)))
                 throw new IllegalStateException();
             if (wasBlocked)
                 processFrames(ParseResult.FRAME);
@@ -447,8 +423,24 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("received {}#{}", frame, streamId);
             Runnable delegate = () -> super.onData(streamId, frame);
-            Runnable task = () -> processData(frame, delegate);
-            if (!frameAction.compareAndSet(null, new FrameAction(frame, task)))
+            Content.Chunk chunk = quicChunk;
+            Runnable task = () ->
+            {
+                try
+                {
+                    processData(frame, delegate);
+                }
+                catch (Throwable x)
+                {
+                    // Pairs the retain() below if the application
+                    // does not have a chance to read this data frame.
+                    chunk.release();
+                    throw x;
+                }
+            };
+            // Retain because the data frame contains a slice of the QUIC chunk.
+            chunk.retain();
+            if (!frameAction.compareAndSet(null, new FrameAction(frame, task, chunk)))
                 throw new IllegalStateException();
         }
     }
@@ -461,7 +453,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         EOF
     }
 
-    private record FrameAction(Frame frame, Runnable task)
+    private record FrameAction(Frame frame, Runnable task, Retainable retainable)
     {
     }
 
