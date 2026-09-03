@@ -19,6 +19,8 @@
     <maven.javadoc.skip>true</maven.javadoc.skip>
     <maven.remote-resources.plugin.version>3.2.0</maven.remote-resources.plugin.version>
     <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
+    <!-- no parent to inherit this from, and the jar ends up in the build cache checksum of every module -->
+    <project.build.outputTimestamp>2023-06-05T23:12:49Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <skipTests>true</skipTests>
   </properties>
