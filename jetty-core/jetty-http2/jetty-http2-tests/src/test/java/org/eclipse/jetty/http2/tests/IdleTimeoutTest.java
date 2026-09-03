@@ -57,9 +57,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -755,7 +758,7 @@ public class IdleTimeoutTest extends AbstractTest
         assertTrue(extraLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
         // Wait for WINDOW_UPDATEs to be processed by the client.
-        await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Session)client).updateSendWindow(0), greaterThan(0));
 
         // Wait for the server to finish serving requests.
         await().atMost(5, TimeUnit.SECONDS).until(handled::get, is(0));
@@ -895,6 +898,64 @@ public class IdleTimeoutTest extends AbstractTest
         http2Client.connect(address, new Session.Listener() {});
 
         await().atMost(Duration.ofMillis(5 * idleTimeout)).until(() -> connector.getConnectedEndPoints().size(), is(0));
+    }
+
+    @Test
+    public void testStreamIdleTimeoutIsRescheduled() throws Exception
+    {
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(new HttpConfiguration());
+        h2.setStreamIdleTimeout(idleTimeout);
+        prepareServer(h2);
+        connector.setIdleTimeout(-1);
+        CountDownLatch handlerLatch = new CountDownLatch(1);
+        AtomicInteger listenerCounter = new AtomicInteger();
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                request.addIdleTimeoutListener(e ->
+                {
+                    int count = listenerCounter.getAndIncrement();
+                    // Returning true marks the request as failed, but the handling goes on.
+                    return count > 0;
+                });
+
+                // Content must be EOF after the timeout listener fired once since it returned false.
+                await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(2 * idleTimeout, TimeUnit.MILLISECONDS).until(listenerCounter::get, is(1));
+                Content.Chunk read = request.read();
+                assertThat(read.getFailure(), nullValue());
+                assertThat(read.isLast(), is(true));
+                assertThat(read.getByteBuffer().remaining(), is(0));
+
+                // Content must be TimeoutException after the timeout listener fired twice since it returned true.
+                await().atMost(3 * idleTimeout, TimeUnit.MILLISECONDS).until(listenerCounter::get, is(2));
+                assertInstanceOf(TimeoutException.class, request.read().getFailure());
+
+                callback.succeeded();
+                handlerLatch.countDown();
+                return true;
+            }
+        });
+        server.start();
+
+        prepareClient();
+        httpClient.start();
+        Session client = newClientSession(new Session.Listener() {});
+
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
+        client.newStream(frame, new Stream.Listener()
+        {
+            @Override
+            public void onClosed(Stream stream)
+            {
+                closeLatch.countDown();
+                Stream.Listener.super.onClosed(stream);
+            }
+        });
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(closeLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     private void sleep(long value)
