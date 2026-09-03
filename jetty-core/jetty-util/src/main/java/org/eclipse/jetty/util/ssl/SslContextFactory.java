@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.CertPathTrustManagerParameters;
@@ -2257,6 +2258,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         private boolean _wantClientAuth;
         private boolean _sniRequired;
         private SniX509ExtendedKeyManager.SniSelector _sniSelector;
+        private UnaryOperator<X509ExtendedTrustManager> _trustManagerWrapper;
 
         public Server()
         {
@@ -2432,6 +2434,54 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
         {
             return new SniX509ExtendedKeyManager(keyManager, this);
+        }
+
+        /**
+         * @return the custom function to wrap trust managers
+         */
+        public UnaryOperator<X509ExtendedTrustManager> getTrustManagerWrapper()
+        {
+            return _trustManagerWrapper;
+        }
+
+        /**
+         * <p>Sets a custom function to wrap trust managers.</p>
+         * <p>This allows intercepting certificate validation to access
+         * certificate chains even when validation fails.</p>
+         *
+         * @param wrapper the wrapper function
+         */
+        public void setTrustManagerWrapper(UnaryOperator<X509ExtendedTrustManager> wrapper)
+        {
+            _trustManagerWrapper = wrapper;
+        }
+
+        /**
+         * <p>Creates a new X509ExtendedTrustManager, possibly wrapping the given one.</p>
+         * <p>Subclasses may override to provide custom trust manager implementations.</p>
+         *
+         * @param trustManager the trust manager to wrap
+         * @return the (possibly wrapped) trust manager
+         */
+        protected X509ExtendedTrustManager newX509ExtendedTrustManager(X509ExtendedTrustManager trustManager)
+        {
+            UnaryOperator<X509ExtendedTrustManager> wrapper = getTrustManagerWrapper();
+            return wrapper != null ? wrapper.apply(trustManager) : trustManager;
+        }
+
+        @Override
+        protected TrustManager[] getTrustManagers(KeyStore trustStore, Collection<? extends CRL> crls) throws Exception
+        {
+            TrustManager[] managers = super.getTrustManagers(trustStore, crls);
+            if (managers != null)
+            {
+                for (int idx = 0; idx < managers.length; idx++)
+                {
+                    if (managers[idx] instanceof X509ExtendedTrustManager x509TrustManager)
+                        managers[idx] = newX509ExtendedTrustManager(x509TrustManager);
+                }
+            }
+            return managers;
         }
     }
 
