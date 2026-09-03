@@ -46,6 +46,17 @@
           </excludeProperties>
         </effectivePom>
       </plugin>
+      <!-- this one points at the whole build/ dir, which the scanner walks recursively -->
+      <plugin groupId="org.apache.maven.plugins" artifactId="maven-resources-plugin">
+        <executions>
+          <execution>
+            <execIds>
+              <execId>generate-git-sha-properties</execId>
+            </execIds>
+            <dirScan mode="skip"/>
+          </execution>
+        </executions>
+      </plugin>
       <plugin groupId="org.apache.maven.plugins" artifactId="maven-surefire-plugin">
         <effectivePom>
           <excludeProperties>
