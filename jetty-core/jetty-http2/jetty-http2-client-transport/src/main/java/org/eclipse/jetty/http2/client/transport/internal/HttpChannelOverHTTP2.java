@@ -130,6 +130,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     @Override
     public void release()
     {
+        Stream stream = getStream();
         setStream(null);
         connection.release(this);
         if (LOG.isDebugEnabled())
