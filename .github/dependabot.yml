@@ -562,7 +562,7 @@ updates:
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
       - dependency-name: "org.glassfish.jersey:*"
-        versions: [ ">=3.1.0" ]
+        versions: [ ">3.1.0" ]
       - dependency-name: "jakarta.activation:jakarta.activation-api"
         versions:  [ ">= 2.1.0"]
       - dependency-name: "jakarta.annotation:jakarta.annotation-api"
