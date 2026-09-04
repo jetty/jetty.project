@@ -10,7 +10,7 @@ ee11
 security
 
 [depend]
-jaspi
+ee11-jaspi
 
 [xml]
 etc/jaspi/jetty-ee11-jaspi-demo.xml
