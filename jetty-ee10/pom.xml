@@ -79,8 +79,8 @@
         <version>${ee10.jakarta.xml.jaxws.impl.version}</version>
       </dependency>
       <dependency>
-        <groupId>jakarta.annotations.jsp</groupId>
-        <artifactId>jakarta.annotations-api</artifactId>
+        <groupId>jakarta.annotation</groupId>
+        <artifactId>jakarta.annotation-api</artifactId>
         <version>${ee10.jakarta.annotation.api.version}</version>
       </dependency>
       <dependency>

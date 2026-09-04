@@ -11,7 +11,7 @@ infinispan-embedded
 sessions/infinispan/embedded/infinispan-embedded-query-libs
 
 [lib]
-lib/infinispan/*.jar
+lib/infinispan/**.jar
 lib/jetty-infinispan-embedded-query-${jetty.version}.jar
 
 [xml]
