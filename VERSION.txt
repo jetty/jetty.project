@@ -1,4 +1,10 @@
-jetty-12.1.13-SNAPSHOT
+12.1.13 - 04 September 2026
+ + 14403 `RoundRobinConnectionPoolTest.testMultiplexWithMaxUsage()` on FCGI is flaky (@DragonFSKY)
+ + 14906 Flaky test: RedispatchTests.testEe8FilterWithAwkwardRequestURI() — fails in 45% of CI builds (@DragonFSKY)
+ + 14930 `SymlinkAllowedResourceAliasChecker.check()` fails with NPE (@kamilkrzywanski)
+ + 15385 Streamline dependencies for HTTP/3 Server with Quiche
+ + 15504 BouncyCastleClientALPNProcessor does not have a fallback for empty protocol string. (@DragonFSKY)
+ + 15548 AbstractProxyServlet.filterServerResponseHeader returns existing value
 
 12.1.12 - 04 August 2026
  + 577   AbstractProxyServlet onServerResponseHeaders addHeader rather than setHeader

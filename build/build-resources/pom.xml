@@ -8,7 +8,7 @@
     -->
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>build-resources</artifactId>
-  <version>12.1.13-SNAPSHOT</version>
+  <version>12.1.13</version>
   <packaging>jar</packaging>
   <name>Build :: Resources</name>
 
@@ -20,7 +20,7 @@
     <maven.remote-resources.plugin.version>3.2.0</maven.remote-resources.plugin.version>
     <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
     <!-- no parent to inherit this from, and the jar ends up in the build cache checksum of every module -->
-    <project.build.outputTimestamp>2026-08-03T22:50:59Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-09-04T06:51:34Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <skipTests>true</skipTests>
   </properties>
