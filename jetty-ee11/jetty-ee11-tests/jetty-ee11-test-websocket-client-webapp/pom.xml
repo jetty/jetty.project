@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee11</groupId>
     <artifactId>jetty-ee11-tests</artifactId>
-    <version>12.1.13</version>
+    <version>12.1.14-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-ee11-test-websocket-client-webapp</artifactId>
   <packaging>war</packaging>
