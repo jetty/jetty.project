@@ -3,6 +3,9 @@
 [description]
 Template configuration file to apply to all web applications deployed in the EE10 environment.
 
+[environment]
+ee10
+
 [tags]
 deployment
 
