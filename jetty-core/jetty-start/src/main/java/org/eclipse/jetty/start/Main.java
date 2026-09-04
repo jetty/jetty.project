@@ -369,10 +369,10 @@ public class Main
         args.getAllModules().showModules(out, args.getShowModules());
     }
 
-    public void validateModules(PrintStream out, StartArgs args) throws IOException
+    public void validateModules(StartArgs args) throws IOException
     {
         StartLog.endStartLog();
-        ModulesValidation.validateModules(args.getAllModules(), out, args.getValidateModules());
+        ModulesValidation.validateModules(args.getAllModules(), args.getValidateModules());
     }
 
     /**
@@ -519,7 +519,7 @@ public class Main
         // Validate modules
         if (args.getValidateModules() != null)
         {
-            validateModules(System.out, args);
+            validateModules(args);
         }
 
         // Generate Module Graph File

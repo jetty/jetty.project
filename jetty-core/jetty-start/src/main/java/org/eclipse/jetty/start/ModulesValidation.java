@@ -14,7 +14,6 @@
 package org.eclipse.jetty.start;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,7 +26,7 @@ public class ModulesValidation
 {
     public static final String VALIDATE_ORIGIN = "validate-modules";
 
-    public static void validateModules(Modules modules, PrintStream out, List<String> moduleSelection) throws IOException
+    public static void validateModules(Modules modules, List<String> moduleSelection) throws IOException
     {
         List<Module> selectedModules = (moduleSelection.contains("*") || moduleSelection.isEmpty())
             ? modules.stream().sorted().toList()
@@ -49,72 +48,41 @@ public class ModulesValidation
 
             Set<String> provides = module.getProvides();
             provides.remove(module.getName());
-            out.printf("%n     Module: %s %s%n", module.getName(), !provides.isEmpty() ? provides : "");
-            for (String description : module.getDescription())
-            {
-                out.printf("           : %s%n", description);
-            }
-            if (module.getEnvironment() != null)
-            {
-                out.printf("Environment: %s%n", module.getEnvironment());
-            }
             for (Props.Prop prop: moduleProps)
             {
-                out.printf("       Prop: %s=%s%n", prop.key, prop.value);
                 String expandedValue = fullProps.expand(prop.value);
                 if (expandedValue.contains("$") || expandedValue.contains("@"))
                     failures.add("%s - [ini] Bad/Unexpandable property [%s=%s]".formatted(module.getName(), prop.key, prop.value));
-            }
-            if (!module.getTags().isEmpty())
-            {
-                String label = "       Tags: %s";
-                for (String t : module.getTags())
-                {
-                    out.printf(label, t);
-                    label = ", %s";
-                }
-                out.println();
             }
             if (!module.getDepends().isEmpty())
             {
                 for (String parent : module.getDepends())
                 {
                     parent = Module.normalizeModuleName(parent);
-                    out.printf("     Depend: %s", parent);
-                    if (Module.isConditionalDependency(parent))
-                        out.print(" [conditional]");
-                    else if (!hasDependency(modules, parent))
+                    if (!Module.isConditionalDependency(parent) && !hasDependency(modules, parent))
                     {
-                        out.print(" [MISSING]");
                         failures.add("%s - [depends] Does not exist '%s'".formatted(module.getName(), parent));
                     }
-                    out.println();
                 }
             }
             if (!module.getBefore().isEmpty())
             {
                 for (String before : module.getBefore())
                 {
-                    out.printf("     Before: %s", before);
                     if (!hasDependency(modules, before))
                     {
-                        out.print(" [MISSING]");
                         failures.add("%s - [before] Does not exist '%s'".formatted(module.getName(), before));
                     }
-                    out.println();
                 }
             }
             if (!module.getAfter().isEmpty())
             {
                 for (String after : module.getAfter())
                 {
-                    out.printf("      After: %s", after);
                     if (!hasDependency(modules, after))
                     {
-                        out.print(" [MISSING]");
                         failures.add("%s - [after] Does not exist '%s'".formatted(module.getName(), after));
                     }
-                    out.println();
                 }
             }
 
@@ -127,7 +95,6 @@ public class ModulesValidation
 
                 for (String file : module.getFiles())
                 {
-                    out.printf("       FILE: %s%n", file);
                     String fileRef = fullProps.expand(file);
                     if (fileRef.contains("${") || fileRef.contains("@")) // didn't properly expand
                     {
@@ -164,22 +131,20 @@ public class ModulesValidation
             for (String lib : module.getLibs())
             {
                 boolean found = false;
-                out.printf("        LIB: %s", lib);
                 String expandedLib = fullProps.expand(lib);
-                if (expandedLib.endsWith("**.jar"))
+                if (expandedLib.endsWith("*.jar"))
                 {
-                    out.print(" [glob]");
+                    if (!expandedLib.endsWith("/**.jar"))
+                        failures.add("%s - [lib] Bad glob definition (should end in `/**.jar`) %s".formatted(module.getName(), lib));
                     found = true;
                 }
                 if (expandedLib.endsWith("/"))
                 {
-                    out.print(" [dir]");
                     found = true;
                 }
                 if (filesLocations.contains(expandedLib))
                 {
                     // Found in [files] section
-                    out.print(" [files-defined]");
                     found = true;
                 }
                 else
@@ -188,12 +153,10 @@ public class ModulesValidation
                     {
                         if (Files.exists(libPath))
                         {
-                            out.printf(" [path:%s]", libPath);
                             found = true;
                         }
                     }
                 }
-                out.println();
                 if (!found)
                     failures.add("%s - [lib] Does not exist '%s'".formatted(module.getName(), lib));
             }
@@ -201,12 +164,10 @@ public class ModulesValidation
             for (String xml : module.getXmls())
             {
                 boolean found = false;
-                out.printf("        XML: %s", xml);
                 xml = fullProps.expand(xml);
                 if (filesLocations.contains(xml))
                 {
                     // Found in [files] section
-                    out.print(" [files-defined]");
                     found = true;
                 }
                 else
@@ -215,36 +176,21 @@ public class ModulesValidation
                     {
                         if (Files.exists(xmlPath))
                         {
-                            out.printf(" [path:%s]", xmlPath);
                             found = true;
                         }
                     }
                 }
-                out.println();
                 if (!found)
                     failures.add("%s - [xml] Does not exist '%s'".formatted(module.getName(), xml));
             }
-            for (String jpms : module.getJPMS())
-            {
-                out.printf("        JPMS: %s%n", jpms);
-            }
-            for (String jvm : module.getJvmArgs())
-            {
-                out.printf("        JVM: %s%n", jvm);
-            }
-            if (module.isEnabled())
-            {
-                for (String selection : module.getEnableSources())
-                {
-                    out.printf("    Enabled: %s%n", selection);
-                }
-            }
         }
+
+        System.err.printf("%nValidated %,d modules%n", selectedModules.size());
 
         if (!failures.isEmpty())
         {
             Collections.sort(failures);
-            System.err.printf("%n%nThere are %d failed module validations%n", failures.size());
+            System.err.printf("%nThere are %d failed module validations%n", failures.size());
             for (int i = 0; i < failures.size(); i++)
             {
                 System.err.printf("  %-3d: %s%n", i + 1, failures.get(i));
@@ -309,8 +255,6 @@ public class ModulesValidation
         {
             for (Module module : modules)
             {
-//                if (module.getTags().contains(name))
-//                    return true;
                 if (module.getName().equals(name))
                     return true;
                 Set<Module> provided = modules.getProvided(name);
