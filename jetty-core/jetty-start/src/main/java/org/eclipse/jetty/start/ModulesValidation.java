@@ -59,7 +59,8 @@ public class ModulesValidation
                 for (String parent : module.getDepends())
                 {
                     parent = Module.normalizeModuleName(parent);
-                    if (!Module.isConditionalDependency(parent) && !hasDependency(modules, parent))
+                    String expandedParent = fullProps.expand(parent);
+                    if (!Module.isConditionalDependency(parent) && !hasDependency(modules, expandedParent))
                     {
                         failures.add("%s - [depends] Does not exist '%s'".formatted(module.getName(), parent));
                     }
@@ -196,6 +197,10 @@ public class ModulesValidation
                 System.err.printf("  %-3d: %s%n", i + 1, failures.get(i));
             }
             throw new IllegalStateException("Failed to validate modules");
+        }
+        else
+        {
+            System.err.println("No failure detected.");
         }
     }
 
