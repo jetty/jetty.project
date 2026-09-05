@@ -175,6 +175,8 @@ def mavenBuild(jdk, cmdline, mvnName) {
     finally
     {
       junit testResults: '**/target/surefire-reports/TEST**.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      // thread dumps written by Surefire when a forked JVM had to be killed on timeout
+      archiveArtifacts artifacts: '**/target/jstacks/*.txt', allowEmptyArchive: true, onlyIfSuccessful: false, fingerprint: false
     }
   }
 }
