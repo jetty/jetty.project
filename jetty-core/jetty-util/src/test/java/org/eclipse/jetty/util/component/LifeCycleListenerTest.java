@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.util.component;
 
-import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,16 +35,10 @@ public class LifeCycleListenerTest
 
         lifecycle.setCause(cause);
 
-        try (StacklessLogging stackless = new StacklessLogging(AbstractLifeCycle.class))
-        {
-            lifecycle.start();
-            assertTrue(false);
-        }
-        catch (Exception e)
-        {
-            assertEquals(cause, e);
-            assertEquals(cause, listener.getCause());
-        }
+        Exception failure = assertThrows(Exception.class, lifecycle::start);
+        assertSame(cause, failure);
+        assertTrue(lifecycle.isFailed());
+        assertSame(cause, listener.getCause());
         lifecycle.setCause(null);
 
         lifecycle.start();
@@ -76,16 +70,10 @@ public class LifeCycleListenerTest
         lifecycle.start();
         lifecycle.setCause(cause);
 
-        try (StacklessLogging stackless = new StacklessLogging(AbstractLifeCycle.class))
-        {
-            lifecycle.stop();
-            assertTrue(false);
-        }
-        catch (Exception e)
-        {
-            assertEquals(cause, e);
-            assertEquals(cause, listener.getCause());
-        }
+        Exception failure = assertThrows(Exception.class, lifecycle::stop);
+        assertSame(cause, failure);
+        assertTrue(lifecycle.isFailed());
+        assertSame(cause, listener.getCause());
 
         lifecycle.setCause(null);
 
