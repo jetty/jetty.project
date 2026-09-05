@@ -52,6 +52,8 @@ public class TestQuickStart
     public void setUp()
     {
         server = new Server();
+        FooContextListener.___initialized = 0;
+        FooContextListener.__destroyed = 0;
     }
     
     @AfterEach

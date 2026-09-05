@@ -299,7 +299,7 @@
     <maven.retryFailedDeploymentCount>10</maven.retryFailedDeploymentCount>
     <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
     <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
-    <maven.surefire.plugin.version>3.5.6</maven.surefire.plugin.version>
+    <maven.surefire.plugin.version>3.6.0</maven.surefire.plugin.version>
     <maven.version>3.9.9</maven.version>
     <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <modify-sources-plugin.version>1.0.14</modify-sources-plugin.version>
@@ -342,6 +342,7 @@
     <spifly.version>1.3.7</spifly.version>
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
+    <surefire.timeout>3600</surefire.timeout>
     <swissbox.version>1.9.0</swissbox.version>
     <testcontainers.version>2.0.5</testcontainers.version>
     <testng.version>7.12.0</testng.version>
@@ -1754,7 +1755,12 @@
           <configuration>
             <trimStackTrace>false</trimStackTrace>
             <rerunFailingTestsCount>${surefire.rerunFailingTestsCount}</rerunFailingTestsCount>
-            <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
+            <forkedProcessTimeoutInSeconds>${surefire.timeout}</forkedProcessTimeoutInSeconds>
+            <!-- dump the threads of a forked JVM just before Surefire kills it on timeout, so we can see what hung -->
+            <forkedProcessTimeoutExtensionContext>
+              <jstack.enabled>true</jstack.enabled>
+              <jstack.output.location>${project.build.directory}/jstacks</jstack.output.location>
+            </forkedProcessTimeoutExtensionContext>
             <argLine>@{argLine} ${jetty.surefire.argLine}</argLine>
             <failIfNoTests>false</failIfNoTests>
             <forkCount>1</forkCount>
