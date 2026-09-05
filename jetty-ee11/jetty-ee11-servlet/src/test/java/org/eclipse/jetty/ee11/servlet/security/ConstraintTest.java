@@ -62,6 +62,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
@@ -2578,6 +2579,25 @@ public class ConstraintTest
             assertThat("%s %s authorization".formatted(httpMethod, requestPath), constraint.getAuthorization(), authorizationMatcher);
             assertThat("%s %s transport".formatted(httpMethod, requestPath), constraint.getTransport(), transportMatcher);
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+        PROPPATCH, PATCH
+        PATCH, PATCHED
+        """)
+    public void testSubstringMethod(String methodConstraint, String methodRequest) throws Exception
+    {
+        ConstraintMapping forbiddenMapping = new ConstraintMapping();
+        forbiddenMapping.setPathSpec("/test/*");
+        forbiddenMapping.setMethod(methodConstraint);
+        forbiddenMapping.setConstraint(Constraint.FORBIDDEN);
+        _security.setConstraintMappings(List.of(forbiddenMapping));
+        _server.start();
+
+        String requestPath = "/test/foo";
+        Constraint constraint = _security.getConstraint(requestPath, methodRequest);
+        assertThat("%s %s constraint not covered".formatted(methodRequest, requestPath), constraint, nullValue());
     }
 
     public static Stream<Arguments> singleForbiddenMethodOmissionCases()

@@ -280,7 +280,7 @@
     <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
     <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
     <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
-    <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
+    <maven.compiler.plugin.version>3.16.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.11.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
     <maven.deps.version>3.9.16</maven.deps.version>
@@ -1799,6 +1799,11 @@
             </statelessTestsetInfoReporter>
           </configuration>
           <dependencies>
+            <dependency>
+              <groupId>org.junit.platform</groupId>
+              <artifactId>junit-platform-commons</artifactId>
+              <version>${junit.platform.version}</version>
+            </dependency>
             <dependency>
               <groupId>org.junit.platform</groupId>
               <artifactId>junit-platform-engine</artifactId>

@@ -41,32 +41,39 @@ public abstract class Quiche
 
     static
     {
-        // This code is safe even if trying to load a QuicheBinding instance throws an error,
-        // as in that case a warning would be logged and the binding ignored.
-        List<QuicheBinding> bindings = TypeUtil.serviceStream(ServiceLoader.load(QuicheBinding.class))
-            .sorted(Comparator.comparingInt(QuicheBinding::priority))
-            .collect(Collectors.toList());
+        try
+        {
+            // Don't fail if a binding cannot be loaded, try the next.
+            List<QuicheBinding> bindings = TypeUtil.serviceStream(ServiceLoader.load(QuicheBinding.class))
+                .sorted(Comparator.comparingInt(QuicheBinding::priority))
+                .collect(Collectors.toList());
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("found quiche binding implementations: {}", bindings);
+            if (LOG.isDebugEnabled())
+                LOG.debug("found quiche binding implementations: {}", bindings);
 
-        List<Throwable> failures = new ArrayList<>();
-        QUICHE_BINDING = bindings.stream()
-            .filter(quicheBinding ->
-            {
-                Throwable failure = quicheBinding.initialize();
-                failures.add(failure);
-                return failure == null;
-            })
-            .min(Comparator.comparingInt(QuicheBinding::priority))
-            .orElseThrow(() ->
-            {
-                IllegalStateException ise = new IllegalStateException("no quiche binding implementation found");
-                failures.forEach(ise::addSuppressed);
-                return ise;
-            });
-        if (LOG.isDebugEnabled())
-            LOG.debug("using quiche binding implementation: {}", QUICHE_BINDING.getClass().getName());
+            List<Throwable> failures = new ArrayList<>();
+            QUICHE_BINDING = bindings.stream()
+                .filter(quicheBinding ->
+                {
+                    Throwable failure = quicheBinding.initialize();
+                    failures.add(failure);
+                    return failure == null;
+                })
+                .min(Comparator.comparingInt(QuicheBinding::priority))
+                .orElseThrow(() ->
+                {
+                    IllegalStateException ise = new IllegalStateException("no quiche binding implementation found");
+                    failures.forEach(ise::addSuppressed);
+                    return ise;
+                });
+            if (LOG.isDebugEnabled())
+                LOG.debug("using quiche binding implementation: {}", QUICHE_BINDING.getClass().getName());
+        }
+        catch (Throwable x)
+        {
+            LOG.warn("could not resolve quiche binding", x);
+            throw x;
+        }
     }
 
     public static InetSocketAddress toInetSocketAddress(SocketAddress address, boolean client)

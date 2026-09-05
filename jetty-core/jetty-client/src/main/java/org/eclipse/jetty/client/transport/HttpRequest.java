@@ -44,6 +44,7 @@ import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.HttpRedirector;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.PathRequestContent;
@@ -103,6 +104,7 @@ public class HttpRequest implements Request
     private Object tag;
     private boolean normalized;
     private boolean queued;
+    private HttpProxy httpProxy;
 
     public HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -921,6 +923,16 @@ public class HttpRequest implements Request
         boolean result = queued;
         queued = true;
         return result;
+    }
+
+    public HttpProxy getHttpProxy()
+    {
+        return httpProxy;
+    }
+
+    void httpProxy(HttpProxy httpProxy)
+    {
+        this.httpProxy = httpProxy;
     }
 
     private String buildQuery()
