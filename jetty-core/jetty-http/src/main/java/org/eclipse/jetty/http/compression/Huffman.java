@@ -288,11 +288,29 @@ public class Huffman
     static final int[][] LCCODES = new int[CODES.length][];
     static final char EOS = 256;
 
+    // Huffman encode codes stored in flattened long arrays for good locality
+    // of reference, packed as (code << CODE_SHIFT) | bits.
+    static final int CODE_SHIFT = 5;
+    static final int BITS_MASK = (1 << CODE_SHIFT) - 1;
+    static final long[] PACKED_CODES;
+    static final long[] PACKED_LCCODES;
+
     // Huffman decode tree stored in a flattened char array for good
     // locality of reference.
     static final char[] tree;
     static final char[] rowsym;
     static final byte[] rowbits;
+
+    /**
+     * <p>A fast lookup of the symbols whose code is 8 bits or fewer, indexed by
+     * the next 8 bits of input read at the root of the tree, and holding the
+     * symbol and its code length packed as {@code (bits << 8) | symbol}.</p>
+     * <p>Walking the tree costs 3 loads per symbol, one from {@code tree} and
+     * one each from {@code rowbits} and {@code rowsym}; this costs 1, from a
+     * table small enough to stay in the innermost cache. A zero means the next
+     * 8 bits do not complete a code, so the tree must be walked instead.</p>
+     */
+    static final char[] FAST_ROOT = new char[256];
 
     // Build the Huffman lookup tree and LC TABLE
     static
@@ -302,6 +320,9 @@ public class Huffman
         {
             LCCODES[i] = LCCODES['a' + i - 'A'];
         }
+
+        PACKED_CODES = pack(CODES);
+        PACKED_LCCODES = pack(LCCODES);
 
         int r = 0;
         for (int[] ints : CODES)
@@ -348,5 +369,30 @@ public class Huffman
                 tree[i] = (char)terminal;
             }
         }
+    }
+
+    static
+    {
+        // The root state is state 0, so its 256 entries are the start of the
+        // tree; an entry is a terminal node when it has a non zero bit count,
+        // and a terminal node reached directly from the root has a code no
+        // longer than the 8 bits used to reach it.
+        for (int i = 0; i < FAST_ROOT.length; i++)
+        {
+            char node = tree[i];
+            int bits = rowbits[node];
+            if (node != 0 && bits != 0 && rowsym[node] != EOS)
+                FAST_ROOT[i] = (char)((bits << 8) | rowsym[node]);
+        }
+    }
+
+    private static long[] pack(int[][] codes)
+    {
+        long[] packed = new long[codes.length];
+        for (int i = 0; i < codes.length; i++)
+        {
+            packed[i] = ((long)codes[i][0] << CODE_SHIFT) | codes[i][1];
+        }
+        return packed;
     }
 }
