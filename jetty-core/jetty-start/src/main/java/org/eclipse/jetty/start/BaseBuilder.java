@@ -16,12 +16,18 @@ package org.eclipse.jetty.start;
 import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.ProxySelector;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -29,10 +35,12 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.start.builders.StartDirBuilder;
 import org.eclipse.jetty.start.builders.StartIniBuilder;
 import org.eclipse.jetty.start.fileinits.BaseHomeFileInitializer;
+import org.eclipse.jetty.start.fileinits.DownloadFileInitializer;
 import org.eclipse.jetty.start.fileinits.LocalFileInitializer;
 import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer;
 import org.eclipse.jetty.start.fileinits.TestFileInitializer;
@@ -106,6 +114,17 @@ public class BaseBuilder
 
             // Normal URL downloads
             fileInitializers.add(new UriFileInitializer(startArgs, baseHome));
+
+            // Propagate download auth to all download-capable initializers
+            String authHeader = args.getDownloadAuthorizationHeader();
+            if (authHeader != null)
+            {
+                for (FileInitializer fi : fileInitializers)
+                {
+                    if (fi instanceof DownloadFileInitializer dfi)
+                        dfi.setAuthorizationHeader(authHeader);
+                }
+            }
         }
     }
 
@@ -118,6 +137,10 @@ public class BaseBuilder
     public boolean build() throws IOException
     {
         Modules modules = startArgs.getAllModules();
+
+        // Pre-process: download and extract any URL-based module references,
+        // replacing URLs in the startModules list with actual module names.
+        resolveRemoteModules(modules);
 
         // Select all the added modules to determine which ones are newly enabled
         Set<String> newlyAdded = new HashSet<>();
@@ -422,5 +445,190 @@ public class BaseBuilder
         }
 
         return dirty;
+    }
+
+    /**
+     * Tests whether a module name is actually a remote URL pointing to a config JAR.
+     *
+     * @param name the module name to test
+     * @return true if the name is an HTTP or HTTPS URL
+     */
+    static boolean isRemoteModuleUri(String name)
+    {
+        return name.startsWith("http://") || name.startsWith("https://");
+    }
+
+    /**
+     * Pre-processes the start modules list, downloading and extracting any entries
+     * that are remote URLs pointing to config JARs. Each URL entry is replaced in the
+     * start modules list with the actual module name(s) discovered inside the JAR.
+     *
+     * <p>A config JAR is a JAR/ZIP file whose contents are extracted directly into
+     * {@code ${jetty.base}}. It typically contains:</p>
+     * <ul>
+     *   <li>{@code modules/*.mod} — module definition files</li>
+     *   <li>{@code etc/*.xml} — XML configuration files</li>
+     *   <li>{@code lib/*.jar} — library files</li>
+     *   <li>{@code resources/} — resource files</li>
+     * </ul>
+     *
+     * @param modules the module registry to register newly discovered modules into
+     * @throws IOException if a download or extraction fails
+     */
+    private void resolveRemoteModules(Modules modules) throws IOException
+    {
+        List<String> startModules = startArgs.getStartModules();
+        List<String> resolved = new ArrayList<>();
+        boolean hasRemote = false;
+
+        for (String name : startModules)
+        {
+            if (isRemoteModuleUri(name))
+            {
+                hasRemote = true;
+                URI uri = URI.create(name);
+                StartLog.info("Downloading config JAR from %s", uri);
+
+                // Download to a temporary file
+                Path tempJar = downloadConfigJar(uri);
+
+                try
+                {
+                    // Extract JAR contents into ${jetty.base}
+                    Path jettyBase = baseHome.getBasePath();
+                    FS.extract(tempJar, jettyBase);
+
+                    // Register any new .mod files that were extracted
+                    Path modulesDir = jettyBase.resolve("modules");
+                    List<String> newModuleNames = modules.registerNewModules(modulesDir);
+
+                    if (newModuleNames.isEmpty())
+                    {
+                        StartLog.warn("No new modules found in config JAR: %s", uri);
+                    }
+                    else
+                    {
+                        StartLog.info("Discovered modules %s from %s", newModuleNames, uri);
+                    }
+
+                    resolved.addAll(newModuleNames);
+                }
+                finally
+                {
+                    // Clean up the temp file
+                    Files.deleteIfExists(tempJar);
+                }
+            }
+            else
+            {
+                resolved.add(name);
+            }
+        }
+
+        if (hasRemote)
+        {
+            // Replace the start modules list with the resolved names
+            startModules.clear();
+            startModules.addAll(resolved);
+        }
+    }
+
+    /**
+     * Downloads a config JAR from a remote URI to a temporary file.
+     *
+     * @param uri the URI to download from
+     * @return the path to the downloaded temporary file
+     * @throws IOException if the download fails
+     */
+    private Path downloadConfigJar(URI uri) throws IOException
+    {
+        // Validate the initial URL against the allowlist
+        validateDownloadUrl(uri);
+
+        if ("http".equalsIgnoreCase(uri.getScheme()) && !startArgs.isAllowInsecureHttpDownloads())
+        {
+            throw new IOException("Insecure HTTP download not allowed (use " +
+                StartArgs.ARG_ALLOW_INSECURE_HTTP_DOWNLOADS + " to bypass): " + uri);
+        }
+
+        HttpClient httpClient = HttpClient.newBuilder()
+            .followRedirects(startArgs.isAllowInsecureHttpDownloads()
+                ? HttpClient.Redirect.ALWAYS
+                : HttpClient.Redirect.NORMAL)
+            .proxy(ProxySelector.getDefault())
+            .build();
+
+        Path tempFile = Files.createTempFile("jetty-config-", ".jar");
+        try
+        {
+            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
+                .uri(uri)
+                .GET();
+            String authHeader = startArgs.getDownloadAuthorizationHeader();
+            if (authHeader != null)
+                reqBuilder.header("Authorization", authHeader);
+            HttpRequest request = reqBuilder.build();
+
+            HttpResponse<InputStream> response =
+                httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+
+            // Validate the final URI after any redirects
+            URI finalUri = response.uri();
+            if (!finalUri.equals(uri))
+                validateDownloadUrl(finalUri);
+
+            int status = response.statusCode();
+            if (status != 200)
+            {
+                Files.deleteIfExists(tempFile);
+                throw new IOException("URL GET Failure [status " + status + "] on " + uri);
+            }
+
+            try (InputStream in = response.body())
+            {
+                Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            return tempFile;
+        }
+        catch (InterruptedException e)
+        {
+            Files.deleteIfExists(tempFile);
+            throw new IOException("Download interrupted: " + uri, e);
+        }
+        catch (IOException e)
+        {
+            Files.deleteIfExists(tempFile);
+            throw e;
+        }
+    }
+
+    /**
+     * Validates that a download URI matches at least one allowed URL prefix.
+     * If {@code --allow-insecure-http-downloads} is enabled, the check is bypassed.
+     *
+     * @param uri the URI to validate
+     * @throws IOException if the URI does not match any allowed prefix
+     */
+    private void validateDownloadUrl(URI uri) throws IOException
+    {
+        if (startArgs.isAllowInsecureHttpDownloads())
+            return;
+
+        String uriString = uri.toString();
+        List<String> allowedUrls = startArgs.getDownloadAllowedUrls();
+
+        for (String prefix : allowedUrls)
+        {
+            if (uriString.startsWith(prefix))
+                return;
+        }
+
+        throw new IOException(String.format(
+            "Download URL not in allowlist: %s%nAllowed URL prefixes:%n%s%nUse %s=<prefix> or %s=<file> to add trusted download sources.",
+            uri,
+            allowedUrls.stream().map(p -> "  - " + p).collect(Collectors.joining(System.lineSeparator())),
+            StartArgs.ARG_DOWNLOAD_ALLOWED_URLS,
+            StartArgs.ARG_DOWNLOAD_ALLOWED_URLS_FILE));
     }
 }

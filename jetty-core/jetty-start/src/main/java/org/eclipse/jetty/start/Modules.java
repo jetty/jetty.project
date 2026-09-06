@@ -251,7 +251,61 @@ public class Modules implements Iterable<Module>
         }
     }
 
-    private Module registerModule(Path file)
+    /**
+     * Scan a directory for {@code .mod} files and register any that are not already known.
+     *
+     * @param modulesDir the directory to scan (e.g. {@code ${jetty.base}/modules/})
+     * @return the list of newly registered module names
+     * @throws IOException if unable to scan the directory
+     */
+    public List<String> registerNewModules(Path modulesDir) throws IOException
+    {
+        List<String> newModuleNames = new ArrayList<>();
+        if (!Files.isDirectory(modulesDir))
+            return newModuleNames;
+
+        try (Stream<Path> modFiles = Files.walk(modulesDir))
+        {
+            modFiles
+                .filter(Files::isRegularFile)
+                .filter(p -> p.getFileName().toString().endsWith(".mod"))
+                .forEach(modFile ->
+                {
+                    // Derive the module name the same way the Module constructor does:
+                    // relative path under modules/ directory, without the .mod extension.
+                    Path relative = modulesDir.relativize(modFile);
+                    StringBuilder nameBuilder = new StringBuilder();
+                    for (int i = 0; i < relative.getNameCount(); i++)
+                    {
+                        if (i > 0)
+                            nameBuilder.append("/");
+                        nameBuilder.append(relative.getName(i));
+                    }
+                    String fileName = nameBuilder.toString();
+                    String moduleName = fileName.substring(0, fileName.length() - ".mod".length());
+
+                    if (_names.containsKey(moduleName))
+                    {
+                        StartLog.debug("Module [%s] already registered, skipping", moduleName);
+                        return;
+                    }
+
+                    Module module = registerModule(modFile);
+                    newModuleNames.add(module.getName());
+                    StartLog.info("Registered remote module [%s]", module.getName());
+                });
+        }
+        return newModuleNames;
+    }
+
+    /**
+     * Register a single module from a {@code .mod} file.
+     *
+     * @param file the path to the {@code .mod} file
+     * @return the registered Module
+     * @throws IllegalStateException if the file cannot be read or parsed
+     */
+    Module registerModule(Path file)
     {
         if (!FS.canReadFile(file))
         {
