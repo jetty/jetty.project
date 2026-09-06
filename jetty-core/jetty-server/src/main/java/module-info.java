@@ -15,10 +15,12 @@ module org.eclipse.jetty.server
 {
     requires transitive org.eclipse.jetty.http;
     requires transitive org.slf4j;
-
+    requires com.github.luben.zstd_jni;
+    
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
-
+    requires org.eclipse.jetty.compression.brotli;
+    
     exports org.eclipse.jetty.server;
     exports org.eclipse.jetty.server.handler;
     exports org.eclipse.jetty.server.handler.gzip;
