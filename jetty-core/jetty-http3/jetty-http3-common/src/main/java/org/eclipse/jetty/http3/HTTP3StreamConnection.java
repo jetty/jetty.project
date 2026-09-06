@@ -27,11 +27,13 @@ import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +42,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3StreamConnection.class);
 
+    private final AutoLock lock = new AutoLock();
     private final Callback fillableCallback = new FillableCallback();
     private final AtomicReference<FrameAction> frameAction = new AtomicReference<>();
     private final MessageParser parser;
@@ -260,30 +263,44 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 case FRAME ->
                 {
                     FrameAction action = frameAction.getAndSet(null);
-                    action.task().run();
-
-                    Frame frame = action.frame();
-                    if (frame instanceof DataFrame dataFrame)
+                    // Retain because the DATA frame bytes reference the QUIC chunk.
+                    Content.Chunk quicChunk = retainData();
+                    try
                     {
-                        if (dataFrame.isLast() && !dataFrame.getByteBuffer().hasRemaining())
-                        {
-                            tryReleaseData(true);
-                            yield Content.Chunk.EOF;
-                        }
-                        else
-                        {
-                            // Retain because multiple frames can be parsed from the same QUIC chunk.
-                            quicChunk.retain();
-                            Content.Chunk h3Chunk = Content.Chunk.asChunk(dataFrame.getByteBuffer(), dataFrame.isLast(), quicChunk);
-                            if (h3Chunk.isLast())
-                                tryReleaseData(true);
-                            yield h3Chunk;
-                        }
-                    }
+                        action.task().run();
 
-                    // It is a trailer HEADERS frame.
-                    tryReleaseData(true);
-                    yield Content.Chunk.EOF;
+                        Frame frame = action.frame();
+                        if (frame instanceof DataFrame dataFrame)
+                        {
+                            // A concurrent release invalidated the frame bytes.
+                            if (quicChunk == null)
+                                throw new EofException("stream closed while reading");
+
+                            if (dataFrame.isLast() && !dataFrame.getByteBuffer().hasRemaining())
+                            {
+                                tryReleaseData(true);
+                                yield Content.Chunk.EOF;
+                            }
+                            else
+                            {
+                                Content.Chunk h3Chunk = Content.Chunk.asChunk(dataFrame.getByteBuffer(), dataFrame.isLast(), quicChunk);
+                                // The retain above is now owned by h3Chunk.
+                                quicChunk = null;
+                                if (h3Chunk.isLast())
+                                    tryReleaseData(true);
+                                yield h3Chunk;
+                            }
+                        }
+
+                        // It is a trailer HEADERS frame.
+                        tryReleaseData(true);
+                        yield Content.Chunk.EOF;
+                    }
+                    finally
+                    {
+                        if (quicChunk != null)
+                            quicChunk.release();
+                    }
                 }
                 case EOF ->
                 {
@@ -314,35 +331,51 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
             while (true)
             {
-                if (quicChunk != null)
+                // Retain so that a concurrent release does not recycle the buffer being parsed.
+                Content.Chunk chunk = retainData();
+                if (chunk != null)
                 {
-                    MessageParser.Result result = parser.parse(quicChunk.getByteBuffer(), quicChunk.isLast());
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("parsed {} from {} on {}", result, quicChunk, this);
+                    try
+                    {
+                        MessageParser.Result result = parser.parse(chunk.getByteBuffer(), chunk.isLast());
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("parsed {} from {} on {}", result, chunk, this);
 
-                    if (result == MessageParser.Result.FRAME)
-                        return ParseResult.FRAME;
-                    if (result == MessageParser.Result.BLOCKED_FRAME)
-                        return ParseResult.BLOCKED_FRAME;
+                        if (result == MessageParser.Result.FRAME)
+                            return ParseResult.FRAME;
+                        if (result == MessageParser.Result.BLOCKED_FRAME)
+                            return ParseResult.BLOCKED_FRAME;
+                    }
+                    finally
+                    {
+                        chunk.release();
+                    }
 
                     tryReleaseData(true);
                 }
 
-                quicChunk = getEndPoint().fill();
+                Content.Chunk filled = getEndPoint().fill();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("filled {} on {}", quicChunk, this);
+                    LOG.debug("filled {} on {}", filled, this);
 
-                if (quicChunk == null)
+                if (filled == null)
                     return ParseResult.NO_FRAME;
 
-                if (quicChunk.hasRemaining())
+                if (filled.hasRemaining())
+                {
+                    storeData(filled);
                     continue;
+                }
 
-                if (Content.Chunk.isFailure(quicChunk))
-                    throw new UncheckedIOException(IO.rethrow(quicChunk.getFailure()));
+                // Not stored, so nothing else can observe it; release it here.
+                if (Content.Chunk.isFailure(filled))
+                {
+                    filled.release();
+                    throw new UncheckedIOException(IO.rethrow(filled.getFailure()));
+                }
 
-                ParseResult result = quicChunk.isLast() ? ParseResult.EOF : ParseResult.NO_FRAME;
-                tryReleaseData(true);
+                ParseResult result = filled.isLast() ? ParseResult.EOF : ParseResult.NO_FRAME;
+                filled.release();
                 return result;
             }
         }
@@ -402,17 +435,58 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         getEndPoint().disconnect(appErrorCode, failure, true, promise);
     }
 
+    /**
+     * <p>Retains the QUIC chunk, so that it is not recycled while in use.</p>
+     *
+     * @return the retained QUIC chunk that the caller must release,
+     * or {@code null} if it was already released
+     */
+    private Content.Chunk retainData()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            // A non-null quicChunk is still referenced by this connection, because
+            // tryReleaseData() nulls it before releasing, so this cannot race to zero.
+            if (quicChunk != null)
+                quicChunk.retain();
+            return quicChunk;
+        }
+    }
+
+    /**
+     * <p>Stores the QUIC chunk just filled, taking ownership of its reference.</p>
+     *
+     * @param chunk the QUIC chunk to store
+     */
+    private void storeData(Content.Chunk chunk)
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            assert quicChunk == null;
+            quicChunk = chunk;
+        }
+    }
+
+    /**
+     * <p>Releases the QUIC chunk reference owned by this connection; the references
+     * taken by {@link #retainData()} are released by their callers.</p>
+     *
+     * @param force whether to release even if the chunk has bytes left to parse
+     */
     private void tryReleaseData(boolean force)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("releasing force={} {} on {}", force, quicChunk, this);
-        if (quicChunk == null)
-            return;
-        if (force || !quicChunk.hasRemaining())
+        Content.Chunk chunk;
+        try (AutoLock ignored = lock.lock())
         {
-            quicChunk.release();
+            chunk = quicChunk;
+            if (chunk == null || (!force && chunk.hasRemaining()))
+                return;
+            // Claim the chunk so it is released at most once, even if called concurrently.
             quicChunk = null;
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("releasing force={} {} on {}", force, chunk, this);
+        chunk.release();
     }
 
     @Override
