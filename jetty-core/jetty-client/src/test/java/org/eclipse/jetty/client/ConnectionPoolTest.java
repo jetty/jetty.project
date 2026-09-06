@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
@@ -56,6 +58,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.eclipse.jetty.client.Response.CompleteListener;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -671,6 +674,48 @@ public class ConnectionPoolTest
 
     @ParameterizedTest
     @MethodSource("pools")
+    public void testActivateRacingWithRemoveWhenMaxDurationEnabled(ConnectionPoolFactory factory) throws Exception
+    {
+        startClient(factory.factory);
+
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(new HttpDestination(client, new Origin("", "", 0)));
+        LifeCycle.start(connectionPool);
+        // maxDuration > 0 enables the EntryHolder expiration check in activate().
+        connectionPool.setMaxDuration(3_600_000);
+
+        Connection connection = new RemoveOnIsClosedConnection(connectionPool);
+        assertTrue(connectionPool.accept(connection));
+
+        // The concurrently removed connection must be skipped;
+        // the pool is then empty, so activate() returns null.
+        assertThat(connectionPool.activate(), nullValue());
+
+        LifeCycle.stop(connectionPool);
+    }
+
+    @ParameterizedTest
+    @MethodSource("pools")
+    public void testActivateRacingWithRemoveWhenMaxUsageEnabled(ConnectionPoolFactory factory) throws Exception
+    {
+        startClient(factory.factory);
+
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(new HttpDestination(client, new Origin("", "", 0)));
+        LifeCycle.start(connectionPool);
+        // Disable maxDuration (the duplex-maxDuration factory enables it)
+        // so that activate() reaches the EntryHolder usage check.
+        connectionPool.setMaxDuration(0);
+        connectionPool.setMaxUsage(2);
+
+        Connection connection = new RemoveOnIsClosedConnection(connectionPool);
+        assertTrue(connectionPool.accept(connection));
+
+        assertThat(connectionPool.activate(), nullValue());
+
+        LifeCycle.stop(connectionPool);
+    }
+
+    @ParameterizedTest
+    @MethodSource("pools")
     public void testNullSafeAndCountersSweepToStringThroughLifecycle(ConnectionPoolFactory factory) throws Exception
     {
         startClient(destination ->
@@ -727,6 +772,50 @@ public class ConnectionPoolTest
         public String toString()
         {
             return name;
+        }
+    }
+
+    private static class RemoveOnIsClosedConnection implements Connection, Attachable
+    {
+        private final AbstractConnectionPool pool;
+        private final AtomicBoolean removed = new AtomicBoolean();
+        private Object attachment;
+
+        private RemoveOnIsClosedConnection(AbstractConnectionPool pool)
+        {
+            this.pool = pool;
+        }
+
+        @Override
+        public void send(Request request, CompleteListener listener)
+        {
+        }
+
+        @Override
+        public void close()
+        {
+        }
+
+        @Override
+        public boolean isClosed()
+        {
+            // Simulate the concurrent removal happening
+            // between Pool.acquire() and the attachment read.
+            if (removed.compareAndSet(false, true))
+                pool.remove(this);
+            return false;
+        }
+
+        @Override
+        public void setAttachment(Object obj)
+        {
+            this.attachment = obj;
+        }
+
+        @Override
+        public Object getAttachment()
+        {
+            return attachment;
         }
     }
 }
