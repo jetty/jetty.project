@@ -479,9 +479,17 @@ public class QuicheStream extends AbstractStream
             if (x == null)
             {
                 if (expired)
+                {
                     disconnect(ErrorCode.NO_ERROR.code(), timeout, Promise.Invocable.noop());
+                }
                 else
+                {
                     notIdle();
+                    // This promise may not be called from the thread that called onIdleTimeout() so CyclicTimeouts.iterate()
+                    // may not notice that the expireNanoTime field has been updated, so we need to explicitly reschedule the
+                    // timeout.
+                    session.scheduleIdleTimeout(this);
+                }
             }
             else
             {
