@@ -34,6 +34,11 @@
       <excludes>
         <exclude glob="*Jenkinsfile*" />
         <exclude glob="./idea/*" />
+        <!-- The invoker plugin points localRepositoryPath and cloneProjectsTo at these, and the
+             scanner follows path-valued plugin config, so whatever happens to be sitting there
+             ends up in the checksum. They are build output, never input. -->
+        <exclude>target/local-repo</exclude>
+        <exclude>target/it</exclude>
       </excludes>
     </global>
     <plugins>

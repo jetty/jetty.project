@@ -175,6 +175,15 @@ def mavenBuild(jdk, cmdline, mvnName) {
     finally
     {
       junit testResults: '**/target/surefire-reports/TEST**.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      // A handful of modules get a fresh build cache checksum on every run and so never hit the
+      // cache. Each buildinfo.xml lists the inputs that went into a checksum, so keeping them
+      // lets us diff two runs and see which input moved. Drop this once the cause is found.
+      sh """
+        rm -rf cache-debug
+        mkdir -p cache-debug/${jdk}
+        find build-cache -name buildinfo.xml -print 2>/dev/null | grep -E '(maven-plugin|osgi|test-distribution-common|jetty-slf4j-impl)' | while read -r f; do cp --parents "\$f" cache-debug/${jdk}/ || true; done
+      """
+      archiveArtifacts artifacts: 'cache-debug/**/buildinfo.xml', allowEmptyArchive: true, onlyIfSuccessful: false
     }
   }
 }
