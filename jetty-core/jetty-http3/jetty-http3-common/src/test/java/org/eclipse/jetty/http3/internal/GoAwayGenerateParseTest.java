@@ -21,6 +21,7 @@ import org.eclipse.jetty.http3.generator.ControlGenerator;
 import org.eclipse.jetty.http3.parser.ControlParser;
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +40,7 @@ public class GoAwayGenerateParseTest
         new ControlGenerator(bufferPool, true).generate(accumulator, 0, input, null);
 
         List<GoAwayFrame> frames = new ArrayList<>();
-        ControlParser parser = new ControlParser(new ParserListener()
+        ControlParser parser = new ControlParser(RateControl.NO_RATE_CONTROL, new ParserListener()
         {
             @Override
             public void onGoAway(GoAwayFrame frame)

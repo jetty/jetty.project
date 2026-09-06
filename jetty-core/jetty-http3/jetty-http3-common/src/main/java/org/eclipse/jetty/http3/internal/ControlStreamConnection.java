@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.HTTP3Exception;
 import org.eclipse.jetty.http3.parser.ControlParser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -24,7 +25,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,10 +108,7 @@ public class ControlStreamConnection extends AbstractConnection.NonBlocking impl
                 }
                 else if (filled < 0)
                 {
-                    buffer.release();
-                    buffer = null;
-                    getEndPoint().disconnect(HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code(), null, true, Promise.Invocable.noop());
-                    break;
+                    throw new HTTP3Exception.SessionException(HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR, "control_stream_eof");
                 }
             }
         }
@@ -121,7 +118,8 @@ public class ControlStreamConnection extends AbstractConnection.NonBlocking impl
                 LOG.debug("could not process control stream {}", getEndPoint(), x);
             buffer.release();
             buffer = null;
-            getEndPoint().disconnect(HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code(), x, true, Promise.Invocable.noop());
+            long errorCode = x instanceof HTTP3Exception h3x ? h3x.getErrorCode() : HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code();
+            parser.getListener().onSessionFailure(errorCode, x.getMessage(), x);
         }
     }
 }

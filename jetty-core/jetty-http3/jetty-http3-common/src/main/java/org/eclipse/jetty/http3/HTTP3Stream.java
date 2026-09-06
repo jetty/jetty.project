@@ -16,6 +16,9 @@ package org.eclipse.jetty.http3;
 import java.util.EnumSet;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
@@ -45,6 +48,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     private long idleTimeout;
     private long expireNanoTime = Long.MAX_VALUE;
     private Object attachment;
+    private long dataLength = -1;
     private boolean dataDemand;
     private boolean dataStalled = true;
     private boolean dataLast;
@@ -278,15 +282,31 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         notIdle();
         try (AutoLock ignored = lock.lock())
         {
+            boolean connect = false;
+            MetaData metaData = frame.getMetaData();
+            if (metaData instanceof MetaData.Request request)
+                connect = HttpMethod.CONNECT.is(request.getMethod());
+            HttpFields fields = metaData.getHttpFields();
+            dataLength = connect ? -1 : fields.getLongField(HttpHeader.CONTENT_LENGTH);
+
             dataLast = frame.isLast();
+
             // Assume there will be data.
-            dataAvailable = !dataLast;
+            dataAvailable = !dataLast && dataLength != 0;
         }
     }
 
-    public void onData(DataFrame ignored)
+    public void onData(DataFrame frame)
     {
         validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.DATA);
+
+        if (dataLength >= 0)
+        {
+            dataLength -= frame.getByteBuffer().remaining();
+            if (dataLength < 0 || (frame.isLast() && dataLength != 0))
+                throw new HTTP3Exception.StreamException(HTTP3ErrorCode.HTTP_MESSAGE_ERROR, "invalid_data_length");
+        }
+
         notIdle();
     }
 

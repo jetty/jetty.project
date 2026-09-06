@@ -25,6 +25,7 @@ import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
@@ -63,7 +64,7 @@ public class DataGenerateParseTest
         List<DataFrame> frames = new ArrayList<>();
         QpackDecoder decoder = new QpackDecoder(instructions -> {});
         decoder.setBeginNanoTimeSupplier(NanoTime::now);
-        MessageParser parser = new MessageParser(new ParserListener()
+        MessageParser parser = new MessageParser(RateControl.NO_RATE_CONTROL, new ParserListener()
         {
             @Override
             public void onData(long streamId, DataFrame frame)

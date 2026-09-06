@@ -38,6 +38,7 @@ import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.client.ClientProtocolSession;
@@ -104,6 +105,11 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
         messageFlusher = new MessageFlusher(getByteBufferPool(), encoder, configuration.isUseOutputDirectByteBuffers());
         installBean(messageFlusher);
+    }
+
+    public HTTP3Configuration getHTTP3Configuration()
+    {
+        return configuration;
     }
 
     public QpackDecoder getQpackDecoder()
@@ -230,7 +236,8 @@ public class ClientHTTP3Session extends ClientProtocolSession
     {
         if (endPoint.getStream().isBidirectional())
             return super.newConnection(endPoint);
-        return new UnidirectionalStreamConnection(endPoint, getExecutor(), getByteBufferPool(), getQpackEncoder(), getQpackDecoder(), session.getParserListener());
+        RateControl rateControl = getHTTP3Configuration().getRateControlFactory().newRateControl(endPoint);
+        return new UnidirectionalStreamConnection(endPoint, getExecutor(), getByteBufferPool(), getQpackEncoder(), getQpackDecoder(), session.getParserListener(), rateControl);
     }
 
     @Override

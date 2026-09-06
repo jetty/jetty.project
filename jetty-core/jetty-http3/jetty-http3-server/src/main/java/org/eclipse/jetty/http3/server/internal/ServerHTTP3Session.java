@@ -35,6 +35,7 @@ import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.common.ProtocolSession;
@@ -187,7 +188,8 @@ public class ServerHTTP3Session extends ServerProtocolSession
     {
         if (endPoint.getStream().isBidirectional())
             return super.newConnection(endPoint);
-        return new UnidirectionalStreamConnection(endPoint, getExecutor(), getByteBufferPool(), getQpackEncoder(), getQpackDecoder(), session.getParserListener());
+        RateControl rateControl = configuration.getRateControlFactory().newRateControl(endPoint);
+        return new UnidirectionalStreamConnection(endPoint, getExecutor(), getByteBufferPool(), getQpackEncoder(), getQpackDecoder(), session.getParserListener(), rateControl);
     }
 
     public void onSettings(SettingsFrame frame)
