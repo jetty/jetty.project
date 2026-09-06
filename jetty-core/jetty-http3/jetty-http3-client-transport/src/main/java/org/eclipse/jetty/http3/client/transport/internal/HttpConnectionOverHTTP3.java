@@ -208,11 +208,9 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
             channels = Set.copyOf(activeChannels);
             activeChannels.clear();
         }
-        for (HttpChannel channel : channels)
+        for (HttpChannelOverHTTP3 channel : channels)
         {
-            HttpExchange exchange = channel.getHttpExchange();
-            if (exchange != null)
-                exchange.getRequest().abort(failure);
+            channel.abort(failure);
         }
         return false;
     }
