@@ -34,8 +34,17 @@ public class GCloudSessionDistributionTests extends AbstractSessionDistributionT
     private static final Logger LOGGER = LoggerFactory.getLogger(GCloudSessionDistributionTests.class);
     private static final Logger GCLOUD_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.gcloud.logs");
 
+    // Point the name at a registry proxying gcr.io to keep the pull inside the build network.
+    private static final String GCLOUD_IMAGE_NAME =
+            System.getProperty("gcloud.docker.image.name", "gcr.io/google.com/cloudsdktool/cloud-sdk");
+    private static final String GCLOUD_IMAGE_VERSION =
+            System.getProperty("gcloud.docker.image.version", "583.0.0-emulators");
+
     public DatastoreEmulatorContainer emulator =
-            new DatastoreEmulatorContainer(DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:583.0.0-emulators"))
+            new DatastoreEmulatorContainer(DockerImageName.parse(GCLOUD_IMAGE_NAME + ":" + GCLOUD_IMAGE_VERSION)
+                    // DatastoreEmulatorContainer only accepts the two gcr.io names, so a proxied
+                    // name has to be declared a stand-in for the one it knows.
+                    .asCompatibleSubstituteFor("gcr.io/google.com/cloudsdktool/cloud-sdk"))
                     .withLogConsumer(new Slf4jLogConsumer(GCLOUD_LOG))
                     .withFlags("--consistency=1.0");
 
