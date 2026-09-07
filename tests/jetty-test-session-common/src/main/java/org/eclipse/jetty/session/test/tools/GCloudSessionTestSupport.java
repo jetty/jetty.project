@@ -69,8 +69,16 @@ public class GCloudSessionTestSupport
     private static final Logger LOGGER = LoggerFactory.getLogger(GCloudSessionTestSupport.class);
     private static final Logger GCLOUD_LOG = LoggerFactory.getLogger("org.eclipse.jetty.gcloud.session.gcloudLogs");
 
+    // Point the name at a registry that proxies gcr.io to keep the pull local.
+    private static final String GCLOUD_IMAGE_NAME =
+            System.getProperty("gcloud.docker.image.name", "gcr.io/google.com/cloudsdktool/cloud-sdk");
+    private static final String GCLOUD_IMAGE_VERSION =
+            System.getProperty("gcloud.docker.image.version", "583.0.0-emulators");
+
     public static DatastoreEmulatorContainer emulator = new DatastoreEmulatorContainer(
-            DockerImageName.parse("gcr.io/google.com/cloudsdktool/cloud-sdk:583.0.0-emulators")
+            // The container only knows the gcr.io names, so a proxied one needs a stand-in.
+            DockerImageName.parse(GCLOUD_IMAGE_NAME + ":" + GCLOUD_IMAGE_VERSION)
+                    .asCompatibleSubstituteFor("gcr.io/google.com/cloudsdktool/cloud-sdk")
     ).withLogConsumer(new Slf4jLogConsumer(GCLOUD_LOG))
             .withFlags("--consistency=1.0");
 
