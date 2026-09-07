@@ -184,7 +184,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
       sh """
         rm -rf cache-debug
         mkdir -p cache-debug/${jdk}
-        find build-cache -name buildinfo.xml -print 2>/dev/null | grep -E '(maven-plugin|osgi|test-distribution-common|jetty-slf4j-impl)' | while read -r f; do cp --parents "\$f" cache-debug/${jdk}/ || true; done
+        find build-cache -name buildinfo.xml -print 2>/dev/null | grep -E '(maven-plugin|osgi|test-distribution-common|jetty-slf4j-impl|jetty-util|jetty-server)' | while read -r f; do cp --parents "\$f" cache-debug/${jdk}/ || true; done
       """
       archiveArtifacts artifacts: 'cache-debug/**/buildinfo.xml', allowEmptyArchive: true, onlyIfSuccessful: false
     }

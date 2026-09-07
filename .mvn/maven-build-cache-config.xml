@@ -50,14 +50,13 @@
             <excludeProperty>filterProperties</excludeProperty>
           </excludeProperties>
         </effectivePom>
-        <!-- javaHome is ${java.home}, so the scanner walks the whole JDK and hashes every file in
-             it. Jenkins unpacks a fresh JDK per agent, so that alone gives a new checksum
-             on every run and the module can never hit the cache. The
-             others point at build output for the same reason. -->
+        <!-- The scanner hashes anything that looks like a path, and these all move between
+             runs: a fresh JDK per agent, a random temp settings file, build output. -->
         <dirScan>
           <excludes>
             <exclude tagName="javaHome"/>
             <exclude tagName="environmentVariables"/>
+            <exclude tagName="settingsFile"/>
             <exclude tagName="localRepositoryPath"/>
             <exclude tagName="cloneProjectsTo"/>
           </excludes>
@@ -80,6 +79,13 @@
             <excludeProperty>systemPropertyVariables</excludeProperty>
           </excludeProperties>
         </effectivePom>
+        <!-- Same story: the osgi tests pass a settings file path through here, and Jenkins
+             gives that file a random name on every run. -->
+        <dirScan>
+          <excludes>
+            <exclude tagName="systemPropertyVariables"/>
+          </excludes>
+        </dirScan>
       </plugin>
       <plugin artifactId="asciidoctor-maven-plugin" groupId="org.asciidoctor">
         <effectivePom>
