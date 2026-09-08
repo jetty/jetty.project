@@ -14,8 +14,12 @@
 package org.eclipse.jetty.client.ssl;
 
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
@@ -242,5 +246,47 @@ public class NeedWantClientAuthTest
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(handshakeLatch.await(10, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testTrustManagerWrapperAccessToCertChain() throws Exception
+    {
+        // Track certificate chain seen during validation
+        AtomicReference<X509Certificate[]> seenCerts = new AtomicReference<>();
+
+        SslContextFactory.Server serverSSL = createServerSslContextFactory();
+        serverSSL.setNeedClientAuth(true);
+
+        // Wrap TrustManager to capture certificate chain during validation
+        serverSSL.setTrustManagerWrapper(delegate ->
+            new SslContextFactory.X509ExtendedTrustManagerWrapper(delegate)
+            {
+                @Override
+                public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
+                    throws CertificateException
+                {
+                    // Capture the certificate chain before validation
+                    seenCerts.set(chain);
+                    super.checkClientTrusted(chain, authType, engine);
+                }
+            });
+
+        startServer(serverSSL, new EmptyServerHandler());
+
+        // Client presents a certificate
+        SslContextFactory.Client clientSSL = new SslContextFactory.Client(true);
+        clientSSL.setKeyStorePath("src/test/resources/client_keystore.p12");
+        clientSSL.setKeyStorePassword("storepwd");
+        startClient(clientSSL);
+
+        ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        // The wrapper should have captured the client certificate chain
+        assertNotNull(seenCerts.get());
+        assertTrue(seenCerts.get().length > 0);
     }
 }
