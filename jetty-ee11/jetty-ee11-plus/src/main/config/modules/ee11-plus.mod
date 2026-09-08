@@ -13,24 +13,18 @@ plus
 ee11-security
 ee11-webapp
 
-[ini]
-ee11.jakarta.enterprise.cdi.api.version?=@ee11.jakarta.enterprise.cdi.api.version@
-ee11.jakarta.inject.version?=@ee11.jakarta.inject.version@
-ee11.jakarta.interceptor.api.version?=@ee11.jakarta.interceptor.api.version@
-ee11.jakarta.transaction.api.version?=@ee11.jakarta.transaction.api.version@
-
 [files]
-maven://jakarta.enterprise/jakarta.enterprise.cdi-api/${ee11.jakarta.enterprise.cdi.api.version}/jar|lib/ee11/support/jakarta.enterprise.jakarta.enterprise.cdi-api-${ee11.jakarta.enterprise.cdi.api.version}.jar
-maven://jakarta.enterprise/jakarta.enterprise.lang-model/${ee11.jakarta.enterprise.cdi.api.version}/jar|lib/ee11/support/jakarta.enterprise.jakarta.enterprise.lang-model-${ee11.jakarta.enterprise.cdi.api.version}.jar
-maven://jakarta.inject/jakarta.inject-api/${ee11.jakarta.inject.version}/jar|lib/ee11/support/jakarta.inject.jakarta.inject-api-${ee11.jakarta.inject.version}.jar
-maven://jakarta.interceptor/jakarta.interceptor-api/${ee11.jakarta.interceptor.api.version}/jar|lib/ee11/support/jakarta.interceptor.jakarta.interceptor-api-${ee11.jakarta.interceptor.api.version}.jar
-maven://jakarta.transaction/jakarta.transaction-api/${ee11.jakarta.transaction.api.version}/jar|lib/ee11/support/jakarta.transaction.jakarta.transaction-api-${ee11.jakarta.transaction.api.version}.jar
+maven://jakarta.enterprise/jakarta.enterprise.cdi-api/4.1.0/jar|lib/ee11/support/jakarta.enterprise.jakarta.enterprise.cdi-api-4.1.0.jar
+maven://jakarta.enterprise/jakarta.enterprise.lang-model/4.1.0/jar|lib/ee11/support/jakarta.enterprise.jakarta.enterprise.lang-model-4.1.0.jar
+maven://jakarta.inject/jakarta.inject-api/2.0.1/jar|lib/ee11/support/jakarta.inject.jakarta.inject-api-2.0.1.jar
+maven://jakarta.interceptor/jakarta.interceptor-api/2.2.0/jar|lib/ee11/support/jakarta.interceptor.jakarta.interceptor-api-2.2.0.jar
+maven://jakarta.transaction/jakarta.transaction-api/2.0.1/jar|lib/ee11/support/jakarta.transaction.jakarta.transaction-api-2.0.1.jar
 maven://org.eclipse.jetty.ee11/jetty-ee11-plus/${jetty.version}/jar|lib/ee11/jetty-ee11-plus-${jetty.version}.jar
 
 [lib]
 lib/ee11/jetty-ee11-plus-${jetty.version}.jar
-lib/ee11/support/jakarta.enterprise.jakarta.enterprise.cdi-api-${ee11.jakarta.enterprise.cdi.api.version}.jar
-lib/ee11/support/jakarta.enterprise.jakarta.enterprise.lang-model-${ee11.jakarta.enterprise.cdi.api.version}.jar
-lib/ee11/support/jakarta.inject.jakarta.inject-api-${ee11.jakarta.inject.version}.jar
-lib/ee11/support/jakarta.interceptor.jakarta.interceptor-api-${ee11.jakarta.interceptor.api.version}.jar
-lib/ee11/support/jakarta.transaction.jakarta.transaction-api-${ee11.jakarta.transaction.api.version}.jar
+lib/ee11/support/jakarta.enterprise.jakarta.enterprise.cdi-api-4.1.0.jar
+lib/ee11/support/jakarta.enterprise.jakarta.enterprise.lang-model-4.1.0.jar
+lib/ee11/support/jakarta.inject.jakarta.inject-api-2.0.1.jar
+lib/ee11/support/jakarta.interceptor.jakarta.interceptor-api-2.2.0.jar
+lib/ee11/support/jakarta.transaction.jakarta.transaction-api-2.0.1.jar

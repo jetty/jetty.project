@@ -16,14 +16,11 @@ ee9-auth-config-factory
 [xml]
 etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml
 
-[ini]
-ee9.jakarta.authentication.api.version?=@ee9.jakarta.authentication.api.version@
-
 [files]
 basehome:etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml|etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml
-maven://jakarta.authentication/jakarta.authentication-api/${ee9.jakarta.authentication.api.version}/jar|lib/ee9/support/jakarta.authentication.jakarta.authentication-api-${ee9.jakarta.authentication.api.version}.jar
+maven://jakarta.authentication/jakarta.authentication-api/2.0.0/jar|lib/ee9/support/jakarta.authentication.jakarta.authentication-api-2.0.0.jar
 maven://org.eclipse.jetty.ee9/jetty-ee9-jaspi/${jetty.version}/jar|lib/ee9/jetty-ee9-jaspi-${jetty.version}.jar
 
 [lib]
 lib/ee9/jetty-ee9-jaspi-${jetty.version}.jar
-lib/ee9/support/jakarta.authentication.jakarta.authentication-api-${ee9.jakarta.authentication.api.version}.jar
+lib/ee9/support/jakarta.authentication.jakarta.authentication-api-2.0.0.jar

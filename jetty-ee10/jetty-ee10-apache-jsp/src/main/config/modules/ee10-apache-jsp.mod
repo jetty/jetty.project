@@ -12,13 +12,11 @@ ee10-annotations
 
 [ini]
 eclipse.jdt.ecj.version?=@eclipse.jdt.ecj.version@
-ee10.jakarta.servlet.jsp.api.version?=@ee10.jakarta.servlet.jsp.api.version@
 ee10.jsp.impl.version?=@ee10.jsp.impl.version@
-ee10.jakarta.el.api.version?=@ee10.jakarta.el.api.version@
 
 [files]
-maven://jakarta.el/jakarta.el-api/${ee10.jakarta.el.api.version}/jar|lib/ee10/support/jakarta.el.jakarta.el-api-${ee10.jakarta.el.api.version}.jar
-maven://jakarta.servlet.jsp/jakarta.servlet.jsp-api/${ee10.jakarta.servlet.jsp.api.version}/jar|lib/ee10/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-${ee10.jakarta.servlet.jsp.api.version}.jar
+maven://jakarta.el/jakarta.el-api/5.0.1/jar|lib/ee10/support/jakarta.el.jakarta.el-api-5.0.1.jar
+maven://jakarta.servlet.jsp/jakarta.servlet.jsp-api/3.1.1/jar|lib/ee10/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-3.1.1.jar
 maven://org.eclipse.jdt/ecj/${eclipse.jdt.ecj.version}/jar|lib/ee10/support/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
 maven://org.eclipse.jetty.ee10/jetty-ee10-apache-jsp/${jetty.version}/jar|lib/ee10/jetty-ee10-apache-jsp-${jetty.version}.jar
 maven://org.mortbay.jasper/mortbay-apache-el/${ee10.jsp.impl.version}/jar|lib/ee10/support/org.mortbay.jasper.mortbay-apache-el-${ee10.jsp.impl.version}.jar
@@ -26,8 +24,8 @@ maven://org.mortbay.jasper/mortbay-apache-jsp/${ee10.jsp.impl.version}/jar|lib/e
 
 [lib]
 lib/ee10/jetty-ee10-apache-jsp-${jetty.version}.jar
-lib/ee10/support/jakarta.el.jakarta.el-api-${ee10.jakarta.el.api.version}.jar
-lib/ee10/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-${ee10.jakarta.servlet.jsp.api.version}.jar
+lib/ee10/support/jakarta.el.jakarta.el-api-5.0.1.jar
+lib/ee10/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-3.1.1.jar
 lib/ee10/support/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
 lib/ee10/support/org.mortbay.jasper.mortbay-apache-el-${ee10.jsp.impl.version}.jar
 lib/ee10/support/org.mortbay.jasper.mortbay-apache-jsp-${ee10.jsp.impl.version}.jar

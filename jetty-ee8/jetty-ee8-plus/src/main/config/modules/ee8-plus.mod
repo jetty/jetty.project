@@ -13,13 +13,10 @@ plus
 ee8-security
 ee8-webapp
 
-[ini]
-ee8.jakarta.transaction-api.version?=@ee8.jakarta.transaction-api.version@
-
 [files]
-maven://jakarta.transaction/jakarta.transaction-api/${ee8.jakarta.transaction-api.version}/jar|lib/ee8/support/jakarta.transaction.jakarta.transaction-api-${ee8.jakarta.transaction-api.version}.jar
+maven://jakarta.transaction/jakarta.transaction-api/1.3.3/jar|lib/ee8/support/jakarta.transaction.jakarta.transaction-api-1.3.3.jar
 maven://org.eclipse.jetty.ee8/jetty-ee8-plus/${jetty.version}/jar|lib/ee8/jetty-ee8-plus-${jetty.version}.jar
 
 [lib]
 lib/ee8/jetty-ee8-plus-${jetty.version}.jar
-lib/ee8/support/jakarta.transaction.jakarta.transaction-api-${ee8.jakarta.transaction-api.version}.jar
+lib/ee8/support/jakarta.transaction.jakarta.transaction-api-1.3.3.jar

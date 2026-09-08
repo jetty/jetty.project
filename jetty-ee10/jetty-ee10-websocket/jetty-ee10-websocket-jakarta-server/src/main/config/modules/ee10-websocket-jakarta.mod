@@ -14,12 +14,9 @@ websocket-core-client
 websocket-core-server
 ee10-annotations
 
-[ini]
-ee10.jakarta.websocket.api.version?=@ee10.jakarta.websocket.api.version@
-
 [files]
-maven://jakarta.websocket/jakarta.websocket-api/${ee10.jakarta.websocket.api.version}/jar|lib/ee10/support/jakarta.websocket.jakarta.websocket-api-${ee10.jakarta.websocket.api.version}.jar
-maven://jakarta.websocket/jakarta.websocket-client-api/${ee10.jakarta.websocket.api.version}/jar|lib/ee10/support/jakarta.websocket.jakarta.websocket-client-api-${ee10.jakarta.websocket.api.version}.jar
+maven://jakarta.websocket/jakarta.websocket-api/2.1.1/jar|lib/ee10/support/jakarta.websocket.jakarta.websocket-api-2.1.1.jar
+maven://jakarta.websocket/jakarta.websocket-client-api/2.1.1/jar|lib/ee10/support/jakarta.websocket.jakarta.websocket-client-api-2.1.1.jar
 maven://org.eclipse.jetty.ee10.websocket/jetty-ee10-websocket-jakarta-client/${jetty.version}/jar|lib/ee10/jetty-ee10-websocket-jakarta-client-${jetty.version}.jar
 maven://org.eclipse.jetty.ee10.websocket/jetty-ee10-websocket-jakarta-common/${jetty.version}/jar|lib/ee10/jetty-ee10-websocket-jakarta-common-${jetty.version}.jar
 maven://org.eclipse.jetty.ee10.websocket/jetty-ee10-websocket-jakarta-server/${jetty.version}/jar|lib/ee10/jetty-ee10-websocket-jakarta-server-${jetty.version}.jar
@@ -30,5 +27,5 @@ lib/ee10/jetty-ee10-websocket-jakarta-client-${jetty.version}.jar
 lib/ee10/jetty-ee10-websocket-jakarta-common-${jetty.version}.jar
 lib/ee10/jetty-ee10-websocket-jakarta-server-${jetty.version}.jar
 lib/ee10/jetty-ee10-websocket-servlet-${jetty.version}.jar
-lib/ee10/support/jakarta.websocket.jakarta.websocket-api-${ee10.jakarta.websocket.api.version}.jar
-lib/ee10/support/jakarta.websocket.jakarta.websocket-client-api-${ee10.jakarta.websocket.api.version}.jar
+lib/ee10/support/jakarta.websocket.jakarta.websocket-api-2.1.1.jar
+lib/ee10/support/jakarta.websocket.jakarta.websocket-client-api-2.1.1.jar

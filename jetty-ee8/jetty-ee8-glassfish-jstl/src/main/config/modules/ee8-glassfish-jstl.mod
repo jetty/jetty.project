@@ -7,13 +7,12 @@ Enables the glassfish version of JSTL for all webapps.
 ee8
 
 [ini]
-ee8.jakarta.servlet.jsp.jstl.api.version?=@ee8.jakarta.servlet.jsp.jstl.api.version@
 ee8.javax.servlet.jsp.jstl.impl.version?=@ee8.javax.servlet.jsp.jstl.impl.version@
 
 [files]
-maven://jakarta.servlet.jsp.jstl/jakarta.servlet.jsp.jstl-api/${ee8.jakarta.servlet.jsp.jstl.api.version}/jar|lib/ee8/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee8.jakarta.servlet.jsp.jstl.api.version}.jar
+maven://jakarta.servlet.jsp.jstl/jakarta.servlet.jsp.jstl-api/1.2.7/jar|lib/ee8/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-1.2.7.jar
 maven://org.glassfish.web/javax.servlet.jsp.jstl/${ee8.javax.servlet.jsp.jstl.impl.version}/jar|lib/ee8/support/org.glassfish.web.javax.servlet.jsp.jstl-${ee8.javax.servlet.jsp.jstl.impl.version}.jar
 
 [lib]
-lib/ee8/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee8.jakarta.servlet.jsp.jstl.api.version}.jar
+lib/ee8/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-1.2.7.jar
 lib/ee8/support/org.glassfish.web.javax.servlet.jsp.jstl-${ee8.javax.servlet.jsp.jstl.impl.version}.jar
