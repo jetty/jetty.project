@@ -207,7 +207,7 @@
     <jacoco.maven.plugin.version>0.8.15</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
     <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
-    <jboss-threads.version>3.9.2</jboss-threads.version>
+    <jboss-threads.version>3.10.1</jboss-threads.version>
     <jboss.logging.annotations.version>3.0.4.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>3.0.4.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.6.3.Final</jboss.logging.version>
