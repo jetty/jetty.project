@@ -1,3 +1,15 @@
+12.0.39 - 03 September 2026
+ + 15549 [Backport] Improve IPv6 support in HttpURI
+ + 15550 [Backport] Use `IncludeExclude` instead for Host filtering
+ + 15551 [Backport] Updating ConstraintTest 
+ + 15583 Add additional configuration for SessionAuthentication persistence (12.0)
+ + 15592 [12.0.x] Fixes FCGI's "try-files" query handling.
+ + 15615 [12.0.x] Reuses URIUtil.canonicalPath() for URI matching.
+ + 15630 [12.0.x] Improve `*AuthenticationProtocolHandler.accept()`
+ + 15680 [12.0.x] Strengthened connection failure handling. (#15668)
+ + 15681 Fix the use of quickstart with a combined base resource (12.0)
+ + 15682 Fixes for MultiPartCompliance configuration (12.0)
+
 12.0.38 - 30 July 2026
  + 15428 Backport of #15307.
  + 15501 cleanups to WebSocket RFC6455Handshaker and Parser (12.0)
