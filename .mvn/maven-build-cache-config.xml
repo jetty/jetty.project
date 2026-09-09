@@ -34,6 +34,11 @@
       <excludes>
         <exclude glob="*Jenkinsfile*" />
         <exclude glob="./idea/*" />
+        <!-- The invoker plugin points localRepositoryPath and cloneProjectsTo at these, and the
+             scanner follows path-valued plugin config, so whatever happens to be sitting there
+             ends up in the checksum. They are build output, never input. -->
+        <exclude>target/local-repo</exclude>
+        <exclude>target/it</exclude>
       </excludes>
     </global>
     <plugins>
@@ -45,6 +50,28 @@
             <excludeProperty>filterProperties</excludeProperty>
           </excludeProperties>
         </effectivePom>
+        <!-- The scanner hashes anything that looks like a path, and these all move between
+             runs: a fresh JDK per agent, a random temp settings file, build output. -->
+        <dirScan>
+          <excludes>
+            <exclude tagName="javaHome"/>
+            <exclude tagName="environmentVariables"/>
+            <exclude tagName="settingsFile"/>
+            <exclude tagName="localRepositoryPath"/>
+            <exclude tagName="cloneProjectsTo"/>
+          </excludes>
+        </dirScan>
+      </plugin>
+      <!-- this one points at the whole build/ dir, which the scanner walks recursively -->
+      <plugin groupId="org.apache.maven.plugins" artifactId="maven-resources-plugin">
+        <executions>
+          <execution>
+            <execIds>
+              <execId>generate-git-sha-properties</execId>
+            </execIds>
+            <dirScan mode="skip"/>
+          </execution>
+        </executions>
       </plugin>
       <plugin groupId="org.apache.maven.plugins" artifactId="maven-surefire-plugin">
         <effectivePom>
@@ -52,6 +79,13 @@
             <excludeProperty>systemPropertyVariables</excludeProperty>
           </excludeProperties>
         </effectivePom>
+        <!-- Same story: the osgi tests pass a settings file path through here, and Jenkins
+             gives that file a random name on every run. -->
+        <dirScan>
+          <excludes>
+            <exclude tagName="systemPropertyVariables"/>
+          </excludes>
+        </dirScan>
       </plugin>
       <plugin artifactId="asciidoctor-maven-plugin" groupId="org.asciidoctor">
         <effectivePom>

@@ -53,7 +53,8 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
     @Override
     protected boolean check(String pathInContext, Path path)
     {
-        if (_baseResource == null)
+        Resource baseResource = getBaseResource();
+        if (baseResource == null)
             return false;
 
         // do not allow any file separation characters in the URI, as we need to know exactly what are the segments
@@ -72,7 +73,7 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
             {
                 // Add the segment to the path and realURI.
                 segmentPath.append("/").append(segment);
-                Resource fromBase = _baseResource.resolve(segmentPath.toString());
+                Resource fromBase = baseResource.resolve(segmentPath.toString());
 
                 // If there is a single path, check it
                 Path p = fromBase.getPath();
@@ -94,7 +95,7 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
                     for (Resource r : fromBase)
                     {
                         p = r.getPath();
-                        if (!Files.exists(p))
+                        if (p == null || !Files.exists(p))
                             continue;
 
                         // If the ancestor of the alias is a symlink, then check if the real URI is protected, otherwise allow.
