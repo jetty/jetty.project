@@ -246,6 +246,29 @@ public class Module implements Comparable<Module>
         return _path.equals(other._path);
     }
 
+    public void expandProperties(Props props)
+    {
+        Function<String, String> expander = props::expand;
+
+        List<String> tmp = _depends.stream().map(expander).collect(Collectors.toList());
+        _depends.clear();
+        _depends.addAll(tmp);
+        tmp = _after.stream().map(expander).collect(Collectors.toList());
+        _after.clear();
+        _after.addAll(tmp);
+        tmp = _before.stream().map(expander).collect(Collectors.toList());
+        _before.clear();
+        _before.addAll(tmp);
+        tmp = _files.stream().map(expander).collect(Collectors.toList());
+        _files.clear();
+        _files.addAll(tmp);
+    }
+
+    /**
+     *
+     * @deprecated not used anymore, no replacement.
+     */
+    @Deprecated(forRemoval = true, since = "12.1.13")
     public void expandDependencies(Props props)
     {
         Function<String, String> expander = props::expand;

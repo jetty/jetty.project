@@ -27,12 +27,15 @@ public class LocalFileInitializer extends FileInitializer
 {
     public LocalFileInitializer(BaseHome basehome)
     {
-        super(basehome, "file");
+        super(basehome);
     }
 
     @Override
     public boolean exists(URI uri) throws IOException
     {
+        if (uri == null)
+            return false;
+
         if (uri.getScheme() != null)
         {
             if (!"file".equals(uri.getScheme()))

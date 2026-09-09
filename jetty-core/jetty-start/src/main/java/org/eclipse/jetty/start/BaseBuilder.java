@@ -292,6 +292,7 @@ public class BaseBuilder
                 String ini = null;
                 try
                 {
+                    StartEnvironment environment = startArgs.getEnvironment(module);
                     if (module.isSkipFilesValidation())
                     {
                         StartLog.debug("Skipping [files] validation on %s", module.getName());
@@ -304,13 +305,16 @@ public class BaseBuilder
                         // Modules that are transitive and have an ini-template
                         if (explicitlyAdded || (module.isTransitive() && module.hasIniTemplate()))
                         {
-                            ini = builder.get().addModule(module, startArgs.getJettyEnvironment().getProperties());
+                            ini = builder.get().addModule(module, environment.getProperties());
                             if (ini != null)
                                 modified.set(true);
                         }
                         for (String file : module.getFiles())
                         {
-                            files.add(new FileArg(module, startArgs.getJettyEnvironment().getProperties().expand(file)));
+                            String expandedFile = environment.getProperties().expand(file);
+                            if (expandedFile.contains("${"))
+                                throw new IllegalStateException("Unable to expand [file] argument: " + file);
+                            files.add(new FileArg(module, file));
                         }
                     }
                 }
@@ -362,7 +366,7 @@ public class BaseBuilder
      */
     private boolean processFileResource(FileArg arg) throws IOException
     {
-        URI uri = arg.uri == null ? null : URI.create(arg.uri);
+        URI uri = arg.toSafeURI();
 
         if (startArgs.isCreateFiles())
         {

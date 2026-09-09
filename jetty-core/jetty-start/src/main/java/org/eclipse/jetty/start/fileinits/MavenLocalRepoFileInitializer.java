@@ -15,6 +15,7 @@ package org.eclipse.jetty.start.fileinits;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,6 +26,8 @@ import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.Utils;
 import org.xml.sax.SAXException;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Attempt to download a <code>maven://</code> URI, by first attempting to find
@@ -324,7 +327,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
             return null;
         }
 
-        String ssp = uri.getSchemeSpecificPart();
+        String ssp = URLDecoder.decode(uri.getSchemeSpecificPart(), UTF_8);
 
         if (ssp.startsWith("//"))
         {
