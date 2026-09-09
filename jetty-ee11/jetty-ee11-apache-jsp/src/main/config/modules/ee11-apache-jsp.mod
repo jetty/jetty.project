@@ -7,17 +7,16 @@ Enables use of the apache implementation of JSP.
 ee11
 
 [depends]
+ecj
 ee11-servlet
 ee11-annotations
 
 [ini]
-eclipse.jdt.ecj.version?=@eclipse.jdt.ecj.version@
 ee11.jsp.impl.version?=@ee11.jsp.impl.version@
 
 [files]
 maven://jakarta.el/jakarta.el-api/6.0.1/jar|lib/ee11/support/jakarta.el.jakarta.el-api-6.0.1.jar
 maven://jakarta.servlet.jsp/jakarta.servlet.jsp-api/4.0.0/jar|lib/ee11/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-4.0.0.jar
-maven://org.eclipse.jdt/ecj/${eclipse.jdt.ecj.version}/jar|lib/ee11/support/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
 maven://org.eclipse.jetty.ee11/jetty-ee11-apache-jsp/${jetty.version}/jar|lib/ee11/jetty-ee11-apache-jsp-${jetty.version}.jar
 maven://org.mortbay.jasper/mortbay-apache-el/${ee11.jsp.impl.version}/jar|lib/ee11/support/org.mortbay.jasper.mortbay-apache-el-${ee11.jsp.impl.version}.jar
 maven://org.mortbay.jasper/mortbay-apache-jsp/${ee11.jsp.impl.version}/jar|lib/ee11/support/org.mortbay.jasper.mortbay-apache-jsp-${ee11.jsp.impl.version}.jar
@@ -26,6 +25,5 @@ maven://org.mortbay.jasper/mortbay-apache-jsp/${ee11.jsp.impl.version}/jar|lib/e
 lib/ee11/jetty-ee11-apache-jsp-${jetty.version}.jar
 lib/ee11/support/jakarta.el.jakarta.el-api-6.0.1.jar
 lib/ee11/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-4.0.0.jar
-lib/ee11/support/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
 lib/ee11/support/org.mortbay.jasper.mortbay-apache-el-${ee11.jsp.impl.version}.jar
 lib/ee11/support/org.mortbay.jasper.mortbay-apache-jsp-${ee11.jsp.impl.version}.jar

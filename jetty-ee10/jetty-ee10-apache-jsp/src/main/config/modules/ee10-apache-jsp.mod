@@ -7,17 +7,16 @@ Enables use of the apache implementation of JSP.
 ee10
 
 [depends]
+ecj
 ee10-servlet
 ee10-annotations
 
 [ini]
-eclipse.jdt.ecj.version?=@eclipse.jdt.ecj.version@
 ee10.jsp.impl.version?=@ee10.jsp.impl.version@
 
 [files]
 maven://jakarta.el/jakarta.el-api/5.0.1/jar|lib/ee10/support/jakarta.el.jakarta.el-api-5.0.1.jar
 maven://jakarta.servlet.jsp/jakarta.servlet.jsp-api/3.1.1/jar|lib/ee10/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-3.1.1.jar
-maven://org.eclipse.jdt/ecj/${eclipse.jdt.ecj.version}/jar|lib/ee10/support/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
 maven://org.eclipse.jetty.ee10/jetty-ee10-apache-jsp/${jetty.version}/jar|lib/ee10/jetty-ee10-apache-jsp-${jetty.version}.jar
 maven://org.mortbay.jasper/mortbay-apache-el/${ee10.jsp.impl.version}/jar|lib/ee10/support/org.mortbay.jasper.mortbay-apache-el-${ee10.jsp.impl.version}.jar
 maven://org.mortbay.jasper/mortbay-apache-jsp/${ee10.jsp.impl.version}/jar|lib/ee10/support/org.mortbay.jasper.mortbay-apache-jsp-${ee10.jsp.impl.version}.jar
@@ -26,6 +25,5 @@ maven://org.mortbay.jasper/mortbay-apache-jsp/${ee10.jsp.impl.version}/jar|lib/e
 lib/ee10/jetty-ee10-apache-jsp-${jetty.version}.jar
 lib/ee10/support/jakarta.el.jakarta.el-api-5.0.1.jar
 lib/ee10/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-3.1.1.jar
-lib/ee10/support/org.eclipse.jdt.ecj-${eclipse.jdt.ecj.version}.jar
 lib/ee10/support/org.mortbay.jasper.mortbay-apache-el-${ee10.jsp.impl.version}.jar
 lib/ee10/support/org.mortbay.jasper.mortbay-apache-jsp-${ee10.jsp.impl.version}.jar
