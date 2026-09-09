@@ -223,8 +223,8 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
-        // Last writes must trigger a close() on the HttpOutput
-        // which itself will make the last write.
+        // Last write must trigger a close() on the HttpOutput
+        // which will call this method again to do the last write.
         HttpOutput httpOutput = getHttpOutput();
         boolean httpOutputClosed = httpOutput.isClosed();
         if (!httpOutputClosed)
