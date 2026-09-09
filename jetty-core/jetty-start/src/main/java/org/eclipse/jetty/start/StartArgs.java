@@ -140,6 +140,12 @@ public class StartArgs
      */
     private final List<String> startModules = new ArrayList<>();
 
+    public enum DryRun
+    {
+        LEGACY,
+        ARGLINES
+    }
+
     // module inspection commands
     /**
      * --write-module-graph=[filename]
@@ -170,7 +176,7 @@ public class StartArgs
     private boolean listClasspath = false;
     private boolean listConfig = false;
     private boolean version = false;
-    private boolean dryRun = false;
+    private DryRun dryRun = null;
     private boolean multiLine = false;
     private final Set<String> dryRunParts = new HashSet<>();
     private boolean jpms = false;
@@ -591,7 +597,7 @@ public class StartArgs
         if (parts.contains("args"))
         {
             Props properties = jettyEnvironment.getProperties();
-            if (dryRun && execProperties == null)
+            if (dryRun != null && execProperties == null)
             {
                 // pass properties as args
                 for (Prop p : properties)
@@ -802,7 +808,19 @@ public class StartArgs
         return jpms;
     }
 
+    /**
+     * @return true if dry-run is active.
+     * @see #getDryRun()
+     */
     public boolean isDryRun()
+    {
+        return dryRun != null;
+    }
+
+    /**
+     * @return the dry-run mode, or null if not active.
+     */
+    public DryRun getDryRun()
     {
         return dryRun;
     }
@@ -1030,13 +1048,15 @@ public class StartArgs
 
         if ("--dry-run".equals(arg) || "--exec-print".equals(arg))
         {
-            dryRun = true;
+            dryRun = DryRun.LEGACY;
+            dryRunParts.addAll(ALL_PARTS);
             run = false;
             return environment;
         }
 
         if (arg.startsWith("--dry-run="))
         {
+            dryRun = DryRun.LEGACY;
             int colon = arg.indexOf('=');
             for (String part : arg.substring(colon + 1).split(","))
             {
@@ -1051,7 +1071,32 @@ public class StartArgs
 
                 dryRunParts.add(part);
             }
-            dryRun = true;
+            run = false;
+            return environment;
+        }
+
+        if ("--arglines".equals(arg))
+        {
+            dryRun = DryRun.ARGLINES;
+            dryRunParts.addAll(ALL_PARTS);
+            dryRunParts.remove("java"); // not compatible with @arglines
+            run = false;
+            return environment;
+        }
+
+        if (arg.startsWith("--arglines="))
+        {
+            dryRun = DryRun.ARGLINES;
+            int colon = arg.indexOf('=');
+            for (String part : arg.substring(colon + 1).split(","))
+            {
+                if (!ALL_PARTS.contains(part))
+                    throw new UsageException(UsageException.ERR_BAD_ARG, "Unrecognized --arglines=\"%s\" in %s", part, source);
+                if ("java".contains(part))
+                    throw new UsageException(UsageException.ERR_BAD_ARG, "Invalid --arglines=java (not compatible with java @arglines)", part, source);
+
+                dryRunParts.add(part);
+            }
             run = false;
             return environment;
         }
