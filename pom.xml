@@ -162,7 +162,7 @@
 
   <properties>
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.17</ant.version>
+    <ant.version>1.10.18</ant.version>
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
@@ -190,7 +190,7 @@
     <compiler.release>17</compiler.release>
     <compiler.source>17</compiler.source>
     <compiler.target>17</compiler.target>
-    <conscrypt.version>2.6.3</conscrypt.version>
+    <conscrypt.version>2.7.0</conscrypt.version>
     <cyclonedx.maven.plugin.version>2.9.3</cyclonedx.maven.plugin.version>
     <depends.maven.plugin.version>1.5.0</depends.maven.plugin.version>
     <detectOfflineLinks>false</detectOfflineLinks>
@@ -199,7 +199,7 @@
     <dist-management-snapshot-id>sonatype-cp</dist-management-snapshot-id>
     <dist-management-snapshot-url>https://central.sonatype.com/repository/maven-snapshots</dist-management-snapshot-url>
     <duplicate-finder-maven-plugin.version>2.0.1</duplicate-finder-maven-plugin.version>
-    <eclipse.jdt.ecj.version>3.46.0</eclipse.jdt.ecj.version>
+    <eclipse.jdt.ecj.version>3.46.100</eclipse.jdt.ecj.version>
 
     <ee10.jakarta.bom.version>10.0.0</ee10.jakarta.bom.version>
     <ee11.jakarta.bom.version>11.0.0</ee11.jakarta.bom.version>
@@ -214,7 +214,7 @@
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <flatten.maven.plugin.version>1.8.0</flatten.maven.plugin.version>
-    <grpc.version>1.83.1</grpc.version>
+    <grpc.version>1.84.0</grpc.version>
     <gson.version>2.14.0</gson.version>
     <guava.version>33.7.1-jre</guava.version>
     <guice.version>7.0.0</guice.version>
@@ -232,7 +232,7 @@
     <jacoco.maven.plugin.version>0.8.15</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
     <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
-    <jboss-threads.version>3.9.2</jboss-threads.version>
+    <jboss-threads.version>3.10.1</jboss-threads.version>
     <jboss.logging.annotations.version>3.0.4.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>3.0.4.Final</jboss.logging.processor.version>
     <jboss.logging.version>3.6.3.Final</jboss.logging.version>
