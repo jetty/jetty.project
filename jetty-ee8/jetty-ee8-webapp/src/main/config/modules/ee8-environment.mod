@@ -3,6 +3,9 @@
 [description]
 Template configuration file to apply to all web applications deployed in the EE8 environment.
 
+[environment]
+ee8
+
 [tags]
 deployment
 
