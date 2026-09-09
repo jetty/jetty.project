@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http.content;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Set;
 import java.util.SortedSet;
@@ -32,7 +33,6 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -311,7 +312,7 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
 
     protected class CachedHttpContent extends HttpContent.Wrapper implements CachingHttpContent
     {
-        private final AtomicReference<RetainableByteBuffer> _buffer = new AtomicReference<>();
+        private final AtomicReference<org.eclipse.jetty.io.RetainableByteBuffer> _buffer = new AtomicReference<>();
         private final String _cacheKey;
         private final HttpField _etagField;
         private volatile long _lastAccessed;
@@ -375,7 +376,7 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
         @Override
         public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
-            RetainableByteBuffer buffer = _buffer.get();
+            org.eclipse.jetty.io.RetainableByteBuffer buffer = _buffer.get();
             if (buffer == null)
             {
                 super.writeTo(sink, offset, length, callback);
@@ -388,7 +389,10 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
                 length = TypeUtil.checkOffsetLengthSize(offset, length, buffer.remaining());
                 retained = tryRetain();
                 if (retained)
-                    sink.write(true, BufferUtil.slice(buffer.getByteBuffer(), Math.toIntExact(offset), Math.toIntExact(length)), Callback.from(this::release, callback));
+                {
+                    ByteBuffer slice = BufferUtil.slice(buffer.getByteBuffer(), Math.toIntExact(offset), Math.toIntExact(length));
+                    sink.write(true, RetainableByteBuffer.wrap(slice), Callback.from(this::release, callback));
+                }
                 else
                     getWrapped().writeTo(sink, offset, length, callback);
             }
@@ -411,7 +415,7 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
         {
             return _cache.computeIfPresent(_cacheKey, (s, cachingHttpContent) ->
             {
-                RetainableByteBuffer buffer = _buffer.get();
+                org.eclipse.jetty.io.RetainableByteBuffer buffer = _buffer.get();
                 if (buffer == null)
                     return null;
                 buffer.retain();
@@ -573,7 +577,7 @@ public class CachingHttpContentFactory extends ContainerLifeCycle implements Htt
         @Override
         public void writeTo(Content.Sink sink, long offset, long length, Callback callback)
         {
-            sink.write(true, BufferUtil.EMPTY_BUFFER, callback);
+            sink.write(true, RetainableByteBuffer.empty(), callback);
         }
 
         @Override

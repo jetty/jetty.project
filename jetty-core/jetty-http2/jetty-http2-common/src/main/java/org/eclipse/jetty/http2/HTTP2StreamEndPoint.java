@@ -15,24 +15,23 @@ package org.eclipse.jetty.http2;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.http2.api.Stream;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +47,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     private final AtomicBoolean eof = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicReference<Throwable> failure = new AtomicReference<>();
-    private final AtomicReference<Stream.Data> data = new AtomicReference<>();
+    private final AtomicReference<Content.Chunk> data = new AtomicReference<>();
     private Connection connection;
 
     public HTTP2StreamEndPoint(HTTP2Stream stream)
@@ -92,7 +91,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                     if (!writeState.compareAndSet(current, WriteState.OSHUT))
                         break;
                     Callback oshutCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, this::oshutSuccess, this::oshutFailure);
-                    stream.data(new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), oshutCallback);
+                    stream.data(RetainableByteBuffer.empty(), true, oshutCallback);
                     return;
                 case PENDING:
                     Callback callback = ((WriteState.Pending)current).callback;
@@ -154,7 +153,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("closing {}", this, cause);
-            Stream.Data data = this.data.getAndSet(null);
+            Content.Chunk data = this.data.getAndSet(null);
             if (data != null)
                 data.release();
             shutdownOutput();
@@ -165,9 +164,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     }
 
     @Override
-    public int fill(ByteBuffer sink) throws IOException
+    public int fill(RetainableByteBuffer.Mutable sink) throws IOException
     {
-        Stream.Data data = this.data.get();
+        Content.Chunk data = this.data.get();
         if (data != null)
             return fillFromData(data, sink);
 
@@ -178,7 +177,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
         if (eof.get())
             return -1;
 
-        data = stream.readData();
+        data = stream.read();
         this.data.set(data);
 
         if (LOG.isDebugEnabled())
@@ -190,44 +189,34 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
         return fillFromData(data, sink);
     }
 
-    private int fillFromData(Stream.Data data, ByteBuffer sink)
+    private int fillFromData(Content.Chunk chunk, RetainableByteBuffer.Mutable sink)
     {
         int length = 0;
-        ByteBuffer source = data.frame().getByteBuffer();
-        boolean hasContent = source.hasRemaining();
+        ByteBuffer buffer = chunk.getByteBuffer();
+        boolean hasContent = buffer.remaining() > 0L;
         if (hasContent)
-        {
-            int sinkPosition = BufferUtil.flipToFill(sink);
-            int sourceLength = source.remaining();
-            length = Math.min(sourceLength, sink.remaining());
-            int sourceLimit = source.limit();
-            source.limit(source.position() + length);
-            sink.put(source);
-            source.limit(sourceLimit);
-            BufferUtil.flipToFlush(sink, sinkPosition);
-        }
+            length = Math.toIntExact(sink.append(buffer));
 
-        if (!source.hasRemaining())
+        if (buffer.remaining() == 0L)
         {
-            boolean endStream = data.frame().isEndStream();
+            boolean endStream = chunk.isLast();
             eof.set(endStream);
-            data.release();
+            chunk.release();
             this.data.set(null);
             if (!endStream)
                 stream.demand();
             if (!hasContent)
                 length = endStream ? -1 : 0;
         }
-
         return length;
     }
 
     @Override
-    public boolean flush(ByteBuffer... buffers) throws IOException
+    public boolean flush(RetainableByteBuffer buffer) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("flushing {} on {}", BufferUtil.toDetailString(buffers), this);
-        if (buffers == null || buffers.length == 0 || remaining(buffers) == 0)
+            LOG.debug("flushing {} on {}", buffer, this);
+        if (buffer == null || !buffer.hasRemaining())
             return true;
 
         // Differently from other EndPoint implementations, where write() calls flush(),
@@ -294,11 +283,11 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     }
 
     @Override
-    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} on {}", BufferUtil.toDetailString(buffers), this);
-        if (buffers == null || buffers.length == 0 || remaining(buffers) == 0)
+            LOG.debug("writing {} on {}", buffer, this);
+        if (buffer == null || !buffer.hasRemaining())
         {
             callback.succeeded();
         }
@@ -315,8 +304,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                         if (!writeState.compareAndSet(current, pending))
                             continue;
                         // TODO: we really need a Stream primitive to write multiple frames.
-                        ByteBuffer result = coalesce(buffers);
-                        stream.data(new DataFrame(stream.getId(), result, false), pending);
+                        stream.data(buffer, false, pending);
                     }
                     case PENDING -> callback.failed(new WritePendingException());
                     case PENDING_OSHUT, OSHUT -> callback.failed(new EofException("Output shutdown"));
@@ -390,7 +378,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                         continue;
                     ((WriteState.Pending)current).callback.succeeded();
                     // Complete the shutdown of the output.
-                    stream.data(new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
+                    stream.data(RetainableByteBuffer.empty(), true, Callback.NOOP);
                 }
             }
             return;
@@ -413,26 +401,6 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
             }
             return;
         }
-    }
-
-    private long remaining(ByteBuffer... buffers)
-    {
-        return BufferUtil.remaining(buffers);
-    }
-
-    private ByteBuffer coalesce(ByteBuffer[] buffers)
-    {
-        if (buffers.length == 1)
-            return buffers[0];
-        long capacity = remaining(buffers);
-        if (capacity > Integer.MAX_VALUE)
-            throw new BufferOverflowException();
-        ByteBuffer result = BufferUtil.allocateDirect((int)capacity);
-        for (ByteBuffer buffer : buffers)
-        {
-            BufferUtil.append(result, buffer);
-        }
-        return result;
     }
 
     @Override
@@ -466,21 +434,34 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     {
         Connection oldConnection = getConnection();
 
-        ByteBuffer buffer = null;
-        if (oldConnection instanceof Connection.UpgradeFrom)
-            buffer = ((Connection.UpgradeFrom)oldConnection).onUpgradeFrom();
+        RetainableByteBuffer.Mutable buffer = null;
+        if (oldConnection instanceof Connection.UpgradeFrom from)
+            buffer = from.onUpgradeFrom();
 
-        if (oldConnection != null)
-            oldConnection.onClose(null);
+        try
+        {
+            if (oldConnection != null)
+                oldConnection.onClose(null);
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("upgrading from {} to {} with data {} on {}", oldConnection, newConnection, BufferUtil.toDetailString(buffer), this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("upgrading from {} to {} with data {} on {}", oldConnection, newConnection, buffer, this);
 
-        setConnection(newConnection);
-        if (newConnection instanceof Connection.UpgradeTo && buffer != null)
-            ((Connection.UpgradeTo)newConnection).onUpgradeTo(buffer);
+            setConnection(newConnection);
 
-        newConnection.onOpen();
+            if (buffer != null && buffer.hasRemaining())
+            {
+                if (newConnection instanceof Connection.UpgradeTo to)
+                    to.onUpgradeTo(buffer);
+                else
+                    throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
+            }
+
+            newConnection.onOpen();
+        }
+        finally
+        {
+            Retainable.dispose(buffer);
+        }
     }
 
     protected void processDataAvailable()

@@ -81,7 +81,7 @@ public class ContextHandlerDeepTest
                         request.getHttpURI().getPath()
                     );
 
-                response.write(true, BufferUtil.toBuffer(msg), callback);
+                response.write(true, BufferUtil.toReadableBuffer(msg), callback);
                 return true;
             }
         });
@@ -94,7 +94,7 @@ public class ContextHandlerDeepTest
             Connection: close\r
                         
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.getContent(), containsString("contextPath=/a/b/c\n"));
         assertThat(response.getContent(), containsString("pathInContext=/d\n"));

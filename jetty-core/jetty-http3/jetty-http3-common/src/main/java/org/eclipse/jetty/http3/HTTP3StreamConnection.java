@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -265,16 +266,16 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     Frame frame = action.frame();
                     if (frame instanceof DataFrame dataFrame)
                     {
-                        if (dataFrame.isLast() && !dataFrame.getByteBuffer().hasRemaining())
+                        if (dataFrame.isLast() && dataFrame.remaining() == 0)
                         {
                             tryReleaseData(true);
                             yield Content.Chunk.EOF;
                         }
                         else
                         {
-                            // Retain because multiple frames can be parsed from the same QUIC chunk.
-                            quicChunk.retain();
-                            Content.Chunk h3Chunk = Content.Chunk.asChunk(dataFrame.getByteBuffer(), dataFrame.isLast(), quicChunk);
+                            RetainableByteBuffer data = dataFrame.acquire();
+                            Content.Chunk h3Chunk = Content.Chunk.asChunk(data, dataFrame.isLast(), quicChunk);
+                            data.release();
                             if (h3Chunk.isLast())
                                 tryReleaseData(true);
                             yield h3Chunk;
@@ -316,7 +317,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             {
                 if (quicChunk != null)
                 {
-                    MessageParser.Result result = parser.parse(quicChunk.getByteBuffer(), quicChunk.isLast());
+                    RetainableByteBuffer buffer = RetainableByteBuffer.wrap(quicChunk.getByteBuffer());
+                    MessageParser.Result result = parser.parse(buffer, quicChunk.isLast());
                     if (LOG.isDebugEnabled())
                         LOG.debug("parsed {} from {} on {}", result, quicChunk, this);
 

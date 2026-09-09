@@ -791,7 +791,7 @@ public class EagerContentHandlerTest
                 }
 
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-                response.write(true, BufferUtil.toBuffer("success"), callback);
+                response.write(true, BufferUtil.toReadableBuffer("success"), callback);
                 return true;
             }
         });

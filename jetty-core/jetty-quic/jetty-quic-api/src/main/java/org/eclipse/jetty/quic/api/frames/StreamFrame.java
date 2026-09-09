@@ -13,17 +13,18 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>A QUIC frame carrying stream data bytes.</p>
  */
-public class StreamFrame extends Frame.WithStreamId
+public class StreamFrame extends Frame.WithStreamId implements Retainable
 {
     public static final long END_STREAM_MASK = 0x01;
     public static final long LENGTH_MASK = 0x02;
@@ -42,8 +43,8 @@ public class StreamFrame extends Frame.WithStreamId
     }
 
     private final long offset;
-    private final ByteBuffer data;
-    private final int length;
+    private final RetainableByteBuffer data;
+    private final long length;
     private final boolean endStream;
     private final boolean endData;
 
@@ -59,7 +60,7 @@ public class StreamFrame extends Frame.WithStreamId
      * @param data the data bytes to send
      * @param endStream whether the data is the last to be sent
      */
-    public StreamFrame(long streamId, ByteBuffer data, boolean endStream)
+    public StreamFrame(long streamId, RetainableByteBuffer data, boolean endStream)
     {
         this(streamId, data, 0, endStream);
     }
@@ -74,7 +75,7 @@ public class StreamFrame extends Frame.WithStreamId
      * @param offset the data offset
      * @param endStream whether the data is the last to be sent
      */
-    public StreamFrame(long streamId, ByteBuffer data, long offset, boolean endStream)
+    public StreamFrame(long streamId, RetainableByteBuffer data, long offset, boolean endStream)
     {
         this(streamId, data, offset, true, endStream);
     }
@@ -90,7 +91,7 @@ public class StreamFrame extends Frame.WithStreamId
      * @param hasLength whether the frame explicitly specifies the data length
      * @param endStream whether the data is the last to be sent
      */
-    public StreamFrame(long streamId, ByteBuffer data, long offset, boolean hasLength, boolean endStream)
+    public StreamFrame(long streamId, RetainableByteBuffer data, long offset, boolean hasLength, boolean endStream)
     {
         this(toFrameType(offset >= 0, hasLength, endStream), streamId, data, offset, true);
     }
@@ -105,10 +106,11 @@ public class StreamFrame extends Frame.WithStreamId
      * @param data the data bytes to send
      * @param offset the data offset
      */
-    public StreamFrame(long frameType, long streamId, ByteBuffer data, long offset, boolean endData)
+    public StreamFrame(long frameType, long streamId, RetainableByteBuffer data, long offset, boolean endData)
     {
         super(frameType, streamId);
         this.offset = offset < 0 ? 0 : offset;
+        data.retain();
         this.data = data;
         this.length = data.remaining();
         this.endStream = (frameType & END_STREAM_MASK) == END_STREAM_MASK;
@@ -126,15 +128,16 @@ public class StreamFrame extends Frame.WithStreamId
     /**
      * @return the data bytes
      */
-    public ByteBuffer getData()
+    public RetainableByteBuffer acquire()
     {
+        retain();
         return data;
     }
 
     /**
      * @return the number of data bytes
      */
-    public int getLength()
+    public long getLength()
     {
         return length;
     }
@@ -156,12 +159,42 @@ public class StreamFrame extends Frame.WithStreamId
     }
 
     @Override
+    public boolean canRetain()
+    {
+        return data.canRetain();
+    }
+
+    @Override
+    public boolean isRetained()
+    {
+        return data.isRetained();
+    }
+
+    @Override
+    public void retain()
+    {
+        data.retain();
+    }
+
+    @Override
+    public boolean release()
+    {
+        return data.release();
+    }
+
+    @Override
+    public int getRetained()
+    {
+        return data.getRetained();
+    }
+
+    @Override
     public String toString()
     {
         return "%s[offset=%d,length=%d/%d,last=%b]".formatted(
             super.toString(),
             getOffset(),
-            getData().remaining(),
+            data.remaining(),
             getLength(),
             isEndStream()
         );

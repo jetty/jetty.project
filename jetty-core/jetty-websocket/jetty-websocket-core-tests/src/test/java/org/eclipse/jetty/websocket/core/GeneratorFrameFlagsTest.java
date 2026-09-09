@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.util.FrameValidation;
@@ -66,7 +65,7 @@ public class GeneratorFrameFlagsTest
     {
         setup(invalidFrame);
 
-        ByteBuffer buffer = BufferUtil.allocate(100);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(100, false);
         new Generator().generateWholeFrame(invalidFrame, buffer);
         assertThrows(ProtocolException.class, () -> FrameValidation.assertValidOutgoing(invalidFrame, coreSession));
     }

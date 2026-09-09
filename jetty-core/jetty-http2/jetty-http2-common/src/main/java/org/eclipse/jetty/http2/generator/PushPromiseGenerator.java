@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.Flags;
@@ -22,8 +22,7 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class PushPromiseGenerator extends FrameGenerator
 {
@@ -36,13 +35,13 @@ public class PushPromiseGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Frame frame) throws HpackException
+    public int generate(List<RetainableByteBuffer> accumulator, Frame frame) throws HpackException
     {
         PushPromiseFrame pushPromiseFrame = (PushPromiseFrame)frame;
         return generatePushPromise(accumulator, pushPromiseFrame.getStreamId(), pushPromiseFrame.getPromisedStreamId(), pushPromiseFrame.getMetaData());
     }
 
-    public int generatePushPromise(RetainableByteBuffer.Mutable accumulator, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
+    public int generatePushPromise(List<RetainableByteBuffer> accumulator, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -50,9 +49,7 @@ public class PushPromiseGenerator extends FrameGenerator
             throw new IllegalArgumentException("Invalid promised stream id: " + promisedStreamId);
 
         RetainableByteBuffer hpack = encode(encoder, metaData);
-        ByteBuffer hpackByteBuffer = hpack.getByteBuffer();
-        BufferUtil.flipToFlush(hpackByteBuffer, 0);
-        int hpackLength = hpackByteBuffer.remaining();
+        int hpackLength = Math.toIntExact(hpack.remaining());
 
         // No support for splitting in CONTINUATION frames,
         // also PushPromiseBodyParser does not support it.
@@ -62,8 +59,9 @@ public class PushPromiseGenerator extends FrameGenerator
         int length = hpackLength + promisedStreamIdLength;
         int flags = Flags.END_HEADERS;
 
-        generateHeader(accumulator, FrameType.PUSH_PROMISE, length, flags, streamId);
-        accumulator.putInt(promisedStreamId);
+        RetainableByteBuffer.Mutable b = generateHeader(FrameType.PUSH_PROMISE, length, flags, streamId);
+        b.putInt(promisedStreamId);
+        accumulator.add(b);
         accumulator.add(hpack);
 
         return Frame.HEADER_LENGTH + length;

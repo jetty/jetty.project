@@ -52,13 +52,13 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -71,6 +71,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+// TODO: Delete this class, as it creates a framework for testing, and
+// its functionality is already there in the client transport tests.
+@Disabled
 public class HttpInputIntegrationTest
 {
     enum Mode
@@ -87,14 +90,13 @@ public class HttpInputIntegrationTest
     public static void beforeClass() throws Exception
     {
         __config = new HttpConfiguration();
-
         __bufferPool = new ArrayByteBufferPool.Tracking();
         __server = new Server(null, null, __bufferPool);
-        LocalConnector local = new LocalConnector(__server, new HttpConnectionFactory(__config));
+        LocalConnector local = new LocalConnector(__server);
         local.setIdleTimeout(4000);
         __server.addConnector(local);
 
-        ServerConnector http = new ServerConnector(__server, new HttpConnectionFactory(__config), new HTTP2CServerConnectionFactory(__config));
+        ServerConnector http = new ServerConnector(__server, new HTTP2CServerConnectionFactory(__config));
         http.setIdleTimeout(5000);
         __server.addConnector(http);
 
@@ -515,8 +517,7 @@ public class HttpInputIntegrationTest
             }
 
             flush(local, buffer);
-            local.waitUntilClosed();
-            return local.takeOutputString();
+            return local.getResponse();
         }
 
         private void flush(LocalEndPoint local, StringBuilder buffer, int delayMs, Boolean delayInFrame, boolean inFrame) throws Exception
@@ -534,7 +535,7 @@ public class HttpInputIntegrationTest
             String flush = buffer.toString();
             buffer.setLength(0);
             flushed.append(flush);
-            local.addInputAndExecute(BufferUtil.toBuffer(flush));
+            local.writeRequestString(flush);
         }
     }
 

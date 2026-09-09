@@ -68,7 +68,7 @@ public class CrossOriginHandlerTest
             Connection: close\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -89,7 +89,7 @@ public class CrossOriginHandlerTest
             Origin: http://127.0.0.1\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -112,7 +112,7 @@ public class CrossOriginHandlerTest
             Origin: http://127.0.0.1\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
         assertFalse(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -135,7 +135,7 @@ public class CrossOriginHandlerTest
             Origin: %s\r
             \r
             """.formatted(origin);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -160,7 +160,7 @@ public class CrossOriginHandlerTest
             Origin: %s\r
             \r
             """.formatted(origin);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -184,7 +184,7 @@ public class CrossOriginHandlerTest
             Origin: %s\r
             \r
             """.formatted(origin);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -209,7 +209,7 @@ public class CrossOriginHandlerTest
             Origin: %s\r
             \r
             """.formatted(origin);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -236,7 +236,7 @@ public class CrossOriginHandlerTest
             Origin: %s\r
             \r
             """.formatted(origin);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -263,7 +263,7 @@ public class CrossOriginHandlerTest
             Origin: %s\r
             \r
             """.formatted(origin);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -292,7 +292,7 @@ public class CrossOriginHandlerTest
             Origin: %s  %s\r
             \r
             """.formatted(otherOrigin, origin);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -317,7 +317,7 @@ public class CrossOriginHandlerTest
             Origin: %s\r
             \r
             """.formatted(origin);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -344,7 +344,7 @@ public class CrossOriginHandlerTest
             Origin: http://localhost\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -372,7 +372,7 @@ public class CrossOriginHandlerTest
             Origin: %s\r
             \r
             """.formatted(origin);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -398,7 +398,7 @@ public class CrossOriginHandlerTest
             Origin: http://localhost\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertFalse(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -426,7 +426,7 @@ public class CrossOriginHandlerTest
             Origin: %s\r
             \r
             """.formatted(origin);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertFalse(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -444,7 +444,7 @@ public class CrossOriginHandlerTest
             Origin: http://localhost\r
             \r
             """;
-        response = HttpTester.parseResponse(connector.getResponse(request));
+        response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -473,7 +473,7 @@ public class CrossOriginHandlerTest
             Origin: %s\r
             \r
             """.formatted(origin);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertFalse(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -493,7 +493,7 @@ public class CrossOriginHandlerTest
             Origin: %s\r
             \r
             """.formatted(origin);
-        response = HttpTester.parseResponse(connector.getResponse(request));
+        response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -519,7 +519,7 @@ public class CrossOriginHandlerTest
             Origin: http://localhost\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertFalse(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -545,7 +545,7 @@ public class CrossOriginHandlerTest
             Origin: %s\r
             \r
             """.formatted(origin);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -569,7 +569,7 @@ public class CrossOriginHandlerTest
             Origin: http://localhost\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertFalse(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -594,7 +594,7 @@ public class CrossOriginHandlerTest
             Origin: http://localhost\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertTrue(response.contains(ApplicationHandler.APPLICATION_HEADER));
@@ -621,7 +621,7 @@ public class CrossOriginHandlerTest
             Origin: http://127.0.0.1\r
             \r
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
         assertFalse(response.contains(ApplicationHandler.APPLICATION_HEADER));

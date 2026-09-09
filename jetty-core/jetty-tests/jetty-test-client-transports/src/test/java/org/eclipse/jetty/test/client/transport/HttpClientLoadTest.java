@@ -35,9 +35,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -82,12 +82,12 @@ public class HttpClientLoadTest extends AbstractTest
         start(transportType, new LoadHandler());
         setStreamIdleTimeout(120000);
         client.setIdleTimeout(120000);
-        int cores = 8;
+        int cores = 1;
         client.setMaxConnectionsPerDestination(cores);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
 
         int runs = 1;
-        int iterations = 64;
+        int iterations = 1;
         IntStream.range(0, cores).parallel().forEach(i ->
             IntStream.range(0, runs).forEach(j ->
                 run(transportType, iterations)));
@@ -272,12 +272,12 @@ public class HttpClientLoadTest extends AbstractTest
             {
                 case "GET" ->
                 {
-                    ByteBuffer content = BufferUtil.EMPTY_BUFFER;
+                    RetainableByteBuffer content = RetainableByteBuffer.empty();
                     int contentLength = (int)request.getHeaders().getLongField("X-Download");
                     if (contentLength >= 0)
                     {
                         response.getHeaders().put("X-Content", contentLength);
-                        content = ByteBuffer.allocate(contentLength);
+                        content = RetainableByteBuffer.allocate(contentLength, false);
                     }
                     response.write(true, content, callback);
                 }

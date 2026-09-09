@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +28,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -148,7 +148,7 @@ public class ContextHandlerCollectionTest
                 \r
                 """).formatted(uri, host);
 
-            String rawResponse = connector.getResponse(rawRequest);
+            String rawResponse = connector.getResponseAsString(rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
             assertThat(testInfo.getDisplayName(), response.getStatus(), is(expectedStatus));
@@ -220,7 +220,7 @@ public class ContextHandlerCollectionTest
                 \r
                 """.formatted(requestHost);
 
-            String rawResponse = connector.getResponse(rawRequest);
+            String rawResponse = connector.getResponseAsString(rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response status for [GET " + requestHost + "]", response.getStatus(), is(HttpStatus.OK_200));
             assertThat("Response body for [GET " + requestHost + "]", response.getContent(), is("H"));
@@ -294,13 +294,13 @@ public class ContextHandlerCollectionTest
                 \r
                 """.formatted(requestHost);
 
-            String rawResponse = connector.getResponse(rawRequest);
+            String rawResponse = connector.getResponseAsString(rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response status for [GET " + requestHost + "]", response.getStatus(), is(HttpStatus.NOT_FOUND_404));
             assertThat("Response body for [GET " + requestHost + "]", response.getContent(), containsString("Not Found"));
             assertThat("Response Header for [GET " + requestHost + "]", response.get("X-IsHandled-Name"), nullValue());
 
-            connector.getResponse(rawRequest);
+            connector.getResponseAsString(rawRequest);
             assertFalse(handler.isHandled(), "'" + requestHost + "' should not have been handled.");
         }
         finally
@@ -376,32 +376,32 @@ public class ContextHandlerCollectionTest
         server.start();
 
         String response;
-        response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
+        response = connector.getResponseAsString("GET / HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
         assertThat(response, not(containsString("Wrapped:")));
 
-        response = connector.getResponse("GET /foobar/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponseAsString("GET /foobar/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
         assertThat(response, not(containsString("Wrapped:")));
 
-        response = connector.getResponse("GET /left/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponseAsString("GET /left/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left"));
         assertThat(response, not(containsString("Wrapped:")));
 
-        response = connector.getResponse("GET /leftcentre/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponseAsString("GET /leftcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left of centre"));
         assertThat(response, not(containsString("Wrapped:")));
 
-        response = connector.getResponse("GET /rightcentre/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponseAsString("GET /rightcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right of centre"));
         assertThat(response, containsString("Wrapped: centreRight"));
 
-        response = connector.getResponse("GET /right/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponseAsString("GET /right/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right"));
         assertThat(response, containsString("Wrapped: right"));
@@ -448,7 +448,7 @@ public class ContextHandlerCollectionTest
         {
             this.handled = true;
             response.getHeaders().put("X-IsHandled-Name", name);
-            ByteBuffer nameBuffer = BufferUtil.toBuffer(name, StandardCharsets.UTF_8);
+            RetainableByteBuffer nameBuffer = BufferUtil.toReadableBuffer(name, StandardCharsets.UTF_8);
             response.write(true, nameBuffer, callback);
             return true;
         }

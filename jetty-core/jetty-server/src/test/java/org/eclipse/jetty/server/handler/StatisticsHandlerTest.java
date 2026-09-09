@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -29,6 +28,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -170,7 +170,7 @@ public class StatisticsHandlerTest
                 0123456789\r
                 """;
 
-        String response = _connector.getResponse(request);
+        String response = _connector.getResponseAsString(request);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Connection: close"));
         await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses2xx, is(1));
@@ -199,7 +199,7 @@ public class StatisticsHandlerTest
 
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
-            String response = _connector.getResponse(request);
+            String response = _connector.getResponseAsString(request);
             assertThat(response, containsString("HTTP/1.1 500 "));
             assertThat(response, containsString("content-length 1 != 0 written"));
             await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses5xx, is(1));
@@ -215,7 +215,7 @@ public class StatisticsHandlerTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 // Do not explicitly set status to 200.
-                response.write(true, ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)), callback);
+                response.write(true, RetainableByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)), callback);
                 return true;
             }
         });
@@ -226,7 +226,7 @@ public class StatisticsHandlerTest
             Host: localhost\r
             \r
             """;
-        String response = _connector.getResponse(request);
+        String response = _connector.getResponseAsString(request);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses2xx, is(1));
     }
@@ -421,7 +421,7 @@ public class StatisticsHandlerTest
                 Host: localhost\r
                 \r
                 """;
-            String response = _connector.getResponse(request);
+            String response = _connector.getResponseAsString(request);
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
 
@@ -461,7 +461,7 @@ public class StatisticsHandlerTest
                 Host: localhost\r
                 \r
                 """;
-            String response = _connector.getResponse(request);
+            String response = _connector.getResponseAsString(request);
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
 
@@ -512,7 +512,7 @@ public class StatisticsHandlerTest
                 Host: localhost\r
                 \r
                 """;
-            String response = _connector.getResponse(request);
+            String response = _connector.getResponseAsString(request);
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
 
@@ -552,7 +552,7 @@ public class StatisticsHandlerTest
                 Host: localhost\r
                 \r
                 """;
-            String response = _connector.getResponse(request);
+            String response = _connector.getResponseAsString(request);
             assertThat(response, containsString("HTTP/1.1 200 OK"));
         }
 

@@ -88,7 +88,7 @@ public class EncodedURITest
     @Test
     public void testTestServlet() throws Exception
     {
-        String response = _connector.getResponse("GET /c%6Fntext%20path/test%20servlet/path%20info HTTP/1.0\n\n");
+        String response = _connector.getResponseAsString("GET /c%6Fntext%20path/test%20servlet/path%20info HTTP/1.0\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 "));
         assertThat(response, Matchers.containsString("requestURI=/c%6Fntext%20path/test%20servlet/path%20info"));
         assertThat(response, Matchers.containsString("contextPath=/context%20path"));
@@ -99,7 +99,7 @@ public class EncodedURITest
     @Test
     public void testAsyncFilterTestServlet() throws Exception
     {
-        String response = _connector.getResponse("GET /context%20path/test%20servlet/path%20info?async=true HTTP/1.0\n\n");
+        String response = _connector.getResponseAsString("GET /context%20path/test%20servlet/path%20info?async=true HTTP/1.0\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 "));
         assertThat(response, Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
         assertThat(response, Matchers.containsString("contextPath=/context%20path"));
@@ -110,7 +110,7 @@ public class EncodedURITest
     @Test
     public void testAsyncFilterWrapTestServlet() throws Exception
     {
-        String response = _connector.getResponse("GET /context%20path/test%20servlet/path%20info?async=true&wrap=true HTTP/1.0\n\n");
+        String response = _connector.getResponseAsString("GET /context%20path/test%20servlet/path%20info?async=true&wrap=true HTTP/1.0\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 "));
         assertThat(response, Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
         assertThat(response, Matchers.containsString("contextPath=/context%20path"));
@@ -121,7 +121,7 @@ public class EncodedURITest
     @Test
     public void testAsyncServletTestServlet() throws Exception
     {
-        String response = _connector.getResponse("GET /context%20path/async%20servlet/path%20info HTTP/1.0\n\n");
+        String response = _connector.getResponseAsString("GET /context%20path/async%20servlet/path%20info HTTP/1.0\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 "));
         assertThat(response, Matchers.containsString("requestURI=/context%20path/test%20servlet/path%20info"));
         assertThat(response, Matchers.containsString("contextPath=/context%20path"));
@@ -133,7 +133,7 @@ public class EncodedURITest
     @Disabled
     public void testAsyncServletTestServletEncoded() throws Exception
     {
-        String response = _connector.getResponse("GET /context%20path/async%20servlet/path%20info?encode=true HTTP/1.0\n\n");
+        String response = _connector.getResponseAsString("GET /context%20path/async%20servlet/path%20info?encode=true HTTP/1.0\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 "));
         assertThat(response, Matchers.containsString("requestURI=/context%20path/test%20servlet/path%2520info"));
         assertThat(response, Matchers.containsString("contextPath=/context%20path"));
@@ -153,7 +153,7 @@ public class EncodedURITest
         _connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         _server.start();
 
-        String response = _connector.getResponse("GET /context_path/test_servlet/path_info HTTP/1.0\n\n".replace("_", separator));
+        String response = _connector.getResponseAsString("GET /context_path/test_servlet/path_info HTTP/1.0\n\n".replace("_", separator));
         assertThat(response, startsWith("HTTP/1.1 200 "));
         assertThat(response, Matchers.containsString("requestURI=/context_path/test_servlet/path_info".replace("_", separator)));
         assertThat(response, Matchers.containsString("contextPath=/context_path".replace("_", separator)));

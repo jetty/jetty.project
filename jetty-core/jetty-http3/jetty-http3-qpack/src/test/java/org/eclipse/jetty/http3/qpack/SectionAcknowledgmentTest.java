@@ -13,12 +13,10 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http3.qpack.QpackException.SessionException;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -56,7 +54,7 @@ public class SectionAcknowledgmentTest
     public void testSectionAcknowledgmentForZeroRequiredInsertCountOnDecoder() throws Exception
     {
         // Encode a header with only a value contained in the static table.
-        ByteBuffer buffer = encode(_encoder, 0, toMetaData("GET", "/", "http"));
+        RetainableByteBuffer buffer = encode(_encoder, 0, toMetaData("GET", "/", "http"));
 
         // No instruction since no addition to table.
         Instruction instruction = _encoderHandler.getInstruction();
@@ -72,12 +70,12 @@ public class SectionAcknowledgmentTest
     public void testSectionAcknowledgmentForZeroRequiredInsertCountOnEncoder() throws Exception
     {
         // Encode a header with only a value contained in the static table.
-        ByteBuffer buffer = encode(_encoder, 0, toMetaData("GET", "/", "http"));
-        assertThat(BufferUtil.remaining(buffer), greaterThan(0L));
+        RetainableByteBuffer buffer = encode(_encoder, 0, toMetaData("GET", "/", "http"));
+        assertThat(buffer.remaining(), greaterThan(0L));
 
         // Parsing a section ack instruction on the encoder when we are not expecting it should result in QPACK_DECODER_STREAM_ERROR.
         SectionAcknowledgmentInstruction instruction = new SectionAcknowledgmentInstruction(0);
-        ByteBuffer instructionBuffer = toBuffer(instruction);
+        RetainableByteBuffer instructionBuffer = toBuffer(instruction);
         SessionException error = assertThrows(SessionException.class, () -> _encoder.parseInstructions(instructionBuffer));
         assertThat(error.getErrorCode(), equalTo(QpackException.QPACK_ENCODER_STREAM_ERROR));
         assertThat(error.getMessage(), containsString("No StreamInfo for 0"));

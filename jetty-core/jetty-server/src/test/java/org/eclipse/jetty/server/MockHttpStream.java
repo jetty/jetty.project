@@ -25,9 +25,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class MockHttpStream implements HttpStream
 {
@@ -43,7 +43,7 @@ public class MockHttpStream implements HttpStream
     private final AtomicReference<Content.Chunk> _content = new AtomicReference<>();
     private final AtomicReference<Throwable> _complete = new AtomicReference<>();
     private final CountDownLatch _completed = new CountDownLatch(1);
-    private final RetainableByteBuffer.DynamicCapacity _accumulator = new RetainableByteBuffer.DynamicCapacity();
+    private final org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity _accumulator = new org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity();
     private final AtomicReference<ByteBuffer> _out = new AtomicReference<>();
     private final HttpChannel _channel;
     private final AtomicReference<MetaData.Response> _response = new AtomicReference<>();
@@ -160,7 +160,7 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
     {
         if (response != null)
         {
@@ -180,7 +180,14 @@ public class MockHttpStream implements HttpStream
         }
 
         if (content != null)
-            _accumulator.append(content);
+        {
+            content.quietWriteTo(bytes ->
+            {
+                int r = bytes.remaining();
+                _accumulator.append(bytes);
+                return r;
+            });
+        }
 
         if (last)
         {

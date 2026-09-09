@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -254,6 +255,44 @@ public class BufferUtilTest
     }
 
     @Test
+    public void testPutFromReadableBufferIntoLargeEnoughBuffer()
+    {
+        RetainableByteBuffer from = RetainableByteBuffer.wrap(BufferUtil.toBuffer("012345"));
+        ByteBuffer to = ByteBuffer.allocate(10);
+
+        BufferUtil.put(from, to);
+        BufferUtil.flipToFlush(to, 0);
+        assertEquals(0, from.remaining());
+        assertEquals(6, to.remaining());
+        assertEquals("012345", BufferUtil.toString(to));
+    }
+
+    @Test
+    public void testPutFromReadableBufferIntoTooSmallBuffer()
+    {
+        RetainableByteBuffer from = RetainableByteBuffer.wrap(BufferUtil.toBuffer("1234567890A"));
+        ByteBuffer to = ByteBuffer.allocate(10);
+
+        BufferUtil.put(from, to);
+        BufferUtil.flipToFlush(to, 0);
+        assertEquals(1, from.remaining());
+        assertEquals(10, to.remaining());
+        assertEquals("1234567890", BufferUtil.toString(to));
+        assertEquals('A', from.get());
+    }
+
+    @Test
+    public void testToBuffer()
+    {
+        RetainableByteBuffer from = RetainableByteBuffer.wrap(BufferUtil.toBuffer("1234567890A"));
+        ByteBuffer buffer = BufferUtil.toBuffer(from, false);
+
+        assertEquals(0, from.remaining());
+        assertEquals(11, buffer.remaining());
+        assertEquals("1234567890A", BufferUtil.toString(buffer));
+    }
+
+    @Test
     public void testPut()
     {
         ByteBuffer to = BufferUtil.allocate(10);
@@ -386,7 +425,6 @@ public class BufferUtilTest
         assertEquals("Cruel", BufferUtil.toString(b1));
         ByteBuffer b2 = b1.slice();
         assertEquals("Cruel", BufferUtil.toString(b2));
-        System.err.println(BufferUtil.toDetailString(b2));
         assertEquals(8, b2.arrayOffset());
         assertEquals(5, b2.capacity());
 

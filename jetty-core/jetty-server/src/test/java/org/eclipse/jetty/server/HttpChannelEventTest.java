@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -22,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
@@ -93,7 +93,7 @@ public class HttpChannelEventTest
         request.setHeader("Host", "localhost");
         request.setContent(new byte[]{(byte)data});
 
-        ByteBuffer buffer = connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer buffer = connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Listener event happens before the application.
         assertTrue(listenerLatch.await(5, TimeUnit.SECONDS));
@@ -135,7 +135,7 @@ public class HttpChannelEventTest
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request.toString(), 5, TimeUnit.SECONDS));
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -169,7 +169,7 @@ public class HttpChannelEventTest
 
         // No Host header, request will fail.
         String request = HttpTester.newRequest().toString();
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request, 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -264,7 +264,7 @@ public class HttpChannelEventTest
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
-        HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
+        HttpTester.parseResponse(connector.getResponseAsString(request.toString(), 5, TimeUnit.SECONDS));
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -300,7 +300,7 @@ public class HttpChannelEventTest
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request.toString(), 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -336,7 +336,7 @@ public class HttpChannelEventTest
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request.toString(), 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));

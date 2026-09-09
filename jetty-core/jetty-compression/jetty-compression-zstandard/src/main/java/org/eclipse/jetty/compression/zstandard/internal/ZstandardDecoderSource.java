@@ -14,14 +14,13 @@
 package org.eclipse.jetty.compression.zstandard.internal;
 
 import java.lang.ref.Cleaner;
-import java.nio.ByteBuffer;
 
 import com.github.luben.zstd.ZstdDecompressCtx;
 import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
 import org.eclipse.jetty.compression.zstandard.ZstandardDecoderConfig;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ZstandardDecoderSource extends DecoderSource
 {
@@ -43,19 +42,41 @@ public class ZstandardDecoderSource extends DecoderSource
     @Override
     protected Content.Chunk transform(Content.Chunk inputChunk)
     {
-        ByteBuffer input = inputChunk.getByteBuffer();
-        if (!inputChunk.hasRemaining())
+        if (inputChunk.isEmpty() && inputChunk.isLast())
             return inputChunk;
-        if (!input.isDirect())
-            throw new IllegalArgumentException("Read Chunk is not a Direct ByteBuffer");
-        RetainableByteBuffer dst = compression.acquireByteBuffer(bufferSize);
+
+        RetainableByteBuffer inputBuffer;
+        if (!inputChunk.getByteBuffer().isDirect())
+        {
+            RetainableByteBuffer.Mutable b = compression.acquireBuffer(inputChunk.remaining());
+            b.put(inputChunk.getByteBuffer());
+            inputBuffer = b;
+        }
+        else
+        {
+            inputBuffer = RetainableByteBuffer.wrap(inputChunk.getByteBuffer());
+        }
+
         boolean last = inputChunk.isLast();
-        dst.getByteBuffer().clear();
-        boolean fullyFlushed = decompressCtx.decompressDirectByteBufferStream(dst.getByteBuffer(), input);
-        if (!fullyFlushed)
+        RetainableByteBuffer.Mutable outputBuffer = compression.acquireBuffer(bufferSize);
+        boolean[] fullyFlushed = new boolean[1];
+        inputBuffer.quietWriteTo(input ->
+        {
+            int r = input.remaining();
+            outputBuffer.readFrom(output ->
+            {
+                int p = output.position();
+                fullyFlushed[0] = decompressCtx.decompressDirectByteBufferStream(output, input);
+                return output.position() - p;
+            });
+            return r - input.remaining();
+        });
+        if (!fullyFlushed[0])
             last = false;
-        dst.getByteBuffer().flip();
-        return Content.Chunk.asChunk(dst.getByteBuffer(), last, dst);
+        Content.Chunk chunk = Content.Chunk.asChunk(outputBuffer, last, null);
+        outputBuffer.release();
+        inputBuffer.release();
+        return chunk;
     }
 
     @Override

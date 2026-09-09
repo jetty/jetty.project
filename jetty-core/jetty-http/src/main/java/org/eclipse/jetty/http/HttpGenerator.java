@@ -15,7 +15,6 @@ package org.eclipse.jetty.http;
 
 import java.io.IOException;
 import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -24,6 +23,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,7 +197,7 @@ public class HttpGenerator
         _endOfContent = null;
     }
 
-    public Result generateRequest(MetaData.Request info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
+    public Result generateRequest(MetaData.Request info, RetainableByteBuffer.Mutable header, RetainableByteBuffer.Mutable chunk, RetainableByteBuffer content, boolean last) throws IOException
     {
         switch (_state)
         {
@@ -211,7 +211,6 @@ public class HttpGenerator
                     return Result.NEED_HEADER;
 
                 // prepare the header
-                int pos = BufferUtil.flipToFill(header);
                 try
                 {
                     // generate request line
@@ -230,8 +229,8 @@ public class HttpGenerator
                     }
                     else
                     {
-                        int contentLength = BufferUtil.length(content);
-                        int committedLength = contentLength;
+                        long contentLength = content == null ? 0L : content.remaining();
+                        long committedLength = contentLength;
                         if (committedLength > 0)
                         {
                             if (isChunking())
@@ -257,10 +256,6 @@ public class HttpGenerator
                         throw e;
                     throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, e.getMessage(), e);
                 }
-                finally
-                {
-                    BufferUtil.flipToFlush(header, pos);
-                }
             }
 
             case COMMITTED:
@@ -274,11 +269,11 @@ public class HttpGenerator
             }
 
             case END:
-                if (BufferUtil.hasContent(content))
+                if (content.hasRemaining())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("discarding content in COMPLETING");
-                    BufferUtil.clear(content);
+                    content.readPosition(content.readPosition() + content.remaining());
                 }
                 return Result.DONE;
 
@@ -287,19 +282,18 @@ public class HttpGenerator
         }
     }
 
-    private Result committed(ByteBuffer chunk, ByteBuffer content, boolean last)
+    private Result committed(RetainableByteBuffer.Mutable chunk, RetainableByteBuffer content, boolean last)
     {
-        int contentLength = BufferUtil.length(content);
-        int committedLength = contentLength;
+        long contentLength = content == null ? 0L : content.remaining();
+        long committedLength = contentLength;
         if (committedLength > 0)
         {
             if (isChunking())
             {
                 if (chunk == null)
                     return Result.NEED_CHUNK;
-                BufferUtil.clearToFill(chunk);
+                chunk.clear();
                 committedLength = prepareChunk(chunk, committedLength);
-                BufferUtil.flipToFlush(chunk, 0);
             }
             _contentPrepared += committedLength;
         }
@@ -313,13 +307,13 @@ public class HttpGenerator
         return committedLength > 0 ? Result.FLUSH : Result.DONE;
     }
 
-    private Result completing(ByteBuffer chunk, ByteBuffer content)
+    private Result completing(RetainableByteBuffer.Mutable chunk, RetainableByteBuffer content)
     {
-        if (BufferUtil.hasContent(content))
+        if (content != null && content.hasRemaining())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("discarding content in COMPLETING");
-            BufferUtil.clear(content);
+            content.readPosition(content.readPosition() + content.remaining());
         }
 
         if (isChunking())
@@ -335,10 +329,9 @@ public class HttpGenerator
 
                 if (trailers != null)
                 {
-                    // Write the last chunk
-                    BufferUtil.clearToFill(chunk);
+                    // Write the last chunk.
+                    chunk.clear();
                     generateTrailers(chunk, trailers);
-                    BufferUtil.flipToFlush(chunk, 0);
                     _endOfContent = EndOfContent.UNKNOWN_CONTENT;
                     return Result.FLUSH;
                 }
@@ -348,10 +341,9 @@ public class HttpGenerator
             if (chunk == null)
                 return Result.NEED_CHUNK;
 
-            // Write the last chunk
-            BufferUtil.clearToFill(chunk);
+            // Write the last chunk.
+            chunk.clear();
             prepareChunk(chunk, 0);
-            BufferUtil.flipToFlush(chunk, 0);
             _endOfContent = EndOfContent.UNKNOWN_CONTENT;
             return Result.FLUSH;
         }
@@ -359,7 +351,7 @@ public class HttpGenerator
         return Boolean.TRUE.equals(_persistent) ? Result.DONE : Result.SHUTDOWN_OUT;
     }
 
-    public Result generateResponse(MetaData.Response info, boolean head, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
+    public Result generateResponse(MetaData.Response info, boolean head, RetainableByteBuffer.Mutable header, RetainableByteBuffer.Mutable chunk, RetainableByteBuffer content, boolean last) throws IOException
     {
         switch (_state)
         {
@@ -377,7 +369,7 @@ public class HttpGenerator
                 {
                     _persistent = false;
                     _endOfContent = EndOfContent.EOF_CONTENT;
-                    if (BufferUtil.hasContent(content))
+                    if (content != null && content.hasRemaining())
                         _contentPrepared += content.remaining();
                     _state = last ? State.COMPLETING : State.COMMITTED;
                     return Result.FLUSH;
@@ -388,7 +380,6 @@ public class HttpGenerator
                     return Result.NEED_HEADER;
 
                 // prepare the header
-                int pos = BufferUtil.flipToFill(header);
                 try
                 {
                     // generate ResponseLine
@@ -420,8 +411,8 @@ public class HttpGenerator
 
                     generateHeaders(header, content, last);
 
-                    int contentLength = BufferUtil.length(content);
-                    int committedLength = contentLength;
+                    long contentLength = content == null ? 0L : content.remaining();
+                    long committedLength = contentLength;
                     if (committedLength > 0)
                     {
                         if (isChunking() && !head)
@@ -443,10 +434,6 @@ public class HttpGenerator
                     if (e instanceof HttpException)
                         throw e;
                     throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, e.getMessage(), e);
-                }
-                finally
-                {
-                    BufferUtil.flipToFlush(header, pos);
                 }
 
                 return Result.FLUSH;
@@ -471,11 +458,11 @@ public class HttpGenerator
             }
 
             case END:
-                if (BufferUtil.hasContent(content))
+                if (content != null && content.hasRemaining())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("discarding content in COMPLETING");
-                    BufferUtil.clear(content);
+                    content.readPosition(content.readPosition() + content.remaining());
                 }
                 return Result.DONE;
 
@@ -496,7 +483,7 @@ public class HttpGenerator
         startTunnel();
     }
 
-    private int prepareChunk(ByteBuffer chunk, long remaining)
+    private int prepareChunk(RetainableByteBuffer.Mutable chunk, long remaining)
     {
         // if we need CRLF add this to header
         if (_needCRLF)
@@ -519,7 +506,7 @@ public class HttpGenerator
         }
     }
 
-    private void generateTrailers(ByteBuffer buffer, HttpFields trailer)
+    private void generateTrailers(RetainableByteBuffer.Mutable buffer, HttpFields trailer)
     {
         // if we need CRLF add this to header
         if (_needCRLF)
@@ -538,7 +525,7 @@ public class HttpGenerator
         BufferUtil.putCRLF(buffer);
     }
 
-    private void generateRequestLine(MetaData.Request request, ByteBuffer header)
+    private void generateRequestLine(MetaData.Request request, RetainableByteBuffer.Mutable header)
     {
         header.put(StringUtil.getBytes(request.getMethod()));
         header.put((byte)' ');
@@ -548,7 +535,7 @@ public class HttpGenerator
         header.put(HttpTokens.CRLF);
     }
 
-    private void generateResponseLine(MetaData.Response response, ByteBuffer header)
+    private void generateResponseLine(MetaData.Response response, RetainableByteBuffer.Mutable header)
     {
         // Look for prepared response line
         int status = response.getStatus();
@@ -598,14 +585,14 @@ public class HttpGenerator
         return bytes;
     }
 
-    private void generateHeaders(ByteBuffer header, ByteBuffer content, boolean last)
+    private void generateHeaders(RetainableByteBuffer.Mutable header, RetainableByteBuffer content, boolean last)
     {
         final MetaData.Request request = (_info instanceof MetaData.Request) ? (MetaData.Request)_info : null;
         final MetaData.Response response = (_info instanceof MetaData.Response) ? (MetaData.Response)_info : null;
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("generateHeaders {} last={} content={}", _info, last, BufferUtil.toDetailString(content));
+            LOG.debug("generateHeaders {} last={} content={}", _info, last, content);
             LOG.debug(_info.getHttpFields().toString());
         }
 
@@ -687,7 +674,7 @@ public class HttpGenerator
 
         // Can we work out the content length?
         if (last && contentLength < 0 && _info.getTrailersSupplier() == null)
-            contentLength = _contentPrepared + BufferUtil.length(content);
+            contentLength = _contentPrepared + (content == null ? 0L : content.remaining());
 
         // Calculate how to end _content and connection, _content length and transfer encoding
         // settings from http://tools.ietf.org/html/rfc7230#section-3.3.3
@@ -823,7 +810,7 @@ public class HttpGenerator
                     {
                         // TODO discard content for backward compatibility with 9.3 releases
                         // TODO review if it is still needed in 9.4 or can we just throw.
-                        content.clear();
+                        content.readPosition(content.readPosition() + content.remaining());
                     }
                     else
                         throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
@@ -925,14 +912,14 @@ public class HttpGenerator
         checkMaxHeaderBytes(header);
     }
 
-    private void checkMaxHeaderBytes(ByteBuffer header)
+    private void checkMaxHeaderBytes(RetainableByteBuffer.Mutable header)
     {
         int maxHeaderBytes = getMaxHeaderBytes();
-        if (maxHeaderBytes > 0 && header.position() > maxHeaderBytes)
+        if (maxHeaderBytes > 0 && header.remaining() > maxHeaderBytes)
             throw new BufferOverflowException();
     }
 
-    private static void putContentLength(ByteBuffer header, long contentLength)
+    private static void putContentLength(RetainableByteBuffer.Mutable header, long contentLength)
     {
         if (contentLength == 0)
         {
@@ -1015,7 +1002,7 @@ public class HttpGenerator
         }
     }
 
-    private static void putSanitisedName(String s, ByteBuffer buffer)
+    private static void putSanitisedName(String s, RetainableByteBuffer.Mutable buffer)
     {
         int l = s.length();
         for (int i = 0; i < l; i++)
@@ -1030,7 +1017,7 @@ public class HttpGenerator
         }
     }
 
-    private static void putSanitisedValue(String s, ByteBuffer buffer)
+    private static void putSanitisedValue(String s, RetainableByteBuffer.Mutable buffer)
     {
         int l = s.length();
         for (int i = 0; i < l; i++)
@@ -1045,7 +1032,7 @@ public class HttpGenerator
         }
     }
 
-    public static void putTo(HttpField field, ByteBuffer bufferInFillMode)
+    public static void putTo(HttpField field, RetainableByteBuffer.Mutable bufferInFillMode)
     {
         if (field instanceof PreEncodedHttpField)
         {
@@ -1070,7 +1057,7 @@ public class HttpGenerator
         }
     }
 
-    public static void putTo(HttpFields.Mutable fields, ByteBuffer bufferInFillMode)
+    public static void putTo(HttpFields.Mutable fields, RetainableByteBuffer.Mutable bufferInFillMode)
     {
         for (HttpField field : fields)
         {

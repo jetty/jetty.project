@@ -49,7 +49,6 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
@@ -65,14 +64,13 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -492,7 +490,7 @@ public class HttpClientTLSTest
                 return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected int networkFill(ByteBuffer input) throws IOException
+                    protected int networkFill(RetainableByteBuffer.Mutable input) throws IOException
                     {
                         int n = super.networkFill(input);
                         if (n > 0)
@@ -525,7 +523,7 @@ public class HttpClientTLSTest
                         return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             @Override
-                            protected int networkFill(ByteBuffer input) throws IOException
+                            protected int networkFill(RetainableByteBuffer.Mutable input) throws IOException
                             {
                                 int n = super.networkFill(input);
                                 if (n > 0)
@@ -582,7 +580,7 @@ public class HttpClientTLSTest
                 return new SslConnection(bufferPool, connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected int networkFill(ByteBuffer input) throws IOException
+                    protected int networkFill(RetainableByteBuffer.Mutable input) throws IOException
                     {
                         int n = super.networkFill(input);
                         if (n > 0)
@@ -611,7 +609,7 @@ public class HttpClientTLSTest
         assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
 
         ArrayByteBufferPool bufferPool = (ArrayByteBufferPool)server.getByteBufferPool();
-        Pool<RetainableByteBuffer.Pooled> bucket = bufferPool.poolFor(16 * 1024 + 1, connector.getConnectionFactory(HttpConnectionFactory.class).isUseInputDirectByteBuffers());
+        Pool<org.eclipse.jetty.io.RetainableByteBuffer.Pooled> bucket = bufferPool.poolFor(16 * 1024 + 1, connector.getConnectionFactory(HttpConnectionFactory.class).isUseInputDirectByteBuffers());
         assertEquals(1, bucket.size());
         assertEquals(1, bucket.getIdleCount());
 
@@ -625,13 +623,13 @@ public class HttpClientTLSTest
         SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        List<RetainableByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
+        List<org.eclipse.jetty.io.RetainableByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
         ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
-            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
+            public org.eclipse.jetty.io.RetainableByteBuffer.Mutable acquire(int size, boolean direct)
             {
-                RetainableByteBuffer.Wrapper buffer = new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+                org.eclipse.jetty.io.RetainableByteBuffer.Wrapper buffer = new org.eclipse.jetty.io.RetainableByteBuffer.Wrapper(super.acquire(size, direct))
                 {
                     @Override
                     public boolean release()
@@ -659,7 +657,7 @@ public class HttpClientTLSTest
                 return new SslConnection(bufferPool, connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected boolean networkFlush(ByteBuffer output) throws IOException
+                    protected boolean networkFlush(RetainableByteBuffer output) throws IOException
                     {
                         throw new IOException("bang");
                     }
@@ -695,13 +693,13 @@ public class HttpClientTLSTest
         SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        List<RetainableByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
+        List<org.eclipse.jetty.io.RetainableByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
         ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
-            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
+            public org.eclipse.jetty.io.RetainableByteBuffer.Mutable acquire(int size, boolean direct)
             {
-                RetainableByteBuffer.Wrapper buffer = new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+                org.eclipse.jetty.io.RetainableByteBuffer.Wrapper buffer = new org.eclipse.jetty.io.RetainableByteBuffer.Wrapper(super.acquire(size, direct))
                 {
                     @Override
                     public boolean release()
@@ -730,7 +728,7 @@ public class HttpClientTLSTest
                 return new SslConnection(bufferPool, connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected boolean networkFlush(ByteBuffer output) throws IOException
+                    protected boolean networkFlush(RetainableByteBuffer output) throws IOException
                     {
                         if (failFlush.get())
                             return false;
@@ -780,13 +778,13 @@ public class HttpClientTLSTest
         SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        List<RetainableByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
+        List<org.eclipse.jetty.io.RetainableByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
         ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
         {
             @Override
-            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
+            public org.eclipse.jetty.io.RetainableByteBuffer.Mutable acquire(int size, boolean direct)
             {
-                RetainableByteBuffer.Wrapper buffer = new RetainableByteBuffer.Wrapper(super.acquire(size, direct))
+                org.eclipse.jetty.io.RetainableByteBuffer.Wrapper buffer = new org.eclipse.jetty.io.RetainableByteBuffer.Wrapper(super.acquire(size, direct))
                 {
                     @Override
                     public boolean release()
@@ -815,7 +813,7 @@ public class HttpClientTLSTest
                 return new SslConnection(bufferPool, connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected boolean networkFlush(ByteBuffer output) throws IOException
+                    protected boolean networkFlush(RetainableByteBuffer output) throws IOException
                     {
                         if (failFlush.get())
                             throw new IOException();
@@ -877,7 +875,7 @@ public class HttpClientTLSTest
                 return new SslConnection(connector.getByteBufferPool(), connector.getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                 {
                     @Override
-                    protected int networkFill(ByteBuffer input) throws IOException
+                    protected int networkFill(RetainableByteBuffer.Mutable input) throws IOException
                     {
                         int n = super.networkFill(input);
                         if (n > 0)
@@ -911,7 +909,7 @@ public class HttpClientTLSTest
                         return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             @Override
-                            protected int networkFill(ByteBuffer input) throws IOException
+                            protected int networkFill(RetainableByteBuffer.Mutable input) throws IOException
                             {
                                 int n = super.networkFill(input);
                                 if (n > 0)
@@ -975,6 +973,12 @@ public class HttpClientTLSTest
                             {
                                 sslEngine.closeOutbound();
                                 return super.wrap(sslEngine, input, output);
+                            }
+
+                            @Override
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                            {
+                                return wrap(sslEngine, new ByteBuffer[]{input}, output);
                             }
                         };
                     }
@@ -1061,6 +1065,12 @@ public class HttpClientTLSTest
                                 {
                                     throw new SSLException(x);
                                 }
+                            }
+
+                            @Override
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                            {
+                                return wrap(sslEngine, new ByteBuffer[]{input}, output);
                             }
                         };
                     }

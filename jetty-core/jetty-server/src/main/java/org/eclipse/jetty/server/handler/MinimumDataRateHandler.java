@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -23,6 +22,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -135,7 +135,7 @@ public class MinimumDataRateHandler extends StatisticsHandler
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
             if (_minimumWriteRate > 0)
             {
@@ -161,7 +161,7 @@ public class MinimumDataRateHandler extends StatisticsHandler
                     // It's the first write; if it is also the last, use a timer to verify the rate.
                     if (last)
                     {
-                        long length = byteBuffer.remaining();
+                        long length = buffer.remaining();
                         if (length > 0)
                         {
                             Callback original = callback;
@@ -172,7 +172,7 @@ public class MinimumDataRateHandler extends StatisticsHandler
                     }
                 }
             }
-            super.write(last, byteBuffer, callback);
+            super.write(last, buffer, callback);
         }
 
         private void fail(Callback callback)

@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
@@ -31,6 +29,7 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
@@ -147,7 +146,7 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
             "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
             "\n";
         Frame firstFrame = new Frame(OpCode.TEXT, "first message payload");
-        byte[] bytes = combineToByteArray(BufferUtil.toBuffer(upgradeResponse), generateFrame(firstFrame));
+        byte[] bytes = combineToByteArray(RetainableByteBuffer.wrap(upgradeResponse, StandardCharsets.UTF_8), generateFrame(firstFrame));
         serverSocket.getOutputStream().write(bytes);
 
         // Now we send the rest of the data.
@@ -265,7 +264,7 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
             "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
             "\n";
         Frame firstFrame = new Frame(OpCode.TEXT, "first message payload");
-        byte[] bytes = combineToByteArray(BufferUtil.toBuffer(upgradeResponse), generateFrame(firstFrame));
+        byte[] bytes = combineToByteArray(RetainableByteBuffer.wrap(upgradeResponse, StandardCharsets.UTF_8), generateFrame(firstFrame));
         serverSocket.getOutputStream().write(bytes);
 
         // Now we send the rest of the data.
@@ -298,10 +297,10 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         assertThat(clientEndpoint.closeStatus.getReason(), is("closed by test"));
     }
 
-    public ByteBuffer generateFrame(Frame frame)
+    public RetainableByteBuffer generateFrame(Frame frame)
     {
         int size = Generator.MAX_HEADER_LENGTH + frame.getPayloadLength();
-        ByteBuffer buffer = BufferUtil.allocate(size);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(size, false);
         generator.generateWholeFrame(frame, buffer);
         return buffer;
     }
@@ -322,15 +321,9 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         return s.hasNext() ? s.next() : "";
     }
 
-    byte[] combineToByteArray(ByteBuffer... buffers) throws IOException
+    byte[] combineToByteArray(RetainableByteBuffer... buffers) throws IOException
     {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        for (ByteBuffer bb : buffers)
-        {
-            BufferUtil.writeTo(bb, baos);
-        }
-
-        return baos.toByteArray();
+        return RetainableByteBuffer.wrap(buffers).getArray();
     }
 
     byte[] toByteArray(Frame frame)

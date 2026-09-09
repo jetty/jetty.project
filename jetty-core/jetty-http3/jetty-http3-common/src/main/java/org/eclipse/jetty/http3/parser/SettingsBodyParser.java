@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.http3.parser;
 
-import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class SettingsBodyParser extends BodyParser
 {
@@ -43,13 +43,13 @@ public class SettingsBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ByteBuffer buffer, boolean last)
+    protected void emptyBody(RetainableByteBuffer buffer, boolean last)
     {
         onSettings(Map.of());
     }
 
     @Override
-    public Result parse(ByteBuffer buffer, boolean last)
+    public Result parse(RetainableByteBuffer buffer, boolean last)
     {
         while (buffer.hasRemaining())
         {

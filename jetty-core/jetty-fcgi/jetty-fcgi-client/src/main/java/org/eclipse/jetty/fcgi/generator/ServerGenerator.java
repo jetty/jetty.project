@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.fcgi.generator;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -23,9 +22,8 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ServerGenerator extends Generator
 {
@@ -35,18 +33,18 @@ public class ServerGenerator extends Generator
 
     private final boolean sendStatus200;
 
-    public ServerGenerator(ByteBufferPool bufferPool)
+    public ServerGenerator(WritableBufferPool bufferPool)
     {
         this(bufferPool, true, true);
     }
 
-    public ServerGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers, boolean sendStatus200)
+    public ServerGenerator(WritableBufferPool bufferPool, boolean useDirectByteBuffers, boolean sendStatus200)
     {
         super(bufferPool, useDirectByteBuffers);
         this.sendStatus200 = sendStatus200;
     }
 
-    public void generateResponseHeaders(ByteBufferPool.Accumulator accumulator, int request, int code, String reason, HttpFields fields)
+    public void generateResponseHeaders(List<RetainableByteBuffer> accumulator, int request, int code, String reason, HttpFields fields)
     {
         request &= 0xFF_FF;
 
@@ -83,48 +81,45 @@ public class ServerGenerator extends Generator
         // End of headers
         length += EOL.length;
 
-        ByteBuffer byteBuffer = BufferUtil.allocate(length, isUseDirectByteBuffers());
-        BufferUtil.clearToFill(byteBuffer);
-
+        RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(length, isUseDirectByteBuffers());
         for (int i = 0; i < bytes.size(); i += 2)
         {
-            byteBuffer.put(bytes.get(i)).put(COLON).put(bytes.get(i + 1)).put(EOL);
+            buffer.put(bytes.get(i));
+            buffer.put(COLON);
+            buffer.put(bytes.get(i + 1));
+            buffer.put(EOL);
         }
-        byteBuffer.put(EOL);
+        buffer.put(EOL);
 
-        BufferUtil.flipToFlush(byteBuffer, 0);
-
-        generateContent(accumulator, request, byteBuffer, false, FCGI.FrameType.STDOUT);
+        generateContent(accumulator, request, buffer, false, FCGI.FrameType.STDOUT);
+        buffer.release();
     }
 
-    public void generateResponseContent(ByteBufferPool.Accumulator accumulator, int request, ByteBuffer content, boolean lastContent, boolean aborted)
+    public void generateResponseContent(List<RetainableByteBuffer> accumulator, int request, RetainableByteBuffer content, boolean lastContent, boolean aborted)
     {
         if (aborted)
         {
             if (lastContent)
-                accumulator.append(generateEndRequest(request, true));
+                accumulator.add(generateEndRequest(request, true));
             else
-                accumulator.append(RetainableByteBuffer.wrap(BufferUtil.EMPTY_BUFFER));
+                accumulator.add(RetainableByteBuffer.empty());
         }
         else
         {
             generateContent(accumulator, request, content, lastContent, FCGI.FrameType.STDOUT);
             if (lastContent)
-                accumulator.append(generateEndRequest(request, false));
+                accumulator.add(generateEndRequest(request, false));
         }
     }
 
     private RetainableByteBuffer generateEndRequest(int request, boolean aborted)
     {
         request &= 0xFF_FF;
-        RetainableByteBuffer endRequestBuffer = getByteBufferPool().acquire(16, isUseDirectByteBuffers());
-        ByteBuffer byteBuffer = endRequestBuffer.getByteBuffer();
-        BufferUtil.clearToFill(byteBuffer);
-        byteBuffer.putInt(0x01_03_00_00 + request);
-        byteBuffer.putInt(0x00_08_00_00);
-        byteBuffer.putInt(aborted ? 1 : 0);
-        byteBuffer.putInt(0);
-        BufferUtil.flipToFlush(byteBuffer, 0);
-        return endRequestBuffer;
+        RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(16, isUseDirectByteBuffers());
+        buffer.putInt(0x01_03_00_00 + request);
+        buffer.putInt(0x00_08_00_00);
+        buffer.putInt(aborted ? 1 : 0);
+        buffer.putInt(0);
+        return buffer;
     }
 }

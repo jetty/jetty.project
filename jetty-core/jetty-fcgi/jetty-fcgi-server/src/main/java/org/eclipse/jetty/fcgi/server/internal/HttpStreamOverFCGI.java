@@ -13,7 +13,8 @@
 
 package org.eclipse.jetty.fcgi.server.internal;
 
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeoutException;
 
@@ -29,15 +30,14 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
@@ -157,7 +157,8 @@ public class HttpStreamOverFCGI implements HttpStream
     public Content.Chunk read()
     {
         if (_chunk == null)
-            _connection.parseAndFill();
+            _connection.process(false);
+
         Content.Chunk chunk = _chunk;
         _chunk = Content.Chunk.next(chunk);
         return chunk;
@@ -169,7 +170,7 @@ public class HttpStreamOverFCGI implements HttpStream
         if (_chunk != null)
             return;
 
-        _connection.parseAndFill();
+        _connection.process(false);
 
         if (_chunk != null)
         {
@@ -204,6 +205,20 @@ public class HttpStreamOverFCGI implements HttpStream
             throw new IllegalStateException();
     }
 
+    public void onFailure(Throwable failure)
+    {
+        if (Content.Chunk.isFailure(_chunk, true))
+        {
+            _chunk.getFailure().addSuppressed(failure);
+        }
+        else
+        {
+            if (_chunk != null)
+                _chunk.release();
+            _chunk = Content.Chunk.from(failure, true);
+        }
+    }
+
     @Override
     public void prepareResponse(HttpFields.Mutable headers)
     {
@@ -211,12 +226,12 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer buffer, Callback callback)
     {
-        ByteBuffer content = byteBuffer != null ? byteBuffer : BufferUtil.EMPTY_BUFFER;
+        RetainableByteBuffer content = buffer != null ? buffer : RetainableByteBuffer.Mutable.empty();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("send {} l={} {} {}", request, last, BufferUtil.toDetailString(byteBuffer), this);
+            LOG.debug("send {} l={} {} {}", request, last, content, this);
         boolean head = HttpMethod.HEAD.is(request.getMethod());
         if (response != null)
         {
@@ -229,9 +244,12 @@ public class HttpStreamOverFCGI implements HttpStream
             {
                 if (last)
                 {
-                    ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
-                    generateResponseContent(accumulator, true, BufferUtil.EMPTY_BUFFER);
-                    flusher.flush(accumulator, callback);
+                    List<RetainableByteBuffer> accumulator = new ArrayList<>();
+                    generateResponseContent(accumulator, true, RetainableByteBuffer.empty());
+                    RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(accumulator);
+                    accumulator.forEach(RetainableByteBuffer::release);
+                    flusher.flush(accumulated, callback);
+                    accumulated.release();
                 }
                 else
                 {
@@ -241,9 +259,12 @@ public class HttpStreamOverFCGI implements HttpStream
             }
             else
             {
-                ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+                List<RetainableByteBuffer> accumulator = new ArrayList<>();
                 generateResponseContent(accumulator, last, content);
-                flusher.flush(accumulator, callback);
+                RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(accumulator);
+                accumulator.forEach(RetainableByteBuffer::release);
+                flusher.flush(accumulated, callback);
+                accumulated.release();
             }
 
             if (last && _shutdown)
@@ -257,7 +278,7 @@ public class HttpStreamOverFCGI implements HttpStream
         return () -> Callback.combine(_connection.getFlusher().cancel(cause), appCallback).failed(cause);
     }
 
-    private void commit(MetaData.Response info, boolean head, boolean last, ByteBuffer content, Callback callback)
+    private void commit(MetaData.Response info, boolean head, boolean last, RetainableByteBuffer content, Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("commit {} {} l={}", this, info, last);
@@ -266,39 +287,50 @@ public class HttpStreamOverFCGI implements HttpStream
 
         boolean shutdown = _shutdown = info.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
         Flusher flusher = _connection.getFlusher();
         if (head)
         {
             if (last)
             {
+                List<RetainableByteBuffer> accumulator = new ArrayList<>();
                 generateResponseHeaders(accumulator, info);
-                generateResponseContent(accumulator, true, BufferUtil.EMPTY_BUFFER);
-                flusher.flush(accumulator, callback);
+                generateResponseContent(accumulator, true, RetainableByteBuffer.empty());
+                RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+                accumulator.forEach(RetainableByteBuffer::release);
+                flusher.flush(buffer, callback);
+                buffer.release();
             }
             else
             {
+                List<RetainableByteBuffer> accumulator = new ArrayList<>();
                 generateResponseHeaders(accumulator, info);
-                flusher.flush(accumulator, callback);
+                RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+                accumulator.forEach(RetainableByteBuffer::release);
+                flusher.flush(buffer, callback);
+                buffer.release();
             }
         }
         else
         {
+            List<RetainableByteBuffer> accumulator = new ArrayList<>();
             generateResponseHeaders(accumulator, info);
             generateResponseContent(accumulator, last, content);
-            flusher.flush(accumulator, callback);
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
+            flusher.flush(buffer, callback);
+            buffer.release();
         }
 
         if (last && shutdown)
             flusher.shutdown();
     }
 
-    private void generateResponseHeaders(ByteBufferPool.Accumulator accumulator, MetaData.Response info)
+    private void generateResponseHeaders(List<RetainableByteBuffer> accumulator, MetaData.Response info)
     {
         _generator.generateResponseHeaders(accumulator, _id, info.getStatus(), info.getReason(), info.getHttpFields());
     }
 
-    private void generateResponseContent(ByteBufferPool.Accumulator accumulator, boolean last, ByteBuffer buffer)
+    private void generateResponseContent(List<RetainableByteBuffer> accumulator, boolean last, RetainableByteBuffer buffer)
     {
         _generator.generateResponseContent(accumulator, _id, buffer, last, _aborted);
     }

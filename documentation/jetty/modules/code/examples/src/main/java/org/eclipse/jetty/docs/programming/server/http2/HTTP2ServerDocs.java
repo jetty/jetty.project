@@ -28,16 +28,17 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 import static java.lang.System.Logger.Level.INFO;
@@ -150,24 +151,24 @@ public class HTTP2ServerDocs
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
+                        Content.Chunk chunk = stream.read();
 
-                        if (data == null)
+                        if (chunk == null)
                         {
                             stream.demand();
                             return;
                         }
 
                         // Get the content buffer.
-                        ByteBuffer buffer = data.frame().getByteBuffer();
+                        ByteBuffer buffer = chunk.getByteBuffer();
 
                         // Consume the buffer, here - as an example - just log it.
                         System.getLogger("http2").log(INFO, "Consuming buffer {0}", buffer);
 
                         // Tell the implementation that the buffer has been consumed.
-                        data.release();
+                        chunk.release();
 
-                        if (!data.frame().isEndStream())
+                        if (!chunk.isLast())
                         {
                             // Demand more DATA frames when they are available.
                             stream.demand();
@@ -205,18 +206,18 @@ public class HTTP2ServerDocs
                         @Override
                         public void onDataAvailable(Stream stream)
                         {
-                            Stream.Data data = stream.readData();
+                            Content.Chunk chunk = stream.read();
 
-                            if (data == null)
+                            if (chunk == null)
                             {
                                 stream.demand();
                                 return;
                             }
 
                             // Consume the request content.
-                            data.release();
+                            chunk.release();
 
-                            if (data.frame().isEndStream())
+                            if (chunk.isLast())
                                 respond(stream, request);
                             else
                                 stream.demand();
@@ -235,12 +236,12 @@ public class HTTP2ServerDocs
                 if (HttpMethod.GET.is(request.getMethod()))
                 {
                     // The response content.
-                    ByteBuffer resourceBytes = getResourceBytes(request);
+                    RetainableByteBuffer resourceBytes = getResourceBytes(request);
 
                     // Send the HEADERS frame with the response status and headers,
                     // and a DATA frame with the response content bytes.
                     stream.headers(new HeadersFrame(stream.getId(), response, null, false))
-                        .thenCompose(s -> s.data(new DataFrame(s.getId(), resourceBytes, true)));
+                        .thenCompose(s -> s.data(resourceBytes, true));
                 }
                 else
                 {
@@ -250,9 +251,9 @@ public class HTTP2ServerDocs
             }
             // tag::exclude[]
 
-            private ByteBuffer getResourceBytes(MetaData.Request request)
+            private RetainableByteBuffer getResourceBytes(MetaData.Request request)
             {
-                return ByteBuffer.allocate(1024);
+                return RetainableByteBuffer.allocate(1024, false);
             }
             // end::exclude[]
         };
@@ -301,7 +302,7 @@ public class HTTP2ServerDocs
     {
         // tag::push[]
         // The favicon bytes.
-        ByteBuffer faviconBuffer = BufferUtil.toBuffer(ResourceFactory.root().newResource("/path/to/favicon.ico"), true);
+        RetainableByteBuffer faviconBuffer = RetainableByteBuffer.wrap(BufferUtil.toBuffer(ResourceFactory.root().newResource("/path/to/favicon.ico"), true));
 
         ServerSessionListener sessionListener = new ServerSessionListener()
         {
@@ -334,7 +335,7 @@ public class HTTP2ServerDocs
                             // Send the favicon "response".
                             MetaData.Response pushedResponse = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                             return pushedStream.headers(new HeadersFrame(pushedStream.getId(), pushedResponse, null, false))
-                                .thenCompose(pushed -> pushed.data(new DataFrame(pushed.getId(), faviconBuffer.slice(), true)));
+                                .thenCompose(pushed -> pushed.data(faviconBuffer.slice(), true));
                         });
                 }
                 // Return a Stream.Listener to handle the request events.

@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +59,7 @@ public class ResponseContentParser extends StreamContentParser
     }
 
     @Override
-    protected boolean onContent(ByteBuffer buffer)
+    protected boolean onContent(RetainableByteBuffer buffer)
     {
         return parser.parse(buffer);
     }
@@ -94,19 +95,24 @@ public class ResponseContentParser extends StreamContentParser
             stalled = false;
         }
 
-        public boolean parse(ByteBuffer buffer)
+        public boolean parse(RetainableByteBuffer buffer)
         {
-            int remaining = buffer.remaining();
+            long remaining = buffer.remaining();
             while (remaining > 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Response {} {}, state {} {}", getRequest(), FCGI.StreamType.STD_OUT, state, BufferUtil.toDetailString(buffer));
+                    LOG.debug("Response {} {}, state {} {}", getRequest(), FCGI.StreamType.STD_OUT, state, buffer);
 
                 switch (state)
                 {
                     case HEADERS ->
                     {
-                        if (httpParser.parseNext(buffer))
+                        long position = buffer.readPosition();
+                        long length = buffer.remaining();
+                        boolean handle = httpParser.parseNext(buffer);
+                        long consumed = length - buffer.remaining();
+                        buffer.readPosition(position + consumed);
+                        if (handle)
                         {
                             state = State.CONTENT_MODE;
                             if (stalled)
@@ -127,15 +133,24 @@ public class ResponseContentParser extends StreamContentParser
                     }
                     case RAW_CONTENT ->
                     {
-                        ByteBuffer content = buffer.asReadOnlyBuffer();
-                        buffer.position(buffer.limit());
-                        if (notifyContent(content))
+                        RetainableByteBuffer slice = buffer.slice();
+                        buffer.readPosition(buffer.readPosition() + slice.remaining());
+                        boolean handle = notifyContent(slice);
+                        slice.release();
+                        if (handle)
                             return true;
                         remaining = 0;
                     }
                     case HTTP_CONTENT ->
                     {
-                        if (httpParser.parseNext(buffer))
+                        // TODO: use directly the ReadableBuffer in httpParser.parseNext().
+                        long position = buffer.readPosition();
+                        ByteBuffer byteBuffer = BufferUtil.toBuffer(buffer, false);
+                        long length = byteBuffer.remaining();
+                        boolean handle = httpParser.parseNext(RetainableByteBuffer.wrap(byteBuffer));
+                        long consumed = length - byteBuffer.remaining();
+                        buffer.readPosition(position + consumed);
+                        if (handle)
                             return true;
                         remaining = buffer.remaining();
                     }
@@ -259,12 +274,12 @@ public class ResponseContentParser extends StreamContentParser
         }
 
         @Override
-        public boolean content(ByteBuffer buffer)
+        public boolean content(RetainableByteBuffer buffer)
         {
             return notifyContent(buffer);
         }
 
-        private boolean notifyContent(ByteBuffer buffer)
+        private boolean notifyContent(RetainableByteBuffer buffer)
         {
             try
             {

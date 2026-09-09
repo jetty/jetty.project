@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.PingFrame;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class PingBodyParser extends BodyParser
 {
@@ -38,7 +37,7 @@ public class PingBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -87,7 +86,7 @@ public class PingBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onPing(ByteBuffer buffer, byte[] payload)
+    private boolean onPing(RetainableByteBuffer buffer, byte[] payload)
     {
         PingFrame frame = new PingFrame(payload, hasFlag(Flags.ACK));
         if (!rateControlOnEvent(frame))

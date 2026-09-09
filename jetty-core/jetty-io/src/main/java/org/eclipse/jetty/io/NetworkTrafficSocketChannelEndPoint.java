@@ -14,10 +14,10 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,30 +39,29 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
     }
 
     @Override
-    public int fill(ByteBuffer buffer) throws IOException
+    public int fill(RetainableByteBuffer.Mutable buffer) throws IOException
     {
         int read = super.fill(buffer);
-        notifyIncoming(buffer, read);
+        RetainableByteBuffer view = buffer.slice();
+        notifyIncoming(view, read);
+        view.release();
         return read;
     }
 
     @Override
-    public boolean flush(ByteBuffer... buffers) throws IOException
+    public boolean flush(RetainableByteBuffer buffer) throws IOException
     {
         boolean flushed = true;
-        for (ByteBuffer b : buffers)
+        if (buffer.hasRemaining())
         {
-            if (b.hasRemaining())
-            {
-                int position = b.position();
-                ByteBuffer view = b.slice();
-                flushed = super.flush(b);
-                int l = b.position() - position;
-                view.limit(view.position() + l);
-                notifyOutgoing(view);
-                if (!flushed)
-                    break;
-            }
+            long position = buffer.readPosition();
+            RetainableByteBuffer dupe = buffer.slice();
+            flushed = super.flush(buffer);
+            long l = buffer.readPosition() - position;
+            RetainableByteBuffer view = dupe.slice(dupe.readPosition(), l);
+            notifyOutgoing(view);
+            view.release();
+            dupe.release();
         }
         return flushed;
     }
@@ -101,14 +100,13 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
         }
     }
 
-    public void notifyIncoming(ByteBuffer buffer, int read)
+    public void notifyIncoming(RetainableByteBuffer buffer, int read)
     {
         if (listener != null && read > 0)
         {
             try
             {
-                ByteBuffer view = buffer.asReadOnlyBuffer();
-                listener.incoming(getChannel().socket(), view);
+                listener.incoming(getChannel().socket(), buffer);
             }
             catch (Throwable x)
             {
@@ -117,7 +115,7 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
         }
     }
 
-    public void notifyOutgoing(ByteBuffer view)
+    public void notifyOutgoing(RetainableByteBuffer view)
     {
         if (listener != null && view.hasRemaining())
         {

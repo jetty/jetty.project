@@ -14,7 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
+import java.net.SocketAddress;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -218,13 +219,13 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         // If no remote IP from a header, determine it directly from the channel
         // Do not use the request methods, as they may have been lied to by the
         // RequestCustomizer!
-        if (baseRequest.getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetAddr)
+        SocketAddress remoteSocketAddress = baseRequest.getConnectionMetaData().getRemoteSocketAddress();
+        if (remoteSocketAddress instanceof InetSocketAddress inetAddr)
         {
-            // TODO ????
             if (inetAddr.getAddress() != null)
                 return inetAddr.getAddress().getHostAddress();
         }
-        return null;
+        return remoteSocketAddress == null ? null : remoteSocketAddress.toString();
     }
 
     private String getForwarded(Request request)
@@ -412,11 +413,11 @@ public class ThreadLimitHandler extends ConditionalHandler.Abstract
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
             if (!_writeCallback.compareAndSet(null, Objects.requireNonNull(callback)))
                 throw new WritePendingException();
-            super.write(last, byteBuffer, this);
+            super.write(last, buffer, this);
         }
 
         @Override

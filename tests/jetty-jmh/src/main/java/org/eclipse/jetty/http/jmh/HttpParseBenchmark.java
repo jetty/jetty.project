@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.http.jmh;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -56,8 +56,8 @@ public class HttpParseBenchmark
         return l;
     }
 
-    private static final ByteBuffer GET = BufferUtil.toBuffer("GET / HTTP/1.1\r\n\r\n");
-    private static final ByteBuffer POST = BufferUtil.toBuffer("POST / HTTP/1.1\r\n\r\n");
+    private static final RetainableByteBuffer GET = BufferUtil.toReadableBuffer("GET / HTTP/1.1\r\n\r\n");
+    private static final RetainableByteBuffer POST = BufferUtil.toReadableBuffer("POST / HTTP/1.1\r\n\r\n");
 
     record RequestLine(String method, String uri, HttpVersion version)
     {
@@ -71,12 +71,12 @@ public class HttpParseBenchmark
     @Param({"100", "10", "1", "0"})
     int hits;
 
-    public static RequestLine parse(ByteBuffer buffer)
+    public static RequestLine parse(RetainableByteBuffer buffer)
     {
         HttpMethod method = HttpMethod.lookAheadGet(buffer);
         if (method == null)
             return null;
-        buffer.position(buffer.position() + method.asString().length() + 1);
+        buffer.readPosition(buffer.readPosition() + method.asString().length() + 1);
 
         StringBuilder uri = new StringBuilder();
         while (buffer.hasRemaining())
@@ -88,7 +88,7 @@ public class HttpParseBenchmark
         }
 
         HttpVersion httpVersion = HttpVersion.CACHE.getBest(buffer);
-        buffer.position(buffer.position() + httpVersion.asString().length());
+        buffer.readPosition(buffer.readPosition() + httpVersion.asString().length());
         if (buffer.get() != '\r')
             return null;
         if (buffer.get() != '\n')
@@ -97,19 +97,19 @@ public class HttpParseBenchmark
         return new RequestLine(method.asString(), uri.toString(), httpVersion);
     }
 
-    public static RequestLine lookAhead(ByteBuffer buffer)
+    public static RequestLine lookAhead(RetainableByteBuffer buffer)
     {
         if (buffer.getLong(0) != GET_SLASH_HT_AS_LONG)
             return parse(buffer);
         long v = buffer.getLong(8);
         if (v == TP_SLASH_1_1_CRLF)
         {
-            buffer.position(buffer.position() + 16);
+            buffer.readPosition(buffer.readPosition() + 16);
             return new RequestLine(HttpMethod.GET.asString(), "/", HttpVersion.HTTP_1_1);
         }
         if (v == TP_SLASH_1_0_CRLF)
         {
-            buffer.position(buffer.position() + 16);
+            buffer.readPosition(buffer.readPosition() + 16);
             return new RequestLine(HttpMethod.GET.asString(), "/", HttpVersion.HTTP_1_0);
         }
         return parse(buffer);
@@ -119,7 +119,7 @@ public class HttpParseBenchmark
     @BenchmarkMode({Mode.Throughput})
     public RequestLine testParse()
     {
-        ByteBuffer request = (ThreadLocalRandom.current().nextInt(100) < hits) ? GET : POST;
+        RetainableByteBuffer request = (ThreadLocalRandom.current().nextInt(100) < hits) ? GET : POST;
         return parse(request.slice());
     }
 
@@ -127,7 +127,7 @@ public class HttpParseBenchmark
     @BenchmarkMode({Mode.Throughput})
     public RequestLine testLookAhead()
     {
-        ByteBuffer request = (ThreadLocalRandom.current().nextInt(100) < hits) ? GET : POST;
+        RetainableByteBuffer request = (ThreadLocalRandom.current().nextInt(100) < hits) ? GET : POST;
         return lookAhead(request.slice());
     }
 

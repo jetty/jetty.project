@@ -38,7 +38,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -135,7 +134,7 @@ public class TryPathsHandlerTest
             // Make a first request without existing file paths.
             HttpTester.Request request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/last");
-            channel.write(request.generate());
+            request.generate().writeTo(channel::write);
             HttpTester.Response response = HttpTester.parseResponse(channel);
             assertNotNull(response);
             assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
@@ -146,7 +145,7 @@ public class TryPathsHandlerTest
             // Make a second request with the specific file.
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/" + path);
-            channel.write(request.generate());
+            request.generate().writeTo(channel::write);
             response = HttpTester.parseResponse(channel);
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -158,7 +157,7 @@ public class TryPathsHandlerTest
             // Make a third request with any path, we should get the maintenance file.
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/whatever");
-            channel.write(request.generate());
+            request.generate().writeTo(channel::write);
             response = HttpTester.parseResponse(channel);
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -188,7 +187,7 @@ public class TryPathsHandlerTest
 
             HttpTester.Request request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/a+b&c=d%3F%20%23/foo");
-            channel.write(request.generate());
+            request.generate().writeTo(channel::write);
             HttpTester.Response response = HttpTester.parseResponse(channel);
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -246,7 +245,7 @@ public class TryPathsHandlerTest
             // Make a first request without existing file paths.
             HttpTester.Request request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/last");
-            channel.write(request.generate());
+            request.generate().writeTo(channel::write);
             HttpTester.Response response = HttpTester.parseResponse(channel);
             assertNotNull(response);
             assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
@@ -257,7 +256,7 @@ public class TryPathsHandlerTest
             // Make a second request with the specific file.
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/" + path);
-            channel.write(request.generate());
+            request.generate().writeTo(channel::write);
             response = HttpTester.parseResponse(channel);
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -267,7 +266,7 @@ public class TryPathsHandlerTest
             Files.writeString(tmpPath.resolve("index.php"), "raw-php-contents", StandardOpenOption.CREATE);
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/index.php");
-            channel.write(request.generate());
+            request.generate().writeTo(channel::write);
             response = HttpTester.parseResponse(channel);
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -279,7 +278,7 @@ public class TryPathsHandlerTest
             // Make a second request with any path, we should get the maintenance file.
             request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/whatever");
-            channel.write(request.generate());
+            request.generate().writeTo(channel::write);
             response = HttpTester.parseResponse(channel);
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -313,7 +312,7 @@ public class TryPathsHandlerTest
             HttpTester.Request request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + path);
             OutputStream output = sslSocket.getOutputStream();
-            output.write(BufferUtil.toArray(request.generate()));
+            output.write(request.generate().getArray());
             output.flush();
 
             HttpTester.Response response = HttpTester.parseResponse(sslSocket.getInputStream());
@@ -369,7 +368,7 @@ public class TryPathsHandlerTest
 
             HttpTester.Request request = HttpTester.newRequest();
             request.setURI(CONTEXT_PATH + "/hello/?a=b&c=%2F");
-            channel.write(request.generate());
+            request.generate().writeTo(channel::write);
             HttpTester.Response response = HttpTester.parseResponse(channel);
             assertNotNull(response);
             assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());

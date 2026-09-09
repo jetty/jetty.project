@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class TestSink implements Content.Sink
 {
     private List<Content.Chunk> accumulatedChunks = new ArrayList<>();
 
     @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
-        accumulatedChunks.add(Content.Chunk.from(BufferUtil.copy(byteBuffer), last));
+        accumulatedChunks.add(Content.Chunk.asChunk(buffer, last, null));
         callback.succeeded();
     }
 

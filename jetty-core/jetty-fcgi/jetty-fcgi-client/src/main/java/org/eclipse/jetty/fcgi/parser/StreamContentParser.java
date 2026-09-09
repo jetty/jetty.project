@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +29,7 @@ public class StreamContentParser extends ContentParser
     private final FCGI.StreamType streamType;
     private final Parser.Listener listener;
     private State state = State.LENGTH;
-    private int contentLength;
+    private long contentLength;
 
     public StreamContentParser(HeaderParser headerParser, FCGI.StreamType streamType, Parser.Listener listener)
     {
@@ -40,7 +39,7 @@ public class StreamContentParser extends ContentParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public Result parse(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -54,13 +53,14 @@ public class StreamContentParser extends ContentParser
                 }
                 case CONTENT:
                 {
-                    int length = Math.min(contentLength, buffer.remaining());
-                    ByteBuffer slice = buffer.slice(buffer.position(), length);
+                    long length = Math.min(contentLength, buffer.remaining());
+                    RetainableByteBuffer slice = buffer.slice(buffer.readPosition(), length);
                     // Only parse the content of this FCGI frame.
                     boolean result = onContent(slice);
                     // Not all the content may have been parsed.
-                    int consumed = length - slice.remaining();
-                    buffer.position(buffer.position() + consumed);
+                    long consumed = length - slice.remaining();
+                    buffer.readPosition(buffer.readPosition() + consumed);
+                    slice.release();
                     contentLength -= consumed;
                     if (contentLength <= 0)
                         state = State.EOF;
@@ -97,19 +97,22 @@ public class StreamContentParser extends ContentParser
         }
     }
 
-    protected boolean onContent(ByteBuffer buffer)
+    protected boolean onContent(RetainableByteBuffer buffer)
     {
+        long limit = buffer.readPosition() + buffer.remaining();
         try
         {
-            ByteBuffer content = buffer.asReadOnlyBuffer();
-            buffer.position(buffer.limit());
-            return listener.onContent(getRequest(), streamType, content);
+            return listener.onContent(getRequest(), streamType, buffer);
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Exception while invoking listener {}", listener, x);
             return false;
+        }
+        finally
+        {
+            buffer.readPosition(limit);
         }
     }
 

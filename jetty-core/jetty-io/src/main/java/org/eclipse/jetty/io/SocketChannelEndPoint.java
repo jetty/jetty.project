@@ -16,10 +16,11 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 public class SocketChannelEndPoint extends SelectableChannelEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(SocketChannelEndPoint.class);
+    private final Target target = new Target();
 
     public SocketChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
@@ -72,16 +74,15 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
     }
 
     @Override
-    public int fill(ByteBuffer buffer) throws IOException
+    public int fill(RetainableByteBuffer.Mutable buffer) throws IOException
     {
         if (isInputShutdown())
             return -1;
 
-        int pos = BufferUtil.flipToFill(buffer);
         int filled;
         try
         {
-            filled = getChannel().read(buffer);
+            filled = (int)buffer.readFrom(output -> getChannel().read(output));
             if (filled > 0)
                 notIdle();
             else if (filled == -1)
@@ -94,22 +95,18 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
             shutdownInput();
             filled = -1;
         }
-        finally
-        {
-            BufferUtil.flipToFlush(buffer, pos);
-        }
         if (LOG.isDebugEnabled())
-            LOG.debug("filled {} {}", filled, BufferUtil.toDetailString(buffer));
+            LOG.debug("filled {} {}", filled, buffer);
         return filled;
     }
 
     @Override
-    public boolean flush(ByteBuffer... buffers) throws IOException
+    public boolean flush(RetainableByteBuffer buffer) throws IOException
     {
         long flushed;
         try
         {
-            flushed = getChannel().write(buffers);
+            flushed = buffer.writeTo(target);
             if (LOG.isDebugEnabled())
                 LOG.debug("flushed {} {}", flushed, this);
         }
@@ -121,12 +118,27 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         if (flushed > 0)
             notIdle();
 
-        for (ByteBuffer b : buffers)
+        return !buffer.hasRemaining();
+    }
+
+    private class Target implements RetainableByteBuffer.GatheringTarget, RetainableByteBuffer.TransferringTarget
+    {
+        @Override
+        public long write(FileChannel input, long position, long count) throws IOException
         {
-            if (!BufferUtil.isEmpty(b))
-                return false;
+            return input.transferTo(position, count, getChannel());
         }
 
-        return true;
+        @Override
+        public long write(ByteBuffer[] inputs) throws IOException
+        {
+            return getChannel().write(inputs);
+        }
+
+        @Override
+        public long write(ByteBuffer input) throws IOException
+        {
+            return getChannel().write(input);
+        }
     }
 }

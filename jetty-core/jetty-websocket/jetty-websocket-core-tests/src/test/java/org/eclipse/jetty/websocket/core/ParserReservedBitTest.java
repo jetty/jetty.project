@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Parser;
@@ -41,7 +40,7 @@ public class ParserReservedBitTest
         // generate raw bytebuffer of provided frames
         int size = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
         Generator generator = new Generator();
-        ByteBuffer raw = BufferUtil.allocate(size);
+        RetainableByteBuffer.Mutable raw = RetainableByteBuffer.Mutable.allocate(size, false);
         frames.forEach(frame -> generator.generateWholeFrame(frame, raw));
 
         // parse buffer

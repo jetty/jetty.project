@@ -402,7 +402,7 @@ public interface RetainableByteBuffer extends Retainable
             return new NonRetainableByteBuffer(slice);
 
         retain();
-        return RetainableByteBuffer.wrap(slice, this);
+        return org.eclipse.jetty.io.RetainableByteBuffer.wrap(slice, this);
     }
 
     /**
@@ -496,24 +496,24 @@ public interface RetainableByteBuffer extends Retainable
      * @param sink the destination sink.
      * @param last true if this is the last write.
      * @param callback the callback to call upon the write completion.
-     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)
+     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, org.eclipse.jetty.util.buffer.RetainableByteBuffer, Callback)
      */
     default void writeTo(Content.Sink sink, boolean last, Callback callback)
     {
-        sink.write(last, getByteBuffer(), callback);
+        sink.write(last, org.eclipse.jetty.util.buffer.RetainableByteBuffer.wrap(getByteBuffer()), callback);
     }
 
     /**
      * Writes and consumes the contents of this retainable byte buffer into the given sink.
      * @param sink the destination sink.
      * @param last true if this is the last write.
-     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)
+     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, org.eclipse.jetty.util.buffer.RetainableByteBuffer, Callback)
      */
     default void writeTo(Content.Sink sink, boolean last) throws IOException
     {
         try (Blocker.Callback callback = Blocker.callback())
         {
-            sink.write(last, getByteBuffer(), callback);
+            sink.write(last, org.eclipse.jetty.util.buffer.RetainableByteBuffer.wrap(getByteBuffer()), callback);
             callback.block();
         }
     }
@@ -892,7 +892,7 @@ public interface RetainableByteBuffer extends Retainable
     {
         public Abstract()
         {
-            this(new ReferenceCounter());
+            this(new Retainable.ReferenceCounter());
         }
 
         public Abstract(Retainable retainable)
@@ -987,7 +987,7 @@ public interface RetainableByteBuffer extends Retainable
 
         public FixedCapacity(ByteBuffer byteBuffer)
         {
-            this(byteBuffer, new ReferenceCounter());
+            this(byteBuffer, new Retainable.ReferenceCounter());
         }
 
         public FixedCapacity(ByteBuffer byteBuffer, Retainable retainable)
@@ -1366,7 +1366,7 @@ public interface RetainableByteBuffer extends Retainable
     {
         public NonRetainableByteBuffer(ByteBuffer byteBuffer)
         {
-            super(byteBuffer, NON_RETAINABLE);
+            super(byteBuffer, Retainable.NON_RETAINABLE);
         }
     }
 
@@ -1620,7 +1620,7 @@ public interface RetainableByteBuffer extends Retainable
             checkNotReleased();
 
             if (_buffers.isEmpty() || length == 0)
-                return RetainableByteBuffer.EMPTY;
+                return org.eclipse.jetty.io.RetainableByteBuffer.EMPTY;
 
             _aggregate = null;
 
@@ -1686,7 +1686,7 @@ public interface RetainableByteBuffer extends Retainable
             checkNotReleased();
 
             if (_buffers.isEmpty() || skip > size())
-                return RetainableByteBuffer.EMPTY;
+                return org.eclipse.jetty.io.RetainableByteBuffer.EMPTY;
 
             _aggregate = null;
 
@@ -2118,7 +2118,7 @@ public interface RetainableByteBuffer extends Retainable
                 byteBuffer.limit(limit + Math.toIntExact(space));
                 byteBuffer = byteBuffer.slice();
                 byteBuffer.limit(limit);
-                _aggregate = RetainableByteBuffer.wrap(byteBuffer, _aggregate);
+                _aggregate = org.eclipse.jetty.io.RetainableByteBuffer.wrap(byteBuffer, _aggregate);
             }
         }
 
@@ -2212,7 +2212,7 @@ public interface RetainableByteBuffer extends Retainable
             if (LOG.isDebugEnabled())
                 LOG.debug("add BB {} <- {}", this, BufferUtil.toDetailString(bytes));
             checkNotReleased();
-            add(RetainableByteBuffer.wrap(bytes));
+            add(org.eclipse.jetty.io.RetainableByteBuffer.wrap(bytes));
             return this;
         }
 

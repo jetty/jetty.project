@@ -22,7 +22,6 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -30,10 +29,15 @@ import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.Aggregator;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * ByteArrayEndPoint.
@@ -54,13 +58,13 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     private static final Logger LOG = LoggerFactory.getLogger(ByteArrayEndPoint.class);
     private static final SocketAddress NO_SOCKET_ADDRESS = noSocketAddress();
-    private static final ByteBuffer EOF = BufferUtil.allocate(0);
+    private static final RetainableByteBuffer EOF = RetainableByteBuffer.wrap(BufferUtil.allocate(0));
 
     private final Runnable _runFillable = () -> getFillInterest().fillable();
     private final AutoLock _lock = new AutoLock();
     private final Condition _hasOutput = _lock.newCondition();
-    private final Queue<ByteBuffer> _inQ = new ArrayDeque<>();
-    private final RetainableByteBuffer.DynamicCapacity _buffer;
+    private final Queue<RetainableByteBuffer> _inputQueue = new ArrayDeque<>();
+    private final Aggregator _outputAggregator;
 
     public ByteArrayEndPoint()
     {
@@ -73,7 +77,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteArrayEndPoint(byte[] input, int outputSize)
     {
-        this(null, 0, input != null ? BufferUtil.toBuffer(input) : null, outputSize, false);
+        this(null, 0, input != null ? ByteBuffer.wrap(input) : null, outputSize, false);
     }
 
     /**
@@ -82,7 +86,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteArrayEndPoint(String input, int outputSize)
     {
-        this(null, 0, input != null ? BufferUtil.toBuffer(input) : null, outputSize, false);
+        this(null, 0, input != null ? UTF_8.encode(input) : null, outputSize, false);
     }
 
     /**
@@ -92,7 +96,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteArrayEndPoint(byte[] input, int outputSize, boolean growable)
     {
-        this(null, 0, input != null ? BufferUtil.toBuffer(input) : null, outputSize, growable);
+        this(null, 0, input != null ? ByteBuffer.wrap(input) : null, outputSize, growable);
     }
 
     /**
@@ -102,7 +106,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteArrayEndPoint(String input, int outputSize, boolean growable)
     {
-        this(null, 0, input != null ? BufferUtil.toBuffer(input) : null, outputSize, growable);
+        this(null, 0, input != null ? UTF_8.encode(input) : null, outputSize, growable);
     }
 
     public ByteArrayEndPoint(Scheduler scheduler, long idleTimeoutMs)
@@ -112,12 +116,12 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, byte[] input, int outputSize)
     {
-        this(timer, idleTimeoutMs, input != null ? BufferUtil.toBuffer(input) : null, outputSize, false);
+        this(timer, idleTimeoutMs, input != null ? ByteBuffer.wrap(input) : null, outputSize, false);
     }
 
     public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, String input, int outputSize)
     {
-        this(timer, idleTimeoutMs, input != null ? BufferUtil.toBuffer(input) : null, outputSize, false);
+        this(timer, idleTimeoutMs, input != null ? UTF_8.encode(input) : null, outputSize, false);
     }
 
     public ByteArrayEndPoint(Scheduler timer, long idleTimeoutMs, ByteBuffer input, int outputSize, boolean growable)
@@ -125,10 +129,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         super(timer);
         if (BufferUtil.hasContent(input))
             addInput(input);
-
-        _buffer = growable
-            ? new RetainableByteBuffer.DynamicCapacity(null, false, -1, outputSize)
-            : new RetainableByteBuffer.DynamicCapacity(null, false, outputSize);
+        _outputAggregator = new Aggregator(growable, outputSize > 0 ? outputSize : 1024);
         setIdleTimeout(idleTimeoutMs);
         onOpen();
     }
@@ -149,7 +150,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void doShutdownOutput()
     {
         super.doShutdownOutput();
-        try (AutoLock l = _lock.lock())
+        try (AutoLock _ = _lock.lock())
         {
             _hasOutput.signalAll();
         }
@@ -159,7 +160,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void doClose()
     {
         super.doClose();
-        try (AutoLock l = _lock.lock())
+        _outputAggregator.close();
+        try (AutoLock _ = _lock.lock())
         {
             _hasOutput.signalAll();
         }
@@ -168,7 +170,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     @Override
     protected void onIncompleteFlush()
     {
-        // Don't need to do anything here as takeOutput does the signalling.
+        // Don't need to do anything here as takeOutput does the signaling.
     }
 
     protected void execute(Runnable task)
@@ -184,10 +186,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             if (!isOpen())
                 throw new ClosedChannelException();
 
-            ByteBuffer in = _inQ.peek();
+            RetainableByteBuffer in = _inputQueue.peek();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} needsFillInterest EOF={} {}", this, in == EOF, BufferUtil.toDetailString(in));
-            if (BufferUtil.hasContent(in) || isEOF(in))
+                LOG.debug("{} needsFillInterest EOF={} {}", this, in == EOF, in);
+            if ((in != null && in.hasRemaining()) || isEOF(in))
                 execute(_runFillable);
         }
     }
@@ -197,7 +199,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void addInputEOF()
     {
-        addInput((ByteBuffer)null);
+        addInput((RetainableByteBuffer)null);
     }
 
     /**
@@ -205,139 +207,111 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void addInput(ByteBuffer in)
     {
-        boolean fillable = false;
-        try (AutoLock ignored = _lock.lock())
-        {
-            if (isEOF(_inQ.peek()))
-                throw new UncheckedIOException(new EOFException());
-            boolean wasEmpty = _inQ.isEmpty();
-            if (in == null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} addEOFAndRun=true", this);
-                _inQ.add(EOF);
-                fillable = true;
-            }
-            if (BufferUtil.hasContent(in))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} addInputAndRun={} {}", this, wasEmpty, BufferUtil.toDetailString(in));
-                _inQ.add(in);
-                fillable = wasEmpty;
-            }
-        }
-        if (fillable)
-            _runFillable.run();
+        addInput(in == null ? null : RetainableByteBuffer.wrap(in));
+    }
+
+    public void addInput(RetainableByteBuffer in)
+    {
+        addInput(in, false);
     }
 
     public void addInput(String s)
     {
-        addInput(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
+        addInput(BufferUtil.toReadableBuffer(s, UTF_8));
     }
 
     public void addInput(String s, Charset charset)
     {
-        addInput(BufferUtil.toBuffer(s, charset));
+        addInput(BufferUtil.toReadableBuffer(s, charset));
     }
 
     public void addInputAndExecute(String s)
     {
-        addInputAndExecute(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
+        addInputAndExecute(BufferUtil.toReadableBuffer(s, UTF_8));
     }
 
-    public void addInputAndExecute(ByteBuffer in)
+    public void addInputAndExecute(RetainableByteBuffer in)
+    {
+        addInput(in, true);
+    }
+
+    private void addInput(RetainableByteBuffer in, boolean execute)
     {
         boolean fillable = false;
         try (AutoLock ignored = _lock.lock())
         {
-            if (isEOF(_inQ.peek()))
+            if (isEOF(_inputQueue.peek()))
                 throw new UncheckedIOException(new EOFException());
-            boolean wasEmpty = _inQ.isEmpty();
+            boolean wasEmpty = _inputQueue.isEmpty();
             if (in == null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} addEOFAndExecute=true", this);
-                _inQ.add(EOF);
+                    LOG.debug("{} addEOF execute={}", this, execute);
+                _inputQueue.add(EOF);
                 fillable = true;
             }
-            if (BufferUtil.hasContent(in))
+            if (in != null && in.hasRemaining())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} addInputAndExecute={} {}", this, wasEmpty, BufferUtil.toDetailString(in));
-                _inQ.add(in);
+                    LOG.debug("{} addInput execute={} notify={}, {}", this, execute, wasEmpty, in);
+                in.retain();
+                _inputQueue.add(in);
                 fillable = wasEmpty;
             }
         }
         if (fillable)
-            execute(_runFillable);
-    }
-
-    /**
-     * @return Returns the out.
-     */
-    public ByteBuffer getOutput()
-    {
-        try (AutoLock ignored = _lock.lock())
         {
-            return _buffer.getByteBuffer();
+            if (execute)
+                execute(_runFillable);
+            else
+                _runFillable.run();
         }
     }
 
-    /**
-     * @return Returns the out.
-     */
-    public String getOutputString()
+    public long outputRemaining()
     {
-        return getOutputString(StandardCharsets.UTF_8);
+        return _outputAggregator.remaining();
     }
 
-    /**
-     * @param charset the charset to encode the output as
-     * @return Returns the out.
-     */
+    /// Copies the output bytes into a [String] decoding them using the given [Charset].
+    ///
+    /// The output in this `ByteArrayEndPoint` remains unchanged.
+    ///
+    /// @param charset the charset to use to decode the output bytes
+    /// @return the output as a [String]
     public String getOutputString(Charset charset)
     {
-        return BufferUtil.toString(getOutput(), charset);
+        return _outputAggregator.getString(charset);
     }
 
     /**
      * @return Returns the out.
      */
-    public ByteBuffer takeOutput()
+    public RetainableByteBuffer takeOutput()
     {
-        ByteBuffer taken;
-
+        RetainableByteBuffer result;
         try (AutoLock ignored = _lock.lock())
         {
-            taken = _buffer.take().getByteBuffer();
+            result = _outputAggregator.take();
         }
         getWriteFlusher().completeWrite();
-        return taken;
+        return result;
     }
 
-    /**
-     * Wait for some output
-     *
-     * @param time Time to wait
-     * @param unit Units for time to wait
-     * @return The buffer of output
-     * @throws InterruptedException if interrupted
-     */
-    public ByteBuffer waitForOutput(long time, TimeUnit unit) throws InterruptedException
+    public RetainableByteBuffer awaitForOutput(long time, TimeUnit unit) throws InterruptedException
     {
-        ByteBuffer taken;
-
+        RetainableByteBuffer result;
         try (AutoLock ignored = _lock.lock())
         {
-            while (_buffer.isEmpty() && !isOutputShutdown())
+            while (outputRemaining() == 0 && !isOutputShutdown())
             {
                 if (!_hasOutput.await(time, unit))
                     return null;
             }
-            taken = _buffer.take().getByteBuffer();
+            result = _outputAggregator.take();
         }
         getWriteFlusher().completeWrite();
-        return taken;
+        return result;
     }
 
     /**
@@ -345,7 +319,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public String takeOutputString()
     {
-        return takeOutputString(StandardCharsets.UTF_8);
+        return takeOutputString(UTF_8);
     }
 
     /**
@@ -354,29 +328,14 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public String takeOutputString(Charset charset)
     {
-        ByteBuffer buffer = takeOutput();
-        return BufferUtil.toString(buffer, charset);
-    }
-
-    /**
-     * @param out The out to set.
-     */
-    @Deprecated
-    public void setOutput(ByteBuffer out)
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @return {@code true} if there are bytes remaining to be read from the encoded input
-     */
-    public boolean hasMore()
-    {
-        return getOutput().position() > 0;
+        RetainableByteBuffer buffer = takeOutput();
+        String result = buffer.getString(charset);
+        buffer.release();
+        return result;
     }
 
     @Override
-    public int fill(ByteBuffer buffer) throws IOException
+    public int fill(RetainableByteBuffer.Mutable buffer) throws IOException
     {
         int filled = 0;
         try (AutoLock ignored = _lock.lock())
@@ -389,24 +348,29 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                 if (isInputShutdown())
                     return -1;
 
-                if (_inQ.isEmpty())
+                if (_inputQueue.isEmpty())
                     break;
 
-                ByteBuffer in = _inQ.peek();
+                RetainableByteBuffer in = _inputQueue.peek();
                 if (isEOF(in))
                 {
                     filled = -1;
                     break;
                 }
 
-                if (BufferUtil.hasContent(in))
+                if (in != null && in.hasRemaining())
                 {
-                    filled = BufferUtil.append(buffer, in);
-                    if (BufferUtil.isEmpty(in))
-                        _inQ.poll();
+                    filled = (int)buffer.append(in);
+                    if (!in.hasRemaining())
+                    {
+                        _inputQueue.poll();
+                        in.release();
+                    }
                     break;
                 }
-                _inQ.poll();
+
+                _inputQueue.poll();
+                Retainable.dispose(in);
             }
         }
 
@@ -418,9 +382,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     }
 
     @Override
-    public boolean flush(ByteBuffer... buffers) throws IOException
+    public boolean flush(RetainableByteBuffer buffer) throws IOException
     {
-        boolean flushed = true;
         try (AutoLock ignored = _lock.lock())
         {
             if (!isOpen())
@@ -428,16 +391,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             if (isOutputShutdown())
                 throw new IOException("OSHUT");
 
-            boolean notIdle = false;
-
-            for (ByteBuffer b : buffers)
-            {
-                int remaining = b.remaining();
-                flushed = _buffer.append(b);
-                notIdle |= b.remaining() < remaining;
-                if (!flushed)
-                    break;
-            }
+            long remaining = buffer.remaining();
+            long appended = _outputAggregator.append(buffer);
+            boolean flushed = remaining - appended == 0;
+            boolean notIdle = appended > 0;
 
             if (notIdle)
             {
@@ -454,9 +411,9 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         try (AutoLock ignored = _lock.lock())
         {
-            _inQ.clear();
+            _inputQueue.clear();
             _hasOutput.signalAll();
-            _buffer.clear();
+            _outputAggregator.clear();
         }
         super.reset();
     }
@@ -465,24 +422,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public Object getTransport()
     {
         return null;
-    }
-
-    /**
-     * @return the growOutput
-     */
-    public boolean isGrowOutput()
-    {
-        return _buffer instanceof RetainableByteBuffer.DynamicCapacity;
-    }
-
-    /**
-     * Set the growOutput to set.
-     * @param growOutput the growOutput to set
-     */
-    @Deprecated
-    public void setGrowOutput(boolean growOutput)
-    {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -494,9 +433,9 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         try (AutoLock lock = _lock.tryLock())
         {
             boolean held = lock.isHeldByCurrentThread();
-            q = held ? _inQ.size() : -1;
-            b = held ? _inQ.peek() : "?";
-            o = held ? _buffer.toString() : "?";
+            q = held ? _inputQueue.size() : -1;
+            b = held ? _inputQueue.peek() : "?";
+            o = held ? _outputAggregator.toString() : "?";
         }
         return String.format("%s[q=%d,q[0]=%s,o=%s]", super.toString(), q, b, o);
     }
@@ -507,7 +446,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      * @param buffer the input ByteBuffer to be compared to EOF
      * @return Whether the reference buffer is equal to that of EOF
      */
-    private static boolean isEOF(ByteBuffer buffer)
+    private static boolean isEOF(RetainableByteBuffer buffer)
     {
         @SuppressWarnings("ReferenceEquality")
         boolean isEof = (buffer == EOF);

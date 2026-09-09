@@ -16,9 +16,7 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -33,9 +31,11 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -52,57 +52,61 @@ public class WriteFlusherTest
     @Test
     public void testCancelWriteBeforeWrite()
     {
-        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16, false);
-        WriteFlusher flusher = endPoint.getWriteFlusher();
+        try (ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16, false))
+        {
+            WriteFlusher flusher = endPoint.getWriteFlusher();
 
-        assertThat(flusher.isFailed(), is(false));
-        Callback callback = flusher.cancelWrite(new ArithmeticException());
-        assertNull(callback);
-        assertThat(flusher.isFailed(), is(true));
+            assertThat(flusher.isFailed(), is(false));
+            Callback callback = flusher.cancelWrite(new ArithmeticException());
+            assertNull(callback);
+            assertThat(flusher.isFailed(), is(true));
 
-        AtomicReference<Throwable> failureRef = new AtomicReference<>();
-        endPoint.write(Callback.from(() -> failureRef.set(new AssertionError("expected callback to be failed")), failureRef::set), ByteBuffer.allocate(32));
-        assertThat(failureRef.get(), instanceOf(ArithmeticException.class));
+            AtomicReference<Throwable> failureRef = new AtomicReference<>();
+            endPoint.write(RetainableByteBuffer.allocate(32, false), Callback.from(() -> failureRef.set(new AssertionError("expected callback to be failed")), failureRef::set));
+            assertThat(failureRef.get(), instanceOf(ArithmeticException.class));
+        }
     }
 
     @Test
     public void testCancelWriteDuringPendingWrite()
     {
-        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16, false);
-        WriteFlusher flusher = endPoint.getWriteFlusher();
+        try (ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16, false))
+        {
+            WriteFlusher flusher = endPoint.getWriteFlusher();
 
-        ByteBuffer buffer = ByteBuffer.allocate(32);
-        AtomicReference<Throwable> failureRef = new AtomicReference<>();
-        Callback writeCallback = Callback.from(() -> failureRef.set(new AssertionError("expected callback to be failed")), failureRef::set);
-        endPoint.write(writeCallback, buffer);
-        assertThat(failureRef.get(), nullValue());
-        assertThat(buffer.remaining(), is(16));
-        assertThat(flusher.isPending(), is(true));
+            AtomicReference<Throwable> failureRef = new AtomicReference<>();
+            Callback writeCallback = Callback.from(() -> failureRef.set(new AssertionError("expected callback to be failed")), failureRef::set);
+            RetainableByteBuffer buffer = RetainableByteBuffer.allocate(32, false);
+            endPoint.write(buffer, writeCallback);
+            assertThat(failureRef.get(), nullValue());
+            assertThat(buffer.remaining(), is(16L));
+            assertThat(flusher.isPending(), is(true));
 
-        Callback cancelCallback = flusher.cancelWrite(new ArithmeticException());
-        assertThat(failureRef.get(), nullValue());
-        assertThat(flusher.isFailed(), is(true));
-        cancelCallback.failed(new IllegalCallerException());
-        assertThat(failureRef.get(), instanceOf(IllegalCallerException.class));
+            Callback cancelCallback = flusher.cancelWrite(new ArithmeticException());
+            assertThat(failureRef.get(), nullValue());
+            assertThat(flusher.isFailed(), is(true));
+            cancelCallback.failed(new IllegalCallerException());
+            assertThat(failureRef.get(), instanceOf(IllegalCallerException.class));
 
-        failureRef.set(null);
-        endPoint.write(writeCallback, buffer);
-        assertThat(failureRef.get(), instanceOf(ArithmeticException.class));
+            failureRef.set(null);
+            endPoint.write(buffer, writeCallback);
+            assertThat(failureRef.get(), instanceOf(ArithmeticException.class));
+        }
     }
 
     @Test
-    public void testCompleteNoBlocking() throws Exception
+    public void testCompleteNoBlocking()
     {
         testCompleteWrite(false);
     }
 
     @Test
-    public void testIgnorePreviousFailures() throws Exception
+    public void testIgnorePreviousFailures()
     {
         testCompleteWrite(true);
     }
 
-    private void testCompleteWrite(boolean failBefore) throws Exception
+    private void testCompleteWrite(boolean failBefore)
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16, true);
 
@@ -120,7 +124,12 @@ public class WriteFlusherTest
             flusher.onFail(new IOException("Ignored because no operation in progress"));
 
         FutureCallback callback = new FutureCallback();
-        flusher.write(callback, BufferUtil.toBuffer("How "), BufferUtil.toBuffer("now "), BufferUtil.toBuffer("brown "), BufferUtil.toBuffer("cow!"));
+        flusher.write(RetainableByteBuffer.wrap(
+            RetainableByteBuffer.wrap("How ", UTF_8),
+            RetainableByteBuffer.wrap("now ", UTF_8),
+            RetainableByteBuffer.wrap("brown ", UTF_8),
+            RetainableByteBuffer.wrap("cow!", UTF_8)
+        ), callback);
 
         assertTrue(callback.isDone());
         assertFalse(incompleteFlush.get());
@@ -129,7 +138,7 @@ public class WriteFlusherTest
     }
 
     @Test
-    public void testClosedNoBlocking() throws Exception
+    public void testClosedNoBlocking()
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16);
         endPoint.close();
@@ -145,24 +154,21 @@ public class WriteFlusherTest
         };
 
         FutureCallback callback = new FutureCallback();
-        flusher.write(callback, BufferUtil.toBuffer("foo"));
+        flusher.write(RetainableByteBuffer.wrap(BufferUtil.toBuffer("foo")), callback);
 
         assertTrue(callback.isDone());
         assertFalse(incompleteFlush.get());
 
-        ExecutionException e = assertThrows(ExecutionException.class, () ->
-        {
-            callback.get();
-        });
+        ExecutionException e = assertThrows(ExecutionException.class, callback::get);
         assertThat(e.getCause(), instanceOf(IOException.class));
         assertThat(e.getCause().getMessage(), containsString("CLOSED"));
 
-        assertEquals("", endPoint.takeOutputString());
+        assertThrows(Exception.class, endPoint::takeOutputString);
         assertTrue(flusher.isFailed());
     }
 
     @Test
-    public void testCompleteBlocking() throws Exception
+    public void testCompleteBlocking()
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 10);
 
@@ -177,17 +183,15 @@ public class WriteFlusherTest
         };
 
         FutureCallback callback = new FutureCallback();
-        flusher.write(callback, BufferUtil.toBuffer("How now brown cow!"));
+        // Write a String longer than 10 bytes.
+        flusher.write(RetainableByteBuffer.wrap("How now brown cow!", UTF_8), callback);
 
         assertFalse(callback.isDone());
         assertFalse(callback.isCancelled());
 
         assertTrue(incompleteFlush.get());
 
-        assertThrows(TimeoutException.class, () ->
-        {
-            callback.get(100, TimeUnit.MILLISECONDS);
-        });
+        assertThrows(TimeoutException.class, () -> callback.get(100, TimeUnit.MILLISECONDS));
 
         incompleteFlush.set(false);
 
@@ -226,9 +230,9 @@ public class WriteFlusherTest
             }
         };
 
-        try (StacklessLogging stacklessLogging = new StacklessLogging(WriteFlusher.class))
+        try (StacklessLogging _ = new StacklessLogging(WriteFlusher.class))
         {
-            flusher.write(callback, BufferUtil.toBuffer("How now brown cow!"));
+            flusher.write(RetainableByteBuffer.wrap(BufferUtil.toBuffer("How now brown cow!")), callback);
             callback.get(100, TimeUnit.MILLISECONDS);
         }
 
@@ -239,7 +243,7 @@ public class WriteFlusherTest
     }
 
     @Test
-    public void testCloseWhileBlocking() throws Exception
+    public void testCloseWhileBlocking()
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 10);
 
@@ -254,7 +258,7 @@ public class WriteFlusherTest
         };
 
         FutureCallback callback = new FutureCallback();
-        flusher.write(callback, BufferUtil.toBuffer("How now brown cow!"));
+        flusher.write(RetainableByteBuffer.wrap(BufferUtil.toBuffer("How now brown cow!")), callback);
 
         assertFalse(callback.isDone());
         assertFalse(callback.isCancelled());
@@ -270,16 +274,16 @@ public class WriteFlusherTest
         assertTrue(callback.isDone());
         assertFalse(incompleteFlush.get());
 
-        ExecutionException e = assertThrows(ExecutionException.class, () -> callback.get());
+        ExecutionException e = assertThrows(ExecutionException.class, callback::get);
         assertThat(e.getCause(), instanceOf(IOException.class));
         assertThat(e.getCause().getMessage(), containsString("CLOSED"));
 
-        assertEquals("", endPoint.takeOutputString());
+        assertThrows(Exception.class, endPoint::takeOutputString);
         assertTrue(flusher.isFailed());
     }
 
     @Test
-    public void testFailWhileBlocking() throws Exception
+    public void testFailWhileBlocking()
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 10);
 
@@ -294,7 +298,7 @@ public class WriteFlusherTest
         };
 
         FutureCallback callback = new FutureCallback();
-        flusher.write(callback, BufferUtil.toBuffer("How now brown cow!"));
+        flusher.write(RetainableByteBuffer.wrap(BufferUtil.toBuffer("How now brown cow!")), callback);
 
         assertFalse(callback.isDone());
         assertFalse(callback.isCancelled());
@@ -311,7 +315,7 @@ public class WriteFlusherTest
         assertTrue(callback.isDone());
         assertFalse(incompleteFlush.get());
 
-        ExecutionException e = assertThrows(ExecutionException.class, () -> callback.get());
+        ExecutionException e = assertThrows(ExecutionException.class, callback::get);
         assertThat(e.getCause(), instanceOf(IOException.class));
         assertThat(e.getCause().getMessage(), containsString(reason));
 
@@ -339,7 +343,10 @@ public class WriteFlusherTest
                 FutureCallback callback = new FutureCallback();
                 futures[i] = callback;
                 scheduler.schedule(() -> flusher.onFail(new Throwable(reason)), (i % 75) + 1, TimeUnit.MILLISECONDS);
-                flusher.write(callback, BufferUtil.toBuffer("How Now Brown Cow."), BufferUtil.toBuffer(" The quick brown fox jumped over the lazy dog!"));
+                flusher.write(RetainableByteBuffer.wrap(
+                    RetainableByteBuffer.wrap("How Now Brown Cow.", UTF_8),
+                    RetainableByteBuffer.wrap(" The quick brown fox jumped over the lazy dog!", UTF_8)
+                ), callback);
             }
 
             int completed = 0;
@@ -369,46 +376,6 @@ public class WriteFlusherTest
     }
 
     @Test
-    public void testPendingWriteDoesNotStoreConsumedBuffers() throws Exception
-    {
-        int capacity = 10;
-        ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], capacity);
-
-        byte[] chunk1 = new byte[capacity / 2];
-        Arrays.fill(chunk1, (byte)1);
-        ByteBuffer buffer1 = ByteBuffer.wrap(chunk1);
-        byte[] chunk2 = new byte[capacity];
-        Arrays.fill(chunk1, (byte)2);
-        ByteBuffer buffer2 = ByteBuffer.wrap(chunk2);
-
-        AtomicBoolean incompleteFlush = new AtomicBoolean();
-        WriteFlusher flusher = new WriteFlusher(endPoint)
-        {
-            @Override
-            protected void onIncompleteFlush()
-            {
-                incompleteFlush.set(true);
-            }
-        };
-
-        flusher.write(Callback.NOOP, buffer1, buffer2);
-        assertTrue(incompleteFlush.get());
-        assertFalse(buffer1.hasRemaining());
-
-        // Reuse buffer1
-        buffer1.clear();
-        Arrays.fill(chunk1, (byte)3);
-        int remaining1 = buffer1.remaining();
-
-        // Complete the write
-        endPoint.takeOutput();
-        flusher.completeWrite();
-
-        // Make sure buffer1 is unchanged
-        assertEquals(remaining1, buffer1.remaining());
-    }
-
-    @Test
     public void testConcurrentWrites() throws Exception
     {
         ByteArrayEndPoint endPoint = new ByteArrayEndPoint(new byte[0], 16);
@@ -417,13 +384,13 @@ public class WriteFlusherTest
         WriteFlusher flusher = new WriteFlusher(endPoint)
         {
             @Override
-            protected ByteBuffer[] flush(SocketAddress address, ByteBuffer[] buffers) throws IOException
+            protected boolean flush(SocketAddress address, RetainableByteBuffer buffer) throws IOException
             {
                 try
                 {
                     flushLatch.countDown();
                     Thread.sleep(2000);
-                    return super.flush(address, buffers);
+                    return super.flush(address, buffer);
                 }
                 catch (InterruptedException x)
                 {
@@ -438,18 +405,18 @@ public class WriteFlusherTest
         };
 
         // Two concurrent writes.
-        new Thread(() -> flusher.write(Callback.NOOP, BufferUtil.toBuffer("foo"))).start();
+        new Thread(() -> flusher.write(RetainableByteBuffer.wrap(BufferUtil.toBuffer("foo")), Callback.NOOP)).start();
         assertTrue(flushLatch.await(1, TimeUnit.SECONDS));
 
         assertThrows(WritePendingException.class, () ->
         {
             // The second write throws WritePendingException.
-            flusher.write(Callback.NOOP, BufferUtil.toBuffer("bar"));
+            flusher.write(RetainableByteBuffer.wrap(BufferUtil.toBuffer("bar")), Callback.NOOP);
         });
     }
 
     @Test
-    public void testConcurrentWriteAndOnFail() throws Exception
+    public void testConcurrentWriteAndOnFail()
     {
         assertThrows(ExecutionException.class, () ->
         {
@@ -458,12 +425,12 @@ public class WriteFlusherTest
             WriteFlusher flusher = new WriteFlusher(endPoint)
             {
                 @Override
-                protected ByteBuffer[] flush(SocketAddress address, ByteBuffer[] buffers) throws IOException
+                protected boolean flush(SocketAddress address, RetainableByteBuffer buffer) throws IOException
                 {
-                    ByteBuffer[] result = super.flush(address, buffers);
+                    boolean flushed = super.flush(address, buffer);
                     boolean notified = onFail(new Throwable());
                     assertTrue(notified);
-                    return result;
+                    return flushed;
                 }
 
                 @Override
@@ -473,7 +440,7 @@ public class WriteFlusherTest
             };
 
             FutureCallback callback = new FutureCallback();
-            flusher.write(callback, BufferUtil.toBuffer("foo"));
+            flusher.write(RetainableByteBuffer.wrap(BufferUtil.toBuffer("foo")), callback);
 
             assertTrue(flusher.isFailed());
 
@@ -499,7 +466,7 @@ public class WriteFlusherTest
 
         FutureCallback callback = new FutureCallback();
         byte[] content = new byte[capacity * 2];
-        flusher.write(callback, BufferUtil.toBuffer(content));
+        flusher.write(RetainableByteBuffer.wrap(BufferUtil.toBuffer(content)), callback);
 
         try
         {

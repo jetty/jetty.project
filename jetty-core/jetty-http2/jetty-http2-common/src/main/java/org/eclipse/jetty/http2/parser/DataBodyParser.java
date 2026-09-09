@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.DataFrame;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class DataBodyParser extends BodyParser
 {
@@ -40,7 +38,7 @@ public class DataBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ByteBuffer buffer)
+    protected void emptyBody(RetainableByteBuffer buffer)
     {
         if (isPadding())
         {
@@ -48,16 +46,17 @@ public class DataBodyParser extends BodyParser
         }
         else
         {
-            DataFrame frame = new DataFrame(getStreamId(), BufferUtil.EMPTY_BUFFER, isEndStream());
+            DataFrame frame = new DataFrame(getStreamId(), RetainableByteBuffer.empty(), isEndStream());
             if (!isEndStream() && !rateControlOnEvent(frame))
                 connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_data_frame_rate");
             else
                 onData(frame);
+            frame.release();
         }
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
         boolean loop = false;
         while (buffer.hasRemaining() || loop)
@@ -88,36 +87,40 @@ public class DataBodyParser extends BodyParser
                 }
                 case DATA:
                 {
-                    int size = Math.min(buffer.remaining(), length);
-                    int position = buffer.position();
-                    int limit = buffer.limit();
-                    buffer.limit(position + size);
-                    ByteBuffer slice = buffer.slice();
-                    buffer.limit(limit);
-                    buffer.position(position + size);
+                    int size = buffer.remaining() > Integer.MAX_VALUE ? length : Math.min((int)buffer.remaining(), length);
+                    if (size > buffer.remaining())
+                        size = (int)buffer.remaining();
+                    RetainableByteBuffer slice = buffer.sliceAndConsume(size);
 
-                    length -= size;
-                    if (length == 0)
+                    try
                     {
-                        state = State.PADDING;
-                        loop = paddingLength == 0;
-                        // Padding bytes include the bytes that define the
-                        // padding length plus the actual padding bytes.
-                        onData(slice, false, padding + paddingLength);
+                        length -= size;
+                        if (length == 0)
+                        {
+                            state = State.PADDING;
+                            loop = paddingLength == 0;
+                            // Padding bytes include the bytes that define the
+                            // padding length plus the actual padding bytes.
+                            onData(slice, false, padding + paddingLength);
+                        }
+                        else
+                        {
+                            // We got partial data, simulate a smaller frame, and stay in DATA state.
+                            // No padding for these synthetic frames (even if we have read
+                            // the padding length already), it will be accounted at the end.
+                            onData(slice, true, 0);
+                        }
                     }
-                    else
+                    finally
                     {
-                        // We got partial data, simulate a smaller frame, and stay in DATA state.
-                        // No padding for these synthetic frames (even if we have read
-                        // the padding length already), it will be accounted at the end.
-                        onData(slice, true, 0);
+                        slice.release();
                     }
                     break;
                 }
                 case PADDING:
                 {
-                    int size = Math.min(buffer.remaining(), paddingLength);
-                    buffer.position(buffer.position() + size);
+                    int size = buffer.remaining() > Integer.MAX_VALUE ? paddingLength : Math.min((int)buffer.remaining(), paddingLength);
+                    buffer.readPosition(buffer.readPosition() + size);
                     paddingLength -= size;
                     if (paddingLength == 0)
                     {
@@ -135,9 +138,17 @@ public class DataBodyParser extends BodyParser
         return false;
     }
 
-    private void onData(ByteBuffer buffer, boolean fragment, int padding)
+    private void onData(RetainableByteBuffer buffer, boolean fragment, int padding)
     {
-        onData(new DataFrame(getStreamId(), buffer, !fragment && isEndStream(), padding));
+        DataFrame frame = new DataFrame(getStreamId(), buffer, !fragment && isEndStream(), padding);
+        try
+        {
+            onData(frame);
+        }
+        finally
+        {
+            frame.release();
+        }
     }
 
     private void onData(DataFrame frame)

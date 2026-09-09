@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1003,7 +1003,7 @@ public class MultiPartFormDataTest
             Content-Type: text/plain\r
             \r
             """;
-        ByteBuffer isoCedilla = ISO_8859_1.encode("ç");
+        RetainableByteBuffer isoCedilla = RetainableByteBuffer.wrap(ISO_8859_1.encode("ç"));
         String body2 = """
             \r
             --AaB03x\r
@@ -1011,7 +1011,7 @@ public class MultiPartFormDataTest
             Content-Type: text/plain; charset="UTF-8"\r
             \r
             """;
-        ByteBuffer utfCedilla = UTF_8.encode("ç");
+        RetainableByteBuffer utfCedilla = RetainableByteBuffer.wrap(UTF_8.encode("ç"));
         String terminator = """
             \r
             --AaB03x--\r
@@ -1284,9 +1284,9 @@ public class MultiPartFormDataTest
             ByteBuffer buf = UTF_8.encode(form);
             while (buf.hasRemaining())
             {
-                source.write(false, ByteBuffer.wrap(new byte[]{buf.get()}), Callback.NOOP);
+                source.write(false, RetainableByteBuffer.wrap(new byte[]{buf.get()}), Callback.NOOP);
             }
-            source.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+            source.write(true, RetainableByteBuffer.empty(), Callback.NOOP);
         }).start();
 
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
@@ -1694,7 +1694,7 @@ public class MultiPartFormDataTest
         }
     }
 
-    private static class NonRetainableChunk extends RetainableByteBuffer.NonRetainableByteBuffer implements Content.Chunk
+    private static class NonRetainableChunk extends org.eclipse.jetty.io.RetainableByteBuffer.NonRetainableByteBuffer implements Content.Chunk
     {
         private final boolean _isLast;
         private final Throwable _failure;

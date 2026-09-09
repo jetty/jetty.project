@@ -13,30 +13,43 @@
 
 package org.eclipse.jetty.http3.frames;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class DataFrame extends Frame
+public class DataFrame extends Frame implements AutoCloseable
 {
-    private final ByteBuffer data;
+    private final RetainableByteBuffer data;
     private final boolean last;
-    private final int length;
+    private final long length;
 
-    public DataFrame(ByteBuffer data, boolean last)
+    public DataFrame(RetainableByteBuffer data, boolean last)
     {
         super(FrameType.DATA);
+        data.retain();
         this.data = data;
         this.last = last;
         this.length = data.remaining();
     }
 
-    public ByteBuffer getByteBuffer()
+    public RetainableByteBuffer acquire()
     {
+        data.retain();
         return data;
+    }
+
+    public long remaining()
+    {
+        return data.remaining();
     }
 
     public boolean isLast()
     {
         return last;
+    }
+
+    @Override
+    public void close()
+    {
+        data.release();
     }
 
     @Override

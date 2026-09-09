@@ -16,6 +16,7 @@ package org.eclipse.jetty.http.compression;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.CharsetStringBuilder;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>Used to decode string literals as described in RFC7541.</p>
@@ -76,12 +77,17 @@ public class NBitStringDecoder
      */
     public String decode(ByteBuffer buffer) throws EncodingException
     {
+        return decode(RetainableByteBuffer.wrap(buffer));
+    }
+
+    public String decode(RetainableByteBuffer buffer) throws EncodingException
+    {
         while (true)
         {
             switch (_state)
             {
                 case PARSING:
-                    byte firstByte = buffer.get(buffer.position());
+                    byte firstByte = buffer.get(buffer.readPosition());
                     _huffman = ((0x80 >>> (8 - _prefix)) & firstByte) != 0;
                     _state = State.LENGTH;
                     _integerDecoder.setPrefix(_prefix - 1);
@@ -107,7 +113,7 @@ public class NBitStringDecoder
         }
     }
 
-    private String stringDecode(ByteBuffer buffer)
+    private String stringDecode(RetainableByteBuffer buffer)
     {
         for (; _count < _length; _count++)
         {

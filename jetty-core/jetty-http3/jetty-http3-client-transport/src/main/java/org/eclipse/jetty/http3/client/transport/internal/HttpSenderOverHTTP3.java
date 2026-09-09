@@ -29,12 +29,12 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +82,8 @@ public class HttpSenderOverHTTP3 extends HttpSender
         }
 
         HeadersFrame headersFrame;
-        DataFrame dataFrame = null;
+        RetainableByteBuffer data = null;
+        boolean dataLast = false;
         HeadersFrame trailerFrame = null;
 
         if (isTunnel)
@@ -95,17 +96,14 @@ public class HttpSenderOverHTTP3 extends HttpSender
             if (hasContent)
             {
                 headersFrame = new HeadersFrame(metaData, false);
+                data = RetainableByteBuffer.wrap(contentBuffer);
                 if (lastContent)
                 {
                     HttpFields trailers = retrieveTrailers(request);
                     boolean hasTrailers = trailers != null;
-                    dataFrame = new DataFrame(contentBuffer, !hasTrailers);
+                    dataLast = !hasTrailers;
                     if (hasTrailers)
                         trailerFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
-                }
-                else
-                {
-                    dataFrame = new DataFrame(contentBuffer, false);
                 }
             }
             else
@@ -126,7 +124,8 @@ public class HttpSenderOverHTTP3 extends HttpSender
         }
 
         HeadersFrame hf = headersFrame;
-        DataFrame df = dataFrame;
+        RetainableByteBuffer d = data;
+        boolean dl = dataLast;
         HeadersFrame tf = trailerFrame;
 
         HTTP3SessionClient session = getHttpChannel().getSession();
@@ -142,12 +141,12 @@ public class HttpSenderOverHTTP3 extends HttpSender
                     System.lineSeparator(), metaData.getHttpFields());
             }
 
-            if (df != null)
+            if (d != null)
             {
                 if (tf != null)
-                    sendDataAndTrailer(s, df, lastContent, tf, callback);
+                    sendDataAndTrailer(s, d, tf, callback);
                 else
-                    sendData(s, df, lastContent, callback);
+                    sendData(s, d, dl, lastContent, callback);
             }
             else
             {
@@ -185,15 +184,15 @@ public class HttpSenderOverHTTP3 extends HttpSender
             boolean hasTrailers = trailers != null && trailers.size() > 0;
             if (hasContent)
             {
-                DataFrame dataFrame = new DataFrame(contentBuffer, !hasTrailers);
+                RetainableByteBuffer data = RetainableByteBuffer.wrap(contentBuffer);
                 if (hasTrailers)
                 {
                     HeadersFrame trailerFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
-                    sendDataAndTrailer(stream, dataFrame, true, trailerFrame, callback);
+                    sendDataAndTrailer(stream, data, trailerFrame, callback);
                 }
                 else
                 {
-                    sendData(stream, dataFrame, true, callback);
+                    sendData(stream, data, true, true, callback);
                 }
             }
             else
@@ -205,8 +204,8 @@ public class HttpSenderOverHTTP3 extends HttpSender
                 }
                 else
                 {
-                    DataFrame dataFrame = new DataFrame(contentBuffer, true);
-                    sendData(stream, dataFrame, true, callback);
+                    RetainableByteBuffer data = RetainableByteBuffer.wrap(contentBuffer);
+                    sendData(stream, data, true, true, callback);
                 }
             }
         }
@@ -214,8 +213,8 @@ public class HttpSenderOverHTTP3 extends HttpSender
         {
             if (hasContent)
             {
-                DataFrame dataFrame = new DataFrame(contentBuffer, false);
-                sendData(stream, dataFrame, false, callback);
+                RetainableByteBuffer data = RetainableByteBuffer.wrap(contentBuffer);
+                sendData(stream, data, false, false, callback);
             }
             else
             {
@@ -225,20 +224,20 @@ public class HttpSenderOverHTTP3 extends HttpSender
         }
     }
 
-    private void sendDataAndTrailer(Stream stream, DataFrame dataFrame, boolean lastContent, HeadersFrame trailersFrame, Callback callback)
+    private void sendDataAndTrailer(Stream stream, RetainableByteBuffer data, HeadersFrame trailersFrame, Callback callback)
     {
-        sendData(stream, dataFrame, lastContent, Callback.from(callback.getInvocationType(), () -> sendTrailer(stream, trailersFrame, callback), callback::failed));
+        sendData(stream, data, false, true, Callback.from(callback.getInvocationType(), () -> sendTrailer(stream, trailersFrame, callback), callback::failed));
     }
 
-    private void sendData(Stream stream, DataFrame dataFrame, boolean lastContent, Callback callback)
+    private void sendData(Stream stream, RetainableByteBuffer data, boolean dataLast, boolean lastContent, Callback callback)
     {
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP3 request #{}/{}: {} content bytes{}",
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                dataFrame.getByteBuffer().remaining(), lastContent ? " (last chunk)" : "");
+                data.remaining(), lastContent ? " (last chunk)" : "");
         }
-        stream.data(dataFrame, Promise.Invocable.from(callback.getInvocationType(), s -> callback.succeeded(), callback::failed));
+        stream.data(data, dataLast, Promise.Invocable.from(callback.getInvocationType(), _ -> callback.succeeded(), callback::failed));
     }
 
     private void sendTrailer(Stream stream, HeadersFrame trailerFrame, Callback callback)
@@ -249,6 +248,6 @@ public class HttpSenderOverHTTP3 extends HttpSender
                 stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                 System.lineSeparator(), trailerFrame.getMetaData().getHttpFields());
         }
-        stream.trailer(trailerFrame, Promise.Invocable.from(callback.getInvocationType(), s -> callback.succeeded(), callback::failed));
+        stream.trailer(trailerFrame, Promise.Invocable.from(callback.getInvocationType(), _ -> callback.succeeded(), callback::failed));
     }
 }

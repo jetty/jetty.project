@@ -19,9 +19,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
 
 public abstract class ByteBufferChunk extends RetainableByteBuffer.FixedCapacity implements Content.Chunk
@@ -53,7 +53,7 @@ public abstract class ByteBufferChunk extends RetainableByteBuffer.FixedCapacity
 
     public static class WithReferenceCount extends ByteBufferChunk
     {
-        private final ReferenceCounter references = new ReferenceCounter();
+        private final Retainable.ReferenceCounter references = new Retainable.ReferenceCounter();
 
         public WithReferenceCount(ByteBuffer byteBuffer, boolean last)
         {

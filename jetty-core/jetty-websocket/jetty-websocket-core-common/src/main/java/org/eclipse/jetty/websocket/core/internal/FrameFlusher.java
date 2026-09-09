@@ -23,15 +23,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.LongAdder;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
@@ -60,7 +60,7 @@ public class FrameFlusher extends IteratingCallback
     private final AutoLock _lock = new AutoLock();
     private final LongAdder _messagesOut = new LongAdder();
     private final LongAdder _bytesOut = new LongAdder();
-    private final ByteBufferPool _bufferPool;
+    private final WritableBufferPool _bufferPool;
     private final EndPoint _endPoint;
     private final int _bufferSize;
     private final Generator _generator;
@@ -73,12 +73,12 @@ public class FrameFlusher extends IteratingCallback
     private final Behavior _behavior;
     private long _currentMessageExpiry = Long.MAX_VALUE;
 
-    private RetainableByteBuffer _batchBuffer;
+    private RetainableByteBuffer.Mutable _batchBuffer;
     private boolean _canEnqueue = true;
     private Throwable _closedCause;
     private boolean _useDirectByteBuffers;
 
-    public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather, Behavior behavior)
+    public FrameFlusher(WritableBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather, Behavior behavior)
     {
         _behavior = behavior;
         _bufferPool = bufferPool;
@@ -257,16 +257,16 @@ public class FrameFlusher extends IteratingCallback
 
         // Process the entries outside the lock, as inside the ICB we only need the lock to modify _entries but not iterate it.
         boolean canBatch = true;
-        List<ByteBuffer> buffers = new ArrayList<>((_maxGather * 2) + 1);
+        List<RetainableByteBuffer> buffers = new ArrayList<>((_maxGather * 2) + 1);
         if (_batchBuffer != null)
-            buffers.add(_batchBuffer.getByteBuffer());
+            buffers.add(_batchBuffer);
         for (FlusherEntry entry : _currentEntries)
         {
             if (entry.getFrame() == FLUSH_FRAME)
                 continue;
             _messagesOut.increment();
 
-            int batchSpace = _batchBuffer == null ? _bufferSize : BufferUtil.space(_batchBuffer.getByteBuffer());
+            int batchSpace = _batchBuffer == null ? _bufferSize : (int)_batchBuffer.space();
             boolean batch = canBatch && entry.isBatch() &&
                 !entry.getFrame().isControlFrame() &&
                 entry.getFrame().getPayloadLength() < _bufferSize / 4 &&
@@ -278,40 +278,43 @@ public class FrameFlusher extends IteratingCallback
                 if (_batchBuffer == null)
                 {
                     _batchBuffer = acquireBuffer(_bufferSize);
-                    buffers.add(_batchBuffer.getByteBuffer());
+                    buffers.add(_batchBuffer);
                 }
 
                 // Generate the frame into the batchBuffer.
-                _generator.generateWholeFrame(entry.getFrame(), _batchBuffer.getByteBuffer());
+                _generator.generateWholeFrame(entry.getFrame(), _batchBuffer);
             }
             else
             {
                 if (canBatch && _batchBuffer != null && batchSpace >= Generator.MAX_HEADER_LENGTH)
                 {
-                    // Use the batch space for our header.
-                    _generator.generateHeader(entry.getFrame(), _batchBuffer.getByteBuffer());
+                    // Use the batch buffer for the header.
+                    _generator.generateHeader(entry.getFrame(), _batchBuffer);
                 }
                 else
                 {
                     // Add headers to the list of buffers.
-                    RetainableByteBuffer headerBuffer = acquireBuffer(Generator.MAX_HEADER_LENGTH);
+                    RetainableByteBuffer.Mutable headerBuffer = acquireBuffer(Generator.MAX_HEADER_LENGTH);
                     _releasableBuffers.add(headerBuffer);
-                    _generator.generateHeader(entry.getFrame(), headerBuffer.getByteBuffer());
-                    buffers.add(headerBuffer.getByteBuffer());
+                    _generator.generateHeader(entry.getFrame(), headerBuffer);
+                    buffers.add(headerBuffer);
                 }
 
                 // Add the payload to the list of buffers.
                 ByteBuffer payload = entry.getFrame().getPayload();
-                if (BufferUtil.hasContent(payload))
+                if (payload != null && payload.hasRemaining())
                 {
                     if (entry.getFrame().isMasked())
                     {
-                        RetainableByteBuffer masked = acquireBuffer(entry.getFrame().getPayloadLength());
-                        payload = masked.getByteBuffer();
+                        RetainableByteBuffer.Mutable masked = acquireBuffer(payload.remaining());
                         _releasableBuffers.add(masked);
-                        _generator.generatePayload(entry.getFrame(), payload);
+                        _generator.generatePayload(entry.getFrame(), masked);
+                        buffers.add(masked);
                     }
-                    buffers.add(payload);
+                    else
+                    {
+                        buffers.add(RetainableByteBuffer.wrap(payload));
+                    }
                 }
 
                 // Once we have added another buffer we cannot add to the batch buffer again.
@@ -336,35 +339,27 @@ public class FrameFlusher extends IteratingCallback
                 _batchBuffer = null;
             }
 
-            int i = 0;
-            int bytes = 0;
-            ByteBuffer[] bufferArray = new ByteBuffer[buffers.size()];
-            for (ByteBuffer bb : buffers)
-            {
-                bytes += bb.limit() - bb.position();
-                bufferArray[i++] = bb;
-            }
-            _bytesOut.add(bytes);
-            _endPoint.write(this, bufferArray);
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(buffers);
             buffers.clear();
+            _bytesOut.add(buffer.remaining());
+            _endPoint.write(buffer, this);
+            buffer.release();
+            return Action.SCHEDULED;
         }
-        else
+
+        // If we did not get any new entries go to IDLE state.
+        if (_currentEntries.isEmpty())
         {
-            // If we did not get any new entries go to IDLE state
-            if (_currentEntries.isEmpty())
-            {
-                releaseAggregateIfEmpty();
-                return Action.IDLE;
-            }
-
-            // We just aggregated the entries, so we need to succeed their callbacks.
-            succeeded();
+            releaseAggregateIfEmpty();
+            return Action.IDLE;
         }
 
+        // We just aggregated the entries, so we need to succeed their callbacks.
+        succeeded();
         return Action.SCHEDULED;
     }
 
-    private RetainableByteBuffer acquireBuffer(int capacity)
+    private RetainableByteBuffer.Mutable acquireBuffer(int capacity)
     {
         return _bufferPool.acquire(capacity, isUseDirectByteBuffers());
     }
@@ -406,6 +401,7 @@ public class FrameFlusher extends IteratingCallback
         if (_batchBuffer != null)
             _batchBuffer.clear();
         releaseAggregateIfEmpty();
+
         try (AutoLock ignored = _lock.lock())
         {
             // Ensure no more entries can be enqueued.
@@ -437,10 +433,7 @@ public class FrameFlusher extends IteratingCallback
     private void releaseAggregateIfEmpty()
     {
         if (_batchBuffer != null && !_batchBuffer.hasRemaining())
-        {
-            _batchBuffer.release();
-            _batchBuffer = null;
-        }
+            _batchBuffer = Retainable.dispose(_batchBuffer);
     }
 
     protected void notifyCallbackSuccess(Callback callback)
@@ -448,9 +441,7 @@ public class FrameFlusher extends IteratingCallback
         try
         {
             if (callback != null)
-            {
                 callback.succeeded();
-            }
         }
         catch (Throwable x)
         {
@@ -464,9 +455,7 @@ public class FrameFlusher extends IteratingCallback
         try
         {
             if (callback != null)
-            {
                 callback.failed(failure);
-            }
         }
         catch (Throwable x)
         {

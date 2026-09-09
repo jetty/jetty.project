@@ -182,7 +182,6 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     @Override
     protected boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
-
         // Calculate an id for the request (which may be global empty string).
         String id = _clientIdFn.apply(request);
 

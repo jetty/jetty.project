@@ -135,7 +135,7 @@ public class AliasedConstraintTest
         request.append("Connection: close\r\n");
         request.append("\r\n");
 
-        String response = connector.getResponse(request.toString());
+        String response = connector.getResponseAsString(request.toString());
 
         switch (expectedStatusCode)
         {

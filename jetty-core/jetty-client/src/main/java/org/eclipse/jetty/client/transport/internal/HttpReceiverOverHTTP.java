@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client.transport.internal;
 
 import java.io.EOFException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -30,13 +29,13 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,14 +47,13 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private final Runnable receiveNext = this::receiveNext;
     private final LongAdder inMessages = new LongAdder();
     private final HttpParser parser;
-    private final ByteBufferPool byteBufferPool;
-    private RetainableByteBuffer networkBuffer;
+    private final WritableBufferPool byteBufferPool;
+    private RetainableByteBuffer.Mutable networkBuffer;
     private State state = State.STATUS;
     private boolean unsolicited;
     private int status;
     private String method;
     private Content.Chunk chunk;
-    private boolean upgraded;
     private boolean shutdown;
     private boolean disposed;
 
@@ -70,7 +68,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             parser.setHeaderCacheSize(httpTransport.getHeaderCacheSize());
             parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
         }
-        byteBufferPool = httpClient.getByteBufferPool();
+        byteBufferPool = WritableBufferPool.wrap(httpClient.getByteBufferPool());
     }
 
     void receive()
@@ -172,33 +170,35 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         return getHttpChannel().getHttpConnection();
     }
 
-    protected ByteBuffer getResponseBuffer()
+    protected RetainableByteBuffer getResponseBuffer()
     {
-        return networkBuffer == null ? null : networkBuffer.getByteBuffer();
+        return networkBuffer;
     }
 
-    private void acquireNetworkBuffer()
+    private RetainableByteBuffer.Mutable acquireNetworkBuffer()
     {
-        networkBuffer = newNetworkBuffer();
+        RetainableByteBuffer.Mutable buffer = newNetworkBuffer();
         if (LOG.isDebugEnabled())
-            LOG.debug("Acquired {} in {}", networkBuffer, this);
+            LOG.debug("Acquired {} in {}", buffer, this);
+        return buffer;
     }
 
-    private void reacquireNetworkBuffer()
+    private RetainableByteBuffer.Mutable reacquireNetworkBuffer()
     {
-        RetainableByteBuffer currentBuffer = networkBuffer;
-        if (currentBuffer == null)
+        RetainableByteBuffer.Mutable oldBuffer = networkBuffer;
+        if (oldBuffer == null)
             throw new IllegalStateException();
-        if (currentBuffer.hasRemaining())
+        if (oldBuffer.hasRemaining())
             throw new IllegalStateException();
 
-        currentBuffer.release();
-        networkBuffer = newNetworkBuffer();
+        oldBuffer.release();
+        RetainableByteBuffer.Mutable newBuffer = newNetworkBuffer();
         if (LOG.isDebugEnabled())
-            LOG.debug("Reacquired {} <- {} in {}", currentBuffer, networkBuffer, this);
+            LOG.debug("Reacquired {} <- {} in {}", oldBuffer, newBuffer, this);
+        return newBuffer;
     }
 
-    private RetainableByteBuffer newNetworkBuffer()
+    private RetainableByteBuffer.Mutable newNetworkBuffer()
     {
         HttpClient client = getHttpDestination().getHttpClient();
         boolean direct = client.isUseInputDirectByteBuffers();
@@ -209,29 +209,25 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         if (networkBuffer == null)
             return;
-        networkBuffer.release();
         if (LOG.isDebugEnabled())
-            LOG.debug("Released {} in {}", networkBuffer, this);
-        networkBuffer = null;
+            LOG.debug("Releasing {} in {}", networkBuffer, this);
+        networkBuffer = Retainable.dispose(networkBuffer);
     }
 
-    protected ByteBuffer onUpgradeFrom()
+    protected void onUpgradeTo(RetainableByteBuffer.Mutable buffer)
     {
-        RetainableByteBuffer networkBuffer = this.networkBuffer;
-        if (networkBuffer == null)
-            return null;
+        buffer.retain();
+        networkBuffer = buffer;
+    }
 
-        ByteBuffer upgradeBuffer = null;
-        if (networkBuffer.hasRemaining())
-        {
-            HttpClient client = getHttpDestination().getHttpClient();
-            upgradeBuffer = BufferUtil.allocate(networkBuffer.remaining(), client.isUseInputDirectByteBuffers());
-            BufferUtil.clearToFill(upgradeBuffer);
-            BufferUtil.put(networkBuffer.getByteBuffer(), upgradeBuffer);
-            BufferUtil.flipToFlush(upgradeBuffer, 0);
-        }
-        releaseNetworkBuffer();
-        return upgradeBuffer;
+    protected RetainableByteBuffer.Mutable onUpgradeFrom()
+    {
+        if (networkBuffer == null || !networkBuffer.hasRemaining())
+            return null;
+        // Differently from other implementations, the buffer is already retained.
+        // This happens because the upgrade is driven by UpgradeProtocolHandler
+        // at the complete event, which happens when also the request is complete.
+        return networkBuffer;
     }
 
     /**
@@ -246,7 +242,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         try
         {
             if (networkBuffer == null)
-                acquireNetworkBuffer();
+                networkBuffer = acquireNetworkBuffer();
             while (true)
             {
                 // Always parse even empty buffers to advance the parser.
@@ -258,9 +254,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     // Return immediately, as this thread may be in a race
                     // with e.g. another thread demanding more content.
                     // The call to parse() above may reenter this method.
-                    // The buffer may contain bytes for the upgraded protocol.
-                    if (upgraded && networkBuffer != null && !networkBuffer.hasRemaining())
-                        releaseNetworkBuffer();
                     return false;
                 }
 
@@ -274,11 +267,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 }
 
                 if (networkBuffer.isRetained())
-                    reacquireNetworkBuffer();
+                    networkBuffer = reacquireNetworkBuffer();
 
-                // The networkBuffer may have been reacquired.
                 assert !networkBuffer.hasRemaining();
-                int read = endPoint.fill(networkBuffer.getByteBuffer());
+
+                int read = endPoint.fill(networkBuffer.clear());
                 if (LOG.isDebugEnabled())
                     LOG.debug("Read {} bytes in {} from {} in {}", read, networkBuffer, endPoint, this);
 
@@ -322,12 +315,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         // is reentrant: it notifies the application which may
         // read response content, which reenters here.
 
-        ByteBuffer byteBuffer = networkBuffer.getByteBuffer();
         while (true)
         {
-            boolean handle = parser.parseNext(byteBuffer);
+            boolean handle = parser.parseNext(networkBuffer);
             if (LOG.isDebugEnabled())
-                LOG.debug("Parse state={} result={} {} {} on {}", state, handle, BufferUtil.toDetailString(byteBuffer), parser, this);
+                LOG.debug("Parse state={} result={} {} {} on {}", state, handle, networkBuffer, parser, this);
             if (!handle)
                 return false;
 
@@ -337,9 +329,18 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
             switch (state)
             {
-                case HEADERS -> responseHeaders(exchange);
+                case HEADERS ->
+                {
+                    // Release the empty buffer before calling the application.
+                    if (!networkBuffer.hasRemaining())
+                        releaseNetworkBuffer();
+                    responseHeaders(exchange);
+                }
                 case CONTENT ->
                 {
+                    // Release the empty buffer before calling the application.
+                    if (!networkBuffer.hasRemaining())
+                        releaseNetworkBuffer();
                     if (notifyContentAvailable)
                         responseContentAvailable(exchange);
                 }
@@ -351,12 +352,16 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     // Connection upgrade, bail out.
                     if (isUpgrade || isTunnel)
                     {
-                        upgraded = true;
+                        // Release the empty buffer before calling the application.
+                        if (!networkBuffer.hasRemaining())
+                            releaseNetworkBuffer();
+                        // Method onUpgradeFrom() will be called
+                        // to consume what's left in the buffer.
                         responseSuccess(null);
                         return true;
                     }
 
-                    if (byteBuffer.hasRemaining())
+                    if (networkBuffer.hasRemaining())
                     {
                         if (HttpStatus.isInterim(status))
                         {
@@ -367,10 +372,13 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                         else
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Discarding unexpected content after response {}: {} in {}", status, BufferUtil.toDetailString(byteBuffer), this);
-                            BufferUtil.clear(byteBuffer);
+                                LOG.debug("Discarding unexpected content after response {}: {} in {}", status, networkBuffer, this);
+                            networkBuffer.clear();
                         }
                     }
+
+                    if (!networkBuffer.hasRemaining())
+                        releaseNetworkBuffer();
 
                     // When notifyContentAvailable==false, this method is called from read(boolean),
                     // and the call to responseSuccess() is performed by read().
@@ -387,7 +395,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             // The application may have aborted the request.
             if (disposed)
             {
-                BufferUtil.clear(byteBuffer);
+                if (networkBuffer != null)
+                    networkBuffer.clear();
                 return false;
             }
 
@@ -468,10 +477,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     @Override
-    public boolean content(ByteBuffer buffer)
+    public boolean content(RetainableByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Parser generated content {} in {}", BufferUtil.toDetailString(buffer), this);
+            LOG.debug("Parser generated content {} in {}", buffer, this);
         HttpExchange exchange = getHttpExchange();
         unsolicited |= exchange == null;
         if (unsolicited)
@@ -482,8 +491,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (getHttpConnection().isFillInterested())
             throw new IllegalStateException("Fill interested while parsing for content");
 
-        // Retain the chunk because it is stored for later use.
-        networkBuffer.retain();
         chunk = Content.Chunk.asChunk(buffer, false, networkBuffer);
         state = State.CONTENT;
         return true;

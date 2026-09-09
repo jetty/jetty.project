@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.compression.gzip.internal;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
@@ -22,8 +23,7 @@ import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.compression.gzip.GzipCompression;
 import org.eclipse.jetty.compression.gzip.GzipDecoderConfig;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.compression.InflaterPool;
 
 public class GzipDecoderSource extends DecoderSource
@@ -102,23 +102,35 @@ public class GzipDecoderSource extends DecoderSource
                     {
                         while (true)
                         {
-                            RetainableByteBuffer buffer = compression.acquireByteBuffer(bufferSize);
+                            RetainableByteBuffer.Mutable b = compression.acquireBuffer(bufferSize);
                             try
                             {
-                                ByteBuffer decoded = buffer.getByteBuffer();
-                                int pos = BufferUtil.flipToFill(decoded);
-                                inflater.inflate(decoded);
-                                BufferUtil.flipToFlush(decoded, pos);
-                                if (buffer.hasRemaining())
-                                    return Content.Chunk.asChunk(decoded, false, buffer);
-                                buffer.release();
+                                b.readFrom(output ->
+                                {
+                                    try
+                                    {
+                                        int p = output.position();
+                                        inflater.inflate(output);
+                                        return output.position() - p;
+                                    }
+                                    catch (DataFormatException e)
+                                    {
+                                        throw new IOException(e);
+                                    }
+                                });
+
+                                if (b.hasRemaining())
+                                    return Content.Chunk.asChunk(b, false, null);
                             }
-                            catch (DataFormatException x)
+                            catch (IOException x)
                             {
-                                buffer.release();
                                 ZipException failure = new ZipException();
                                 failure.initCause(x);
                                 throw failure;
+                            }
+                            finally
+                            {
+                                b.release();
                             }
 
                             if (inflater.needsInput())

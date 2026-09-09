@@ -21,8 +21,8 @@ import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.compression.brotli.BrotliCompression;
 import org.eclipse.jetty.compression.brotli.BrotliDecoderConfig;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class BrotliDecoderSource extends DecoderSource
 {
@@ -81,9 +81,11 @@ public class BrotliDecoderSource extends DecoderSource
                     int remaining = output.remaining();
                     if (remaining == 0)
                         return Content.Chunk.EMPTY;
-                    RetainableByteBuffer.Mutable copy = compression.acquireByteBuffer(remaining);
-                    copy.append(output);
-                    return Content.Chunk.asChunk(copy.getByteBuffer(), false, copy);
+                    RetainableByteBuffer.Mutable copy = compression.acquireBuffer(remaining);
+                    copy.put(output);
+                    Content.Chunk chunk = Content.Chunk.asChunk(copy, false, null);
+                    copy.release();
+                    return chunk;
                 }
                 default ->
                 {

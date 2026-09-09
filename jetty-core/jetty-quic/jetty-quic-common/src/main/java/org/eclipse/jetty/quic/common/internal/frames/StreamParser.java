@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.quic.common.internal.frames;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class StreamParser
 {
@@ -48,15 +47,15 @@ public class StreamParser
         this.maxFrameSize = maxFrameSize;
     }
 
-    public StreamFrame parse(ByteBuffer byteBuffer)
+    public StreamFrame parse(RetainableByteBuffer buffer)
     {
-        while (byteBuffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
             switch (state)
             {
                 case FRAME_TYPE ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, (l, v) ->
+                    if (varLenInt.tryDecode(buffer, (l, v) ->
                     {
                         frameSize += l;
                         frameType = v;
@@ -69,7 +68,7 @@ public class StreamParser
                 }
                 case STREAM_ID ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, (l, v) ->
+                    if (varLenInt.tryDecode(buffer, (l, v) ->
                     {
                         frameSize += l;
                         streamId = v;
@@ -85,7 +84,7 @@ public class StreamParser
                 }
                 case OFFSET ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, (l, v) ->
+                    if (varLenInt.tryDecode(buffer, (l, v) ->
                     {
                         frameSize += l;
                         offset = v;
@@ -99,14 +98,14 @@ public class StreamParser
                 }
                 case LENGTH ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, (l, v) ->
+                    if (varLenInt.tryDecode(buffer, (l, v) ->
                     {
                         frameSize += l;
                         dataLength = v;
                     }))
                     {
                         if (dataLength == 0)
-                            return result(byteBuffer.slice(byteBuffer.position(), 0), true);
+                            return result(RetainableByteBuffer.empty(), true);
                         state = State.DATA;
                     }
                 }
@@ -119,9 +118,8 @@ public class StreamParser
                     if (dataLength + frameSize > getFrameMaxSize())
                         throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_frame_size", frameType);
 
-                    int length = (int)Math.min(dataLength, byteBuffer.remaining());
-                    ByteBuffer data = byteBuffer.slice(byteBuffer.position(), length);
-                    byteBuffer.position(byteBuffer.position() + length);
+                    int length = (int)Math.min(dataLength, buffer.remaining());
+                    RetainableByteBuffer data = buffer.sliceAndConsume(length);
                     dataLength -= length;
                     boolean done = dataLength == 0;
                     return result(data, done);
@@ -131,7 +129,7 @@ public class StreamParser
         return null;
     }
 
-    private StreamFrame result(ByteBuffer data, boolean complete)
+    private StreamFrame result(RetainableByteBuffer data, boolean complete)
     {
         long type = frameType;
         long off = offset;

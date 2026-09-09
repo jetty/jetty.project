@@ -28,6 +28,7 @@ module org.eclipse.jetty.util
 
     exports org.eclipse.jetty.util;
     exports org.eclipse.jetty.util.annotation;
+    exports org.eclipse.jetty.util.buffer;
     exports org.eclipse.jetty.util.component;
     exports org.eclipse.jetty.util.compression;
     exports org.eclipse.jetty.util.jndi;

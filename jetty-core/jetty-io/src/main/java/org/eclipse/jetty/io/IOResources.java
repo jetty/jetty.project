@@ -25,9 +25,8 @@ import java.util.Objects;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -45,10 +44,10 @@ public class IOResources
      *
      * @param resource the resource to be read.
      * @param bufferPool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
-     * @return a {@link RetainableByteBuffer} containing the resource's contents.
+     * @return a {@link org.eclipse.jetty.io.RetainableByteBuffer} containing the resource's contents.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static RetainableByteBuffer toRetainableByteBuffer(Resource resource, ByteBufferPool.Sized bufferPool) throws IllegalArgumentException
+    public static org.eclipse.jetty.io.RetainableByteBuffer toRetainableByteBuffer(Resource resource, ByteBufferPool.Sized bufferPool) throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -56,7 +55,7 @@ public class IOResources
         // Optimize for Content.Source.Factory.
         if (resource instanceof Content.Source.Factory factory)
         {
-            try (Blocker.Promise<RetainableByteBuffer> promise = Blocker.promise(Retainable::retain))
+            try (Blocker.Promise<org.eclipse.jetty.io.RetainableByteBuffer> promise = Blocker.promise(Retainable::retain))
             {
                 Content.Source.asRetainableByteBuffer(factory.newContentSource(bufferPool, 0L, -1L), bufferPool, bufferPool.isDirect(), Integer.MAX_VALUE, promise);
                 return promise.block();
@@ -69,7 +68,7 @@ public class IOResources
 
         // Optimize for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
-            return RetainableByteBuffer.wrap(ByteBuffer.wrap(memoryResource.getBytes()));
+            return org.eclipse.jetty.io.RetainableByteBuffer.wrap(ByteBuffer.wrap(memoryResource.getBytes()));
 
         long longLength = resource.length();
 
@@ -80,7 +79,7 @@ public class IOResources
         if (path != null && longLength < Integer.MAX_VALUE)
         {
             // TODO convert to a Dynamic once HttpContent uses writeTo semantics
-            RetainableByteBuffer retainableByteBuffer = bufferPool.acquire((int)longLength);
+            org.eclipse.jetty.io.RetainableByteBuffer retainableByteBuffer = bufferPool.acquire((int)longLength);
             try (SeekableByteChannel seekableByteChannel = Files.newByteChannel(path))
             {
                 long totalRead = 0L;
@@ -104,13 +103,13 @@ public class IOResources
         }
 
         // Fallback to InputStream.
-        RetainableByteBuffer buffer = null;
+        org.eclipse.jetty.io.RetainableByteBuffer buffer = null;
         try (InputStream inputStream = resource.newInputStream())
         {
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
 
-            RetainableByteBuffer.DynamicCapacity retainableByteBuffer = new RetainableByteBuffer.DynamicCapacity(bufferPool, bufferPool.isDirect(), longLength);
+            org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity retainableByteBuffer = new org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity(bufferPool, bufferPool.isDirect(), longLength);
             while (true)
             {
                 if (buffer == null)
@@ -259,7 +258,9 @@ public class IOResources
             Path path = resource.getPath();
             if (path != null)
             {
-                new PathToSinkCopier(path, sink, bufferPool, offset, length, callback).iterate();
+                RetainableByteBuffer pathBuffer = RetainableByteBuffer.wrap(path, offset, length, WritableBufferPool.wrap(bufferPool == null ? ByteBufferPool.SIZED_NON_POOLING : bufferPool));
+                sink.write(true, pathBuffer, callback);
+                pathBuffer.release();
                 return;
             }
 
@@ -267,7 +268,7 @@ public class IOResources
             if (resource instanceof MemoryResource memoryResource)
             {
                 ByteBuffer byteBuffer = BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(offset), Math.toIntExact(length));
-                sink.write(true, byteBuffer, callback);
+                sink.write(true, RetainableByteBuffer.wrap(byteBuffer), callback);
                 return;
             }
 
@@ -281,106 +282,6 @@ public class IOResources
         catch (Throwable x)
         {
             callback.failed(x);
-        }
-    }
-
-    private static class PathToSinkCopier extends IteratingNestedCallback
-    {
-        private final SeekableByteChannel channel;
-        private final Content.Sink sink;
-        private final ByteBufferPool.Sized pool;
-        private long remainingLength;
-        private RetainableByteBuffer retainableByteBuffer;
-        private boolean terminated;
-
-        public PathToSinkCopier(Path path, Content.Sink sink, ByteBufferPool.Sized pool, long offset, long length, Callback callback) throws IOException
-        {
-            super(callback);
-            this.sink = sink;
-            this.pool = pool == null ? ByteBufferPool.SIZED_NON_POOLING : pool;
-            this.remainingLength = length;
-            this.channel = Files.newByteChannel(path);
-            skipToOffset(channel, offset, length, this.pool);
-        }
-
-        private static void skipToOffset(SeekableByteChannel channel, long offset, long length, ByteBufferPool.Sized pool)
-        {
-            if (offset > 0L && length != 0L)
-            {
-                RetainableByteBuffer.Mutable byteBuffer = pool.acquire(1);
-                try
-                {
-                    channel.position(offset - 1);
-                    if (channel.read(byteBuffer.getByteBuffer().limit(1)) == -1)
-                        throw new IllegalArgumentException("Offset out of range");
-                }
-                catch (IOException e)
-                {
-                    throw new UncheckedIOException(e);
-                }
-                finally
-                {
-                    byteBuffer.release();
-                }
-            }
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-
-        @Override
-        protected Action process() throws Throwable
-        {
-            if (terminated)
-                return Action.SUCCEEDED;
-
-            if (retainableByteBuffer == null)
-                retainableByteBuffer = pool.acquire();
-
-            ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
-            BufferUtil.clearToFill(byteBuffer);
-            if (remainingLength >= 0 && remainingLength < Integer.MAX_VALUE)
-                byteBuffer.limit((int)Math.min(byteBuffer.capacity(), remainingLength));
-            boolean eof = false;
-            while (byteBuffer.hasRemaining() && !eof)
-            {
-                int read = channel.read(byteBuffer);
-                if (read == -1)
-                    eof = true;
-                else if (remainingLength >= 0)
-                    remainingLength -= read;
-            }
-            BufferUtil.flipToFlush(byteBuffer, 0);
-            terminated = eof || remainingLength == 0;
-            sink.write(terminated, byteBuffer, this);
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            if (retainableByteBuffer != null)
-                retainableByteBuffer.release();
-            IO.close(channel);
-            super.onCompleteSuccess();
-        }
-
-        @Override
-        protected void onFailure(Throwable x)
-        {
-            IO.close(channel);
-            super.onFailure(x);
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable cause)
-        {
-            if (retainableByteBuffer != null)
-                retainableByteBuffer.release();
-            super.onCompleteFailure(cause);
         }
     }
 }

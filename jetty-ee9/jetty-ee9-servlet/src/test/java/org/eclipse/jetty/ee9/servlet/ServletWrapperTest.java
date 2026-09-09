@@ -83,7 +83,7 @@ public class ServletWrapperTest
         req.append("Connection: close\r\n");
         req.append("\r\n");
 
-        String rawResponse = localConnector.getResponse(req.toString());
+        String rawResponse = localConnector.getResponseAsString(req.toString());
         HttpTester.Response resp = HttpTester.parseResponse(rawResponse);
         assertThat("Response.status", resp.getStatus(), is(200));
     }

@@ -22,8 +22,7 @@ import com.aayushatharva.brotli4j.encoder.EncoderJNI;
 import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.compression.brotli.BrotliEncoderConfig;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class BrotliEncoderSink extends EncoderSink
 {
@@ -67,7 +66,7 @@ public class BrotliEncoderSink extends EncoderSink
     }
 
     @Override
-    protected WriteRecord encode(boolean last, ByteBuffer content)
+    protected WriteRecord encode(boolean last, RetainableByteBuffer content)
     {
         if (encoder.isFinished())
             throw new IllegalStateException("Already released");
@@ -80,19 +79,27 @@ public class BrotliEncoderSink extends EncoderSink
                 {
                     try
                     {
-                        while (BufferUtil.hasContent(content))
+                        while (content != null && content.hasRemaining())
                         {
-                            // only encode if inputBuffer is full.
+                            // Only encode if inputBuffer is full.
                             if (!inputBuffer.hasRemaining())
                             {
                                 ByteBuffer output = encode(EncoderJNI.Operation.PROCESS);
                                 if (output != null)
-                                    return new WriteRecord(false, output, Callback.NOOP);
+                                    return new WriteRecord(false, RetainableByteBuffer.wrap(output));
                             }
 
-                            // the only place the input buffer gets set.
-                            BufferUtil.put(content, inputBuffer);
-                            // do not flip input buffer, that's not what Brotli4j expects/wants.
+                            // The only place the input buffer is filled.
+                            long length = Math.min(content.remaining(), inputBuffer.remaining());
+                            RetainableByteBuffer slice = content.sliceAndConsume(length);
+                            slice.quietWriteTo(b ->
+                            {
+                                int r = b.remaining();
+                                inputBuffer.put(b);
+                                return r;
+                            });
+                            slice.release();
+                            // Do not flip input buffer, that's not what Brotli4j expects/wants.
                         }
                         // content is fully consumed.
                         if (!last)
@@ -110,14 +117,14 @@ public class BrotliEncoderSink extends EncoderSink
                     ByteBuffer output = encode(EncoderJNI.Operation.FLUSH);
                     state.compareAndSet(State.FLUSHING, State.FINISHING);
                     if (output != null)
-                        return new WriteRecord(false, output, Callback.NOOP);
+                        return new WriteRecord(false, RetainableByteBuffer.wrap(output));
                 }
                 case FINISHING ->
                 {
                     inputBuffer.limit(inputBuffer.position());
                     ByteBuffer output = encode(EncoderJNI.Operation.FINISH);
                     state.compareAndSet(State.FINISHING, State.FINISHED);
-                    return new WriteRecord(true, output != null ? output : BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+                    return new WriteRecord(true, output != null ? RetainableByteBuffer.wrap(output) : RetainableByteBuffer.Mutable.empty());
                 }
                 case FINISHED ->
                 {

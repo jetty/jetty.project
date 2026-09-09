@@ -39,7 +39,7 @@ import org.eclipse.jetty.http3.qpack.internal.metadata.Http3Fields;
 import org.eclipse.jetty.http3.qpack.internal.parser.EncoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -198,7 +198,7 @@ public class QpackEncoder implements Dumpable
      * @param metadata the {@link MetaData} to encode into the buffer.
      * @throws QpackException if there was an error with the QPACK compression.
      */
-    public void encode(ByteBuffer buffer, long streamId, MetaData metadata) throws QpackException
+    public void encode(RetainableByteBuffer.Mutable buffer, long streamId, MetaData metadata) throws QpackException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Encoding: streamId={}, metadata={}", streamId, metadata);
@@ -320,10 +320,10 @@ public class QpackEncoder implements Dumpable
      * @param buffer a buffer containing bytes from the Decoder stream.
      * @throws QpackException if there was an error parsing or handling the instructions.
      */
-    public void parseInstructions(ByteBuffer buffer) throws QpackException
+    public void parseInstructions(RetainableByteBuffer buffer) throws QpackException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Parsing Instructions {}", BufferUtil.toDetailString(buffer));
+            LOG.debug("Parsing Instructions {}", buffer);
 
         List<Instruction> instructions;
         try (AutoLock ignored = lock.lock())

@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -59,8 +59,7 @@ public class ParsePayloadLengthTest
         ParserCapture capture = new ParserCapture();
         capture.getCoreSession().setMaxFrameSize(0);
 
-        ByteBuffer raw = BufferUtil.allocate(size + Generator.MAX_HEADER_LENGTH);
-        BufferUtil.clearToFill(raw);
+        RetainableByteBuffer.Mutable raw = RetainableByteBuffer.Mutable.allocate(size + Generator.MAX_HEADER_LENGTH, false);
 
         // Create text frame
         RawFrameBuilder.putOpFin(raw, OpCode.TEXT, true);
@@ -70,7 +69,6 @@ public class ParsePayloadLengthTest
         raw.put(payload);
 
         // parse buffer
-        BufferUtil.flipToFlush(raw, 0);
         capture.parse(raw);
 
         // validate frame

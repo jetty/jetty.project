@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.http3.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class GoAwayBodyParser extends BodyParser
 {
@@ -28,7 +27,7 @@ public class GoAwayBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer, boolean last)
+    public Result parse(RetainableByteBuffer buffer, boolean last)
     {
         if (varLenInt.tryDecode(buffer, this::onGoAway))
             return Result.WHOLE_FRAME;

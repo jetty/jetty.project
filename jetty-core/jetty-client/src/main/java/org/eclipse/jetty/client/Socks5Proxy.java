@@ -16,7 +16,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
@@ -32,10 +31,10 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,7 +130,7 @@ public class Socks5Proxy extends Proxy
         private static final Pattern IPv4_PATTERN = Pattern.compile("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})");
 
         // SOCKS5 response max length is 262 bytes.
-        private final ByteBuffer byteBuffer = BufferUtil.allocate(512);
+        private final RetainableByteBuffer.Mutable networkBuffer = RetainableByteBuffer.Mutable.allocate(512, true);
         private final ClientConnectionFactory connectionFactory;
         private final Map<String, Object> context;
         private final Map<Byte, Socks5.Authentication.Factory> authentications;
@@ -146,9 +145,10 @@ public class Socks5Proxy extends Proxy
         }
 
         @Override
-        public ByteBuffer onUpgradeFrom()
+        public RetainableByteBuffer.Mutable onUpgradeFrom()
         {
-            return BufferUtil.copy(byteBuffer);
+            networkBuffer.retain();
+            return networkBuffer;
         }
 
         @Override
@@ -156,6 +156,13 @@ public class Socks5Proxy extends Proxy
         {
             super.onOpen();
             sendHandshake();
+        }
+
+        @Override
+        public void onClose(Throwable cause)
+        {
+            super.onClose(cause);
+            networkBuffer.release();
         }
 
         private void sendHandshake()
@@ -166,12 +173,11 @@ public class Socks5Proxy extends Proxy
                 // | version (1) | num of methods (1) | methods (1..255) |
                 // +-------------+--------------------+------------------+
                 int size = authentications.size();
-                ByteBuffer byteBuffer = ByteBuffer.allocate(1 + 1 + size)
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1 + 1 + size, true)
                     .put(Socks5.VERSION)
                     .put((byte)size);
-                authentications.keySet().forEach(byteBuffer::put);
-                byteBuffer.flip();
-                getEndPoint().write(Callback.from(this::handshakeSent, this::fail), byteBuffer);
+                authentications.keySet().forEach(buffer::put);
+                getEndPoint().write(buffer, Callback.from(this::handshakeSent, this::fail));
             }
             catch (Throwable x)
             {
@@ -227,23 +233,23 @@ public class Socks5Proxy extends Proxy
             // +-------------+------------+
             // | version (1) | method (1) |
             // +-------------+------------+
-            int filled = getEndPoint().fill(byteBuffer);
+            int filled = getEndPoint().fill(networkBuffer);
             if (filled < 0)
                 throw new ClosedChannelException();
-            if (byteBuffer.remaining() < 2)
+            if (networkBuffer.remaining() < 2)
             {
                 fillInterested();
                 return;
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Received SOCKS5 handshake response {}", BufferUtil.toDetailString(byteBuffer));
+                LOG.debug("Received SOCKS5 handshake response {}", networkBuffer);
 
-            byte version = byteBuffer.get();
+            byte version = networkBuffer.get();
             if (version != Socks5.VERSION)
                 throw new IOException("Unsupported SOCKS5 version: " + version);
 
-            byte method = byteBuffer.get();
+            byte method = networkBuffer.get();
             if (method == -1)
                 throw new IOException("Unacceptable SOCKS5 authentication methods");
 
@@ -266,52 +272,49 @@ public class Socks5Proxy extends Proxy
                 String host = address.getHost();
                 short port = (short)address.getPort();
 
-                ByteBuffer byteBuffer;
+                RetainableByteBuffer.Mutable buffer;
                 Matcher matcher = IPv4_PATTERN.matcher(host);
                 if (matcher.matches())
                 {
-                    byteBuffer = ByteBuffer.allocate(10)
+                    buffer = RetainableByteBuffer.Mutable.allocate(10, true)
                         .put(Socks5.VERSION)
                         .put(Socks5.COMMAND_CONNECT)
                         .put(Socks5.RESERVED)
                         .put(Socks5.ADDRESS_TYPE_IPV4);
                     for (int i = 1; i <= 4; ++i)
                     {
-                        byteBuffer.put((byte)Integer.parseInt(matcher.group(i)));
+                        buffer.put((byte)Integer.parseInt(matcher.group(i)));
                     }
-                    byteBuffer.putShort(port)
-                        .flip();
+                    buffer.putShort(port);
                 }
                 else if (URIUtil.isValidHostRegisteredName(host))
                 {
                     byte[] bytes = host.getBytes(StandardCharsets.US_ASCII);
                     if (bytes.length > 255)
                         throw new IOException("Invalid host name: " + host);
-                    byteBuffer = ByteBuffer.allocate(7 + bytes.length)
+                    buffer = RetainableByteBuffer.Mutable.allocate(7 + bytes.length, true)
                         .put(Socks5.VERSION)
                         .put(Socks5.COMMAND_CONNECT)
                         .put(Socks5.RESERVED)
                         .put(Socks5.ADDRESS_TYPE_DOMAIN)
                         .put((byte)bytes.length)
                         .put(bytes)
-                        .putShort(port)
-                        .flip();
+                        .putShort(port);
                 }
                 else
                 {
                     // Assume IPv6.
                     byte[] bytes = InetAddress.getByName(host).getAddress();
-                    byteBuffer = ByteBuffer.allocate(22)
+                    buffer = RetainableByteBuffer.Mutable.allocate(22, true)
                         .put(Socks5.VERSION)
                         .put(Socks5.COMMAND_CONNECT)
                         .put(Socks5.RESERVED)
                         .put(Socks5.ADDRESS_TYPE_IPV6)
                         .put(bytes)
-                        .putShort(port)
-                        .flip();
+                        .putShort(port);
                 }
 
-                getEndPoint().write(Callback.from(this::connectSent, this::fail), byteBuffer);
+                getEndPoint().write(buffer, Callback.from(this::connectSent, this::fail));
             }
             catch (Throwable x)
             {
@@ -332,45 +335,46 @@ public class Socks5Proxy extends Proxy
             // +-------------+-----------+--------------+------------------+------------------------+----------+
             // | version (1) | reply (1) | reserved (1) | address type (1) | address bytes (4..255) | port (2) |
             // +-------------+-----------+--------------+------------------+------------------------+----------+
-            int filled = getEndPoint().fill(byteBuffer);
+            int filled = getEndPoint().fill(networkBuffer);
             if (filled < 0)
                 throw new ClosedChannelException();
-            if (byteBuffer.remaining() < 5)
+            if (networkBuffer.remaining() < 5)
             {
                 fillInterested();
                 return;
             }
-            byte addressType = byteBuffer.get(3);
+            long p = networkBuffer.readPosition();
+            byte addressType = networkBuffer.get(p + 3);
             int length = 6;
             if (addressType == Socks5.ADDRESS_TYPE_IPV4)
                 length += 4;
             else if (addressType == Socks5.ADDRESS_TYPE_DOMAIN)
-                length += 1 + (byteBuffer.get(4) & 0xFF);
+                length += 1 + networkBuffer.getByteAsInt(p + 4);
             else if (addressType == Socks5.ADDRESS_TYPE_IPV6)
                 length += 16;
             else
                 throw new IOException("Invalid SOCKS5 address type: " + addressType);
-            if (byteBuffer.remaining() < length)
+            if (networkBuffer.remaining() < length)
             {
                 fillInterested();
                 return;
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Received SOCKS5 connect response {}", BufferUtil.toDetailString(byteBuffer));
+                LOG.debug("Received SOCKS5 connect response {}", networkBuffer);
 
             // We have all the SOCKS5 bytes.
-            byte version = byteBuffer.get();
+            byte version = networkBuffer.get(p);
             if (version != Socks5.VERSION)
                 throw new IOException("Unsupported SOCKS5 version: " + version);
 
-            byte status = byteBuffer.get();
+            byte status = networkBuffer.get(p + 1);
             switch (status)
             {
                 case 0 ->
                 {
                     // Consume the buffer before upgrading to the tunnel.
-                    byteBuffer.position(length);
+                    networkBuffer.consume(length);
                     tunnel();
                 }
                 case 1 -> throw new IOException("SOCKS5 general failure");

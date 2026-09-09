@@ -28,7 +28,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
@@ -38,6 +37,7 @@ import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import static java.lang.System.Logger.Level.INFO;
@@ -260,7 +260,7 @@ public class HTTP3ServerDocs
                         @Override
                         public void succeeded(Stream result)
                         {
-                            result.data(new DataFrame(resourceBytes, true), Promise.Invocable.noop());
+                            result.data(RetainableByteBuffer.wrap(resourceBytes), true, Promise.Invocable.noop());
                         }
                     });
                 }
