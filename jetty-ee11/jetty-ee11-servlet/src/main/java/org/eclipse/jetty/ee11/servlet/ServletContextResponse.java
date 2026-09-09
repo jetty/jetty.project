@@ -37,7 +37,9 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -222,7 +224,14 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
-        super.write(last, content, callback);
+        // Last writes must trigger a close() on the HttpOutput
+        // which itself will make the last write.
+        boolean httpOutputClosed = getHttpOutput().isClosed();
+        if (!httpOutputClosed && last)
+            callback = Callback.from(() -> IO.close(getHttpOutput()), callback);
+
+        getHttpOutput().addBytesWritten(BufferUtil.length(content));
+        super.write(httpOutputClosed, content, callback);
     }
 
     public void closeOutput() throws IOException
