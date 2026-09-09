@@ -273,7 +273,6 @@
                 jakarta.security.auth.message,
                 jakarta.servlet.jsp.jstl,
                 jakarta.transaction,
-                org.eclipse.jdt,
                 org.glassfish.web,
                 org.mortbay.jasper</includeGroupIds>
               <excludeClassifiers>config</excludeClassifiers>

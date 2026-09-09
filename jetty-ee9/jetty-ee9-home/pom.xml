@@ -262,7 +262,6 @@
                 jakarta.inject,
                 jakarta.interceptor,
                 jakarta.transaction,
-                org.eclipse.jdt,
                 org.glassfish.web,
                 org.mortbay.jasper</includeGroupIds>
               <includeTypes>jar</includeTypes>

@@ -295,7 +295,6 @@
                 jakarta.transaction,
                 jakarta.websocket,
                 jakarta.websocket.client,
-                org.eclipse.jdt,
                 org.glassfish.wasp,
                 org.glassfish.web,
                 org.mortbay.jasper</includeGroupIds>
