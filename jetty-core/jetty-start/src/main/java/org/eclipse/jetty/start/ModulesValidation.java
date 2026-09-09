@@ -14,6 +14,7 @@
 package org.eclipse.jetty.start;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,7 +27,7 @@ public class ModulesValidation
 {
     public static final String VALIDATE_ORIGIN = "validate-modules";
 
-    public static void validateModules(Modules modules, List<String> moduleSelection) throws IOException
+    public static void validateModules(PrintStream out, Modules modules, List<String> moduleSelection) throws IOException
     {
         List<Module> selectedModules = (moduleSelection.contains("*") || moduleSelection.isEmpty())
             ? modules.stream().sorted().toList()
@@ -107,22 +108,31 @@ public class ModulesValidation
                         URI fileURI = fileArg.uri == null ? null : URI.create(fileArg.uri);
                         for (FileInitializer finit : fileInitializers)
                         {
-                            if (finit.isApplicable(fileURI))
+                            if (fileURI != null)
                             {
-                                try
+                                if (finit.isApplicable(fileURI))
                                 {
-                                    if (!finit.exists(fileURI))
-                                        failures.add("%s - [files] Does not exist '%s'".formatted(module.getName(), file));
-                                    else
+                                    try
                                     {
-                                        String destLocation = moduleProps.expand(fileArg.location);
-                                        filesLocations.add(destLocation);
+                                        if (!finit.exists(fileURI))
+                                            failures.add("%s - [files] Does not exist '%s'".formatted(module.getName(), file));
+                                        else
+                                        {
+                                            String destLocation = moduleProps.expand(fileArg.location);
+                                            filesLocations.add(destLocation);
+                                        }
+                                    }
+                                    catch (IOException e)
+                                    {
+                                        failures.add("%s - [files] Invalid '%s' : %s".formatted(module.getName(), file, Utils.asString(e)));
                                     }
                                 }
-                                catch (IOException e)
-                                {
-                                    failures.add("%s - [files] Invalid '%s' : %s".formatted(module.getName(), file, Utils.asString(e)));
-                                }
+                            }
+                            else
+                            {
+                                // Just a raw location reference (no URI)
+                                String destLocation = moduleProps.expand(fileArg.location);
+                                filesLocations.add(destLocation);
                             }
                         }
                     }
@@ -137,10 +147,6 @@ public class ModulesValidation
                 {
                     if (!expandedLib.endsWith("/**.jar"))
                         failures.add("%s - [lib] Bad glob definition (should end in `/**.jar`) %s".formatted(module.getName(), lib));
-                    found = true;
-                }
-                if (expandedLib.endsWith("/"))
-                {
                     found = true;
                 }
                 if (filesLocations.contains(expandedLib))
@@ -186,21 +192,21 @@ public class ModulesValidation
             }
         }
 
-        System.err.printf("%nValidated %,d modules%n", selectedModules.size());
+        out.printf("%nValidated %,d module(s)%n", selectedModules.size());
 
         if (!failures.isEmpty())
         {
             Collections.sort(failures);
-            System.err.printf("%nThere are %d failed module validations%n", failures.size());
+            out.printf("%nThere are %d failed module validations%n", failures.size());
             for (int i = 0; i < failures.size(); i++)
             {
-                System.err.printf("  %-3d: %s%n", i + 1, failures.get(i));
+                out.printf("  %-3d: %s%n", i + 1, failures.get(i));
             }
             throw new IllegalStateException("Failed to validate modules");
         }
         else
         {
-            System.err.println("No failure detected.");
+            out.println("No failure detected.");
         }
     }
 
