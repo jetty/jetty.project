@@ -29,6 +29,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ModuleValidationTest extends AbstractUseCase
 {
@@ -61,7 +62,14 @@ public class ModuleValidationTest extends AbstractUseCase
         ExecResults results = exec(runArgs, false);
         try (PrintCapture capture = new PrintCapture())
         {
-            results.main.validateModules(capture, results.startArgs);
+            try
+            {
+                results.main.validateModules(capture, results.startArgs);
+            }
+            catch (IllegalStateException e)
+            {
+                fail(results.output + capture.asString(), e);
+            }
             String validationOutput = capture.asString();
             assertThat(validationOutput, allOf(
                 containsString("Validated 1 module(s)"),
@@ -113,9 +121,9 @@ public class ModuleValidationTest extends AbstractUseCase
         Files.writeString(baseDir.resolve("modules/feature.mod"),
             """
             [files]
-            maven://org.example/foo/1.1/jar|lib/foo-1.1.jar
+            maven://org.junit.jupiter/junit-jupiter/6.1.3/jar|lib/junit-6.1.3.jar
             [lib]
-            lib/foo-1.1.jar
+            lib/junit-6.1.3.jar
             """, UTF_8);
 
         List<String> runArgs = List.of(
@@ -124,7 +132,15 @@ public class ModuleValidationTest extends AbstractUseCase
         ExecResults results = exec(runArgs, false);
         try (PrintCapture capture = new PrintCapture())
         {
-            results.main.validateModules(capture, results.startArgs);
+            try
+            {
+                results.main.validateModules(capture, results.startArgs);
+            }
+            catch (IllegalStateException e)
+            {
+                fail(results.output + capture.asString(), e);
+            }
+
             String validationOutput = capture.asString();
             assertThat(validationOutput, allOf(
                 containsString("Validated 1 module(s)"),
