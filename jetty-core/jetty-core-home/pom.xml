@@ -3,9 +3,8 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-project</artifactId>
+    <artifactId>jetty-core</artifactId>
     <version>12.1.14-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>jetty-core-home</artifactId>
   <packaging>pom</packaging>
