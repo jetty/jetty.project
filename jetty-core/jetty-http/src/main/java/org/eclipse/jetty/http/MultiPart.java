@@ -1104,8 +1104,8 @@ public class MultiPart
         private final Utf8StringBuilder text = new Utf8StringBuilder();
         private final String boundary;
         private final SearchPattern boundaryFinder;
-        private final MultiPartCompliance compliance;
         private final Listener listener;
+        private MultiPartCompliance compliance;
         private int partHeadersLength;
         private int partHeadersMaxLength = -1;
         private State state;
@@ -1158,6 +1158,16 @@ public class MultiPart
         public int getPartHeadersMaxLength()
         {
             return partHeadersMaxLength;
+        }
+
+        public MultiPartCompliance getMultiPartCompliance()
+        {
+            return compliance;
+        }
+
+        public void setMultiPartCompliance(MultiPartCompliance multiPartCompliance)
+        {
+            compliance = Objects.requireNonNull(multiPartCompliance);
         }
 
         /**

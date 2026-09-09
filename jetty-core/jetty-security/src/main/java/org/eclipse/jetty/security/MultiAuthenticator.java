@@ -94,21 +94,9 @@ public class MultiAuthenticator extends LoginAuthenticator
         }
     }
 
-    public boolean isLoginPage(String uri)
+    public boolean isLoginPage(String pathInContext)
     {
-        return matchURI(uri, _loginPath);
-    }
-
-    private boolean matchURI(String uri, String path)
-    {
-        int jsc = uri.indexOf(path);
-        if (jsc < 0)
-            return false;
-        int e = jsc + path.length();
-        if (e == uri.length())
-            return true;
-        char c = uri.charAt(e);
-        return c == ';' || c == '#' || c == '/' || c == '?';
+        return pathInContext != null && pathInContext.equals(_loginPath);
     }
 
     public void setDispatch(boolean dispatch)

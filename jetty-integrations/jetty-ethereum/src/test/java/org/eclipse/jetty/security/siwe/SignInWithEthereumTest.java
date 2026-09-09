@@ -233,23 +233,66 @@ public class SignInWithEthereumTest
     }
 
     @Test
+    public void testDomainBoundToRequestByDefault() throws Exception
+    {
+        // A message asserting an unknown domain is rejected.
+        String nonce = getNonce();
+        String siweMessage = SignInWithEthereumGenerator.generateMessage(null, "example.com", _credentials.getAddress(), nonce);
+        ContentResponse response = sendAuthRequest(_credentials.signMessage(siweMessage));
+        assertThat(response.getStatus(), equalTo(HttpStatus.FORBIDDEN_403));
+        assertThat(response.getContentAsString(), containsString("unregistered domain"));
+
+        // A message asserting the request authority is accepted.
+        nonce = getNonce();
+        siweMessage = SignInWithEthereumGenerator.generateMessage(null, "localhost:" + _connector.getLocalPort(), _credentials.getAddress(), nonce);
+        response = sendAuthRequest(_credentials.signMessage(siweMessage));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContentAsString(), containsString("UserPrincipal: " + _credentials.getAddress()));
+    }
+
+    @Test
     public void testEnforceChainId() throws Exception
     {
         _authenticator.includeChainIds("1");
+        String domain = "localhost:" + _connector.getLocalPort();
 
         // Test login with invalid chainId.
         String nonce = getNonce();
-        String siweMessage = SignInWithEthereumGenerator.generateMessage(null, "localhost", _credentials.getAddress(), nonce, "2");
+        String siweMessage = SignInWithEthereumGenerator.generateMessage(null, domain, _credentials.getAddress(), nonce, "2");
         ContentResponse response = sendAuthRequest(_credentials.signMessage(siweMessage));
         assertThat(response.getStatus(), equalTo(HttpStatus.FORBIDDEN_403));
         assertThat(response.getContentAsString(), containsString("unregistered chainId"));
 
         // Test login with valid chainId.
         nonce = getNonce();
-        siweMessage = SignInWithEthereumGenerator.generateMessage(null, "localhost", _credentials.getAddress(), nonce, "1");
+        siweMessage = SignInWithEthereumGenerator.generateMessage(null, domain, _credentials.getAddress(), nonce, "1");
         response = sendAuthRequest(_credentials.signMessage(siweMessage));
         assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), containsString("UserPrincipal: " + _credentials.getAddress()));
+    }
+
+    @Test
+    public void testPathMatching() throws Exception
+    {
+        _client.setFollowRedirects(false);
+
+        // Protected resources containing substring of a protected path must redirect to /login.
+        for (String path : new String[]{"/admin/login", "/login/secret", "/admin/auth/login", "/admin/auth/nonce", "/admin/error"})
+        {
+            ContentResponse response = _client.GET("http://localhost:" + _connector.getLocalPort() + path);
+            assertTrue(HttpStatus.isRedirection(response.getStatus()), path + " HttpStatus was not redirect: " + response.getStatus());
+            assertThat(path, response.getHeaders().get(HttpHeader.LOCATION), equalTo("/login"));
+        }
+
+        // The exact login path is allowed without authentication.
+        ContentResponse response = _client.GET("http://localhost:" + _connector.getLocalPort() + "/login");
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.getContentAsString(), equalTo("Please Login"));
+
+        // The exact error path is allowed without authentication.
+        response = _client.GET("http://localhost:" + _connector.getLocalPort() + "/error?" + EthereumAuthenticator.ERROR_PARAMETER + "=oops");
+        assertThat(response.getStatus(), equalTo(HttpStatus.FORBIDDEN_403));
+        assertThat(response.getContentAsString(), equalTo("oops"));
     }
 
     private ContentResponse sendAuthRequest(EthereumAuthenticator.SignedMessage signedMessage) throws ExecutionException, InterruptedException, TimeoutException

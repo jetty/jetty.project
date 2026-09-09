@@ -572,16 +572,22 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 if (update == null)
                     break;
                 if (selector == null)
-                    break;
-                try
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("update {}", update);
-                    update.update(selector);
+                    if (update instanceof Closeable closeable)
+                        IO.close(closeable);
                 }
-                catch (Throwable x)
+                else
                 {
-                    LOG.warn("Cannot update selector {}", ManagedSelector.this, x);
+                    try
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("update {}", update);
+                        update.update(selector);
+                    }
+                    catch (Throwable x)
+                    {
+                        LOG.warn("Cannot update selector {}", ManagedSelector.this, x);
+                    }
                 }
             }
 
@@ -696,22 +702,27 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Ignoring cancelled key for channel {}", channel);
-                        IO.close(attachment instanceof EndPoint ? (EndPoint)attachment : channel);
+                        close(channel, attachment);
                     }
                     catch (Throwable x)
                     {
                         LOG.warn("Could not process key for channel {}", channel, x);
-                        IO.close(attachment instanceof EndPoint ? (EndPoint)attachment : channel);
+                        close(channel, attachment);
                     }
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector loop ignoring invalid key for channel {}", channel);
-                    IO.close(attachment instanceof EndPoint ? (EndPoint)attachment : channel);
+                    close(channel, attachment);
                 }
             }
             return null;
+        }
+
+        private void close(SelectableChannel channel, Object attachment)
+        {
+            IO.close(attachment instanceof Closeable closeable ? closeable : channel);
         }
 
         private void updateKeys()
@@ -848,12 +859,17 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             _key = newKey;
         }
 
-        @Override
-        public void close() throws IOException
+        void cancelAccept()
         {
-            // May be called from any thread.
-            // Implements AbstractConnector.setAccepting(boolean).
+            // Implements AbstractConnector.setAccepting(boolean),
+            // where accepting may be suspended and then resumed.
             submit(selector -> _key.cancel());
+        }
+
+        @Override
+        public void close()
+        {
+            IO.close(_channel);
         }
     }
 
@@ -867,7 +883,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             this.channel = channel;
             this.attachment = attachment;
-            _selectorManager.onAccepting(channel);
         }
 
         @Override
@@ -913,7 +928,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         private void failed(Throwable failure)
         {
             IO.close(channel);
-            _selectorManager.onAcceptFailed(channel, failure);
+            _selectorManager.onAcceptFailed(channel, failure, attachment);
         }
 
         @Override
@@ -923,7 +938,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    class Connect implements SelectorUpdate, Runnable
+    class Connect implements SelectorUpdate, Runnable, Closeable
     {
         private final AtomicBoolean failed = new AtomicBoolean();
         private final SelectableChannel channel;
@@ -934,9 +949,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             this.channel = channel;
             this.attachment = attachment;
-            long timeout = ManagedSelector.this._selectorManager.getConnectTimeout();
+            long timeout = _selectorManager.getConnectTimeout();
             if (timeout > 0)
-                this.timeout = ManagedSelector.this._selectorManager.getScheduler().schedule(this, timeout, TimeUnit.MILLISECONDS);
+                this.timeout = _selectorManager.getScheduler().schedule(this, timeout, TimeUnit.MILLISECONDS);
             else
                 this.timeout = null;
         }
@@ -965,14 +980,22 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
         }
 
-        public void failed(Throwable failure)
+        @Override
+        public void close()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closed connect of {}", channel);
+            failed(new ClosedChannelException());
+        }
+
+        private void failed(Throwable failure)
         {
             if (failed.compareAndSet(false, true))
             {
                 if (timeout != null)
                     timeout.cancel();
                 IO.close(channel);
-                ManagedSelector.this._selectorManager.connectionFailed(channel, failure, attachment);
+                _selectorManager.connectionFailed(channel, failure, attachment);
             }
         }
 
@@ -996,11 +1019,16 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     LOG.debug("Closing {} connections on {}", selector.keys().size(), ManagedSelector.this);
                 for (SelectionKey key : selector.keys())
                 {
-                    if (key != null && key.isValid())
+                    if (key != null)
                     {
-                        Closeable closeable = (key.attachment() instanceof EndPoint endPoint)
-                            ? Objects.requireNonNullElse(endPoint.getConnection(), endPoint)
-                            : key.channel();
+                        Object attachment = key.attachment();
+                        Closeable closeable;
+                        if (attachment instanceof EndPoint endPoint)
+                            closeable = Objects.requireNonNullElse(endPoint.getConnection(), endPoint);
+                        else if (attachment instanceof Closeable c)
+                            closeable = c;
+                        else
+                            closeable = key.channel();
                         IO.close(closeable);
                     }
                 }
@@ -1042,7 +1070,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private final class CreateEndPoint implements Runnable
+    private final class CreateEndPoint implements Runnable, Closeable
     {
         private final Connect _connect;
         private final SelectionKey _key;
@@ -1062,12 +1090,17 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (Throwable failure)
             {
-                IO.close(_connect.channel);
-                LOG.warn("Could not create EndPoint {}: {}", _connect.channel, String.valueOf(failure));
-                if (LOG.isDebugEnabled())
-                    LOG.debug("", failure);
+                LOG.warn("Could not create EndPoint {}", _connect.channel, failure);
                 _connect.failed(failure);
             }
+        }
+
+        @Override
+        public void close()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closed EndPoint creation of {}", _connect.channel);
+            _connect.failed(new ClosedChannelException());
         }
 
         @Override

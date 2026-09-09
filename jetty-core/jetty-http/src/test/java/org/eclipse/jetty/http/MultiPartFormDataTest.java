@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,14 +33,18 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -48,6 +53,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -427,6 +433,60 @@ public class MultiPartFormDataTest
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
         assertThat(ee.getCause(), instanceOf(HttpException.class));
         assertThat(ee.getCause().getMessage(), containsString("invalid LF-only EOL"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"RFC7578", "RFC7578_STRICT"})
+    public void testComplianceModeConfiguration(String spec) throws Exception
+    {
+        MultiPartCompliance compliance = MultiPartCompliance.from(spec);
+
+        String boundary = "boundary";
+        String str = """
+            --$B
+            Content-Disposition: form-data; name="greeting"
+            Content-Type: text/plain; charset=US-ASCII
+            
+            Hello World
+            --$B--
+            """.replace("$B", boundary);
+
+        CaptureMultiPartViolations listener = new CaptureMultiPartViolations();
+        MultiPartConfig config = new MultiPartConfig.Builder()
+            .location(_tmpDir)
+            .maxMemoryPartSize(-1)
+            .complianceMode(compliance)
+            .violationListener(listener)
+            .build();
+
+        String contentType = "multipart/form-data; boundary=\"" + boundary + "\"";
+        Attributes attributes = new Attributes.Mapped();
+        Content.Source source = new ByteBufferContentSource(BufferUtil.toBuffer(str, UTF_8));
+        if (compliance.equals(MultiPartCompliance.RFC7578))
+        {
+            // RFC7578 tolerates LF line endings, parsing succeeds and the violation is reported.
+            try (MultiPartFormData.Parts parts = MultiPartFormData.getParts(source, attributes, contentType, config))
+            {
+                assertThat(parts.size(), is(1));
+                MultiPart.Part greeting = parts.getFirst("greeting");
+                assertThat(greeting, notNullValue());
+                assertThat(Content.Source.asString(greeting.getContentSource()), is("Hello World"));
+            }
+            assertThat(listener.getEvents().stream().map(ComplianceViolation.Event::violation).collect(Collectors.toList()),
+                hasItem(MultiPartCompliance.Violation.LF_LINE_TERMINATION));
+        }
+        else if (compliance.equals(MultiPartCompliance.RFC7578_STRICT))
+        {
+            // RFC7578_STRICT rejects LF line endings, the parsing must fail.
+            CompletionException ce = assertThrows(CompletionException.class,
+                () -> MultiPartFormData.getParts(source, attributes, contentType, config));
+            assertThat(ce.getCause(), instanceOf(HttpException.class));
+            assertThat(ce.getCause().getMessage(), containsString("invalid LF-only EOL"));
+        }
+        else
+        {
+            throw new IllegalStateException("Unexpected compliance mode: " + compliance);
+        }
     }
 
     /**

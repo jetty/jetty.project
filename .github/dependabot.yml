@@ -209,17 +209,17 @@ updates:
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
       - dependency-name: "org.glassfish.jersey:*"
-        versions: [ ">=3.1.0" ]
+        versions: [ ">3.1.0" ]
       - dependency-name: "jakarta.activation:jakarta.activation-api"
-        versions:  [ ">= 2.1.0"]
+        versions:  [ "> 2.1.0"]
       - dependency-name: "jakarta.annotation:jakarta.annotation-api"
-        versions:  [ ">= 2.1.0"]
+        versions:  [ "> 2.1.0"]
       - dependency-name: "jakarta.interceptor:jakarta.interceptor-api"
-        versions:  [ ">= 2.1.0"]
+        versions:  [ "> 2.1.0"]
       - dependency-name: "jakarta.servlet.jsp:jakarta.servlet.jsp-api"
-        versions:  [ ">= 3.1.0"]
+        versions:  [ "> 3.1.0"]
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
-        versions:  [ ">= 3.1.0"]
+        versions:  [ "> 3.1.0"]
       - dependency-name: "org.mortbay.jasper:*"
         versions:  [ "> 10.1.0"]
       - dependency-name: "jakarta.inject:*"
@@ -562,7 +562,7 @@ updates:
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
       - dependency-name: "org.glassfish.jersey:*"
-        versions: [ ">=3.1.0" ]
+        versions: [ ">3.1.0" ]
       - dependency-name: "jakarta.activation:jakarta.activation-api"
         versions:  [ ">= 2.1.0"]
       - dependency-name: "jakarta.annotation:jakarta.annotation-api"
