@@ -24,6 +24,22 @@ import org.slf4j.LoggerFactory;
 public class PrefaceParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(PrefaceParser.class);
+    /**
+     * {@code PREFACE_AS_LONGS[i]} holds the 8 preface octets starting at index {@code i},
+     * so that the preface can be compared 8 octets at a time from any offset.
+     */
+    private static final long[] PREFACE_AS_LONGS = prefaceAsLongs();
+
+    private static long[] prefaceAsLongs()
+    {
+        ByteBuffer preface = ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES);
+        long[] longs = new long[PrefaceFrame.PREFACE_BYTES.length - Long.BYTES + 1];
+        for (int i = 0; i < longs.length; i++)
+        {
+            longs[i] = preface.getLong(i);
+        }
+        return longs;
+    }
 
     private final Parser.Listener listener;
     private int cursor;
@@ -48,15 +64,49 @@ public class PrefaceParser
 
     public boolean parse(ByteBuffer buffer)
     {
+        int end = PrefaceFrame.PREFACE_BYTES.length;
+        int needed = end - cursor;
+        // Fast path: all the remaining preface octets are available in the
+        // buffer, so compare them 8 at a time rather than one at a time.
+        if (buffer.remaining() >= needed)
+        {
+            int position = buffer.position();
+            int index = 0;
+            for (; needed - index >= Long.BYTES; index += Long.BYTES)
+            {
+                if (buffer.getLong(position + index) != PREFACE_AS_LONGS[cursor + index])
+                    return invalidPreface(buffer);
+            }
+            if (index < needed)
+            {
+                if (needed >= Long.BYTES)
+                {
+                    // Compare the last 8 octets, overlapping the ones already compared.
+                    if (buffer.getLong(position + needed - Long.BYTES) != PREFACE_AS_LONGS[end - Long.BYTES])
+                        return invalidPreface(buffer);
+                }
+                else
+                {
+                    // Fewer than 8 octets in total, for example after a direct upgrade.
+                    for (; index < needed; index++)
+                    {
+                        if (buffer.get(position + index) != PrefaceFrame.PREFACE_BYTES[cursor + index])
+                            return invalidPreface(buffer);
+                    }
+                }
+            }
+            buffer.position(position + needed);
+            cursor = 0;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Parsed preface bytes from {}", buffer);
+            return true;
+        }
+
         while (buffer.hasRemaining())
         {
             int currByte = buffer.get();
             if (currByte != PrefaceFrame.PREFACE_BYTES[cursor])
-            {
-                BufferUtil.clear(buffer);
-                notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_preface");
-                return false;
-            }
+                return invalidPreface(buffer);
             ++cursor;
             if (cursor == PrefaceFrame.PREFACE_BYTES.length)
             {
@@ -66,6 +116,13 @@ public class PrefaceParser
                 return true;
             }
         }
+        return false;
+    }
+
+    private boolean invalidPreface(ByteBuffer buffer)
+    {
+        BufferUtil.clear(buffer);
+        notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_preface");
         return false;
     }
 
