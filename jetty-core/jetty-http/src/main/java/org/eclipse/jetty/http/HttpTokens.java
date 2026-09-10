@@ -155,6 +155,21 @@ public class HttpTokens
     public static final Token EOL_CRLF = new Token(LINE_FEED, Type.EOL);
     public static final Token[] TOKENS = new Token[256];
 
+    private static final int LEGAL_H2H3_FIELD_NAME = 0x01;
+    private static final int LEGAL_FIELD_VCHAR = 0x02;
+    private static final int LEGAL_FIELD_VALUE = 0x04;
+
+    /**
+     * <p>The character classes of every ISO-8859-1 character, as a flat array of
+     * bit flags, so that validating a character is a single load and a single
+     * mask rather than a table lookup followed by an object dereference and a
+     * switch on its type.</p>
+     * <p>Because the flags of a whole string can be accumulated with {@code &},
+     * a string is validated with one test at the end rather than one per
+     * character.</p>
+     */
+    private static final byte[] CHAR_FLAGS = new byte[256];
+
     static
     {
         for (int b = 0; b < 256; b++)
@@ -222,6 +237,34 @@ public class HttpTokens
                         TOKENS[b] = new Token((byte)b, Type.CNTL);
             }
         }
+
+        for (int b = 0; b < 256; b++)
+        {
+            int flags = 0;
+
+            switch (TOKENS[b].getType())
+            {
+                case ALPHA:
+                    // HTTP/2 and HTTP/3 do not allow uppercase in field names.
+                    if (b < 'A' || b > 'Z')
+                        flags |= LEGAL_H2H3_FIELD_NAME;
+                    break;
+                case TCHAR:
+                case DIGIT:
+                    flags |= LEGAL_H2H3_FIELD_NAME;
+                    break;
+                default:
+                    break;
+            }
+
+            // field-vchar = VCHAR / obs-text
+            if (b >= 0x21 && b <= 0x7E || b >= 0x80)
+                flags |= LEGAL_FIELD_VCHAR | LEGAL_FIELD_VALUE;
+            else if (b == SPACE || b == TAB)
+                flags |= LEGAL_FIELD_VALUE;
+
+            CHAR_FLAGS[b] = (byte)flags;
+        }
     }
 
     /**
@@ -266,9 +309,7 @@ public class HttpTokens
      */
     public static boolean isIllegalFieldVchar(char c)
     {
-        boolean isValidObsText = c >= 0x80 && c <= 0xFF;
-        boolean isValidVchar = c >= 0x21 && c <= 0x7E;
-        return !isValidVchar && !isValidObsText;
+        return c > 0xFF || (CHAR_FLAGS[c] & LEGAL_FIELD_VCHAR) == 0;
     }
 
     /**
@@ -286,30 +327,18 @@ public class HttpTokens
         if (fieldName.startsWith(":"))
             return true;
 
+        // Accumulate the character classes of the whole name, so that its
+        // legality is a single test rather than one test per character.
+        int flags = -1;
         for (int i = 0; i < fieldName.length(); i++)
         {
             char c = fieldName.charAt(i);
             if (c > 0xFF)
                 return false;
-            HttpTokens.Token token = HttpTokens.TOKENS[0xFF & c];
-            switch (token.getType())
-            {
-                case ALPHA:
-                {
-                    // HTTP/2 and HTTP/3 do not allow uppercase in field names.
-                    if (c >= 'A' && c <= 'Z')
-                        return false;
-                    break;
-                }
-                case TCHAR:
-                case DIGIT:
-                    break;
-                default:
-                    return false;
-            }
+            flags &= CHAR_FLAGS[c];
         }
 
-        return true;
+        return (flags & LEGAL_H2H3_FIELD_NAME) != 0;
     }
 
     /**
@@ -323,20 +352,23 @@ public class HttpTokens
         if (fieldValue.isEmpty())
             return true;
 
+        // All characters must be SP / HTAB / field-vchar; accumulate the
+        // character classes of the whole value, so that its legality is a
+        // single test rather than one test per character.
+        int flags = -1;
         for (int i = 0; i < fieldValue.length(); i++)
         {
             char c = fieldValue.charAt(i);
-
-            // First and last character must be a valid field-vchar.
-            if ((i == 0 || i == fieldValue.length() - 1) && isIllegalFieldVchar(c))
+            if (c > 0xFF)
                 return false;
-
-            // All characters must be SP / HTAB / field-vchar.
-            if (c != ' ' && c != '\t' && isIllegalFieldVchar(c))
-                return false;
+            flags &= CHAR_FLAGS[c];
         }
+        if ((flags & LEGAL_FIELD_VALUE) == 0)
+            return false;
 
-        return true;
+        // The first and last character must additionally be a valid field-vchar.
+        return !isIllegalFieldVchar(fieldValue.charAt(0)) &&
+            !isIllegalFieldVchar(fieldValue.charAt(fieldValue.length() - 1));
     }
 }
 

@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http.compression.NBitStringEncoder;
@@ -165,6 +166,37 @@ public class HpackEncoder
         return _context;
     }
 
+    /**
+     * <p>Verify that a field can be encoded, throwing if it cannot.</p>
+     * <p>A field already in the dynamic table passed this same check when it was
+     * added, so the outcome is memoized on its entry rather than derived again
+     * from a scan of the name and of the value on every message. Static entries
+     * are checked normally, as an application setting a field whose name matches
+     * a pseudo header must still be rejected.</p>
+     */
+    private void validateForEncoding(MetaData metadata, HttpField field) throws HpackException.StreamException
+    {
+        // Only worth looking the field up while the dynamic table holds
+        // something, otherwise the lookup is a miss that buys nothing.
+        Entry entry = _context.size() > 0 ? _context.get(field) : null;
+        if (entry != null && !entry.isStatic())
+        {
+            if (entry.hasIllegalNameForEncoding())
+                throw new HpackException.StreamException(metadata.isRequest(), metadata.isResponse(), "Invalid header name: '%s'", field.getLowerCaseName());
+            if (entry.hasIllegalValueForEncoding())
+                throw new HpackException.StreamException(metadata.isRequest(), metadata.isResponse(), "Invalid header value: '%s'", field.getValue());
+            return;
+        }
+
+        String name = field.getLowerCaseName();
+        if (!HttpTokens.isLegalH2H3FieldName(name) || name.charAt(0) == ':')
+            throw new HpackException.StreamException(metadata.isRequest(), metadata.isResponse(), "Invalid header name: '%s'", name);
+
+        String value = field.getValue();
+        if (!HttpTokens.isLegalFieldValue(value))
+            throw new HpackException.StreamException(metadata.isRequest(), metadata.isResponse(), "Invalid header value: '%s'", value);
+    }
+
     public boolean isValidateEncoding()
     {
         return _validateEncoding;
@@ -183,18 +215,36 @@ public class HpackEncoder
                 LOG.debug(String.format("CtxTbl[%x] encoding", _context.hashCode()));
 
             HttpFields fields = metadata.getHttpFields();
-            // Verify that we can encode without errors.
-            if (isValidateEncoding() && fields != null)
+
+            // A single pass over the fields, before anything is encoded, to
+            // verify that they can be encoded without errors, and to collect the
+            // hop headers named by the Connection header, which RFC 7540 8.1.2.2
+            // says must not be forwarded.
+            QuotedCSV connectionValues = null;
+            boolean validate = isValidateEncoding();
+            if (fields != null)
             {
                 for (HttpField field : fields)
                 {
-                    String name = field.getLowerCaseName();
-                    if (!HttpTokens.isLegalH2H3FieldName(name) || name.charAt(0) == ':')
-                        throw new HpackException.StreamException(metadata.isRequest(), metadata.isResponse(), "Invalid header name: '%s'", name);
+                    if (validate)
+                        validateForEncoding(metadata, field);
 
-                    String value = field.getValue();
-                    if (!HttpTokens.isLegalFieldValue(value))
-                        throw new HpackException.StreamException(metadata.isRequest(), metadata.isResponse(), "Invalid header value: '%s'", value);
+                    if (field.getHeader() == HttpHeader.CONNECTION)
+                    {
+                        if (connectionValues == null)
+                            connectionValues = fields.newQuotedCSV(false);
+                        connectionValues.addValue(field.getValue());
+                    }
+                }
+            }
+
+            Set<String> hopHeaders = null;
+            if (connectionValues != null)
+            {
+                hopHeaders = new HashSet<>();
+                for (String value : connectionValues.getValues())
+                {
+                    hopHeaders.add(StringUtil.asciiToLowerCase(value));
                 }
             }
 
@@ -243,16 +293,6 @@ public class HpackEncoder
             // Remove fields as specified in RFC 7540, 8.1.2.2.
             if (fields != null)
             {
-                // Remove the headers specified in the Connection header,
-                // for example: Connection: Close, TE, Upgrade, Custom.
-                Set<String> hopHeaders = null;
-                for (String value : fields.getCSV(HttpHeader.CONNECTION, false))
-                {
-                    if (hopHeaders == null)
-                        hopHeaders = new HashSet<>();
-                    hopHeaders.add(StringUtil.asciiToLowerCase(value));
-                }
-
                 boolean contentLengthEncoded = false;
                 for (HttpField field : fields)
                 {
