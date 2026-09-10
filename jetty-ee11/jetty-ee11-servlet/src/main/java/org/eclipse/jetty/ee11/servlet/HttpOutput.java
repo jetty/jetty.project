@@ -1740,6 +1740,15 @@ public class HttpOutput extends ServletOutputStream
                     len += r;
             }
 
+            if (_eof)
+            {
+                // Change the state to signal that this is really the last write.
+                try (AutoLock ignored = _channelState.lock())
+                {
+                    _state = State.CLOSING;
+                }
+            }
+
             // write what we have
             byteBuffer.position(0);
             byteBuffer.limit(len);
@@ -1815,6 +1824,14 @@ public class HttpOutput extends ServletOutputStream
 
             // write what we have
             BufferUtil.flipToFlush(byteBuffer, 0);
+            if (_eof)
+            {
+                // Change the state to signal that this is really the last write.
+                try (AutoLock ignored = _channelState.lock())
+                {
+                    _state = State.CLOSING;
+                }
+            }
             channelWrite(byteBuffer, _eof, this);
 
             return Action.SCHEDULED;
