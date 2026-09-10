@@ -30,19 +30,23 @@ public class BrotliEncoderSink extends EncoderSink
     enum State
     {
         /**
-         * Taking the input and encoding.
+         * Consuming input content, pushing it to the encoder each time the input buffer fills.
          */
         PROCESSING,
         /**
-         * Done taking input, flushing what's left in encoder.
+         * Draining the output of a {@link EncoderJNI.Operation#PROCESS} operation, one buffer at a time.
          */
-        FLUSHING,
+        PROCESS_OUTPUT,
         /**
-         * Done flushing, performing finish operation.
+         * Draining the output of the final {@link EncoderJNI.Operation#FLUSH} operation.
          */
-        FINISHING,
+        FLUSH_OUTPUT,
         /**
-         * Finish operation completed.
+         * Draining the output of the final {@link EncoderJNI.Operation#FINISH} operation.
+         */
+        FINISH_OUTPUT,
+        /**
+         * All output has been produced.
          */
         FINISHED
     }
@@ -69,7 +73,10 @@ public class BrotliEncoderSink extends EncoderSink
     @Override
     protected WriteRecord encode(boolean last, ByteBuffer content)
     {
-        if (encoder.isFinished())
+        // Guard on our own terminal state: a single operation is drained across several invocations, so
+        // the encoder can report finished while we are still being re-invoked to emit its output. Only a
+        // write once we have reached FINISHED is illegal.
+        if (state.get() == State.FINISHED)
             throw new IllegalStateException("Already released");
 
         while (true)
@@ -78,46 +85,57 @@ public class BrotliEncoderSink extends EncoderSink
             {
                 case PROCESSING ->
                 {
-                    try
+                    if (BufferUtil.hasContent(content))
                     {
-                        while (BufferUtil.hasContent(content))
+                        if (inputBuffer.hasRemaining())
                         {
-                            // only encode if inputBuffer is full.
-                            if (!inputBuffer.hasRemaining())
-                            {
-                                ByteBuffer output = encode(EncoderJNI.Operation.PROCESS);
-                                if (output != null)
-                                    return new WriteRecord(false, output, Callback.NOOP);
-                            }
-
-                            // the only place the input buffer gets set.
+                            // Fill the input buffer; do not flip it, that's not what Brotli4j expects/wants.
                             BufferUtil.put(content, inputBuffer);
-                            // do not flip input buffer, that's not what Brotli4j expects/wants.
                         }
-                        // content is fully consumed.
+                        else
+                        {
+                            // Input buffer full: hand it to the encoder, then drain the produced output.
+                            encoder.push(EncoderJNI.Operation.PROCESS, inputBuffer.limit());
+                            state.set(State.PROCESS_OUTPUT);
+                        }
+                    }
+                    else
+                    {
+                        // Content fully consumed. A non-last write simply waits for more content.
                         if (!last)
                             return null;
-                    }
-                    finally
-                    {
-                        if (last)
-                            state.compareAndSet(State.PROCESSING, State.FLUSHING);
+                        // Final write: flush whatever is still buffered, then finish.
+                        inputBuffer.limit(inputBuffer.position());
+                        encoder.push(EncoderJNI.Operation.FLUSH, inputBuffer.limit());
+                        state.set(State.FLUSH_OUTPUT);
                     }
                 }
-                case FLUSHING ->
+                case PROCESS_OUTPUT ->
                 {
-                    inputBuffer.limit(inputBuffer.position());
-                    ByteBuffer output = encode(EncoderJNI.Operation.FLUSH);
-                    state.compareAndSet(State.FLUSHING, State.FINISHING);
+                    ByteBuffer output = drain(EncoderJNI.Operation.PROCESS);
                     if (output != null)
                         return new WriteRecord(false, output, Callback.NOOP);
+                    // Output drained: reuse the input buffer for the next content.
+                    inputBuffer.clear();
+                    state.set(State.PROCESSING);
                 }
-                case FINISHING ->
+                case FLUSH_OUTPUT ->
                 {
-                    inputBuffer.limit(inputBuffer.position());
-                    ByteBuffer output = encode(EncoderJNI.Operation.FINISH);
-                    state.compareAndSet(State.FINISHING, State.FINISHED);
-                    return new WriteRecord(true, output != null ? output : BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+                    ByteBuffer output = drain(EncoderJNI.Operation.FLUSH);
+                    if (output != null)
+                        return new WriteRecord(false, output, Callback.NOOP);
+                    // Flush drained: finish the stream (no further input).
+                    encoder.push(EncoderJNI.Operation.FINISH, 0);
+                    state.set(State.FINISH_OUTPUT);
+                }
+                case FINISH_OUTPUT ->
+                {
+                    ByteBuffer output = drain(EncoderJNI.Operation.FINISH);
+                    if (output != null)
+                        return new WriteRecord(false, output, Callback.NOOP);
+                    // Finish drained: signal completion with a final empty last write.
+                    state.set(State.FINISHED);
+                    return new WriteRecord(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
                 }
                 case FINISHED ->
                 {
@@ -127,37 +145,37 @@ public class BrotliEncoderSink extends EncoderSink
         }
     }
 
-    protected ByteBuffer encode(EncoderJNI.Operation op)
+    /**
+     * Returns the next output buffer produced by the given operation, or {@code null} once the operation
+     * has been fully drained.
+     *
+     * <p>The operation's input must already have been submitted with
+     * {@link EncoderJNI.Wrapper#push(EncoderJNI.Operation, int)}; this method only pulls output and, if the
+     * encoder still holds unprocessed input, drives it with a zero-length push. A single operation
+     * (notably the final {@code FLUSH}/{@code FINISH} of a large response) can produce several output
+     * buffers, so this returns one buffer at a time and is invoked once per {@link EncoderSink} write.
+     * Returning them individually is what prevents earlier buffers from being dropped and the response
+     * from being truncated.</p>
+     */
+    private ByteBuffer drain(EncoderJNI.Operation op)
     {
         try
         {
-            boolean inputPushed = false;
-            ByteBuffer output = null;
             while (true)
             {
                 if (!encoder.isSuccess())
-                {
                     throw new IOException("Brotli Encoder failure");
-                }
-                // process previous output before new input
-                else if (encoder.hasMoreOutput())
-                {
-                    output = encoder.pull();
-                }
-                else if (encoder.hasRemainingInput())
+
+                if (encoder.hasMoreOutput())
+                    return encoder.pull();
+
+                if (encoder.hasRemainingInput())
                 {
                     encoder.push(op, 0);
+                    continue;
                 }
-                else if (!inputPushed)
-                {
-                    encoder.push(op, inputBuffer.limit());
-                    inputPushed = true;
-                }
-                else
-                {
-                    inputBuffer.clear();
-                    return output;
-                }
+
+                return null;
             }
         }
         catch (IOException e)
