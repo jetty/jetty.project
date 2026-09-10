@@ -243,6 +243,20 @@ public class HttpOutput extends ServletOutputStream
         content.writeTo(_servletChannel.getResponse(), last, callback);
     }
 
+    void lastWriteComplete()
+    {
+        Callback closedCallback;
+        try (AutoLock ignored = _channelState.lock())
+        {
+            _state = State.CLOSED;
+            closedCallback = _closedCallback;
+            _closedCallback = null;
+            lockedReleaseBuffer();
+        }
+        if (closedCallback != null)
+            closedCallback.succeeded();
+    }
+
     private void onWriteComplete(boolean last, Throwable failure)
     {
         String state = null;
@@ -487,11 +501,6 @@ public class HttpOutput extends ServletOutputStream
             _state = State.CLOSED;
             lockedReleaseBuffer();
         }
-    }
-
-    boolean isBlocking()
-    {
-        return _writeBlocker.isBlocking();
     }
 
     @Override

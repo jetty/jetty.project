@@ -39,7 +39,6 @@ import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.ManagedSession;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -235,16 +234,13 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
             if (!httpOutput.isClosed())
             {
                 // The HttpOutput instance can only be blocking if a blocking sendContent()
-                // variant was called; in those cases, sendContent() will close the httpOutput.
-                if (!httpOutput.isBlocking())
+                // variant is the caller; in this case, sendContent() closes the httpOutput.
+                callback = Callback.from(callback, () ->
                 {
-                    callback = Callback.from(() -> IO.close(httpOutput), callback);
-                    forwardLast = false;
-                }
-                else
-                {
-                    forwardLast = true;
-                }
+                    httpOutput.lastWriteComplete();
+                    super.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+                });
+                forwardLast = false;
             }
             else
             {
