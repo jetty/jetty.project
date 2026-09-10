@@ -222,19 +222,41 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     }
 
     @Override
-    public void write(boolean last, ByteBuffer content, Callback callback)
+    public void write(boolean requestLast, ByteBuffer content, Callback callback)
     {
-        // Last write must trigger a close() on the HttpOutput
-        // which will call this method again to do the last write.
+        // When write() is not called from a blocking call, the
+        // last write must trigger a close() on the HttpOutput
+        // which will call this method again to actually do the
+        // last write.
         HttpOutput httpOutput = getHttpOutput();
-        boolean httpOutputClosed = httpOutput.isClosed();
-        if (!httpOutputClosed)
+        boolean forwardLast;
+        if (requestLast)
         {
-            httpOutput.addBytesWritten(BufferUtil.length(content));
-            if (last)
-                callback = Callback.from(() -> IO.close(httpOutput), callback);
+            if (!httpOutput.isClosed())
+            {
+                // The HttpOutput instance can only be blocking if a blocking sendContent()
+                // variant was called; in those cases, sendContent() will close the httpOutput.
+                if (!httpOutput.isBlocking())
+                {
+                    callback = Callback.from(() -> IO.close(httpOutput), callback);
+                    forwardLast = false;
+                }
+                else
+                {
+                    forwardLast = true;
+                }
+            }
+            else
+            {
+                forwardLast = true;
+            }
         }
-        super.write(httpOutputClosed, content, callback);
+        else
+        {
+            forwardLast = false;
+        }
+        httpOutput.addBytesWritten(BufferUtil.length(content));
+        super.write(forwardLast, content, callback);
     }
 
     public void closeOutput() throws IOException

@@ -540,6 +540,19 @@ public class Blocker
             }
         }
 
+        public boolean isBlocking()
+        {
+            _lock.lock();
+            try
+            {
+                return _completed != null && _completed != SUCCEEDED;
+            }
+            finally
+            {
+                _lock.unlock();
+            }
+        }
+
         @Override
         public String toString()
         {
