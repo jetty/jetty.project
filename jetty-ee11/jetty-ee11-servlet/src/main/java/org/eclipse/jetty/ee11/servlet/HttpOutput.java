@@ -1743,6 +1743,7 @@ public class HttpOutput extends ServletOutputStream
         {
             _buffer.release();
             IO.close(_in);
+            super.onCompleteSuccess();
         }
 
         @Override
@@ -1819,6 +1820,7 @@ public class HttpOutput extends ServletOutputStream
         {
             _buffer.release();
             IO.close(_in);
+            super.onCompleteSuccess();
         }
 
         @Override
