@@ -80,6 +80,7 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
         super(handler);
 
         includeMethod(HttpMethod.GET.asString());
+        includeMethod(HttpMethod.QUERY.asString());
 
         // Mimetypes are not a condition on the ConditionalHandler as they
         // are also check during response generation, once the type is known.
