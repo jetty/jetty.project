@@ -79,6 +79,22 @@ public class StringUtil
 
     // @checkstyle-enable-check : IllegalTokenTextCheck
 
+    // Constants for the SWAR scans below, which pack 4 characters into a long
+    // and test all 4 of them at once, each in its own 16 bit lane.
+    private static final int LANE_BITS = 16;
+    private static final int LANES = Long.SIZE / LANE_BITS;
+    // The top bit of every lane, cleared before adding so that an addition
+    // cannot carry from one lane into the next.
+    private static final long LANE_TOP_BIT = 0x8000_8000_8000_8000L;
+    // Bit 7 of every lane, which the range test below leaves set for a match.
+    private static final long LANE_TEST_BIT = 0x0080_0080_0080_0080L;
+    // A lane holding c has bit 7 of (c + (0x80 - low)) set if c >= low, and
+    // bit 7 of (c + (0x7F - high)) set if c > high, for any c <= 0x7F.
+    private static final long AT_LEAST_UPPERCASE = 0x003F_003F_003F_003FL; // 0x80 - 'A'
+    private static final long ABOVE_UPPERCASE = 0x0025_0025_0025_0025L;    // 0x7F - 'Z'
+    private static final long AT_LEAST_LOWERCASE = 0x001F_001F_001F_001FL; // 0x80 - 'a'
+    private static final long ABOVE_LOWERCASE = 0x0005_0005_0005_0005L;    // 0x7F - 'z'
+
     /**
      * fast lower case conversion. Only works on ascii (not unicode)
      *
@@ -112,31 +128,20 @@ public class StringUtil
         if (s == null)
             return null;
 
-        char[] c = null;
-        int i = s.length();
-        // look for first conversion
-        while (i-- > 0)
+        // Look for the first conversion; most strings need none, so this scan
+        // decides the common case and it is done 4 characters at a time.
+        int i = indexOfAsciiRange(s, 'A', 'Z', AT_LEAST_UPPERCASE, ABOVE_UPPERCASE);
+        if (i < 0)
+            return s;
+
+        char[] c = s.toCharArray();
+        for (; i < c.length; i++)
         {
-            char c1 = s.charAt(i);
-            if (c1 <= 127)
-            {
-                char c2 = LOWERCASES[c1];
-                if (c1 != c2)
-                {
-                    c = s.toCharArray();
-                    c[i] = c2;
-                    break;
-                }
-            }
-        }
-        while (i-- > 0)
-        {
-            assert c != null;
             if (c[i] <= 127)
                 c[i] = LOWERCASES[c[i]];
         }
 
-        return c == null ? s : new String(c);
+        return new String(c);
     }
 
     /**
@@ -150,30 +155,72 @@ public class StringUtil
         if (s == null)
             return null;
 
-        char[] c = null;
-        int i = s.length();
-        // look for first conversion
-        while (i-- > 0)
+        int i = indexOfAsciiRange(s, 'a', 'z', AT_LEAST_LOWERCASE, ABOVE_LOWERCASE);
+        if (i < 0)
+            return s;
+
+        char[] c = s.toCharArray();
+        for (; i < c.length; i++)
         {
-            char c1 = s.charAt(i);
-            if (c1 <= 127)
-            {
-                char c2 = UPPERCASES[c1];
-                if (c1 != c2)
-                {
-                    c = s.toCharArray();
-                    c[i] = c2;
-                    break;
-                }
-            }
-        }
-        while (i-- > 0)
-        {
-            assert c != null;
             if (c[i] <= 127)
                 c[i] = UPPERCASES[c[i]];
         }
-        return c == null ? s : new String(c);
+
+        return new String(c);
+    }
+
+    /**
+     * <p>Find the first character of {@code s} within the ASCII range
+     * {@code low} to {@code high}, testing 4 characters at a time.</p>
+     * <p>The 4 characters are packed into a long, one per 16 bit lane, and the
+     * range test is done on all the lanes at once. The test can report a false
+     * positive for a lane holding a non ASCII character, so a positive group is
+     * confirmed character by character; it never reports a false negative for a
+     * lane holding an ASCII character, which is what makes the scan correct.</p>
+     *
+     * @param s the string to scan
+     * @param low the first character of the range, which must be ASCII
+     * @param high the last character of the range, which must be ASCII
+     * @param atLeastLow the per lane offset that sets the test bit for characters at or above {@code low}
+     * @param aboveHigh the per lane offset that sets the test bit for characters above {@code high}
+     * @return the index of the first character within the range, or -1 if there is none
+     */
+    private static int indexOfAsciiRange(String s, char low, char high, long atLeastLow, long aboveHigh)
+    {
+        int length = s.length();
+        int i = 0;
+
+        for (; length - i >= LANES; i += LANES)
+        {
+            long lanes = (long)s.charAt(i) << 48 |
+                (long)s.charAt(i + 1) << 32 |
+                (long)s.charAt(i + 2) << 16 |
+                s.charAt(i + 3);
+
+            // Clear the top bit of each lane so that the additions below cannot
+            // carry into the next lane, and discard those lanes afterwards, as
+            // a character with its top bit set is well beyond the ASCII range.
+            long values = lanes & ~LANE_TOP_BIT;
+            long matches = (values + atLeastLow) & ~(values + aboveHigh) & ~(lanes >>> 8) & LANE_TEST_BIT;
+            if (matches == 0)
+                continue;
+
+            for (int j = i; j < i + LANES; j++)
+            {
+                char c = s.charAt(j);
+                if (c >= low && c <= high)
+                    return j;
+            }
+        }
+
+        for (; i < length; i++)
+        {
+            char c = s.charAt(i);
+            if (c >= low && c <= high)
+                return i;
+        }
+
+        return -1;
     }
 
     /**
