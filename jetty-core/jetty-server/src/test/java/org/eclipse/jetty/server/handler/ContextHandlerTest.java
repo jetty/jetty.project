@@ -505,23 +505,27 @@ public class ContextHandlerTest
                 {
                     assertInContext(request);
                     scopeListener.assertInContext(request.getContext(), request);
-                    Content.Chunk chunk = request.read();
-                    assertTrue(chunk.hasRemaining());
-                    assertTrue(chunk.isLast());
-                    response.setStatus(200);
-                    response.write(true, RetainableByteBuffer.wrap(chunk.getByteBuffer()), Callback.from(
-                        () ->
+                    try (Content.Chunk chunk = request.read())
+                    {
+                        assertTrue(chunk.hasRemaining());
+                        assertTrue(chunk.isLast());
+                        response.setStatus(200);
+                        try (RetainableByteBuffer buffer = chunk.acquire())
                         {
-                            chunk.release();
-                            assertInContext(request);
-                            scopeListener.assertInContext(request.getContext(), request);
-                            callback.succeeded();
-                        },
-                        t ->
-                        {
-                            chunk.release();
-                            throw new IllegalStateException(t);
-                        }));
+                            response.write(true, buffer, Callback.from(() ->
+                                {
+                                    chunk.release();
+                                    assertInContext(request);
+                                    scopeListener.assertInContext(request.getContext(), request);
+                                    callback.succeeded();
+                                },
+                                t ->
+                                {
+                                    chunk.release();
+                                    throw new IllegalStateException(t);
+                                }));
+                        }
+                    }
                 });
                 return true;
             }
@@ -581,11 +585,15 @@ public class ContextHandlerTest
 
                 blocking.countDown();
                 assertTrue(latch.await(10, TimeUnit.SECONDS));
-                Content.Chunk chunk = request.read();
-                assertNotNull(chunk);
-                assertTrue(chunk.hasRemaining());
-                assertTrue(chunk.isLast());
-                chunk.release();
+
+                try (Content.Chunk chunk = request.read())
+                {
+                    assertNotNull(chunk);
+                    assertTrue(chunk.hasRemaining());
+                    assertTrue(chunk.isLast());
+                    chunk.release();
+                }
+
                 response.setStatus(200);
                 callback.succeeded();
                 return true;

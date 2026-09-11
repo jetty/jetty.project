@@ -230,24 +230,27 @@ public class HTTP3ClientDocs
             public void onDataAvailable(Stream.Client stream)
             {
                 // Read a chunk of the content.
-                Content.Chunk chunk = stream.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    // No data available now, demand to be called back.
-                    stream.demand();
-                }
-                else
-                {
-                    // Process the content.
-                    process(chunk.getByteBuffer());
-
-                    // Notify the implementation that the content has been consumed.
-                    chunk.release();
-
-                    if (!chunk.isLast())
+                    if (chunk == null)
                     {
-                        // Demand to be called back.
+                        // No data available now, demand to be called back.
                         stream.demand();
+                    }
+                    else
+                    {
+                        // Process the content.
+                        // Closing the buffer will release this acquire.
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            process(buffer);
+
+                            if (!chunk.isLast())
+                            {
+                                // Demand to be called back.
+                                stream.demand();
+                            }
+                        }
                     }
                 }
             }
@@ -255,7 +258,7 @@ public class HTTP3ClientDocs
         // end::responseListener[]
     }
 
-    private void process(ByteBuffer byteBuffer)
+    private void process(RetainableByteBuffer byteBuffer)
     {
     }
 

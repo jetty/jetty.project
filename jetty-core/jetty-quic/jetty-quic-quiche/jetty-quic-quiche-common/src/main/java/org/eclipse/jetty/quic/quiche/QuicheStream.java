@@ -154,7 +154,7 @@ public class QuicheStream extends AbstractStream
             if (filled > 0)
             {
                 RetainableByteBuffer slice = buffer.sliceAndConsume(filled);
-                Content.Chunk chunk = Content.Chunk.asChunk(slice, last, buffer);
+                Content.Chunk chunk = Content.Chunk.from(slice, last);
                 slice.release();
                 if (last)
                     tryReleaseInputBuffer(buffer);

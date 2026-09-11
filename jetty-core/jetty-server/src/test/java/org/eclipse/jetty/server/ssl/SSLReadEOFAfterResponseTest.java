@@ -81,25 +81,25 @@ public class SSLReadEOFAfterResponseTest
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
                 // First: read the whole content exactly
-                int length = bytes.length;
+                long length = bytes.length;
                 while (length > 0)
                 {
-                    Content.Chunk c = request.read();
-                    if (c == null)
+                    try (Content.Chunk c = request.read())
                     {
-                        try (Blocker.Runnable blocker = Blocker.runnable())
+                        if (c == null)
                         {
-                            request.demand(blocker);
-                            blocker.block();
+                            try (Blocker.Runnable blocker = Blocker.runnable())
+                            {
+                                request.demand(blocker);
+                                blocker.block();
+                            }
+                            continue;
                         }
-                        continue;
+                        if (c.hasRemaining())
+                            length -= c.remaining();
+                        if (c.isLast() && !c.hasRemaining() && !Content.Chunk.isFailure(c))
+                            callback.failed(new IllegalStateException());
                     }
-                    if (c.hasRemaining())
-                        length -= c.remaining();
-                    c.release();
-                    // TODO: should not compare to EOF.
-                    if (c == Content.Chunk.EOF)
-                        callback.failed(new IllegalStateException());
                 }
 
                 // Second: write the response.
@@ -113,10 +113,12 @@ public class SSLReadEOFAfterResponseTest
                 sleep(idleTimeout / 2);
 
                 // Third, read the EOF.
-                Content.Chunk chunk = request.read();
-                chunk.release();
-                if (!chunk.isLast())
-                    throw new IllegalStateException();
+                try (Content.Chunk chunk = request.read())
+                {
+                    if (!chunk.isLast())
+                        throw new IllegalStateException();
+                }
+
                 callback.succeeded();
                 return true;
             }

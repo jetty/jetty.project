@@ -132,20 +132,23 @@ public class StreamCloseTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-
-                        assertTrue(stream.isRemotelyClosed());
-                        completable.thenRun(() -> stream.data(RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), new Callback()
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            @Override
-                            public void succeeded()
+                            assertTrue(stream.isRemotelyClosed());
+                            try (RetainableByteBuffer buffer = chunk.acquire())
                             {
-                                assertTrue(stream.isClosed());
-                                assertEquals(0, stream.getSession().getStreams().size());
-                                chunk.release();
-                                serverDataLatch.countDown();
+                                completable.thenRun(() -> stream.data(buffer, chunk.isLast(), new Callback()
+                                {
+                                    @Override
+                                    public void succeeded()
+                                    {
+                                        assertTrue(stream.isClosed());
+                                        assertEquals(0, stream.getSession().getStreams().size());
+                                        serverDataLatch.countDown();
+                                    }
+                                }));
                             }
-                        }));
+                        }
                     }
                 };
             }
@@ -160,9 +163,10 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                // The sent data callback may not be notified yet here.
-                chunk.release();
+                try (Content.Chunk _ = stream.read())
+                {
+                    // The sent data callback may not be notified yet here.
+                }
                 completeLatch.countDown();
             }
         });
@@ -238,10 +242,11 @@ public class StreamCloseTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream pushedStream)
                     {
-                        Content.Chunk chunk = pushedStream.read();
-                        assertTrue(pushedStream.isClosed());
-                        chunk.release();
-                        clientLatch.countDown();
+                        try (Content.Chunk chunk = pushedStream.read())
+                        {
+                            assertTrue(pushedStream.isClosed());
+                            clientLatch.countDown();
+                        }
                     }
                 };
             }

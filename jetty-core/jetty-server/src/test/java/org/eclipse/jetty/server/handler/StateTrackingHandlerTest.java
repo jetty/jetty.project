@@ -366,23 +366,24 @@ public class StateTrackingHandlerTest
                     @Override
                     public void run()
                     {
-                        Content.Chunk chunk = request.read();
-                        if (chunk != null)
+                        try (Content.Chunk chunk = request.read())
                         {
-                            chunk.release();
-                            if (chunk.isLast())
+                            if (chunk != null)
                             {
-                                try
+                                if (chunk.isLast())
                                 {
-                                    // Block.
-                                    latch.await();
-                                    callback.succeeded();
+                                    try
+                                    {
+                                        // Block.
+                                        latch.await();
+                                        callback.succeeded();
+                                    }
+                                    catch (Throwable x)
+                                    {
+                                        callback.failed(x);
+                                    }
+                                    return;
                                 }
-                                catch (Throwable x)
-                                {
-                                    callback.failed(x);
-                                }
-                                return;
                             }
                         }
                         request.demand(this);
@@ -593,20 +594,21 @@ public class StateTrackingHandlerTest
                         {
                             while (true)
                             {
-                                Content.Chunk chunk = request.read();
-                                if (chunk == null)
+                                try (Content.Chunk chunk = request.read())
                                 {
-                                    request.demand(this);
-                                    // Bad behavior: must not block a demand
-                                    // callback because they are serialized.
-                                    demandLatch.await();
-                                    return;
-                                }
-                                chunk.release();
-                                if (chunk.isLast())
-                                {
-                                    callback.succeeded();
-                                    return;
+                                    if (chunk == null)
+                                    {
+                                        request.demand(this);
+                                        // Bad behavior: must not block a demand
+                                        // callback because they are serialized.
+                                        demandLatch.await();
+                                        return;
+                                    }
+                                    if (chunk.isLast())
+                                    {
+                                        callback.succeeded();
+                                        return;
+                                    }
                                 }
                             }
                         }

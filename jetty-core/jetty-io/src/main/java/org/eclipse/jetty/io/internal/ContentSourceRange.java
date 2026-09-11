@@ -16,8 +16,8 @@ package org.eclipse.jetty.io.internal;
 import java.nio.channels.ClosedChannelException;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * A {@link Content.Source} that provides a range of content from another {@link Content.Source}.
@@ -90,69 +90,90 @@ public class ContentSourceRange implements Content.Source
 
         while (true)
         {
-            Content.Chunk chunk = _source.read();
-            if (chunk == null)
-                return null;
-
-            if (Content.Chunk.isFailure(chunk))
+            try (Content.Chunk chunk = _source.read())
             {
-                _terminal = Content.Chunk.next(chunk);
-                return chunk;
-            }
+                if (chunk == null)
+                    return null;
 
-            if (_offsetRemaining > 0)
-            {
-                if (_offsetRemaining >= chunk.remaining())
+                if (Content.Chunk.isFailure(chunk))
                 {
-                    // We can skip this whole chunk.
-                    _offsetRemaining -= chunk.remaining();
-                    chunk.release();
-                    if (chunk.isLast())
-                        return _terminal = Content.Chunk.EOF;
-                    continue;
+                    _terminal = Content.Chunk.next(chunk);
+                    return chunk;
+                }
+
+                boolean sliceChunk = false;
+                if (_offsetRemaining > 0)
+                {
+                    if (_offsetRemaining >= chunk.remaining())
+                    {
+                        // We can skip this whole chunk.
+                        _offsetRemaining -= chunk.remaining();
+                        if (chunk.isLast())
+                            return _terminal = Content.Chunk.EOF;
+                        continue;
+                    }
+                    else
+                    {
+                        // Advance position to the correct offset.
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            buffer.consume(_offsetRemaining);
+                            _offsetRemaining = 0;
+                            sliceChunk = true;
+                        }
+                    }
+                }
+
+                // We can start processing the limited length if we have
+                // reached the starting offset and there is length remaining.
+                if (_lengthRemaining == 0)
+                {
+                    // We have read all we need to
+                    if (_readToEof)
+                    {
+                        // Release the chunk and continue until we find the last chunk.
+                        if (chunk.isLast())
+                            return _terminal = Content.Chunk.EOF;
+                        chunk.release();
+                        continue;
+                    }
+
+                    // We do not have to read until EOF of the source, so we can return EOF now and fail the source.
+                    fail(new ClosedChannelException());
+                    return _terminal = Content.Chunk.EOF;
+                }
+
+                if (_lengthRemaining > 0 && _lengthRemaining < chunk.remaining())
+                {
+                    // We must limit the size of the chunk to the remaining length.
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        try (RetainableByteBuffer slice = buffer.sliceAndConsume(_lengthRemaining))
+                        {
+                            _lengthRemaining = 0;
+                            return Content.Chunk.from(slice, chunk.isLast());
+                        }
+                    }
+                }
+
+                // We can return the chunk.
+                _lengthRemaining -= chunk.remaining();
+                if (sliceChunk)
+                {
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        try (RetainableByteBuffer slice = buffer.sliceAndConsume(buffer.remaining()))
+                        {
+                            return Content.Chunk.from(slice, chunk.isLast());
+                        }
+                    }
                 }
                 else
                 {
-                    // Advance position to the correct offset.
-                    RetainableByteBuffer slice = chunk.slice();
-                    chunk.release();
-                    while (_offsetRemaining > 0)
-                        _offsetRemaining -= slice.skip(_offsetRemaining);
-                    chunk = Content.Chunk.from(slice, chunk.isLast());
+                    chunk.retain();
+                    return chunk;
                 }
             }
-
-            // We can start processing the limited length if we have reached the starting offset and there
-            // is length remaining
-            if (_lengthRemaining == 0)
-            {
-                // We have read all we need to
-                if (_readToEof)
-                {
-                    // Release the chunk and continue until we find the last chunk.
-                    chunk.release();
-                    if (chunk.isLast())
-                        return _terminal = Content.Chunk.EOF;
-                    continue;
-                }
-
-                // We do not have to read until EOF of the source, so we can return EOF now and fail the source.
-                fail(new ClosedChannelException());
-                return _terminal = Content.Chunk.EOF;
-            }
-
-            if (_lengthRemaining > 0 && _lengthRemaining < chunk.remaining())
-            {
-                // We must limit the size of the chunk to the remaining length.
-                RetainableByteBuffer slice = chunk.slice(_lengthRemaining);
-                _lengthRemaining = 0;
-                chunk.release();
-                return Content.Chunk.from(slice, chunk.isLast());
-            }
-
-            // We can return the whole chunk.
-            _lengthRemaining -= chunk.remaining();
-            return chunk;
         }
     }
 

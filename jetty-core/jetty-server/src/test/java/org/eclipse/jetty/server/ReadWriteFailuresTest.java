@@ -72,9 +72,8 @@ public class ReadWriteFailuresTest
                 // Upon idle timeout, the demand callback is invoked.
                 request.demand(() ->
                 {
-                    try
+                    try (Content.Chunk chunk = request.read())
                     {
-                        Content.Chunk chunk = request.read();
                         assertTrue(Content.Chunk.isFailure(chunk, false));
 
                         response.setStatus(HttpStatus.ACCEPTED_202);

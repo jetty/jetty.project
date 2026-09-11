@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.client.transport.internal;
 
-import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpUpgrader;
@@ -31,7 +30,6 @@ import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.URIUtil;
@@ -51,7 +49,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendHeaders(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         HttpRequest request = exchange.getRequest();
         boolean isTunnel = HttpMethod.CONNECT.is(request.getMethod());
@@ -88,21 +86,20 @@ public class HttpSenderOverHTTP2 extends HttpSender
         }
         else
         {
-            boolean hasContent = BufferUtil.hasContent(contentBuffer);
-            if (hasContent)
+            if (contentBuffer.hasRemaining())
             {
                 headersFrame = new HeadersFrame(metaData, null, false);
                 if (lastContent)
                 {
                     HttpFields trailers = retrieveTrailers(request);
                     boolean hasTrailers = trailers != null;
-                    dataFrame = new DataFrame(RetainableByteBuffer.wrap(contentBuffer), !hasTrailers);
+                    dataFrame = new DataFrame(contentBuffer, !hasTrailers);
                     if (hasTrailers)
                         trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_2, trailers), null, true);
                 }
                 else
                 {
-                    dataFrame = new DataFrame(RetainableByteBuffer.wrap(contentBuffer), false);
+                    dataFrame = new DataFrame(contentBuffer, false);
                 }
             }
             else
@@ -135,7 +132,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendContent(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         Stream stream = getHttpChannel().getStream();
         boolean hasContent = contentBuffer.hasRemaining();
@@ -147,23 +144,23 @@ public class HttpSenderOverHTTP2 extends HttpSender
             if (hasContent)
             {
                 if (hasTrailers)
-                    stream.data(RetainableByteBuffer.wrap(contentBuffer), !hasTrailers, Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed));
+                    stream.data(contentBuffer, false, Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed));
                 else
-                    stream.data(RetainableByteBuffer.wrap(contentBuffer), !hasTrailers, callback);
+                    stream.data(contentBuffer, true, callback);
             }
             else
             {
                 if (hasTrailers)
                     sendTrailers(stream, trailers, callback);
                 else
-                    stream.data(RetainableByteBuffer.wrap(contentBuffer), true, callback);
+                    stream.data(contentBuffer, true, callback);
             }
         }
         else
         {
             if (hasContent)
             {
-                stream.data(RetainableByteBuffer.wrap(contentBuffer), false, callback);
+                stream.data(contentBuffer, false, callback);
             }
             else
             {

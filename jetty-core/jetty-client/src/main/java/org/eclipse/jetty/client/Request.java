@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>{@link Request} represents an HTTP request, and offers a fluent interface to customize
@@ -400,7 +401,16 @@ public interface Request
      * @param listener a listener for request content events
      * @return this request object
      */
-    Request onRequestContent(ContentListener listener);
+    default Request onRequestContent(ContentListener listener)
+    {
+        return onRequestContentRetainable(listener);
+    }
+
+    /**
+     * @param listener a listener for request content events
+     * @return this request object
+     */
+    Request onRequestContentRetainable(RetainableContentListener listener);
 
     /**
      * @param listener a listener for request success event
@@ -450,14 +460,31 @@ public interface Request
     /**
      * @param listener a consuming listener for response content events
      * @return this request object
+     * @deprecated use {@link #onResponseContentRetainable(Response.RetainableContentListener)} instead
      */
-    Request onResponseContent(Response.ContentListener listener);
+    @Deprecated(since = "13.0.0", forRemoval = true)
+    default Request onResponseContent(Response.ContentListener listener)
+    {
+        return onResponseContentSource(listener);
+    }
+
+    /**
+     * @param listener a listener for response content events
+     * @return this request object
+     */
+    default Request onResponseContentRetainable(Response.RetainableContentListener listener)
+    {
+        return onResponseContentSource(listener);
+    }
 
     /**
      * @param listener an asynchronous listener for response content events
      * @return this request object
      */
-    Request onResponseContentAsync(Response.AsyncContentListener listener);
+    default Request onResponseContentAsync(Response.AsyncContentListener listener)
+    {
+        return onResponseContentSource(listener);
+    }
 
     /**
      * @param listener a listener for driving {@link org.eclipse.jetty.io.Content.Source}
@@ -623,7 +650,25 @@ public interface Request
     /**
      * Listener for the request content event.
      */
-    public interface ContentListener extends RequestListener
+    public interface RetainableContentListener extends RequestListener
+    {
+        /**
+         * Callback method invoked when a chunk of request content has been sent successfully.
+         * Changes to bytes in the given buffer have no effect, as the content has already been sent.
+         *
+         * @param request the request that has been committed
+         * @param content the content
+         */
+        public void onContent(Request request, RetainableByteBuffer content);
+    }
+
+    /**
+     * Listener for the request content event.
+     *
+     * @deprecated use {@link RetainableContentListener} instead
+     */
+    @Deprecated(since = "13.0.0", forRemoval = true)
+    public interface ContentListener extends RetainableContentListener
     {
         /**
          * Callback method invoked when a chunk of request content has been sent successfully.
@@ -633,6 +678,17 @@ public interface Request
          * @param content the content
          */
         public void onContent(Request request, ByteBuffer content);
+
+        @Override
+        default void onContent(Request request, RetainableByteBuffer content)
+        {
+            content.quietWriteTo(b ->
+            {
+                int r = b.remaining();
+                onContent(request, b);
+                return r;
+            });
+        }
     }
 
     /**

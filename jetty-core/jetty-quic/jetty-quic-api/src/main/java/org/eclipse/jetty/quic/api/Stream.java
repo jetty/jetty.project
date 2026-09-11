@@ -251,15 +251,16 @@ public interface Stream
         {
             while (true)
             {
-                Content.Chunk chunk = stream.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    stream.demand();
-                    return;
+                    if (chunk == null)
+                    {
+                        stream.demand();
+                        return;
+                    }
+                    if (chunk.isLast())
+                        return;
                 }
-                chunk.release();
-                if (chunk.isLast())
-                    return;
             }
         }
 
@@ -291,25 +292,24 @@ public interface Stream
          *         while (true)
          *         {
          *             // Read a chunk of the content.
-         *             Content.Chunk chunk = stream.read();
-         *             if (chunk == null)
+         *             try (Content.Chunk chunk = stream.read())
          *             {
-         *                 // No data available now, demand to be called back.
-         *                 stream.demand();
-         *                 return;
-         *             }
+         *                 if (chunk == null)
+         *                 {
+         *                     // No data available now, demand to be called back.
+         *                     stream.demand();
+         *                     return;
+         *                 }
          *
-         *             // Process the content chunk.
-         *             process(chunk);
+         *                 // Process the content chunk.
+         *                 process(chunk);
          *
-         *             // Notify that the content has been consumed.
-         *             chunk.release();
-         *
-         *             if (chunk.isLast())
-         *             {
-         *                 // All data has been processed.
-         *                 return;
-         *             }
+         *                 if (chunk.isLast())
+         *                 {
+         *                     // All data has been processed.
+         *                     return;
+         *                 }
+         *             } // Release the chunk by closing it.
          *         }
          *     }
          * }

@@ -267,35 +267,37 @@ public class PushedResourcesTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    stream.demand();
-                    return;
-                }
-                chunk.release();
-                if (chunk.isLast())
-                {
-                    // Request for the secondary resource.
-                    HttpFields.Mutable secondaryFields = HttpFields.build();
-                    secondaryFields.put(HttpHeader.REFERER, referrerURI);
-                    MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
-                    session.newStream(new HeadersFrame(secondaryRequest, null, true), new Stream.Listener()
+                    if (chunk == null)
                     {
-                        @Override
-                        public void onDataAvailable(Stream stream)
+                        stream.demand();
+                        return;
+                    }
+                    if (chunk.isLast())
+                    {
+                        // Request for the secondary resource.
+                        HttpFields.Mutable secondaryFields = HttpFields.build();
+                        secondaryFields.put(HttpHeader.REFERER, referrerURI);
+                        MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
+                        session.newStream(new HeadersFrame(secondaryRequest, null, true), new Stream.Listener()
                         {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk == null)
+                            @Override
+                            public void onDataAvailable(Stream stream)
                             {
-                                stream.demand();
-                                return;
+                                try (Content.Chunk chunk = stream.read())
+                                {
+                                    if (chunk == null)
+                                    {
+                                        stream.demand();
+                                        return;
+                                    }
+                                    if (chunk.isLast())
+                                        warmupLatch.countDown();
+                                }
                             }
-                            chunk.release();
-                            if (chunk.isLast())
-                                warmupLatch.countDown();
-                        }
-                    });
+                        });
+                    }
                 }
             }
         });
@@ -317,15 +319,16 @@ public class PushedResourcesTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    stream.demand();
-                    return;
+                    if (chunk == null)
+                    {
+                        stream.demand();
+                        return;
+                    }
+                    if (chunk.isLast())
+                        primaryResponseLatch.countDown();
                 }
-                chunk.release();
-                if (chunk.isLast())
-                    primaryResponseLatch.countDown();
             }
         });
         assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));

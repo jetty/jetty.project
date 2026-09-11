@@ -264,13 +264,16 @@ public class StreamEndPoint implements EndPoint
         {
             if (current != null)
             {
-                ByteBuffer source = current.getByteBuffer();
-                if (source.hasRemaining())
+                if (current.hasRemaining())
                 {
-                    int filled = Math.toIntExact(sink.append(current.getByteBuffer()));
+                    int filled;
+                    try (RetainableByteBuffer buffer = current.acquire())
+                    {
+                        filled = (int)sink.append(buffer);
+                    }
 
                     boolean release = true;
-                    if (source.hasRemaining())
+                    if (current.hasRemaining())
                     {
                         try (AutoLock ignored = lock.lock())
                         {

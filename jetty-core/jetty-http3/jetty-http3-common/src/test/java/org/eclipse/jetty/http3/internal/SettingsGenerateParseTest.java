@@ -59,7 +59,7 @@ public class SettingsGenerateParseTest
                 frames.add(frame);
             }
         });
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator);
         parser.parse(buffer);
         assertFalse(buffer.hasRemaining());
 

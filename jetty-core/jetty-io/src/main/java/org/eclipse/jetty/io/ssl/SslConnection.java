@@ -426,9 +426,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         _sslEndPoint.onFillableFail(cause == null ? new IOException() : cause);
     }
 
-    protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+    protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, int offset, int length, ByteBuffer output) throws SSLException
     {
-        return sslEngine.wrap(input, output);
+        return sslEngine.wrap(input, offset, length, output);
     }
 
     protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
@@ -1270,11 +1270,11 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     appOut.writeTo(new RetainableByteBuffer.GatheringTarget()
                                     {
                                         @Override
-                                        public long write(ByteBuffer[] inputs) throws IOException
+                                        public long write(ByteBuffer[] inputs, int offset, int length) throws IOException
                                         {
                                             if (wrapResultRef[0] != null)
                                                 return 0;
-                                            wrapResultRef[0] = wrap(_sslEngine, inputs, output);
+                                            wrapResultRef[0] = wrap(_sslEngine, inputs, offset, length, output);
                                             return wrapResultRef[0].bytesConsumed();
                                         }
 

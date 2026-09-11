@@ -21,11 +21,12 @@ import java.util.concurrent.atomic.LongAdder;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.io.Content.Chunk;
 import org.eclipse.jetty.server.Context;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -138,29 +139,20 @@ public class HttpInput extends ServletInputStream implements Runnable
     private int get(Content content, byte[] bytes, int offset, int length)
     {
         length = Math.min(content.remaining(), length);
-        int consumed = content.get(bytes, offset, length);
-        _contentConsumed.add(consumed);
-        return consumed;
+        try (RetainableByteBuffer buffer = content.acquire())
+        {
+            buffer.get(bytes, offset, length);
+            _contentConsumed.add(length);
+            return length;
+        }
     }
 
     private int get(Content content, ByteBuffer des)
     {
-        var capacity = des.remaining();
-        var src = content.getByteBuffer();
-        if (src.remaining() > capacity)
+        try (RetainableByteBuffer buffer = content.acquire())
         {
-            int limit = src.limit();
-            src.limit(src.position() + capacity);
-            des.put(src);
-            src.limit(limit);
+            return buffer.appendTo(des);
         }
-        else
-        {
-            des.put(src);
-        }
-        var consumed = capacity - des.remaining();
-        _contentConsumed.add(consumed);
-        return consumed;
     }
 
     public long getContentConsumed()
@@ -490,7 +482,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * </pre>
      * Implementors of this interface must keep the following in mind:
      * <ul>
-     *     <li>Calling {@link Content#getByteBuffer()} when {@link Content#isSpecial()} returns <code>true</code> throws
+     *     <li>Calling {@link Content#acquire()} when {@link Content#isSpecial()} returns <code>true</code> throws
      *     {@link IllegalStateException}.</li>
      *     <li>A {@link Content} can both be non-special and have {@link Content#isEof()} return <code>true</code>.</li>
      *     <li>{@link Content} extends {@link Callback} to manage the lifecycle of the contained byte buffer. The code calling
@@ -582,45 +574,51 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public static class Content implements Callback
     {
-        public static Content asChunk(org.eclipse.jetty.io.Content.Chunk chunk)
+        public static Content asChunk(Chunk chunk)
         {
-            if (org.eclipse.jetty.io.Content.Chunk.isFailure(chunk))
+            if (Chunk.isFailure(chunk))
                 return new ErrorContent(chunk.getFailure());
             if (chunk.isLast() && !chunk.hasRemaining())
                 return new EofContent();
-            Content content = new Content(chunk.getByteBuffer())
+            try (RetainableByteBuffer buffer = chunk.acquire())
             {
-                @Override
-                public void succeeded()
+                Content content = new Content(buffer)
                 {
-                    chunk.release();
-                    super.succeeded();
-                }
+                    @Override
+                    public void succeeded()
+                    {
+                        buffer.release();
+                        super.succeeded();
+                    }
 
-                @Override
-                public void failed(Throwable x)
-                {
-                    chunk.release();
-                    super.failed(x);
-                }
-            };
-            return chunk.isLast() ? new WrappingContent(content, true) : content;
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        buffer.release();
+                        super.failed(x);
+                    }
+                };
+                return chunk.isLast() ? new WrappingContent(content, true) : content;
+            }
         }
 
-        protected final ByteBuffer _content;
+        protected final RetainableByteBuffer _content;
 
-        public Content(ByteBuffer content)
+        public Content(RetainableByteBuffer content)
         {
+            content.retain();
             _content = content;
         }
 
-        /**
-         * Get the wrapped byte buffer. Throws {@link IllegalStateException} if the content is special.
-         * @return the wrapped byte buffer.
-         */
+        public RetainableByteBuffer acquire()
+        {
+            _content.retain();
+            return _content;
+        }
+
         public ByteBuffer getByteBuffer()
         {
-            return _content;
+            return null;
         }
 
         @Override
@@ -630,28 +628,13 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
 
         /**
-         * Read the wrapped byte buffer. Throws {@link IllegalStateException} if the content is special.
-         * @param buffer The array into which bytes are to be written.
-         * @param offset The offset within the array of the first byte to be written.
-         * @param length The maximum number of bytes to be written to the given array.
-         * @return The amount of bytes read from the buffer.
-         */
-        public int get(byte[] buffer, int offset, int length)
-        {
-            length = Math.min(_content.remaining(), length);
-            _content.get(buffer, offset, length);
-            return length;
-        }
-
-        /**
          * Skip some bytes from the buffer. Has no effect on a special content.
          * @param length How many bytes to skip.
          * @return How many bytes were skipped.
          */
         public int skip(int length)
         {
-            length = Math.min(_content.remaining(), length);
-            _content.position(_content.position() + length);
+            _content.consume(length);
             return length;
         }
 
@@ -672,7 +655,7 @@ public class HttpInput extends ServletInputStream implements Runnable
          */
         public int remaining()
         {
-            return _content.remaining();
+            return (int)_content.remaining();
         }
 
         /**
@@ -682,7 +665,7 @@ public class HttpInput extends ServletInputStream implements Runnable
          */
         public boolean isEmpty()
         {
-            return !_content.hasRemaining();
+            return !hasContent();
         }
 
         /**
@@ -721,7 +704,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         public String toString()
         {
             return String.format("%s@%x{%s,spc=%s,eof=%s,err=%s}", TypeUtil.toShortName(getClass()), hashCode(),
-                BufferUtil.toDetailString(_content), isSpecial(), isEof(), getError());
+                _content, isSpecial(), isEof(), getError());
         }
     }
 
@@ -735,7 +718,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
         public WrappingContent(Content delegate, boolean eof)
         {
-            super(delegate.getByteBuffer());
+            super(delegate._content);
             _delegate = delegate;
             _eof = eof;
         }
@@ -772,17 +755,11 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         public SpecialContent()
         {
-            super(null);
+            super(RetainableByteBuffer.empty());
         }
 
         @Override
-        public final ByteBuffer getByteBuffer()
-        {
-            throw new IllegalStateException(this + " has no buffer");
-        }
-
-        @Override
-        public final int get(byte[] buffer, int offset, int length)
+        public RetainableByteBuffer acquire()
         {
             throw new IllegalStateException(this + " has no buffer");
         }

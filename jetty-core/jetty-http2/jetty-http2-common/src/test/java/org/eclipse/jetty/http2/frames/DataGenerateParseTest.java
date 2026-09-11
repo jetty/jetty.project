@@ -60,11 +60,11 @@ public class DataGenerateParseTest
     {
         List<DataFrame> frames = testGenerateParse(content);
         assertEquals(1, frames.size());
-        DataFrame frame = frames.get(0);
+        DataFrame frame = frames.getFirst();
         assertTrue(frame.getStreamId() != 0);
         assertTrue(frame.isEndStream());
         assertThat(BufferUtil.toArray(frame.acquire()), is(BufferUtil.toArray(content)));
-        frames.forEach(DataFrame::release);
+        frames.forEach(DataFrame::close);
     }
 
     @Test
@@ -84,7 +84,7 @@ public class DataGenerateParseTest
             rb.release();
         }
         assertThat(aggregate.getArray(), is(BufferUtil.toArray(content)));
-        frames.forEach(DataFrame::release);
+        frames.forEach(DataFrame::close);
     }
 
     private List<DataFrame> testGenerateParse(RetainableByteBuffer data)
@@ -98,7 +98,7 @@ public class DataGenerateParseTest
             @Override
             public void onData(DataFrame frame)
             {
-                frame.retain();
+                frame.acquire();
                 frames.add(frame);
             }
         });
@@ -107,22 +107,24 @@ public class DataGenerateParseTest
         for (int i = 0; i < 2; ++i)
         {
             List<RetainableByteBuffer> accumulator = new ArrayList<>();
-            RetainableByteBuffer slice = data.slice();
-            int generated = 0;
-            while (true)
+            try (RetainableByteBuffer slice = data.slice())
             {
-                generated += generator.generateData(accumulator, 13, slice, true, (int)slice.remaining());
-                generated -= Frame.HEADER_LENGTH;
-                if (generated == data.remaining())
-                    break;
+                int generated = 0;
+                while (true)
+                {
+                    generated += generator.generateData(accumulator, 13, slice, true, (int)slice.remaining());
+                    generated -= Frame.HEADER_LENGTH;
+                    if (generated == data.remaining())
+                        break;
+                }
             }
-            slice.release();
 
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator))
+            {
+                accumulator.forEach(RetainableByteBuffer::release);
+                UnknownParseTest.parse(parser, rb);
+            }
         }
 
         return frames;
@@ -140,7 +142,7 @@ public class DataGenerateParseTest
             @Override
             public void onData(DataFrame frame)
             {
-                frame.retain();
+                frame.acquire();
                 frames.add(frame);
             }
         });
@@ -150,24 +152,26 @@ public class DataGenerateParseTest
         {
             List<RetainableByteBuffer> accumulator = new ArrayList<>();
             RetainableByteBuffer data = RetainableByteBuffer.wrap(largeContent);
-            RetainableByteBuffer slice = data.slice();
-            int generated = 0;
-            while (true)
+            try (RetainableByteBuffer slice = data.slice())
             {
-                generated += generator.generateData(accumulator, 13, slice, true, (int)slice.remaining());
-                generated -= Frame.HEADER_LENGTH;
-                if (generated == data.remaining())
-                    break;
+                int generated = 0;
+                while (true)
+                {
+                    generated += generator.generateData(accumulator, 13, slice, true, (int)slice.remaining());
+                    generated -= Frame.HEADER_LENGTH;
+                    if (generated == data.remaining())
+                        break;
+                }
             }
-            slice.release();
 
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator))
+            {
+                accumulator.forEach(RetainableByteBuffer::release);
+                UnknownParseTest.parse(parser, rb);
+            }
 
             assertEquals(largeContent.length, frames.stream().mapToLong(DataFrame::remaining).sum());
-            frames.forEach(DataFrame::release);
+            frames.forEach(DataFrame::close);
             frames.clear();
         }
     }

@@ -296,7 +296,7 @@ public class AsyncMiddleManServletTest
             @Override
             protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
-                return new GZIPContentTransformer(ContentTransformer.IDENTITY);
+                return new GZIPContentTransformer(getHttpClient(), ContentTransformer.IDENTITY);
             }
         });
         startClient();
@@ -329,13 +329,13 @@ public class AsyncMiddleManServletTest
             @Override
             protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
             {
-                return new GZIPContentTransformer(new HrefTransformer.Client());
+                return new GZIPContentTransformer(getHttpClient(), new HrefTransformer.Client());
             }
 
             @Override
             protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
-                return new GZIPContentTransformer(new HrefTransformer.Server());
+                return new GZIPContentTransformer(getHttpClient(), new HrefTransformer.Server());
             }
         });
         startClient();
@@ -382,7 +382,7 @@ public class AsyncMiddleManServletTest
             @Override
             protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
-                return new GZIPContentTransformer(new HeadTransformer());
+                return new GZIPContentTransformer(getHttpClient(), new HeadTransformer());
             }
         });
         startClient();
@@ -425,7 +425,7 @@ public class AsyncMiddleManServletTest
             @Override
             protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
             {
-                return new GZIPContentTransformer(new BufferingContentTransformer());
+                return new GZIPContentTransformer(getHttpClient(), new BufferingContentTransformer());
             }
         });
         startClient();
@@ -470,7 +470,7 @@ public class AsyncMiddleManServletTest
             @Override
             protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
-                return new GZIPContentTransformer(new BufferingContentTransformer());
+                return new GZIPContentTransformer(getHttpClient(), new BufferingContentTransformer());
             }
         });
         startClient();
@@ -509,13 +509,13 @@ public class AsyncMiddleManServletTest
             @Override
             protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
             {
-                return new GZIPContentTransformer(new DiscardContentTransformer());
+                return new GZIPContentTransformer(getHttpClient(), new DiscardContentTransformer());
             }
 
             @Override
             protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
-                return new GZIPContentTransformer(new DiscardContentTransformer());
+                return new GZIPContentTransformer(getHttpClient(), new DiscardContentTransformer());
             }
         });
         startClient();
@@ -735,7 +735,7 @@ public class AsyncMiddleManServletTest
             {
                 ContentTransformer transformer = new BufferingContentTransformer();
                 if (gzipped)
-                    transformer = new GZIPContentTransformer(transformer);
+                    transformer = new GZIPContentTransformer(getHttpClient(), transformer);
                 return transformer;
             }
         });

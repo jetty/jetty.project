@@ -21,6 +21,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
@@ -153,8 +154,10 @@ public interface Response
      * Synchronous listener for the response content events.
      *
      * @see AsyncContentListener
+     * @deprecated use {@link RetainableContentListener}
      */
-    interface ContentListener extends AsyncContentListener
+    @Deprecated(since = "13.0.0", forRemoval = true)
+    interface ContentListener extends RetainableContentListener
     {
         /**
          * Callback method invoked when the response content has been received, parsed and there is demand.
@@ -169,10 +172,47 @@ public interface Response
         void onContent(Response response, ByteBuffer content) throws Exception;
 
         @Override
+        default void onContent(Response response, RetainableByteBuffer content) throws Exception
+        {
+            try
+            {
+                content.writeTo(b ->
+                {
+                    try
+                    {
+                        onContent(response, b);
+                        return 0;
+                    }
+                    catch (Throwable x)
+                    {
+                        throw new RuntimeException(x);
+                    }
+                });
+            }
+            catch (RuntimeException x)
+            {
+                Throwable cause = x.getCause();
+                if (cause == null)
+                    throw x;
+                if (cause instanceof Error)
+                    throw (Error)cause;
+                throw (Exception)cause;
+            }
+        }
+    }
+
+    interface RetainableContentListener extends AsyncContentListener
+    {
+        void onContent(Response response, RetainableByteBuffer content) throws Exception;
+
+        @Override
         default void onContent(Response response, Content.Chunk chunk, Runnable demander) throws Exception
         {
-            onContent(response, chunk.getByteBuffer());
-            demander.run();
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                onContent(response, buffer);
+                demander.run();
+            }
         }
     }
 
@@ -204,35 +244,32 @@ public interface Response
             // have set it there using Content.Source.demand(Runnable).
             Invocable.InvocationType invocationType = Invocable.getInvocationType(contentSource);
             Runnable demandCallback = Invocable.from(invocationType, () -> onContentSource(response, contentSource));
-            Content.Chunk chunk = contentSource.read();
-            if (chunk == null)
+            try (Content.Chunk chunk = contentSource.read())
             {
-                contentSource.demand(demandCallback);
-                return;
-            }
-            if (Content.Chunk.isFailure(chunk))
-            {
-                response.abort(chunk.getFailure());
-                if (!chunk.isLast())
-                    contentSource.fail(chunk.getFailure());
-                return;
-            }
-            if (chunk.isLast() && !chunk.hasRemaining())
-            {
-                chunk.release();
-                return;
-            }
+                if (chunk == null)
+                {
+                    contentSource.demand(demandCallback);
+                    return;
+                }
+                if (Content.Chunk.isFailure(chunk))
+                {
+                    response.abort(chunk.getFailure());
+                    if (!chunk.isLast())
+                        contentSource.fail(chunk.getFailure());
+                    return;
+                }
+                if (chunk.isLast() && !chunk.hasRemaining())
+                    return;
 
-            try
-            {
-                onContent(response, chunk, () -> contentSource.demand(demandCallback));
-                chunk.release();
-            }
-            catch (Throwable x)
-            {
-                chunk.release();
-                response.abort(x);
-                contentSource.fail(x);
+                try
+                {
+                    onContent(response, chunk, () -> contentSource.demand(demandCallback));
+                }
+                catch (Throwable x)
+                {
+                    response.abort(x);
+                    contentSource.fail(x);
+                }
             }
         }
     }

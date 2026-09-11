@@ -43,11 +43,12 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
         this.byteBuffer = Objects.requireNonNull(byteBuffer);
         this.retainable = Objects.requireNonNull(retainable);
         this.flipPosition = writeMode ? 0 : -1;
+        retain();
     }
 
     ByteBuffer getByteBuffer()
     {
-        return byteBuffer;
+        return flipToRead();
     }
 
     private ByteBuffer flipToRead()
@@ -148,6 +149,12 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
+    public boolean isDirect()
+    {
+        return byteBuffer.isDirect();
+    }
+
+    @Override
     public long space()
     {
         return flipPosition < 0 ? byteBuffer.capacity() - byteBuffer.limit() : byteBuffer.remaining();
@@ -160,9 +167,9 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public byte get(long index)
+    public byte get(long position)
     {
-        return flipToRead().get(Math.toIntExact(index));
+        return flipToRead().get(Math.toIntExact(position));
     }
 
     @Override
@@ -172,9 +179,9 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public short getShort(long index)
+    public short getShort(long position)
     {
-        return flipToRead().getShort(Math.toIntExact(index));
+        return flipToRead().getShort(Math.toIntExact(position));
     }
 
     @Override
@@ -184,9 +191,9 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public int getInt(long index)
+    public int getInt(long position)
     {
-        return flipToRead().getInt(Math.toIntExact(index));
+        return flipToRead().getInt(Math.toIntExact(position));
     }
 
     @Override
@@ -196,9 +203,9 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public long getLong(long index)
+    public long getLong(long position)
     {
-        return flipToRead().getLong(Math.toIntExact(index));
+        return flipToRead().getLong(Math.toIntExact(position));
     }
 
     @Override
@@ -208,16 +215,15 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public void get(long index, byte[] b, int off, int len)
+    public void get(long position, byte[] b, int off, int len)
     {
-        flipToRead().get(Math.toIntExact(index), b, off, len);
+        flipToRead().get(Math.toIntExact(position), b, off, len);
     }
 
     @Override
     public RetainableByteBuffer slice(long position, long length)
     {
         ByteBuffer slice = flipToRead().slice(Math.toIntExact(position), Math.toIntExact(length));
-        retain();
         return new SingleMutableBuffer(slice, this, false);
     }
 
@@ -394,12 +400,6 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     // Retainable
 
     @Override
-    public boolean canRetain()
-    {
-        return retainable.canRetain();
-    }
-
-    @Override
     public boolean isRetained()
     {
         return retainable.isRetained();
@@ -415,12 +415,6 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     public boolean release()
     {
         return retainable.release();
-    }
-
-    @Override
-    public int getRetained()
-    {
-        return retainable.getRetained();
     }
 
     public static class Empty extends SingleMutableBuffer

@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -458,11 +457,10 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
         return out.build();
     }
 
-    protected SignedMessage parseMessage(Request request, Response response, Callback callback)
+    protected SignedMessage parseMessage(Request request)
     {
-        try
+        try (InputStream inputStream = Content.Source.asInputStream(request))
         {
-            InputStream inputStream = Content.Source.asInputStream(request);
             String requestContent = readMessage(inputStream);
             ByteBufferContentSource contentSource = new ByteBufferContentSource(BufferUtil.toBuffer(requestContent));
 
@@ -487,8 +485,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
                         .maxSize(_maxMessageSize)
                         .maxParts(10)
                         .build();
-
-                    MultiPartFormData.Parts parts = MultiPartFormData.from(contentSource, request, contentType, config).get();
+                    MultiPartFormData.Parts parts = MultiPartFormData.getParts(contentSource, request, contentType, config);
                     signature = parts.getFirst("signature").getContentAsString(StandardCharsets.ISO_8859_1);
                     message = parts.getFirst("message").getContentAsString(StandardCharsets.ISO_8859_1);
                 }
@@ -503,7 +500,6 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("error reading SIWE message and signature", t);
-            sendError(request, response, callback, t.getMessage());
             return null;
         }
     }
@@ -512,7 +508,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
     {
         String nonce = createNonce(request.getSession(false));
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "application/json");
-        RetainableByteBuffer content = BufferUtil.toReadableBuffer("{ \"nonce\": \"" + nonce + "\" }");
+        RetainableByteBuffer content = RetainableByteBuffer.wrap("{ \"nonce\": \"" + nonce + "\" }", StandardCharsets.ISO_8859_1);
         response.write(true, content, callback);
         return AuthenticationState.CHALLENGE;
     }
@@ -584,12 +580,12 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
                     LOG.debug("authentication request");
 
                 // Parse and validate SIWE Message.
-                SignedMessage signedMessage = parseMessage(request, response, callback);
+                SignedMessage signedMessage = parseMessage(request);
                 if (signedMessage == null)
-                    return sendError(request, response, callback, "failed to read SIWE message");
+                    return sendError(request, response, callback, "Failed to read SIWE message");
                 SignInWithEthereumToken siwe = SignInWithEthereumToken.from(signedMessage.message());
                 if (siwe == null)
-                    return sendError(request, response, callback, "failed to parse SIWE message");
+                    return sendError(request, response, callback, "Failed to parse SIWE message");
 
                 AuthenticationState authenticationState = validateSignInWithEthereumToken(siwe, signedMessage, request, response, callback);
                 if (authenticationState != null)
@@ -716,16 +712,9 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
 
     protected Fields getParameters(Request request)
     {
-        try
-        {
-            Fields queryFields = Request.extractQueryParameters(request);
-            Fields formFields = FormFields.from(request).get();
-            return Fields.combine(queryFields, formFields);
-        }
-        catch (InterruptedException | ExecutionException e)
-        {
-            throw new RuntimeException(e);
-        }
+        Fields queryFields = Request.extractQueryParameters(request);
+        Fields formFields = FormFields.getFields(request);
+        return Fields.combine(queryFields, formFields);
     }
 
     public boolean isLoginPage(String pathInContext)

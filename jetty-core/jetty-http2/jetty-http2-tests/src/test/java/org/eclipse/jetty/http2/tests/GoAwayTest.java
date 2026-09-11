@@ -522,11 +522,12 @@ public class GoAwayTest extends AbstractTest
         Stream serverStream = serverStreams.iterator().next();
         while (true)
         {
-            Content.Chunk chunk = serverStream.read();
-            assertNotNull(chunk);
-            chunk.release();
-            if (chunk.isLast())
-                break;
+            try (Content.Chunk chunk = serverStream.read())
+            {
+                assertNotNull(chunk);
+                if (chunk.isLast())
+                    break;
+            }
         }
 
         assertTrue(serverCloseLatch.await(5, TimeUnit.SECONDS));
@@ -728,12 +729,13 @@ public class GoAwayTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        chunk.release();
-                        if (chunk.isLast())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            if (chunk.isLast())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            }
                         }
                     }
                 };

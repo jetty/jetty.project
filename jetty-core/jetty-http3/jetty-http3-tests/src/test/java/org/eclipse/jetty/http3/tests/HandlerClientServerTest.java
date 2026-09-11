@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.tests;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,7 +97,7 @@ public class HandlerClientServerTest extends AbstractClientServerTest
 
         Session.Client session = newSession(new Session.Client.Listener() {});
 
-        List<ByteBuffer> clientReceivedBuffers = new ArrayList<>();
+        List<RetainableByteBuffer> clientReceivedBuffers = new ArrayList<>();
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest(HttpMethod.POST, "/"), false);
@@ -115,27 +114,24 @@ public class HandlerClientServerTest extends AbstractClientServerTest
             @Override
             public void onDataAvailable(Stream.Client stream)
             {
-                Content.Chunk chunk = stream.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = stream.read())
                 {
+                    if (chunk == null)
+                    {
+                        stream.demand();
+                        return;
+                    }
+
+                    clientReceivedBuffers.add(chunk.acquire());
+
+                    if (chunk.isLast())
+                    {
+                        clientResponseLatch.countDown();
+                        return;
+                    }
+
                     stream.demand();
-                    return;
                 }
-
-                ByteBuffer byteBuffer = chunk.getByteBuffer();
-                ByteBuffer copy = ByteBuffer.allocate(byteBuffer.remaining());
-                copy.put(byteBuffer);
-                copy.flip();
-                clientReceivedBuffers.add(copy);
-                chunk.release();
-
-                if (chunk.isLast())
-                {
-                    clientResponseLatch.countDown();
-                    return;
-                }
-
-                stream.demand();
             }
         }, p));
 
@@ -153,12 +149,16 @@ public class HandlerClientServerTest extends AbstractClientServerTest
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
 
-        int sum = clientReceivedBuffers.stream().mapToInt(Buffer::remaining).sum();
+        int sum = Math.toIntExact(clientReceivedBuffers.stream().mapToLong(RetainableByteBuffer::remaining).sum());
         assertThat(sum, is(bytes.length));
 
         byte[] mirroredBytes = new byte[sum];
         ByteBuffer clientBuffer = ByteBuffer.wrap(mirroredBytes);
-        clientReceivedBuffers.forEach(clientBuffer::put);
+        clientReceivedBuffers.forEach(b ->
+        {
+            b.putTo(clientBuffer);
+            b.release();
+        });
         assertArrayEquals(bytes, mirroredBytes);
     }
 }

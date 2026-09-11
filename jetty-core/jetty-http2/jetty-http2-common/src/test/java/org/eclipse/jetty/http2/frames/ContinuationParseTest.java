@@ -302,7 +302,7 @@ public class ContinuationParseTest
         // the failure is due to accumulation, not decoding.
         parser.getHpackDecoder().setMaxHeaderListSize(10 * maxHeadersSize);
 
-        RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
         accumulator.forEach(RetainableByteBuffer::release);
         parser.parse(rb);
         rb.release();

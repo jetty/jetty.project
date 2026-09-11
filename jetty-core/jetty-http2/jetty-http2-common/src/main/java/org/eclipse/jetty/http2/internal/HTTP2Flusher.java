@@ -325,11 +325,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 pendingEntries,
                 this);
 
-        RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
-        accumulator.forEach(RetainableByteBuffer::release);
-        accumulator.clear();
-        session.getEndPoint().write(rb, this);
-        rb.release();
+        try (RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator))
+        {
+            accumulator.forEach(RetainableByteBuffer::release);
+            accumulator.clear();
+            session.getEndPoint().write(rb, this);
+        }
         return Action.SCHEDULED;
     }
 

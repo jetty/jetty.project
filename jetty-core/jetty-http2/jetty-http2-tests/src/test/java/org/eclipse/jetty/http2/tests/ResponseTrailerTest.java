@@ -103,10 +103,11 @@ public class ResponseTrailerTest extends AbstractTest
                 @Override
                 public void onDataAvailable(Stream stream)
                 {
-                    Content.Chunk chunk = stream.read();
-                    chunk.release();
-                    if (chunk.isLast())
-                        latch.countDown();
+                    try (Content.Chunk chunk = stream.read())
+                    {
+                        if (chunk.isLast())
+                            latch.countDown();
+                    }
                 }
             });
 

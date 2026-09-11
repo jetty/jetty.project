@@ -124,34 +124,33 @@ public class TrailersTest extends AbstractTest
 
             private void firstRead()
             {
-                Content.Chunk chunk = _request.read();
-
-                // No trailers yet.
-                assertThat(chunk, not(instanceOf(Trailers.class)));
-                chunk.release();
-
-                trailerLatch.countDown();
-
-                _request.demand(this::otherReads);
+                try (Content.Chunk chunk = _request.read())
+                {
+                    // No trailers yet.
+                    assertThat(chunk, not(instanceOf(Trailers.class)));
+                    trailerLatch.countDown();
+                    _request.demand(this::otherReads);
+                }
             }
 
             private void otherReads()
             {
                 while (true)
                 {
-                    Content.Chunk chunk = _request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = _request.read())
                     {
-                        _request.demand(this::otherReads);
-                        return;
-                    }
-                    chunk.release();
-                    if (chunk instanceof Trailers contentTrailers)
-                    {
-                        HttpFields trailers = contentTrailers.getTrailers();
-                        assertNotNull(trailers.get("X-Trailer"));
-                        _callback.succeeded();
-                        return;
+                        if (chunk == null)
+                        {
+                            _request.demand(this::otherReads);
+                            return;
+                        }
+                        if (chunk instanceof Trailers contentTrailers)
+                        {
+                            HttpFields trailers = contentTrailers.getTrailers();
+                            assertNotNull(trailers.get("X-Trailer"));
+                            _callback.succeeded();
+                            return;
+                        }
                     }
                 }
             }
@@ -295,12 +294,19 @@ public class TrailersTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                DataFrame frame = new DataFrame(stream.getId(), RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast());
-                frames.add(frame);
-                chunk.release();
-                if (frame.isEndStream())
-                    latch.countDown();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        try (DataFrame frame = new DataFrame(stream.getId(), buffer, chunk.isLast()))
+                        {
+                            frame.acquire();
+                            frames.add(frame);
+                            if (frame.isEndStream())
+                                latch.countDown();
+                        }
+                    }
+                }
             }
         });
 
@@ -313,11 +319,16 @@ public class TrailersTest extends AbstractTest
         HeadersFrame trailers = (HeadersFrame)frames.get(2);
         DataFrame eof = (DataFrame)frames.get(3);
 
+        frames.stream()
+            .filter(DataFrame.class::isInstance)
+            .map(DataFrame.class::cast)
+            .forEach(DataFrame::close);
+
         assertFalse(headers.isEndStream());
         assertFalse(data.isEndStream());
         assertTrue(trailers.isEndStream());
         assertTrue(eof.isEndStream());
-        assertEquals(trailers.getMetaData().getHttpFields().get(trailerName), trailerValue);
+        assertEquals(trailerValue, trailers.getMetaData().getHttpFields().get(trailerName));
     }
 
     @Test

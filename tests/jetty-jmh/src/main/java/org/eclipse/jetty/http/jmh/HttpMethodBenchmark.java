@@ -41,9 +41,17 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Measurement(iterations = 5, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 public class HttpMethodBenchmark
 {
-    private static final RetainableByteBuffer GET = BufferUtil.toReadableBuffer("GET / HTTP/1.1\r\n\r\n");
-    private static final RetainableByteBuffer POST = BufferUtil.toReadableBuffer("POST / HTTP/1.1\r\n\r\n");
-    private static final RetainableByteBuffer MOVE = BufferUtil.toReadableBuffer("MOVE / HTTP/1.1\r\n\r\n");
+    private static final RetainableByteBuffer GET;
+    private static final RetainableByteBuffer POST;
+    private static final RetainableByteBuffer MOVE;
+
+    static
+    {
+        GET = RetainableByteBuffer.wrap("GET / HTTP/1.1\r\n\r\n", StandardCharsets.ISO_8859_1);
+        POST = RetainableByteBuffer.wrap("POST / HTTP/1.1\r\n\r\n", StandardCharsets.ISO_8859_1);
+        MOVE = RetainableByteBuffer.wrap("MOVE / HTTP/1.1\r\n\r\n", StandardCharsets.ISO_8859_1);
+    }
+
     private static final Map<String, HttpMethod> MAP = new HashMap<>();
 
     static

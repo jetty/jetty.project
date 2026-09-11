@@ -15,6 +15,7 @@ package org.eclipse.jetty.websocket.tests.client;
 
 import java.io.EOFException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -27,8 +28,8 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.api.exceptions.UpgradeException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.JettyUpgradeListener;
@@ -84,7 +85,7 @@ public class ClientResponseTest
         {
             resp.setStatus(HttpStatus.IM_A_TEAPOT_418);
             resp.getHeaders().put("specialHeader", "value123");
-            resp.write(true, BufferUtil.toReadableBuffer("failed by test"), cb);
+            resp.write(true, RetainableByteBuffer.wrap("failed by test", StandardCharsets.ISO_8859_1), cb);
             return null;
         });
 

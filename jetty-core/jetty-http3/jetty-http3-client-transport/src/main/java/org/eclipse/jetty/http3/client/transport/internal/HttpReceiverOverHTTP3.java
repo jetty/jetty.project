@@ -28,6 +28,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,30 +55,34 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver
             LOG.debug("Reading, fillInterestIfNeeded={} from {} in {}", fillInterestIfNeeded, stream, this);
         if (stream == null)
             return Content.Chunk.from(new EOFException("Channel has been released"));
-        Content.Chunk chunk = stream.read();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Read stream data {} in {}", chunk, this);
-        if (chunk == null)
+        try (Content.Chunk chunk = stream.read())
         {
-            if (fillInterestIfNeeded)
-                stream.demand();
-            return null;
-        }
-        if (!chunk.isLast() || chunk.hasRemaining())
-        {
-            // Convert to non-last chunk.
-            return Content.Chunk.asChunk(chunk.getByteBuffer(), false, chunk);
-        }
-        chunk.release();
-        if (Content.Chunk.isFailure(chunk))
-        {
-            responseFailure(chunk.getFailure(), Promise.noop());
-            return chunk;
-        }
-        else
-        {
-            responseSuccess(null);
-            return Content.Chunk.EOF;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Read stream data {} in {}", chunk, this);
+            if (chunk == null)
+            {
+                if (fillInterestIfNeeded)
+                    stream.demand();
+                return null;
+            }
+            if (!chunk.isLast() || chunk.hasRemaining())
+            {
+                // Convert to non-last chunk.
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    return Content.Chunk.from(buffer, false);
+                }
+            }
+            if (Content.Chunk.isFailure(chunk))
+            {
+                responseFailure(chunk.getFailure(), Promise.noop());
+                return chunk;
+            }
+            else
+            {
+                responseSuccess(null);
+                return Content.Chunk.EOF;
+            }
         }
     }
 

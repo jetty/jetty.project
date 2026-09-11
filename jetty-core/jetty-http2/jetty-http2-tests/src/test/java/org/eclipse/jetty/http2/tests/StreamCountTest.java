@@ -68,12 +68,13 @@ public class StreamCountTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        chunk.release();
-                        if (chunk.isLast())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), Callback.NOOP);
+                            if (chunk.isLast())
+                            {
+                                MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), Callback.NOOP);
+                            }
                         }
                     }
                 };
@@ -134,12 +135,13 @@ public class StreamCountTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        chunk.release();
-                        if (chunk.isLast())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), Callback.NOOP);
+                            if (chunk.isLast())
+                            {
+                                MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), Callback.NOOP);
+                            }
                         }
                     }
                 };
@@ -205,7 +207,7 @@ public class StreamCountTest extends AbstractTest
         List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.control(accumulator, frame3);
         generator.data(accumulator, data3, (int)data3.remaining());
-        RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
         accumulator.forEach(RetainableByteBuffer::release);
         ((HTTP2Session)session).getEndPoint().write(rb, Callback.NOOP);
         rb.release();

@@ -323,7 +323,10 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
 
     byte[] combineToByteArray(RetainableByteBuffer... buffers) throws IOException
     {
-        return RetainableByteBuffer.wrap(buffers).getArray();
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(buffers))
+        {
+            return buffer.getArray();
+        }
     }
 
     byte[] toByteArray(Frame frame)

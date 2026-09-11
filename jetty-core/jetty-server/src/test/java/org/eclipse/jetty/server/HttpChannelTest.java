@@ -554,7 +554,7 @@ public class HttpChannelTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toReadableBuffer("12345"), callback);
+                response.write(true, RetainableByteBuffer.wrap("12345", StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         };
@@ -592,7 +592,7 @@ public class HttpChannelTest
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 try (StacklessLogging ignore = new StacklessLogging(Response.class))
                 {
-                    response.write(true, BufferUtil.toReadableBuffer("12345"), Callback.from(callback, writeFailureRef::set));
+                    response.write(true, RetainableByteBuffer.wrap("12345", StandardCharsets.ISO_8859_1), Callback.from(callback, writeFailureRef::set));
                 }
                 return true;
             }
@@ -637,13 +637,13 @@ public class HttpChannelTest
 
                 try (Blocker.Callback cb = Blocker.callback())
                 {
-                    response.write(false, BufferUtil.toReadableBuffer("0"), cb);
+                    response.write(false, RetainableByteBuffer.wrap("0", StandardCharsets.ISO_8859_1), cb);
                     cb.block();
                 }
 
                 try (StacklessLogging ignore = new StacklessLogging(Response.class))
                 {
-                    response.write(true, BufferUtil.toReadableBuffer("12345"), Callback.from(callback, writeFailureRef::set));
+                    response.write(true, RetainableByteBuffer.wrap("12345", StandardCharsets.ISO_8859_1), Callback.from(callback, writeFailureRef::set));
                 }
                 return true;
             }
@@ -688,7 +688,7 @@ public class HttpChannelTest
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false,
-                    BufferUtil.toReadableBuffer("12345"), Callback.from(() ->
+                    RetainableByteBuffer.wrap("12345", StandardCharsets.ISO_8859_1), Callback.from(() ->
                         response.write(true, null, callback)));
                 return true;
             }
@@ -721,7 +721,7 @@ public class HttpChannelTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(true, BufferUtil.toReadableBuffer("1234567890"), callback);
+                response.write(true, RetainableByteBuffer.wrap("1234567890", StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         };
@@ -761,9 +761,9 @@ public class HttpChannelTest
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
                 try (StacklessLogging ignore = new StacklessLogging(Response.class))
                 {
-                    response.write(false, BufferUtil.toReadableBuffer("1234"),
+                    response.write(false, RetainableByteBuffer.wrap("1234", StandardCharsets.ISO_8859_1),
                         Callback.from(() ->
-                            response.write(true, BufferUtil.toReadableBuffer("567890"),
+                            response.write(true, RetainableByteBuffer.wrap("567890", StandardCharsets.ISO_8859_1),
                                 callback)));
                 }
                 return true;
@@ -838,7 +838,7 @@ public class HttpChannelTest
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toReadableBuffer("12345"), callback)));
+                response.write(false, null, Callback.from(() -> response.write(true, RetainableByteBuffer.wrap("12345", StandardCharsets.ISO_8859_1), callback)));
                 return true;
             }
         };
@@ -881,7 +881,7 @@ public class HttpChannelTest
                 response.getHeaders().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toReadableBuffer("12345"), callback)));
+                response.write(false, null, Callback.from(() -> response.write(true, RetainableByteBuffer.wrap("12345", StandardCharsets.ISO_8859_1), callback)));
                 return true;
             }
         };
@@ -1092,7 +1092,7 @@ public class HttpChannelTest
         // demand content
         assertThat(timeline.next(), allOf(startsWith("demandContent")));
         // read the last part when it arrives
-        assertThat(timeline.next(), allOf(startsWith("readContent: "), containsString("<<<echo>>>"), containsString("l=true")));
+        assertThat(timeline.next(), allOf(startsWith("readContent: "), containsString("<<<echo>>>"), containsString("last=true")));
         // send the last part
         assertThat(timeline.next(), allOf(startsWith("send 0 l=true "), containsString("<<<echo>>>")));
         // succeed the stream
@@ -1170,20 +1170,21 @@ public class HttpChannelTest
                     @Override
                     public void run()
                     {
-                        Content.Chunk chunk = request.read();
-                        contentSize.add(chunk.remaining());
-                        chunk.release();
-                        if (chunk.isLast())
-                            latch.countDown();
-                        else
-                            request.demand(this);
+                        try (Content.Chunk chunk = request.read())
+                        {
+                            contentSize.add(chunk.remaining());
+                            if (chunk.isLast())
+                                latch.countDown();
+                            else
+                                request.demand(this);
+                        }
                     }
                 };
                 request.demand(onContentAvailable);
                 if (latch.await(30, TimeUnit.SECONDS))
                 {
                     response.setStatus(200);
-                    response.write(true, BufferUtil.toReadableBuffer("contentSize=" + contentSize.longValue()), callback);
+                    response.write(true, RetainableByteBuffer.wrap("contentSize=" + contentSize.longValue(), StandardCharsets.ISO_8859_1), callback);
                 }
                 else
                 {
@@ -1353,10 +1354,12 @@ public class HttpChannelTest
 
         // Can read the failure.
         Request rq = handling.get().getRequest();
-        Content.Chunk chunk = rq.read();
-        assertTrue(chunk.isLast());
-        assertTrue(Content.Chunk.isFailure(chunk, true));
-        assertThat(chunk.getFailure(), sameInstance(failure));
+        try (Content.Chunk chunk = rq.read())
+        {
+            assertTrue(chunk.isLast());
+            assertTrue(Content.Chunk.isFailure(chunk, true));
+            assertThat(chunk.getFailure(), sameInstance(failure));
+        }
 
         CountDownLatch demand = new CountDownLatch(1);
         // Demand callback is serialized after the onFailure task runs.

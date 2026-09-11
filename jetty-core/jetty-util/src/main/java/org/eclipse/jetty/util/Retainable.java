@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </ol>
  * </ol>
  */
-public interface Retainable
+public interface Retainable extends AutoCloseable
 {
     Retainable NON_RETAINABLE = new Retainable()
     {
@@ -79,21 +79,8 @@ public interface Retainable
     }
 
     /**
-     * <p>Returns whether this resource is referenced counted by calls to {@link #retain()}
-     * and {@link #release()}.</p>
-     * <p>Implementations may decide that special resources are not not referenced counted (for example,
-     * {@code static} constants) so calling {@link #retain()} is a no-operation, and
-     * calling {@link #release()} on those special resources is a no-operation that always returns true.</p>
-     *
-     * @return true if calls to {@link #retain()} are reference counted.
-     */
-    default boolean canRetain()
-    {
-        return false;
-    }
-
-    /**
      * <p>Returns whether {@link #retain()} has been called at least one more time than {@link #release()}.</p>
+     *
      * @return whether this buffer is retained
      */
     default boolean isRetained()
@@ -112,20 +99,17 @@ public interface Retainable
      * <p>Releases this resource, potentially decrementing a reference count (if any).</p>
      *
      * @return {@code true} when the reference count goes to zero or if there was no reference count,
-     *         {@code false} otherwise.
+     * {@code false} otherwise.
      */
     default boolean release()
     {
         return true;
     }
 
-    /**
-     * <p>Get the retained count. This value is volatile and should only be used for informational/debugging purposes.</p>
-     * @return the retained count
-     */
-    default int getRetained()
+    @Override
+    default void close()
     {
-        return -1;
+        release();
     }
 
     /**
@@ -146,18 +130,6 @@ public interface Retainable
         }
 
         @Override
-        public boolean canRetain()
-        {
-            return getWrapped().canRetain();
-        }
-
-        @Override
-        public int getRetained()
-        {
-            return getWrapped().getRetained();
-        }
-
-        @Override
         public boolean isRetained()
         {
             return getWrapped().isRetained();
@@ -173,6 +145,12 @@ public interface Retainable
         public boolean release()
         {
             return getWrapped().release();
+        }
+
+        @Override
+        public void close()
+        {
+            getWrapped().close();
         }
 
         @Override
@@ -209,7 +187,7 @@ public interface Retainable
         /**
          * @return the current reference count
          */
-        public int get()
+        public int getCount()
         {
             return references.get();
         }
@@ -223,12 +201,6 @@ public interface Retainable
         {
             if (references.getAndUpdate(c -> c == 0 ? 1 : c) != 0)
                 throw new IllegalStateException("acquired while in use " + this);
-        }
-
-        @Override
-        public boolean canRetain()
-        {
-            return get() > 0;
         }
 
         @Override
@@ -258,19 +230,13 @@ public interface Retainable
         @Override
         public boolean isRetained()
         {
-            return references.get() > 1;
-        }
-
-        @Override
-        public int getRetained()
-        {
-            return references.get();
+            return getCount() > 1;
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s@%x[rc=%d]", TypeUtil.toShortName(getClass()), hashCode(), get());
+            return String.format("%s@%x[rc=%d]", TypeUtil.toShortName(getClass()), hashCode(), getCount());
         }
     }
 }

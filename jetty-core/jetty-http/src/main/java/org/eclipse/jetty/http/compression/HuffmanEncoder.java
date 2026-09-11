@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.http.compression;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static org.eclipse.jetty.http.compression.Huffman.BITS_MASK;
 import static org.eclipse.jetty.http.compression.Huffman.CODE_SHIFT;
@@ -61,7 +61,7 @@ public class HuffmanEncoder
      * @param buffer the buffer to encode into.
      * @param s the string to encode.
      */
-    public static void encode(ByteBuffer buffer, String s)
+    public static void encode(RetainableByteBuffer.Mutable buffer, String s)
     {
         encode(PACKED_CODES, buffer, s);
     }
@@ -79,7 +79,7 @@ public class HuffmanEncoder
      * @param buffer the buffer to encode into in lowercase.
      * @param s the string to encode.
      */
-    public static void encodeLowerCase(ByteBuffer buffer, String s)
+    public static void encodeLowerCase(RetainableByteBuffer.Mutable buffer, String s)
     {
         encode(PACKED_LCCODES, buffer, s);
     }
@@ -114,34 +114,34 @@ public class HuffmanEncoder
      * @param prefix the prefix used to encode the length, in bits
      * @param s the string to encode
      */
-    public static void encodeWithLength(ByteBuffer buffer, int prefix, String s)
+    public static void encodeWithLength(RetainableByteBuffer.Mutable buffer, int prefix, String s)
     {
         encodeWithLength(PACKED_CODES, buffer, prefix, s);
     }
 
     /**
-     * As {@link #encodeWithLength(ByteBuffer, int, String)}, encoding {@code s}
+     * As {@link #encodeWithLength(RetainableByteBuffer.Mutable, int, String)}, encoding {@code s}
      * in lowercase.
      *
      * @param buffer the buffer to encode into
      * @param prefix the prefix used to encode the length, in bits
      * @param s the string to encode
      */
-    public static void encodeLowerCaseWithLength(ByteBuffer buffer, int prefix, String s)
+    public static void encodeLowerCaseWithLength(RetainableByteBuffer.Mutable buffer, int prefix, String s)
     {
         encodeWithLength(PACKED_LCCODES, buffer, prefix, s);
     }
 
-    private static void encodeWithLength(final long[] table, ByteBuffer buffer, int prefix, String s)
+    private static void encodeWithLength(final long[] table, RetainableByteBuffer.Mutable buffer, int prefix, String s)
     {
         // A prefix of 8 means the length starts a fresh octet, as NBitIntegerEncoder does.
         if (prefix == 8)
             buffer.put((byte)0x00);
 
-        int lengthPosition = buffer.position() - 1;
-        int contentPosition = buffer.position();
+        long contentPosition = buffer.writePosition();
+        long lengthPosition = contentPosition - 1;
         encode(table, buffer, s);
-        int encodedValueSize = buffer.position() - contentPosition;
+        long encodedValueSize = buffer.writePosition() - contentPosition;
 
         int max = 0xFF >>> (8 - prefix);
         if (encodedValueSize < max)
@@ -152,7 +152,7 @@ public class HuffmanEncoder
 
         // The length needs continuation octets, which would displace the content
         // already written, so rewind and write the length and the content in order.
-        buffer.position(prefix == 8 ? lengthPosition : contentPosition);
+        buffer.writePosition(prefix == 8 ? lengthPosition : contentPosition);
         NBitIntegerEncoder.encode(buffer, prefix, encodedValueSize);
         encode(table, buffer, s);
     }
@@ -162,7 +162,7 @@ public class HuffmanEncoder
      * @param buffer The buffer to encode to
      * @param s The string to encode
      */
-    private static void encode(final long[] table, ByteBuffer buffer, String s)
+    private static void encode(final long[] table, RetainableByteBuffer.Mutable buffer, String s)
     {
         long current = 0;
         int n = 0;

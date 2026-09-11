@@ -206,17 +206,18 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
                         return;
                     }
 
-                    Content.Chunk chunk = contentSource.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = contentSource.read())
                     {
-                        demander.run();
-                        return;
+                        if (chunk == null)
+                        {
+                            demander.run();
+                            return;
+                        }
+                        if (chunk.hasRemaining())
+                            contentCount.incrementAndGet();
+                        if (!chunk.isLast())
+                            demander.run();
                     }
-                    if (chunk.hasRemaining())
-                        contentCount.incrementAndGet();
-                    chunk.release();
-                    if (!chunk.isLast())
-                        demander.run();
                 }
             })
             .transport(transport)

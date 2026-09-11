@@ -21,6 +21,8 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+
 /**
  * <p>Build a string from a sequence of bytes and/or characters.</p>
  * <p>Implementations of this interface are optimized for processing a mix of calls to already decoded
@@ -85,6 +87,14 @@ public interface CharsetStringBuilder
         int end = buf.position() + buf.remaining();
         while (buf.position() < end)
             append(buf.get());
+    }
+
+    default void append(RetainableByteBuffer buffer)
+    {
+        while (buffer.hasRemaining())
+        {
+            append(buffer.get());
+        }
     }
 
     /**
