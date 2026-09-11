@@ -15,6 +15,7 @@ package org.eclipse.jetty.start.fileinits;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,6 +26,8 @@ import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.Utils;
 import org.xml.sax.SAXException;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Attempt to download a <code>maven://</code> URI, by first attempting to find
@@ -160,6 +163,38 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
     }
 
     @Override
+    public boolean exists(URI uri) throws IOException
+    {
+        Coordinates coords = getCoordinates(uri);
+        if (coords == null)
+        {
+            // Skip, not a maven:// URI
+            return false;
+        }
+
+        // Check local repo first
+        Path localFile = localRepositoryDir.resolve(coords.toPath());
+        if (!Files.isRegularFile(localFile))
+        {
+            if (offline)
+            {
+                StartLog.warn("Maven is offline, but Local Maven Repo does not contain: %s%n", coords);
+                return false;
+            }
+            else
+            {
+                // Download from global maven repo
+                if (FS.ensureDirectoryExists(localFile.getParent()))
+                    StartLog.info("mkdir %s", _basehome.toShortForm(localFile.getParent()));
+                download(coords, localFile);
+            }
+        }
+
+        // Found in local repo
+        return Files.isRegularFile(localFile);
+    }
+
+    @Override
     public boolean create(URI uri, String location) throws IOException
     {
         Coordinates coords = getCoordinates(uri);
@@ -292,7 +327,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
             return null;
         }
 
-        String ssp = uri.getSchemeSpecificPart();
+        String ssp = URLDecoder.decode(uri.getSchemeSpecificPart(), UTF_8);
 
         if (ssp.startsWith("//"))
         {

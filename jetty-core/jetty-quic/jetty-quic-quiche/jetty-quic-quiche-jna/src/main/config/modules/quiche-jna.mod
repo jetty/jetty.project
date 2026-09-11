@@ -14,4 +14,4 @@ jna
 quiche
 
 [libs]
-lib/quic/jetty-quic-quiche-jna-${jetty.version}.jar
+lib/jetty-quic-quiche-jna-${jetty.version}.jar

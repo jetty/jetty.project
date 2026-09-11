@@ -19,6 +19,7 @@
     <module>jetty-client</module>
     <module>jetty-compression</module>
     <module>jetty-coreapp</module>
+    <module>jetty-core-home</module>
     <module>jetty-deploy</module>
     <module>jetty-ee</module>
     <module>jetty-fcgi</module>

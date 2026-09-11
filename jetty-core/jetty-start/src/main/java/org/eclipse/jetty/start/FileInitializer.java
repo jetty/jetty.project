@@ -48,6 +48,15 @@ public abstract class FileInitializer
     }
 
     /**
+     * Test if URI exists (is accessible)
+     *
+     * @param uri the URI of the resource acting as its source
+     * @return true if URI exists (is accessible)
+     * @throws IOException if there was an attempt to initialize, but an error occurred.
+     */
+    public abstract boolean exists(URI uri) throws IOException;
+
+    /**
      * Initialize a file resource
      *
      * @param uri the URI of the resource acting as its source
@@ -56,7 +65,6 @@ public abstract class FileInitializer
      * @return true if local file system is modified.
      * @throws IOException if there was an attempt to initialize, but an error occurred.
      */
-
     public abstract boolean create(URI uri, String location) throws IOException;
 
     public boolean check(URI uri, String location) throws IOException

@@ -5,13 +5,7 @@ Enables Annotation parsing.
 
 [depend]
 server
-
-[ini]
-asm.version?=@asm.version@
+asm
 
 [lib]
 lib/jetty-annotations-${jetty.version}.jar
-lib/annotations/asm-${asm.version}.jar
-lib/annotations/asm-analysis-${asm.version}.jar
-lib/annotations/asm-commons-${asm.version}.jar
-lib/annotations/asm-tree-${asm.version}.jar

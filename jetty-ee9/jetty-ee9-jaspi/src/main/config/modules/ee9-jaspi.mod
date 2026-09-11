@@ -3,20 +3,24 @@
 [description]
 Enables JASPI authentication for deployed web applications.
 
+[environment]
+ee9
+
 [tags]
 security
 
-[depend]
+[depends]
 ee9-security
 ee9-auth-config-factory
-
-[lib]
-lib/jetty-ee9-jaspi-${jetty.version}.jar
-lib/ee9-jaspi/@jakarta.authentication:jakarta.authentication-api@
 
 [xml]
 etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml
 
 [files]
 basehome:etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml|etc/jaspi/jetty-ee9-jaspi-authmoduleconfig.xml
+maven://jakarta.authentication/jakarta.authentication-api/2.0.0/jar|lib/ee9/support/jakarta.authentication.jakarta.authentication-api-2.0.0.jar
+maven://org.eclipse.jetty.ee9/jetty-ee9-jaspi/${jetty.version}/jar|lib/ee9/jetty-ee9-jaspi-${jetty.version}.jar
 
+[lib]
+lib/ee9/jetty-ee9-jaspi-${jetty.version}.jar
+lib/ee9/support/jakarta.authentication.jakarta.authentication-api-2.0.0.jar

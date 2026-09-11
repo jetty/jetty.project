@@ -9,5 +9,5 @@ client
 server
 
 [lib]
-lib/fcgi/jetty-fcgi-client-${jetty.version}.jar
-lib/fcgi/jetty-fcgi-server-${jetty.version}.jar
+lib/jetty-fcgi-client-${jetty.version}.jar
+lib/jetty-fcgi-server-${jetty.version}.jar

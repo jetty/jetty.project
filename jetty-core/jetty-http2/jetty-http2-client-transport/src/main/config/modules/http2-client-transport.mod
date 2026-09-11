@@ -13,4 +13,4 @@ http2-client
 maven://org.eclipse.jetty.http2/jetty-http2-client-transport/${jetty.version}/jar|lib/http2/jetty-http2-client-transport-${jetty.version}.jar
 
 [lib]
-lib/http2/jetty-http2-client-transport-${jetty.version}.jar
+lib/jetty-http2-client-transport-${jetty.version}.jar

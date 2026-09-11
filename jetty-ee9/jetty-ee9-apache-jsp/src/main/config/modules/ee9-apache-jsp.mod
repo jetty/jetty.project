@@ -6,12 +6,20 @@ Enables use of the apache implementation of JSP.
 [environment]
 ee9
 
-[depend]
+[depends]
+ecj
 ee9-servlet
 ee9-annotations
 
+[ini]
+ee9.jsp.impl.version?=@ee9.jsp.impl.version@
+
+[files]
+maven://org.eclipse.jetty.ee9/jetty-ee9-apache-jsp/${jetty.version}/jar|lib/ee9/jetty-ee9-apache-jsp-${jetty.version}.jar
+maven://org.mortbay.jasper/mortbay-apache-el/${ee9.jsp.impl.version}/jar|lib/ee9/support/org.mortbay.jasper.mortbay-apache-el-${ee9.jsp.impl.version}.jar
+maven://org.mortbay.jasper/mortbay-apache-jsp/${ee9.jsp.impl.version}/jar|lib/ee9/support/org.mortbay.jasper.mortbay-apache-jsp-${ee9.jsp.impl.version}.jar
+
 [lib]
-lib/ee9-apache-jsp/@org.eclipse.jdt:ecj@
-lib/ee9-apache-jsp/@org.mortbay.jasper:mortbay-apache-el@
-lib/ee9-apache-jsp/@org.mortbay.jasper:mortbay-apache-jsp@
-lib/jetty-ee9-apache-jsp-${jetty.version}.jar
+lib/ee9/jetty-ee9-apache-jsp-${jetty.version}.jar
+lib/ee9/support/org.mortbay.jasper.mortbay-apache-el-${ee9.jsp.impl.version}.jar
+lib/ee9/support/org.mortbay.jasper.mortbay-apache-jsp-${ee9.jsp.impl.version}.jar

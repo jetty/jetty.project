@@ -9,5 +9,5 @@ proxy
 proxy
 
 [lib]
-lib/fcgi/jetty-fcgi-client-${jetty.version}.jar
-lib/fcgi/jetty-fcgi-proxy-${jetty.version}.jar
+lib/jetty-fcgi-client-${jetty.version}.jar
+lib/jetty-fcgi-proxy-${jetty.version}.jar

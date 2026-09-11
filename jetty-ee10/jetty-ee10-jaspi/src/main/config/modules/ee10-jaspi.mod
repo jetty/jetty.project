@@ -9,17 +9,18 @@ ee10
 [tags]
 security
 
-[depend]
+[depends]
 ee10-security
 auth-config-factory
-
-[lib]
-lib/jetty-ee10-jaspi-${jetty.version}.jar
-lib/ee10-jaspi/@jakarta.authentication:jakarta.authentication-api@
 
 [xml]
 etc/jaspi/jetty-ee10-jaspi-authmoduleconfig.xml
 
 [files]
 basehome:etc/jaspi/jetty-ee10-jaspi-authmoduleconfig.xml|etc/jaspi/jetty-ee10-jaspi-authmoduleconfig.xml
+maven://jakarta.authentication/jakarta.authentication-api/3.0.0/jar|lib/ee10/support/jakarta.authentication.jakarta.authentication-api-3.0.0.jar
+maven://org.eclipse.jetty.ee10/jetty-ee10-jaspi/${jetty.version}/jar|lib/ee10/jetty-ee10-jaspi-${jetty.version}.jar
 
+[lib]
+lib/ee10/jetty-ee10-jaspi-${jetty.version}.jar
+lib/ee10/support/jakarta.authentication.jakarta.authentication-api-3.0.0.jar
