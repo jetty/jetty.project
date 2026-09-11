@@ -243,6 +243,20 @@ public class HttpOutput extends ServletOutputStream
         content.writeTo(_servletChannel.getResponse(), last, callback);
     }
 
+    void lastWriteComplete()
+    {
+        Callback closedCallback;
+        try (AutoLock ignored = _channelState.lock())
+        {
+            _state = State.CLOSED;
+            closedCallback = _closedCallback;
+            _closedCallback = null;
+            lockedReleaseBuffer();
+        }
+        if (closedCallback != null)
+            closedCallback.succeeded();
+    }
+
     private void onWriteComplete(boolean last, Throwable failure)
     {
         String state = null;
@@ -811,7 +825,7 @@ public class HttpOutput extends ServletOutputStream
         try (AutoLock ignored = _channelState.lock())
         {
             checkWritable();
-            long written = _written + len;
+            long written = lockedGetWritten() + len;
             int space = maximizeAggregateSpace();
 
             // Is this the last write due to content-length?
@@ -848,8 +862,6 @@ public class HttpOutput extends ServletOutputStream
                 default:
                     throw new IllegalStateException(lockedStateString());
             }
-
-            _written = written;
 
             // Should we aggregate?
             if (aggregate)
@@ -949,7 +961,7 @@ public class HttpOutput extends ServletOutputStream
         try (AutoLock ignored = _channelState.lock())
         {
             checkWritable();
-            long written = _written + len;
+            long written = lockedGetWritten() + len;
 
             // Is this the last write due to content-length?
             last = isAllContentWritten(written);
@@ -981,7 +993,6 @@ public class HttpOutput extends ServletOutputStream
                 default:
                     throw new IllegalStateException(lockedStateString());
             }
-            _written = written;
         }
 
         if (!flush)
@@ -1031,7 +1042,7 @@ public class HttpOutput extends ServletOutputStream
         try (AutoLock ignored = _channelState.lock())
         {
             checkWritable();
-            long written = _written + 1;
+            long written = lockedGetWritten() + 1;
             int space = maximizeAggregateSpace();
 
             // Is this the last write due to content-length?
@@ -1063,7 +1074,6 @@ public class HttpOutput extends ServletOutputStream
                 default:
                     throw new IllegalStateException(lockedStateString());
             }
-            _written = written;
 
             lockedAcquireBuffer();
             BufferUtil.append(_aggregate.getByteBuffer(), (byte)b);
@@ -1089,6 +1099,12 @@ public class HttpOutput extends ServletOutputStream
                 throw t;
             }
         }
+    }
+
+    private long lockedGetWritten()
+    {
+        assert _channelState.isLockHeldByCurrentThread();
+        return _written + (_aggregate == null ? 0 : _aggregate.remaining());
     }
 
     @Override
@@ -1171,7 +1187,6 @@ public class HttpOutput extends ServletOutputStream
         if (LOG.isDebugEnabled())
             LOG.debug("sendContent({})", BufferUtil.toDetailString(content));
 
-        _written += content.remaining();
         channelWrite(content, true);
     }
 
@@ -1216,7 +1231,7 @@ public class HttpOutput extends ServletOutputStream
         if (LOG.isDebugEnabled())
             LOG.debug("sendContent(buffer={},{})", BufferUtil.toDetailString(content), callback);
 
-        if (prepareSendContent(content.remaining(), callback))
+        if (prepareSendContent(callback))
             channelWrite(content, true,
                 new Callback.Nested(callback)
                 {
@@ -1248,7 +1263,7 @@ public class HttpOutput extends ServletOutputStream
         if (LOG.isDebugEnabled())
             LOG.debug("sendContent(stream={},{})", in, callback);
 
-        if (prepareSendContent(0, callback))
+        if (prepareSendContent(callback))
             new InputStreamWritingCB(in, callback).iterate();
     }
 
@@ -1264,11 +1279,11 @@ public class HttpOutput extends ServletOutputStream
         if (LOG.isDebugEnabled())
             LOG.debug("sendContent(channel={},{})", in, callback);
 
-        if (prepareSendContent(0, callback))
+        if (prepareSendContent(callback))
             new ReadableByteChannelWritingCB(in, callback).iterate();
     }
 
-    private boolean prepareSendContent(int len, Callback callback)
+    private boolean prepareSendContent(Callback callback)
     {
         try (AutoLock ignored = _channelState.lock())
         {
@@ -1304,8 +1319,6 @@ public class HttpOutput extends ServletOutputStream
             if (_apiState != ApiState.BLOCKING)
                 throw new IllegalStateException(lockedStateString());
             _apiState = ApiState.PENDING;
-            if (len > 0)
-                _written += len;
             return true;
         }
     }
@@ -1679,7 +1692,6 @@ public class HttpOutput extends ServletOutputStream
         private final InputStream _in;
         private final RetainableByteBuffer _buffer;
         private boolean _eof;
-        private boolean _closed;
 
         private InputStreamWritingCB(InputStream in, Callback callback)
         {
@@ -1699,8 +1711,6 @@ public class HttpOutput extends ServletOutputStream
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("EOF of {}", this);
-                if (!_closed)
-                    _closed = true;
                 return Action.SUCCEEDED;
             }
 
@@ -1717,10 +1727,18 @@ public class HttpOutput extends ServletOutputStream
                     len += r;
             }
 
+            if (_eof)
+            {
+                // Change the state to signal that this is really the last write.
+                try (AutoLock ignored = _channelState.lock())
+                {
+                    _state = State.CLOSING;
+                }
+            }
+
             // write what we have
             byteBuffer.position(0);
             byteBuffer.limit(len);
-            _written += len;
             channelWrite(byteBuffer, _eof, this);
             return Action.SCHEDULED;
         }
@@ -1730,6 +1748,7 @@ public class HttpOutput extends ServletOutputStream
         {
             _buffer.release();
             IO.close(_in);
+            super.onCompleteSuccess();
         }
 
         @Override
@@ -1759,7 +1778,6 @@ public class HttpOutput extends ServletOutputStream
         private final ReadableByteChannel _in;
         private final RetainableByteBuffer _buffer;
         private boolean _eof;
-        private boolean _closed;
 
         private ReadableByteChannelWritingCB(ReadableByteChannel in, Callback callback)
         {
@@ -1779,8 +1797,6 @@ public class HttpOutput extends ServletOutputStream
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("EOF of {}", this);
-                if (!_closed)
-                    _closed = true;
                 return Action.SUCCEEDED;
             }
 
@@ -1793,9 +1809,17 @@ public class HttpOutput extends ServletOutputStream
                 _eof = (_in.read(byteBuffer)) < 0;
             }
 
+            if (_eof)
+            {
+                // Change the state to signal that this is really the last write.
+                try (AutoLock ignored = _channelState.lock())
+                {
+                    _state = State.CLOSING;
+                }
+            }
+
             // write what we have
             BufferUtil.flipToFlush(byteBuffer, 0);
-            _written += byteBuffer.remaining();
             channelWrite(byteBuffer, _eof, this);
 
             return Action.SCHEDULED;
@@ -1806,6 +1830,7 @@ public class HttpOutput extends ServletOutputStream
         {
             _buffer.release();
             IO.close(_in);
+            super.onCompleteSuccess();
         }
 
         @Override

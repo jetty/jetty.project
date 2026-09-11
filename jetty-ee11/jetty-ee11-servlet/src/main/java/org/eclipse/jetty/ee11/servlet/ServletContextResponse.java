@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.ManagedSession;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -222,6 +223,10 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     @Override
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
+        HttpOutput httpOutput = getHttpOutput();
+        if (!httpOutput.isClosed() && last)
+            httpOutput.lastWriteComplete();
+        httpOutput.addBytesWritten(BufferUtil.length(content));
         super.write(last, content, callback);
     }
 
