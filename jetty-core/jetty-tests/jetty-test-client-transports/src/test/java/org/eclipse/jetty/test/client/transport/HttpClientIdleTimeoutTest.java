@@ -25,10 +25,12 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.jetty.test.client.transport.AbstractTest.TransportType.H3_QUICHE;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,6 +43,8 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     @MethodSource("transports")
     public void testClientIdleTimeout(TransportType transportType) throws Exception
     {
+        Assumptions.assumeTrue(transportType != H3_QUICHE, "Test is flaky on H3, see #14901");
+
         long serverIdleTimeout = idleTimeout * 2;
         AtomicReference<Callback> serverCallbackRef = new AtomicReference<>();
         start(transportType, new Handler.Abstract()
@@ -87,6 +91,8 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     @MethodSource("transports")
     public void testRequestIdleTimeout(TransportType transportType) throws Exception
     {
+        Assumptions.assumeTrue(transportType != H3_QUICHE, "Test is flaky on H3, see #14901");
+
         long serverIdleTimeout = idleTimeout * 2;
         AtomicReference<Callback> serverCallbackRef = new AtomicReference<>();
         start(transportType, new Handler.Abstract()
