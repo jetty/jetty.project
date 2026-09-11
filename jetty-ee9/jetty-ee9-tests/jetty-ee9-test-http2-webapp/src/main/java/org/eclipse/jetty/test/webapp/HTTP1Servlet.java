@@ -15,7 +15,6 @@ package org.eclipse.jetty.test.webapp;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HTTP1Servlet extends HttpServlet
@@ -101,10 +101,9 @@ public class HTTP1Servlet extends HttpServlet
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        try
+                        // Read a chunk of the content.
+                        try (Content.Chunk data = stream.read())
                         {
-                            // Read a chunk of the content.
-                            Content.Chunk data = stream.read();
                             if (data == null)
                             {
                                 // No data available now, demand to be called back.
@@ -113,19 +112,17 @@ public class HTTP1Servlet extends HttpServlet
                             else
                             {
                                 // Process the content.
-                                ByteBuffer buffer = data.getByteBuffer();
-                                byte[] bytes = new byte[(int)buffer.remaining()];
-                                buffer.get(bytes);
-                                output.write(bytes);
-                                // Notify that the content has been consumed.
-                                data.release();
-                                if (!data.isLast())
+                                try (RetainableByteBuffer buffer = data.acquire())
                                 {
-                                    // Demand to be called back.
-                                    stream.demand();
+                                    output.write(buffer.getArray());
+                                    if (!data.isLast())
+                                    {
+                                        // Demand to be called back.
+                                        stream.demand();
+                                    }
+                                    else
+                                        asyncContext.complete();
                                 }
-                                else
-                                    asyncContext.complete();
                             }
                         }
                         catch (IOException x)

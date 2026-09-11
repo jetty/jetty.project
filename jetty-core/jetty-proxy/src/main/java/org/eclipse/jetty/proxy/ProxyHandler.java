@@ -711,40 +711,39 @@ public abstract class ProxyHandler extends Handler.Abstract
         @Override
         public void onContent(org.eclipse.jetty.client.Response serverToProxyResponse, Content.Chunk serverToProxyChunk, Runnable serverToProxyDemander)
         {
-            RetainableByteBuffer serverToProxyContent = RetainableByteBuffer.wrap(serverToProxyChunk.getByteBuffer());
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} S2P received content {}", requestId(clientToProxyRequest), serverToProxyContent);
-
-            serverToProxyChunk.retain();
-            Callback callback = new Callback()
+            try (RetainableByteBuffer serverToProxyContent = serverToProxyChunk.acquire())
             {
-                @Override
-                public void succeeded()
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} P2C succeeded to write content {}", requestId(clientToProxyRequest), serverToProxyContent);
-                    serverToProxyChunk.release();
-                    serverToProxyDemander.run();
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} S2P received content {}", requestId(clientToProxyRequest), serverToProxyContent);
 
-                @Override
-                public void failed(Throwable failure)
+                Callback callback = new Callback()
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} P2C failed to write content {}", requestId(clientToProxyRequest), serverToProxyContent, failure);
-                    serverToProxyChunk.release();
-                    // Cannot write towards the client, abort towards the server.
-                    serverToProxyResponse.abort(failure);
-                }
+                    @Override
+                    public void succeeded()
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} P2C succeeded to write content {}", requestId(clientToProxyRequest), serverToProxyContent);
+                        serverToProxyDemander.run();
+                    }
 
-                @Override
-                public InvocationType getInvocationType()
-                {
-                    return InvocationType.NON_BLOCKING;
-                }
-            };
+                    @Override
+                    public void failed(Throwable failure)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} P2C failed to write content {}", requestId(clientToProxyRequest), serverToProxyContent, failure);
+                        // Cannot write towards the client, abort towards the server.
+                        serverToProxyResponse.abort(failure);
+                    }
 
-            proxyToClientResponse.write(false, serverToProxyContent, callback);
+                    @Override
+                    public InvocationType getInvocationType()
+                    {
+                        return InvocationType.NON_BLOCKING;
+                    }
+                };
+
+                proxyToClientResponse.write(false, serverToProxyContent, callback);
+            }
         }
 
         @Override

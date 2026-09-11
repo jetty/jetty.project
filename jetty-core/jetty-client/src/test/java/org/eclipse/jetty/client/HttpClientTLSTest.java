@@ -969,16 +969,16 @@ public class HttpClientTLSTest
                         return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             @Override
-                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, int offset, int length, ByteBuffer output) throws SSLException
                             {
                                 sslEngine.closeOutbound();
-                                return super.wrap(sslEngine, input, output);
+                                return super.wrap(sslEngine, input, offset, length, output);
                             }
 
                             @Override
                             protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
                             {
-                                return wrap(sslEngine, new ByteBuffer[]{input}, output);
+                                return wrap(sslEngine, new ByteBuffer[]{input}, 0, 1, output);
                             }
                         };
                     }
@@ -1053,13 +1053,13 @@ public class HttpClientTLSTest
                         return new SslConnection(getByteBufferPool(), getExecutor(), getSslContextFactory(), endPoint, engine, isDirectBuffersForEncryption(), isDirectBuffersForDecryption())
                         {
                             @Override
-                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, int offset, int length, ByteBuffer output) throws SSLException
                             {
                                 try
                                 {
                                     clientLatch.countDown();
                                     assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
-                                    return super.wrap(sslEngine, input, output);
+                                    return super.wrap(sslEngine, input, offset, length, output);
                                 }
                                 catch (InterruptedException x)
                                 {
@@ -1070,7 +1070,7 @@ public class HttpClientTLSTest
                             @Override
                             protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
                             {
-                                return wrap(sslEngine, new ByteBuffer[]{input}, output);
+                                return wrap(sslEngine, new ByteBuffer[]{input}, 0, 1, output);
                             }
                         };
                     }

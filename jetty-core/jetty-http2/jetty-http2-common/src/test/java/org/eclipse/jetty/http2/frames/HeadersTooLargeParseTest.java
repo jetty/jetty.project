@@ -83,7 +83,7 @@ public class HeadersTooLargeParseTest
         PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
         int len = generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
-        RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
         accumulator.forEach(RetainableByteBuffer::release);
         parser.parse(rb);
         if (failure.get() == 0)

@@ -29,17 +29,12 @@ public class TrackingRetainable implements Retainable
 {
     private final Instant acquireInstant;
     private final List<Throwable> stacks = new CopyOnWriteArrayList<>();
-    private final Retainable delegate;
+    private final ReferenceCounter delegate;
 
     public TrackingRetainable()
     {
-        this(new ReferenceCounter());
-    }
-
-    public TrackingRetainable(Retainable retainable)
-    {
-        this.delegate = retainable;
-        stacks.add(new Throwable("Acquired by " + Thread.currentThread().getName()));
+        this.delegate = new ReferenceCounter();
+        this.stacks.add(new Throwable("Acquired by " + Thread.currentThread().getName()));
         this.acquireInstant = Instant.now();
     }
 
@@ -90,10 +85,8 @@ public class TrackingRetainable implements Retainable
             pw.println(stackString);
         }
         String stacks = w.toString();
-        return ("%s@%x on %s wrapping %s%n" +
-            " %s")
-            .formatted(TypeUtil.toShortName(getClass()), hashCode(), getAcquireInstant(), getRetained(),
-                stacks);
+        return ("%s@%x on %s wrapping %s%n %s")
+            .formatted(TypeUtil.toShortName(getClass()), hashCode(), getAcquireInstant(), delegate.getCount(), stacks);
     }
 
     private String toString(Throwable stack)
@@ -105,21 +98,9 @@ public class TrackingRetainable implements Retainable
     }
 
     @Override
-    public boolean canRetain()
-    {
-        return delegate.canRetain();
-    }
-
-    @Override
     public boolean isRetained()
     {
         return delegate.isRetained();
-    }
-
-    @Override
-    public int getRetained()
-    {
-        return delegate.getRetained();
     }
 
     @Override

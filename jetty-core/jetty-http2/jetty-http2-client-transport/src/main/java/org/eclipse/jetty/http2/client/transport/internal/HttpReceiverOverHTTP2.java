@@ -41,6 +41,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,34 +69,39 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         if (stream == null)
             return Content.Chunk.from(new EOFException("Channel has been released"));
 
-        Content.Chunk chunk = stream.read();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Read stream data {} in {}", chunk, this);
-        if (chunk == null)
+        try (Content.Chunk chunk = stream.read())
         {
-            if (fillInterestIfNeeded)
-                stream.demand();
-            return null;
-        }
+            if (LOG.isDebugEnabled())
+                LOG.debug("Read stream data {} in {}", chunk, this);
+            if (chunk == null)
+            {
+                if (fillInterestIfNeeded)
+                    stream.demand();
+                return null;
+            }
 
-        boolean last = chunk.getByteBuffer().remaining() == 0 && chunk.isLast();
-        if (!last)
-            return Content.Chunk.asChunk(chunk.getByteBuffer(), false, chunk);
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                boolean last = chunk.remaining() == 0 && chunk.isLast();
+                if (!last)
+                    return Content.Chunk.from(buffer, false);
 
-        if (getHttpChannel().isLastDataReceived())
-        {
-            responseSuccess(null);
-            return Content.Chunk.EOF;
-        }
-        else if (stream.isReset())
-        {
-            Throwable failure = new EOFException("Stream has been reset");
-            responseFailure(failure, Promise.noop());
-            return Content.Chunk.from(failure);
-        }
-        else
-        {
-            return Content.Chunk.from(new IllegalStateException("Last data mismatch"));
+                if (getHttpChannel().isLastDataReceived())
+                {
+                    responseSuccess(null);
+                    return Content.Chunk.EOF;
+                }
+                else if (stream.isReset())
+                {
+                    Throwable failure = new EOFException("Stream has been reset");
+                    responseFailure(failure, Promise.noop());
+                    return Content.Chunk.from(failure);
+                }
+                else
+                {
+                    return Content.Chunk.from(new IllegalStateException("Last data mismatch"));
+                }
+            }
         }
     }
 

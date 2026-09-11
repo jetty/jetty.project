@@ -43,9 +43,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SocketCustomizationListener;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -96,7 +96,7 @@ public class SslConnectionFactoryTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.write(true, BufferUtil.toReadableBuffer("url=" + request.getHttpURI() + "\nhost=" + Request.getServerName(request)), callback);
+                response.write(true, RetainableByteBuffer.wrap("url=" + request.getHttpURI() + "\nhost=" + Request.getServerName(request), StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         });

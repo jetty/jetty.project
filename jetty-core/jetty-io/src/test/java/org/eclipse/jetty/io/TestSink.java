@@ -26,7 +26,7 @@ public class TestSink implements Content.Sink
     @Override
     public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
-        accumulatedChunks.add(Content.Chunk.asChunk(buffer, last, null));
+        accumulatedChunks.add(Content.Chunk.from(buffer, last));
         callback.succeeded();
     }
 

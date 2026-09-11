@@ -35,12 +35,12 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.slf4j.Logger;
@@ -257,7 +257,7 @@ public class OpenIdProvider extends ContainerLifeCycle
                 </form>
                 """, AUTH_PATH, redirectUri, state);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html");
-            response.write(true, BufferUtil.toReadableBuffer(responseContent), callback);
+            response.write(true, RetainableByteBuffer.wrap(responseContent, StandardCharsets.ISO_8859_1), callback);
         }
         else
         {
@@ -351,7 +351,7 @@ public class OpenIdProvider extends ContainerLifeCycle
                 "\"error_description\": \"bad request description\"," +
                 "\"error_uri\":\"https://example.com/description\"" +
                 "}";
-            response.write(true, BufferUtil.toReadableBuffer(responseContent), callback);
+            response.write(true, RetainableByteBuffer.wrap(responseContent, StandardCharsets.ISO_8859_1), callback);
             return;
         }
 
@@ -363,7 +363,7 @@ public class OpenIdProvider extends ContainerLifeCycle
                 "\"error\": \"invalid_grant\"," +
                 "\"error_description\": \"bad auth code\"," +
                 "}";
-            response.write(true, BufferUtil.toReadableBuffer(responseContent), callback);
+            response.write(true, RetainableByteBuffer.wrap(responseContent, StandardCharsets.ISO_8859_1), callback);
             return;
         }
 
@@ -377,7 +377,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             "}";
 
         loggedInUsers.increment();
-        response.write(true, BufferUtil.toReadableBuffer(responseContent), callback);
+        response.write(true, RetainableByteBuffer.wrap(responseContent, StandardCharsets.ISO_8859_1), callback);
     }
 
     protected void doEndSessionEndpoint(Request request, Response response, Callback callback) throws Exception
@@ -394,7 +394,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         if (logoutRedirect == null)
         {
             response.setStatus(HttpStatus.OK_200);
-            response.write(true, BufferUtil.toReadableBuffer("logout success on end_session_endpoint"), callback);
+            response.write(true, RetainableByteBuffer.wrap("logout success on end_session_endpoint", StandardCharsets.ISO_8859_1), callback);
             return;
         }
 
@@ -411,7 +411,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             "\"end_session_endpoint\": \"" + provider + END_SESSION_PATH + "\"," +
             "}";
 
-        response.write(true, BufferUtil.toReadableBuffer(discoveryDocument), callback);
+        response.write(true, RetainableByteBuffer.wrap(discoveryDocument, StandardCharsets.ISO_8859_1), callback);
     }
 
     public static class User

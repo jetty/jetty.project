@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,10 +25,10 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -80,7 +81,7 @@ public class FormFieldsTest
         FutureCallback eof = new FutureCallback();
         for (int i = 0; i <= last; i++)
         {
-            source.write(i == last, BufferUtil.toReadableBuffer(chunks.get(i), charset), i == last ? eof : Callback.NOOP);
+            source.write(i == last, RetainableByteBuffer.wrap(chunks.get(i), charset), i == last ? eof : Callback.NOOP);
         }
 
         try
@@ -144,7 +145,7 @@ public class FormFieldsTest
         int last = chunks.size() - 1;
         for (int i = 0; i <= last; i++)
         {
-            source.write(i == last, BufferUtil.toReadableBuffer(chunks.get(i)), Callback.NOOP);
+            source.write(i == last, RetainableByteBuffer.wrap(chunks.get(i), StandardCharsets.ISO_8859_1), Callback.NOOP);
         }
         Throwable cause = assertThrows(ExecutionException.class, futureFields::get).getCause();
         assertThat(cause, instanceOf(expectedException));

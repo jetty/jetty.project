@@ -19,11 +19,12 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.channels.Channel;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
@@ -610,14 +611,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             Request request;
             Response response;
             Callback callback;
-            ByteBufferAccumulator bufferAccumulator;
+            List<RetainableByteBuffer> accumulator;
 
             public WholeProcess(Request request, Response response, Callback callback)
             {
                 this.request = request;
                 this.response = response;
                 this.callback = callback;
-                this.bufferAccumulator = new ByteBufferAccumulator();
+                this.accumulator = new ArrayList<>();
             }
 
             @Override
@@ -625,28 +626,37 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 while (true)
                 {
-                    Content.Chunk chunk = request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = request.read())
                     {
-                        request.demand(this);
-                        return;
-                    }
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        callback.failed(chunk.getFailure());
-                        return;
-                    }
-                    // copy buffer
-                    bufferAccumulator.copyBuffer(chunk.getByteBuffer().slice());
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        // write accumulated buffers
-                        org.eclipse.jetty.io.RetainableByteBuffer buffer = bufferAccumulator.toRetainableByteBuffer();
-                        response.write(true, RetainableByteBuffer.wrap(buffer.getByteBuffer()), Callback.from(buffer::release, callback));
-                        return;
+                        if (chunk == null)
+                        {
+                            request.demand(this);
+                            return;
+                        }
+                        if (Content.Chunk.isFailure(chunk))
+                        {
+                            release();
+                            callback.failed(chunk.getFailure());
+                            return;
+                        }
+                        accumulator.add(chunk.acquire());
+                        if (chunk.isLast())
+                        {
+                            // Write accumulated buffers.
+                            try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+                            {
+                                release();
+                                response.write(true, buffer, callback);
+                                return;
+                            }
+                        }
                     }
                 }
+            }
+
+            private void release()
+            {
+                accumulator.forEach(RetainableByteBuffer::release);
             }
         }
     }

@@ -134,7 +134,7 @@ public class ContentSourceInputStreamTest
     {
         TimeoutException originalFailure1 = new TimeoutException("timeout 1");
         TimeoutException originalFailure2 = new TimeoutException("timeout 2");
-        TestSource originalSource = new TestSource(
+        try (TestSource originalSource = new TestSource(
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{'1'}), false),
             null,
@@ -145,85 +145,86 @@ public class ContentSourceInputStreamTest
             Content.Chunk.from(originalFailure2, false),
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{'3'}), true)
-        );
-
-        ContentSourceInputStream contentSourceInputStream = new ContentSourceInputStream(originalSource);
-
-        byte[] buf = new byte[16];
-
-        int read = contentSourceInputStream.read(buf);
-        assertThat(read, is(1));
-        assertThat(buf[0], is((byte)'1'));
-        try
+        ))
         {
-            contentSourceInputStream.read();
-            fail();
-        }
-        catch (IOException e)
-        {
-            assertThat(e.getCause(), sameInstance(originalFailure1));
-        }
-        read = contentSourceInputStream.read(buf);
-        assertThat(read, is(1));
-        assertThat(buf[0], is((byte)'2'));
-        try
-        {
-            contentSourceInputStream.read();
-            fail();
-        }
-        catch (IOException e)
-        {
-            assertThat(e.getCause(), sameInstance(originalFailure2));
-        }
-        read = contentSourceInputStream.read(buf);
-        assertThat(read, is(1));
-        assertThat(buf[0], is((byte)'3'));
+            try (ContentSourceInputStream contentSourceInputStream = new ContentSourceInputStream(originalSource))
+            {
+                byte[] buf = new byte[16];
 
-        read = contentSourceInputStream.read(buf);
-        assertThat(read, is(-1));
+                int read = contentSourceInputStream.read(buf);
+                assertThat(read, is(1));
+                assertThat(buf[0], is((byte)'1'));
+                try
+                {
+                    contentSourceInputStream.read();
+                    fail();
+                }
+                catch (IOException e)
+                {
+                    assertThat(e.getCause(), sameInstance(originalFailure1));
+                }
+                read = contentSourceInputStream.read(buf);
+                assertThat(read, is(1));
+                assertThat(buf[0], is((byte)'2'));
+                try
+                {
+                    contentSourceInputStream.read();
+                    fail();
+                }
+                catch (IOException e)
+                {
+                    assertThat(e.getCause(), sameInstance(originalFailure2));
+                }
+                read = contentSourceInputStream.read(buf);
+                assertThat(read, is(1));
+                assertThat(buf[0], is((byte)'3'));
 
-        Content.Chunk chunk = originalSource.read();
-        assertThat(chunk.isLast(), is(true));
-        assertThat(chunk.hasRemaining(), is(false));
-        assertThat(Content.Chunk.isFailure(chunk), is(false));
+                read = contentSourceInputStream.read(buf);
+                assertThat(read, is(-1));
 
-        contentSourceInputStream.close();
-
-        originalSource.close();
+                try (Content.Chunk chunk = originalSource.read())
+                {
+                    assertThat(chunk.isLast(), is(true));
+                    assertThat(chunk.hasRemaining(), is(false));
+                    assertThat(Content.Chunk.isFailure(chunk), is(false));
+                }
+            }
+        }
     }
 
     @Test
     public void testNextTransientErrorIsRethrownOnClose() throws Exception
     {
         TimeoutException originalFailure = new TimeoutException("timeout");
-        TestSource originalSource = new TestSource(
+        try (TestSource originalSource = new TestSource(
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{'1'}), false),
             Content.Chunk.from(originalFailure, false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{'2'}), true)
-        );
-
-        ContentSourceInputStream contentSourceInputStream = new ContentSourceInputStream(originalSource);
-
-        byte[] buf = new byte[16];
-
-        int read = contentSourceInputStream.read(buf);
-        assertThat(read, is(1));
-        assertThat(buf[0], is((byte)'1'));
-        try
+        ))
         {
-            contentSourceInputStream.close();
-            fail();
-        }
-        catch (IOException e)
-        {
-            assertThat(e.getCause(), sameInstance(originalFailure));
-        }
+            ContentSourceInputStream contentSourceInputStream = new ContentSourceInputStream(originalSource);
 
-        Content.Chunk chunk = originalSource.read();
-        assertThat(chunk.isLast(), is(true));
-        assertThat(chunk.getFailure(), sameInstance(originalFailure));
+            byte[] buf = new byte[16];
 
-        originalSource.close();
+            int read = contentSourceInputStream.read(buf);
+            assertThat(read, is(1));
+            assertThat(buf[0], is((byte)'1'));
+            try
+            {
+                contentSourceInputStream.close();
+                fail();
+            }
+            catch (IOException e)
+            {
+                assertThat(e.getCause(), sameInstance(originalFailure));
+            }
+
+            try (Content.Chunk chunk = originalSource.read())
+            {
+                assertThat(chunk.isLast(), is(true));
+                assertThat(chunk.getFailure(), sameInstance(originalFailure));
+            }
+        }
     }
 }

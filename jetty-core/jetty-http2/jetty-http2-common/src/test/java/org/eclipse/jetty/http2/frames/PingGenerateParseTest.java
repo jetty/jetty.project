@@ -60,7 +60,7 @@ public class PingGenerateParseTest
             generator.generatePing(accumulator, payload, true);
 
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             UnknownParseTest.parse(parser, rb);
             rb.release();
@@ -98,7 +98,7 @@ public class PingGenerateParseTest
             generator.generatePing(accumulator, payload, true);
 
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             UnknownParseTest.parse(parser, rb);
             rb.release();
@@ -130,7 +130,7 @@ public class PingGenerateParseTest
         PingFrame ping = new PingFrame(NanoTime.now(), true);
         generator.generate(accumulator, ping);
 
-        RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
         accumulator.forEach(RetainableByteBuffer::release);
         UnknownParseTest.parse(parser, rb);
         rb.release();

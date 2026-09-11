@@ -56,7 +56,7 @@ public class ResetGenerateParseTest
             generator.generateReset(accumulator, streamId, error);
 
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             UnknownParseTest.parse(parser, rb);
             rb.release();
@@ -94,7 +94,7 @@ public class ResetGenerateParseTest
             generator.generateReset(accumulator, streamId, error);
 
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             UnknownParseTest.parse(parser, rb);
             rb.release();

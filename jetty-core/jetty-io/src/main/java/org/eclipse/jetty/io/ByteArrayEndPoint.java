@@ -22,6 +22,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -217,17 +218,17 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     public void addInput(String s)
     {
-        addInput(BufferUtil.toReadableBuffer(s, UTF_8));
+        addInput(RetainableByteBuffer.wrap(s, StandardCharsets.UTF_8));
     }
 
     public void addInput(String s, Charset charset)
     {
-        addInput(BufferUtil.toReadableBuffer(s, charset));
+        addInput(RetainableByteBuffer.wrap(s, charset));
     }
 
     public void addInputAndExecute(String s)
     {
-        addInputAndExecute(BufferUtil.toReadableBuffer(s, UTF_8));
+        addInputAndExecute(RetainableByteBuffer.wrap(s, StandardCharsets.UTF_8));
     }
 
     public void addInputAndExecute(RetainableByteBuffer in)

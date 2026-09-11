@@ -87,12 +87,17 @@ public class InterleavingTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                DataFrame dataFrame = new DataFrame(stream.getId(), RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast());
-                // Do not release.
-                dataQueue.offer(dataFrame);
-                if (!chunk.isLast())
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        // Do not close the DataFrame because it's stored for later use.
+                        DataFrame dataFrame = new DataFrame(stream.getId(), buffer, chunk.isLast());
+                        dataQueue.offer(dataFrame);
+                        if (!chunk.isLast())
+                            stream.demand();
+                    }
+                }
             }
         };
 
@@ -149,21 +154,22 @@ public class InterleavingTest extends AbstractTest
         int finished = 0;
         while (finished < 2)
         {
-            DataFrame dataFrame = dataQueue.poll(5, TimeUnit.SECONDS);
-            if (dataFrame == null)
-                fail();
+            try (DataFrame dataFrame = dataQueue.poll(5, TimeUnit.SECONDS))
+            {
+                if (dataFrame == null)
+                    fail();
 
-            int streamId = dataFrame.getStreamId();
-            int length = (int)dataFrame.remaining();
-            streamLengths.add(new StreamLength(streamId, length));
-            if (dataFrame.isEndStream())
-                ++finished;
+                int streamId = dataFrame.getStreamId();
+                int length = (int)dataFrame.remaining();
+                streamLengths.add(new StreamLength(streamId, length));
+                if (dataFrame.isEndStream())
+                    ++finished;
 
-            RetainableByteBuffer rb = dataFrame.acquire();
-            BufferUtil.writeTo(rb, contents.get(streamId));
-            rb.release();
-
-            dataFrame.release();
+                try (RetainableByteBuffer rb = dataFrame.acquire())
+                {
+                    BufferUtil.writeTo(rb, contents.get(streamId));
+                }
+            }
         }
 
         // Verify that the content has been sent properly.

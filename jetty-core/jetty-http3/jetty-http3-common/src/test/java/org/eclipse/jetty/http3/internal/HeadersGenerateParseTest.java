@@ -66,7 +66,7 @@ public class HeadersGenerateParseTest
             }
         }, decoder, 13);
         parser.init(UnaryOperator.identity());
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator);
         parser.parse(buffer, false);
         assertFalse(buffer.hasRemaining());
 

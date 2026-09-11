@@ -170,10 +170,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
                                 yield interim;
                             }
-                            case EOF ->
-                            {
-                                yield false;
-                            }
+                            case EOF -> false;
                         };
 
                         if (loop)
@@ -250,10 +247,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
             Content.Chunk chunk = switch (result)
             {
-                case NO_FRAME ->
-                {
-                    yield null;
-                }
+                case NO_FRAME -> null;
                 case BLOCKED_FRAME ->
                 {
                     // A QPACK-blocked trailer HEADERS frame.
@@ -280,12 +274,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                             Content.Chunk quicChunk = tryRetainData();
                             if (quicChunk == null)
                                 throw new EofException("stream closed while reading");
-                            RetainableByteBuffer data = dataFrame.acquire();
-                            Content.Chunk h3Chunk = Content.Chunk.asChunk(data, dataFrame.isLast(), quicChunk);
-                            data.release();
-                            if (h3Chunk.isLast())
-                                tryReleaseData(true);
-                            yield h3Chunk;
+                            try (RetainableByteBuffer data = dataFrame.acquire())
+                            {
+                                Content.Chunk h3Chunk = Content.Chunk.from(data, dataFrame.isLast());
+                                if (h3Chunk.isLast())
+                                    tryReleaseData(true);
+                                yield h3Chunk;
+                            }
                         }
                     }
 
@@ -293,10 +288,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     tryReleaseData(true);
                     yield Content.Chunk.EOF;
                 }
-                case EOF ->
-                {
-                    yield Content.Chunk.EOF;
-                }
+                case EOF -> Content.Chunk.EOF;
             };
 
             if (LOG.isDebugEnabled())
@@ -323,27 +315,24 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             while (true)
             {
                 // Retain so that a concurrent release does not recycle the buffer being parsed.
-                Content.Chunk chunk = tryRetainData();
-                if (chunk != null)
+                try (Content.Chunk chunk = tryRetainData())
                 {
-                    try
+                    if (chunk != null)
                     {
-                        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(chunk.getByteBuffer());
-                        MessageParser.Result result = parser.parse(buffer, chunk.isLast());
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("parsed {} from {} on {}", result, chunk, this);
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            MessageParser.Result result = parser.parse(buffer, chunk.isLast());
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("parsed {} from {} on {}", result, chunk, this);
 
-                        if (result == MessageParser.Result.FRAME)
-                            return ParseResult.FRAME;
-                        if (result == MessageParser.Result.BLOCKED_FRAME)
-                            return ParseResult.BLOCKED_FRAME;
-                    }
-                    finally
-                    {
-                        chunk.release();
-                    }
+                            if (result == MessageParser.Result.FRAME)
+                                return ParseResult.FRAME;
+                            if (result == MessageParser.Result.BLOCKED_FRAME)
+                                return ParseResult.BLOCKED_FRAME;
 
-                    tryReleaseData(true);
+                            tryReleaseData(true);
+                        }
+                    }
                 }
 
                 Content.Chunk filled = getEndPoint().fill();

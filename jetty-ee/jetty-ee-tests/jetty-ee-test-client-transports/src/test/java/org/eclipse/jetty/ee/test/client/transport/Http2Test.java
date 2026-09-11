@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -116,7 +117,7 @@ public class Http2Test
 
         MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_2, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
-        Queue<Stream.Data> datas = new ConcurrentLinkedQueue<>();
+        Queue<Content.Chunk> chunks = new ConcurrentLinkedQueue<>();
         session.newStream(frame, new Stream.Listener()
         {
             @Override
@@ -124,23 +125,26 @@ public class Http2Test
             {
                 while (true)
                 {
-                    Stream.Data data = stream.readData();
-                    if (data == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        chunk.retain();
+                        chunks.offer(chunk);
+                        if (chunk.isLast())
+                            break;
                     }
-                    datas.offer(data);
-                    if (data.frame().isEndStream())
-                        break;
                 }
             }
         }).get(5, TimeUnit.SECONDS);
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> datas.stream().anyMatch(d -> d.frame().isEndStream()));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> chunks.stream().anyMatch(Content.Chunk::isLast));
 
         // There should only be 1 DATA frame with data and last=true,
         // not a DATA frame with data, and then an empty, last DATA frame.
-        assertThat(datas.toString(), datas.size(), equalTo(1));
+        assertThat(chunks.toString(), chunks.size(), equalTo(1));
     }
 }

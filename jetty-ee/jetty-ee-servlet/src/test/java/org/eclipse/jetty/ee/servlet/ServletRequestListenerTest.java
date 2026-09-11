@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee.servlet;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -41,8 +42,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -220,7 +221,7 @@ public class ServletRequestListenerTest
             {
                 response.setStatus(500);
                 _events.add("errorHandler");
-                response.write(true, BufferUtil.toReadableBuffer("error handled"), callback);
+                response.write(true, RetainableByteBuffer.wrap("error handled", StandardCharsets.ISO_8859_1), callback);
                 return true;
             });
 

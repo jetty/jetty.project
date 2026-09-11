@@ -177,10 +177,11 @@ public class StreamResetTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        chunk.release();
-                        completable.thenCompose(s -> s.data(RetainableByteBuffer.allocate(16, false), true))
-                            .thenRun(serverDataLatch::countDown);
+                        try (Content.Chunk _ = stream.read())
+                        {
+                            completable.thenCompose(s -> s.data(RetainableByteBuffer.allocate(16, false), true))
+                                .thenRun(serverDataLatch::countDown);
+                        }
                     }
 
                     @Override
@@ -221,9 +222,10 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                chunk.release();
-                stream1DataLatch.countDown();
+                try (Content.Chunk _ = stream.read())
+                {
+                    stream1DataLatch.countDown();
+                }
             }
         });
         Stream stream1 = promise1.get(5, TimeUnit.SECONDS);
@@ -238,9 +240,10 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                chunk.release();
-                stream2DataLatch.countDown();
+                try (Content.Chunk _ = stream.read())
+                {
+                    stream2DataLatch.countDown();
+                }
             }
         });
         Stream stream2 = promise2.get(5, TimeUnit.SECONDS);
@@ -533,12 +536,13 @@ public class StreamResetTest extends AbstractTest
                 @Override
                 public void onDataAvailable(Stream stream)
                 {
-                    Content.Chunk chunk = stream.read();
-                    chunk.release();
-                    if (chunk.isLast())
-                        latch.get().countDown();
-                    else
-                        stream.demand();
+                    try (Content.Chunk chunk = stream.read())
+                    {
+                        if (chunk.isLast())
+                            latch.get().countDown();
+                        else
+                            stream.demand();
+                    }
                 }
             });
             Stream stream = promise.get(5, TimeUnit.SECONDS);
@@ -875,7 +879,7 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
@@ -885,7 +889,7 @@ public class StreamResetTest extends AbstractTest
 
             accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            rb = RetainableByteBuffer.wrap(accumulator);
+            rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
@@ -971,7 +975,7 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
@@ -981,7 +985,7 @@ public class StreamResetTest extends AbstractTest
 
             accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            rb = RetainableByteBuffer.wrap(accumulator);
+            rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
@@ -1063,7 +1067,7 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(3, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             accumulator.clear();
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
@@ -1078,7 +1082,7 @@ public class StreamResetTest extends AbstractTest
             int streamId = 5;
             headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
-            rb = RetainableByteBuffer.wrap(accumulator);
+            rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
@@ -1087,7 +1091,7 @@ public class StreamResetTest extends AbstractTest
             // Now reset the second request, which has not started writing yet.
             accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            rb = RetainableByteBuffer.wrap(accumulator);
+            rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
@@ -1352,17 +1356,18 @@ public class StreamResetTest extends AbstractTest
                     public void onDataAvailable(Stream stream)
                     {
                         dataCount.incrementAndGet();
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
+                            if (chunk == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
+                            stream.data(RetainableByteBuffer.allocate(length1, false), false)
+                                .thenCompose(s -> s.data(RetainableByteBuffer.allocate(length2, false), true))
+                                .thenAccept(s -> s.reset(new ResetFrame(s.getId(), ErrorCode.STREAM_CLOSED_ERROR.code)));
                             stream.demand();
-                            return;
                         }
-                        chunk.release();
-                        stream.data(RetainableByteBuffer.allocate(length1, false), false)
-                            .thenCompose(s -> s.data(RetainableByteBuffer.allocate(length2, false), true))
-                            .thenAccept(s -> s.reset(new ResetFrame(s.getId(), ErrorCode.STREAM_CLOSED_ERROR.code)));
-                        stream.demand();
                     }
                 };
             }

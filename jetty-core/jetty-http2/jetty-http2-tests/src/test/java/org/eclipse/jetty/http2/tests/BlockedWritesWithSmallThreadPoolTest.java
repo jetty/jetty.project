@@ -162,12 +162,13 @@ public class BlockedWritesWithSmallThreadPoolTest
                     // Block here to stop reading from the network
                     // to cause the server to TCP congest.
                     clientBlockLatch.await(5, SECONDS);
-                    Content.Chunk chunk = stream.read();
-                    chunk.release();
-                    if (chunk.isLast())
-                        clientDataLatch.countDown();
-                    else
-                        stream.demand();
+                    try (Content.Chunk chunk = stream.read())
+                    {
+                        if (chunk.isLast())
+                            clientDataLatch.countDown();
+                        else
+                            stream.demand();
+                    }
                 }
                 catch (InterruptedException ignored)
                 {
@@ -255,12 +256,13 @@ public class BlockedWritesWithSmallThreadPoolTest
                     // Block here to stop reading from the network
                     // to cause the server to TCP congest.
                     clientBlockLatch.await(5, SECONDS);
-                    Content.Chunk data = stream.read();
-                    data.release();
-                    if (data.isLast())
-                        clientDataLatch.countDown();
-                    else
-                        stream.demand();
+                    try (Content.Chunk data = stream.read())
+                    {
+                        if (data.isLast())
+                            clientDataLatch.countDown();
+                        else
+                            stream.demand();
+                    }
                 }
                 catch (InterruptedException ignored)
                 {
@@ -344,16 +346,17 @@ public class BlockedWritesWithSmallThreadPoolTest
                             // Block here to stop reading from the network
                             // to cause the client to TCP congest.
                             serverBlockLatch.await(5, SECONDS);
-                            Content.Chunk data = stream.read();
-                            data.release();
-                            if (data.isLast())
+                            try (Content.Chunk data = stream.read())
                             {
-                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                            }
-                            else
-                            {
-                                stream.demand();
+                                if (data.isLast())
+                                {
+                                    MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                    stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                                }
+                                else
+                                {
+                                    stream.demand();
+                                }
                             }
                         }
                         catch (InterruptedException ignored)

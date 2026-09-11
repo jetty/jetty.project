@@ -70,13 +70,13 @@ public class RequestTrailersTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk != null)
-                                chunk.release();
-                            if (chunk == null || !chunk.isLast())
-                                stream.demand();
-                            if (chunk == null || chunk.isLast())
-                                break;
+                            try (Content.Chunk chunk = stream.read())
+                            {
+                                if (chunk == null || !chunk.isLast())
+                                    stream.demand();
+                                if (chunk == null || chunk.isLast())
+                                    break;
+                            }
                         }
                     }
 
@@ -116,19 +116,20 @@ public class RequestTrailersTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        chunk.release();
-                        // We should not receive an empty HEADERS frame for the
-                        // trailers, but instead a DATA frame with endStream=true.
-                        if (chunk.isLast())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
-                            stream.headers(responseFrame, Callback.NOOP);
-                        }
-                        else
-                        {
-                            stream.demand();
+                            // We should not receive an empty HEADERS frame for the
+                            // trailers, but instead a DATA frame with endStream=true.
+                            if (chunk.isLast())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
+                                stream.headers(responseFrame, Callback.NOOP);
+                            }
+                            else
+                            {
+                                stream.demand();
+                            }
                         }
                     }
                 };
@@ -171,15 +172,16 @@ public class RequestTrailersTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        chunk.release();
-                        // We should not receive an empty HEADERS frame for the
-                        // trailers, but instead a DATA frame with endStream=true.
-                        if (chunk.isLast())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
-                            stream.headers(responseFrame, Callback.NOOP);
+                            // We should not receive an empty HEADERS frame for the
+                            // trailers, but instead a DATA frame with endStream=true.
+                            if (chunk.isLast())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
+                                stream.headers(responseFrame, Callback.NOOP);
+                            }
                         }
                     }
                 };

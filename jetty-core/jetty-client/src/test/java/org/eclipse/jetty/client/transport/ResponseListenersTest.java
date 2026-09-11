@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ChunksContentSource;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,65 +40,102 @@ public class ResponseListenersTest
     @Test
     public void testContentSourceDemultiplexerSpuriousWakeup()
     {
-        TestSource contentSource = new TestSource(
+        try (TestSource contentSource = new TestSource(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{3}), true)
-        );
-
-        List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
-
-        ResponseListeners responseListeners = new ResponseListeners();
-        Response.ContentSourceListener contentSourceListener = (r, source) ->
+        ))
         {
-            Runnable runnable = new Runnable()
+            List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
+
+            ResponseListeners responseListeners = new ResponseListeners();
+            Response.ContentSourceListener contentSourceListener = (r, source) ->
             {
-                @Override
-                public void run()
+                Runnable runnable = new Runnable()
                 {
-                    Content.Chunk chunk = source.read();
-                    chunks.add(chunk);
-                    if (chunk == null)
+                    @Override
+                    public void run()
                     {
-                        source.demand(this);
-                        return;
+                        try (Content.Chunk chunk = source.read())
+                        {
+                            if (chunk == null)
+                            {
+                                source.demand(this);
+                                return;
+                            }
+                            chunk.retain();
+                            chunks.add(chunk);
+                            if (!chunk.isLast())
+                                source.demand(this);
+                        }
                     }
-                    if (!chunk.isLast())
-                        source.demand(this);
-                }
+                };
+                source.demand(runnable);
             };
-            source.demand(runnable);
-        };
-        // Add 2 ContentSourceListeners to enable the use of ContentSourceDemultiplexer.
-        responseListeners.addContentSourceListener(contentSourceListener);
-        responseListeners.addContentSourceListener(contentSourceListener);
+            // Add 2 ContentSourceListeners to enable the use of ContentSourceDemultiplexer.
+            responseListeners.addContentSourceListener(contentSourceListener);
+            responseListeners.addContentSourceListener(contentSourceListener);
 
-        responseListeners.notifyContentSource(null, contentSource);
+            responseListeners.notifyContentSource(null, contentSource);
 
-        assertThat("Chunks: " + chunks, chunks.size(), is(6));
-        assertThat(chunks.get(0).isLast(), is(false));
-        assertThat(chunks.get(0).getByteBuffer().get(), is((byte)1));
-        assertThat(chunks.get(1).isLast(), is(false));
-        assertThat(chunks.get(1).getByteBuffer().get(), is((byte)1));
-        assertThat(chunks.get(2).isLast(), is(false));
-        assertThat(chunks.get(2).getByteBuffer().get(), is((byte)2));
-        assertThat(chunks.get(3).isLast(), is(false));
-        assertThat(chunks.get(3).getByteBuffer().get(), is((byte)2));
-        assertThat(chunks.get(4).isLast(), is(true));
-        assertThat(chunks.get(4).getByteBuffer().get(), is((byte)3));
-        assertThat(chunks.get(5).isLast(), is(true));
-        assertThat(chunks.get(5).getByteBuffer().get(), is((byte)3));
-
-        chunks.forEach(Content.Chunk::release);
-        contentSource.close();
+            assertThat("Chunks: " + chunks, chunks.size(), is(6));
+            try (Content.Chunk chunk = chunks.get(0))
+            {
+                assertThat(chunk.isLast(), is(false));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)1));
+                }
+            }
+            try (Content.Chunk chunk = chunks.get(1))
+            {
+                assertThat(chunk.isLast(), is(false));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)1));
+                }
+            }
+            try (Content.Chunk chunk = chunks.get(2))
+            {
+                assertThat(chunk.isLast(), is(false));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)2));
+                }
+            }
+            try (Content.Chunk chunk = chunks.get(3))
+            {
+                assertThat(chunk.isLast(), is(false));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)2));
+                }
+            }
+            try (Content.Chunk chunk = chunks.get(4))
+            {
+                assertThat(chunk.isLast(), is(true));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)3));
+                }
+            }
+            try (Content.Chunk chunk = chunks.get(5))
+            {
+                assertThat(chunk.isLast(), is(true));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)3));
+                }
+            }
+        }
     }
 
     @Test
     public void testContentSourceDemultiplexerFailOnTransientException()
     {
-        TestSource contentSource = new TestSource(
+        try (TestSource contentSource = new TestSource(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
@@ -105,129 +143,201 @@ public class ResponseListenersTest
             Content.Chunk.from(new TimeoutException("timeout"), false),
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{3}), true)
-        );
-
-        List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
-        ResponseListeners responseListeners = new ResponseListeners();
-        Response.ContentSourceListener contentSourceListener = (r, source) ->
+        ))
         {
-            Runnable runnable = new Runnable()
+            List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
+            ResponseListeners responseListeners = new ResponseListeners();
+            Response.ContentSourceListener contentSourceListener = (r, source) ->
             {
-                @Override
-                public void run()
+                Runnable runnable = new Runnable()
                 {
-                    Content.Chunk chunk = source.read();
-                    chunks.add(chunk);
-                    if (chunk == null)
+                    @Override
+                    public void run()
                     {
-                        source.demand(this);
-                        return;
+                        try (Content.Chunk chunk = source.read())
+                        {
+                            if (chunk == null)
+                            {
+                                source.demand(this);
+                                return;
+                            }
+                            chunk.retain();
+                            chunks.add(chunk);
+                            if (Content.Chunk.isFailure(chunk, false))
+                                source.fail(new NumberFormatException());
+                            if (!chunk.isLast())
+                                source.demand(this);
+                        }
                     }
-                    if (Content.Chunk.isFailure(chunk, false))
-                        source.fail(new NumberFormatException());
-                    if (!chunk.isLast())
-                        source.demand(this);
-                }
+                };
+                source.demand(runnable);
             };
-            source.demand(runnable);
-        };
-        // Add 2 ContentSourceListeners to enable the use of ContentSourceDemultiplexer.
-        responseListeners.addContentSourceListener(contentSourceListener);
-        responseListeners.addContentSourceListener(contentSourceListener);
+            // Add 2 ContentSourceListeners to enable the use of ContentSourceDemultiplexer.
+            responseListeners.addContentSourceListener(contentSourceListener);
+            responseListeners.addContentSourceListener(contentSourceListener);
 
-        responseListeners.notifyContentSource(null, contentSource);
+            responseListeners.notifyContentSource(null, contentSource);
 
-        assertThat(chunks.size(), is(8));
-        assertThat(chunks.get(0).getByteBuffer().get(), is((byte)1));
-        assertThat(chunks.get(0).isLast(), is(false));
-        assertThat(chunks.get(1).getByteBuffer().get(), is((byte)1));
-        assertThat(chunks.get(1).isLast(), is(false));
-        assertThat(chunks.get(2).getByteBuffer().get(), is((byte)2));
-        assertThat(chunks.get(2).isLast(), is(false));
-        assertThat(chunks.get(3).getByteBuffer().get(), is((byte)2));
-        assertThat(chunks.get(3).isLast(), is(false));
+            assertThat(chunks.size(), is(8));
+            try (Content.Chunk chunk = chunks.get(0))
+            {
+                assertThat(chunk.isLast(), is(false));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)1));
+                }
+            }
+            try (Content.Chunk chunk = chunks.get(1))
+            {
+                assertThat(chunk.isLast(), is(false));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)1));
+                }
+            }
+            try (Content.Chunk chunk = chunks.get(2))
+            {
+                assertThat(chunk.isLast(), is(false));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)2));
+                }
+            }
+            try (Content.Chunk chunk = chunks.get(3))
+            {
+                assertThat(chunk.isLast(), is(false));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)2));
+                }
+            }
 
-        // Failures are not alternated because ContentSourceDemultiplexer is failed,
-        // it immediately services demands.
-        assertThat(Content.Chunk.isFailure(chunks.get(4), false), is(true));
-        assertThat(chunks.get(4).getFailure(), instanceOf(TimeoutException.class));
-        assertThat(Content.Chunk.isFailure(chunks.get(5), true), is(true));
-        assertThat(chunks.get(5).getFailure(), instanceOf(NumberFormatException.class));
-        assertThat(Content.Chunk.isFailure(chunks.get(6), false), is(true));
-        assertThat(chunks.get(6).getFailure(), instanceOf(TimeoutException.class));
-        assertThat(Content.Chunk.isFailure(chunks.get(7), true), is(true));
-        assertThat(chunks.get(7).getFailure(), instanceOf(NumberFormatException.class));
+            // Failures are not alternated because ContentSourceDemultiplexer is failed,
+            // it immediately services demands.
+            try (Content.Chunk chunk = chunks.get(4))
+            {
+                assertThat(Content.Chunk.isFailure(chunk, false), is(true));
+                assertThat(chunk.getFailure(), instanceOf(TimeoutException.class));
+            }
+            try (Content.Chunk chunk = chunks.get(5))
+            {
+                assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+                assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+            }
+            try (Content.Chunk chunk = chunks.get(6))
+            {
+                assertThat(Content.Chunk.isFailure(chunk, false), is(true));
+                assertThat(chunk.getFailure(), instanceOf(TimeoutException.class));
+            }
+            try (Content.Chunk chunk = chunks.get(7))
+            {
+                assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+                assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+            }
 
-        Content.Chunk chunk = contentSource.read();
-        assertThat(Content.Chunk.isFailure(chunk, true), is(true));
-        assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
-
-        chunks.forEach(Content.Chunk::release);
-        contentSource.close();
+            try (Content.Chunk chunk = contentSource.read())
+            {
+                assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+                assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+            }
+        }
     }
 
     @Test
     public void testContentSourceDemultiplexerFailOnTerminalException()
     {
-        TestSource contentSource = new TestSource(
+        try (TestSource contentSource = new TestSource(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
             null,
             Content.Chunk.from(new ArithmeticException(), true)
-        );
-
-        List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
-        ResponseListeners responseListeners = new ResponseListeners();
-        Response.ContentSourceListener contentSourceListener = (r, source) ->
+        ))
         {
-            Runnable runnable = new Runnable()
+            List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
+            ResponseListeners responseListeners = new ResponseListeners();
+            Response.ContentSourceListener contentSourceListener = (r, source) ->
             {
-                @Override
-                public void run()
+                Runnable runnable = new Runnable()
                 {
-                    Content.Chunk chunk = source.read();
-                    chunks.add(chunk);
-                    if (chunk == null)
+                    @Override
+                    public void run()
                     {
-                        source.demand(this);
-                        return;
+                        try (Content.Chunk chunk = source.read())
+                        {
+                            if (chunk == null)
+                            {
+                                source.demand(this);
+                                return;
+                            }
+                            chunk.retain();
+                            chunks.add(chunk);
+                            if (Content.Chunk.isFailure(chunk))
+                                source.fail(new NumberFormatException());
+                            if (!chunk.isLast())
+                                source.demand(this);
+                        }
                     }
-                    if (Content.Chunk.isFailure(chunk))
-                        source.fail(new NumberFormatException());
-                    if (!chunk.isLast())
-                        source.demand(this);
-                }
+                };
+                source.demand(runnable);
             };
-            source.demand(runnable);
-        };
-        // Add 2 ContentSourceListeners to enable the use of ContentSourceDemultiplexer.
-        responseListeners.addContentSourceListener(contentSourceListener);
-        responseListeners.addContentSourceListener(contentSourceListener);
+            // Add 2 ContentSourceListeners to enable the use of ContentSourceDemultiplexer.
+            responseListeners.addContentSourceListener(contentSourceListener);
+            responseListeners.addContentSourceListener(contentSourceListener);
 
-        responseListeners.notifyContentSource(null, contentSource);
+            responseListeners.notifyContentSource(null, contentSource);
 
-        assertThat(chunks.size(), is(6));
-        assertThat(chunks.get(0).getByteBuffer().get(), is((byte)1));
-        assertThat(chunks.get(0).isLast(), is(false));
-        assertThat(chunks.get(1).getByteBuffer().get(), is((byte)1));
-        assertThat(chunks.get(1).isLast(), is(false));
-        assertThat(chunks.get(2).getByteBuffer().get(), is((byte)2));
-        assertThat(chunks.get(2).isLast(), is(false));
-        assertThat(chunks.get(3).getByteBuffer().get(), is((byte)2));
-        assertThat(chunks.get(3).isLast(), is(false));
-        assertThat(Content.Chunk.isFailure(chunks.get(4), true), is(true));
-        assertThat(chunks.get(4).getFailure(), instanceOf(ArithmeticException.class));
-        assertThat(Content.Chunk.isFailure(chunks.get(5), true), is(true));
-        assertThat(chunks.get(5).getFailure(), instanceOf(ArithmeticException.class));
+            assertThat(chunks.size(), is(6));
+            try (Content.Chunk chunk = chunks.get(0))
+            {
+                assertThat(chunk.isLast(), is(false));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)1));
+                }
+            }
+            try (Content.Chunk chunk = chunks.get(1))
+            {
+                assertThat(chunk.isLast(), is(false));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)1));
+                }
+            }
+            try (Content.Chunk chunk = chunks.get(2))
+            {
+                assertThat(chunk.isLast(), is(false));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)2));
+                }
+            }
+            try (Content.Chunk chunk = chunks.get(3))
+            {
+                assertThat(chunk.isLast(), is(false));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    assertThat(buffer.get(), is((byte)2));
+                }
+            }
+            try (Content.Chunk chunk = chunks.get(4))
+            {
+                assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+                assertThat(chunk.getFailure(), instanceOf(ArithmeticException.class));
+            }
+            try (Content.Chunk chunk = chunks.get(5))
+            {
+                assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+                assertThat(chunk.getFailure(), instanceOf(ArithmeticException.class));
+            }
 
-        Content.Chunk chunk = contentSource.read();
-        assertThat(Content.Chunk.isFailure(chunk, true), is(true));
-        assertThat(chunk.getFailure().getCause(), instanceOf(ArithmeticException.class));
-        assertThat(chunk.getFailure().getCause().getSuppressed().length, is(0));
-
-        chunks.forEach(Content.Chunk::release);
-        contentSource.close();
+            try (Content.Chunk chunk = contentSource.read())
+            {
+                assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+                assertThat(chunk.getFailure().getCause(), instanceOf(ArithmeticException.class));
+                assertThat(chunk.getFailure().getCause().getSuppressed().length, is(0));
+            }
+        }
     }
 
     @Test

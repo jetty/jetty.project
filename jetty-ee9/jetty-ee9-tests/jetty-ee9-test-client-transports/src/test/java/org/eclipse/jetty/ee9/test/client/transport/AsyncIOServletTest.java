@@ -70,6 +70,7 @@ import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -77,9 +78,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static java.nio.ByteBuffer.wrap;
 import static org.awaitility.Awaitility.await;
-import static org.eclipse.jetty.util.BufferUtil.toArray;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
@@ -1232,10 +1231,13 @@ public class AsyncIOServletTest extends AbstractTest
                                     state++;
                                     return content;
                                 }
-                                ByteBuffer copy = wrap(toArray(content.getByteBuffer()));
-                                content.skip(copy.remaining());
-                                content.succeeded();
-                                return new HttpInput.Content(copy);
+                                try (RetainableByteBuffer buffer = content.acquire())
+                                {
+                                    RetainableByteBuffer.Mutable copy = RetainableByteBuffer.Mutable.allocate((int)buffer.remaining(), false);
+                                    copy.put(buffer);
+                                    content.succeeded();
+                                    return new HttpInput.Content(copy);
+                                }
                             }
 
                             case 2:
@@ -1245,12 +1247,15 @@ public class AsyncIOServletTest extends AbstractTest
                                     state++;
                                     return content;
                                 }
-                                byte[] b = new byte[1];
-                                int l = content.get(b, 0, 1);
-                                if (!content.hasContent())
-                                    content.succeeded();
-                                return new HttpInput.Content(wrap(b, 0, l));
-
+                                try (RetainableByteBuffer buffer = content.acquire())
+                                {
+                                    try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                                    {
+                                        if (!content.hasContent())
+                                            content.succeeded();
+                                        return new HttpInput.Content(slice);
+                                    }
+                                }
                             case 3:
                             {
                                 // double vision
@@ -1265,12 +1270,13 @@ public class AsyncIOServletTest extends AbstractTest
                                     saved = null;
                                     return ref;
                                 }
-
-                                byte[] data = toArray(content.getByteBuffer());
-                                content.skip(data.length);
-                                content.succeeded();
-                                saved = new HttpInput.Content(wrap(data));
-                                return new HttpInput.Content(wrap(data));
+                                try (RetainableByteBuffer buffer = content.acquire())
+                                {
+                                    byte[] data = buffer.getArray();
+                                    content.succeeded();
+                                    saved = new HttpInput.Content(RetainableByteBuffer.wrap(data));
+                                    return new HttpInput.Content(RetainableByteBuffer.wrap(data));
+                                }
                             }
 
                             default:
@@ -1562,30 +1568,30 @@ public class AsyncIOServletTest extends AbstractTest
                 {
                     if (!chunk.hasContent())
                         return chunk;
-
-                    // skip contents with odd numbers
-                    ByteBuffer duplicate = chunk.getByteBuffer().duplicate();
-                    duplicate.get();
-                    byte integer = duplicate.get();
-                    int idx = Character.getNumericValue(integer);
-                    HttpInput.Content chunkCopy = new HttpInput.Content(chunk.getByteBuffer().duplicate());
-                    chunk.skip(chunk.remaining());
-                    chunk.succeeded();
-                    if (idx % 2 == 0)
-                        return chunkCopy;
-                    return null;
+                    // Skip contents with odd numbers.
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        RetainableByteBuffer slice = buffer.slice();
+                        buffer.get();
+                        int num = Character.getNumericValue(buffer.get());
+                        chunk.succeeded();
+                        if (num % 2 == 0)
+                            return new HttpInput.Content(slice);
+                        return null;
+                    }
                 });
                 httpInput.addInterceptor(chunk ->
                 {
                     if (!chunk.hasContent())
                         return chunk;
-
-                    // reverse the bytes
-                    ByteBuffer byteBuffer = chunk.getByteBuffer();
-                    byte[] bytes = new byte[2];
-                    bytes[1] = byteBuffer.get();
-                    bytes[0] = byteBuffer.get();
-                    return new HttpInput.Content(wrap(bytes));
+                    // Reverse the bytes.
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        byte[] bytes = new byte[2];
+                        bytes[1] = buffer.get();
+                        bytes[0] = buffer.get();
+                        return new HttpInput.Content(RetainableByteBuffer.wrap(bytes));
+                    }
                 });
 
                 AsyncContext asyncContext = request.startAsync();

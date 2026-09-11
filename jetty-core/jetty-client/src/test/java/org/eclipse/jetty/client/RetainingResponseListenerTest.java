@@ -48,13 +48,17 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
             }
         });
 
-        List<ByteBuffer> byteBuffers = new ArrayList<>();
+        List<RetainableByteBuffer> buffers = new ArrayList<>();
         RetainingResponseListener listener = new RetainingResponseListener()
         {
         };
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .onResponseContent((r, b) -> byteBuffers.add(b))
+            .onResponseContentRetainable((r, b) ->
+            {
+                b.retain();
+                buffers.add(b);
+            })
             .onResponseContentAsync(listener)
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -63,12 +67,16 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
 
         try (InputStream inputStream = listener.takeContentAsInputStream())
         {
+            assertEquals(1, buffers.size());
+            RetainableByteBuffer buffer = buffers.getFirst();
+            assertEquals(1, buffer.remaining());
             // Modify the content so that we can check if there was a copy.
-            assertEquals(1, byteBuffers.size());
-            ByteBuffer byteBuffer = byteBuffers.get(0);
-            assertEquals(1, byteBuffer.remaining());
             byte modified = 1;
-            byteBuffer.put(0, modified);
+            buffer.writeTo(b ->
+            {
+                b.put(b.position(), modified);
+                return 0;
+            });
 
             // Read from the input stream.
             int read = inputStream.read();
@@ -80,6 +88,10 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
             assertEquals(-1, inputStream.read());
             // Further getContent() calls see an empty byte[].
             assertEquals(0, listener.getContent().length);
+        }
+        finally
+        {
+            buffers.forEach(RetainableByteBuffer::release);
         }
     }
 

@@ -88,7 +88,7 @@ public class SettingsGenerateParseTest
             generator.generateSettings(accumulator, settings, reply);
 
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             UnknownParseTest.parse(parser, rb);
             rb.release();
@@ -118,7 +118,7 @@ public class SettingsGenerateParseTest
         List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.generateSettings(accumulator, settings1, false);
         // Modify the length of the frame to make it invalid
-        RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
         accumulator.forEach(RetainableByteBuffer::release);
         rb.readPosition(1);
         short aShort = rb.getShort();
@@ -165,7 +165,7 @@ public class SettingsGenerateParseTest
 
             frames.clear();
 
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             while (rb.hasRemaining())
                 parser.parse(RetainableByteBuffer.wrap(new byte[]{rb.get()}));
@@ -205,7 +205,7 @@ public class SettingsGenerateParseTest
 
         List<RetainableByteBuffer> accumulator = new ArrayList<>();
         generator.generateSettings(accumulator, settings, false);
-        RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
         accumulator.forEach(RetainableByteBuffer::release);
         UnknownParseTest.parse(parser, rb);
         rb.release();
@@ -283,7 +283,7 @@ public class SettingsGenerateParseTest
             generator.generateSettings(accumulator, settings, false);
         }
 
-        RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
         accumulator.forEach(RetainableByteBuffer::release);
         UnknownParseTest.parse(parser, rb);
         rb.release();

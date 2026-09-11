@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class DataFrame extends StreamFrame implements Retainable
+public class DataFrame extends StreamFrame implements AutoCloseable
 {
     private final RetainableByteBuffer data;
     private final boolean endStream;
@@ -50,7 +49,7 @@ public class DataFrame extends StreamFrame implements Retainable
 
     public RetainableByteBuffer acquire()
     {
-        retain();
+        data.retain();
         return data;
     }
 
@@ -91,33 +90,9 @@ public class DataFrame extends StreamFrame implements Retainable
     }
 
     @Override
-    public boolean canRetain()
+    public void close()
     {
-        return data.canRetain();
-    }
-
-    @Override
-    public boolean isRetained()
-    {
-        return data.isRetained();
-    }
-
-    @Override
-    public void retain()
-    {
-        data.retain();
-    }
-
-    @Override
-    public boolean release()
-    {
-        return data.release();
-    }
-
-    @Override
-    public int getRetained()
-    {
-        return data.getRetained();
+        data.release();
     }
 
     @Override

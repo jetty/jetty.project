@@ -54,18 +54,19 @@ public class StreamContentParser extends ContentParser
                 case CONTENT:
                 {
                     long length = Math.min(contentLength, buffer.remaining());
-                    RetainableByteBuffer slice = buffer.slice(buffer.readPosition(), length);
-                    // Only parse the content of this FCGI frame.
-                    boolean result = onContent(slice);
-                    // Not all the content may have been parsed.
-                    long consumed = length - slice.remaining();
-                    buffer.readPosition(buffer.readPosition() + consumed);
-                    slice.release();
-                    contentLength -= consumed;
-                    if (contentLength <= 0)
-                        state = State.EOF;
-                    if (result)
-                        return Result.ASYNC;
+                    try (RetainableByteBuffer slice = buffer.slice(buffer.readPosition(), length))
+                    {
+                        // Only parse the content of this FCGI frame.
+                        boolean result = onContent(slice);
+                        // Not all the content may have been parsed.
+                        long consumed = length - slice.remaining();
+                        buffer.readPosition(buffer.readPosition() + consumed);
+                        contentLength -= consumed;
+                        if (contentLength <= 0)
+                            state = State.EOF;
+                        if (result)
+                            return Result.ASYNC;
+                    }
                     break;
                 }
                 case EOF:
@@ -99,20 +100,15 @@ public class StreamContentParser extends ContentParser
 
     protected boolean onContent(RetainableByteBuffer buffer)
     {
-        long limit = buffer.readPosition() + buffer.remaining();
-        try
+        try (RetainableByteBuffer slice = buffer.sliceAndConsume(buffer.remaining()))
         {
-            return listener.onContent(getRequest(), streamType, buffer);
+            return listener.onContent(getRequest(), streamType, slice);
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Exception while invoking listener {}", listener, x);
             return false;
-        }
-        finally
-        {
-            buffer.readPosition(limit);
         }
     }
 

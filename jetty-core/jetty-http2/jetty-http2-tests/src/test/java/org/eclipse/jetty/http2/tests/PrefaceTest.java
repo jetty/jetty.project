@@ -163,7 +163,7 @@ public class PrefaceTest extends AbstractTest
             // The PING frame just to make sure the client stops reading.
             generator.control(accumulator, new PingFrame(true));
 
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
@@ -299,7 +299,7 @@ public class PrefaceTest extends AbstractTest
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 1);
             generator.control(accumulator, new SettingsFrame(clientSettings, false));
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();

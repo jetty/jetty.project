@@ -367,15 +367,16 @@ public interface Response extends Content.Sink
             {
                 while (true)
                 {
-                    Content.Chunk chunk = response.getRequest().read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = response.getRequest().read())
                     {
-                        response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                        break;
+                        if (chunk == null)
+                        {
+                            response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+                            break;
+                        }
+                        if (chunk.isLast())
+                            break;
                     }
-                    chunk.release();
-                    if (chunk.isLast())
-                        break;
                 }
             }
 

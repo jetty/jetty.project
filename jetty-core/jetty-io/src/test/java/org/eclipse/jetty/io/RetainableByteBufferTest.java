@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.io.RetainableByteBuffer.Mutable;
+import org.eclipse.jetty.io.internal.BufferChunk;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -650,7 +651,7 @@ public class RetainableByteBufferTest
         {
             Callback.Completable callback = new Callback.Completable();
             buffer.writeTo(endPoint, false, callback);
-            endPoint.write(true, BufferUtil.toReadableBuffer(" OK!"), Callback.NOOP);
+            endPoint.write(true, RetainableByteBuffer.wrap(" OK!", StandardCharsets.ISO_8859_1), Callback.NOOP);
             callback.get(5, TimeUnit.SECONDS);
         }
 
@@ -1590,16 +1591,18 @@ public class RetainableByteBufferTest
         assertThat(root.remaining(), is(0));
         for (int i = 0; i < 3; i++)
         {
-            Content.Chunk read = source.read();
-            assertInstanceOf(org.eclipse.jetty.io.RetainableByteBuffer.FixedCapacity.class, read);
-            assertFalse(read.isLast());
-            read.release();
+            try (Content.Chunk read = source.read())
+            {
+                assertInstanceOf(BufferChunk.class, read);
+                assertFalse(read.isLast());
+            }
         }
-        Content.Chunk last = source.read();
-        assertTrue(last.isLast());
-        assertTrue(last.isEmpty());
-
-        assertThat(mutable2.release(), is(true));
-        assertThat(pool.getLeaks().size(), is(0));
+        try (Content.Chunk last = source.read())
+        {
+            assertTrue(last.isLast());
+            assertFalse(last.hasRemaining());
+            assertThat(mutable2.release(), is(true));
+            assertThat(pool.getLeaks().size(), is(0));
+        }
     }
 }

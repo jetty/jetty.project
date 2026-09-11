@@ -86,10 +86,11 @@ public class MessageFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} bytes for stream #{} on {}", accumulator.size(), endPoint.getStream().getId(), this);
 
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
-        endPoint.write(Frame.isLast(frame), buffer, Callback.from(entry.callback.getInvocationType(), this::onWriteSuccess, this::onWriteFailure));
-        buffer.release();
-        return Action.SCHEDULED;
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+        {
+            endPoint.write(Frame.isLast(frame), buffer, Callback.from(entry.callback.getInvocationType(), this::onWriteSuccess, this::onWriteFailure));
+            return Action.SCHEDULED;
+        }
     }
 
     private void onGenerateFailure(Throwable cause)

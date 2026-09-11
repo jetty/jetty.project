@@ -60,28 +60,28 @@ public class DataBodyParser extends BodyParser
                 }
                 case DATA:
                 {
-                    // TODO: SIMON: release the slice
-                    int size = (int)Math.min(buffer.remaining(), length);
-                    RetainableByteBuffer slice = buffer.sliceAndConsume(size);
-
-                    length -= size;
-                    if (length == 0)
+                    long size = Math.min(buffer.remaining(), length);
+                    try (RetainableByteBuffer slice = buffer.sliceAndConsume(size))
                     {
-                        reset();
-                        // Only HEADERS, DATA or PUSH_PROMISE can be received.
-                        // If the buffer contains more frames that need
-                        // to be parsed, then it's not the last frame.
-                        // TODO: the sequence: DATA(last=true)+PUSH_PROMISE
-                        //  would break the logic in the line below.
-                        boolean lastFrame = quicLast && !buffer.hasRemaining();
-                        onData(slice, lastFrame, false);
-                        return Result.WHOLE_FRAME;
-                    }
-                    else
-                    {
-                        // We got partial data, simulate a smaller frame, and stay in DATA state.
-                        onData(slice, false, true);
-                        return Result.FRAGMENT_FRAME;
+                        length -= size;
+                        if (length == 0)
+                        {
+                            reset();
+                            // Only HEADERS, DATA or PUSH_PROMISE can be received.
+                            // If the buffer contains more frames that need
+                            // to be parsed, then it's not the last frame.
+                            // TODO: the sequence: DATA(last=true)+PUSH_PROMISE
+                            //  would break the logic in the line below.
+                            boolean lastFrame = quicLast && !buffer.hasRemaining();
+                            onData(slice, lastFrame, false);
+                            return Result.WHOLE_FRAME;
+                        }
+                        else
+                        {
+                            // We got partial data, simulate a smaller frame, and stay in DATA state.
+                            onData(slice, false, true);
+                            return Result.FRAGMENT_FRAME;
+                        }
                     }
                 }
                 default:
@@ -95,11 +95,12 @@ public class DataBodyParser extends BodyParser
 
     private void onData(RetainableByteBuffer buffer, boolean last, boolean fragment)
     {
-        DataFrame frame = new DataFrame(buffer, last);
-        if (LOG.isDebugEnabled())
-            LOG.debug("notifying fragment={} {}#{} left={}", fragment, frame, streamId, length);
-        notifyData(frame);
-        frame.close();
+        try (DataFrame frame = new DataFrame(buffer, last))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("notifying fragment={} {}#{} left={}", fragment, frame, streamId, length);
+            notifyData(frame);
+        }
     }
 
     private void notifyData(DataFrame frame)

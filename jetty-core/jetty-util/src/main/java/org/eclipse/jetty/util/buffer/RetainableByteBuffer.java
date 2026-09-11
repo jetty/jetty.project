@@ -15,6 +15,7 @@ package org.eclipse.jetty.util.buffer;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -24,11 +25,11 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.internal.MultiBuffer;
 import org.eclipse.jetty.util.internal.PathBuffer;
@@ -85,7 +86,12 @@ public interface RetainableByteBuffer extends Retainable
     /// @return a new buffer
     static RetainableByteBuffer wrap(ByteBuffer byteBuffer)
     {
-        return byteBuffer == null ? empty() : wrap(byteBuffer, new ReferenceCounter());
+        if (byteBuffer == null)
+            return empty();
+        try (ReferenceCounter rc = new ReferenceCounter())
+        {
+            return wrap(byteBuffer, rc);
+        }
     }
 
     /// Wraps the given [ByteBuffer], using the provided [Retainable] for retainability.
@@ -109,44 +115,46 @@ public interface RetainableByteBuffer extends Retainable
         return wrap(charset.encode(string));
     }
 
-    /// Wraps the given [ByteBuffer]s, using a [ReferenceCounter] for retainability.
+    /// Merges the given [ByteBuffer]s into a single buffer.
     ///
-    /// @param buffers the [ByteBuffer]s to wrap
+    /// The given [ByteBuffer]s are sliced into the returned buffer and then consumed.
+    ///
+    /// The returned buffer must be released.
+    ///
+    /// @param buffers the [ByteBuffer]s to merge
     /// @return a new buffer
-    static RetainableByteBuffer wrap(ByteBuffer... buffers)
+    static RetainableByteBuffer merge(ByteBuffer... buffers)
     {
-        if (BufferUtil.isEmpty(buffers))
-            return empty();
-        if (buffers.length == 1)
-            return wrap(buffers[0]);
-        List<RetainableByteBuffer> rbs = Arrays.stream(buffers).map(RetainableByteBuffer::wrap).toList();
-        return new MultiBuffer(rbs);
+        return merge(Arrays.stream(buffers).map(RetainableByteBuffer::wrap).toList());
     }
 
-    /// Wraps the given buffer list, using a new [ReferenceCounter] for retainability.
+    /// Merges the given buffers into a single buffer.
     ///
-    /// @param buffers the buffer list to wrap
-    /// @return a new buffer
-    static RetainableByteBuffer wrap(List<RetainableByteBuffer> buffers)
-    {
-        if (buffers.isEmpty())
-            return empty();
-        return new MultiBuffer(buffers);
-    }
-
-    /// Wraps the given array of buffers, using a new [ReferenceCounter] for retainability.
+    /// The given buffers are sliced into the returned buffer and then consumed.
+    ///
+    /// The returned buffer must be released.
     ///
     /// @param buffers the array of buffers to wrap
     /// @return a new buffer
-    static RetainableByteBuffer wrap(RetainableByteBuffer... buffers)
+    static RetainableByteBuffer merge(RetainableByteBuffer... buffers)
     {
-        List<RetainableByteBuffer> list = new ArrayList<>(buffers.length);
-        for (RetainableByteBuffer buffer : buffers)
-        {
-            if (buffer != null && buffer.hasRemaining())
-                list.add(buffer);
-        }
-        return wrap(list);
+        // Cannot use List.of() because it does not allow null elements.
+        List<RetainableByteBuffer> list = new ArrayList<>();
+        Collections.addAll(list, buffers);
+        return merge(list);
+    }
+
+    /// Merges the given buffers into a single buffer.
+    ///
+    /// The given buffers are sliced into the returned buffer and then consumed.
+    ///
+    /// The returned buffer must be released.
+    ///
+    /// @param buffers the buffers to merge
+    /// @return a new buffer
+    static RetainableByteBuffer merge(List<RetainableByteBuffer> buffers)
+    {
+        return MultiBuffer.merge(buffers);
     }
 
     /// Wraps the given [Path], using a new [ReferenceCounter] for retainability.
@@ -208,6 +216,9 @@ public interface RetainableByteBuffer extends Retainable
         return remaining() > 0;
     }
 
+    /// @return whether this buffer is direct
+    boolean isDirect();
+
     /// Reads a single `byte` at the current [#readPosition()], and advances the read position by one.
     ///
     /// @throws BufferUnderflowException if there are no bytes to read
@@ -216,9 +227,9 @@ public interface RetainableByteBuffer extends Retainable
     /// Reads a single `byte` at the specified absolute read position.
     /// Does not advance [#readPosition()].
     ///
-    /// @param index the absolute read position of the byte to read
+    /// @param position the absolute read position of the byte to read
     /// @throws BufferUnderflowException if there are no bytes to read at the given read position
-    byte get(long index);
+    byte get(long position);
 
     /// Reads a single `byte` at the current [#readPosition()], converted to `int` via `get() & 0xFF`.
     ///
@@ -234,11 +245,11 @@ public interface RetainableByteBuffer extends Retainable
     ///
     /// Does not advance the read position.
     ///
-    /// @param index the absolute read position of the byte to read
+    /// @param position the absolute read position of the byte to read
     /// @return the `byte` converted to `int`
-    default int getByteAsInt(long index)
+    default int getByteAsInt(long position)
     {
-        return get(index) & 0xFF;
+        return get(position) & 0xFF;
     }
 
     /// Reads a short at the current position.
@@ -249,10 +260,10 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * Reads a short at the specified absolute position.
      *
-     * @param index the absolute position of the short to read
+     * @param position the absolute position of the short to read
      * @throws BufferUnderflowException – If the buffer's remaining bytes at the given index is less than two.
      */
-    short getShort(long index);
+    short getShort(long position);
 
     /**
      * Reads a short at the current position, converted to `int` via `get() &amp; 0xFFFF`
@@ -275,10 +286,10 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * Reads an int at the specified absolute position.
      *
-     * @param index the absolute position of the int to read
+     * @param position the absolute position of the int to read
      * @throws BufferUnderflowException – If the buffer's remaining bytes at the given index is less than four.
      */
-    int getInt(long index);
+    int getInt(long position);
 
     /**
      * Reads a long at the current position.
@@ -290,10 +301,10 @@ public interface RetainableByteBuffer extends Retainable
     /**
      * Reads a long at the specified absolute position.
      *
-     * @param index the absolute position of the long to read
+     * @param position the absolute position of the long to read
      * @throws BufferUnderflowException – If the buffer's remaining bytes at the given index is less than eight.
      */
-    long getLong(long index);
+    long getLong(long position);
 
     /**
      * Reads a byte array at the current position.
@@ -316,7 +327,7 @@ public interface RetainableByteBuffer extends Retainable
      */
     void get(byte[] b, int off, int len);
 
-    void get(long index, byte[] b, int off, int len);
+    void get(long position, byte[] b, int off, int len);
 
     default byte[] getArray()
     {
@@ -327,22 +338,48 @@ public interface RetainableByteBuffer extends Retainable
 
     default byte[] getArray(long index)
     {
-        byte[] bytes = new byte[Math.toIntExact(remaining())];
+        byte[] bytes = new byte[Math.toIntExact(remaining() + readPosition() - index)];
         get(index, bytes, 0, bytes.length);
         return bytes;
     }
 
+    /// Reads the bytes of this buffer into a string using the given [Charset],
+    /// from the current [#readPosition()] for the number of [#remaining()] bytes.
+    ///
+    /// @param charset the [Charset] to use to convert the bytes
+    /// @return a new [String] from the buffer bytes
     default String getString(Charset charset)
     {
         return new String(getArray(), charset);
     }
 
-    default String getString(long index, Charset charset)
+    /// Reads the bytes of this buffer into a string using the given [Charset],
+    /// from the specified absolute [#readPosition()]
+    ///
+    /// Does not advance the read position.
+    ///
+    /// @param position the absolute read position to start reading from
+    /// @param charset the [Charset] to use to convert the bytes
+    /// @return a new [String] from the buffer bytes
+    default String getString(long position, Charset charset)
     {
-        return new String(getArray(index), charset);
+        return new String(getArray(position), charset);
     }
 
-    /// Slices this buffer, equivalent to `slice(readPosition(), remaining())`.
+    default ByteBuffer getByteBuffer(boolean direct)
+    {
+        int length = Math.toIntExact(remaining());
+        ByteBuffer result = direct ? ByteBuffer.allocateDirect(length) : ByteBuffer.allocate(length);
+        quietWriteTo(b ->
+        {
+            int r = b.remaining();
+            result.put(b);
+            return r;
+        });
+        return result.flip();
+    }
+
+    /// Slices this buffer, equivalent to [`slice(readPosition(), remaining())`][#slice(long, long)].
     ///
     /// @return a slice of this buffer
     default RetainableByteBuffer slice()
@@ -355,6 +392,8 @@ public interface RetainableByteBuffer extends Retainable
     /// The slice operation retains this buffer, and the returned slice must be released.
     ///
     /// The returned slice read position is zero and the capacity is `length`.
+    ///
+    /// This buffer read position is not modified.
     ///
     /// @param position the read position of the current buffer
     /// @param length the length of the slice.
@@ -428,6 +467,60 @@ public interface RetainableByteBuffer extends Retainable
         }
     }
 
+    /// Copies the content of this buffer to the given [ByteBuffer].
+    ///
+    /// The operation tries to copy `n` bytes where `n` is the
+    /// number of remaining bytes in this buffer.
+    /// If there is not enough space in the given [ByteBuffer],
+    /// then [BufferOverflowException] is thrown.
+    /// The given [ByteBuffer] position is advanced by the number of
+    /// bytes copied.
+    ///
+    /// @param output the [ByteBuffer] to copy bytes into
+    /// @return the number of bytes copied
+    default int putTo(ByteBuffer output)
+    {
+        return Math.toIntExact(quietWriteTo(b ->
+        {
+            int r = b.remaining();
+            output.put(b);
+            return r;
+        }));
+    }
+
+    /// Copies the content of this buffer to the given [ByteBuffer].
+    ///
+    /// The operation copies up to `n` bytes where `n` is the number
+    /// of remaining bytes in this buffer.
+    /// The number of bytes copied is capped by the space available
+    /// in the given [ByteBuffer].
+    /// The given [ByteBuffer] position is advanced by the number of
+    /// bytes copied.
+    ///
+    /// @param output the [ByteBuffer] to copy bytes into
+    /// @return the number of bytes copied
+    default int appendTo(ByteBuffer output)
+    {
+        return Math.toIntExact(quietWriteTo(b ->
+        {
+            int remaining = b.remaining();
+            int space = output.remaining();
+            if (remaining <= space)
+            {
+                output.put(b);
+                return remaining;
+            }
+            else
+            {
+                int limit = b.limit();
+                b.limit(b.position() + space);
+                output.put(b);
+                b.limit(limit);
+                return space;
+            }
+        }));
+    }
+
     /**
      * Base interface of the Target (i.e.: byte destination) used to flush a ReadableBuffer via the NIO ByteBuffer API.
      */
@@ -460,7 +553,7 @@ public interface RetainableByteBuffer extends Retainable
          * @param inputs the buffer to be written
          * @throws IOException when IOException occurs
          */
-        long write(ByteBuffer[] inputs) throws IOException;
+        long write(ByteBuffer[] inputs, int offset, int length) throws IOException;
     }
 
     /**
@@ -511,7 +604,10 @@ public interface RetainableByteBuffer extends Retainable
          */
         static Mutable wrap(ByteBuffer byteBuffer)
         {
-            return wrap(byteBuffer, new ReferenceCounter());
+            try (ReferenceCounter rc = new ReferenceCounter())
+            {
+                return wrap(byteBuffer, rc);
+            }
         }
 
         /**
@@ -536,7 +632,10 @@ public interface RetainableByteBuffer extends Retainable
         /// @return a new buffer
         static Mutable allocate(int size, boolean direct)
         {
-            return new SingleMutableBuffer(direct ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size), new ReferenceCounter(), true);
+            try (ReferenceCounter rc = new ReferenceCounter())
+            {
+                return new SingleMutableBuffer(direct ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size), rc, true);
+            }
         }
 
         /**
@@ -572,7 +671,7 @@ public interface RetainableByteBuffer extends Retainable
          * Writes a single byte at the current position.
          *
          * @param b the byte to write
-         * @throws java.nio.BufferOverflowException if this buffer's current position is not smaller than its capacity
+         * @throws BufferOverflowException if this buffer's current position is not smaller than its capacity
          */
         Mutable put(byte b);
 
@@ -581,7 +680,7 @@ public interface RetainableByteBuffer extends Retainable
          *
          * @param position the position of the byte
          * @param b the byte to write
-         * @throws java.nio.BufferOverflowException if this buffer's current position is not smaller than its capacity
+         * @throws BufferOverflowException if this buffer's current position is not smaller than its capacity
          */
         Mutable put(long position, byte b);
 
@@ -589,7 +688,7 @@ public interface RetainableByteBuffer extends Retainable
          * Writes a short at the current position.
          *
          * @param s the short to write
-         * @throws java.nio.BufferOverflowException if there are fewer than two bytes remaining in this buffer
+         * @throws BufferOverflowException if there are fewer than two bytes remaining in this buffer
          */
         Mutable putShort(short s);
 
@@ -598,7 +697,7 @@ public interface RetainableByteBuffer extends Retainable
          *
          * @param position the position to write the `short`
          * @param s the `short` to write
-         * @throws java.nio.BufferOverflowException if there are fewer than two bytes remaining in this buffer
+         * @throws BufferOverflowException if there are fewer than two bytes remaining in this buffer
          */
         Mutable putShort(long position, short s);
 
@@ -606,7 +705,7 @@ public interface RetainableByteBuffer extends Retainable
          * Writes an int at the current position.
          *
          * @param i the int to write
-         * @throws java.nio.BufferOverflowException if there are fewer than four bytes remaining in this buffer
+         * @throws BufferOverflowException if there are fewer than four bytes remaining in this buffer
          */
         Mutable putInt(int i);
 
@@ -616,7 +715,7 @@ public interface RetainableByteBuffer extends Retainable
          * Writes a long at the current position.
          *
          * @param l the long to write
-         * @throws java.nio.BufferOverflowException if there are fewer than eight bytes remaining in this buffer
+         * @throws BufferOverflowException if there are fewer than eight bytes remaining in this buffer
          */
         Mutable putLong(long l);
 
@@ -647,7 +746,7 @@ public interface RetainableByteBuffer extends Retainable
          * Writes a {@link RetainableByteBuffer} at the current position.
          *
          * @param readableBuffer the buffer to write
-         * @throws java.nio.BufferOverflowException if there is insufficient space in this buffer for the remaining bytes in the source buffer
+         * @throws BufferOverflowException if there is insufficient space in this buffer for the remaining bytes in the source buffer
          */
         Mutable put(RetainableByteBuffer readableBuffer);
 

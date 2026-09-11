@@ -20,6 +20,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.Blocker;
@@ -43,11 +45,11 @@ public class IOResources
      * {@link Resource#newInputStream()} is used as a fallback.</p>
      *
      * @param resource the resource to be read.
-     * @param bufferPool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
-     * @return a {@link org.eclipse.jetty.io.RetainableByteBuffer} containing the resource's contents.
+     * @param pool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
+     * @return a {@link RetainableByteBuffer} containing the resource's contents.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static org.eclipse.jetty.io.RetainableByteBuffer toRetainableByteBuffer(Resource resource, ByteBufferPool.Sized bufferPool) throws IllegalArgumentException
+    public static RetainableByteBuffer toRetainableByteBuffer(Resource resource, ByteBufferPool.Sized pool) throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -55,9 +57,9 @@ public class IOResources
         // Optimize for Content.Source.Factory.
         if (resource instanceof Content.Source.Factory factory)
         {
-            try (Blocker.Promise<org.eclipse.jetty.io.RetainableByteBuffer> promise = Blocker.promise(Retainable::retain))
+            try (Blocker.Promise<RetainableByteBuffer> promise = Blocker.promise(RetainableByteBuffer::retain))
             {
-                Content.Source.asRetainableByteBuffer(factory.newContentSource(bufferPool, 0L, -1L), bufferPool, bufferPool.isDirect(), Integer.MAX_VALUE, promise);
+                Content.Source.asRetainableByteBuffer(factory.newContentSource(pool, 0L, -1L), promise);
                 return promise.block();
             }
             catch (IOException e)
@@ -68,81 +70,76 @@ public class IOResources
 
         // Optimize for MemoryResource.
         if (resource instanceof MemoryResource memoryResource)
-            return org.eclipse.jetty.io.RetainableByteBuffer.wrap(ByteBuffer.wrap(memoryResource.getBytes()));
+            return RetainableByteBuffer.wrap(ByteBuffer.wrap(memoryResource.getBytes()));
 
         long longLength = resource.length();
 
-        bufferPool = bufferPool == null ? ByteBufferPool.SIZED_NON_POOLING : bufferPool;
+        WritableBufferPool.Sized bufferPool = pool == null ? WritableBufferPool.SIZED_NON_POOLING : WritableBufferPool.wrap(pool);
 
         // Optimize for PathResource.
         Path path = resource.getPath();
         if (path != null && longLength < Integer.MAX_VALUE)
         {
-            // TODO convert to a Dynamic once HttpContent uses writeTo semantics
-            org.eclipse.jetty.io.RetainableByteBuffer retainableByteBuffer = bufferPool.acquire((int)longLength);
-            try (SeekableByteChannel seekableByteChannel = Files.newByteChannel(path))
+            // TODO: SIMON Just RBB.wrap(path...)?
+            try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire((int)longLength))
             {
-                long totalRead = 0L;
-                ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
-                int pos = BufferUtil.flipToFill(byteBuffer);
-                while (totalRead < longLength)
+                try (SeekableByteChannel seekableByteChannel = Files.newByteChannel(path))
                 {
-                    int read = seekableByteChannel.read(byteBuffer);
-                    if (read == -1)
-                        break;
-                    totalRead += read;
+                    long totalRead = 0L;
+                    while (totalRead < longLength)
+                    {
+                        long read = buffer.readFrom(seekableByteChannel::read);
+                        if (read == -1)
+                            break;
+                        totalRead += read;
+                    }
+                    buffer.retain();
+                    return buffer;
                 }
-                BufferUtil.flipToFlush(byteBuffer, pos);
-                return retainableByteBuffer;
-            }
-            catch (IOException e)
-            {
-                retainableByteBuffer.release();
-                throw new UncheckedIOException(e);
+                catch (IOException e)
+                {
+                    throw new UncheckedIOException(e);
+                }
             }
         }
 
         // Fallback to InputStream.
-        org.eclipse.jetty.io.RetainableByteBuffer buffer = null;
         try (InputStream inputStream = resource.newInputStream())
         {
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
 
-            org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity retainableByteBuffer = new org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity(bufferPool, bufferPool.isDirect(), longLength);
+            List<RetainableByteBuffer> accumulator = new ArrayList<>();
             while (true)
             {
-                if (buffer == null)
-                    buffer = bufferPool.acquire(false);
-                int read = inputStream.read(buffer.getByteBuffer().array());
-                if (read == -1)
-                    break;
-                buffer.getByteBuffer().limit(read);
-                retainableByteBuffer.append(buffer);
-                if (buffer.isRetained())
+                try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(false))
                 {
-                    // buffer has been retained by DynamicCapacity, fetch
-                    // a new one on the next loop iteration.
-                    buffer.release();
-                    buffer = null;
-                }
-                else
-                {
-                    // buffer has been copied by DynamicCapacity, clear it
-                    // before reusing it for the next loop iteration.
-                    buffer.clear();
+                    long read = buffer.readFrom(b ->
+                    {
+                        int position = b.position();
+                        int r = inputStream.read(b.array(), b.arrayOffset() + position, b.remaining());
+                        if (r > 0)
+                            b.position(position + r);
+                        return r;
+                    });
+                    if (read < 0)
+                        break;
+                    buffer.retain();
+                    accumulator.add(buffer);
                 }
             }
-            return retainableByteBuffer;
+
+            if (accumulator.isEmpty())
+                return RetainableByteBuffer.empty();
+            if (accumulator.size() == 1)
+                return accumulator.getFirst();
+            RetainableByteBuffer result = RetainableByteBuffer.merge(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
+            return result;
         }
         catch (IOException e)
         {
             throw new UncheckedIOException(e);
-        }
-        finally
-        {
-            if (buffer != null)
-                buffer.release();
         }
     }
 

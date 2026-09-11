@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,7 +125,7 @@ public abstract class ContentSourceTransformer implements Content.Source
             if (transformedChunk == rawChunk)
                 rawChunk = null;
 
-            if (rawChunk != null && rawChunk.isEmpty())
+            if (rawChunk != null && !rawChunk.hasRemaining())
             {
                 rawChunk.release();
                 rawChunk = Content.Chunk.next(rawChunk);
@@ -139,10 +140,19 @@ public abstract class ContentSourceTransformer implements Content.Source
                 // change to non-last transformed chunk to force more read() and transform().
                 if (transformedLast && !transformedFailure && !rawLast)
                 {
-                    if (transformedChunk.isEmpty())
+                    if (!transformedChunk.hasRemaining())
+                    {
                         transformedChunk = Content.Chunk.EMPTY;
+                    }
                     else
-                        transformedChunk = Content.Chunk.asChunk(transformedChunk.getByteBuffer(), false, transformedChunk);
+                    {
+                        try (RetainableByteBuffer buffer = transformedChunk.acquire())
+                        {
+                            Content.Chunk nonLastChunk = Content.Chunk.from(buffer, false);
+                            transformedChunk.release();
+                            transformedChunk = nonLastChunk;
+                        }
+                    }
                 }
 
                 if (transformedFailure && transformedLast)

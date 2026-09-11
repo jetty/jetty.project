@@ -52,32 +52,31 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
     @Override
     public void onNext(Content.Chunk chunk)
     {
-        // Retain the chunk because the write may not complete immediately.
-        chunk.retain();
-        sink.write(chunk.isLast(), RetainableByteBuffer.wrap(chunk.getByteBuffer()), new Callback()
+        try (RetainableByteBuffer buffer = chunk.acquire())
         {
-            public void succeeded()
+            sink.write(chunk.isLast(), buffer, new Callback()
             {
-                chunk.release();
-                if (chunk.isLast())
-                    complete();
-                else
-                    subscription.request(1);
-            }
+                public void succeeded()
+                {
+                    if (chunk.isLast())
+                        complete();
+                    else
+                        subscription.request(1);
+                }
 
-            public void failed(Throwable failure)
-            {
-                chunk.release();
-                subscription.cancel();
-                error(failure);
-            }
+                public void failed(Throwable failure)
+                {
+                    subscription.cancel();
+                    error(failure);
+                }
 
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return Invocable.getInvocationType(callback);
-            }
-        });
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return Invocable.getInvocationType(callback);
+                }
+            });
+        }
     }
 
     @Override

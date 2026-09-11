@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.test.client.transport;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -25,9 +26,9 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CompletableTask;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -55,22 +56,25 @@ public class ServerRetainContentTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = request.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = request.read())
                             {
-                                request.demand(this);
-                                return;
-                            }
-                            if (Content.Chunk.isFailure(chunk))
-                            {
-                                completeExceptionally(chunk.getFailure());
-                                return;
-                            }
-                            chunks.add(chunk);
-                            if (chunk.isLast())
-                            {
-                                complete(null);
-                                return;
+                                if (chunk == null)
+                                {
+                                    request.demand(this);
+                                    return;
+                                }
+                                if (Content.Chunk.isFailure(chunk))
+                                {
+                                    completeExceptionally(chunk.getFailure());
+                                    return;
+                                }
+                                chunk.retain();
+                                chunks.add(chunk);
+                                if (chunk.isLast())
+                                {
+                                    complete(null);
+                                    return;
+                                }
                             }
                         }
                     }
@@ -86,7 +90,7 @@ public class ServerRetainContentTest extends AbstractTest
         AsyncRequestContent content = new AsyncRequestContent();
 
         Callback.Completable one = new Callback.Completable();
-        content.write(false, BufferUtil.toReadableBuffer("1"), one);
+        content.write(false, RetainableByteBuffer.wrap("1", StandardCharsets.ISO_8859_1), one);
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
@@ -99,7 +103,7 @@ public class ServerRetainContentTest extends AbstractTest
             });
 
         Callback.Completable two = new Callback.Completable();
-        content.write(false, BufferUtil.toReadableBuffer("2"), two);
+        content.write(false, RetainableByteBuffer.wrap("2", StandardCharsets.ISO_8859_1), two);
 
         one.get(5, TimeUnit.SECONDS);
         two.get(5, TimeUnit.SECONDS);
@@ -108,13 +112,13 @@ public class ServerRetainContentTest extends AbstractTest
         for (int i = 3; i < count; i++)
         {
             Callback.Completable complete = new Callback.Completable();
-            content.write(false, BufferUtil.toReadableBuffer(Integer.toString(i)), complete);
+            content.write(false, RetainableByteBuffer.wrap(Integer.toString(i), StandardCharsets.ISO_8859_1), complete);
             content.flush();
             complete.get(5, TimeUnit.SECONDS);
         }
 
         Callback.Completable end = new Callback.Completable();
-        content.write(true, BufferUtil.toReadableBuffer("x"), end);
+        content.write(true, RetainableByteBuffer.wrap("x", StandardCharsets.ISO_8859_1), end);
         content.close();
         end.get(5, TimeUnit.SECONDS);
 
