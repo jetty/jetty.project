@@ -220,20 +220,13 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     }
 
     @Override
-    public void write(boolean requestLast, ByteBuffer content, Callback callback)
+    public void write(boolean last, ByteBuffer content, Callback callback)
     {
         HttpOutput httpOutput = getHttpOutput();
-        boolean deferLast = requestLast && !httpOutput.isClosed();
-        if (deferLast)
-        {
-            callback = Callback.from(callback, () ->
-            {
-                httpOutput.lastWriteComplete();
-                super.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
-            });
-        }
+        if (last && !httpOutput.isClosed())
+            httpOutput.lastWriteComplete();
         httpOutput.addBytesWritten(BufferUtil.length(content));
-        super.write(requestLast && !deferLast, content, callback);
+        super.write(last, content, callback);
     }
 
     public void closeOutput() throws IOException
