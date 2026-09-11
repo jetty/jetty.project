@@ -1876,9 +1876,8 @@ public class HttpParser
                 switch (_state)
                 {
                     case EOF_CONTENT:
-                        contentChunk = buffer.slice();
+                        contentChunk = buffer.sliceAndConsume(remaining);
                         _contentPosition += remaining;
-                        buffer.readPosition(buffer.readPosition() + remaining);
                         if (_handler.content(contentChunk))
                             return true;
                         break;
@@ -1961,11 +1960,9 @@ public class HttpParser
                         else
                         {
                             int length = (int)Math.min(remaining, chunkLength);
-                            contentChunk = buffer.slice(buffer.readPosition(), length);
-
+                            contentChunk = buffer.sliceAndConsume(length);
                             _contentPosition += length;
                             _chunkOffset += length;
-                            buffer.readPosition(buffer.readPosition() + length);
                             if (_handler.content(contentChunk))
                                 return true;
                         }

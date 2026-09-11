@@ -23,9 +23,11 @@ public interface WritableBufferPool extends org.eclipse.jetty.util.buffer.Writab
     {
         return (size, direct) ->
         {
-            RetainableByteBuffer.Mutable rbbm = byteBufferPool.acquire(size, direct);
-            BufferUtil.flipToFill(rbbm.getByteBuffer());
-            return org.eclipse.jetty.util.buffer.RetainableByteBuffer.Mutable.wrap(rbbm.getByteBuffer(), rbbm);
+            try (RetainableByteBuffer.Mutable rbbm = byteBufferPool.acquire(size, direct))
+            {
+                BufferUtil.flipToFill(rbbm.getByteBuffer());
+                return org.eclipse.jetty.util.buffer.RetainableByteBuffer.Mutable.wrap(rbbm.getByteBuffer(), rbbm);
+            }
         };
     }
 

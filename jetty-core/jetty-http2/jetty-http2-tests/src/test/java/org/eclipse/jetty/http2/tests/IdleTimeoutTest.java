@@ -395,9 +395,10 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                chunk.release();
-                dataLatch.countDown();
+                try (Content.Chunk _ = stream.read())
+                {
+                    dataLatch.countDown();
+                }
             }
 
             @Override
@@ -610,22 +611,23 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = _request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = _request.read())
                     {
-                        _request.demand(this::onContentAvailable);
-                        return;
-                    }
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        _callback.failed(chunk.getFailure());
-                        return;
-                    }
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        _callback.succeeded();
-                        return;
+                        if (chunk == null)
+                        {
+                            _request.demand(this::onContentAvailable);
+                            return;
+                        }
+                        if (Content.Chunk.isFailure(chunk))
+                        {
+                            _callback.failed(chunk.getFailure());
+                            return;
+                        }
+                        if (chunk.isLast())
+                        {
+                            _callback.succeeded();
+                            return;
+                        }
                     }
                     sleep(delay);
                 }
@@ -784,18 +786,19 @@ public class IdleTimeoutTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                stream.demand();
-                                return;
-                            }
-                            chunk.release();
-                            if (chunk.isLast())
-                            {
-                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                                stream.headers(new HeadersFrame(stream.getId(), response, null, true));
-                                return;
+                                if (chunk == null)
+                                {
+                                    stream.demand();
+                                    return;
+                                }
+                                if (chunk.isLast())
+                                {
+                                    MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                    stream.headers(new HeadersFrame(stream.getId(), response, null, true));
+                                    return;
+                                }
                             }
                         }
                     }

@@ -108,19 +108,20 @@ public class ExternalServerTest
                 @Override
                 public void onDataAvailable(Stream.Client stream)
                 {
-                    Content.Chunk chunk = stream.read();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("RESPONSE DATA = {}", chunk);
-                    if (chunk != null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        chunk.release();
-                        if (chunk.isLast())
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("RESPONSE DATA = {}", chunk);
+                        if (chunk != null)
                         {
-                            requestLatch.countDown();
-                            return;
+                            if (chunk.isLast())
+                            {
+                                requestLatch.countDown();
+                                return;
+                            }
                         }
+                        stream.demand();
                     }
-                    stream.demand();
                 }
 
                 @Override

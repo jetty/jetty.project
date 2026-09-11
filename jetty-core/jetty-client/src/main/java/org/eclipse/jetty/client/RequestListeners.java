@@ -14,10 +14,10 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.function.BiFunction;
 
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,7 @@ public class RequestListeners implements Dumpable
     private Request.BeginListener beginListener;
     private Request.HeadersListener headersListener;
     private Request.CommitListener commitListener;
-    private Request.ContentListener contentListener;
+    private Request.RetainableContentListener contentListener;
     private Request.SuccessListener successListener;
     private Request.FailureListener failureListener;
 
@@ -233,16 +233,16 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    public boolean addContentListener(Request.ContentListener listener)
+    public boolean addContentListener(Request.RetainableContentListener listener)
     {
         if (listener == null)
             return false;
-        Request.ContentListener existing = contentListener;
+        Request.RetainableContentListener existing = contentListener;
         contentListener = existing == null ? listener : new ContentListenerLink(existing, listener);
         return true;
     }
 
-    public boolean removeContentListener(Request.ContentListener listener)
+    public boolean removeContentListener(Request.RetainableContentListener listener)
     {
         if (listener == null)
             return false;
@@ -253,7 +253,7 @@ public class RequestListeners implements Dumpable
         }
         if (contentListener instanceof ContentListenerLink link)
         {
-            Request.ContentListener remaining = link.remove(listener);
+            Request.RetainableContentListener remaining = link.remove(listener);
             if (remaining != null)
             {
                 contentListener = remaining;
@@ -263,16 +263,16 @@ public class RequestListeners implements Dumpable
         return false;
     }
 
-    protected static void notifyContent(Request.ContentListener listener, Request request, ByteBuffer byteBuffer)
+    protected static void notifyContent(Request.RetainableContentListener listener, Request request, RetainableByteBuffer buffer)
     {
         try
         {
             if (listener != null)
             {
-                // The same ByteBuffer instance may be passed to multiple listeners
-                // that may modify the position and limit, so clear it every time.
-                byteBuffer.clear();
-                listener.onContent(request, byteBuffer);
+                try (RetainableByteBuffer slice = buffer.slice())
+                {
+                    listener.onContent(request, slice);
+                }
             }
         }
         catch (Throwable x)
@@ -398,7 +398,7 @@ public class RequestListeners implements Dumpable
         return commitListener;
     }
 
-    protected Request.ContentListener getContentListener()
+    protected Request.RetainableContentListener getContentListener()
     {
         return contentListener;
     }
@@ -552,15 +552,15 @@ public class RequestListeners implements Dumpable
         }
     }
 
-    private static class ContentListenerLink extends Link<Request.ContentListener, ContentListenerLink> implements Request.ContentListener
+    private static class ContentListenerLink extends Link<Request.RetainableContentListener, ContentListenerLink> implements Request.RetainableContentListener
     {
-        private ContentListenerLink(Request.ContentListener prev, Request.ContentListener next)
+        private ContentListenerLink(Request.RetainableContentListener prev, Request.RetainableContentListener next)
         {
             super(ContentListenerLink.class, ContentListenerLink::new, prev, next);
         }
 
         @Override
-        public void onContent(Request request, ByteBuffer content)
+        public void onContent(Request request, RetainableByteBuffer content)
         {
             notifyContent(prev, request, content);
             notifyContent(next, request, content);

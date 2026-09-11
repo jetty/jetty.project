@@ -19,6 +19,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -32,52 +33,58 @@ public class ContentSourceCompletableFutureTest
     public void testTransientErrorsBecomeTerminalErrors() throws Exception
     {
         TimeoutException originalFailure = new TimeoutException("timeout 1");
-        TestSource originalSource = new TestSource(
+        try (TestSource originalSource = new TestSource(
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{'1'}), false),
             null,
             Content.Chunk.from(originalFailure, false),
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{'2'}), true)
-        );
-
-        ContentSourceCompletableFuture<String> contentSourceCompletableFuture = new ContentSourceCompletableFuture<>(originalSource)
+        ))
         {
-            final Utf8StringBuilder builder = new Utf8StringBuilder();
-
-            @Override
-            protected String parse(Content.Chunk chunk)
+            ContentSourceCompletableFuture<String> contentSourceCompletableFuture = new ContentSourceCompletableFuture<>(originalSource)
             {
-                if (chunk.hasRemaining())
-                    builder.append(chunk.getByteBuffer());
-                if (!chunk.isLast())
-                    return null;
-                return builder.takeCompleteString(IllegalStateException::new);
+                final Utf8StringBuilder builder = new Utf8StringBuilder();
+
+                @Override
+                protected String parse(Content.Chunk chunk)
+                {
+                    if (chunk.hasRemaining())
+                    {
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            builder.append(buffer);
+                        }
+                    }
+                    if (!chunk.isLast())
+                        return null;
+                    return builder.takeCompleteString(IllegalStateException::new);
+                }
+            };
+
+            try
+            {
+                contentSourceCompletableFuture.parse();
+                contentSourceCompletableFuture.get();
+                fail();
             }
-        };
+            catch (ExecutionException e)
+            {
+                assertThat(e.getCause(), sameInstance(originalFailure));
+            }
 
-        try
-        {
-            contentSourceCompletableFuture.parse();
-            contentSourceCompletableFuture.get();
-            fail();
+            try (Content.Chunk chunk = originalSource.read())
+            {
+                assertThat(chunk.isLast(), is(true));
+                assertThat(chunk.getFailure(), sameInstance(originalFailure));
+            }
         }
-        catch (ExecutionException e)
-        {
-            assertThat(e.getCause(), sameInstance(originalFailure));
-        }
-
-        Content.Chunk chunk = originalSource.read();
-        assertThat(chunk.isLast(), is(true));
-        assertThat(chunk.getFailure(), sameInstance(originalFailure));
-
-        originalSource.close();
     }
 
     @Test
     public void testTransientErrorsAreIgnored() throws Exception
     {
-        TestSource originalSource = new TestSource(
+        try (TestSource originalSource = new TestSource(
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{'1'}), false),
             null,
@@ -88,36 +95,42 @@ public class ContentSourceCompletableFutureTest
             Content.Chunk.from(new TimeoutException("timeout 2"), false),
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{'3'}), true)
-        );
-
-        ContentSourceCompletableFuture<String> contentSourceCompletableFuture = new ContentSourceCompletableFuture<>(originalSource)
+        ))
         {
-            final Utf8StringBuilder builder = new Utf8StringBuilder();
-
-            @Override
-            protected String parse(Content.Chunk chunk)
+            ContentSourceCompletableFuture<String> contentSourceCompletableFuture = new ContentSourceCompletableFuture<>(originalSource)
             {
-                if (chunk.hasRemaining())
-                    builder.append(chunk.getByteBuffer());
-                if (!chunk.isLast())
-                    return null;
-                return builder.takeCompleteString(IllegalStateException::new);
-            }
+                final Utf8StringBuilder builder = new Utf8StringBuilder();
 
-            @Override
-            protected boolean onTransientFailure(Throwable cause)
+                @Override
+                protected String parse(Content.Chunk chunk)
+                {
+                    if (chunk.hasRemaining())
+                    {
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            builder.append(buffer);
+                        }
+                    }
+                    if (!chunk.isLast())
+                        return null;
+                    return builder.takeCompleteString(IllegalStateException::new);
+                }
+
+                @Override
+                protected boolean onTransientFailure(Throwable cause)
+                {
+                    return true;
+                }
+            };
+
+            contentSourceCompletableFuture.parse();
+            assertThat(contentSourceCompletableFuture.get(), is("123"));
+
+            try (Content.Chunk chunk = originalSource.read())
             {
-                return true;
+                assertThat(chunk.isLast(), is(true));
+                assertThat(chunk.hasRemaining(), is(false));
             }
-        };
-
-        contentSourceCompletableFuture.parse();
-        assertThat(contentSourceCompletableFuture.get(), is("123"));
-
-        Content.Chunk chunk = originalSource.read();
-        assertThat(chunk.isLast(), is(true));
-        assertThat(chunk.hasRemaining(), is(false));
-
-        originalSource.close();
+        }
     }
 }

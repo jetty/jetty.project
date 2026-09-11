@@ -14,7 +14,6 @@
 package org.eclipse.jetty.docs.programming.server.http2;
 
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -151,27 +150,27 @@ public class HTTP2ServerDocs
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            stream.demand();
-                            return;
-                        }
+                            if (chunk == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
 
-                        // Get the content buffer.
-                        ByteBuffer buffer = chunk.getByteBuffer();
+                            // Get the content buffer.
+                            // Closing the buffer will release this acquire.
+                            try (RetainableByteBuffer buffer = chunk.acquire())
+                            {
+                                // Consume the buffer, here - as an example - just log it.
+                                System.getLogger("http2").log(INFO, "Consuming buffer {0}", buffer);
 
-                        // Consume the buffer, here - as an example - just log it.
-                        System.getLogger("http2").log(INFO, "Consuming buffer {0}", buffer);
-
-                        // Tell the implementation that the buffer has been consumed.
-                        chunk.release();
-
-                        if (!chunk.isLast())
-                        {
-                            // Demand more DATA frames when they are available.
-                            stream.demand();
+                                if (!chunk.isLast())
+                                {
+                                    // Demand more DATA frames when they are available.
+                                    stream.demand();
+                                }
+                            }
                         }
                     }
                 };
@@ -206,21 +205,22 @@ public class HTTP2ServerDocs
                         @Override
                         public void onDataAvailable(Stream stream)
                         {
-                            Content.Chunk chunk = stream.read();
-
-                            if (chunk == null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                stream.demand();
-                                return;
-                            }
+                                if (chunk == null)
+                                {
+                                    stream.demand();
+                                    return;
+                                }
 
-                            // Consume the request content.
-                            chunk.release();
+                                // Consume the request content.
+                                consume(chunk);
 
-                            if (chunk.isLast())
-                                respond(stream, request);
-                            else
-                                stream.demand();
+                                if (chunk.isLast())
+                                    respond(stream, request);
+                                else
+                                    stream.demand();
+                            } // The chunk is closed and released here.
                         }
                     };
                 }
@@ -258,6 +258,10 @@ public class HTTP2ServerDocs
             // end::exclude[]
         };
         // end::response[]
+    }
+
+    private static void consume(Content.Chunk chunk)
+    {
     }
 
     public void reset()

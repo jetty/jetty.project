@@ -235,19 +235,19 @@ public class ClientServerTest extends AbstractClientServerTest
                     public void onDataAvailable(Stream.Server stream)
                     {
                         // FlowControl acknowledged already.
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            // Call me again when you have data.
-                            stream.demand();
-                            return;
+                            if (chunk == null)
+                            {
+                                // Call me again when you have data.
+                                stream.demand();
+                                return;
+                            }
+                            if (chunk.isLast())
+                                serverLatch.get().countDown();
+                            else
+                                stream.demand();
                         }
-                        // Recycle the ByteBuffer in the chunk.
-                        chunk.release();
-                        if (chunk.isLast())
-                            serverLatch.get().countDown();
-                        else
-                            stream.demand();
                     }
                 };
             }
@@ -316,23 +316,28 @@ public class ClientServerTest extends AbstractClientServerTest
                     public void onDataAvailable(Stream.Server stream)
                     {
                         // Read data.
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            stream.demand();
-                            return;
-                        }
-                        // Echo it back, then release, then demand only when the write is finished.
-                        stream.data(RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), Promise.Invocable.from(chunk::release, new Promise.Invocable.NonBlocking<>()
-                        {
-                            @Override
-                            public void succeeded(Stream result)
+                            if (chunk == null)
                             {
-                                // Demand only if successful and not last.
-                                if (!chunk.isLast())
-                                    stream.demand();
+                                stream.demand();
+                                return;
                             }
-                        }));
+                            try (RetainableByteBuffer buffer = chunk.acquire())
+                            {
+                                // Echo it back, then release, then demand only when the write is finished.
+                                stream.data(buffer, chunk.isLast(), new Promise.Invocable.NonBlocking<>()
+                                {
+                                    @Override
+                                    public void succeeded(Stream result)
+                                    {
+                                        // Demand only if successful and not last.
+                                        if (!chunk.isLast())
+                                            stream.demand();
+                                    }
+                                });
+                            }
+                        }
                     }
                 };
             }
@@ -360,19 +365,23 @@ public class ClientServerTest extends AbstractClientServerTest
             public void onDataAvailable(Stream.Client stream)
             {
                 // Read data.
-                Content.Chunk chunk = stream.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    stream.demand();
-                    return;
+                    if (chunk == null)
+                    {
+                        stream.demand();
+                        return;
+                    }
+                    // Consume data.
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        buffer.putTo(byteBuffer);
+                        if (chunk.isLast())
+                            clientDataLatch.countDown();
+                        else
+                            stream.demand();
+                    }
                 }
-                // Consume data.
-                byteBuffer.put(chunk.getByteBuffer());
-                chunk.release();
-                if (chunk.isLast())
-                    clientDataLatch.countDown();
-                else
-                    stream.demand();
             }
         }, p));
         stream.data(RetainableByteBuffer.wrap(bytesSent), true, Promise.Invocable.noop());
@@ -581,14 +590,16 @@ public class ClientServerTest extends AbstractClientServerTest
                     {
                         // Calling read() triggers the read+parse
                         // of the trailer, and returns EOF.
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            stream.demand();
-                            return;
+                            if (chunk == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
+                            assertTrue(chunk.isLast());
+                            assertFalse(chunk.hasRemaining());
                         }
-                        assertTrue(chunk.isLast());
-                        assertFalse(chunk.getByteBuffer().hasRemaining());
                     }
 
                     @Override
@@ -652,17 +663,18 @@ public class ClientServerTest extends AbstractClientServerTest
                         {
                             while (true)
                             {
-                                Content.Chunk chunk = stream.read();
-                                if (chunk == null)
+                                try (Content.Chunk chunk = stream.read())
                                 {
-                                    Thread.sleep(100);
-                                    continue;
-                                }
-                                chunk.release();
-                                if (chunk.isLast())
-                                {
-                                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
-                                    break;
+                                    if (chunk == null)
+                                    {
+                                        Thread.sleep(100);
+                                        continue;
+                                    }
+                                    if (chunk.isLast())
+                                    {
+                                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
+                                        break;
+                                    }
                                 }
                             }
                         }

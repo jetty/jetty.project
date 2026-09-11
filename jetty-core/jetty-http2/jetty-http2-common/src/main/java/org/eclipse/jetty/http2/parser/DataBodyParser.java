@@ -46,12 +46,13 @@ public class DataBodyParser extends BodyParser
         }
         else
         {
-            DataFrame frame = new DataFrame(getStreamId(), RetainableByteBuffer.empty(), isEndStream());
-            if (!isEndStream() && !rateControlOnEvent(frame))
-                connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_data_frame_rate");
-            else
-                onData(frame);
-            frame.release();
+            try (DataFrame frame = new DataFrame(getStreamId(), RetainableByteBuffer.empty(), isEndStream()))
+            {
+                if (!isEndStream() && !rateControlOnEvent(frame))
+                    connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_data_frame_rate");
+                else
+                    onData(frame);
+            }
         }
     }
 
@@ -90,9 +91,8 @@ public class DataBodyParser extends BodyParser
                     int size = buffer.remaining() > Integer.MAX_VALUE ? length : Math.min((int)buffer.remaining(), length);
                     if (size > buffer.remaining())
                         size = (int)buffer.remaining();
-                    RetainableByteBuffer slice = buffer.sliceAndConsume(size);
 
-                    try
+                    try (RetainableByteBuffer slice = buffer.sliceAndConsume(size))
                     {
                         length -= size;
                         if (length == 0)
@@ -110,10 +110,6 @@ public class DataBodyParser extends BodyParser
                             // the padding length already), it will be accounted at the end.
                             onData(slice, true, 0);
                         }
-                    }
-                    finally
-                    {
-                        slice.release();
                     }
                     break;
                 }
@@ -140,14 +136,9 @@ public class DataBodyParser extends BodyParser
 
     private void onData(RetainableByteBuffer buffer, boolean fragment, int padding)
     {
-        DataFrame frame = new DataFrame(getStreamId(), buffer, !fragment && isEndStream(), padding);
-        try
+        try (DataFrame frame = new DataFrame(getStreamId(), buffer, !fragment && isEndStream(), padding))
         {
             onData(frame);
-        }
-        finally
-        {
-            frame.release();
         }
     }
 

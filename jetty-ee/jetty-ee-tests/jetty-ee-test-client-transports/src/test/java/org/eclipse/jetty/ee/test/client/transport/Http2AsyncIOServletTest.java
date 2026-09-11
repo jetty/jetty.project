@@ -271,15 +271,18 @@ public class Http2AsyncIOServletTest
             {
                 while (true)
                 {
-                    Content.Chunk data = stream.read();
-                    if (data == null)
+                    try (Content.Chunk data = stream.read())
                     {
-                        stream.demand();
-                        return;
+                        if (data == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        data.retain();
+                        dataList.offer(data);
+                        if (data.isLast())
+                            return;
                     }
-                    dataList.offer(data);
-                    if (data.isLast())
-                        return;
                 }
             }
         }).get(5, TimeUnit.SECONDS);
@@ -347,16 +350,18 @@ public class Http2AsyncIOServletTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = stream.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        chunk.retain();
+                        dataList.offer(chunk);
+                        if (chunk.isLast())
+                            return;
                     }
-                    chunk.retain();
-                    dataList.offer(chunk);
-                    if (chunk.isLast())
-                        return;
                 }
             }
         }).get(5, TimeUnit.SECONDS);

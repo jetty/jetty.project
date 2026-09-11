@@ -864,34 +864,35 @@ public class GracefulHandlerTest
                 LOG.debug("process: request={}", request);
             onBeforeRead(request, response);
             // Read request content (completely)
-            int bytesRead = 0;
+            long bytesRead = 0;
             long contentLength = request.getLength();
             Blocker.Shared blocking = new Blocker.Shared();
             if (contentLength > 0)
             {
                 while (true)
                 {
-                    Content.Chunk chunk = request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = request.read())
                     {
-                        try (Blocker.Runnable block = blocking.runnable())
+                        if (chunk == null)
                         {
-                            request.demand(block);
-                            block.block();
-                            continue;
+                            try (Blocker.Runnable block = blocking.runnable())
+                            {
+                                request.demand(block);
+                                block.block();
+                                continue;
+                            }
                         }
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("chunk = {}", chunk);
+                        if (Content.Chunk.isFailure(chunk))
+                        {
+                            Response.writeError(request, response, callback, chunk.getFailure());
+                            return true;
+                        }
+                        bytesRead += chunk.remaining();
+                        if (chunk.isLast())
+                            break;
                     }
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("chunk = {}", chunk);
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        Response.writeError(request, response, callback, chunk.getFailure());
-                        return true;
-                    }
-                    bytesRead += chunk.remaining();
-                    chunk.release();
-                    if (chunk.isLast())
-                        break;
                 }
             }
 

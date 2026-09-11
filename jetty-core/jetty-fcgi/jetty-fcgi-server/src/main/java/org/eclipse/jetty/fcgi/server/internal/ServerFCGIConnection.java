@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.fcgi.server.internal;
 
-import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
@@ -25,11 +24,10 @@ import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
@@ -38,6 +36,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,14 +49,14 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Lazy();
     private final Connector connector;
-    private final ByteBufferPool bufferPool;
+    private final WritableBufferPool bufferPool;
     private final boolean sendStatus200;
     private final Flusher flusher;
     private final ServerParser parser;
     private final String id;
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
-    private RetainableByteBuffer inputBuffer;
+    private RetainableByteBuffer.Mutable networkBuffer;
     private HttpStreamOverFCGI stream;
     private Runnable onRequest;
 
@@ -65,7 +64,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     {
         super(connector, configuration, endPoint);
         this.connector = connector;
-        this.bufferPool = connector.getByteBufferPool();
+        this.bufferPool = WritableBufferPool.wrap(connector.getByteBufferPool());
         this.flusher = new Flusher(endPoint);
         this.sendStatus200 = sendStatus200;
         this.parser = new ServerParser(new ServerListener());
@@ -173,25 +172,33 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug(">>onFillable enter {} {} {}", this, stream, inputBuffer);
-        acquireInputBuffer();
-        try
+            LOG.debug("onFillable() {} {}", this, stream);
+
+        try (RetainableByteBuffer.Mutable buffer = acquireBuffer())
         {
             while (true)
             {
-                int read = fillInputBuffer();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Read {} bytes from {} {}", read, getEndPoint(), this);
+                long read = buffer.remaining();
+                if (read == 0)
+                {
+                    read = fillBuffer(buffer);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Read {} bytes from {} {}", read, getEndPoint(), this);
+                }
+
                 if (read > 0)
                 {
-                    // The inputBuffer cannot be released immediately after parse()
-                    // even if the buffer has been fully consumed because releaseInputBuffer()
-                    // must be called as the last release for it to be able to null out the
-                    // inputBuffer field exactly when the latter isn't used anymore.
-                    if (parse(inputBuffer.getByteBuffer()))
+                    if (parse(buffer))
                     {
-                        if (stream == null && inputBuffer.isEmpty())
-                            releaseInputBuffer();
+                        if (stream == null)
+                            return;
+
+                        if (buffer.hasRemaining())
+                        {
+                            buffer.retain();
+                            networkBuffer = buffer;
+                        }
+
                         Runnable task = onRequest;
                         onRequest = null;
                         if (task != null)
@@ -201,30 +208,21 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 }
                 else if (read == 0)
                 {
-                    releaseInputBuffer();
                     fillInterested(fillableCallback);
                     return;
                 }
                 else
                 {
-                    releaseInputBuffer();
                     shutdown();
                     return;
                 }
             }
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to fill endpoint", x);
-            inputBuffer.clear();
-            releaseInputBuffer();
-            // TODO: fail and close ?
-        }
-        finally
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("<<onFillable exit {} {} {}", this, stream, inputBuffer);
+                LOG.debug("onFillable() failure", x);
+            parser.eof();
         }
     }
 
@@ -236,55 +234,52 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     void parseAndFill()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("parseAndFill {}", this);
-        acquireInputBuffer();
-        // This loop must run only until the request is completed.
-        // See also HttpConnection.parseAndFillForContent().
-        while (stream != null)
-        {
-            // The inputBuffer cannot be released immediately after parse()
-            // even if the buffer has been fully consumed because releaseInputBuffer()
-            // must be called as the last release for it to be able to null out the
-            // inputBuffer field exactly when the latter isn't used anymore.
-            if (parse(inputBuffer.getByteBuffer()))
-                return;
+            LOG.debug("parseAndFill {} {}", this, stream);
 
-            // Check if the request was completed by the parsing; parse() sets
-            // stream to null when the end of the stream is reached.
-            int filled = 0;
-            if (stream == null || (filled = fillInputBuffer()) <= 0)
+        try (RetainableByteBuffer.Mutable buffer = acquireBuffer())
+        {
+            // This loop must run only until the request is completed.
+            while (stream != null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("parseAndFill completed the request by parsing {}", this);
-                releaseInputBuffer();
-                if (filled < 0)
-                    stream.onContent(Content.Chunk.from(new EofException()));
-                return;
+                if (parse(buffer))
+                {
+                    if (buffer.hasRemaining())
+                    {
+                        buffer.retain();
+                        networkBuffer = buffer;
+                    }
+                    return;
+                }
+
+                // Check if the request was completed by the parsing; parse()
+                // sets stream to null when the end of the stream is reached.
+                int filled = 0;
+                if (stream == null || (filled = fillBuffer(buffer)) <= 0)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("parseAndFill completed the request by parsing {}", this);
+                    if (filled < 0)
+                        stream.onContent(Content.Chunk.from(new EofException()));
+                    return;
+                }
             }
         }
     }
 
-    private void acquireInputBuffer()
+    private RetainableByteBuffer.Mutable acquireBuffer()
     {
-        if (inputBuffer == null)
-            inputBuffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+        if (networkBuffer == null)
+            return bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+        RetainableByteBuffer.Mutable result = networkBuffer;
+        networkBuffer = null;
+        return result;
     }
 
-    private void releaseInputBuffer()
-    {
-        if (inputBuffer == null)
-            return;
-        boolean released = inputBuffer.release();
-        if (LOG.isDebugEnabled())
-            LOG.debug("releaseInputBuffer {} {}", released, this);
-        inputBuffer = null;
-    }
-
-    private int fillInputBuffer()
+    private int fillBuffer(RetainableByteBuffer.Mutable buffer)
     {
         try
         {
-            return getEndPoint().fill(inputBuffer.getByteBuffer());
+            return getEndPoint().fill(buffer.clear());
         }
         catch (Throwable x)
         {
@@ -294,7 +289,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         }
     }
 
-    private boolean parse(ByteBuffer buffer)
+    private boolean parse(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -312,7 +307,6 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
 
     void onCompleted(Throwable failure)
     {
-        releaseInputBuffer();
         if (failure == null)
             fillInterested(fillableCallback);
         else
@@ -325,11 +319,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         HttpStreamOverFCGI stream = this.stream;
         if (stream == null)
             return true;
-        HttpChannel.IdleTimeoutTask task = stream.getHttpChannel().onIdleTimeout(timeoutException);
-        boolean handlingRequest = task.handlingRequest();
-        if (handlingRequest)
-            ThreadPool.executeImmediately(getExecutor(), task.action());
-        return !handlingRequest;
+        return stream.onIdleTimeout(timeoutException);
     }
 
     private class ServerListener implements ServerParser.Listener
@@ -341,7 +331,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
             if (stream != null)
                 throw new UnsupportedOperationException("FastCGI Multiplexing");
             HttpChannel channel = httpChannelFactory.newHttpChannel(ServerFCGIConnection.this);
-            ServerGenerator generator = new ServerGenerator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200);
+            ServerGenerator generator = new ServerGenerator(WritableBufferPool.wrap(connector.getByteBufferPool()), isUseOutputDirectByteBuffers(), sendStatus200);
             stream = new HttpStreamOverFCGI(ServerFCGIConnection.this, generator, channel, request);
             channel.setHttpStream(stream);
             if (LOG.isDebugEnabled())
@@ -362,30 +352,30 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} headers on {}", request, stream);
-            if (stream != null)
-            {
-                onRequest = stream.onHeaders();
-                // Return to onFillable() before dispatching to the application.
-                return true;
-            }
-            return false;
+
+            if (stream == null)
+                return false;
+
+            onRequest = stream.onHeaders();
+            // Return to onFillable() before dispatching to the application.
+            return true;
         }
 
         @Override
-        public boolean onContent(int request, FCGI.StreamType streamType, ByteBuffer buffer)
+        public boolean onContent(int request, FCGI.StreamType streamType, RetainableByteBuffer buffer)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} {} content {} on {}", request, streamType, buffer, stream);
-            if (stream != null)
+
+            if (stream == null)
+                return false;
+
+            try (Content.Chunk chunk = Content.Chunk.from(buffer, false))
             {
-                // No need to call inputBuffer.retain() here.
-                // The receiver of the chunk decides whether to consume/retain it.
-                Content.Chunk chunk = Content.Chunk.asChunk(buffer, false, inputBuffer);
                 stream.onContent(chunk);
                 // Signal that the content is processed asynchronously, to ensure backpressure.
                 return true;
             }
-            return false;
         }
 
         @Override
@@ -393,15 +383,14 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} end on {}", request, stream);
-            if (stream != null)
-            {
-                stream.onComplete();
-                // Nulling out the stream signals that the
-                // request is complete, see also parseAndFill().
-                stream = null;
-                return true;
-            }
-            return false;
+            if (stream == null)
+                return false;
+
+            stream.onComplete();
+            // Nulling out the stream signals that the
+            // request is complete, see also parseAndFill().
+            stream = null;
+            return true;
         }
 
         @Override

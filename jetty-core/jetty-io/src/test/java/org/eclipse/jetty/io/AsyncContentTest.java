@@ -53,9 +53,10 @@ public class AsyncContentTest
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-            Content.Chunk chunk = async.read();
-            assertNotNull(chunk);
-            chunk.release();
+            try (Content.Chunk chunk = async.read())
+            {
+                assertNotNull(chunk);
+            }
         }
     }
 
@@ -72,10 +73,11 @@ public class AsyncContentTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        Content.Chunk chunk = async.read();
-        assertNotNull(chunk);
-        chunk.release();
-        assertTrue(chunk.isLast());
+        try (Content.Chunk chunk = async.read())
+        {
+            assertNotNull(chunk);
+            assertTrue(chunk.isLast());
+        }
     }
 
     @Test
@@ -85,9 +87,10 @@ public class AsyncContentTest
         {
             async.write(false, RetainableByteBuffer.wrap(UTF_8.encode("one")), Callback.NOOP);
 
-            Content.Chunk chunk = async.read();
-            assertNotNull(chunk);
-            chunk.release();
+            try (Content.Chunk chunk = async.read())
+            {
+                assertNotNull(chunk);
+            }
 
             CountDownLatch latch = new CountDownLatch(1);
             async.demand(latch::countDown);
@@ -98,8 +101,10 @@ public class AsyncContentTest
             assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             // We must read the error.
-            chunk = async.read();
-            assertTrue(Content.Chunk.isFailure(chunk, true));
+            try (Content.Chunk chunk = async.read())
+            {
+                assertTrue(Content.Chunk.isFailure(chunk, true));
+            }
 
             // Offering more should fail.
             CountDownLatch failLatch = new CountDownLatch(1);
@@ -140,7 +145,7 @@ public class AsyncContentTest
             async.write(false, RetainableByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
-            assertThat(successCounter.get(), is(1));
+            assertThat(successCounter.get(), is(0));
             assertThat(chunk.isLast(), is(false));
             assertThat(chunk.hasRemaining(), is(false));
             assertThat(chunk.release(), is(true));
@@ -160,7 +165,7 @@ public class AsyncContentTest
             async.write(true, RetainableByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
-            assertThat(successCounter.get(), is(1));
+            assertThat(successCounter.get(), is(0));
             assertThat(chunk.isLast(), is(true));
             assertThat(chunk.hasRemaining(), is(false));
             assertThat(chunk.release(), is(true));
@@ -176,16 +181,19 @@ public class AsyncContentTest
         {
             async.close();
 
-            Content.Chunk chunk1 = async.read();
-            assertThat(chunk1.isLast(), is(true));
-            assertThat(chunk1.hasRemaining(), is(false));
-            chunk1.release();
+            Content.Chunk chunk;
+            try (Content.Chunk chunk1 = chunk = async.read())
+            {
+                assertThat(chunk1.isLast(), is(true));
+                assertThat(chunk1.hasRemaining(), is(false));
+            }
 
-            Content.Chunk chunk2 = async.read();
-            assertThat(chunk2.isLast(), is(true));
-            assertThat(chunk2.hasRemaining(), is(false));
-            assertSame(chunk1, chunk2);
-            chunk2.release();
+            try (Content.Chunk chunk2 = async.read())
+            {
+                assertThat(chunk2.isLast(), is(true));
+                assertThat(chunk2.hasRemaining(), is(false));
+                assertSame(chunk, chunk2);
+            }
         }
     }
 
@@ -203,7 +211,7 @@ public class AsyncContentTest
 
             Content.Chunk chunk = async.read();
             callback1.assertNoFailureNoSuccess();
-            assertThat(chunk.getByteBuffer().remaining(), is(1));
+            assertThat(chunk.remaining(), is(1L));
             assertThat(chunk.release(), is(true));
             callback1.assertNoFailureWithSuccesses(1);
 
@@ -212,6 +220,7 @@ public class AsyncContentTest
 
             chunk = async.read();
             assertSame(failure1, chunk.getFailure());
+            assertThat(chunk.release(), is(true));
 
             callback2.assertSingleFailureSameInstanceNoSuccess(failure1);
             callback3.assertSingleFailureSameInstanceNoSuccess(failure1);

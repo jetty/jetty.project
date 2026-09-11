@@ -116,9 +116,9 @@ public class EchoHandler extends Handler.Abstract
         @Override
         protected void copy(Request request, Response response, Callback callback)
         {
-            try
+            try (RetainableByteBuffer buffer = Content.Source.asRetainableByteBuffer(request))
             {
-                response.write(true, Content.Source.asReadableBuffer(request), callback);
+                response.write(true, buffer, callback);
             }
             catch (IOException e)
             {
@@ -132,7 +132,7 @@ public class EchoHandler extends Handler.Abstract
         @Override
         protected void copy(Request request, Response response, Callback callback)
         {
-            Content.Source.asReadableBuffer(request, new Promise<>()
+            Content.Source.asRetainableByteBuffer(request, new Promise.Invocable<>()
             {
                 @Override
                 public void succeeded(RetainableByteBuffer result)
@@ -144,6 +144,12 @@ public class EchoHandler extends Handler.Abstract
                 public void failed(Throwable x)
                 {
                     callback.failed(x);
+                }
+
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return callback.getInvocationType();
                 }
             });
         }

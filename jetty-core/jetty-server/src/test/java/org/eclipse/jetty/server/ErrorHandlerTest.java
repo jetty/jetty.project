@@ -35,9 +35,9 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.ReHandlingErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -774,7 +774,7 @@ public class ErrorHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toReadableBuffer("Context Error"), callback);
+                response.write(true, RetainableByteBuffer.wrap("Context Error", StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         });
@@ -793,7 +793,7 @@ public class ErrorHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toReadableBuffer("Server Error"), callback);
+                response.write(true, RetainableByteBuffer.wrap("Server Error", StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         });

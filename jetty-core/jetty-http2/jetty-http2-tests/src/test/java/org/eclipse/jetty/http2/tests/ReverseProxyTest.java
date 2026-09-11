@@ -187,12 +187,13 @@ public class ReverseProxyTest
                 try
                 {
                     TimeUnit.MILLISECONDS.sleep(1);
-                    Content.Chunk chunk = stream.read();
-                    chunk.release();
-                    if (chunk.isLast())
-                        clientLatch.countDown();
-                    else
-                        stream.demand();
+                    try (Content.Chunk chunk = stream.read())
+                    {
+                        if (chunk.isLast())
+                            clientLatch.countDown();
+                        else
+                            stream.demand();
+                    }
                 }
                 catch (InterruptedException x)
                 {

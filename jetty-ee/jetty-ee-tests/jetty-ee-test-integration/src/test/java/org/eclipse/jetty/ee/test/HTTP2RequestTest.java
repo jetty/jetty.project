@@ -135,17 +135,18 @@ public class HTTP2RequestTest
                 @Override
                 public void onDataAvailable(Stream stream)
                 {
-                    Content.Chunk data = stream.read();
-                    if (data == null)
+                    try (Content.Chunk data = stream.read())
                     {
-                        stream.demand();
-                        return;
+                        if (data == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        if (data.isLast())
+                            responseLatch.countDown();
+                        else
+                            stream.demand();
                     }
-                    data.release();
-                    if (data.isLast())
-                        responseLatch.countDown();
-                    else
-                        stream.demand();
                 }
 
                 @Override

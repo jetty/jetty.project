@@ -133,17 +133,17 @@ Just returning from the `onDataAvailable(Stream stream)` method does _not_ impli
 Applications must call `Stream.demand()` to explicitly require that `onDataAvailable(Stream stream)` is invoked again when more `DATA` frames are available.
 ====
 
-Applications that consume the content buffer within `onDataAvailable(Stream stream)` (for example, writing it to a file, or copying the bytes to another storage) should call `Data.release()` as soon as they have consumed the content buffer.
+Applications that consume the content buffer within `onDataAvailable(Stream stream)` (for example, writing it to a file, or copying the bytes to another storage) should release the `Content.Chunk` after they have consumed the chunk buffer, preferably using a try-with-resources block.
 This allows the implementation to reuse the buffer, reducing the memory requirements needed to handle the content buffers.
 
-Alternatively, an application may store away the `Data` object to consume the buffer bytes later, or pass the `Data` object to another asynchronous API (this is typical in proxy applications).
+Alternatively, an application may store away the `Content.Chunk` object to consume the buffer bytes later, or pass the `Content.Chunk` object to another asynchronous API (this is typical in proxy applications).
 
 [IMPORTANT]
 ====
-The call to `Stream.readData()` tells the implementation to enlarge the stream and session flow control windows so that the sender will be able to send more `DATA` frames without stalling.
+The call to `Stream.read()` tells the implementation to enlarge the stream and session flow control windows so that the sender will be able to send more `DATA` frames without stalling.
 ====
 
-Applications can unwrap the `Data` object into some other object that may be used later, provided that the _release_ semantic is maintained:
+Applications can unwrap the `Content.Chunk` object into some other object that may be used later, provided that the _release_ semantic is maintained:
 
 [,java,indent=0]
 ----

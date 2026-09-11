@@ -246,14 +246,18 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             .scheme(scenario.getScheme())
             .onResponseContentSource((response, contentSource) -> response.abort(new Throwable()).whenComplete((failed, x) ->
             {
-                Content.Chunk chunk = contentSource.read();
-                assertTrue(Content.Chunk.isFailure(chunk, true));
-                contentSource.demand(() ->
+                try (Content.Chunk chunk = contentSource.read())
                 {
-                    Content.Chunk c = contentSource.read();
-                    assertTrue(Content.Chunk.isFailure(c, true));
-                    errorContentLatch.countDown();
-                });
+                    assertTrue(Content.Chunk.isFailure(chunk, true));
+                    contentSource.demand(() ->
+                    {
+                        try (Content.Chunk c = contentSource.read())
+                        {
+                            assertTrue(Content.Chunk.isFailure(c, true));
+                            errorContentLatch.countDown();
+                        }
+                    });
+                }
             }))
             .send(result ->
             {

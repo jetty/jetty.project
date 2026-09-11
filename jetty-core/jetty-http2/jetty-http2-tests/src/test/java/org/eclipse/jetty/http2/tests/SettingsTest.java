@@ -337,7 +337,7 @@ public class SettingsTest extends AbstractTest
                     PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 2, push);
                     session.getGenerator().control(accumulator, pushFrame);
 
-                    RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+                    RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
                     accumulator.forEach(RetainableByteBuffer::release);
                     session.getEndPoint().write(rb, Callback.NOOP);
                     rb.release();

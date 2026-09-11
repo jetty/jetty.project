@@ -155,8 +155,7 @@ public class HttpStreamOverFCGI implements HttpStream
     public Content.Chunk read()
     {
         if (_chunk == null)
-            _connection.process(false);
-
+            _connection.parseAndFill();
         Content.Chunk chunk = _chunk;
         _chunk = Content.Chunk.next(chunk);
         return chunk;
@@ -168,7 +167,7 @@ public class HttpStreamOverFCGI implements HttpStream
         if (_chunk != null)
             return;
 
-        _connection.process(false);
+        _connection.parseAndFill();
 
         if (_chunk != null)
         {
@@ -244,10 +243,11 @@ public class HttpStreamOverFCGI implements HttpStream
                 {
                     List<RetainableByteBuffer> accumulator = new ArrayList<>();
                     generateResponseContent(accumulator, true, RetainableByteBuffer.empty());
-                    RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(accumulator);
-                    accumulator.forEach(RetainableByteBuffer::release);
-                    flusher.flush(accumulated, callback);
-                    accumulated.release();
+                    try (RetainableByteBuffer accumulated = RetainableByteBuffer.merge(accumulator))
+                    {
+                        accumulator.forEach(RetainableByteBuffer::release);
+                        flusher.flush(accumulated, callback);
+                    }
                 }
                 else
                 {
@@ -259,10 +259,11 @@ public class HttpStreamOverFCGI implements HttpStream
             {
                 List<RetainableByteBuffer> accumulator = new ArrayList<>();
                 generateResponseContent(accumulator, last, content);
-                RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(accumulator);
-                accumulator.forEach(RetainableByteBuffer::release);
-                flusher.flush(accumulated, callback);
-                accumulated.release();
+                try (RetainableByteBuffer accumulated = RetainableByteBuffer.merge(accumulator))
+                {
+                    accumulator.forEach(RetainableByteBuffer::release);
+                    flusher.flush(accumulated, callback);
+                }
             }
 
             if (last && _shutdown)
@@ -293,19 +294,21 @@ public class HttpStreamOverFCGI implements HttpStream
                 List<RetainableByteBuffer> accumulator = new ArrayList<>();
                 generateResponseHeaders(accumulator, info);
                 generateResponseContent(accumulator, true, RetainableByteBuffer.empty());
-                RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
-                accumulator.forEach(RetainableByteBuffer::release);
-                flusher.flush(buffer, callback);
-                buffer.release();
+                try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+                {
+                    accumulator.forEach(RetainableByteBuffer::release);
+                    flusher.flush(buffer, callback);
+                }
             }
             else
             {
                 List<RetainableByteBuffer> accumulator = new ArrayList<>();
                 generateResponseHeaders(accumulator, info);
-                RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
-                accumulator.forEach(RetainableByteBuffer::release);
-                flusher.flush(buffer, callback);
-                buffer.release();
+                try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+                {
+                    accumulator.forEach(RetainableByteBuffer::release);
+                    flusher.flush(buffer, callback);
+                }
             }
         }
         else
@@ -313,10 +316,11 @@ public class HttpStreamOverFCGI implements HttpStream
             List<RetainableByteBuffer> accumulator = new ArrayList<>();
             generateResponseHeaders(accumulator, info);
             generateResponseContent(accumulator, last, content);
-            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            flusher.flush(buffer, callback);
-            buffer.release();
+            try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+            {
+                accumulator.forEach(RetainableByteBuffer::release);
+                flusher.flush(buffer, callback);
+            }
         }
 
         if (last && shutdown)

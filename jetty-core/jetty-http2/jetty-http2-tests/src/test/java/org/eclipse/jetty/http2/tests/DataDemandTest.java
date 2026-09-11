@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -97,12 +97,14 @@ public class DataDemandTest extends AbstractTest
         Stream serverStream = serverStreamRef.getAndSet(null);
         await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
 
+        AtomicLong serverReceived = new AtomicLong();
         // Read and demand 1 more DATA frame.
-        Content.Chunk chunk = serverStream.read();
-        assertNotNull(chunk);
-        AtomicInteger serverReceived = new AtomicInteger(chunk.getByteBuffer().remaining());
-        chunk.release();
-        serverStream.demand();
+        try (Content.Chunk chunk = serverStream.read())
+        {
+            assertNotNull(chunk);
+            serverReceived.addAndGet(chunk.remaining());
+            serverStream.demand();
+        }
 
         // The server onDataAvailable() should be invoked.
         await().atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() != null);
@@ -110,12 +112,13 @@ public class DataDemandTest extends AbstractTest
         // Read all the rest.
         await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() ->
         {
-            Content.Chunk c = serverStream.read();
-            if (c == null)
-                return false;
-            serverReceived.addAndGet(c.getByteBuffer().remaining());
-            c.release();
-            return c.isLast();
+            try (Content.Chunk c = serverStream.read())
+            {
+                if (c == null)
+                    return false;
+                serverReceived.addAndGet(c.remaining());
+                return c.isLast();
+            }
         });
         assertEquals(length, serverReceived.get());
 
@@ -127,12 +130,14 @@ public class DataDemandTest extends AbstractTest
         Stream clientStream = clientStreamRef.getAndSet(null);
         await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> clientStreamRef.get() == null);
 
+        AtomicLong clientReceived = new AtomicLong();
         // Read and demand 1 more DATA frame.
-        chunk = clientStream.read();
-        assertNotNull(chunk);
-        AtomicInteger clientReceived = new AtomicInteger(chunk.getByteBuffer().remaining());
-        chunk.release();
-        clientStream.demand();
+        try (Content.Chunk chunk = clientStream.read())
+        {
+            assertNotNull(chunk);
+            clientReceived.addAndGet(chunk.remaining());
+            clientStream.demand();
+        }
 
         // The client onDataAvailable() should be invoked.
         await().atMost(5, TimeUnit.SECONDS).until(() -> clientStreamRef.get() != null);
@@ -140,12 +145,13 @@ public class DataDemandTest extends AbstractTest
         // Read all the rest.
         await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() ->
         {
-            Content.Chunk c = clientStream.read();
-            if (c == null)
-                return false;
-            clientReceived.addAndGet(c.getByteBuffer().remaining());
-            c.release();
-            return c.isLast();
+            try (Content.Chunk c = clientStream.read())
+            {
+                if (c == null)
+                    return false;
+                clientReceived.addAndGet(c.remaining());
+                return c.isLast();
+            }
         });
         assertEquals(length, clientReceived.get());
 
@@ -192,13 +198,14 @@ public class DataDemandTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                assertNotNull(chunk);
-                chunk.release();
-                if (chunk.isLast())
-                    latch.countDown();
-                else
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    assertNotNull(chunk);
+                    if (chunk.isLast())
+                        latch.countDown();
+                    else
+                        stream.demand();
+                }
             }
         });
         Stream clientStream = promise.get(5, TimeUnit.SECONDS);
@@ -237,13 +244,14 @@ public class DataDemandTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                assertNotNull(chunk);
-                chunk.release();
-                if (chunk.isLast())
-                    latch.countDown();
-                else
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    assertNotNull(chunk);
+                    if (chunk.isLast())
+                        latch.countDown();
+                    else
+                        stream.demand();
+                }
             }
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -287,12 +295,13 @@ public class DataDemandTest extends AbstractTest
             public void onDataAvailable(Stream stream)
             {
                 assertFalse(inHeaders);
-                Content.Chunk chunk = stream.read();
-                chunk.release();
-                if (chunk.isLast())
-                    latch.countDown();
-                else
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk.isLast())
+                        latch.countDown();
+                    else
+                        stream.demand();
+                }
             }
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -312,16 +321,17 @@ public class DataDemandTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        chunk.release();
-                        if (chunk.isLast())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                        }
-                        else
-                        {
-                            stream.demand();
+                            if (chunk.isLast())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            }
+                            else
+                            {
+                                stream.demand();
+                            }
                         }
                     }
                 };
@@ -360,10 +370,11 @@ public class DataDemandTest extends AbstractTest
         // client finishes writing the SETTINGS reply to the server
         // during connection initialization, or we risk a WritePendingException.
         Thread.sleep(1000);
-        RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
-        accumulator.forEach(RetainableByteBuffer::release);
-        ((HTTP2Session)clientStream.getSession()).getEndPoint().write(rb, Callback.NOOP);
-        rb.release();
+        try (RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator))
+        {
+            accumulator.forEach(RetainableByteBuffer::release);
+            ((HTTP2Session)clientStream.getSession()).getEndPoint().write(rb, Callback.NOOP);
+        }
 
         assertTrue(latch.await(15, TimeUnit.SECONDS));
     }

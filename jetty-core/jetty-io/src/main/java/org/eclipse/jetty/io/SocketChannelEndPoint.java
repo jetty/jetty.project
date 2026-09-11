@@ -130,9 +130,9 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         }
 
         @Override
-        public long write(ByteBuffer[] inputs) throws IOException
+        public long write(ByteBuffer[] inputs, int offset, int length) throws IOException
         {
-            return getChannel().write(inputs);
+            return getChannel().write(inputs, offset, length);
         }
 
         @Override

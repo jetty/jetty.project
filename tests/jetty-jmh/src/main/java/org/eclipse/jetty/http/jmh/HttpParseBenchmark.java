@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.http.jmh;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -56,8 +56,14 @@ public class HttpParseBenchmark
         return l;
     }
 
-    private static final RetainableByteBuffer GET = BufferUtil.toReadableBuffer("GET / HTTP/1.1\r\n\r\n");
-    private static final RetainableByteBuffer POST = BufferUtil.toReadableBuffer("POST / HTTP/1.1\r\n\r\n");
+    private static final RetainableByteBuffer GET;
+    private static final RetainableByteBuffer POST;
+
+    static
+    {
+        GET = RetainableByteBuffer.wrap("GET / HTTP/1.1\r\n\r\n", StandardCharsets.ISO_8859_1);
+        POST = RetainableByteBuffer.wrap("POST / HTTP/1.1\r\n\r\n", StandardCharsets.ISO_8859_1);
+    }
 
     record RequestLine(String method, String uri, HttpVersion version)
     {

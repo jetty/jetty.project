@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -44,9 +46,9 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -1222,7 +1224,7 @@ public class HttpConnectionTest
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.getHeaders().put("LongStr", longstr);
                 response.write(false,
-                    BufferUtil.toReadableBuffer("<html><h1>FOO</h1></html>"), Callback.from(callback::succeeded, t ->
+                    RetainableByteBuffer.wrap("<html><h1>FOO</h1></html>", StandardCharsets.ISO_8859_1), Callback.from(callback::succeeded, t ->
                     {
                         checkError.countDown();
                         callback.failed(t);
@@ -1261,7 +1263,7 @@ public class HttpConnectionTest
                 response.getHeaders().put("LongStr", longstr);
 
                 response.write(false,
-                    BufferUtil.toReadableBuffer("<html><h1>FOO</h1></html>"), Callback.from(callback::succeeded, t ->
+                    RetainableByteBuffer.wrap("<html><h1>FOO</h1></html>", StandardCharsets.ISO_8859_1), Callback.from(callback::succeeded, t ->
                     {
                         checkError.countDown();
                         callback.failed(t);
@@ -1326,14 +1328,13 @@ public class HttpConnectionTest
                 // Respond without reading the request content, if any.
                 response.getHeaders().put("X-Padding", paddingValue);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(true, BufferUtil.toBuffer("hello"), callback);
+                Content.Sink.write(response, true, "hello", callback);
                 return true;
             }
         });
         _server.start();
 
-        LocalConnector.LocalEndPoint endPoint = _connector.connect();
-        endPoint.addInput(rawRequest);
+        LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -1343,7 +1344,7 @@ public class HttpConnectionTest
         {
             assertFalse(response.contains(HttpHeader.CONNECTION, "close"));
             // The connection must still be usable.
-            endPoint.addInput(rawRequest);
+            endPoint.writeRequestString(rawRequest);
             response = HttpTester.parseResponse(endPoint.getResponse());
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.get("X-Padding"), is(paddingValue));
@@ -1351,7 +1352,6 @@ public class HttpConnectionTest
         else
         {
             assertTrue(response.contains(HttpHeader.CONNECTION, "close"));
-            endPoint.waitUntilClosed();
         }
     }
 
@@ -1445,27 +1445,25 @@ public class HttpConnectionTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = request.read())
                     {
-                        try
+                        if (chunk == null)
                         {
-                            CountDownLatch blocker = new CountDownLatch(1);
-                            request.demand(blocker::countDown);
-                            blocker.await();
+                            try
+                            {
+                                CountDownLatch blocker = new CountDownLatch(1);
+                                request.demand(blocker::countDown);
+                                blocker.await();
+                            }
+                            catch (InterruptedException e)
+                            {
+                                // ignored
+                            }
+                            continue;
                         }
-                        catch (InterruptedException e)
-                        {
-                            // ignored
-                        }
-                        continue;
+                        if (chunk.isLast())
+                            break;
                     }
-
-                    if (chunk.hasRemaining())
-                        chunk.getByteBuffer().clear();
-                    chunk.release();
-                    if (chunk.isLast())
-                        break;
                 }
 
                 HttpConnection connection = HttpConnection.getCurrentConnection();
@@ -1832,25 +1830,28 @@ public class HttpConnectionTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = request.read())
                     {
-                        try (Blocker.Runnable blocker = Blocker.runnable())
+                        if (chunk == null)
                         {
-                            blocked.countDown();
-                            request.demand(blocker);
-                            blocker.block();
+                            try (Blocker.Runnable blocker = Blocker.runnable())
+                            {
+                                blocked.countDown();
+                                request.demand(blocker);
+                                blocker.block();
+                            }
+                            catch (IOException e)
+                            {
+                                // ignored
+                            }
+                            continue;
                         }
-                        catch (IOException e)
-                        {
-                            // ignored
-                        }
-                        continue;
-                    }
 
-                    chunks.add(chunk);
-                    if (chunk.isLast())
-                        break;
+                        chunk.retain();
+                        chunks.add(chunk);
+                        if (chunk.isLast())
+                            break;
+                    }
                 }
                 callback.succeeded();
                 return true;
@@ -1901,10 +1902,7 @@ public class HttpConnectionTest
         localEndPoint.close();
 
         assertThat(chunks.size(), greaterThan(8));
-        // chunks.forEach(System.err::println);
 
-        // TODO restore after asChunk(ReadableBuffer buffer, boolean last) stops making copies.
-/*
         // Verify that all chunks are backed by the same buffer.
         List<String> backingBuffers = chunks.stream()
             // Drop EOF and other special chunks.
@@ -1919,6 +1917,7 @@ public class HttpConnectionTest
             .distinct()
             .toList();
         assertThat(backingBuffers.size(), is(1));
-*/
+
+        chunks.forEach(Content.Chunk::close);
     }
 }

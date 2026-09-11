@@ -64,8 +64,13 @@ public class ConnectTunnelTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        stream.data(RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), Callback.from(chunk::release));
+                        try (Content.Chunk chunk = stream.read())
+                        {
+                            try (RetainableByteBuffer buffer = chunk.acquire())
+                            {
+                                stream.data(buffer, chunk.isLast(), Callback.NOOP);
+                            }
+                        }
                     }
                 };
             }
@@ -85,10 +90,11 @@ public class ConnectTunnelTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk data = stream.read();
-                data.release();
-                if (data.isLast())
-                    latch.countDown();
+                try (Content.Chunk data = stream.read())
+                {
+                    if (data.isLast())
+                        latch.countDown();
+                }
             }
         });
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
@@ -121,8 +127,13 @@ public class ConnectTunnelTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        stream.data(RetainableByteBuffer.wrap(chunk.getByteBuffer()), chunk.isLast(), Callback.from(chunk::release));
+                        try (Content.Chunk chunk = stream.read())
+                        {
+                            try (RetainableByteBuffer buffer = chunk.acquire())
+                            {
+                                stream.data(buffer, chunk.isLast(), Callback.NOOP);
+                            }
+                        }
                     }
                 };
             }
@@ -142,10 +153,11 @@ public class ConnectTunnelTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk data = stream.read();
-                data.release();
-                if (data.isLast())
-                    latch.countDown();
+                try (Content.Chunk data = stream.read())
+                {
+                    if (data.isLast())
+                        latch.countDown();
+                }
             }
         });
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);

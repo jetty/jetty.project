@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee.servlet;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,8 +35,8 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.security.Credential;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,7 +116,7 @@ public class DeferredAuthenticationTest
                 {
                     // Send 401 response as a challenge.
                     response.setStatus(HttpStatus.UNAUTHORIZED_401);
-                    response.write(true, BufferUtil.toReadableBuffer("this is a challenge"), callback);
+                    response.write(true, RetainableByteBuffer.wrap("this is a challenge", StandardCharsets.ISO_8859_1), callback);
                     return AuthenticationState.CHALLENGE;
                 }
 

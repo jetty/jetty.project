@@ -14,7 +14,6 @@
 package org.eclipse.jetty.fcgi.client.transport.internal;
 
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -55,7 +54,7 @@ public class HttpSenderOverFCGI extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendHeaders(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         Request request = exchange.getRequest();
         // Copy the request headers to be able to convert them properly
@@ -107,30 +106,32 @@ public class HttpSenderOverFCGI extends HttpSender
         if (contentBuffer.hasRemaining() || lastContent)
         {
             generator.generateRequestHeaders(accumulator, id, fcgiHeaders);
-            generator.generateRequestContent(accumulator, id, RetainableByteBuffer.wrap(contentBuffer), lastContent);
+            generator.generateRequestContent(accumulator, id, contentBuffer, lastContent);
         }
         else
         {
             generator.generateRequestHeaders(accumulator, id, fcgiHeaders);
         }
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
-        accumulator.forEach(RetainableByteBuffer::release);
-        getHttpChannel().flush(buffer, callback);
-        buffer.release();
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+        {
+            accumulator.forEach(RetainableByteBuffer::release);
+            getHttpChannel().flush(buffer, callback);
+        }
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendContent(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         if (contentBuffer.hasRemaining() || lastContent)
         {
             List<RetainableByteBuffer> accumulator = new ArrayList<>();
             int request = getHttpChannel().getRequest();
-            generator.generateRequestContent(accumulator, request, RetainableByteBuffer.wrap(contentBuffer), lastContent);
-            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            getHttpChannel().flush(buffer, callback);
-            buffer.release();
+            generator.generateRequestContent(accumulator, request, contentBuffer, lastContent);
+            try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+            {
+                accumulator.forEach(RetainableByteBuffer::release);
+                getHttpChannel().flush(buffer, callback);
+            }
         }
         else
         {

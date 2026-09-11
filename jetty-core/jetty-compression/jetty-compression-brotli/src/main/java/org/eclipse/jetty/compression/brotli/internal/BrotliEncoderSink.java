@@ -22,8 +22,7 @@ import com.aayushatharva.brotli4j.encoder.EncoderJNI;
 import org.eclipse.jetty.compression.EncoderSink;
 import org.eclipse.jetty.compression.brotli.BrotliEncoderConfig;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class BrotliEncoderSink extends EncoderSink
 {
@@ -71,7 +70,7 @@ public class BrotliEncoderSink extends EncoderSink
     }
 
     @Override
-    protected WriteRecord encode(boolean last, ByteBuffer content)
+    protected WriteRecord encode(boolean last, RetainableByteBuffer content)
     {
         // Guard on our own terminal state: a single operation is drained across several invocations, so
         // the encoder can report finished while we are still being re-invoked to emit its output. Only a
@@ -85,12 +84,12 @@ public class BrotliEncoderSink extends EncoderSink
             {
                 case PROCESSING ->
                 {
-                    if (BufferUtil.hasContent(content))
+                    if (content.hasRemaining())
                     {
                         if (inputBuffer.hasRemaining())
                         {
                             // Fill the input buffer; do not flip it, that's not what Brotli4j expects/wants.
-                            BufferUtil.put(content, inputBuffer);
+                            content.appendTo(inputBuffer);
                         }
                         else
                         {
@@ -114,7 +113,7 @@ public class BrotliEncoderSink extends EncoderSink
                 {
                     ByteBuffer output = drain(EncoderJNI.Operation.PROCESS);
                     if (output != null)
-                        return new WriteRecord(false, output, Callback.NOOP);
+                        return new WriteRecord(false, RetainableByteBuffer.wrap(output));
                     // Output drained: reuse the input buffer for the next content.
                     inputBuffer.clear();
                     state.set(State.PROCESSING);
@@ -123,7 +122,7 @@ public class BrotliEncoderSink extends EncoderSink
                 {
                     ByteBuffer output = drain(EncoderJNI.Operation.FLUSH);
                     if (output != null)
-                        return new WriteRecord(false, output, Callback.NOOP);
+                        return new WriteRecord(false, RetainableByteBuffer.wrap(output));
                     // Flush drained: finish the stream (no further input).
                     encoder.push(EncoderJNI.Operation.FINISH, 0);
                     state.set(State.FINISH_OUTPUT);
@@ -132,10 +131,10 @@ public class BrotliEncoderSink extends EncoderSink
                 {
                     ByteBuffer output = drain(EncoderJNI.Operation.FINISH);
                     if (output != null)
-                        return new WriteRecord(false, output, Callback.NOOP);
+                        return new WriteRecord(false, RetainableByteBuffer.wrap(output));
                     // Finish drained: signal completion with a final empty last write.
                     state.set(State.FINISHED);
-                    return new WriteRecord(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+                    return new WriteRecord(true, RetainableByteBuffer.empty());
                 }
                 case FINISHED ->
                 {

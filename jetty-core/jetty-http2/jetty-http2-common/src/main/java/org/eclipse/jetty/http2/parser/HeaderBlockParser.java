@@ -78,9 +78,10 @@ public class HeaderBlockParser
             RetainableByteBuffer toDecode;
             if (blockBuffer != null)
             {
-                RetainableByteBuffer slice = buffer.sliceAndConsume(remaining);
-                blockBuffer.put(slice);
-                slice.release();
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(remaining))
+                {
+                    blockBuffer.put(slice);
+                }
                 toDecode = blockBuffer;
                 blockBuffer = null;
             }

@@ -224,7 +224,7 @@ public interface EndPoint extends Closeable, Content.Sink
     @Deprecated
     default boolean flush(ByteBuffer... buffers) throws IOException
     {
-        return flush(buffers == null ? null : RetainableByteBuffer.wrap(buffers));
+        return flush(buffers == null ? null : RetainableByteBuffer.merge(buffers));
     }
 
     default boolean flush(RetainableByteBuffer buffer) throws IOException
@@ -311,7 +311,7 @@ public interface EndPoint extends Closeable, Content.Sink
     @Deprecated
     default void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
-        write(RetainableByteBuffer.wrap(buffers), callback);
+        write(RetainableByteBuffer.merge(buffers), callback);
     }
 
     default void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
@@ -332,7 +332,7 @@ public interface EndPoint extends Closeable, Content.Sink
     @Deprecated
     default void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
     {
-        write(RetainableByteBuffer.wrap(buffers), address, callback);
+        write(RetainableByteBuffer.merge(buffers), address, callback);
     }
 
     default void write(RetainableByteBuffer buffer, SocketAddress address, Callback callback) throws WritePendingException

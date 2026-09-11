@@ -54,12 +54,12 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -76,13 +76,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentSourceTest
 {
-    private static ArrayByteBufferPool.Tracking byteBufferPool;
-
-    @BeforeEach
-    public void beforeEach()
-    {
-        byteBufferPool = new ArrayByteBufferPool.Tracking();
-    }
+    private static final ArrayByteBufferPool.Tracking byteBufferPool = new ArrayByteBufferPool.Tracking();
 
     @AfterEach
     public void afterEach()
@@ -91,7 +85,6 @@ public class ContentSourceTest
             byteBufferPool.dumpLeaks();
         assertThat(byteBufferPool.getLeaks(), empty());
         byteBufferPool.clear();
-        byteBufferPool = null;
     }
 
     public static List<Content.Source> all() throws Exception
@@ -143,7 +136,7 @@ public class ContentSourceTest
         Files.writeString(path0123, "zeroonetwothree", StandardOpenOption.CREATE, StandardOpenOption.WRITE);
 
         PathContentSource path0 = new PathContentSource(path12, byteBufferPool);
-        PathContentSource path1 = new PathContentSource(path12, new ByteBufferPool.Sized(byteBufferPool, false, 3));
+        PathContentSource path1 = new PathContentSource(path12, new ByteBufferPool.Sized(null, false, 3));
 
         InputStreamContentSource inputSource = new InputStreamContentSource(new ByteArrayInputStream("onetwo".getBytes(UTF_8)));
         InputStreamContentSource inputSource2 =
@@ -209,11 +202,13 @@ public class ContentSourceTest
             @Override
             public void run()
             {
-                Content.Chunk chunk = source.read();
-                if (chunk == null)
-                    source.demand(this);
-                else
-                    complete(chunk);
+                try (Content.Chunk chunk = source.read())
+                {
+                    if (chunk == null)
+                        source.demand(this);
+                    else
+                        complete(chunk);
+                }
             }
         };
         source.demand(task);
@@ -232,21 +227,27 @@ public class ContentSourceTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = source.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = source.read())
                     {
-                        source.demand(this);
-                        break;
-                    }
+                        if (chunk == null)
+                        {
+                            source.demand(this);
+                            break;
+                        }
 
-                    if (chunk.hasRemaining())
-                        builder.append(BufferUtil.toString(chunk.getByteBuffer()));
-                    chunk.release();
+                        if (chunk.hasRemaining())
+                        {
+                            try (RetainableByteBuffer buffer = chunk.acquire())
+                            {
+                                builder.append(buffer.getString(ISO_8859_1));
+                            }
+                        }
 
-                    if (chunk.isLast())
-                    {
-                        complete(null);
-                        break;
+                        if (chunk.isLast())
+                        {
+                            complete(null);
+                            break;
+                        }
                     }
                 }
             }
@@ -268,24 +269,30 @@ public class ContentSourceTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = source.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = source.read())
                     {
-                        source.demand(this);
-                        break;
-                    }
+                        if (chunk == null)
+                        {
+                            source.demand(this);
+                            break;
+                        }
 
-                    if (chunk.hasRemaining() && builder.isEmpty())
-                        assertTrue(source.rewind());
+                        if (chunk.hasRemaining() && builder.isEmpty())
+                            assertTrue(source.rewind());
 
-                    if (chunk.hasRemaining())
-                        builder.append(BufferUtil.toString(chunk.getByteBuffer()));
-                    chunk.release();
+                        if (chunk.hasRemaining())
+                        {
+                            try (RetainableByteBuffer buffer = chunk.acquire())
+                            {
+                                builder.append(buffer.getString(ISO_8859_1));
+                            }
+                        }
 
-                    if (chunk.isLast())
-                    {
-                        complete(null);
-                        break;
+                        if (chunk.isLast())
+                        {
+                            complete(null);
+                            break;
+                        }
                     }
                 }
             }
@@ -322,20 +329,25 @@ public class ContentSourceTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = source.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = source.read())
                     {
-                        source.demand(this);
-                        break;
-                    }
+                        if (chunk == null)
+                        {
+                            source.demand(this);
+                            break;
+                        }
 
-                    if (chunk.hasRemaining())
-                        chunks.add(chunk);
+                        if (chunk.hasRemaining())
+                        {
+                            chunk.retain();
+                            chunks.add(chunk);
+                        }
 
-                    if (chunk.isLast())
-                    {
-                        complete(null);
-                        break;
+                        if (chunk.isLast())
+                        {
+                            complete(null);
+                            break;
+                        }
                     }
                 }
             }
@@ -348,7 +360,12 @@ public class ContentSourceTest
         for (Content.Chunk chunk : chunks)
         {
             if (chunk.hasRemaining())
-                builder.append(BufferUtil.toString(chunk.getByteBuffer()));
+            {
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    builder.append(buffer.getString(ISO_8859_1));
+                }
+            }
             chunk.release();
         }
         assertThat(builder.toString(), is("onetwo"));
@@ -369,13 +386,13 @@ public class ContentSourceTest
 
                 assertTrue(recursion.compareAndSet(false, true));
 
-                Content.Chunk chunk = source.read();
-                assertNotNull(chunk);
-                chunk.release();
-
-                // Demand again, it must not recurse.
-                if (!chunk.isLast())
-                    source.demand(this);
+                try (Content.Chunk chunk = source.read())
+                {
+                    assertNotNull(chunk);
+                    // Demand again, it must not recurse.
+                    if (!chunk.isLast())
+                        source.demand(this);
+                }
 
                 assertTrue(recursion.compareAndSet(true, false));
             }
@@ -393,16 +410,16 @@ public class ContentSourceTest
             @Override
             public void run()
             {
-                Content.Chunk chunk = source.read();
-                assertNotNull(chunk);
-                chunk.release();
-
-                if (!chunk.isLast())
+                try (Content.Chunk chunk = source.read())
                 {
-                    // First demand is ok.
-                    source.demand(this);
-                    // Second demand after the first must throw.
-                    assertThrows(IllegalStateException.class, () -> source.demand(this));
+                    assertNotNull(chunk);
+                    if (!chunk.isLast())
+                    {
+                        // First demand is ok.
+                        source.demand(this);
+                        // Second demand after the first must throw.
+                        assertThrows(IllegalStateException.class, () -> source.demand(this));
+                    }
                 }
                 processed.countDown();
             }
@@ -414,15 +431,18 @@ public class ContentSourceTest
     @MethodSource("multi")
     public void testReadFailReadReturnsError(Content.Source source) throws Exception
     {
-        Content.Chunk chunk = nextChunk(source);
-        assertNotNull(chunk);
-        chunk.release();
+        try (Content.Chunk chunk = nextChunk(source))
+        {
+            assertNotNull(chunk);
+        }
 
         source.fail(new CancellationException());
 
         // We must read the error.
-        chunk = source.read();
-        assertTrue(Content.Chunk.isFailure(chunk, true));
+        try (Content.Chunk chunk = source.read())
+        {
+            assertTrue(Content.Chunk.isFailure(chunk, true));
+        }
     }
 
     @ParameterizedTest
@@ -432,8 +452,10 @@ public class ContentSourceTest
         source.fail(new CancellationException());
 
         // We must read the error.
-        Content.Chunk chunk = source.read();
-        assertTrue(Content.Chunk.isFailure(chunk, true));
+        try (Content.Chunk chunk = source.read())
+        {
+            assertTrue(Content.Chunk.isFailure(chunk, true));
+        }
     }
 
     @ParameterizedTest
@@ -454,8 +476,10 @@ public class ContentSourceTest
     {
         source.fail(new CancellationException());
 
-        Content.Chunk chunk = source.read();
-        assertTrue(Content.Chunk.isFailure(chunk, true));
+        try (Content.Chunk chunk = source.read())
+        {
+            assertTrue(Content.Chunk.isFailure(chunk, true));
+        }
 
         CountDownLatch latch = new CountDownLatch(1);
         source.demand(latch::countDown);
@@ -489,8 +513,10 @@ public class ContentSourceTest
             throw new CancellationException();
         });
 
-        Content.Chunk chunk = source.read();
-        assertTrue(Content.Chunk.isFailure(chunk, true));
+        try (Content.Chunk chunk = source.read())
+        {
+            assertTrue(Content.Chunk.isFailure(chunk, true));
+        }
     }
 
     @Test
@@ -499,10 +525,14 @@ public class ContentSourceTest
         TestContentSource source = new TestContentSource();
         assertNull(source.read());
         source.add("hello", false);
-        Content.Chunk chunk = source.read();
-        assertNotNull(chunk);
-        assertThat(UTF_8.decode(chunk.getByteBuffer()).toString(), equalTo("hello"));
-        chunk.release();
+        try (Content.Chunk chunk = source.read())
+        {
+            assertNotNull(chunk);
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                assertThat(buffer.getString(UTF_8), equalTo("hello"));
+            }
+        }
     }
 
     @Test
@@ -873,20 +903,32 @@ public class ContentSourceTest
         content.fail(new TimeoutException("test"), false);
         Content.Sink.write(content, true, "Two", Callback.NOOP);
 
-        Content.Chunk chunk = content.read();
-        assertFalse(chunk.isLast());
-        assertFalse(Content.Chunk.isFailure(chunk));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer()), is("One"));
+        try (Content.Chunk chunk = content.read())
+        {
+            assertFalse(chunk.isLast());
+            assertFalse(Content.Chunk.isFailure(chunk));
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                assertThat(buffer.getString(ISO_8859_1), is("One"));
+            }
+        }
 
-        chunk = content.read();
-        assertFalse(chunk.isLast());
-        assertTrue(Content.Chunk.isFailure(chunk));
-        assertThat(chunk.getFailure(), instanceOf(TimeoutException.class));
+        try (Content.Chunk chunk = content.read())
+        {
+            assertFalse(chunk.isLast());
+            assertTrue(Content.Chunk.isFailure(chunk));
+            assertThat(chunk.getFailure(), instanceOf(TimeoutException.class));
+        }
 
-        chunk = content.read();
-        assertTrue(chunk.isLast());
-        assertFalse(Content.Chunk.isFailure(chunk));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer()), is("Two"));
+        try (Content.Chunk chunk = content.read())
+        {
+            assertTrue(chunk.isLast());
+            assertFalse(Content.Chunk.isFailure(chunk));
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                assertThat(buffer.getString(ISO_8859_1), is("Two"));
+            }
+        }
     }
 
     @Test
@@ -928,41 +970,31 @@ public class ContentSourceTest
     {
         TestContentSource source = new TestContentSource();
 
-        FuturePromise<org.eclipse.jetty.io.RetainableByteBuffer> promise = new FuturePromise<>()
-        {
-            @Override
-            public void succeeded(org.eclipse.jetty.io.RetainableByteBuffer result)
-            {
-                result.retain();
-                super.succeeded(result);
-            }
-        };
-        Content.Source.asRetainableByteBuffer(source, null, false, -1, promise);
-
-        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter();
-        counter.retain();
-        counter.retain();
+        Promise.Completable<RetainableByteBuffer> promise = new Promise.Completable<>();
+        promise.thenAccept(RetainableByteBuffer::retain);
+        Content.Source.asRetainableByteBuffer(source, -1, promise);
 
         Runnable todo = source.takeDemand();
         assertNotNull(todo);
-        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer("hello"), false, counter));
+        source.add(Content.Chunk.from(BufferUtil.toBuffer("hello"), false));
         todo.run();
         assertFalse(promise.isDone());
 
         todo = source.takeDemand();
         assertNotNull(todo);
-        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer(" cruel"), false, counter));
-        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer(" world"), true, counter));
+        source.add(Content.Chunk.from(BufferUtil.toBuffer(" cruel"), false));
+        source.add(Content.Chunk.from(BufferUtil.toBuffer(" world"), true));
         todo.run();
 
         todo = source.takeDemand();
         assertNull(todo);
         assertTrue(promise.isDone());
 
-        org.eclipse.jetty.io.RetainableByteBuffer buffer = promise.get();
+        RetainableByteBuffer buffer = promise.get();
         assertNotNull(buffer);
 
-        assertThat(BufferUtil.toString(buffer.getByteBuffer()), equalTo("hello cruel world"));
+        assertThat(buffer.getString(ISO_8859_1), equalTo("hello cruel world"));
+        assertTrue(buffer.release());
     }
 
     @Test
@@ -970,20 +1002,13 @@ public class ContentSourceTest
     {
         TestContentSource source = new TestContentSource();
 
-        FuturePromise<org.eclipse.jetty.io.RetainableByteBuffer> promise = new FuturePromise<>()
-        {
-            @Override
-            public void succeeded(org.eclipse.jetty.io.RetainableByteBuffer result)
-            {
-                result.retain();
-                super.succeeded(result);
-            }
-        };
-        Content.Source.asRetainableByteBuffer(source, null, false, 3, promise);
+        Promise.Completable<RetainableByteBuffer> promise = new Promise.Completable<>();
+        promise.thenAccept(RetainableByteBuffer::retain);
+        Content.Source.asRetainableByteBuffer(source, 3, promise);
 
         Runnable todo = source.takeDemand();
         assertNotNull(todo);
-        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer("hello"), false, new Retainable.ReferenceCounter()));
+        source.add(Content.Chunk.from(RetainableByteBuffer.wrap("hello", ISO_8859_1), false));
         todo.run();
         assertTrue(promise.isDone());
 
@@ -1001,39 +1026,6 @@ public class ContentSourceTest
     }
 
     @Test
-    public void testAsRetainableByteBufferWithCompletableFuture() throws Exception
-    {
-        TestContentSource source = new TestContentSource();
-
-        CompletableFuture<org.eclipse.jetty.io.RetainableByteBuffer> completableFuture = Content.Source.asRetainableByteBuffer(source, null, false, -1);
-
-        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter();
-        counter.retain();
-        counter.retain();
-
-        Runnable todo = source.takeDemand();
-        assertNotNull(todo);
-        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer("hello"), false, counter));
-        todo.run();
-        assertFalse(completableFuture.isDone());
-
-        todo = source.takeDemand();
-        assertNotNull(todo);
-        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer(" cruel"), false, counter));
-        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer(" world"), true, counter));
-        todo.run();
-
-        todo = source.takeDemand();
-        assertNull(todo);
-        assertTrue(completableFuture.isDone());
-
-        org.eclipse.jetty.io.RetainableByteBuffer buffer = completableFuture.get();
-        assertNotNull(buffer);
-
-        assertThat(BufferUtil.toString(buffer.getByteBuffer()), equalTo("hello cruel world"));
-    }
-
-    @Test
     public void testAsByteArrayAsync() throws Exception
     {
         TestContentSource source = new TestContentSource();
@@ -1041,20 +1033,16 @@ public class ContentSourceTest
         CompletableFuture<byte[]> future = new CompletableFuture<>();
         Content.Source.asByteArrayAsync(source, -1, Promise.Invocable.toPromise(future));
 
-        Retainable.ReferenceCounter counter = new Retainable.ReferenceCounter();
-        counter.retain();
-        counter.retain();
-
         Runnable todo = source.takeDemand();
         assertNotNull(todo);
-        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer("hello"), false, counter));
+        source.add(Content.Chunk.from(BufferUtil.toBuffer("hello"), false));
         todo.run();
         assertFalse(future.isDone());
 
         todo = source.takeDemand();
         assertNotNull(todo);
-        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer(" cruel"), false, counter));
-        source.add(Content.Chunk.asChunk(BufferUtil.toBuffer(" world"), true, counter));
+        source.add(Content.Chunk.from(BufferUtil.toBuffer(" cruel"), false));
+        source.add(Content.Chunk.from(BufferUtil.toBuffer(" world"), true));
         todo.run();
 
         todo = source.takeDemand();
@@ -1065,6 +1053,5 @@ public class ContentSourceTest
         assertNotNull(buffer);
 
         assertThat(new String(buffer, UTF_8), equalTo("hello cruel world"));
-
     }
 }

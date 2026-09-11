@@ -23,6 +23,7 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -201,7 +202,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                     @Override
                     public void succeeded()
                     {
-                        RetainableByteBuffer data = RetainableByteBuffer.allocate(1024, false);
+                        byte[] bytes = new byte[1024];
+                        Arrays.fill(bytes, (byte)'x');
+                        RetainableByteBuffer data = RetainableByteBuffer.wrap(bytes);
                         stream.data(data, false, NOOP);
                     }
                 });
@@ -220,7 +223,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
         assertThrows(ExecutionException.class, () ->
             httpClient.newRequest("localhost", connector.getLocalPort())
-                .onResponseContent((response, buffer) -> response.abort(new Exception("explicitly_aborted_by_test")))
+                .onResponseContentRetainable((response, _) -> response.abort(new Exception("explicitly_aborted_by_test")))
                 .send());
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
@@ -313,17 +316,18 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         return;
                     }
 
-                    Content.Chunk chunk = contentSource.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = contentSource.read())
                     {
-                        demander.run();
-                        return;
+                        if (chunk == null)
+                        {
+                            demander.run();
+                            return;
+                        }
+                        if (chunk.hasRemaining())
+                            contentCount.incrementAndGet();
+                        if (!chunk.isLast())
+                            demander.run();
                     }
-                    if (chunk.hasRemaining())
-                        contentCount.incrementAndGet();
-                    chunk.release();
-                    if (!chunk.isLast())
-                        demander.run();
                 }
             })
             .timeout(5, TimeUnit.SECONDS)
@@ -699,7 +703,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         try
                         {
                             // Write the frames.
-                            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+                            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
                             accumulator.forEach(RetainableByteBuffer::release);
                             accumulator.clear();
                             rb.writeTo(input -> BufferUtil.writeTo(input, output));
@@ -880,10 +884,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             @Override
             public void onContentSource(Response response, Content.Source contentSource)
             {
-                try
+                try (Content.Chunk _ = contentSource.read())
                 {
-                    Content.Chunk chunk = contentSource.read();
-                    chunk.release();
+                    // Release the chunk.
                 }
                 catch (Throwable x)
                 {
@@ -969,23 +972,24 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         assertTrue(requestFailureLatch.await(5, TimeUnit.SECONDS));
 
         // Verify that we can fully read the response.
-        int received = 0;
+        long received = 0;
         try (Blocker.Runnable task = Blocker.runnable())
         {
             Content.Source source = contentSourceRef.get();
             while (true)
             {
-                Content.Chunk chunk = source.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = source.read())
                 {
-                    source.demand(task);
-                    task.block(5, TimeUnit.SECONDS);
-                    continue;
+                    if (chunk == null)
+                    {
+                        source.demand(task);
+                        task.block(5, TimeUnit.SECONDS);
+                        continue;
+                    }
+                    received += chunk.remaining();
+                    if (chunk.isLast())
+                        break;
                 }
-                received += chunk.remaining();
-                chunk.release();
-                if (chunk.isLast())
-                    break;
             }
         }
 

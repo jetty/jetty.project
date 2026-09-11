@@ -348,7 +348,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
                     long elapsedSinceLastDrip = NanoTime.elapsed(_lastDripNanoTime, now);
                     long drips = elapsedSinceLastDrip / _nanosPerDrip;
                     _lastDripNanoTime = _lastDripNanoTime + drips * _nanosPerDrip;
-                    _bucket = Math.min(_bucketSize, Math.toIntExact(Math.max(0L, _bucket - drips) + 1));
+                    _bucket = (int)Math.min(_bucketSize, Math.max(0L, _bucket - drips) + 1);
                     _expireNanoTime = now + _bucket * _nanosPerDrip + _idleTimeout;
                     return _bucket < _bucketSize;
                 }

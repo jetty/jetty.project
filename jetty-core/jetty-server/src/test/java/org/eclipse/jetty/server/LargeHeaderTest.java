@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.net.Socket;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,11 +37,11 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,7 +116,7 @@ public class LargeHeaderTest
                         callback.failed(x);
                     }
                 };
-                response.write(true, BufferUtil.toReadableBuffer(responseBody, UTF_8), topCallback);
+                response.write(true, RetainableByteBuffer.wrap(responseBody, StandardCharsets.UTF_8), topCallback);
                 if (LOG.isDebugEnabled())
                     LOG.debug("X-Count: {} [handle-completed]", idCount);
                 return true;

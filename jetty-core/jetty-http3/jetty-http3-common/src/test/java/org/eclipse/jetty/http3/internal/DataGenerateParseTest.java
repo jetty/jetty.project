@@ -65,11 +65,12 @@ public class DataGenerateParseTest
             @Override
             public void onData(long streamId, DataFrame frame)
             {
+                frame.acquire();
                 frames.add(frame);
             }
         }, decoder, 13);
         parser.init(UnaryOperator.identity());
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator);
         parser.parse(buffer, false);
         assertFalse(buffer.hasRemaining());
 
@@ -77,5 +78,7 @@ public class DataGenerateParseTest
         DataFrame output = frames.getFirst();
         byte[] outputBytes = output.acquire().getArray();
         assertArrayEquals(inputBytes, outputBytes);
+
+        frames.forEach(DataFrame::close);
     }
 }

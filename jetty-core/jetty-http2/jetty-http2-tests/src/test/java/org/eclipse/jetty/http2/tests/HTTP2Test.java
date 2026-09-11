@@ -54,7 +54,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
@@ -69,6 +68,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -157,10 +157,11 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                assertTrue(chunk.isLast());
-                chunk.release();
-                latch.countDown();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    assertTrue(chunk.isLast());
+                    latch.countDown();
+                }
             }
         });
 
@@ -207,11 +208,15 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                assertTrue(chunk.isLast());
-                assertThat(BufferUtil.toArray(chunk.getByteBuffer()), is(content));
-                chunk.release();
-                latch.countDown();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    assertTrue(chunk.isLast());
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        assertArrayEquals(content, buffer.getArray());
+                        latch.countDown();
+                    }
+                }
             }
         });
 
@@ -241,12 +246,13 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                chunk.release();
-                if (chunk.isLast())
-                    latch.countDown();
-                else
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk.isLast())
+                        latch.countDown();
+                    else
+                        stream.demand();
+                }
             }
         })
         .thenCompose(s -> s.data(RetainableByteBuffer.allocate(512, false), false))
@@ -289,12 +295,13 @@ public class HTTP2Test extends AbstractTest
                 @Override
                 public void onDataAvailable(Stream stream)
                 {
-                    Content.Chunk chunk = stream.read();
-                    chunk.release();
-                    if (chunk.isLast())
-                        latch.countDown();
-                    else
-                        stream.demand();
+                    try (Content.Chunk chunk = stream.read())
+                    {
+                        if (chunk.isLast())
+                            latch.countDown();
+                        else
+                            stream.demand();
+                    }
                 }
             });
         }
@@ -562,16 +569,17 @@ public class HTTP2Test extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        chunk.release();
-                        if (chunk.isLast())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            completable.thenAccept(s ->
-                                s.data(RetainableByteBuffer.empty(), true));
-                        }
-                        else
-                        {
-                            stream.demand();
+                            if (chunk.isLast())
+                            {
+                                completable.thenAccept(s ->
+                                    s.data(RetainableByteBuffer.empty(), true));
+                            }
+                            else
+                            {
+                                stream.demand();
+                            }
                         }
                     }
                 };
@@ -588,12 +596,13 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                chunk.release();
-                if (chunk.isLast())
-                    completeLatch.countDown();
-                else
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk.isLast())
+                        completeLatch.countDown();
+                    else
+                        stream.demand();
+                }
             }
         }).get(5, TimeUnit.SECONDS);
 
@@ -698,10 +707,11 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                chunk.release();
-                if (chunk.isLast())
-                    completeLatch.countDown();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk.isLast())
+                        completeLatch.countDown();
+                }
             }
         });
 
@@ -883,17 +893,18 @@ public class HTTP2Test extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        chunk.release();
-                        dataLatch.countDown();
-                        if (chunk.isLast())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                        }
-                        else
-                        {
-                            stream.demand();
+                            dataLatch.countDown();
+                            if (chunk.isLast())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            }
+                            else
+                            {
+                                stream.demand();
+                            }
                         }
                     }
                 };

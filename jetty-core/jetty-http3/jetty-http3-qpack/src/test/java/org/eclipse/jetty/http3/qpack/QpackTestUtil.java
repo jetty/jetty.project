@@ -49,7 +49,7 @@ public class QpackTestUtil
             return RetainableByteBuffer.empty();
         if (accumulator.size() == 1)
             return accumulator.getFirst();
-        return RetainableByteBuffer.wrap(accumulator);
+        return RetainableByteBuffer.merge(accumulator);
     }
 
     public static Matcher<String> equalsHex(String expectedString)

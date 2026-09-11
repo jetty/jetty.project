@@ -18,81 +18,88 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class MultiBuffer implements RetainableByteBuffer
 {
-    private final List<Long> originalPositions;
-    private final List<RetainableByteBuffer> originalBuffers;
-    private final List<RetainableByteBuffer> buffers;
-    private final Retainable retainable;
-    private final long capacity;
-    private long position;
-
-    public MultiBuffer(List<RetainableByteBuffer> buffers)
+    public static RetainableByteBuffer merge(List<RetainableByteBuffer> list)
     {
-        if (Objects.requireNonNull(buffers).isEmpty())
-            throw new IllegalArgumentException("Buffers list cannot be empty");
-
-        this.retainable = new ReferenceCounter();
-        this.buffers = new ArrayList<>(buffers.size());
-        this.originalBuffers = new ArrayList<>(buffers.size());
-        this.originalPositions = new ArrayList<>(buffers.size());
-        this.capacity = fillLists(buffers);
-        this.position = 0L;
+        List<RetainableByteBuffer> buffers = new ArrayList<>();
+        flatten(list, buffers);
+        if (buffers.isEmpty())
+            return RetainableByteBuffer.empty();
+        if (buffers.size() == 1)
+            return buffers.getFirst();
+        return new MultiBuffer(buffers);
     }
 
-    private long fillLists(List<RetainableByteBuffer> buffers)
+    private static void flatten(List<RetainableByteBuffer> input, List<RetainableByteBuffer> output)
     {
-        long totalCapacity = 0L;
-        for (RetainableByteBuffer buffer : buffers)
+        for (RetainableByteBuffer buffer : input)
         {
-            if (buffer instanceof MultiBuffer arb)
-            {
-                // Flatten nested MultiBuffers.
-                totalCapacity += fillLists(arb.buffers);
-            }
+            if (buffer == null || !buffer.hasRemaining())
+                continue;
+            if (buffer instanceof MultiBuffer mb)
+                flatten(mb.buffers, output);
             else
-            {
-                this.originalBuffers.add(buffer);
-                this.originalPositions.add(buffer.readPosition());
-                buffer = buffer.slice();
-                totalCapacity += buffer.capacity();
-                this.buffers.add(buffer);
-            }
+                output.add(buffer.sliceAndConsume(buffer.remaining()));
         }
-        return totalCapacity;
+    }
+
+    private final ReferenceCounter refCount = new ReferenceCounter();
+    private final List<RetainableByteBuffer> buffers;
+    private final long capacity;
+
+    private MultiBuffer(List<RetainableByteBuffer> buffers)
+    {
+        this.buffers = buffers;
+        long capacity = 0;
+        for (int i = 0; i < buffers.size(); i++)
+        {
+            capacity += buffers.get(i).capacity();
+        }
+        this.capacity = capacity;
     }
 
     @Override
     public long readPosition()
     {
-        return position;
+        long r = 0;
+        for (RetainableByteBuffer buffer : buffers)
+        {
+            if (buffer.hasRemaining())
+            {
+                r += buffer.readPosition();
+                break;
+            }
+            r += buffer.capacity();
+        }
+        return r;
     }
 
     @Override
     public RetainableByteBuffer readPosition(long newPosition)
     {
-        if (newPosition > capacity)
-            throw new IllegalArgumentException("newPosition(" + newPosition + ") > capacity(" + capacity + ")");
-        this.position = newPosition;
-        for (int i = 0; i < buffers.size(); i++)
-        {
-            RetainableByteBuffer currentRb = buffers.get(i);
-            RetainableByteBuffer originalRb = originalBuffers.get(i);
-            Long originalRbPosition = originalPositions.get(i);
+        if (newPosition < 0 || newPosition > capacity())
+            throw new IllegalArgumentException();
 
-            long currentLimit = currentRb.capacity();
-            long nextLimit = Math.min(newPosition, currentLimit);
-            currentRb.readPosition(nextLimit);
-            originalRb.readPosition(originalRbPosition + nextLimit);
-            newPosition -= currentLimit;
-            newPosition = Math.max(0L, newPosition);
+        for (int i = 0; i < buffers.size(); ++i)
+        {
+            RetainableByteBuffer buffer = buffers.get(i);
+            if (newPosition <= buffer.capacity())
+            {
+                buffer.readPosition(newPosition);
+                for (int j = i + 1; j < buffers.size(); ++j)
+                {
+                    buffers.get(j).readPosition(0);
+                }
+                break;
+            }
+            buffer.consume(buffer.remaining());
+            newPosition -= buffer.capacity();
         }
         return this;
     }
@@ -106,12 +113,12 @@ public class MultiBuffer implements RetainableByteBuffer
     @Override
     public long remaining()
     {
-        long totalRemaining = 0L;
+        long r = 0;
         for (RetainableByteBuffer buffer : buffers)
         {
-            totalRemaining += buffer.remaining();
+            r += buffer.remaining();
         }
-        return totalRemaining;
+        return r;
     }
 
     @Override
@@ -125,74 +132,79 @@ public class MultiBuffer implements RetainableByteBuffer
         return false;
     }
 
-    // Readable
-
-    private RetainableByteBuffer currentReadableBuffer()
+    @Override
+    public boolean isDirect()
     {
-        long currentPosition = position;
+        boolean r = true;
         for (RetainableByteBuffer buffer : buffers)
         {
-            currentPosition -= buffer.readPosition();
-            if (currentPosition <= 0L && buffer.hasRemaining())
+            r &= buffer.isDirect();
+        }
+        return r;
+    }
+
+    private RetainableByteBuffer current()
+    {
+        for (RetainableByteBuffer buffer : buffers)
+        {
+            if (buffer.hasRemaining())
                 return buffer;
         }
         throw new BufferUnderflowException();
     }
 
-    private ByteBuffer fragmentedGet(RetainableByteBuffer buffer, int length)
+    private ByteBuffer fragmented(int bytes)
     {
-        if (remaining() < length)
+        if (bytes > remaining())
             throw new BufferUnderflowException();
-        ByteBuffer tmpBuf = ByteBuffer.allocate(length);
-        position += buffer.remaining();
-        while (buffer.hasRemaining())
+        ByteBuffer byteBuffer = ByteBuffer.allocate(bytes);
+        for (int i = 0; i < bytes; ++i)
         {
-            tmpBuf.put(buffer.get());
+            byteBuffer.put(get());
         }
-        while (tmpBuf.hasRemaining())
-        {
-            buffer = currentReadableBuffer();
-            position += buffer.readPosition();
-            position += buffer.remaining();
-            while (tmpBuf.hasRemaining() && buffer.hasRemaining())
-            {
-                tmpBuf.put(buffer.get());
-            }
-        }
-        return tmpBuf.flip();
+        return byteBuffer.flip();
     }
 
-    private void consumeOriginalBuffers(long byteCount)
+    private ByteBuffer fragmented(int index, long position, int bytes)
     {
-        for (RetainableByteBuffer originalBuffer : originalBuffers)
-        {
-            if (!originalBuffer.hasRemaining())
-                continue;
-            if (originalBuffer.remaining() >= byteCount)
-            {
-                originalBuffer.readPosition(originalBuffer.readPosition() + byteCount);
-                break;
-            }
-            else
-            {
-                long remaining = originalBuffer.remaining();
-                originalBuffer.readPosition(originalBuffer.readPosition() + remaining);
-                byteCount -= remaining;
-            }
-            if (byteCount == 0)
-                break;
-        }
-    }
+        // Example: fragmented(1, 3, 8)
+        // b0     b1      b2  b3
+        // |----| |-----| |-| |------|
+        // Since index=1, b0 is skipped.
+        // b1.capacity=5, position=3, so we need to copy 2 of bytes=8.
+        // Set position=0 and bytes=6
+        // b2.capacity=1, so copy 1 byte
+        // Set position=0 and bytes=5
+        // b3.capacity=6, so bytes=5 are in the same buffer, copy 5 bytes and return.
 
-    @Override
-    public byte get(long index)
-    {
-        for (RetainableByteBuffer buffer : buffers)
+        ByteBuffer byteBuffer = ByteBuffer.allocate(bytes);
+        for (int i = index; i < buffers.size(); ++i)
         {
-            long limit = buffer.capacity();
-            if (limit > index)
-                return buffer.get(index);
-            index -= limit;
+            RetainableByteBuffer buffer = buffers.get(i);
+
+            // All the necessary bytes are in the same buffer.
+            if (position + bytes <= buffer.capacity())
+            {
+                for (int j = 0; j < bytes; ++j)
+                {
+                    byteBuffer.put(buffer.get(position + j));
+                }
+                return byteBuffer.flip();
+            }
+
+            // Here the bytes span 2 or more buffers.
+
+            // Copy the remaining bytes of the current buffer starting at position.
+            int remaining = (int)(buffer.capacity() - position);
+            for (int j = 0; j < remaining; ++j)
+            {
+                byteBuffer.put(buffer.get(position + j));
+            }
+
+            // The next buffer will be read at position 0.
+            position = 0;
+            // Decrement the number of bytes to copy and loop.
+            bytes -= remaining;
         }
         throw new BufferUnderflowException();
     }
@@ -200,41 +212,54 @@ public class MultiBuffer implements RetainableByteBuffer
     @Override
     public byte get()
     {
-        RetainableByteBuffer buffer = currentReadableBuffer();
-        position++;
-        consumeOriginalBuffers(1);
-        return buffer.get();
+        return current().get();
+    }
+
+    @Override
+    public byte get(long position)
+    {
+        if (position < 0 || position + Byte.BYTES > capacity())
+            throw new IllegalArgumentException();
+
+        for (RetainableByteBuffer buffer : buffers)
+        {
+            long capacity = buffer.capacity();
+            if (position < capacity)
+                return buffer.get(position);
+            position -= capacity;
+        }
+        throw new BufferUnderflowException();
     }
 
     @Override
     public short getShort()
     {
-        RetainableByteBuffer buffer = currentReadableBuffer();
-        if (buffer.remaining() >= 2L)
-        {
-            consumeOriginalBuffers(2);
-            position += 2L;
+        int bytes = Short.BYTES;
+        RetainableByteBuffer buffer = current();
+        if (buffer.remaining() >= bytes)
             return buffer.getShort();
-        }
-        short aShort = fragmentedGet(buffer, 2).getShort();
-        consumeOriginalBuffers(2);
-        return aShort;
+        return fragmented(bytes).getShort();
     }
 
     @Override
-    public short getShort(long index)
+    public short getShort(long position)
     {
-        for (RetainableByteBuffer buffer : buffers)
+        int bytes = Short.BYTES;
+
+        if (position < 0 || position + bytes > capacity())
+            throw new IllegalArgumentException();
+
+        for (int i = 0; i < buffers.size(); ++i)
         {
-            long limit = buffer.capacity();
-            if (limit > index)
+            RetainableByteBuffer buffer = buffers.get(i);
+            long capacity = buffer.capacity();
+            if (position < capacity)
             {
-                if (buffer.remaining() >= 2L)
-                    return buffer.getShort();
-                else
-                    return fragmentedGet(buffer, 2).getShort();
+                if (position + bytes <= capacity)
+                    return buffer.getShort(position);
+                return fragmented(i, position, bytes).getShort();
             }
-            index -= limit;
+            position -= capacity;
         }
         throw new BufferUnderflowException();
     }
@@ -242,32 +267,32 @@ public class MultiBuffer implements RetainableByteBuffer
     @Override
     public int getInt()
     {
-        RetainableByteBuffer buffer = currentReadableBuffer();
-        if (buffer.remaining() >= 4L)
-        {
-            consumeOriginalBuffers(4);
-            position += 4L;
+        int bytes = Integer.BYTES;
+        RetainableByteBuffer buffer = current();
+        if (buffer.remaining() >= bytes)
             return buffer.getInt();
-        }
-        int anInt = fragmentedGet(buffer, 4).getInt();
-        consumeOriginalBuffers(4);
-        return anInt;
+        return fragmented(bytes).getInt();
     }
 
     @Override
-    public int getInt(long index)
+    public int getInt(long position)
     {
-        for (RetainableByteBuffer buffer : buffers)
+        int bytes = Integer.BYTES;
+
+        if (position < 0 || position + bytes > capacity())
+            throw new IllegalArgumentException();
+
+        for (int i = 0; i < buffers.size(); ++i)
         {
-            long limit = buffer.capacity();
-            if (limit > index)
+            RetainableByteBuffer buffer = buffers.get(i);
+            long capacity = buffer.capacity();
+            if (position < capacity)
             {
-                if (buffer.remaining() >= 4L)
-                    return buffer.getInt();
-                else
-                    return fragmentedGet(buffer, 4).getInt();
+                if (position + bytes <= capacity)
+                    return buffer.getInt(position);
+                return fragmented(i, position, bytes).getInt();
             }
-            index -= limit;
+            position -= capacity;
         }
         throw new BufferUnderflowException();
     }
@@ -275,172 +300,171 @@ public class MultiBuffer implements RetainableByteBuffer
     @Override
     public long getLong()
     {
-        RetainableByteBuffer buffer = currentReadableBuffer();
-        if (buffer.remaining() >= 8L)
-        {
-            consumeOriginalBuffers(8);
-            position += 8L;
+        int bytes = Long.BYTES;
+        RetainableByteBuffer buffer = current();
+        if (buffer.remaining() >= bytes)
             return buffer.getLong();
-        }
-        long aLong = fragmentedGet(buffer, 8).getLong();
-        consumeOriginalBuffers(8);
-        return aLong;
+        return fragmented(bytes).getLong();
     }
 
     @Override
-    public long getLong(long index)
+    public long getLong(long position)
     {
-        for (RetainableByteBuffer buffer : buffers)
+        int bytes = Long.BYTES;
+
+        if (position < 0 || position + bytes > capacity())
+            throw new IllegalArgumentException();
+
+        for (int i = 0; i < buffers.size(); ++i)
         {
-            long limit = buffer.capacity();
-            if (limit > index)
+            RetainableByteBuffer buffer = buffers.get(i);
+            long capacity = buffer.capacity();
+            if (position < capacity)
             {
-                if (buffer.remaining() >= 8L)
-                    return buffer.getLong();
-                else
-                    return fragmentedGet(buffer, 8).getLong();
+                if (position + bytes <= capacity)
+                    return buffer.getLong(position);
+                return fragmented(i, position, bytes).getLong();
             }
-            index -= limit;
+            position -= capacity;
         }
         throw new BufferUnderflowException();
     }
 
     @Override
-    public void get(byte[] b, int off, int len)
+    public void get(byte[] bytes, int offset, int length)
     {
-        RetainableByteBuffer buffer = currentReadableBuffer();
-        if (buffer.remaining() >= len)
+        if (length > remaining())
+            throw new BufferUnderflowException();
+
+        while (length > 0)
         {
-            consumeOriginalBuffers(len);
-            position += b.length;
-            buffer.get(b, off, len);
-            return;
+            RetainableByteBuffer buffer = current();
+            int l = (int)Math.min(length, buffer.remaining());
+            buffer.get(bytes, offset, l);
+            offset += l;
+            length -= l;
         }
-        fragmentedGet(buffer, len).get(b, off, len);
-        consumeOriginalBuffers(len);
     }
 
     @Override
-    public void get(long index, byte[] b, int off, int len)
+    public void get(long position, byte[] bytes, int offset, int length)
     {
-        // TODO
-    }
+        if (position + length > capacity())
+            throw new BufferUnderflowException();
 
-    @Override
-    public RetainableByteBuffer slice()
-    {
-        List<RetainableByteBuffer> copy = new ArrayList<>(buffers.size());
+        if (length == 0)
+            return;
+
         for (RetainableByteBuffer buffer : buffers)
         {
-            RetainableByteBuffer slice = buffer.slice();
-            copy.add(slice);
+            long capacity = buffer.capacity();
+            if (position < capacity)
+            {
+                int l = (int)Math.min(length, capacity - position);
+                buffer.get(position, bytes, offset, l);
+                offset += l;
+                length -= l;
+                if (length == 0)
+                    return;
+                // The next buffer is read from its beginning.
+                position = 0;
+            }
+            else
+            {
+                position -= capacity;
+            }
         }
-        RetainableByteBuffer result = new MultiBuffer(copy);
-        copy.forEach(Retainable::release);
-        return result;
+        throw new BufferUnderflowException();
     }
 
     @Override
     public RetainableByteBuffer slice(long position, long length)
     {
-        if (position < 0)
-            throw new IllegalArgumentException("position must be >= 0");
-        if (length < 0)
-            throw new IllegalArgumentException("length must be >= 0");
-        if (position + length > capacity)
-            throw new IllegalArgumentException("position(" + position + ") + length(" + length + ") must be <= capacity(" + capacity + ")");
+        if (position < 0 || length < 0 || position + length > capacity())
+            throw new IllegalArgumentException();
 
         if (length == 0)
             return RetainableByteBuffer.empty();
 
-        List<RetainableByteBuffer> copy = new ArrayList<>(buffers.size());
-
-        int i;
-        long seekPosition = position;
-        // First, skip buffers up to position.
-        for (i = 0; i < buffers.size(); i++)
+        List<RetainableByteBuffer> slices = new ArrayList<>();
+        for (int i = 0; i < buffers.size(); ++i)
         {
-            RetainableByteBuffer buffer = buffers.get(i);
-            long limit = buffer.capacity();
-
-            if (seekPosition < limit)
-                break;
-            seekPosition -= limit;
-        }
-        // Second, slice the remaining buffers up to length.
-        for (; i < buffers.size(); i++)
-        {
-            RetainableByteBuffer buffer = buffers.get(i);
-            long subSlicePosition = seekPosition;
-            long subSliceLength;
-            seekPosition = 0L;
-
-            long remaining = buffer.capacity() - subSlicePosition;
-            if (length > remaining)
-                subSliceLength = remaining;
-            else
-                subSliceLength = length;
-            length -= remaining;
-
-            RetainableByteBuffer slice = buffer.slice(subSlicePosition, subSliceLength);
-            copy.add(slice);
-
-            if (length <= 0L)
+            RetainableByteBuffer element = buffers.get(i);
+            long capacity = element.capacity();
+            if (position < capacity)
             {
-                RetainableByteBuffer result = new MultiBuffer(copy);
-                copy.forEach(Retainable::release);
-                return result;
+                for (int j = i; j < buffers.size(); ++j)
+                {
+                    RetainableByteBuffer buffer = buffers.get(j);
+                    long remaining = buffer.capacity() - position;
+                    if (length <= remaining)
+                    {
+                        slices.add(buffer.slice(position, length));
+                        return new MultiBuffer(slices);
+                    }
+
+                    slices.add(buffer.slice(position, remaining));
+
+                    // The next buffer will be sliced at position 0.
+                    position = 0;
+                    // Decrement the number of bytes to slice and loop.
+                    length -= remaining;
+                }
+                throw new BufferUnderflowException();
             }
+            position -= capacity;
         }
-        throw new IllegalStateException("Should not happen");
+        throw new BufferUnderflowException();
     }
 
     @Override
     public long writeTo(Target target) throws IOException
     {
-        boolean writeCalled = false;
-        long totalWritten = 0L;
+        long totalWritten = 0;
+        boolean invoked = false;
+        GatheringTarget gatherer = target instanceof GatheringTarget gt ? gt : null;
         for (int i = 0; i < buffers.size(); ++i)
         {
             RetainableByteBuffer buffer = buffers.get(i);
             if (!buffer.hasRemaining())
                 continue;
 
-            if (buffer instanceof SingleMutableBuffer single)
+            if (gatherer != null)
             {
-                if (target instanceof GatheringTarget gatherer)
+                // We can gather and the current buffer is a single,
+                // check if the next buffers are also singles.
+                if (buffer instanceof SingleMutableBuffer single)
                 {
+                    int idx = 0;
+                    ByteBuffer[] gathers = null;
                     long length = 0;
-                    List<ByteBuffer> buffers = null;
-                    for (int j = i + 1; j < this.buffers.size(); ++j)
+                    for (int j = i + 1; j < buffers.size(); ++j)
                     {
-                        RetainableByteBuffer b = this.buffers.get(j);
-                        if (b instanceof SingleMutableBuffer s)
+                        RetainableByteBuffer next = buffers.get(j);
+                        if (!next.hasRemaining())
+                            continue;
+                        if (next instanceof SingleMutableBuffer nextSingle)
                         {
-                            if (buffers == null)
+                            if (gathers == null)
                             {
-                                buffers = new ArrayList<>();
-                                buffers.add(single.getByteBuffer());
-                                length += single.remaining();
+                                gathers = new ByteBuffer[buffers.size()];
+                                gathers[idx++] = single.getByteBuffer();
+                                length = single.remaining();
                             }
-                            buffers.add(s.getByteBuffer());
-                            length += s.remaining();
+                            gathers[idx++] = nextSingle.getByteBuffer();
+                            length += nextSingle.remaining();
                         }
                         else
                         {
                             break;
                         }
                     }
-                    if (length > 0)
+                    if (idx > 0)
                     {
-                        i += buffers.size() - 1;
-                        writeCalled = true;
-                        long written = gatherer.write(buffers.toArray(new ByteBuffer[0]));
+                        invoked = true;
+                        long written = gatherer.write(gathers, 0, idx);
                         if (written > 0)
-                        {
-                            position += written;
                             totalWritten += written;
-                        }
                         if (written < length)
                             break;
                         else
@@ -449,72 +473,49 @@ public class MultiBuffer implements RetainableByteBuffer
                 }
             }
 
+            invoked = true;
             long length = buffer.remaining();
-            writeCalled = true;
             long written = buffer.writeTo(target);
             if (written > 0)
-            {
-                position += written;
                 totalWritten += written;
-            }
             if (written < length)
                 break;
         }
-        // Call Target.write() with an empty NIO buffer when this buffer is empty.
-        if (!writeCalled)
+
+        if (!invoked)
             target.write(BufferUtil.EMPTY_BUFFER);
-        else
-            consumeOriginalBuffers(totalWritten);
+
         return totalWritten;
-    }
-
-    // Retainable
-
-    @Override
-    public boolean canRetain()
-    {
-        return retainable.canRetain();
     }
 
     @Override
     public boolean isRetained()
     {
-        return retainable.isRetained();
+        return refCount.isRetained();
     }
 
     @Override
     public void retain()
     {
-        retainable.retain();
+        refCount.retain();
     }
 
     @Override
     public boolean release()
     {
-        boolean released = retainable.release();
+        boolean released = refCount.release();
         if (released)
-        {
-            buffers.forEach(Retainable::release);
-            buffers.clear();
-            originalBuffers.clear();
-            originalPositions.clear();
-        }
+            buffers.forEach(RetainableByteBuffer::release);
         return released;
-    }
-
-    @Override
-    public int getRetained()
-    {
-        return retainable.getRetained();
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{bs=%s,r=%s}",
+        return String.format("%s@%x[rc=%s,bs=%s]",
             TypeUtil.toShortName(getClass()),
             hashCode(),
-            buffers,
-            retainable);
+            refCount.getCount(),
+            buffers);
     }
 }

@@ -171,13 +171,15 @@ public class FlowControlStalledTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                // Do not release.
-                dataQueue.offer(chunk);
-                if (chunk.isLast())
-                    latch.countDown();
-                else
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    chunk.retain();
+                    dataQueue.offer(chunk);
+                    if (chunk.isLast())
+                        latch.countDown();
+                    else
+                        stream.demand();
+                }
             }
         });
 
@@ -195,9 +197,10 @@ public class FlowControlStalledTest
         // Consume all data.
         while (!latch.await(10, TimeUnit.MILLISECONDS))
         {
-            Content.Chunk chunk = dataQueue.poll();
-            if (chunk != null)
-                chunk.release();
+            try (Content.Chunk _ = dataQueue.poll())
+            {
+                // Release the chunk.
+            }
         }
 
         // Make sure the unstall callback is invoked.
@@ -276,13 +279,15 @@ public class FlowControlStalledTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                // Do not release.
-                dataQueue.offer(chunk);
-                if (chunk.isLast())
-                    latch.countDown();
-                else
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    chunk.retain();
+                    dataQueue.offer(chunk);
+                    if (chunk.isLast())
+                        latch.countDown();
+                    else
+                        stream.demand();
+                }
             }
         });
 
@@ -300,9 +305,10 @@ public class FlowControlStalledTest
         // Release all data.
         while (!latch.await(10, TimeUnit.MILLISECONDS))
         {
-            Content.Chunk chunk = dataQueue.poll();
-            if (chunk != null)
-                chunk.release();
+            try (Content.Chunk _ = dataQueue.poll())
+            {
+                // Release the chunk.
+            }
         }
 
         // Make sure the unstall callback is invoked.

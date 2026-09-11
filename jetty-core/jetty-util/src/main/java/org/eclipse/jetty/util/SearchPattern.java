@@ -17,6 +17,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+
 /**
  * <p>Fast search for patterns within strings, arrays of
  * bytes and {@code ByteBuffer}s.</p>
@@ -123,18 +125,24 @@ public class SearchPattern
      */
     public int match(ByteBuffer buffer)
     {
-        int remaining = buffer.remaining();
+        return match(RetainableByteBuffer.wrap(buffer));
+    }
+
+    public int match(RetainableByteBuffer buffer)
+    {
+        long remaining = buffer.remaining();
+        long position = buffer.readPosition();
         int cursor = 0;
         while (remaining - cursor >= getLength())
         {
             int i = getLength() - 1;
-            while (buffer.get(buffer.position() + cursor + i) == pattern[i])
+            while (buffer.get(position + cursor + i) == pattern[i])
             {
                 if (i == 0)
                     return cursor;
                 --i;
             }
-            cursor += table[buffer.get(buffer.position() + cursor + getLength() - 1) & 0xFF];
+            cursor += table[buffer.getByteAsInt(position + cursor + getLength() - 1)];
         }
         return -1;
     }
@@ -180,15 +188,21 @@ public class SearchPattern
      */
     public int endsWith(ByteBuffer buffer)
     {
-        int limit = buffer.limit();
-        int cursor = getLength() <= buffer.remaining() ? limit - getLength() : buffer.position();
+        return endsWith(RetainableByteBuffer.wrap(buffer));
+    }
+
+    public int endsWith(RetainableByteBuffer buffer)
+    {
+        long position = buffer.readPosition();
+        long limit = position + buffer.remaining();
+        long cursor = getLength() <= buffer.remaining() ? limit - getLength() : position;
         while (cursor < limit)
         {
-            int i = limit - 1 - cursor;
+            int i = (int)(limit - 1 - cursor);
             while (buffer.get(cursor + i) == pattern[i])
             {
                 if (i == 0)
-                    return limit - cursor;
+                    return (int)(limit - cursor);
                 --i;
             }
             // Cannot use the pre-processed table as we are not matching on the full pattern.
@@ -236,14 +250,20 @@ public class SearchPattern
      */
     public int startsWith(ByteBuffer buffer, int matched)
     {
-        int position = buffer.position();
+        return startsWith(RetainableByteBuffer.wrap(buffer), matched);
+    }
+
+    public int startsWith(RetainableByteBuffer buffer, int matched)
+    {
+        long start = buffer.readPosition();
+        long position = start;
         for (int i = matched; i < getLength(); ++i)
         {
             if (buffer.get(position) != pattern[i])
                 return 0;
             ++matched;
             ++position;
-            if (position == buffer.limit())
+            if (position == start + buffer.remaining())
                 break;
         }
         return matched;

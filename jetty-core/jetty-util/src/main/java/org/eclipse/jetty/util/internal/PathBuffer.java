@@ -112,9 +112,15 @@ public class PathBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public byte get(long index)
+    public boolean isDirect()
     {
-        RetainableByteBuffer buffer = getBytesAt(index, true, Byte.BYTES);
+        return bufferPool.isDirect();
+    }
+
+    @Override
+    public byte get(long position)
+    {
+        RetainableByteBuffer buffer = getBytesAt(position, true, Byte.BYTES);
         byte b = buffer.get();
         buffer.release();
         return b;
@@ -139,9 +145,9 @@ public class PathBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public short getShort(long index)
+    public short getShort(long position)
     {
-        RetainableByteBuffer buffer = getBytesAt(index, true, Short.BYTES);
+        RetainableByteBuffer buffer = getBytesAt(position, true, Short.BYTES);
         short s = buffer.getShort();
         buffer.release();
         return s;
@@ -157,9 +163,9 @@ public class PathBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public int getInt(long index)
+    public int getInt(long position)
     {
-        RetainableByteBuffer buffer = getBytesAt(index, true, Integer.BYTES);
+        RetainableByteBuffer buffer = getBytesAt(position, true, Integer.BYTES);
         int i = buffer.getInt();
         buffer.release();
         return i;
@@ -175,9 +181,9 @@ public class PathBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public long getLong(long index)
+    public long getLong(long position)
     {
-        RetainableByteBuffer buffer = getBytesAt(index, true, Long.BYTES);
+        RetainableByteBuffer buffer = getBytesAt(position, true, Long.BYTES);
         long l = buffer.getLong();
         buffer.release();
         return l;
@@ -192,9 +198,9 @@ public class PathBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public void get(long index, byte[] b, int off, int len)
+    public void get(long position, byte[] b, int off, int len)
     {
-        RetainableByteBuffer buffer = getBytesAt(index, true, len);
+        RetainableByteBuffer buffer = getBytesAt(position, true, len);
         buffer.get(b, off, len);
         buffer.release();
     }
@@ -286,12 +292,6 @@ public class PathBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public boolean canRetain()
-    {
-        return retainable.canRetain();
-    }
-
-    @Override
     public boolean isRetained()
     {
         return retainable.isRetained();
@@ -307,12 +307,6 @@ public class PathBuffer implements RetainableByteBuffer
     public boolean release()
     {
         return retainable.release();
-    }
-
-    @Override
-    public int getRetained()
-    {
-        return retainable.getRetained();
     }
 
     @Override

@@ -171,30 +171,34 @@ public class ConnectionPoolTest
                             response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
                         while (true)
                         {
-                            Content.Chunk chunk = request.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = request.read())
                             {
-                                try (Blocker.Runnable block = _blocking.runnable())
+                                if (chunk == null)
                                 {
-                                    request.demand(block);
-                                    block.block();
-                                    continue;
+                                    try (Blocker.Runnable block = _blocking.runnable())
+                                    {
+                                        request.demand(block);
+                                        block.block();
+                                        continue;
+                                    }
                                 }
-                            }
-                            if (Content.Chunk.isFailure(chunk))
-                                throw chunk.getFailure();
+                                if (Content.Chunk.isFailure(chunk))
+                                    throw chunk.getFailure();
 
-                            if (chunk.hasRemaining())
-                            {
-                                try (Blocker.Callback callback = _blocking.callback())
+                                if (chunk.hasRemaining())
                                 {
-                                    response.write(chunk.isLast(), RetainableByteBuffer.wrap(chunk.getByteBuffer()), callback);
-                                    callback.block();
+                                    try (Blocker.Callback callback = _blocking.callback())
+                                    {
+                                        try (RetainableByteBuffer buffer = chunk.acquire())
+                                        {
+                                            response.write(chunk.isLast(), buffer, callback);
+                                        }
+                                        callback.block();
+                                    }
                                 }
+                                if (chunk.isLast())
+                                    break;
                             }
-                            chunk.release();
-                            if (chunk.isLast())
-                                break;
                         }
                     }
                     default -> throw new IllegalStateException();

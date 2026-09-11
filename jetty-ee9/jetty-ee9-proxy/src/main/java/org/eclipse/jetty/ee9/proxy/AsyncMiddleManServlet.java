@@ -44,7 +44,6 @@ import org.eclipse.jetty.http.GZIPContentDecoder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -52,6 +51,7 @@ import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -462,8 +462,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             Callback callback = Callback.from(chunk::release, Callback.from(demander, serverResponse::abort));
             try
             {
-                ByteBuffer content = chunk.getByteBuffer();
-                int contentBytes = content.remaining();
+                long contentBytes = chunk.remaining();
                 if (_log.isDebugEnabled())
                     _log.debug("{} received server content: {} bytes", getRequestId(clientRequest), contentBytes);
 
@@ -487,7 +486,17 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 length += contentBytes;
 
                 boolean finished = contentLength >= 0 && length == contentLength;
-                transform(transformer, content, finished, buffers);
+
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    ContentTransformer t = transformer;
+                    buffer.writeTo(b ->
+                    {
+                        transform(t, b, finished, buffers);
+                        // The return value is not used.
+                        return 0;
+                    });
+                }
 
                 int newContentBytes = 0;
                 int size = buffers.size();
@@ -844,14 +853,21 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 decodeds = new ArrayList<>();
                 while (true)
                 {
-                    RetainableByteBuffer decoded = decoder.decode(input);
+                    RetainableByteBuffer decoded = decoder.decode(RetainableByteBuffer.wrap(input));
                     decodeds.add(decoded);
-                    boolean decodeComplete = !input.hasRemaining() && decoded.isEmpty();
+                    boolean decodeComplete = !input.hasRemaining() && !decoded.hasRemaining();
                     boolean complete = finished && decodeComplete;
                     if (logger.isDebugEnabled())
                         logger.debug("Ungzipped {} bytes, complete={}", decoded.remaining(), complete);
                     if (decoded.hasRemaining() || complete)
-                        transformer.transform(decoded.getByteBuffer(), complete, buffers);
+                    {
+                        decoded.writeTo(b ->
+                        {
+                            int r = b.remaining();
+                            transformer.transform(b, complete, buffers);
+                            return r;
+                        });
+                    }
                     if (decodeComplete)
                         break;
                 }

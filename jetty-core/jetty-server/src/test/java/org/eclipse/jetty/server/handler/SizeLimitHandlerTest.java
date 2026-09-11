@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -31,7 +32,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -81,7 +81,7 @@ public class SizeLimitHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toReadableBuffer("Hello World"), callback);
+                response.write(true, RetainableByteBuffer.wrap("Hello World", StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         });
@@ -280,7 +280,7 @@ public class SizeLimitHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toReadableBuffer(message), callback);
+                response.write(true, RetainableByteBuffer.wrap(message, StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         });

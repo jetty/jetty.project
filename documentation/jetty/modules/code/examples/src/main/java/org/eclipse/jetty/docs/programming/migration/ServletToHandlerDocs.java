@@ -331,40 +331,41 @@ public class ServletToHandlerDocs
                     while (true)
                     {
                         // Read a chunk of content.
-                        Content.Chunk chunk = request.read();
-
-                        // If there is no content, demand to be
-                        // called back when more content is available.
-                        if (chunk == null)
+                        // The chunk MUST be released, here done
+                        // by closing it using try-with-resources.
+                        try (Content.Chunk chunk = request.read())
                         {
-                            request.demand(this);
-                            return;
-                        }
+                            // If there is no content, demand to be
+                            // called back when more content is available.
+                            if (chunk == null)
+                            {
+                                request.demand(this);
+                                return;
+                            }
 
-                        // If a failure is read, complete with a failure.
-                        if (Content.Chunk.isFailure(chunk))
-                        {
-                            Throwable failure = chunk.getFailure();
-                            failed(failure);
-                            return;
-                        }
+                            // If a failure is read, complete with a failure.
+                            if (Content.Chunk.isFailure(chunk))
+                            {
+                                Throwable failure = chunk.getFailure();
+                                failed(failure);
+                                return;
+                            }
 
-                        if (chunk instanceof Trailers trailers)
-                        {
-                            // Possibly process the request trailers here.
-                            // Trailers have an empty ByteBuffer and are a last chunk.
-                        }
+                            if (chunk instanceof Trailers trailers)
+                            {
+                                // Possibly process the request trailers here.
+                                // Trailers have an empty ByteBuffer and are a last chunk.
+                            }
 
-                        // Process the request content chunk here.
-                        // After the processing, the chunk MUST be released.
-                        chunk.release();
+                            // Process the request content chunk here.
 
-                        // If the last chunk is read, complete normally.
-                        if (chunk.isLast())
-                        {
-                            succeeded(null);
-                            return;
-                        }
+                            // If the last chunk is read, complete normally.
+                            if (chunk.isLast())
+                            {
+                                succeeded(null);
+                                return;
+                            }
+                        } // Closing the chunk will release it.
 
                         // Not the last chunk of content, loop around to read more.
                     }
