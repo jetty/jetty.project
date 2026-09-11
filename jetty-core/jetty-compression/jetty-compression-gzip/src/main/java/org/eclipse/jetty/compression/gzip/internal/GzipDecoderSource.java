@@ -14,7 +14,6 @@
 package org.eclipse.jetty.compression.gzip.internal;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 import java.util.zip.ZipException;
@@ -23,6 +22,8 @@ import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.compression.gzip.GzipCompression;
 import org.eclipse.jetty.compression.gzip.GzipDecoderConfig;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.compression.InflaterPool;
 
@@ -39,6 +40,7 @@ public class GzipDecoderSource extends DecoderSource
     private final int bufferSize;
     private final InflaterPool.Entry inflaterEntry;
     private final Inflater inflater;
+    private RetainableByteBuffer input;
     private State state;
     private int size;
     private long value;
@@ -58,7 +60,6 @@ public class GzipDecoderSource extends DecoderSource
     @Override
     protected Content.Chunk transform(Content.Chunk inputChunk)
     {
-        ByteBuffer compressed = inputChunk.getByteBuffer();
         try
         {
             while (true)
@@ -102,8 +103,7 @@ public class GzipDecoderSource extends DecoderSource
                     {
                         while (true)
                         {
-                            RetainableByteBuffer.Mutable b = compression.acquireBuffer(bufferSize);
-                            try
+                            try (RetainableByteBuffer.Mutable b = compression.acquireBuffer(bufferSize))
                             {
                                 b.readFrom(output ->
                                 {
@@ -113,14 +113,14 @@ public class GzipDecoderSource extends DecoderSource
                                         inflater.inflate(output);
                                         return output.position() - p;
                                     }
-                                    catch (DataFormatException e)
+                                    catch (DataFormatException x)
                                     {
-                                        throw new IOException(e);
+                                        throw new IOException(x);
                                     }
                                 });
 
                                 if (b.hasRemaining())
-                                    return Content.Chunk.asChunk(b, false, null);
+                                    return Content.Chunk.from(b, false);
                             }
                             catch (IOException x)
                             {
@@ -128,20 +128,30 @@ public class GzipDecoderSource extends DecoderSource
                                 failure.initCause(x);
                                 throw failure;
                             }
-                            finally
-                            {
-                                b.release();
-                            }
 
                             if (inflater.needsInput())
                             {
-                                if (!compressed.hasRemaining())
-                                    return Content.Chunk.EMPTY;
-                                inflater.setInput(compressed);
+                                releaseInput();
+                                try (RetainableByteBuffer buffer = inputChunk.acquire())
+                                {
+                                    if (!buffer.hasRemaining())
+                                        return Content.Chunk.EMPTY;
+
+                                    // Retain the input buffer to be used by the Inflater.
+                                    buffer.retain();
+                                    input = buffer;
+
+                                    buffer.quietWriteTo(compressed ->
+                                    {
+                                        inflater.setInput(compressed);
+                                        return 0;
+                                    });
+                                }
                                 // Loop around and try again to inflate.
                             }
                             else if (inflater.finished())
                             {
+                                releaseInput();
                                 state = State.CRC;
                                 size = 0;
                                 value = 0;
@@ -151,128 +161,131 @@ public class GzipDecoderSource extends DecoderSource
                     }
                 }
 
-                if (inputChunk.isEmpty())
+                if (!inputChunk.hasRemaining())
                     return inputChunk.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
 
-                byte currByte = compressed.get();
-                switch (state)
+                try (RetainableByteBuffer buffer = inputChunk.acquire())
                 {
-                    case ERROR, FINISHED ->
+                    byte currByte = buffer.get();
+                    switch (state)
                     {
-                        // skip rest of content (nothing else possible to read safely)
-                        compressed.position(compressed.limit());
-                        return Content.Chunk.EOF;
-                    }
-                    case ID ->
-                    {
-                        value += (long)(currByte & 0xFF) << 8 * size;
-                        ++size;
-                        if (size == 2)
+                        case ERROR, FINISHED ->
                         {
-                            if (value != 0x8B1F)
-                                throw new ZipException("Invalid gzip bytes");
-                            state = State.CM;
-                        }
-                    }
-                    case CM ->
-                    {
-                        if ((currByte & 0xFF) != 0x08)
-                            throw new ZipException("Invalid gzip compression method");
-                        state = State.FLG;
-                    }
-                    case FLG ->
-                    {
-                        flags = currByte;
-                        state = State.MTIME;
-                        size = 0;
-                        value = 0;
-                    }
-                    case MTIME ->
-                    {
-                        // Skip the 4 MTIME bytes
-                        ++size;
-                        if (size == 4)
-                            state = State.XFL;
-                    }
-                    case XFL -> state = State.OS; // Skip XFL
-                    case OS -> state = State.FLAGS; // Skip OS
-                    case EXTRA_LENGTH ->
-                    {
-                        value += (long)(currByte & 0xFF) << 8 * size;
-                        ++size;
-                        if (size == 2)
-                            state = State.EXTRA;
-                    }
-                    case EXTRA ->
-                    {
-                        // Skip EXTRA bytes
-                        --value;
-                        if (value == 0)
-                        {
-                            // Clear the EXTRA flag and loop on the flags
-                            flags &= ~0x04;
-                            state = State.FLAGS;
-                        }
-                    }
-                    case NAME ->
-                    {
-                        // Skip NAME bytes
-                        if (currByte == 0)
-                        {
-                            // Clear the NAME flag and loop on the flags
-                            flags &= ~0x08;
-                            state = State.FLAGS;
-                        }
-                    }
-                    case COMMENT ->
-                    {
-                        // Skip COMMENT bytes
-                        if (currByte == 0)
-                        {
-                            // Clear the COMMENT flag and loop on the flags
-                            flags &= ~0x10;
-                            state = State.FLAGS;
-                        }
-                    }
-                    case HCRC ->
-                    {
-                        // Skip HCRC
-                        ++size;
-                        if (size == 2)
-                        {
-                            // Clear the HCRC flag and loop on the flags
-                            flags &= ~0x02;
-                            state = State.FLAGS;
-                        }
-                    }
-                    case CRC ->
-                    {
-                        value += (long)(currByte & 0xFF) << 8 * size;
-                        ++size;
-                        if (size == 4)
-                        {
-                            // From RFC 1952, compliant decoders need not verify the CRC
-                            state = State.ISIZE;
-                            size = 0;
-                            value = 0;
-                        }
-                    }
-                    case ISIZE ->
-                    {
-                        value = value | ((currByte & 0xFFL) << (8 * size));
-                        ++size;
-                        if (size == 4)
-                        {
-                            // RFC 1952: Section 2.3.1; ISIZE is the input size modulo 2^32
-                            if (value != (inflater.getBytesWritten() & UINT_MAX))
-                                throw new ZipException("Invalid input size");
-                            state = State.INITIAL;
-                            size = 0;
-                            value = 0;
+                            // Skip rest of content (nothing else possible to read safely).
+                            buffer.consume(buffer.remaining());
                             return Content.Chunk.EOF;
                         }
+                        case ID ->
+                        {
+                            value += (long)(currByte & 0xFF) << 8 * size;
+                            ++size;
+                            if (size == 2)
+                            {
+                                if (value != 0x8B1F)
+                                    throw new ZipException("Invalid gzip bytes");
+                                state = State.CM;
+                            }
+                        }
+                        case CM ->
+                        {
+                            if ((currByte & 0xFF) != 0x08)
+                                throw new ZipException("Invalid gzip compression method");
+                            state = State.FLG;
+                        }
+                        case FLG ->
+                        {
+                            flags = currByte;
+                            state = State.MTIME;
+                            size = 0;
+                            value = 0;
+                        }
+                        case MTIME ->
+                        {
+                            // Skip the 4 MTIME bytes
+                            ++size;
+                            if (size == 4)
+                                state = State.XFL;
+                        }
+                        case XFL -> state = State.OS; // Skip XFL
+                        case OS -> state = State.FLAGS; // Skip OS
+                        case EXTRA_LENGTH ->
+                        {
+                            value += (long)(currByte & 0xFF) << 8 * size;
+                            ++size;
+                            if (size == 2)
+                                state = State.EXTRA;
+                        }
+                        case EXTRA ->
+                        {
+                            // Skip EXTRA bytes
+                            --value;
+                            if (value == 0)
+                            {
+                                // Clear the EXTRA flag and loop on the flags
+                                flags &= ~0x04;
+                                state = State.FLAGS;
+                            }
+                        }
+                        case NAME ->
+                        {
+                            // Skip NAME bytes
+                            if (currByte == 0)
+                            {
+                                // Clear the NAME flag and loop on the flags
+                                flags &= ~0x08;
+                                state = State.FLAGS;
+                            }
+                        }
+                        case COMMENT ->
+                        {
+                            // Skip COMMENT bytes
+                            if (currByte == 0)
+                            {
+                                // Clear the COMMENT flag and loop on the flags
+                                flags &= ~0x10;
+                                state = State.FLAGS;
+                            }
+                        }
+                        case HCRC ->
+                        {
+                            // Skip HCRC
+                            ++size;
+                            if (size == 2)
+                            {
+                                // Clear the HCRC flag and loop on the flags
+                                flags &= ~0x02;
+                                state = State.FLAGS;
+                            }
+                        }
+                        case CRC ->
+                        {
+                            value += (long)(currByte & 0xFF) << 8 * size;
+                            ++size;
+                            if (size == 4)
+                            {
+                                // From RFC 1952, compliant decoders need not verify the CRC
+                                state = State.ISIZE;
+                                size = 0;
+                                value = 0;
+                            }
+                        }
+                        case ISIZE ->
+                        {
+                            value = value | ((currByte & 0xFFL) << (8 * size));
+                            ++size;
+                            if (size == 4)
+                            {
+                                // RFC 1952: Section 2.3.1; ISIZE is the input size modulo 2^32
+                                if (value != (inflater.getBytesWritten() & UINT_MAX))
+                                    throw new ZipException("Invalid input size");
+                                state = State.INITIAL;
+                                size = 0;
+                                value = 0;
+                                return Content.Chunk.EOF;
+                            }
+                        }
+                        default -> throw new ZipException("Unknown state: " + state);
                     }
-                    default -> throw new ZipException("Unknown state: " + state);
                 }
             }
         }
@@ -283,9 +296,16 @@ public class GzipDecoderSource extends DecoderSource
         }
     }
 
+    private void releaseInput()
+    {
+        inflater.setInput(BufferUtil.EMPTY_BUFFER);
+        input = Retainable.dispose(input);
+    }
+
     @Override
     protected void release()
     {
+        releaseInput();
         super.release();
         inflaterEntry.release();
     }

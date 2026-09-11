@@ -22,7 +22,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -83,17 +82,18 @@ public class DataDemandTest extends AbstractClientServerTest
                         else
                         {
                             // When resumed, demand all content until the last.
-                            Content.Chunk chunk = stream.read();
-                            if (chunk != null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                chunk.release();
-                                if (chunk.isLast())
+                                if (chunk != null)
                                 {
-                                    serverDataLatch.countDown();
-                                    return;
+                                    if (chunk.isLast())
+                                    {
+                                        serverDataLatch.countDown();
+                                        return;
+                                    }
                                 }
+                                stream.demand();
                             }
-                            stream.demand();
                         }
                     }
                 };
@@ -147,30 +147,32 @@ public class DataDemandTest extends AbstractClientServerTest
                         if (firstDataLatch.getCount() > 0)
                         {
                             // Read only one chunk of data.
-                            Content.Chunk chunk = stream.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                stream.demand();
+                                if (chunk == null)
+                                {
+                                    stream.demand();
+                                    return;
+                                }
+                                firstDataLatch.countDown();
+                                // Don't demand, just exit.
                                 return;
                             }
-                            chunk.release();
-                            firstDataLatch.countDown();
-                            // Don't demand, just exit.
-                            return;
                         }
 
                         // When resumed, demand all content until the last.
-                        Content.Chunk chunk = stream.read();
-                        if (chunk != null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            chunk.release();
-                            if (chunk.isLast())
+                            if (chunk != null)
                             {
-                                serverDataLatch.countDown();
-                                return;
+                                if (chunk.isLast())
+                                {
+                                    serverDataLatch.countDown();
+                                    return;
+                                }
                             }
+                            stream.demand();
                         }
-                        stream.demand();
                     }
                 };
             }
@@ -223,33 +225,32 @@ public class DataDemandTest extends AbstractClientServerTest
                         {
                             while (true)
                             {
-                                Content.Chunk chunk = stream.read();
-                                if (chunk == null)
+                                try (Content.Chunk chunk = stream.read())
                                 {
-                                    serverStreamLatch.countDown();
-                                    // Do not demand after reading null data.
-                                    return;
-                                }
-                                else
-                                {
-                                    chunk.release();
+                                    if (chunk == null)
+                                    {
+                                        serverStreamLatch.countDown();
+                                        // Do not demand after reading null data.
+                                        return;
+                                    }
                                 }
                             }
                         }
                         else
                         {
                             // When resumed, demand all content until the last.
-                            Content.Chunk chunk = stream.read();
-                            if (chunk != null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                chunk.release();
-                                if (chunk.isLast())
+                                if (chunk != null)
                                 {
-                                    serverDataLatch.countDown();
-                                    return;
+                                    if (chunk.isLast())
+                                    {
+                                        serverDataLatch.countDown();
+                                        return;
+                                    }
                                 }
+                                stream.demand();
                             }
-                            stream.demand();
                         }
                     }
                 };
@@ -311,7 +312,7 @@ public class DataDemandTest extends AbstractClientServerTest
     public void testHeadersDataTrailers(TransportType transportType) throws Exception
     {
         int dataLength = 8192;
-        AtomicInteger dataRead = new AtomicInteger();
+        AtomicLong dataRead = new AtomicLong();
         CountDownLatch serverDataLatch = new CountDownLatch(1);
         CountDownLatch serverTrailerLatch = new CountDownLatch(1);
         AtomicLong onDataAvailableCalls = new AtomicLong();
@@ -326,17 +327,18 @@ public class DataDemandTest extends AbstractClientServerTest
                     public void onDataAvailable(Stream.Server stream)
                     {
                         onDataAvailableCalls.incrementAndGet();
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            stream.demand();
-                            return;
+                            if (chunk == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
+                            if (dataRead.addAndGet(chunk.remaining()) == dataLength)
+                                serverDataLatch.countDown();
+                            if (!chunk.isLast())
+                                stream.demand();
                         }
-                        if (dataRead.addAndGet(chunk.getByteBuffer().remaining()) == dataLength)
-                            serverDataLatch.countDown();
-                        chunk.release();
-                        if (!chunk.isLast())
-                            stream.demand();
                     }
 
                     @Override
@@ -384,18 +386,21 @@ public class DataDemandTest extends AbstractClientServerTest
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                stream.demand();
-                                return;
-                            }
-                            // Store the chunk away to be used later.
-                            chunks.add(chunk);
-                            if (chunk.isLast())
-                            {
-                                serverDataLatch.countDown();
-                                return;
+                                if (chunk == null)
+                                {
+                                    stream.demand();
+                                    return;
+                                }
+                                // Store the chunk away to be used later.
+                                chunk.retain();
+                                chunks.add(chunk);
+                                if (chunk.isLast())
+                                {
+                                    serverDataLatch.countDown();
+                                    return;
+                                }
                             }
                         }
                     }
@@ -414,10 +419,16 @@ public class DataDemandTest extends AbstractClientServerTest
 
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
 
-        assertEquals(bytesSent.length, chunks.stream().mapToInt(d -> d.getByteBuffer().remaining()).sum());
+        assertEquals(bytesSent.length, chunks.stream().mapToLong(Content.Chunk::remaining).sum());
         byte[] bytesReceived = new byte[bytesSent.length];
         ByteBuffer buffer = ByteBuffer.wrap(bytesReceived);
-        chunks.forEach(d -> buffer.put(d.getByteBuffer()));
+        chunks.forEach(d ->
+        {
+            try (RetainableByteBuffer b = d.acquire())
+            {
+                b.putTo(buffer);
+            }
+        });
         assertArrayEquals(bytesSent, bytesReceived);
         chunks.forEach(Content.Chunk::release);
     }
@@ -449,17 +460,18 @@ public class DataDemandTest extends AbstractClientServerTest
                     public void onDataAvailable(Stream.Server stream)
                     {
                         onDataAvailableCalls.incrementAndGet();
-                        Content.Chunk chunk = stream.read();
-                        if (chunk != null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            chunk.release();
-                            if (chunk.isLast())
+                            if (chunk != null)
                             {
-                                serverDataLatch.countDown();
-                                return;
+                                if (chunk.isLast())
+                                {
+                                    serverDataLatch.countDown();
+                                    return;
+                                }
                             }
+                            stream.demand();
                         }
-                        stream.demand();
                     }
                 };
             }
@@ -513,23 +525,23 @@ public class DataDemandTest extends AbstractClientServerTest
                                 semaphore.acquire();
                                 while (true)
                                 {
-                                    Content.Chunk chunk = stream.read();
-                                    if (chunk != null)
+                                    try (Content.Chunk chunk = stream.read())
                                     {
-                                        // Consume the chunk.
-                                        chunk.release();
-                                        if (chunk.isLast())
+                                        if (chunk != null)
                                         {
-                                            dataLatch.countDown();
-                                            return;
+                                            if (chunk.isLast())
+                                            {
+                                                dataLatch.countDown();
+                                                return;
+                                            }
                                         }
-                                    }
-                                    else
-                                    {
-                                        // Demand and block.
-                                        stream.demand();
-                                        blockLatch.countDown();
-                                        semaphore.acquire();
+                                        else
+                                        {
+                                            // Demand and block.
+                                            stream.demand();
+                                            blockLatch.countDown();
+                                            semaphore.acquire();
+                                        }
                                     }
                                 }
                             }
@@ -590,14 +602,15 @@ public class DataDemandTest extends AbstractClientServerTest
                     {
                         while (!firstData)
                         {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                stream.demand();
-                                return;
+                                if (chunk == null)
+                                {
+                                    stream.demand();
+                                    return;
+                                }
+                                firstData = true;
                             }
-                            firstData = true;
-                            chunk.release();
                         }
 
                         if (!nullData)
@@ -611,18 +624,19 @@ public class DataDemandTest extends AbstractClientServerTest
                             return;
                         }
 
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            stream.demand();
-                        }
-                        else
-                        {
-                            chunk.release();
-                            if (chunk.isLast())
-                                lastDataLatch.countDown();
-                            else
+                            if (chunk == null)
+                            {
                                 stream.demand();
+                            }
+                            else
+                            {
+                                if (chunk.isLast())
+                                    lastDataLatch.countDown();
+                                else
+                                    stream.demand();
+                            }
                         }
                     }
                 };
@@ -669,29 +683,33 @@ public class DataDemandTest extends AbstractClientServerTest
             @Override
             public void onDataAvailable(Stream.Client stream)
             {
-                Content.Chunk chunk = stream.read();
-                if (chunk == null && dataCalls == 0)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    stream.demand();
-                    return;
-                }
+                    if (chunk == null && dataCalls == 0)
+                    {
+                        stream.demand();
+                        return;
+                    }
 
-                if (++dataCalls == 1)
-                {
-                    String content = StandardCharsets.UTF_8.decode(chunk.getByteBuffer()).toString();
-                    assertEquals("hello", content);
-                    assertTrue(chunk.isLast());
-                    chunk.release();
-                    // Demand one more time, we should get an EOF.
-                    stream.demand();
-                }
-                else
-                {
-                    assertNotNull(chunk);
-                    assertTrue(chunk.isLast());
-                    assertEquals(0, chunk.getByteBuffer().remaining());
-                    chunk.release();
-                    latch.countDown();
+                    if (++dataCalls == 1)
+                    {
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            String content = buffer.getString(StandardCharsets.UTF_8);
+                            assertEquals("hello", content);
+                            assertTrue(chunk.isLast());
+                            // Demand one more time, we should get an EOF.
+                            stream.demand();
+                        }
+                    }
+                    else
+                    {
+                        assertNotNull(chunk);
+                        assertTrue(chunk.isLast());
+                        assertEquals(0, chunk.remaining());
+                        chunk.release();
+                        latch.countDown();
+                    }
                 }
             }
         }, Promise.Invocable.noop());
@@ -746,17 +764,18 @@ public class DataDemandTest extends AbstractClientServerTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = stream.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
-                    }
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        latch.countDown();
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        if (chunk.isLast())
+                        {
+                            latch.countDown();
+                            return;
+                        }
                     }
                 }
             }

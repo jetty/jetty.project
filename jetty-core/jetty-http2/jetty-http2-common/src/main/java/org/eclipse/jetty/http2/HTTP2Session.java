@@ -1732,7 +1732,8 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             // the flow control window exhausting, since in that case
             // we would have to count the padding only once.
             dataRemaining = frame.remaining();
-            frame.retain();
+            // Retain the DataFrame until this entry is completed.
+            frame.acquire();
         }
 
         @Override
@@ -1791,7 +1792,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             DataFrame dataFrame = (DataFrame)frame;
             if (getDataBytesRemaining() == 0)
             {
-                dataFrame.release();
+                dataFrame.close();
                 // Only now we can update the close state
                 // and eventually remove the stream.
                 if (stream.updateClose(dataFrame.isEndStream(), CloseState.Event.AFTER_SEND))
@@ -1803,7 +1804,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         @Override
         public void failed(Throwable x)
         {
-            ((DataFrame)frame).release();
+            ((DataFrame)frame).close();
             super.failed(x);
         }
     }

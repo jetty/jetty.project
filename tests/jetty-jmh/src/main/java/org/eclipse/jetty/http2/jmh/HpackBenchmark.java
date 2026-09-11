@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.jmh;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -28,6 +27,7 @@ import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.HeaderParser;
 import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -58,11 +58,11 @@ public class HpackBenchmark
 
     private MetaData.Request request;
     private MetaData.Response response;
-    private ByteBuffer encodeBuffer;
-    private ByteBuffer encodedRequest;
-    private ByteBuffer encodedResponse;
+    private RetainableByteBuffer.Mutable encodeBuffer;
+    private RetainableByteBuffer encodedRequest;
+    private RetainableByteBuffer encodedResponse;
     private HuffmanDecoder huffmanDecoder;
-    private ByteBuffer huffmanEncoded;
+    private RetainableByteBuffer.Mutable huffmanEncoded;
     private String[] fieldNames;
     private String[] fieldValues;
 
@@ -91,14 +91,13 @@ public class HpackBenchmark
             .put("X-Served-By", "cache-lhr7382-LHR");
         response = new MetaData.Response(200, null, HttpVersion.HTTP_2, responseFields);
 
-        encodeBuffer = ByteBuffer.allocateDirect(BUFFER_CAPACITY);
+        encodeBuffer = RetainableByteBuffer.Mutable.allocate(BUFFER_CAPACITY, true);
         encodedRequest = encode(request);
         encodedResponse = encode(response);
 
         String value = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-        huffmanEncoded = ByteBuffer.allocateDirect(HuffmanEncoder.octetsNeeded(value));
+        huffmanEncoded = RetainableByteBuffer.Mutable.allocate(HuffmanEncoder.octetsNeeded(value), true);
         HuffmanEncoder.encode(huffmanEncoded, value);
-        huffmanEncoded.flip();
         huffmanDecoder = new HuffmanDecoder();
 
         fieldNames = new String[]{"content-type", "x-request-id", "accept-encoding", "cache-control", "x-forwarded-for"};
@@ -106,28 +105,27 @@ public class HpackBenchmark
                                    "gzip, deflate, br", "max-age=3600, must-revalidate", "203.0.113.42, 198.51.100.7"};
     }
 
-    private ByteBuffer encode(MetaData metaData) throws Exception
+    private RetainableByteBuffer.Mutable encode(MetaData metaData) throws Exception
     {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(BUFFER_CAPACITY);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(BUFFER_CAPACITY, true);
         new HpackEncoder().encode(buffer, metaData);
-        buffer.flip();
         return buffer;
     }
 
     @Benchmark
-    public int encodeRequest() throws Exception
+    public long encodeRequest() throws Exception
     {
         encodeBuffer.clear();
         new HpackEncoder().encode(encodeBuffer, request);
-        return encodeBuffer.position();
+        return encodeBuffer.writePosition();
     }
 
     @Benchmark
-    public int encodeResponse() throws Exception
+    public long encodeResponse() throws Exception
     {
         encodeBuffer.clear();
         new HpackEncoder().encode(encodeBuffer, response);
-        return encodeBuffer.position();
+        return encodeBuffer.writePosition();
     }
 
     @Benchmark
@@ -145,21 +143,21 @@ public class HpackBenchmark
     @Benchmark
     public String decodeHuffman() throws Exception
     {
-        ByteBuffer buffer = huffmanEncoded.slice();
+        RetainableByteBuffer buffer = huffmanEncoded.slice();
         huffmanDecoder.reset();
         huffmanDecoder.setLength(buffer.remaining());
         return huffmanDecoder.decode(buffer);
     }
 
     @Benchmark
-    public int encodeHuffman()
+    public long encodeHuffman()
     {
         encodeBuffer.clear();
         for (String value : fieldValues)
         {
             HuffmanEncoder.encode(encodeBuffer, value);
         }
-        return encodeBuffer.position();
+        return encodeBuffer.writePosition();
     }
 
     @Benchmark

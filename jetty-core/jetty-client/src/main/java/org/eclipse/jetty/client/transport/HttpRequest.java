@@ -18,7 +18,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -67,6 +66,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HttpRequest implements Request
 {
@@ -552,17 +552,17 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request onRequestContent(ContentListener listener)
+    public Request onRequestContentRetainable(RetainableContentListener listener)
     {
         requestListeners().addContentListener(listener);
         return this;
     }
 
-    public void notifyContent(ByteBuffer byteBuffer)
+    public void notifyContent(RetainableByteBuffer buffer)
     {
         if (requestListeners != null)
-            requestListeners.notifyContent(this, byteBuffer);
-        getHttpClientRequestListeners().notifyContent(this, byteBuffer);
+            requestListeners.notifyContent(this, buffer);
+        getHttpClientRequestListeners().notifyContent(this, buffer);
     }
 
     @Override
@@ -618,20 +618,6 @@ public class HttpRequest implements Request
     public Request onResponseHeaders(Response.HeadersListener listener)
     {
         responseListeners.addHeadersListener(listener);
-        return this;
-    }
-
-    @Override
-    public Request onResponseContent(Response.ContentListener listener)
-    {
-        responseListeners.addContentSourceListener(listener);
-        return this;
-    }
-
-    @Override
-    public Request onResponseContentAsync(Response.AsyncContentListener listener)
-    {
-        responseListeners.addContentSourceListener(listener);
         return this;
     }
 

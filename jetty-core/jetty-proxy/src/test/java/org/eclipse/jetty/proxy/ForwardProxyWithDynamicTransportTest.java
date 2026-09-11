@@ -70,7 +70,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ConnectHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -658,11 +657,15 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                String response = BufferUtil.toString(chunk.getByteBuffer(), StandardCharsets.UTF_8);
-                chunk.release();
-                if (response.startsWith("HTTP/1.1 200"))
-                    responseLatch.countDown();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        String response = buffer.getString(StandardCharsets.UTF_8);
+                        if (response.startsWith("HTTP/1.1 200"))
+                            responseLatch.countDown();
+                    }
+                }
             }
         });
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
@@ -745,11 +748,15 @@ public class ForwardProxyWithDynamicTransportTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                String response = BufferUtil.toString(chunk.getByteBuffer(), StandardCharsets.UTF_8);
-                chunk.release();
-                if (response.startsWith("HTTP/1.1 200"))
-                    responseLatch.countDown();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        String response = buffer.getString(StandardCharsets.UTF_8);
+                        if (response.startsWith("HTTP/1.1 200"))
+                            responseLatch.countDown();
+                    }
+                }
             }
 
             @Override

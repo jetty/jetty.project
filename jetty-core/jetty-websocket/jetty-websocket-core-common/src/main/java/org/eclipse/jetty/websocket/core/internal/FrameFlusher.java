@@ -339,12 +339,12 @@ public class FrameFlusher extends IteratingCallback
                 _batchBuffer = null;
             }
 
-            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(buffers);
-            buffers.clear();
-            _bytesOut.add(buffer.remaining());
-            _endPoint.write(buffer, this);
-            buffer.release();
-            return Action.SCHEDULED;
+            try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(buffers))
+            {
+                _bytesOut.add(buffer.remaining());
+                _endPoint.write(buffer, this);
+                return Action.SCHEDULED;
+            }
         }
 
         // If we did not get any new entries go to IDLE state.

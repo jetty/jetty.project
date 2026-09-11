@@ -133,13 +133,14 @@ public class ResponseContentParser extends StreamContentParser
                     }
                     case RAW_CONTENT ->
                     {
-                        RetainableByteBuffer slice = buffer.slice();
-                        buffer.readPosition(buffer.readPosition() + slice.remaining());
-                        boolean handle = notifyContent(slice);
-                        slice.release();
-                        if (handle)
-                            return true;
-                        remaining = 0;
+                        try (RetainableByteBuffer slice = buffer.slice())
+                        {
+                            buffer.readPosition(buffer.readPosition() + slice.remaining());
+                            boolean handle = notifyContent(slice);
+                            if (handle)
+                                return true;
+                            remaining = 0;
+                        }
                     }
                     case HTTP_CONTENT ->
                     {

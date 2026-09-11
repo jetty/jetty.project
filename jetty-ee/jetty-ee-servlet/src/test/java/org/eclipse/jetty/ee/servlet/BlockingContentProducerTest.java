@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +44,7 @@ public class BlockingContentProducerTest extends AbstractContentProducerTest
             Content.Chunk.from(ByteBuffer.wrap("2 howdy 2".getBytes(US_ASCII)), false),
             Content.Chunk.from(ByteBuffer.wrap("3 hey ya 3".getBytes(US_ASCII)), true)
         );
-        int totalContentBytesCount = countRemaining(chunks);
+        long totalContentBytesCount = countRemaining(chunks);
         String originalContentString = asString(chunks);
 
         ArrayDelayedServletChannel servletChannel = new ArrayDelayedServletChannel(chunks);
@@ -64,7 +65,7 @@ public class BlockingContentProducerTest extends AbstractContentProducerTest
             Content.Chunk.from(ByteBuffer.wrap("3 hey ya 3".getBytes(US_ASCII)), false),
             Content.Chunk.EOF
         );
-        int totalContentBytesCount = countRemaining(chunks);
+        long totalContentBytesCount = countRemaining(chunks);
         String originalContentString = asString(chunks);
 
         ArrayDelayedServletChannel servletChannel = new ArrayDelayedServletChannel(chunks);
@@ -86,7 +87,7 @@ public class BlockingContentProducerTest extends AbstractContentProducerTest
             Content.Chunk.from(ByteBuffer.wrap("3 hey ya 3".getBytes(US_ASCII)), false),
             Content.Chunk.from(expectedError, true)
         );
-        int totalContentBytesCount = countRemaining(chunks);
+        long totalContentBytesCount = countRemaining(chunks);
         String originalContentString = asString(chunks);
 
         ArrayDelayedServletChannel servletChannel = new ArrayDelayedServletChannel(chunks);
@@ -110,7 +111,7 @@ public class BlockingContentProducerTest extends AbstractContentProducerTest
             Content.Chunk.from(new TimeoutException("timeout 3"), false),
             Content.Chunk.EOF
         );
-        int totalContentBytesCount = countRemaining(chunks);
+        long totalContentBytesCount = countRemaining(chunks);
         String originalContentString = asString(chunks);
 
         ArrayDelayedServletChannel servletChannel = new ArrayDelayedServletChannel(chunks);
@@ -143,9 +144,9 @@ public class BlockingContentProducerTest extends AbstractContentProducerTest
         assertThat(error, nullValue());
     }
 
-    private Throwable readAndAssertContent(ContentProducer contentProducer, AutoLock lock, int totalContentBytesCount, String originalContentString, int totalContentCount, Consumer<Content.Chunk> transientErrorConsumer)
+    private Throwable readAndAssertContent(ContentProducer contentProducer, AutoLock lock, long totalContentBytesCount, String originalContentString, int totalContentCount, Consumer<Content.Chunk> transientErrorConsumer)
     {
-        int readBytes = 0;
+        long readBytes = 0;
         String consumedString = "";
         int nextContentCount = 0;
         Throwable failure;
@@ -163,11 +164,11 @@ public class BlockingContentProducerTest extends AbstractContentProducerTest
             if (Content.Chunk.isFailure(content, false))
                 transientErrorConsumer.accept(content);
 
-            byte[] b = new byte[content.remaining()];
-            readBytes += b.length;
-            content.getByteBuffer().get(b);
-            consumedString += new String(b, US_ASCII);
-            content.skip(content.remaining());
+            try (RetainableByteBuffer buffer = content.acquire())
+            {
+                readBytes += buffer.remaining();
+                consumedString += buffer.getString(US_ASCII);
+            }
 
             if (content.isLast())
             {

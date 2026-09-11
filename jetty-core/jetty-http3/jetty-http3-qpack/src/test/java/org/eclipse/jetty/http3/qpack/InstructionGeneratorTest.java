@@ -34,7 +34,7 @@ public class InstructionGeneratorTest
     {
         List<RetainableByteBuffer> accumulator = new ArrayList<>();
         instruction.encode(_bufferPool, accumulator);
-        return StringUtil.toHexString(RetainableByteBuffer.wrap(accumulator).getArray());
+        return StringUtil.toHexString(RetainableByteBuffer.merge(accumulator).getArray());
     }
 
     @Test

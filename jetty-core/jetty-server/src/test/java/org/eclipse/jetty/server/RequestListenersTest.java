@@ -412,11 +412,16 @@ public class RequestListenersTest
             Callback callback = callbackCompletable.get(5 * idleTimeout, TimeUnit.MILLISECONDS);
             Request request = requestRef.get();
 
-            Content.Chunk chunk = request.read();
-            assertNotNull(chunk);
-            assertTrue(Content.Chunk.isFailure(chunk, false));
-            chunk = request.read();
-            assertNull(chunk);
+            try (Content.Chunk chunk = request.read())
+            {
+                assertNotNull(chunk);
+                assertTrue(Content.Chunk.isFailure(chunk, false));
+            }
+
+            try (Content.Chunk chunk = request.read())
+            {
+                assertNull(chunk);
+            }
 
             callback.succeeded();
 
@@ -475,8 +480,10 @@ public class RequestListenersTest
 
             // The write side has failed, but the read side has not.
             Request request = response.getRequest();
-            Content.Chunk chunk = request.read();
-            assertNull(chunk);
+            try (Content.Chunk chunk = request.read())
+            {
+                assertNull(chunk);
+            }
 
             // Since we cannot write, only choice is to fail the Handler callback.
             callback.failed(new IOException());

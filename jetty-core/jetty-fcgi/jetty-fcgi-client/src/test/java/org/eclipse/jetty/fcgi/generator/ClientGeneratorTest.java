@@ -119,7 +119,7 @@ public class ClientGeneratorTest
             }
         });
 
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator);
         accumulator.forEach(RetainableByteBuffer::release);
 
         parser.parse(buffer);
@@ -185,7 +185,7 @@ public class ClientGeneratorTest
             }
         });
 
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator);
         accumulator.forEach(RetainableByteBuffer::release);
 
         parser.parse(buffer);

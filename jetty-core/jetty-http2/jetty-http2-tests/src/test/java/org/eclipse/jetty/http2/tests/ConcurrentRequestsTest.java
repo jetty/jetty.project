@@ -157,17 +157,18 @@ public class ConcurrentRequestsTest extends AbstractTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = stream.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
-                    }
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        requestLatch.countDown();
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        if (chunk.isLast())
+                        {
+                            requestLatch.countDown();
+                            return;
+                        }
                     }
                 }
             }
@@ -241,17 +242,18 @@ public class ConcurrentRequestsTest extends AbstractTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = stream.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
-                    }
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        requestLatch.countDown();
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        if (chunk.isLast())
+                        {
+                            requestLatch.countDown();
+                            return;
+                        }
                     }
                 }
             }

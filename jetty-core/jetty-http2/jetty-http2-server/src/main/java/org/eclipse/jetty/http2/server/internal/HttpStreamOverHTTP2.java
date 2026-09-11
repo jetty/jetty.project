@@ -167,37 +167,34 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (chunk != null)
             return chunk;
 
-        Content.Chunk data = _stream.read();
-        if (data == null)
-            return null;
-
-        // Check if the trailers must be returned.
-        if (data.isLast())
+        try (Content.Chunk data = _stream.read())
         {
-            Content.Chunk trailer;
-            try (AutoLock ignored = _lock.lock())
+            if (data == null)
+                return null;
+
+            // Check if the trailers must be returned.
+            if (data.isLast())
             {
-                trailer = _trailer;
-                if (trailer != null)
+                Content.Chunk trailer;
+                try (AutoLock ignored = _lock.lock())
                 {
-                    data.release();
-                    _chunk = Content.Chunk.next(trailer);
-                    return trailer;
+                    trailer = _trailer;
+                    if (trailer != null)
+                    {
+                        _chunk = Content.Chunk.next(trailer);
+                        return trailer;
+                    }
                 }
             }
-        }
 
-        // The data instance should be released after readData() above;
-        // the chunk is stored below for later use, so should be retained;
-        // the two actions cancel each other, no need to further retain or release.
-        chunk = createChunk(data);
-        data.release();
+            chunk = createChunk(data);
 
-        try (AutoLock ignored = _lock.lock())
-        {
-            _chunk = Content.Chunk.next(chunk);
+            try (AutoLock ignored = _lock.lock())
+            {
+                _chunk = Content.Chunk.next(chunk);
+            }
+            return chunk;
         }
-        return chunk;
     }
 
     @Override
@@ -267,7 +264,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
     private Content.Chunk createChunk(Content.Chunk chunk)
     {
-        if (chunk.isLast() && chunk.getByteBuffer().remaining() == 0)
+        if (chunk.isLast() && chunk.remaining() == 0)
             return Content.Chunk.EOF;
         chunk.retain();
         return chunk;
@@ -393,9 +390,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 System.lineSeparator(), response.getHttpFields());
         }
 
-        _stream.send(new HTTP2Stream.FrameList(headersFrame, dataFrame, trailersFrame), callback);
-        if (dataFrame != null)
-            dataFrame.release();
+        try (DataFrame df = dataFrame)
+        {
+            _stream.send(new HTTP2Stream.FrameList(headersFrame, df, trailersFrame), callback);
+        }
     }
 
     private void sendContent(MetaData.Request request, RetainableByteBuffer content, boolean last, Callback callback)

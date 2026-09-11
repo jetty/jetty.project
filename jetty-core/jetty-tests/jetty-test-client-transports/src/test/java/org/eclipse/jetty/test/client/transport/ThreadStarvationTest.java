@@ -116,21 +116,22 @@ public class ThreadStarvationTest extends AbstractTest
                 {
                     while (true)
                     {
-                        Content.Chunk chunk = request.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = request.read())
                         {
-                            CountDownLatch latch = new CountDownLatch(1);
-                            // The lambda passed to demand() has invocationType==BLOCKING.
-                            request.demand(latch::countDown);
-                            // Block here until more chunks are available.
-                            assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
-                            continue;
+                            if (chunk == null)
+                            {
+                                CountDownLatch latch = new CountDownLatch(1);
+                                // The lambda passed to demand() has invocationType==BLOCKING.
+                                request.demand(latch::countDown);
+                                // Block here until more chunks are available.
+                                assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+                                continue;
+                            }
+                            if (Content.Chunk.isFailure(chunk))
+                                throw IO.rethrow(chunk.getFailure());
+                            if (chunk.isLast())
+                                break;
                         }
-                        if (Content.Chunk.isFailure(chunk))
-                            throw IO.rethrow(chunk.getFailure());
-                        chunk.release();
-                        if (chunk.isLast())
-                            break;
                     }
                     callback.succeeded();
                     return true;

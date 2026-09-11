@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.client.transport.internal;
 
-import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpUpgrader;
@@ -30,7 +29,6 @@ import org.eclipse.jetty.http3.HTTP3Stream;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.URIUtil;
@@ -54,7 +52,7 @@ public class HttpSenderOverHTTP3 extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendHeaders(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         HttpRequest request = exchange.getRequest();
         boolean isTunnel = HttpMethod.CONNECT.is(request.getMethod());
@@ -92,11 +90,10 @@ public class HttpSenderOverHTTP3 extends HttpSender
         }
         else
         {
-            boolean hasContent = BufferUtil.hasContent(contentBuffer);
-            if (hasContent)
+            if (contentBuffer.hasRemaining())
             {
                 headersFrame = new HeadersFrame(metaData, false);
-                data = RetainableByteBuffer.wrap(contentBuffer);
+                data = contentBuffer;
                 if (lastContent)
                 {
                     HttpFields trailers = retrieveTrailers(request);
@@ -173,7 +170,7 @@ public class HttpSenderOverHTTP3 extends HttpSender
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendContent(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         Stream stream = getHttpChannel().getStream();
         boolean hasContent = contentBuffer.hasRemaining();
@@ -184,15 +181,14 @@ public class HttpSenderOverHTTP3 extends HttpSender
             boolean hasTrailers = trailers != null && trailers.size() > 0;
             if (hasContent)
             {
-                RetainableByteBuffer data = RetainableByteBuffer.wrap(contentBuffer);
                 if (hasTrailers)
                 {
                     HeadersFrame trailerFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
-                    sendDataAndTrailer(stream, data, trailerFrame, callback);
+                    sendDataAndTrailer(stream, contentBuffer, trailerFrame, callback);
                 }
                 else
                 {
-                    sendData(stream, data, true, true, callback);
+                    sendData(stream, contentBuffer, true, true, callback);
                 }
             }
             else
@@ -204,8 +200,7 @@ public class HttpSenderOverHTTP3 extends HttpSender
                 }
                 else
                 {
-                    RetainableByteBuffer data = RetainableByteBuffer.wrap(contentBuffer);
-                    sendData(stream, data, true, true, callback);
+                    sendData(stream, contentBuffer, true, true, callback);
                 }
             }
         }
@@ -213,8 +208,7 @@ public class HttpSenderOverHTTP3 extends HttpSender
         {
             if (hasContent)
             {
-                RetainableByteBuffer data = RetainableByteBuffer.wrap(contentBuffer);
-                sendData(stream, data, false, false, callback);
+                sendData(stream, contentBuffer, false, false, callback);
             }
             else
             {

@@ -21,10 +21,8 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
@@ -133,40 +131,6 @@ public interface Stream
      * @see Listener#onDataAvailable(Stream, boolean)
      */
     public Content.Chunk read();
-
-    /**
-     * <p>Reads DATA frames from this stream, wrapping them in retainable
-     * {@link Data} objects.</p>
-     * <p>The returned {@link Stream.Data} object may be {@code null}, indicating
-     * that the end of the read side of the stream has not yet been reached, which
-     * may happen in these cases:</p>
-     * <ul>
-     *   <li>not all the bytes have been received so far, for example the remote
-     *   peer did not send them yet, or they are in-flight</li>
-     *   <li>all the bytes have been received, but there is a trailer HEADERS
-     *   frame to be received to indicate the end of the read side of the
-     *   stream</li>
-     * </ul>
-     * <p>When the returned {@link Stream.Data} object is not {@code null},
-     * the flow control window has been enlarged by the DATA frame length;
-     * applications <em>must</em> call, either immediately or later (even
-     * asynchronously from a different thread) {@link Stream.Data#release()}
-     * to notify the implementation that the bytes have been processed.</p>
-     * <p>{@link Stream.Data} objects may be stored away for later, asynchronous,
-     * processing (for example, to process them only when all of them have been
-     * received).</p>
-     * <p>Once the returned {@link Stream.Data} object indicates that the end
-     * of the read side of the stream has been reached, further calls to this
-     * method will return a {@link Stream.Data} object with the same indication,
-     * although the instance may be different.</p>
-     *
-     * @return a {@link Stream.Data} object containing the DATA frame,
-     * or null if no DATA frame is available
-     * @see #demand()
-     * @see Listener#onDataAvailable(Stream, boolean)
-     */
-    @Deprecated
-    public Data readData();
 
     /**
      * <p>Sends the given DATA {@code frame}.</p>
@@ -402,15 +366,16 @@ public interface Stream
         {
             while (true)
             {
-                Content.Chunk chunk = stream.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    stream.demand();
-                    return;
+                    if (chunk == null)
+                    {
+                        stream.demand();
+                        return;
+                    }
+                    if (chunk.isLast())
+                        return;
                 }
-                chunk.release();
-                if (chunk.isLast())
-                    return;
             }
         }
 
@@ -442,24 +407,25 @@ public interface Stream
          *     public void onDataAvailable(Stream stream, boolean immediate)
          *     {
          *         // Read a chunk of the content.
-         *         Stream.Data data = stream.readData();
-         *         if (data == null)
+         *         try (Content.Chunk data = stream.read())
          *         {
-         *             // No data available now, demand to be called back.
-         *             stream.demand();
-         *         }
-         *         else
-         *         {
-         *             // Process the content.
-         *             process(data.frame().getByteBuffer());
-         *             // Notify that the content has been consumed.
-         *             data.release();
-         *             if (!data.frame().isEndStream())
+         *             if (data == null)
          *             {
-         *                 // Demand to be called back.
+         *                 // No data available now, demand to be called back.
          *                 stream.demand();
          *             }
-         *         }
+         *             else
+         *             {
+         *                 // Process the content.
+         *                 process(data);
+
+         *                 if (!data.isLast())
+         *                 {
+         *                     // Demand to be called back.
+         *                     stream.demand();
+         *                 }
+         *             }
+         *         } // Closing the chunk releases the underlying buffer.
          *     }
          * }
          * }</pre>
@@ -525,61 +491,6 @@ public interface Stream
          */
         public default void onClosed(Stream stream)
         {
-        }
-    }
-
-    /**
-     * <p>A {@link Retainable} wrapper of a {@link DataFrame}.</p>
-     */
-    @Deprecated
-    class Data implements Retainable
-    {
-        private final DataFrame frame;
-
-        public Data(DataFrame frame)
-        {
-            this.frame = frame;
-        }
-
-        public DataFrame frame()
-        {
-            return frame;
-        }
-
-        @Override
-        public boolean canRetain()
-        {
-            return frame.canRetain();
-        }
-
-        @Override
-        public boolean isRetained()
-        {
-            return frame.isRetained();
-        }
-
-        @Override
-        public void retain()
-        {
-            frame.retain();
-        }
-
-        @Override
-        public boolean release()
-        {
-            return frame.release();
-        }
-
-        @Override
-        public int getRetained()
-        {
-            return frame.getRetained();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), frame);
         }
     }
 }

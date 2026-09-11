@@ -1259,21 +1259,11 @@ public class BufferUtil
         return toBuffer(s, StandardCharsets.ISO_8859_1);
     }
 
-    public static RetainableByteBuffer toReadableBuffer(String s)
-    {
-        return RetainableByteBuffer.wrap(toBuffer(s, StandardCharsets.ISO_8859_1));
-    }
-
     public static ByteBuffer toBuffer(String s, Charset charset)
     {
         if (s == null)
             return EMPTY_BUFFER;
         return toBuffer(s.getBytes(charset));
-    }
-
-    public static RetainableByteBuffer toReadableBuffer(String s, Charset charset)
-    {
-        return RetainableByteBuffer.wrap(toBuffer(s, charset));
     }
 
     /**

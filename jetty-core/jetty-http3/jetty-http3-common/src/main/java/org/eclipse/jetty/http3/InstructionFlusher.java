@@ -94,11 +94,11 @@ public class InstructionFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("writing buffers ({} bytes) on {}", accumulator.size(), this);
 
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
-        endPoint.write(false, buffer, this);
-        buffer.release();
-
-        return Action.SCHEDULED;
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+        {
+            endPoint.write(false, buffer, this);
+            return Action.SCHEDULED;
+        }
     }
 
     @Override

@@ -199,7 +199,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/two", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
             generator.control(accumulator, new HeadersFrame(3, metaData, null, true));
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(in -> BufferUtil.writeTo(in, client.getOutputStream()));
             rb.release();
@@ -242,7 +242,7 @@ public class HTTP2CServerTest extends AbstractServerTest
         {
             client.setSoTimeout(5000);
 
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
@@ -335,7 +335,7 @@ public class HTTP2CServerTest extends AbstractServerTest
         {
             client.setSoTimeout(5000);
 
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();

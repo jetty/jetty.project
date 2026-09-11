@@ -15,7 +15,6 @@ package org.eclipse.jetty.http2;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -191,24 +190,25 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
 
     private int fillFromData(Content.Chunk chunk, RetainableByteBuffer.Mutable sink)
     {
-        int length = 0;
-        ByteBuffer buffer = chunk.getByteBuffer();
-        boolean hasContent = buffer.remaining() > 0L;
-        if (hasContent)
-            length = Math.toIntExact(sink.append(buffer));
-
-        if (buffer.remaining() == 0L)
+        try (RetainableByteBuffer buffer = chunk.acquire())
         {
-            boolean endStream = chunk.isLast();
-            eof.set(endStream);
-            chunk.release();
-            this.data.set(null);
-            if (!endStream)
-                stream.demand();
-            if (!hasContent)
-                length = endStream ? -1 : 0;
+            int length = 0;
+            boolean hasContent = buffer.hasRemaining();
+            if (hasContent)
+                length = Math.toIntExact(sink.append(buffer));
+
+            if (!buffer.hasRemaining())
+            {
+                boolean endStream = chunk.isLast();
+                eof.set(endStream);
+                this.data.set(null);
+                if (!endStream)
+                    stream.demand();
+                if (!hasContent)
+                    length = endStream ? -1 : 0;
+            }
+            return length;
         }
-        return length;
     }
 
     @Override

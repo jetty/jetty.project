@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io.internal;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +25,7 @@ import org.eclipse.jetty.io.TestSink;
 import org.eclipse.jetty.io.TestSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -56,7 +58,12 @@ public class ContentCopierTest
 
         StringBuilder result = new StringBuilder();
         for (Content.Chunk chunk : resultSink.takeAccumulatedChunks())
-            result.append(BufferUtil.toString(chunk.getByteBuffer()));
+        {
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                result.append(buffer.getString(StandardCharsets.ISO_8859_1));
+            }
+        }
         assertThat(result.toString(), equalTo("How now brown cow."));
     }
 
@@ -89,10 +96,14 @@ public class ContentCopierTest
 
         List<Content.Chunk> accumulatedChunks = resultSink.takeAccumulatedChunks();
         assertThat(accumulatedChunks.size(), is(1));
-        assertThat(accumulatedChunks.get(0).isLast(), is(false));
-        assertThat(accumulatedChunks.get(0).getByteBuffer().get(), is((byte)1));
+        Content.Chunk chunk = accumulatedChunks.getFirst();
+        assertThat(chunk.isLast(), is(false));
+        try (RetainableByteBuffer buffer = chunk.acquire())
+        {
+            assertThat(buffer.get(), is((byte)1));
+        }
 
-        Content.Chunk chunk = originalSource.read();
+        chunk = originalSource.read();
         assertThat(chunk.isLast(), is(true));
         assertThat(chunk.getFailure(), sameInstance(originalFailure));
 

@@ -58,7 +58,7 @@ public class PriorityGenerateParseTest
             generator.generatePriority(accumulator, streamId, parentStreamId, weight, exclusive);
 
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             UnknownParseTest.parse(parser, rb);
             rb.release();
@@ -100,7 +100,7 @@ public class PriorityGenerateParseTest
             generator.generatePriority(accumulator, streamId, parentStreamId, weight, exclusive);
 
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.wrap(accumulator);
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             UnknownParseTest.parse(parser, rb);
             rb.release();

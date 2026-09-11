@@ -52,31 +52,32 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         });
 
         Exception failure = new NumberFormatException();
-        TestContent content = new TestContent(
+        try (TestContent content = new TestContent(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
             Content.Chunk.from(failure, true)
-        );
-
-        try
+        ))
         {
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .body(content)
-                .send();
-            fail();
-        }
-        catch (ExecutionException e)
-        {
-            assertThat(e.getCause(), sameInstance(failure));
-        }
+            try
+            {
+                client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scenario.getScheme())
+                    .method(HttpMethod.POST)
+                    .body(content)
+                    .send();
+                fail();
+            }
+            catch (ExecutionException e)
+            {
+                assertThat(e.getCause(), sameInstance(failure));
+            }
 
-        Content.Chunk chunk = content.read();
-        assertThat(Content.Chunk.isFailure(chunk, true), is(true));
-        assertThat(chunk.getFailure().getCause(), instanceOf(failure.getClass()));
-
-        content.close();
+            try (Content.Chunk chunk = content.read())
+            {
+                assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+                assertThat(chunk.getFailure().getCause(), instanceOf(failure.getClass()));
+            }
+        }
     }
 
     @ParameterizedTest
@@ -94,32 +95,33 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         });
 
         Exception failure = new NumberFormatException();
-        TestContent content = new TestContent(
+        try (TestContent content = new TestContent(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
             Content.Chunk.from(failure, false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{3}), true)
-        );
-
-        try
+        ))
         {
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .body(content)
-                .send();
-            fail();
-        }
-        catch (ExecutionException e)
-        {
-            assertThat(e.getCause(), sameInstance(failure));
-        }
+            try
+            {
+                client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scenario.getScheme())
+                    .method(HttpMethod.POST)
+                    .body(content)
+                    .send();
+                fail();
+            }
+            catch (ExecutionException e)
+            {
+                assertThat(e.getCause(), sameInstance(failure));
+            }
 
-        Content.Chunk chunk = content.read();
-        assertThat(Content.Chunk.isFailure(chunk, true), is(true));
-        assertThat(chunk.getFailure(), sameInstance(failure));
-
-        content.close();
+            try (Content.Chunk chunk = content.read())
+            {
+                assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+                assertThat(chunk.getFailure(), sameInstance(failure));
+            }
+        }
     }
 
     @ParameterizedTest
@@ -137,32 +139,33 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         });
 
         Exception failure = new TimeoutException();
-        TestContent content = new TestContent(
+        try (TestContent content = new TestContent(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
             Content.Chunk.from(failure, false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{3}), true)
-        );
-
-        try
+        ))
         {
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .body(content)
-                .send();
-            fail();
-        }
-        catch (TimeoutException e)
-        {
-            assertThat(e, sameInstance(failure));
-        }
+            try
+            {
+                client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scenario.getScheme())
+                    .method(HttpMethod.POST)
+                    .body(content)
+                    .send();
+                fail();
+            }
+            catch (TimeoutException e)
+            {
+                assertThat(e, sameInstance(failure));
+            }
 
-        Content.Chunk chunk = content.read();
-        assertThat(Content.Chunk.isFailure(chunk, true), is(true));
-        assertThat(chunk.getFailure(), sameInstance(failure));
-
-        content.close();
+            try (Content.Chunk chunk = content.read())
+            {
+                assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+                assertThat(chunk.getFailure(), sameInstance(failure));
+            }
+        }
     }
 
     @ParameterizedTest
@@ -180,31 +183,32 @@ public class HttpClientContentFailuresTest extends AbstractHttpClientServerTest
         });
 
         Exception failure = new TimeoutException();
-        TestContent content = new TestContent(
+        try (TestContent content = new TestContent(
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{1}), false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{2}), false),
             Content.Chunk.from(failure, true)
-        );
-
-        try
+        ))
         {
-            client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .body(content)
-                .send();
-            fail();
-        }
-        catch (TimeoutException e)
-        {
-            assertThat(e, sameInstance(failure));
-        }
+            try
+            {
+                client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scenario.getScheme())
+                    .method(HttpMethod.POST)
+                    .body(content)
+                    .send();
+                fail();
+            }
+            catch (TimeoutException e)
+            {
+                assertThat(e, sameInstance(failure));
+            }
 
-        Content.Chunk chunk = content.read();
-        assertThat(Content.Chunk.isFailure(chunk, true), is(true));
-        assertThat(chunk.getFailure().getCause(), instanceOf(failure.getClass()));
-
-        content.close();
+            try (Content.Chunk chunk = content.read())
+            {
+                assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+                assertThat(chunk.getFailure().getCause(), instanceOf(failure.getClass()));
+            }
+        }
     }
 
     public static class TestContent extends ChunksContentSource implements Closeable, org.eclipse.jetty.client.Request.Content

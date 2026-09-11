@@ -87,56 +87,54 @@ import org.slf4j.LoggerFactory;
  *
  *     while (true)
  *     {
- *         Content.Chunk chunk = request.read();
- *         if (chunk == null)
+ *         try (Content.Chunk chunk = request.read())
  *         {
- *             // The chunk is not currently available, demand to be called back.
- *             request.demand(() -> handle(request, response, callback));
- *             return true;
- *         }
+ *             if (chunk == null)
+ *             {
+ *                 // The chunk is not currently available, demand to be called back.
+ *                 request.demand(() -> handle(request, response, callback));
+ *                 return true;
+ *             }
  *
- *         if (Content.Chunk.isError(chunk))
- *         {
- *             Throwable failure = error.getCause();
+ *             if (Content.Chunk.isFailure(chunk))
+ *             {
+ *                 Throwable failure = chunk.getFailure();
  *
- *             // Handle errors.
- *             // If the chunk is not last, then the error can be ignored and reading can be tried again.
- *             // Otherwise, if the chunk is last, or we do not wish to ignore a non-last error, then
- *             // mark the handling as complete, either generating a custom
- *             // response and succeeding the callback, or failing the callback.
- *             callback.failed(failure);
- *             return true;
- *         }
+ *                 // Handle errors.
+ *                 // If the chunk is not last, then the error can be ignored and reading can be tried again.
+ *                 // Otherwise, if the chunk is last, or we do not wish to ignore a non-last error, then
+ *                 // mark the handling as complete, either generating a custom
+ *                 // response and succeeding the callback, or failing the callback.
+ *                 callback.failed(failure);
+ *                 return true;
+ *             }
  *
- *         if (chunk instanceof Trailers trailers)
- *         {
- *             HttpFields fields = trailers.getTrailers();
+ *             if (chunk instanceof Trailers trailers)
+ *             {
+ *                 HttpFields fields = trailers.getTrailers();
  *
- *             // Handle trailers.
+ *                 // Handle trailers.
  *
- *             // Generate a response.
+ *                 // Generate a response.
  *
- *             // Mark the handling as complete.
- *             callback.succeeded();
+ *                 // Mark the handling as complete.
+ *                 callback.succeeded();
+ *                 return true;
+ *             }
  *
- *             return true;
- *         }
+ *             // Normal chunk, process it.
+ *             processChunk(chunk);
  *
- *         // Normal chunk, process it.
- *         processChunk(chunk);
- *         // Release the content after processing.
- *         chunk.release();
+ *             // Reached end-of-file?
+ *             if (chunk.isLast())
+ *             {
+ *                 // Generate a response.
  *
- *         // Reached end-of-file?
- *         if (chunk.isLast())
- *         {
- *             // Generate a response.
- *
- *             // Mark the handling as complete.
- *             callback.succeeded();
- *
- *             return true;
- *         }
+ *                 // Mark the handling as complete.
+ *                 callback.succeeded();
+ *                 return true;
+ *             }
+ *         } // Release the chunk by closing it.
  *     }
  * }
  * }</pre>

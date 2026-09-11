@@ -166,21 +166,24 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     public Content.Chunk read()
     {
         HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
-        Content.Chunk chunk = connection.read();
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("read {} on {}", chunk, this);
-
-        try (AutoLock ignored = lock.lock())
+        try (Content.Chunk chunk = connection.read())
         {
-            dataAvailable = chunk != null;
-            dataLast = chunk != null && chunk.isLast();
+            if (LOG.isDebugEnabled())
+                LOG.debug("read {} on {}", chunk, this);
+
+            try (AutoLock ignored = lock.lock())
+            {
+                dataAvailable = chunk != null;
+                dataLast = chunk != null && chunk.isLast();
+            }
+
+            if (chunk != null)
+                updateClose(chunk.isLast(), false);
+
+            if (chunk != null)
+                chunk.retain();
+            return chunk;
         }
-
-        if (chunk != null)
-            updateClose(chunk.isLast(), false);
-
-        return chunk;
     }
 
     @Override

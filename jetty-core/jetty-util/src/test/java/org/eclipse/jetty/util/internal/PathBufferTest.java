@@ -233,7 +233,7 @@ public class PathBufferTest
         b.put("-- suffix --\n".getBytes(StandardCharsets.UTF_8));
         RetainableByteBuffer b3 = b;
 
-        RetainableByteBuffer acc = RetainableByteBuffer.wrap(b1, b2, b3);
+        RetainableByteBuffer acc = RetainableByteBuffer.merge(b1, b2, b3);
 
         StringBuilder sb = new StringBuilder();
         long written = acc.writeTo(input ->

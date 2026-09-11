@@ -163,12 +163,13 @@ public class SmallThreadPoolLoadTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Content.Chunk chunk = stream.read();
-                chunk.release();
-                if (chunk.isLast())
-                    responseLatch.countDown();
-                else
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk.isLast())
+                        responseLatch.countDown();
+                    else
+                        stream.demand();
+                }
             }
 
             @Override

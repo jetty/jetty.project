@@ -32,14 +32,9 @@ public class DataGenerator
 
     public int generate(List<RetainableByteBuffer> accumulator, DataFrame frame, int maxLength)
     {
-        RetainableByteBuffer rb = frame.acquire();
-        try
+        try (RetainableByteBuffer rb = frame.acquire())
         {
             return generateData(accumulator, frame.getStreamId(), rb, frame.isEndStream(), maxLength);
-        }
-        finally
-        {
-            rb.release();
         }
     }
 
@@ -58,10 +53,10 @@ public class DataGenerator
         }
         else
         {
-            RetainableByteBuffer slice = data.slice(data.readPosition(), length);
-            data.readPosition(data.readPosition() + length);
-            generateFrame(accumulator, streamId, slice, false);
-            slice.release();
+            try (RetainableByteBuffer slice = data.sliceAndConsume(length))
+            {
+                generateFrame(accumulator, streamId, slice, false);
+            }
         }
         return Frame.HEADER_LENGTH + length;
     }

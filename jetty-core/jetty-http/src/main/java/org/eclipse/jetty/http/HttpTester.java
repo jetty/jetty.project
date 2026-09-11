@@ -20,6 +20,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
@@ -92,7 +93,7 @@ public class HttpTester
 
     public static Input from(String string)
     {
-        return from(BufferUtil.toReadableBuffer(string));
+        return from(RetainableByteBuffer.wrap(string, StandardCharsets.ISO_8859_1));
     }
 
     public static Input from(RetainableByteBuffer data)
@@ -178,7 +179,7 @@ public class HttpTester
 
     public static Request parseRequest(String request)
     {
-        return parseRequest(BufferUtil.toReadableBuffer(request));
+        return parseRequest(RetainableByteBuffer.wrap(request, StandardCharsets.ISO_8859_1));
     }
 
     public static Request parseRequest(RetainableByteBuffer buffer)
@@ -238,7 +239,7 @@ public class HttpTester
 
     private static Response parseResponse(String response, boolean head)
     {
-        return parseResponse(BufferUtil.toReadableBuffer(response), head);
+        return parseResponse(RetainableByteBuffer.wrap(response, StandardCharsets.ISO_8859_1), head);
     }
 
     public static Response parseHeadResponse(RetainableByteBuffer response)

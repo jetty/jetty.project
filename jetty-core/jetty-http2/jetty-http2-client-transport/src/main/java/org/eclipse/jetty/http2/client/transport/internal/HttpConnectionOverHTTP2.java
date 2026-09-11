@@ -180,8 +180,6 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
 
     public boolean upgrade(Map<String, Object> context)
     {
-        LOG.info("SIMON: upgrading");
-
         // In case of HTTP/1.1 upgrade to HTTP/2, the request is HTTP/1.1
         // (with upgrade) for a resource, and the response is HTTP/2.
 
@@ -205,8 +203,6 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
             destroyHttpChannel(http2Channel);
             return false;
         }
-
-        LOG.info("SIMON: creating stream #1");
 
         // Create the implicit stream#1 so that it can receive the HTTP/2 response.
         MetaData.Request metaData = new MetaData.Request(request.getMethod(), HttpURI.from(request.getURI()), HttpVersion.HTTP_2, request.getHeaders());

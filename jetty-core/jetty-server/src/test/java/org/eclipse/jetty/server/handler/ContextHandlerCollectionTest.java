@@ -26,7 +26,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
@@ -448,7 +447,7 @@ public class ContextHandlerCollectionTest
         {
             this.handled = true;
             response.getHeaders().put("X-IsHandled-Name", name);
-            RetainableByteBuffer nameBuffer = BufferUtil.toReadableBuffer(name, StandardCharsets.UTF_8);
+            RetainableByteBuffer nameBuffer = RetainableByteBuffer.wrap(name, StandardCharsets.UTF_8);
             response.write(true, nameBuffer, callback);
             return true;
         }

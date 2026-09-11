@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
-
 /**
  * <p>Implementation of {@link AbstractResponseListener} that retains the response
  * content without copying it, up to a configurable number of bytes.</p>
@@ -28,7 +26,6 @@ public abstract class RetainingResponseListener extends AbstractResponseListener
 
     public RetainingResponseListener(int maxLength)
     {
-        // A DynamicCapacity that always retains.
-        super(new RetainableByteBuffer.DynamicCapacity(null, maxLength, 0));
+        super(maxLength);
     }
 }

@@ -159,12 +159,6 @@ public class StreamFrame extends Frame.WithStreamId implements Retainable
     }
 
     @Override
-    public boolean canRetain()
-    {
-        return data.canRetain();
-    }
-
-    @Override
     public boolean isRetained()
     {
         return data.isRetained();
@@ -180,12 +174,6 @@ public class StreamFrame extends Frame.WithStreamId implements Retainable
     public boolean release()
     {
         return data.release();
-    }
-
-    @Override
-    public int getRetained()
-    {
-        return data.getRetained();
     }
 
     @Override

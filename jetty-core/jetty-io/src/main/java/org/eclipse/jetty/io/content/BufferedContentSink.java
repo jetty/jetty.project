@@ -15,12 +15,14 @@ package org.eclipse.jetty.io.content;
 
 import java.io.IOException;
 import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
@@ -38,7 +40,7 @@ public class BufferedContentSink implements Content.Sink
      * An empty {@link RetainableByteBuffer}, which if {@link #write(boolean, RetainableByteBuffer, Callback) written}
      * will invoke a {@link #flush(Callback)} operation.
      */
-    public static final RetainableByteBuffer FLUSH_BUFFER = RetainableByteBuffer.wrap(new byte[0]);
+    public static final RetainableByteBuffer FLUSH_BUFFER = RetainableByteBuffer.wrap(ByteBuffer.allocate(0), Retainable.NON_RETAINABLE);
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedContentSink.class);
 
@@ -128,57 +130,65 @@ public class BufferedContentSink implements Content.Sink
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("nothing aggregated, flushing current buffer {}", currentBuffer);
+
             _delegate.write(last, currentBuffer, callback);
         }
         else if (!currentBuffer.hasRemaining())
         {
-            RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(_aggregator);
-            if (LOG.isDebugEnabled())
-                LOG.debug("flushing aggregate {}", accumulated);
-            _delegate.write(last, accumulated, callback);
-            accumulated.release();
-            _aggregator.forEach(RetainableByteBuffer::release);
-            _aggregator.clear();
+            try (RetainableByteBuffer accumulated = RetainableByteBuffer.merge(_aggregator))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("flushing aggregate {}", accumulated);
+                _aggregator.forEach(RetainableByteBuffer::release);
+                _aggregator.clear();
+
+                _delegate.write(last, accumulated, callback);
+            }
         }
         else if (last && currentBuffer.remaining() <= Math.min(_aggregationSize, aggregatorSpace()) && aggregatorAppend(currentBuffer))
         {
-            currentBuffer.retain();
-            RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(_aggregator);
-            if (LOG.isDebugEnabled())
-                LOG.debug("flushing aggregated {}", accumulated);
-            _delegate.write(last, accumulated, callback);
-            accumulated.release();
-            _aggregator.forEach(RetainableByteBuffer::release);
-            _aggregator.clear();
+            try (RetainableByteBuffer accumulated = RetainableByteBuffer.merge(_aggregator))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("flushing aggregated {}", accumulated);
+                _aggregator.forEach(RetainableByteBuffer::release);
+                _aggregator.clear();
+
+                _delegate.write(last, accumulated, callback);
+            }
         }
         else
         {
-            RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(_aggregator);
-            if (LOG.isDebugEnabled())
-                LOG.debug("flushing aggregate {} and buffer {}", accumulated, currentBuffer);
-            _delegate.write(false, accumulated, new Callback() 
+            try (RetainableByteBuffer accumulated = RetainableByteBuffer.merge(_aggregator))
             {
-                @Override
-                public void succeeded()
-                {
-                    _delegate.write(last, currentBuffer, callback);
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("flushing aggregate {} and buffer {}", accumulated, currentBuffer);
+                _aggregator.forEach(RetainableByteBuffer::release);
+                _aggregator.clear();
 
-                @Override
-                public void failed(Throwable x)
+                currentBuffer.retain();
+                _delegate.write(false, accumulated, new Callback.Nested(callback)
                 {
-                    callback.failed(x);
-                }
+                    @Override
+                    public void succeeded()
+                    {
+                        try
+                        {
+                            _delegate.write(last, currentBuffer, getCallback());
+                        }
+                        finally
+                        {
+                            completed();
+                        }
+                    }
 
-                @Override
-                public InvocationType getInvocationType()
-                {
-                    return callback.getInvocationType();
-                }
-            });
-            accumulated.release();
-            _aggregator.forEach(RetainableByteBuffer::release);
-            _aggregator.clear();
+                    @Override
+                    public void completed()
+                    {
+                        currentBuffer.release();
+                    }
+                });
+            }
         }
     }
 
@@ -196,8 +206,7 @@ public class BufferedContentSink implements Content.Sink
         if (totalRemaining + buffer.remaining() > _maxSize)
         {
             long sliceLength = _maxSize - totalRemaining;
-            RetainableByteBuffer slice = buffer.slice(buffer.readPosition(), sliceLength);
-            buffer.readPosition(buffer.readPosition() + sliceLength);
+            RetainableByteBuffer slice = buffer.sliceAndConsume(sliceLength);
             _aggregator.add(slice);
             return false;
         }
@@ -228,31 +237,32 @@ public class BufferedContentSink implements Content.Sink
             return;
         }
 
-        RetainableByteBuffer accumulated = RetainableByteBuffer.wrap(_aggregator);
-        _delegate.write(false, accumulated, new Callback()
+        try (RetainableByteBuffer accumulated = RetainableByteBuffer.merge(_aggregator))
         {
-            @Override
-            public void succeeded()
+            _delegate.write(false, accumulated, new Callback()
             {
-                if (aggregatorAppend(currentBuffer))
-                    callback.succeeded();
-                else
-                    callback.failed(new BufferOverflowException());
-            }
+                @Override
+                public void succeeded()
+                {
+                    if (aggregatorAppend(currentBuffer))
+                        callback.succeeded();
+                    else
+                        callback.failed(new BufferOverflowException());
+                }
 
-            @Override
-            public void failed(Throwable x)
-            {
-                callback.failed(x);
-            }
+                @Override
+                public void failed(Throwable x)
+                {
+                    callback.failed(x);
+                }
 
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return callback.getInvocationType();
-            }
-        });
-        accumulated.release();
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return callback.getInvocationType();
+                }
+            });
+        }
         _aggregator.forEach(RetainableByteBuffer::release);
         _aggregator.clear();
     }

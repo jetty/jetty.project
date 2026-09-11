@@ -54,7 +54,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -372,7 +371,7 @@ public class ThreadStarvationTest
 
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 13L);
-                response.write(true, BufferUtil.toReadableBuffer("Hello World!\n"), callback);
+                response.write(true, RetainableByteBuffer.wrap("Hello World!\n", StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         }

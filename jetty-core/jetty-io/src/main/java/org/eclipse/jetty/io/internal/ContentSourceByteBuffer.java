@@ -14,15 +14,17 @@
 package org.eclipse.jetty.io.internal;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 
 public class ContentSourceByteBuffer implements Invocable.Task
 {
-    private final RetainableByteBuffer.Mutable.DynamicCapacity dynamic = new RetainableByteBuffer.Mutable.DynamicCapacity();
+    private final List<RetainableByteBuffer> accumulator = new ArrayList<>();
     private final Content.Source source;
     private final Promise<ByteBuffer> promise;
 
@@ -37,31 +39,32 @@ public class ContentSourceByteBuffer implements Invocable.Task
     {
         while (true)
         {
-            Content.Chunk chunk = source.read();
-
-            if (chunk == null)
+            try (Content.Chunk chunk = source.read())
             {
-                source.demand(this);
-                return;
-            }
+                if (chunk == null)
+                {
+                    source.demand(this);
+                    return;
+                }
 
-            if (Content.Chunk.isFailure(chunk))
-            {
-                promise.failed(chunk.getFailure());
-                if (!chunk.isLast())
-                    source.fail(chunk.getFailure());
-                return;
-            }
+                if (Content.Chunk.isFailure(chunk))
+                {
+                    promise.failed(chunk.getFailure());
+                    if (!chunk.isLast())
+                        source.fail(chunk.getFailure());
+                    return;
+                }
 
-            dynamic.append(chunk.getByteBuffer().slice());
-            chunk.release();
+                accumulator.add(chunk.acquire());
 
-            if (chunk.isLast())
-            {
-                ByteBuffer dynamicResult = dynamic.getByteBuffer();
-                dynamic.release();
-                promise.succeeded(dynamicResult);
-                return;
+                if (chunk.isLast())
+                {
+                    try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+                    {
+                        promise.succeeded(buffer.getByteBuffer(true));
+                        return;
+                    }
+                }
             }
         }
     }

@@ -37,7 +37,6 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.EagerContentHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
@@ -245,7 +244,7 @@ public class ThreadStarvationTest
                 Fields fields = FormFields.getFields(request);
                 StringBuilder builder = new StringBuilder();
                 fields.forEach(field -> builder.append(field.getName()).append('=').append(field.getValue()).append('\n'));
-                response.write(true, BufferUtil.toReadableBuffer(builder.toString()), callback);
+                response.write(true, RetainableByteBuffer.wrap(builder.toString(), StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         });
@@ -328,7 +327,7 @@ public class ThreadStarvationTest
                 StringBuilder builder = new StringBuilder();
                 parts.forEach(part -> builder.append(part.getName()).append('=').append(part.getContentAsString(StandardCharsets.UTF_8)).append('\n'));
                 parts.close();
-                response.write(true, BufferUtil.toReadableBuffer(builder.toString()), callback);
+                response.write(true, RetainableByteBuffer.wrap(builder.toString(), StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         });

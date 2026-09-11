@@ -527,10 +527,12 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             {
                 case STD_OUT ->
                 {
-                    Content.Chunk chunk = Content.Chunk.from(buffer, false);
-                    channel.content(chunk);
-                    state = State.CONTENT;
-                    return true;
+                    try (Content.Chunk chunk = Content.Chunk.from(buffer, false))
+                    {
+                        channel.content(chunk);
+                        state = State.CONTENT;
+                        return true;
+                    }
                 }
                 case STD_ERR -> LOG.info(BufferUtil.toString(buffer, UTF_8));
                 default -> throw new IllegalArgumentException();

@@ -425,29 +425,28 @@ public class ServerDocs
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = request.read();
-
-                            if (chunk == null)
+                            try (Content.Chunk chunk = request.read())
                             {
-                                request.demand(this); // <2>
-                                return;
-                            }
+                                if (chunk == null)
+                                {
+                                    request.demand(this); // <2>
+                                    return;
+                                }
 
-                            if (Content.Chunk.isFailure(chunk))
-                            {
-                                callback.failed(chunk.getFailure());
-                                return;
-                            }
+                                if (Content.Chunk.isFailure(chunk))
+                                {
+                                    callback.failed(chunk.getFailure());
+                                    return;
+                                }
 
-                            // Process the Chunk in non-blocking way.
-                            processNonBlocking(chunk);
+                                // Process the Chunk in non-blocking way.
+                                processNonBlocking(chunk);
 
-                            chunk.release();
-
-                            if (chunk.isLast())
-                            {
-                                callback.succeeded();
-                                return;
+                                if (chunk.isLast())
+                                {
+                                    callback.succeeded();
+                                    return;
+                                }
                             }
                         }
                     }

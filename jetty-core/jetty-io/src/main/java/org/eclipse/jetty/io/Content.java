@@ -17,7 +17,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousByteChannel;
 import java.nio.channels.ByteChannel;
@@ -26,10 +25,9 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Objects;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.content.BufferedContentSink;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
@@ -38,10 +36,10 @@ import org.eclipse.jetty.io.content.ContentSinkSubscriber;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
 import org.eclipse.jetty.io.content.ContentSourcePublisher;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
-import org.eclipse.jetty.io.internal.ByteBufferChunk;
+import org.eclipse.jetty.io.content.RetainableByteBufferContentSource;
+import org.eclipse.jetty.io.internal.BufferChunk;
 import org.eclipse.jetty.io.internal.ByteChannelContentSource;
 import org.eclipse.jetty.io.internal.ContentCopier;
-import org.eclipse.jetty.io.internal.ContentSourceByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceConsumer;
 import org.eclipse.jetty.io.internal.ContentSourceRange;
 import org.eclipse.jetty.io.internal.ContentSourceRetainableByteBuffer;
@@ -54,6 +52,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -192,6 +191,11 @@ public class Content
         static Content.Source from(ByteBuffer... byteBuffers)
         {
             return new ByteBufferContentSource(byteBuffers);
+        }
+
+        static Content.Source from(Collection<RetainableByteBuffer> buffers)
+        {
+            return new RetainableByteBufferContentSource(buffers);
         }
 
         /**
@@ -339,25 +343,12 @@ public class Content
          */
         static void asByteBuffer(Source source, Promise<ByteBuffer> promise)
         {
-            new ContentSourceByteBuffer(source, promise).run();
-        }
-
-        static void asReadableBuffer(Source source, Promise<RetainableByteBuffer> promise)
-        {
-            new ContentSourceByteBuffer(source, new Promise<>()
-            {
-                @Override
-                public void succeeded(ByteBuffer result)
-                {
-                    promise.succeeded(RetainableByteBuffer.wrap(result));
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    promise.failed(x);
-                }
-            }).run();
+            Promise.Invocable<RetainableByteBuffer> p = Promise.Invocable.from(
+                Invocable.getInvocationType(promise),
+                b -> promise.succeeded(b.getByteBuffer(true)),
+                promise::failed
+            );
+            asRetainableByteBuffer(source, -1, p);
         }
 
         /**
@@ -383,43 +374,6 @@ public class Content
             }
         }
 
-        static RetainableByteBuffer asReadableBuffer(Source source) throws IOException
-        {
-            try
-            {
-                try (Blocker.Promise<RetainableByteBuffer> promise = Blocker.promise())
-                {
-                    asReadableBuffer(source, promise);
-                    return promise.block();
-                }
-            }
-            catch (Throwable x)
-            {
-                throw IO.rethrow(x);
-            }
-        }
-
-        /**
-         * <p>Reads, non-blocking, the whole content source into a {@code byte} array.</p>
-         *
-         * @param source the source to read
-         * @param maxSize The maximum size to read, or -1 for no limit
-         * @return A {@link CompletableFuture} that will be completed when the complete content is read or
-         * failed if the max size is exceeded or there is a read error.
-         * @deprecated use {@link #asByteArrayAsync(Source, int, Promise.Invocable)}
-         */
-        @Deprecated(forRemoval = true, since = "12.0.15")
-        static CompletableFuture<byte[]> asByteArrayAsync(Source source, int maxSize)
-        {
-            return asRetainableByteBuffer(source, null, false, maxSize).thenApply(rbb ->
-            {
-                int remaining = rbb.remaining();
-                byte[] bytes = new byte[remaining];
-                rbb.get(bytes, 0, remaining);
-                return bytes;
-            });
-        }
-
         /**
          * <p>Reads, non-blocking, the whole content source into a {@code byte} array.</p>
          *
@@ -429,80 +383,40 @@ public class Content
          */
         static void asByteArrayAsync(Source source, int maxSize, Promise.Invocable<byte[]> promise)
         {
-            asRetainableByteBuffer(source, null, false, maxSize, Promise.Invocable.toPromise(promise, org.eclipse.jetty.io.RetainableByteBuffer::takeByteArray));
-        }
-
-        /**
-         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
-         *
-         * @param source the source to read
-         * @return the {@link CompletableFuture} to notify when the whole content has been read
-         * @deprecated use {@link #asByteBuffer(Source, Promise)} instead
-         */
-        @Deprecated(forRemoval = true, since = "12.0.15")
-        static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source)
-        {
-            return asByteBufferAsync(source, -1);
-        }
-
-        /**
-         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
-         *
-         * @param source the source to read
-         * @param maxSize The maximum size to read, or -1 for no limit
-         * @return the {@link CompletableFuture} to notify when the whole content has been read
-         * @deprecated no replacement
-         */
-        @Deprecated(forRemoval = true, since = "12.0.15")
-        static CompletableFuture<ByteBuffer> asByteBufferAsync(Source source, int maxSize)
-        {
-            return asRetainableByteBuffer(source, null, false, maxSize).thenApply(rbb ->
-            {
-               ByteBuffer byteBuffer = rbb.getByteBuffer();
-               rbb.release(); // safe as the buffer is known not to be pooled
-               return byteBuffer;
-            });
-        }
-
-        /**
-         * <p>Reads, non-blocking, the whole content source into a {@link org.eclipse.jetty.io.RetainableByteBuffer}.</p>
-         *
-         * @param source The {@link Content.Source} to read
-         * @param pool The {@link ByteBufferPool} to acquire the buffer from, or null for a non {@link Retainable} buffer
-         * @param direct True if the buffer should be direct.
-         * @param maxSize The maximum size to read, or -1 for no limit
-         * @return A {@link CompletableFuture} that will be completed when the complete content is read or
-         * failed if the max size is exceeded or there is a read error.
-         * @deprecated no replacement
-         */
-        @Deprecated(forRemoval = true, since = "12.0.15")
-        static CompletableFuture<org.eclipse.jetty.io.RetainableByteBuffer> asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize)
-        {
-            Promise.Completable<org.eclipse.jetty.io.RetainableByteBuffer> promise = new Promise.Completable<>()
-            {
-                @Override
-                public void succeeded(org.eclipse.jetty.io.RetainableByteBuffer result)
-                {
-                    result.retain();
-                    super.succeeded(result);
-                }
-            };
-            asRetainableByteBuffer(source, pool, direct, maxSize, promise);
-            return promise;
+            asRetainableByteBuffer(source, maxSize, Promise.Invocable.toPromise(promise, RetainableByteBuffer::getArray));
         }
 
         /**
          * <p>Reads, non-blocking, the whole content source into a {@link org.eclipse.jetty.io.RetainableByteBuffer}.</p>
          *
          * @param source the source to read
-         * @param pool The {@link ByteBufferPool} to acquire the buffer from, or null for a non {@link Retainable} buffer
-         * @param direct True if the buffer should be direct.
          * @param maxSize The maximum size to read, or -1 for no limit
          * @param promise the promise to notify when the whole content has been read into a RetainableByteBuffer.
          */
-        static void asRetainableByteBuffer(Source source, ByteBufferPool pool, boolean direct, int maxSize, Promise<org.eclipse.jetty.io.RetainableByteBuffer> promise)
+        static void asRetainableByteBuffer(Source source, long maxSize, Promise<RetainableByteBuffer> promise)
         {
-            new ContentSourceRetainableByteBuffer(source, pool, direct, maxSize, promise).run();
+            new ContentSourceRetainableByteBuffer(source, maxSize, promise).run();
+        }
+
+        static void asRetainableByteBuffer(Source source, Promise<RetainableByteBuffer> promise)
+        {
+            asRetainableByteBuffer(source, -1, promise);
+        }
+
+        static RetainableByteBuffer asRetainableByteBuffer(Source source) throws IOException
+        {
+            try
+            {
+                try (Blocker.Promise<RetainableByteBuffer> promise = Blocker.promise(RetainableByteBuffer::retain))
+                {
+                    asRetainableByteBuffer(source, promise);
+                    return promise.block();
+                }
+            }
+            catch (Throwable x)
+            {
+                throw IO.rethrow(x);
+            }
         }
 
         /**
@@ -1011,7 +925,7 @@ public class Content
      * to release the {@code ByteBuffer} back into a pool), or the
      * {@link #release()} method overridden.</p>
      */
-    public interface Chunk extends org.eclipse.jetty.io.RetainableByteBuffer
+    public interface Chunk extends Retainable
     {
         /**
          * <p>An empty chunk implementation.</p>
@@ -1019,18 +933,19 @@ public class Content
         abstract class Empty implements Chunk
         {
             protected Empty()
-            {}
-
-            @Override
-            public ByteBuffer getByteBuffer()
             {
-                return BufferUtil.EMPTY_BUFFER;
             }
 
             @Override
-            public org.eclipse.jetty.io.RetainableByteBuffer slice(long length)
+            public RetainableByteBuffer acquire()
             {
-                return this;
+                return RetainableByteBuffer.empty();
+            }
+
+            @Override
+            public long remaining()
+            {
+                return 0;
             }
         }
 
@@ -1070,123 +985,36 @@ public class Content
             }
         };
 
-        /**
-         * <p>Creates a Chunk with the given ByteBuffer.</p>
-         * <p>The returned Chunk must be {@link #release() released}.</p>
-         *
-         * @param byteBuffer the ByteBuffer with the bytes of this Chunk
-         * @param last whether the Chunk is the last one
-         * @return a new Chunk
-         */
+        /// Creates a chunk from the given [ByteBuffer].
+        ///
+        /// The returned chunk must be either [released][#release()] or [closed][#close()].
+        ///
+        /// @param byteBuffer the [ByteBuffer] with the data bytes
+        /// @param last whether the chunk is the last
+        /// @return a new chunk
         static Chunk from(ByteBuffer byteBuffer, boolean last)
         {
             if (byteBuffer.hasRemaining())
-               return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
+            {
+                try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(byteBuffer))
+                {
+                    return from(buffer, last);
+                }
+            }
             return last ? EOF : EMPTY;
         }
 
-        /**
-         * <p>Creates a Chunk with the given RetainableByteBuffer</p>
-         * <p>The returned Chunk is not {@link #retain() retained} and {@link #release() releasing it
-         * will release the passed buffer}.</p>
-         * @param buffer the RetainableByteBuffer to use to back the returned Chunk
-         * @param last whether the Chunk is the last one
-         * @return a buffer as a Chunk
-         */
-        static Chunk from(org.eclipse.jetty.io.RetainableByteBuffer buffer, boolean last)
-        {
-            return new ByteBufferChunk.WithRetainableByteBuffer(buffer, last);
-        }
-
+        /// Creates a chunk from the given [RetainableByteBuffer].
+        ///
+        /// The returned chunk must be either [released][#release()] or [closed][#close()].
+        ///
+        /// @param buffer the [RetainableByteBuffer] with the data bytes
+        /// @param last whether the chunk is the last
+        /// @return a new chunk
         static Chunk from(RetainableByteBuffer buffer, boolean last)
         {
-            if (!buffer.hasRemaining())
-                return last ? EOF : EMPTY;
-
-            // TODO: do not copy but link the chunk and the buffer.
-            ByteBuffer copy = BufferUtil.toBuffer(buffer, true/*TODO do not hardcode directness*/);
-            return from(copy, last);
-        }
-
-        /**
-         * <p>Creates a Chunk with the given ByteBuffer.</p>
-         * <p>The returned Chunk must be {@link #release() released}.</p>
-         *
-         * @param byteBuffer the ByteBuffer with the bytes of this Chunk
-         * @param last whether the Chunk is the last one
-         * @param releaser the code to run when this Chunk is released
-         * @return a new Chunk
-         */
-        static Chunk from(ByteBuffer byteBuffer, boolean last, Runnable releaser)
-        {
-            if (byteBuffer.hasRemaining())
-                return new ByteBufferChunk.ReleasedByRunnable(byteBuffer, last, Objects.requireNonNull(releaser));
-            releaser.run();
-            return last ? EOF : EMPTY;
-        }
-
-        /**
-         * <p>Creates a last/non-last Chunk with the given ByteBuffer.</p>
-         * <p>The returned Chunk must be {@link #release() released}.</p>
-         *
-         * @param byteBuffer the ByteBuffer with the bytes of this Chunk
-         * @param last whether the Chunk is the last one
-         * @param releaser the code to run when this Chunk is released
-         * @return a new Chunk
-         */
-        static Chunk from(ByteBuffer byteBuffer, boolean last, Consumer<ByteBuffer> releaser)
-        {
-            if (byteBuffer.hasRemaining())
-                return new ByteBufferChunk.ReleasedByConsumer(byteBuffer, last, Objects.requireNonNull(releaser));
-            releaser.accept(byteBuffer);
-            return last ? EOF : EMPTY;
-        }
-
-        /**
-         * <p>Returns the given {@code ByteBuffer} and {@code last} arguments
-         * as a {@code Chunk}, linked to the given {@link Retainable}.</p>
-         * <p>The {@link #retain()} and {@link #release()} methods of this
-         * {@code Chunk} will delegate to the given {@code Retainable}.</p>
-         *
-         * @param byteBuffer the ByteBuffer with the bytes of this Chunk
-         * @param last whether the Chunk is the last one
-         * @param retainable the Retainable this Chunk links to
-         * @return a new Chunk
-         */
-        static Chunk asChunk(ByteBuffer byteBuffer, boolean last, Retainable retainable)
-        {
-            if (byteBuffer.hasRemaining())
-            {
-                if (retainable.canRetain())
-                {
-                    return new ByteBufferChunk.WithRetainable(byteBuffer, last, retainable);
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Copying buffer because could not retain");
-                    return new ByteBufferChunk.WithReferenceCount(BufferUtil.copy(byteBuffer), last);
-                }
-            }
-            retainable.release();
-            return last ? EOF : EMPTY;
-        }
-
-        static Chunk asChunk(RetainableByteBuffer buffer, boolean last, org.eclipse.jetty.io.Retainable retainable)
-        {
-            return asChunk(buffer, last, (Retainable)retainable);
-        }
-
-        static Chunk asChunk(RetainableByteBuffer buffer, boolean last, Retainable retainable)
-        {
             if (buffer.hasRemaining())
-            {
-                // TODO retain instead of copy
-                ByteBuffer byteBuffer = BufferUtil.toBuffer(buffer, false);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Copying buffer because could not retain");
-                return new ByteBufferChunk.WithReferenceCount(byteBuffer, last);
-            }
+                return new BufferChunk(buffer, last);
             return last ? EOF : EMPTY;
         }
 
@@ -1350,42 +1178,36 @@ public class Content
             return chunk != null && chunk.getFailure() != null && chunk.isLast() == last;
         }
 
-        /**
-         * Get a failure (which may be from a {@link Source#fail(Throwable) failure} or
-         * a {@link Source#fail(Throwable, boolean) warning}), if any, associated with the chunk.
-         * <ul>
-         * <li>A {@code chunk} must not have a failure and a {@link #getByteBuffer()} with content.</li>
-         * <li>A {@code chunk} with a failure may or may not be {@link #isLast() last}.</li>
-         * <li>A {@code chunk} with a failure must not be {@link #canRetain() retainable}.</li>
-         * </ul>
-         * @return A {@link Throwable} indicating the failure or null if there is no failure or warning.
-         * @see Source#fail(Throwable)
-         * @see Source#fail(Throwable, boolean)
-         */
+        /// Returns the failure (which may be [fatal][Source#fail(Throwable)] or
+        /// [transient][Source#fail(Throwable, boolean)]), if any, associated with the chunk.
+        ///
+        /// - A chunk must not have a failure and a buffer with content.
+        /// - A chunk with a failure may or may not be [fatal][#isLast()].
+        ///
+        /// @return the failure associated with this chunk or `null` if there is no failure
+        /// @see Source#fail(Throwable)
+        /// @see Source#fail(Throwable, boolean)
         default Throwable getFailure()
         {
             return null;
         }
 
-        /**
-         * @return whether this is the last Chunk
-         */
+        /// @return whether this is the last chunk
         boolean isLast();
 
-        @Override
-        ByteBuffer getByteBuffer() throws BufferOverflowException;
+        /// Acquires the [RetainableByteBuffer] with the data bytes of this chunk.
+        /// The buffer is retained and must be released or closed.
+        ///
+        /// @return the [RetainableByteBuffer] with the data bytes of this chunk
+        RetainableByteBuffer acquire();
 
-        /**
-         * @return an immutable version of this Chunk
-         */
-        @Deprecated(forRemoval = true, since = "12.1.0")
-        default Chunk asReadOnly()
+        /// @return the number of bytes remaining in this chunk.
+        long remaining();
+
+        /// @return whether this chunk has bytes remaining
+        default boolean hasRemaining()
         {
-            if (!getByteBuffer().hasRemaining() || getByteBuffer().isReadOnly())
-                return this;
-            if (canRetain())
-                return asChunk(getByteBuffer().asReadOnlyBuffer(), isLast(), this);
-            return from(getByteBuffer().asReadOnlyBuffer(), isLast());
+            return remaining() > 0;
         }
 
         /**

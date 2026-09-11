@@ -647,17 +647,17 @@ public class GoAwayTest extends AbstractClientServerTest
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        if (chunk != null)
-                            chunk.release();
-                        if (chunk != null && chunk.isLast())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
-                            stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
-                        }
-                        else
-                        {
-                            stream.demand();
+                            if (chunk != null && chunk.isLast())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                                stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
+                            }
+                            else
+                            {
+                                stream.demand();
+                            }
                         }
                     }
                 };
@@ -1342,17 +1342,18 @@ public class GoAwayTest extends AbstractClientServerTest
             @Override
             public void onDataAvailable(Stream.Client stream)
             {
-                Content.Chunk chunk = stream.read();
-                if (chunk != null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    chunk.release();
-                    if (chunk.isLast())
+                    if (chunk != null)
                     {
-                        dataLatch.countDown();
-                        return;
+                        if (chunk.isLast())
+                        {
+                            dataLatch.countDown();
+                            return;
+                        }
                     }
+                    stream.demand();
                 }
-                stream.demand();
             }
         }, Promise.Invocable.noop());
 
@@ -1413,17 +1414,18 @@ public class GoAwayTest extends AbstractClientServerTest
             @Override
             public void onDataAvailable(Stream.Client stream)
             {
-                Content.Chunk chunk = stream.read();
-                if (chunk != null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    chunk.release();
-                    if (chunk.isLast())
+                    if (chunk != null)
                     {
-                        dataLatch.countDown();
-                        return;
+                        if (chunk.isLast())
+                        {
+                            dataLatch.countDown();
+                            return;
+                        }
                     }
+                    stream.demand();
                 }
-                stream.demand();
             }
         }, Promise.Invocable.noop());
 
