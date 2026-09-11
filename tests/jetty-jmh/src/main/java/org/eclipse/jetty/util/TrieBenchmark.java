@@ -117,12 +117,22 @@ public class TrieBenchmark
         throw new IllegalStateException();
     }
 
-    private static final RetainableByteBuffer X = BufferUtil.toReadableBuffer("Xx\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final RetainableByteBuffer Z = BufferUtil.toReadableBuffer("Zasdfadsfasfasfbae9mn3m0mdmmfkk092nvfs0smnsmm3k23m3m23m\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final RetainableByteBuffer M = BufferUtil.toReadableBuffer(LONG_MISS + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final RetainableByteBuffer P = BufferUtil.toReadableBuffer("Pragma: no-cache;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final RetainableByteBuffer A = BufferUtil.toReadableBuffer("Accept-Language: en-US,enq=0.5;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final RetainableByteBuffer H = BufferUtil.toReadableBuffer(LONG_HIT + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    private static final RetainableByteBuffer X;
+    private static final RetainableByteBuffer Z;
+    private static final RetainableByteBuffer M;
+    private static final RetainableByteBuffer P;
+    private static final RetainableByteBuffer A;
+    private static final RetainableByteBuffer H;
+
+    static
+    {
+        X = RetainableByteBuffer.wrap("Xx\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", StandardCharsets.ISO_8859_1);
+        Z = RetainableByteBuffer.wrap("Zasdfadsfasfasfbae9mn3m0mdmmfkk092nvfs0smnsmm3k23m3m23m\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", StandardCharsets.ISO_8859_1);
+        M = RetainableByteBuffer.wrap(LONG_MISS + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", StandardCharsets.ISO_8859_1);
+        P = RetainableByteBuffer.wrap("Pragma: no-cache;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", StandardCharsets.ISO_8859_1);
+        A = RetainableByteBuffer.wrap("Accept-Language: en-US,enq=0.5;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", StandardCharsets.ISO_8859_1);
+        H = RetainableByteBuffer.wrap(LONG_HIT + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", StandardCharsets.ISO_8859_1);
+    }
 
     @Benchmark
     public boolean testGetBest()

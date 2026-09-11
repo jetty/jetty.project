@@ -15,7 +15,6 @@ package org.eclipse.jetty.docs.programming.client.http2;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -251,28 +250,28 @@ public class HTTP2ClientDocs
             public void onDataAvailable(Stream stream)
             {
                 // Read a Chunk object.
-                Content.Chunk chunk = stream.read();
-
-                if (chunk == null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    // Demand more DATA frames.
-                    stream.demand();
-                    return;
-                }
+                    if (chunk == null)
+                    {
+                        // Demand more DATA frames.
+                        stream.demand();
+                        return;
+                    }
 
-                // Get the content buffer.
-                ByteBuffer buffer = chunk.getByteBuffer();
+                    // Get the content buffer.
+                    // Closing the buffer will release this acquire.
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        // Consume the buffer, here - as an example - just log it.
+                        System.getLogger("http2").log(INFO, "Consuming buffer {0}", buffer);
 
-                // Consume the buffer, here - as an example - just log it.
-                System.getLogger("http2").log(INFO, "Consuming buffer {0}", buffer);
-
-                // Tell the implementation that the buffer has been consumed.
-                chunk.release();
-
-                if (!chunk.isLast())
-                {
-                    // Demand more DATA frames when they are available.
-                    stream.demand();
+                        if (!chunk.isLast())
+                        {
+                            // Demand more DATA frames when they are available.
+                            stream.demand();
+                        }
+                    }
                 }
             }
         });
@@ -366,29 +365,37 @@ public class HTTP2ClientDocs
                     {
                         // Handle the pushed stream "response" content.
 
-                        Content.Chunk chunk = stream.read();
-
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            stream.demand();
-                            return;
-                        }
+                            if (chunk == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
 
-                        // The pushed stream "response" content bytes.
-                        ByteBuffer buffer = chunk.getByteBuffer();
-                        // Consume the buffer and release the Data object.
-                        chunk.release();
+                            // The pushed stream "response" content bytes.
+                            // Closing the buffer will release this acquire.
+                            try (RetainableByteBuffer buffer = chunk.acquire())
+                            {
+                                // Consume the buffer.
+                                consume(buffer);
 
-                        if (!chunk.isLast())
-                        {
-                            // Demand more DATA frames when they are available.
-                            stream.demand();
+                                if (!chunk.isLast())
+                                {
+                                    // Demand more DATA frames when they are available.
+                                    stream.demand();
+                                }
+                            }
                         }
                     }
                 };
             }
         });
         // end::push[]
+    }
+
+    private static void consume(RetainableByteBuffer buffer)
+    {
     }
 
     public void pushReset() throws Exception

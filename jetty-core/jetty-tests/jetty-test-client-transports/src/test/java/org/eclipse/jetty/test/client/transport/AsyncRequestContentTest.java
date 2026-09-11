@@ -65,8 +65,10 @@ public class AsyncRequestContentTest extends AbstractTest
             {
                 request.addFailureListener(x -> failureRef.compareAndExchange(null, x).addSuppressed(x));
 
-                Content.Chunk chunk = request.read();
-                assertNull(chunk);
+                try (Content.Chunk chunk = request.read())
+                {
+                    assertNull(chunk);
+                }
 
                 request.demand(new Runnable()
                 {

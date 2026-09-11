@@ -59,7 +59,7 @@ public class FrameGeneratorParserTest
     @SuppressWarnings("unchecked")
     private <T extends Frame> List<T> parse(List<RetainableByteBuffer> accumulator)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(accumulator);
+        RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator);
         T frame1 = (T)parser.parse(buffer.slice());
 
         while (buffer.hasRemaining())

@@ -122,17 +122,18 @@ public class GracefulShutdownTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        chunk.release();
-                        if (chunk.isLast())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                        }
-                        else
-                        {
-                            serverLatch.countDown();
-                            stream.demand();
+                            if (chunk.isLast())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            }
+                            else
+                            {
+                                serverLatch.countDown();
+                                stream.demand();
+                            }
                         }
                     }
                 };

@@ -19,8 +19,10 @@ import java.util.function.BooleanSupplier;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.TimerScheduler;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -28,12 +30,12 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public abstract class AbstractContentProducerTest
 {
-    private TimerScheduler _scheduler;
+    private Scheduler _scheduler;
 
     @BeforeEach
     public void setUp() throws Exception
     {
-        _scheduler = new TimerScheduler();
+        _scheduler = new ScheduledExecutorScheduler();
         _scheduler.start();
     }
 
@@ -43,9 +45,9 @@ public abstract class AbstractContentProducerTest
         _scheduler.stop();
     }
 
-    static int countRemaining(List<Content.Chunk> chunks)
+    static long countRemaining(List<Content.Chunk> chunks)
     {
-        int total = 0;
+        long total = 0;
         for (Content.Chunk chunk : chunks)
         {
             total += chunk.remaining();
@@ -58,9 +60,11 @@ public abstract class AbstractContentProducerTest
         StringBuilder sb = new StringBuilder();
         for (Content.Chunk chunk : chunks)
         {
-            byte[] b = new byte[chunk.remaining()];
-            chunk.getByteBuffer().duplicate().get(b);
-            sb.append(new String(b, US_ASCII));
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                // Do not consume the buffer.
+                sb.append(buffer.getString(0, US_ASCII));
+            }
         }
         return sb.toString();
     }
@@ -108,8 +112,9 @@ public abstract class AbstractContentProducerTest
                 if (chunk.isLast())
                     throw new AssertionError("Only the last of the given chunks may be marked as last");
             }
-            if (!chunks.get(chunks.size() - 1).isLast())
+            if (!chunks.getLast().isLast())
                 throw new AssertionError("The last of the given chunks must be marked as last");
+            chunks.forEach(Content.Chunk::retain);
             this.chunks = chunks;
         }
 
@@ -132,7 +137,9 @@ public abstract class AbstractContentProducerTest
             _scheduler.schedule(() ->
             {
                 int idx = counter < chunks.size() ? counter++ : chunks.size() - 1;
-                nextContent = chunks.get(idx);
+                Content.Chunk chunk = chunks.get(idx);
+                chunk.retain();
+                nextContent = chunk;
                 demandCallback.run();
             }, 50, TimeUnit.MILLISECONDS);
         }

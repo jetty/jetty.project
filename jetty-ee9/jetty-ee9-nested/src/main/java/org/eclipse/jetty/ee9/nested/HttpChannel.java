@@ -181,18 +181,20 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         ContextHandler.CoreContextRequest coreContextRequest = getCoreRequest();
         if (coreContextRequest == null)
             return new HttpInput.ErrorContent(new IOException("Channel has been recycled"));
-        Content.Chunk chunk = coreContextRequest.read();
-        if (chunk == null)
-            return null;
+        try (Content.Chunk chunk = coreContextRequest.read())
+        {
+            if (chunk == null)
+                return null;
 
-        if (chunk.hasRemaining())
-            onContent(chunk);
-        if (chunk instanceof Trailers trailers)
-            onTrailers(trailers.getTrailers());
-        if (chunk.isLast())
-            onContentComplete();
+            if (chunk.hasRemaining())
+                onContent(chunk);
+            if (chunk instanceof Trailers trailers)
+                onTrailers(trailers.getTrailers());
+            if (chunk.isLast())
+                onContentComplete();
 
-        return HttpInput.Content.asChunk(chunk);
+            return HttpInput.Content.asChunk(chunk);
+        }
     }
 
     /**
@@ -887,7 +889,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onContent {} {}", this, content);
-        _combinedListener.onRequestContent(_request, RetainableByteBuffer.wrap(content.getByteBuffer().slice()));
+        try (RetainableByteBuffer buffer = content.acquire())
+        {
+            _combinedListener.onRequestContent(_request, buffer);
+        }
     }
 
     void onContentComplete()

@@ -149,6 +149,6 @@ public class DecoderInstructionParserTest
     {
         List<RetainableByteBuffer> accumulator = new ArrayList<>();
         instruction.encode(bufferPool, accumulator);
-        return RetainableByteBuffer.wrap(accumulator);
+        return RetainableByteBuffer.merge(accumulator);
     }
 }

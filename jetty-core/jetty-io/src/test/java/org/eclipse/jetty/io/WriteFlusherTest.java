@@ -124,7 +124,7 @@ public class WriteFlusherTest
             flusher.onFail(new IOException("Ignored because no operation in progress"));
 
         FutureCallback callback = new FutureCallback();
-        flusher.write(RetainableByteBuffer.wrap(
+        flusher.write(RetainableByteBuffer.merge(
             RetainableByteBuffer.wrap("How ", UTF_8),
             RetainableByteBuffer.wrap("now ", UTF_8),
             RetainableByteBuffer.wrap("brown ", UTF_8),
@@ -343,7 +343,7 @@ public class WriteFlusherTest
                 FutureCallback callback = new FutureCallback();
                 futures[i] = callback;
                 scheduler.schedule(() -> flusher.onFail(new Throwable(reason)), (i % 75) + 1, TimeUnit.MILLISECONDS);
-                flusher.write(RetainableByteBuffer.wrap(
+                flusher.write(RetainableByteBuffer.merge(
                     RetainableByteBuffer.wrap("How Now Brown Cow.", UTF_8),
                     RetainableByteBuffer.wrap(" The quick brown fox jumped over the lazy dog!", UTF_8)
                 ), callback);

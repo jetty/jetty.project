@@ -114,7 +114,7 @@ public class BrotliEncoderSinkTest extends AbstractBrotliTest
             Content.Sink encoderSink = brotli.newEncoderSink(fileSink, config);
 
             Callback.Completable callback = new Callback.Completable();
-            encoderSink.write(true, ByteBuffer.wrap(original), callback);
+            encoderSink.write(true, RetainableByteBuffer.wrap(original), callback);
             callback.get();
             compressed = baos.toByteArray();
         }

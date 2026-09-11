@@ -14,15 +14,15 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ContentTest
 {
@@ -34,48 +34,54 @@ public class ContentTest
     }
 
     @Test
-    public void testFromEmptyByteBufferWithRunnableReleaser()
-    {
-        AtomicInteger counter1 = new AtomicInteger();
-        assertThat(Content.Chunk.from(ByteBuffer.wrap(new byte[0]), true, counter1::incrementAndGet), sameInstance(Content.Chunk.EOF));
-        assertThat(counter1.get(), is(1));
-
-        AtomicInteger counter2 = new AtomicInteger();
-        assertThat(Content.Chunk.from(ByteBuffer.wrap(new byte[0]), false, counter2::incrementAndGet), sameInstance(Content.Chunk.EMPTY));
-        assertThat(counter2.get(), is(1));
-    }
-
-    @Test
-    public void testFromEmptyByteBufferWithConsumerReleaser()
-    {
-        List<ByteBuffer> buffers = new ArrayList<>();
-
-        ByteBuffer buffer1 = ByteBuffer.wrap(new byte[0]);
-        assertThat(Content.Chunk.from(buffer1, true, buffers::add), sameInstance(Content.Chunk.EOF));
-        assertThat(buffers.size(), is(1));
-        assertThat(buffers.remove(0), sameInstance(buffer1));
-
-        ByteBuffer buffer2 = ByteBuffer.wrap(new byte[0]);
-        assertThat(Content.Chunk.from(buffer2, false, buffers::add), sameInstance(Content.Chunk.EMPTY));
-        assertThat(buffers.size(), is(1));
-        assertThat(buffers.remove(0), sameInstance(buffer2));
-    }
-
-    @Test
     public void testFromEmptyByteBufferWithRetainableReleaser()
     {
-        Retainable.ReferenceCounter referenceCounter1 = new Retainable.ReferenceCounter();
-        referenceCounter1.retain();
-        assertThat(referenceCounter1.isRetained(), is(true));
-        assertThat(Content.Chunk.asChunk(ByteBuffer.wrap(new byte[0]), true, referenceCounter1), sameInstance(Content.Chunk.EOF));
-        assertThat(referenceCounter1.isRetained(), is(false));
-        assertThat(referenceCounter1.release(), is(true));
+        Retainable.ReferenceCounter rc1 = new Retainable.ReferenceCounter();
+        rc1.retain();
+        assertThat(rc1.isRetained(), is(true));
+        assertEquals(2, rc1.getCount());
 
-        Retainable.ReferenceCounter referenceCounter2 = new Retainable.ReferenceCounter();
-        referenceCounter2.retain();
-        assertThat(referenceCounter2.isRetained(), is(true));
-        assertThat(Content.Chunk.asChunk(ByteBuffer.wrap(new byte[0]), false, referenceCounter2), sameInstance(Content.Chunk.EMPTY));
-        assertThat(referenceCounter2.isRetained(), is(false));
-        assertThat(referenceCounter2.release(), is(true));
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(ByteBuffer.allocate(0), rc1))
+        {
+            assertEquals(3, rc1.getCount());
+
+            try (Content.Chunk chunk = Content.Chunk.from(buffer, true))
+            {
+                assertThat(chunk, sameInstance(Content.Chunk.EOF));
+                assertEquals(3, rc1.getCount());
+            }
+            assertEquals(3, rc1.getCount());
+        }
+        assertEquals(2, rc1.getCount());
+
+        // Pairs the initial retain().
+        assertThat(rc1.release(), is(false));
+
+        assertThat(rc1.isRetained(), is(false));
+        assertThat(rc1.release(), is(true));
+
+        Retainable.ReferenceCounter rc2 = new Retainable.ReferenceCounter();
+        rc2.retain();
+        assertThat(rc2.isRetained(), is(true));
+        assertEquals(2, rc2.getCount());
+
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(ByteBuffer.allocate(0), rc2))
+        {
+            assertEquals(3, rc2.getCount());
+
+            try (Content.Chunk chunk = Content.Chunk.from(buffer, false))
+            {
+                assertThat(chunk, sameInstance(Content.Chunk.EMPTY));
+                assertEquals(3, rc2.getCount());
+            }
+            assertEquals(3, rc2.getCount());
+        }
+        assertEquals(2, rc2.getCount());
+
+        // Pairs the initial retain().
+        assertThat(rc2.release(), is(false));
+
+        assertThat(rc2.isRetained(), is(false));
+        assertThat(rc2.release(), is(true));
     }
 }

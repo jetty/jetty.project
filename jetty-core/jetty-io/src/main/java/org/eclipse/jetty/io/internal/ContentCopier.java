@@ -29,7 +29,6 @@ public class ContentCopier extends IteratingNestedCallback
     private final Content.Source source;
     private final Content.Sink sink;
     private final Content.Chunk.Processor chunkProcessor;
-    private Content.Chunk chunk;
     private boolean terminated;
 
     public ContentCopier(Content.Source source, Content.Sink sink, Content.Chunk.Processor chunkProcessor, Callback callback)
@@ -46,44 +45,36 @@ public class ContentCopier extends IteratingNestedCallback
         if (terminated)
             return Action.SUCCEEDED;
 
-        chunk = source.read();
-
-        if (chunk == null)
+        try (Content.Chunk chunk = source.read())
         {
-            source.demand(Invocable.from(getInvocationType(), this::succeeded));
-            return Action.SCHEDULED;
+            if (chunk == null)
+            {
+                source.demand(Invocable.from(getInvocationType(), this::succeeded));
+                return Action.SCHEDULED;
+            }
+
+            if (chunkProcessor != null && chunkProcessor.process(chunk, this))
+                return Action.SCHEDULED;
+
+            terminated = chunk.isLast();
+
+            if (Content.Chunk.isFailure(chunk))
+            {
+                failed(chunk.getFailure());
+                return Action.SCHEDULED;
+            }
+
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                sink.write(chunk.isLast(), buffer, this);
+            }
         }
-
-        if (chunkProcessor != null && chunkProcessor.process(chunk, this))
-            return Action.SCHEDULED;
-
-        terminated = chunk.isLast();
-
-        if (Content.Chunk.isFailure(chunk))
-        {
-            failed(chunk.getFailure());
-            return Action.SCHEDULED;
-        }
-
-        sink.write(chunk.isLast(), RetainableByteBuffer.wrap(chunk.getByteBuffer(), chunk), this);
         return Action.SCHEDULED;
-    }
-
-    @Override
-    protected void onSuccess()
-    {
-        chunk = Content.Chunk.releaseAndNext(chunk);
     }
 
     @Override
     protected void onFailure(Throwable cause)
     {
         ExceptionUtil.callAndThen(cause, source::fail, super::onFailure);
-    }
-
-    @Override
-    protected void onCompleteFailure(Throwable x)
-    {
-        chunk = Content.Chunk.releaseAndNext(chunk);
     }
 }

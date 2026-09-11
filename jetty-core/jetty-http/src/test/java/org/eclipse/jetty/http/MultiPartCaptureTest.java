@@ -31,7 +31,7 @@ import org.eclipse.jetty.tests.multipart.MultiPartRequest;
 import org.eclipse.jetty.tests.multipart.MultiPartResults;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -168,25 +168,33 @@ public class MultiPartCaptureTest
     {
         // Preserve parts order.
         private final Map<String, List<MultiPart.Part>> parts = new LinkedHashMap<>();
-        private final List<ByteBuffer> partByteBuffers = new ArrayList<>();
+        private final List<Content.Chunk> partChunks = new ArrayList<>();
 
         @Override
         public void onPartContent(Content.Chunk chunk)
         {
-            // Copy the part content, as we need to iterate over it multiple times.
-            partByteBuffers.add(BufferUtil.copy(chunk.getByteBuffer()));
+            chunk.retain();
+            partChunks.add(chunk);
         }
 
         @Override
         public void onPart(String name, String fileName, HttpFields headers)
         {
-            List<ByteBuffer> copyOfByteBuffers = new ArrayList<>();
-            for (ByteBuffer capture: partByteBuffers)
+            List<Content.Chunk> copy = new ArrayList<>();
+            for (Content.Chunk chunk : partChunks)
             {
-                copyOfByteBuffers.add(BufferUtil.copy(capture));
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    // Slice to read the part content multiple times.
+                    try (RetainableByteBuffer slice = buffer.slice())
+                    {
+                        copy.add(Content.Chunk.from(slice, chunk.isLast()));
+                    }
+                }
             }
-            MultiPart.Part newPart = new MultiPart.ByteBufferPart(name, fileName, headers, copyOfByteBuffers);
-            partByteBuffers.clear();
+            MultiPart.Part newPart = new MultiPart.ChunksPart(name, fileName, headers, copy);
+            partChunks.forEach(Content.Chunk::release);
+            partChunks.clear();
             parts.compute(newPart.getName(), (k, v) -> v == null ? new ArrayList<>() : v).add(newPart);
         }
     }

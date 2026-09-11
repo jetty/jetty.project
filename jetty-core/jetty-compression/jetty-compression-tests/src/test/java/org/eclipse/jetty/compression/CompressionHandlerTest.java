@@ -666,11 +666,13 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                     }
                     case "PUT", "POST" ->
                     {
-                        RetainableByteBuffer requestContent = Content.Source.asReadableBuffer(request);
-                        response.setStatus(200);
-                        response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                        response.getHeaders().put("X-Request-Content-Length", requestContent.remaining());
-                        response.write(true, requestContent, callback);
+                        try (RetainableByteBuffer requestContent = Content.Source.asRetainableByteBuffer(request))
+                        {
+                            response.setStatus(200);
+                            response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
+                            response.getHeaders().put("X-Request-Content-Length", requestContent.remaining());
+                            response.write(true, requestContent, callback);
+                        }
                     }
                 }
                 return true;

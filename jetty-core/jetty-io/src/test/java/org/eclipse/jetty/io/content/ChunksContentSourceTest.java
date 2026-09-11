@@ -27,8 +27,10 @@ public class ChunksContentSourceTest
     public void testEmptyCollectionReadsEOF()
     {
         ChunksContentSource contentSource = new ChunksContentSource(List.of());
-        Content.Chunk read = contentSource.read();
-        assertFalse(read.getByteBuffer().hasRemaining());
-        assertTrue(read.isLast());
+        try (Content.Chunk read = contentSource.read())
+        {
+            assertFalse(read.hasRemaining());
+            assertTrue(read.isLast());
+        }
     }
 }

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.DataFormatException;
@@ -21,8 +20,8 @@ import java.util.zip.Inflater;
 import java.util.zip.ZipException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.compression.InflaterPool;
 
@@ -37,7 +36,7 @@ public class GZIPContentDecoder implements Destroyable
     private static final long UINT_MAX = 0xFFFFFFFFL;
 
     private final List<RetainableByteBuffer> _inflateds = new ArrayList<>();
-    private final ByteBufferPool _pool;
+    private final WritableBufferPool _pool;
     private final int _bufferSize;
     private InflaterPool.Entry _inflaterEntry;
     private Inflater _inflater;
@@ -49,25 +48,30 @@ public class GZIPContentDecoder implements Destroyable
 
     public GZIPContentDecoder()
     {
-        this(null, 2048);
+        this((WritableBufferPool)null, 2048);
     }
 
     public GZIPContentDecoder(int bufferSize)
     {
-        this(null, bufferSize);
+        this((WritableBufferPool)null, bufferSize);
     }
 
     public GZIPContentDecoder(ByteBufferPool byteBufferPool, int bufferSize)
     {
-        this(new InflaterPool(0, true), byteBufferPool, bufferSize);
+        this(WritableBufferPool.wrap(byteBufferPool), bufferSize);
     }
 
-    public GZIPContentDecoder(InflaterPool inflaterPool, ByteBufferPool byteBufferPool, int bufferSize)
+    public GZIPContentDecoder(WritableBufferPool bufferPool, int bufferSize)
+    {
+        this(new InflaterPool(0, true), bufferPool, bufferSize);
+    }
+
+    public GZIPContentDecoder(InflaterPool inflaterPool, WritableBufferPool bufferPool, int bufferSize)
     {
         _inflaterEntry = inflaterPool.acquire();
         _inflater = _inflaterEntry.get();
         _bufferSize = bufferSize;
-        _pool = byteBufferPool != null ? byteBufferPool : ByteBufferPool.NON_POOLING;
+        _pool = bufferPool != null ? bufferPool : WritableBufferPool.NON_POOLING;
         reset();
     }
 
@@ -89,14 +93,14 @@ public class GZIPContentDecoder implements Destroyable
      * @param compressed the buffer containing compressed data.
      * @return a buffer containing inflated data.
      */
-    public RetainableByteBuffer decode(ByteBuffer compressed)
+    public RetainableByteBuffer decode(RetainableByteBuffer compressed)
     {
         decodeChunks(compressed);
 
         if (_inflateds.isEmpty())
         {
             if ((_inflated == null || !_inflated.hasRemaining()) || _state == State.CRC || _state == State.ISIZE)
-                return RetainableByteBuffer.EMPTY;
+                return RetainableByteBuffer.empty();
             RetainableByteBuffer result = _inflated;
             _inflated = null;
             return result;
@@ -105,32 +109,32 @@ public class GZIPContentDecoder implements Destroyable
         {
             _inflateds.add(_inflated);
             _inflated = null;
-            int length = _inflateds.stream().mapToInt(RetainableByteBuffer::remaining).sum();
-            if (length == 0)
-                return RetainableByteBuffer.EMPTY;
-            RetainableByteBuffer result = acquire(length);
-            for (RetainableByteBuffer buffer : _inflateds)
+            try
             {
-                buffer.appendTo(result);
-                buffer.release();
+                if (_inflateds.stream().noneMatch(RetainableByteBuffer::hasRemaining))
+                    return RetainableByteBuffer.empty();
+                return RetainableByteBuffer.merge(_inflateds);
             }
-            _inflateds.clear();
-            return result;
+            finally
+            {
+                _inflateds.forEach(RetainableByteBuffer::release);
+                _inflateds.clear();
+            }
         }
     }
 
     /**
      * <p>Called when a chunk of data is inflated.</p>
      * <p>The default implementation aggregates all the chunks
-     * into a single buffer returned from {@link #decode(ByteBuffer)}.</p>
+     * into a single buffer returned from {@link #decode(RetainableByteBuffer)}.</p>
      * <p>Derived implementations may choose to consume inflated chunks
      * individually and return {@code true} from this method to prevent
-     * further inflation until a subsequent call to {@link #decode(ByteBuffer)}
-     * or {@link #decodeChunks(ByteBuffer)} is made.
+     * further inflation until a subsequent call to {@link #decode(RetainableByteBuffer)}
+     * or {@link #decodeChunks(RetainableByteBuffer)} is made.
      *
      * @param chunk the inflated chunk of data
      * @return false if inflating should continue, or true if the call
-     * to {@link #decodeChunks(ByteBuffer)} or {@link #decode(ByteBuffer)}
+     * to {@link #decodeChunks(RetainableByteBuffer)} or {@link #decode(RetainableByteBuffer)}
      * should return, allowing to consume the inflated chunk and apply
      * backpressure
      */
@@ -151,9 +155,9 @@ public class GZIPContentDecoder implements Destroyable
      *
      * @param compressed the buffer of compressed data to inflate
      */
-    protected void decodeChunks(ByteBuffer compressed)
+    protected void decodeChunks(RetainableByteBuffer compressed)
     {
-        RetainableByteBuffer buffer = null;
+        RetainableByteBuffer.Mutable uncompressed = null;
         try
         {
             while (true)
@@ -196,26 +200,26 @@ public class GZIPContentDecoder implements Destroyable
                     {
                         while (true)
                         {
-                            if (buffer == null)
-                                buffer = acquire(_bufferSize);
+                            if (uncompressed == null)
+                                uncompressed = acquire(_bufferSize);
 
-                            try
+                            uncompressed.quietReadFrom(b ->
                             {
-                                ByteBuffer decoded = buffer.getByteBuffer();
-                                int pos = BufferUtil.flipToFill(decoded);
-                                _inflater.inflate(decoded);
-                                BufferUtil.flipToFlush(decoded, pos);
-                            }
-                            catch (DataFormatException x)
-                            {
-                                throw new ZipException(x.getMessage());
-                            }
+                                try
+                                {
+                                    return _inflater.inflate(b);
+                                }
+                                catch (DataFormatException x)
+                                {
+                                    throw (ZipException)new ZipException().initCause(x);
+                                }
+                            });
 
-                            if (buffer.hasRemaining())
+                            if (uncompressed.hasRemaining())
                             {
-                                boolean stop = decodedChunk(buffer);
-                                buffer.release();
-                                buffer = null;
+                                boolean stop = decodedChunk(uncompressed);
+                                uncompressed.release();
+                                uncompressed = null;
                                 if (stop)
                                     return;
                             }
@@ -223,7 +227,12 @@ public class GZIPContentDecoder implements Destroyable
                             {
                                 if (!compressed.hasRemaining())
                                     return;
-                                _inflater.setInput(compressed);
+                                compressed.quietWriteTo(b ->
+                                {
+                                    int r = b.remaining();
+                                    _inflater.setInput(b);
+                                    return r;
+                                });
                             }
                             else if (_inflater.finished())
                             {
@@ -243,12 +252,12 @@ public class GZIPContentDecoder implements Destroyable
                 if (!compressed.hasRemaining())
                     break;
 
-                byte currByte = compressed.get();
+                long currByte = compressed.getByteAsInt();
                 switch (_state)
                 {
                     case ID:
                     {
-                        _value += (currByte & 0xFF) << 8 * _size;
+                        _value += currByte << (8 * _size);
                         ++_size;
                         if (_size == 2)
                         {
@@ -260,14 +269,14 @@ public class GZIPContentDecoder implements Destroyable
                     }
                     case CM:
                     {
-                        if ((currByte & 0xFF) != 0x08)
+                        if (currByte != 0x08)
                             throw new ZipException("Invalid gzip compression method");
                         _state = State.FLG;
                         break;
                     }
                     case FLG:
                     {
-                        _flags = currByte;
+                        _flags = (byte)currByte;
                         _state = State.MTIME;
                         _size = 0;
                         _value = 0;
@@ -295,7 +304,7 @@ public class GZIPContentDecoder implements Destroyable
                     }
                     case EXTRA_LENGTH:
                     {
-                        _value += (currByte & 0xFF) << 8 * _size;
+                        _value += currByte << (8 * _size);
                         ++_size;
                         if (_size == 2)
                             _state = State.EXTRA;
@@ -349,7 +358,7 @@ public class GZIPContentDecoder implements Destroyable
                     }
                     case CRC:
                     {
-                        _value += (currByte & 0xFF) << 8 * _size;
+                        _value += currByte << (8 * _size);
                         ++_size;
                         if (_size == 4)
                         {
@@ -362,7 +371,7 @@ public class GZIPContentDecoder implements Destroyable
                     }
                     case ISIZE:
                     {
-                        _value = _value | ((currByte & 0xFFL) << (8 * _size));
+                        _value += currByte << (8 * _size);
                         ++_size;
                         if (_size == 4)
                         {
@@ -386,8 +395,8 @@ public class GZIPContentDecoder implements Destroyable
         }
         finally
         {
-            if (buffer != null)
-                buffer.release();
+            if (uncompressed != null)
+                uncompressed.release();
         }
     }
 
@@ -422,7 +431,7 @@ public class GZIPContentDecoder implements Destroyable
      * @param capacity capacity of the ByteBuffer to acquire
      * @return a heap buffer of the configured capacity either from the pool or freshly allocated.
      */
-    public RetainableByteBuffer acquire(int capacity)
+    public RetainableByteBuffer.Mutable acquire(int capacity)
     {
         return _pool.acquire(capacity, false);
     }

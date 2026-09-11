@@ -168,9 +168,10 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     {
         if (startWrite(callback))
         {
-            DataFrame frame = new DataFrame(streamId, data, endStream);
-            session.data(this, frame, this);
-            frame.release();
+            try (DataFrame frame = new DataFrame(streamId, data, endStream))
+            {
+                session.data(this, frame, this);
+            }
         }
     }
 
@@ -452,11 +453,11 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             if (isTrailer)
             {
                 // In case of trailers, notify first and then offer EOF to
-                // avoid race conditions due to concurrent calls to readData().
+                // avoid race conditions due to concurrent calls to read().
                 boolean closed = updateClose(true, CloseState.Event.RECEIVED);
                 notifyHeaders(frame, Callback.from(() ->
                 {
-                    // Offer EOF in case the application calls readData() or demand().
+                    // Offer EOF in case the application calls read() or demand().
                     if (offer(DataFrame.eof(getId())))
                         processData(true);
                     if (closed)
@@ -473,7 +474,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 dataLength = length;
 
                 // Offer EOF for either the request or the response in
-                // case the application calls readData() or demand().
+                // case the application calls read() or demand().
                 boolean eof = frame.isEndStream() && offer(DataFrame.eof(getId()));
 
                 // Requests are notified to a Session.Listener, here only notify responses.
@@ -543,7 +544,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             {
                 boolean process = dataQueue.isEmpty() && dataDemand;
                 // Retain the data because it is stored for later use.
-                frame.retain();
+                frame.acquire();
                 dataQueue.offer(frame);
                 dataLast = frame.isEndStream();
                 if (LOG.isDebugEnabled())
@@ -562,21 +563,15 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
     @Override
     public Content.Chunk read()
     {
-        DataFrame dataFrame = readFrame();
-        if (dataFrame == null)
-            return null;
-        RetainableByteBuffer data = dataFrame.acquire();
-        Content.Chunk chunk = Content.Chunk.asChunk(data, dataFrame.isEndStream(), dataFrame);
-        data.release();
-        dataFrame.release();
-        return chunk;
-    }
-
-    @Override
-    public Data readData()
-    {
-        DataFrame frame = readFrame();
-        return frame == null ? null : new Data(frame);
+        try (DataFrame dataFrame = readFrame())
+        {
+            if (dataFrame == null)
+                return null;
+            try (RetainableByteBuffer data = dataFrame.acquire())
+            {
+                return Content.Chunk.from(data, dataFrame.isEndStream());
+            }
+        }
     }
 
     private DataFrame readFrame()
@@ -599,7 +594,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
             LOG.debug("Reading {} for {}", frame, this);
 
         // Enlarge the flow control window now, since the application
-        // may want to retain the Data objects, accumulating them in
+        // may want to retain the Chunk objects, accumulating them in
         // memory beyond the flow control window, without copying them.
         session.dataConsumed(this, frame.flowControlLength());
 
@@ -764,15 +759,16 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         int length = 0;
         while (true)
         {
-            DataFrame frame = dataQueue.poll();
-            if (frame == null)
-                break;
-            frame.release();
-            length += frame.flowControlLength();
-            if (frame.isEndStream())
+            try (DataFrame frame = dataQueue.poll())
             {
-                dataQueue.offer(DataFrame.eof(getId()));
-                break;
+                if (frame == null)
+                    break;
+                length += frame.flowControlLength();
+                if (frame.isEndStream())
+                {
+                    dataQueue.offer(DataFrame.eof(getId()));
+                    break;
+                }
             }
         }
         if (LOG.isDebugEnabled())
@@ -1138,7 +1134,7 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
          */
         public int getStreamId()
         {
-            return frames.get(0).getStreamId();
+            return frames.getFirst().getStreamId();
         }
 
         /**

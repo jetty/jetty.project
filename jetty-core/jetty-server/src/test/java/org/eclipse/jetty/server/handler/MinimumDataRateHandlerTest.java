@@ -71,25 +71,26 @@ public class MinimumDataRateHandlerTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = request.read())
                     {
-                        request.demand(() -> handle(request, response, callback));
-                        return true;
-                    }
+                        if (chunk == null)
+                        {
+                            request.demand(() -> handle(request, response, callback));
+                            return true;
+                        }
 
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        callback.failed(chunk.getFailure());
-                        return true;
-                    }
+                        if (Content.Chunk.isFailure(chunk))
+                        {
+                            callback.failed(chunk.getFailure());
+                            return true;
+                        }
 
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        response.setStatus(HttpStatus.OK_200);
-                        callback.succeeded();
-                        return true;
+                        if (chunk.isLast())
+                        {
+                            response.setStatus(HttpStatus.OK_200);
+                            callback.succeeded();
+                            return true;
+                        }
                     }
                 }
             }
@@ -142,26 +143,27 @@ public class MinimumDataRateHandlerTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = request.read())
                     {
-                        request.demand(() -> read(request, response, callback));
-                        demandLatch.countDown();
-                        return;
-                    }
+                        if (chunk == null)
+                        {
+                            request.demand(() -> read(request, response, callback));
+                            demandLatch.countDown();
+                            return;
+                        }
 
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        callback.failed(chunk.getFailure());
-                        return;
-                    }
+                        if (Content.Chunk.isFailure(chunk))
+                        {
+                            callback.failed(chunk.getFailure());
+                            return;
+                        }
 
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        response.setStatus(HttpStatus.OK_200);
-                        callback.succeeded();
-                        return;
+                        if (chunk.isLast())
+                        {
+                            response.setStatus(HttpStatus.OK_200);
+                            callback.succeeded();
+                            return;
+                        }
                     }
                 }
             }

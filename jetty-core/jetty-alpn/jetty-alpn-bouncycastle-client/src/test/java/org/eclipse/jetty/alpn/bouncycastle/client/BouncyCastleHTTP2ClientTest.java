@@ -82,12 +82,13 @@ public class BouncyCastleHTTP2ClientTest
                 @Override
                 public void onDataAvailable(Stream stream)
                 {
-                    Content.Chunk chunk = stream.read();
-                    chunk.release();
-                    if (chunk.isLast())
-                        latch.countDown();
-                    else
-                        stream.demand();
+                    try (Content.Chunk chunk = stream.read())
+                    {
+                        if (chunk.isLast())
+                            latch.countDown();
+                        else
+                            stream.demand();
+                    }
                 }
             });
 

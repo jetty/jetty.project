@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -75,7 +73,7 @@ public class SizeLimitHandler extends Handler.Wrapper
 
     private class SizeLimitRequestWrapper extends Request.Wrapper
     {
-        private long _read = 0;
+        private long _read;
 
         public SizeLimitRequestWrapper(Request wrapped)
         {
@@ -92,10 +90,10 @@ public class SizeLimitHandler extends Handler.Wrapper
                 return chunk;
 
             // Check request content limit.
-            ByteBuffer content = chunk.getByteBuffer();
-            if (content != null && content.remaining() > 0)
+            long remaining = chunk.remaining();
+            if (remaining > 0)
             {
-                _read += content.remaining();
+                _read += remaining;
                 if (_requestLimit >= 0 && _read > _requestLimit)
                 {
                     HttpException.RuntimeException e = new HttpException.RuntimeException(HttpStatus.PAYLOAD_TOO_LARGE_413, "Request body is too large: " + _read + ">" + _requestLimit);

@@ -164,17 +164,18 @@ public class HTTP3RequestTest
                 @Override
                 public void onDataAvailable(Stream.Client stream)
                 {
-                    Content.Chunk chunk = stream.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        if (chunk.isLast())
+                            responseLatch.countDown();
+                        else
+                            stream.demand();
                     }
-                    chunk.release();
-                    if (chunk.isLast())
-                        responseLatch.countDown();
-                    else
-                        stream.demand();
                 }
 
                 @Override

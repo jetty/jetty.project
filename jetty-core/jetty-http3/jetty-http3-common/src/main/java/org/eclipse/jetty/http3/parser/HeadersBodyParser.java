@@ -30,7 +30,7 @@ public class HeadersBodyParser extends BodyParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(HeadersBodyParser.class);
 
-    private final List<RetainableByteBuffer> byteBuffers = new ArrayList<>();
+    private final List<RetainableByteBuffer> buffers = new ArrayList<>();
     private final long streamId;
     private final QpackDecoder decoder;
     private State state = State.INIT;
@@ -69,14 +69,14 @@ public class HeadersBodyParser extends BodyParser
                     {
                         length -= remaining;
                         buffer.retain();
-                        byteBuffers.add(buffer);
+                        buffers.add(buffer);
                         return Result.NO_FRAME;
                     }
                     else
                     {
                         RetainableByteBuffer encoded;
                         boolean last;
-                        if (byteBuffers.isEmpty())
+                        if (buffers.isEmpty())
                         {
                             if (remaining == length)
                             {
@@ -94,11 +94,11 @@ public class HeadersBodyParser extends BodyParser
                         }
                         else
                         {
-                            byteBuffers.add(buffer.sliceAndConsume(length));
-                            encoded = RetainableByteBuffer.wrap(byteBuffers);
+                            buffers.add(buffer.sliceAndConsume(length));
+                            encoded = RetainableByteBuffer.merge(buffers);
                             last = quicLast && !buffer.hasRemaining();
-                            byteBuffers.forEach(RetainableByteBuffer::release);
-                            byteBuffers.clear();
+                            buffers.forEach(RetainableByteBuffer::release);
+                            buffers.clear();
                         }
 
                         Result result = decode(encoded, last) ? Result.WHOLE_FRAME : Result.BLOCKED_FRAME;

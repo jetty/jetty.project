@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import java.nio.ByteBuffer;
 import java.util.ListIterator;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
@@ -22,12 +21,12 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.compression.InflaterPool;
 
 public class GzipRequest extends Request.Wrapper
@@ -46,7 +45,7 @@ public class GzipRequest extends Request.Wrapper
         if (inflateBufferSize > 0)
         {
             Components components = getComponents();
-            _decoder = new Decoder(inflaterPool, components.getByteBufferPool(), inflateBufferSize);
+            _decoder = new Decoder(inflaterPool, WritableBufferPool.wrap(components.getByteBufferPool()), inflateBufferSize);
             _gzipTransformer = new GzipTransformer(getWrapped(), _decoder);
         }
     }
@@ -169,23 +168,23 @@ public class GzipRequest extends Request.Wrapper
             // Retain the input chunk because its ByteBuffer will be referenced by the Inflater.
             if (retain)
                 _chunk.retain();
-            RetainableByteBuffer decodedBuffer = _decoder.decode(_chunk);
 
-            if (decodedBuffer != null && decodedBuffer.hasRemaining())
+            try (RetainableByteBuffer decodedBuffer = _decoder.decode(_chunk))
             {
-                // The decoded ByteBuffer is a transformed "copy" of the
-                // compressed one, so it has its own reference counter.
-                return Content.Chunk.from(decodedBuffer.getByteBuffer(), _chunk.isLast() && !_chunk.hasRemaining(), decodedBuffer::release);
-            }
-            else
-            {
-                if (decodedBuffer != null)
-                    decodedBuffer.release();
-                // Could not decode more from this chunk, release it.
-                Content.Chunk result = _chunk.isLast() ? Content.Chunk.EOF : null;
-                _chunk.release();
-                _chunk = null;
-                return result;
+                if (decodedBuffer != null && decodedBuffer.hasRemaining())
+                {
+                    // The decoded ByteBuffer is a transformed "copy" of the
+                    // compressed one, so it has its own reference counter.
+                    return Content.Chunk.from(decodedBuffer, _chunk.isLast() && !_chunk.hasRemaining());
+                }
+                else
+                {
+                    // Could not decode more from this chunk, release it.
+                    Content.Chunk result = _chunk.isLast() ? Content.Chunk.EOF : null;
+                    _chunk.release();
+                    _chunk = null;
+                    return result;
+                }
             }
         }
     }
@@ -194,14 +193,17 @@ public class GzipRequest extends Request.Wrapper
     {
         private RetainableByteBuffer _decoded;
 
-        Decoder(InflaterPool inflaterPool, ByteBufferPool bufferPool, int bufferSize)
+        Decoder(InflaterPool inflaterPool, WritableBufferPool bufferPool, int bufferSize)
         {
             super(inflaterPool, bufferPool, bufferSize);
         }
 
         public RetainableByteBuffer decode(Content.Chunk chunk)
         {
-            decodeChunks(chunk.getByteBuffer());
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                decodeChunks(buffer);
+            }
             RetainableByteBuffer decoded = _decoded;
             _decoded = null;
             return decoded;
@@ -217,7 +219,7 @@ public class GzipRequest extends Request.Wrapper
         }
 
         @Override
-        public void decodeChunks(ByteBuffer compressed)
+        public void decodeChunks(RetainableByteBuffer compressed)
         {
             _decoded = null;
             super.decodeChunks(compressed);

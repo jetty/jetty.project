@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.io.Closeable;
-import java.nio.ByteBuffer;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;
@@ -499,7 +499,7 @@ public class MultiPartFormData
                 protected Parts parse(Content.Chunk chunk) throws Throwable
                 {
                     listener.rethrowIfFailed();
-                    length += chunk.getByteBuffer().remaining();
+                    length += chunk.remaining();
                     long max = getMaxLength();
                     if (max >= 0 && length > max)
                         throw new IllegalStateException("max length exceeded: %d".formatted(max));
@@ -715,65 +715,70 @@ public class MultiPartFormData
             @Override
             public void onPartContent(Content.Chunk chunk)
             {
-                ByteBuffer buffer = chunk.getByteBuffer();
-                long maxPartSize = getMaxFileSize();
-                size += buffer.remaining();
-                if (maxPartSize >= 0 && size > maxPartSize)
+                try (RetainableByteBuffer buffer = chunk.acquire())
                 {
-                    onFailure(new IllegalStateException("max file size exceeded: %d".formatted(maxPartSize)));
-                    return;
-                }
-
-                String fileName = getFileName();
-                if (fileName != null || isUseFilesForPartsWithoutFileName())
-                {
-                    long maxMemoryPartSize = getMaxMemoryFileSize();
-                    if (maxMemoryPartSize >= 0)
+                    long maxPartSize = getMaxFileSize();
+                    size += buffer.remaining();
+                    if (maxPartSize >= 0 && size > maxPartSize)
                     {
-                        if (size > maxMemoryPartSize)
+                        onFailure(new IllegalStateException("max file size exceeded: %d".formatted(maxPartSize)));
+                        return;
+                    }
+
+                    String fileName = getFileName();
+                    if (fileName != null || isUseFilesForPartsWithoutFileName())
+                    {
+                        long maxMemoryPartSize = getMaxMemoryFileSize();
+                        if (maxMemoryPartSize >= 0)
                         {
-                            try
+                            if (size > maxMemoryPartSize)
                             {
-                                // Must save to disk.
-                                if (ensureFileChannel())
+                                try
                                 {
-                                    // Write existing memory chunks.
-                                    List<Content.Chunk> partChunks;
-                                    try (AutoLock ignored = lock.lock())
+                                    // Must save to disk.
+                                    if (ensureFileChannel())
                                     {
-                                        partChunks = List.copyOf(this.partChunks);
+                                        // Write existing memory chunks.
+                                        List<Content.Chunk> partChunks;
+                                        try (AutoLock ignored = lock.lock())
+                                        {
+                                            partChunks = List.copyOf(this.partChunks);
+                                        }
+                                        for (Content.Chunk c : partChunks)
+                                        {
+                                            try (RetainableByteBuffer b = c.acquire())
+                                            {
+                                                write(b);
+                                            }
+                                        }
+                                        try (AutoLock ignored = lock.lock())
+                                        {
+                                            this.partChunks.forEach(Content.Chunk::release);
+                                            this.partChunks.clear();
+                                        }
                                     }
-                                    for (Content.Chunk c : partChunks)
-                                    {
-                                        write(c.getByteBuffer());
-                                    }
-                                    try (AutoLock ignored = lock.lock())
-                                    {
-                                        this.partChunks.forEach(Content.Chunk::release);
-                                        this.partChunks.clear();
-                                    }
+                                    write(buffer);
+                                    if (chunk.isLast())
+                                        close();
                                 }
-                                write(buffer);
-                                if (chunk.isLast())
-                                    close();
+                                catch (Throwable x)
+                                {
+                                    onFailure(x);
+                                }
+                                return;
                             }
-                            catch (Throwable x)
-                            {
-                                onFailure(x);
-                            }
-                            return;
                         }
                     }
-                }
-                else
-                {
-                    long maxMemoryPartSize = getMaxMemoryFileSize();
-                    if (maxMemoryPartSize >= 0)
+                    else
                     {
-                        if (size > maxMemoryPartSize)
+                        long maxMemoryPartSize = getMaxMemoryFileSize();
+                        if (maxMemoryPartSize >= 0)
                         {
-                            onFailure(new IllegalStateException("max memory file size exceeded: %d".formatted(maxMemoryPartSize)));
-                            return;
+                            if (size > maxMemoryPartSize)
+                            {
+                                onFailure(new IllegalStateException("max memory file size exceeded: %d".formatted(maxMemoryPartSize)));
+                                return;
+                            }
                         }
                     }
                 }
@@ -786,15 +791,15 @@ public class MultiPartFormData
                 }
             }
 
-            private void write(ByteBuffer buffer) throws Exception
+            private void write(RetainableByteBuffer buffer) throws Exception
             {
-                int remaining = buffer.remaining();
+                long remaining = buffer.remaining();
                 while (remaining > 0)
                 {
                     SeekableByteChannel channel = fileChannel();
                     if (channel == null)
                         throw new IllegalStateException();
-                    int written = channel.write(buffer);
+                    long written = buffer.writeTo(channel::write);
                     if (written == 0)
                         throw new NonWritableChannelException();
                     remaining -= written;

@@ -13,14 +13,15 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
-
 /**
  * <p>Implementation of {@link AbstractResponseListener} that buffers the response content
  * by copying it up to a maximum length specified to the constructors.</p>
  * <p>Use {@link RetainingResponseListener} for a more efficient
  * implementation that does not copy the content bytes.</p>
+ *
+ * @deprecated use {@link RetainingResponseListener} instead
  */
+@Deprecated(since = "13.0.0", forRemoval = true)
 public abstract class BufferingResponseListener extends AbstractResponseListener
 {
     /**
@@ -38,7 +39,6 @@ public abstract class BufferingResponseListener extends AbstractResponseListener
      */
     public BufferingResponseListener(int maxLength)
     {
-        // A DynamicCapacity that always copies.
-        super(new RetainableByteBuffer.DynamicCapacity(null, maxLength, Integer.MAX_VALUE));
+        super(maxLength);
     }
 }
