@@ -223,9 +223,12 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
         HttpOutput httpOutput = getHttpOutput();
-        if (last && !httpOutput.isClosed())
-            httpOutput.lastWriteComplete();
-        httpOutput.addBytesWritten(BufferUtil.length(content));
+        if (!httpOutput.isClosed())
+        {
+            httpOutput.addBytesWritten(BufferUtil.length(content));
+            if (last)
+                httpOutput.lastWriteComplete();
+        }
         super.write(last, content, callback);
     }
 
