@@ -266,7 +266,8 @@ public class HttpOutputTest
     {
         _server.start();
         Resource big = ResourceFactory.of(_servletContextHandler).newClassLoaderResource("simple/big.txt", false);
-        _contentServlet._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.Sized(ByteBufferPool.NON_POOLING, true, -1)).getByteBuffer();        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        _contentServlet._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.Sized(ByteBufferPool.NON_POOLING, true, -1)).getByteBuffer();
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length"));
         assertThat(response, endsWith(toUTF8String(big)));
