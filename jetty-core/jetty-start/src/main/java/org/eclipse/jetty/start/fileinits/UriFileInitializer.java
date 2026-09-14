@@ -20,6 +20,7 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.StartArgs;
+import org.eclipse.jetty.start.StartLog;
 
 public class UriFileInitializer extends DownloadFileInitializer
 {
@@ -53,6 +54,12 @@ public class UriFileInitializer extends DownloadFileInitializer
 
         if (isFilePresent(destination))
             return false;
+
+        if (isProvidedByHome(location))
+        {
+            StartLog.debug("skipping download of %s : ${jetty.home} provides %s", uri, location);
+            return false;
+        }
 
         download(uri, destination);
 

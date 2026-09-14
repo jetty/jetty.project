@@ -260,6 +260,12 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
             if (isFilePresent(destination))
                 return false;
 
+            if (isProvidedByHome(location))
+            {
+                StartLog.debug("skipping download of %s : ${jetty.home} provides %s", uri, location);
+                return false;
+            }
+
             // Grab copy from local repository (download if needed to local repository)
             Path localRepoFile = getLocalRepoFile(coords);
 
