@@ -1709,7 +1709,16 @@ public class DistributionTests extends AbstractJettyHomeTest
             .jettyBase(jettyBase)
             .build();
 
-        try (JettyHomeTester.Run run1 = distribution.start("--validate-modules"))
+        List<String> args = new ArrayList<>();
+        args.add("--validate-modules");
+
+        String remoteRepoUri = System.getProperty("maven.repo.uri");
+        if (remoteRepoUri != null)
+        {
+            args.add("maven.repo.uri=" + remoteRepoUri);
+        }
+
+        try (JettyHomeTester.Run run1 = distribution.start(args))
         {
             assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue(), run1.logs());

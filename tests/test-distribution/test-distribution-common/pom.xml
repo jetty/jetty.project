@@ -419,6 +419,11 @@
                   <artifactId>native-windows-x86_64</artifactId>
                   <version>${brotli4j.version}</version>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>org.slf4j</groupId>
+                  <artifactId>slf4j-reload4j</artifactId>
+                  <version>${slf4j.version}</version>
+                </artifactItem>
               </artifactItems>
               <outputDirectory>${project.build.directory}/fake-deps</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
