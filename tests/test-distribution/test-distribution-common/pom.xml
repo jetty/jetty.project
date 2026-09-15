@@ -17,6 +17,8 @@
     <!--    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>-->
     <junit.jupiter.execution.parallel.config.dynamic.factor>0.4</junit.jupiter.execution.parallel.config.dynamic.factor>
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
+    <!-- Keep in step with log4j.version in jetty-core-home logging-log4j1.mod -->
+    <log4j1.version>1.2.17</log4j1.version>
     <!--    <junit.jupiter.execution.parallel.config.strategy>fixed</junit.jupiter.execution.parallel.config.strategy>-->
     <testcontainers-keycloak.version>3.9.1</testcontainers-keycloak.version>
   </properties>
@@ -423,6 +425,16 @@
                   <groupId>org.slf4j</groupId>
                   <artifactId>slf4j-reload4j</artifactId>
                   <version>${slf4j.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.slf4j</groupId>
+                  <artifactId>log4j-over-slf4j</artifactId>
+                  <version>${slf4j.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>log4j</groupId>
+                  <artifactId>log4j</artifactId>
+                  <version>${log4j1.version}</version>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${project.build.directory}/fake-deps</outputDirectory>
