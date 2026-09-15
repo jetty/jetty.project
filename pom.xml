@@ -274,7 +274,7 @@
     <mariadb.version>3.5.10</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.3.0</maven-build-cache.version>
-    <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
+    <maven-plugin.plugin.version>3.16.0</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.2.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
@@ -292,7 +292,7 @@
     <maven.invoker.plugin.version>3.10.1</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.5.1</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.15.2</maven.plugin-tools.version>
+    <maven.plugin-tools.version>3.16.0</maven.plugin-tools.version>
     <maven.release.plugin.version>3.3.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.3.0</maven.remote-resources-plugin.version>
     <maven.resolver.version>1.9.27</maven.resolver.version>
