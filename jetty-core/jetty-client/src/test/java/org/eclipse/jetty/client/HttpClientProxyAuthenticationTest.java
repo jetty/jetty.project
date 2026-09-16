@@ -19,6 +19,19 @@ package org.eclipse.jetty.client;
 public class HttpClientProxyAuthenticationTest extends HttpClientAuthenticationTest
 {
     @Override
+    protected void startClient(Scenario scenario) throws Exception
+    {
+        super.startClient(scenario);
+        client.getProxyConfiguration().addProxy(new HttpProxy("localhost", connector.getLocalPort()));
+    }
+
+    @Override
+    protected int getServerPort()
+    {
+        return super.getServerPort() + 1;
+    }
+
+    @Override
     protected boolean isProxyMode()
     {
         return true;

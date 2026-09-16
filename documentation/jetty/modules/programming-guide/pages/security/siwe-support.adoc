@@ -77,7 +77,7 @@ Authenticate New Users::
 
 Domains::
 * Init Param: org.eclipse.jetty.security.siwe.domains
-* Description: This list of allowed domains to be declared in the `domain` field of the SIWE Message. If left blank this will allow all domains.
+* Description: The list of allowed domains to be declared in the `domain` field of the SIWE Message. If left unconfigured, the `domain` field must match the authority (`host[:port]`) of the request being authenticated.
 
 Chain IDs::
 * Init Param: org.eclipse.jetty.security.siwe.chainIds

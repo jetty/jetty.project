@@ -84,7 +84,7 @@ public class MultiPartCompliance implements ComplianceViolation.Mode
     public static final MultiPartCompliance LEGACY =  new MultiPartCompliance(
         "LEGACY", EnumSet.complementOf(EnumSet.of(Violation.BASE64_TRANSFER_ENCODING)));
 
-    private static final List<MultiPartCompliance> KNOWN_MODES = Arrays.asList(RFC7578, LEGACY);
+    private static final List<MultiPartCompliance> KNOWN_MODES = Arrays.asList(RFC7578, RFC7578_STRICT, LEGACY);
     private static final AtomicInteger __custom = new AtomicInteger();
 
     public static MultiPartCompliance valueOf(String name)

@@ -516,11 +516,19 @@ public class ConnectHandler extends Handler.Wrapper
         }
 
         @Override
-        protected void connectionFailed(SelectableChannel channel, final Throwable ex, final Object attachment)
+        protected void connectionFailed(SelectableChannel channel, Throwable failure, final Object attachment)
         {
             close(channel);
             ConnectContext connectContext = (ConnectContext)attachment;
-            onConnectFailure(connectContext.request, connectContext.response, connectContext.callback, ex);
+            onConnectFailure(connectContext.request, connectContext.response, connectContext.callback, failure);
+        }
+
+        @Override
+        protected void onAcceptFailed(SelectableChannel channel, Throwable failure, Object attachment)
+        {
+            super.onAcceptFailed(channel, failure, attachment);
+            ConnectContext connectContext = (ConnectContext)attachment;
+            onConnectFailure(connectContext.request, connectContext.response, connectContext.callback, failure);
         }
     }
 
