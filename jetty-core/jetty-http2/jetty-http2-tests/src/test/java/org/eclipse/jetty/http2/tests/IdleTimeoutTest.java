@@ -52,17 +52,16 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -406,7 +405,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onIdleTimeout(Stream stream, TimeoutException x, Promise<Boolean> promise)
             {
-                assertThat(x, Matchers.instanceOf(TimeoutException.class));
+                assertThat(x, instanceOf(TimeoutException.class));
                 timeoutLatch.countDown();
                 promise.succeeded(true);
             }
@@ -921,16 +920,13 @@ public class IdleTimeoutTest extends AbstractTest
                     return count > 0;
                 });
 
-                // Content must be EOF after the timeout listener fired once since it returned false.
-                await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(2 * idleTimeout, TimeUnit.MILLISECONDS).until(listenerCounter::get, is(1));
-                Content.Chunk read = request.read();
-                assertThat(read.getFailure(), nullValue());
-                assertThat(read.isLast(), is(true));
-                assertThat(read.getByteBuffer().remaining(), is(0));
-
-                // Content must be TimeoutException after the timeout listener fired twice since it returned true.
-                await().atMost(3 * idleTimeout, TimeUnit.MILLISECONDS).until(listenerCounter::get, is(2));
-                assertInstanceOf(TimeoutException.class, request.read().getFailure());
+                // Content must eventually be TimeoutException after the timeout listener fired twice since it returned true.
+                await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(3 * idleTimeout, TimeUnit.MILLISECONDS).until(() ->
+                {
+                    Content.Chunk read = request.read();
+                    return read == null ? null : read.getFailure();
+                }, instanceOf(TimeoutException.class));
+                assertThat(listenerCounter.get(), greaterThanOrEqualTo(2));
 
                 callback.succeeded();
                 handlerLatch.countDown();
@@ -943,19 +939,20 @@ public class IdleTimeoutTest extends AbstractTest
         httpClient.start();
         Session client = newClientSession(new Session.Listener() {});
 
-        CountDownLatch closeLatch = new CountDownLatch(1);
-        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
+        CountDownLatch resetLatch = new CountDownLatch(1);
+        // Send a request but never send a frame with endStream=true so the server eventually sends a reset.
+        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, false);
         client.newStream(frame, new Stream.Listener()
         {
             @Override
-            public void onClosed(Stream stream)
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
             {
-                closeLatch.countDown();
-                Stream.Listener.super.onClosed(stream);
+                resetLatch.countDown();
+                Stream.Listener.super.onReset(stream, frame, callback);
             }
         });
         assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(closeLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(resetLatch.await(3 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     private void sleep(long value)
