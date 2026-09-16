@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>jetty-tests</artifactId>
-    <version>12.1.13-SNAPSHOT</version>
+    <version>12.1.14-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-test-rfc</artifactId>
   <name>Core :: Tests :: RFC</name>
@@ -111,10 +111,30 @@
 
   <profiles>
     <profile>
+      <id>enable-jna</id>
+      <activation>
+        <jdk>[17,22)</jdk>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.eclipse.jetty.quic</groupId>
+          <artifactId>jetty-quic-quiche-jna</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
       <id>enable-foreign</id>
       <activation>
         <jdk>[22,)</jdk>
       </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.eclipse.jetty.quic</groupId>
+          <artifactId>jetty-quic-quiche-foreign</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
       <build>
         <plugins>
           <plugin>
