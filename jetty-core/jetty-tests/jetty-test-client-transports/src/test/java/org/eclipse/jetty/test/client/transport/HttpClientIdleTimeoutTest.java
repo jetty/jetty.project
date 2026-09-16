@@ -16,14 +16,20 @@ package org.eclipse.jetty.test.client.transport;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.StringRequestContent;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -31,8 +37,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.test.client.transport.AbstractTest.TransportType.H3_QUICHE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientIdleTimeoutTest extends AbstractTest
@@ -172,5 +183,70 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(HttpStatus.OK_200, response2.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testStreamIdleTimeoutIsRescheduled(TransportType transportType) throws Exception
+    {
+        Assumptions.assumeTrue(transportType != H3_QUICHE, "Test is broken on H3");
+
+        CountDownLatch handlerLatch = new CountDownLatch(1);
+        AtomicInteger listenerCounter = new AtomicInteger();
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                request.addIdleTimeoutListener(e ->
+                {
+                    int count = listenerCounter.getAndIncrement();
+                    // Returning true marks the request as failed, but the handling goes on.
+                    return count > 0;
+                });
+
+                // Assert that the first timeout is transient, which only happens if there is demand.
+                Content.Chunk chunk = null;
+                while (chunk == null)
+                {
+                    try (Blocker.Runnable runnable = Blocker.runnable())
+                    {
+                        request.demand(runnable);
+                        runnable.block(2 * idleTimeout, TimeUnit.MILLISECONDS);
+                    }
+                    chunk = request.read();
+                }
+                assertFalse(chunk.isLast());
+                assertInstanceOf(TimeoutException.class, chunk.getFailure());
+
+                // After the transient timeout, we can still read.
+                assertNull(request.read());
+
+                // Content must eventually be TimeoutException after the timeout listener fired twice since it returned true.
+                chunk = await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(3 * idleTimeout, TimeUnit.MILLISECONDS).until(request::read, notNullValue());
+                assertTrue(chunk.isLast());
+                assertInstanceOf(TimeoutException.class, chunk.getFailure());
+
+                assertThat(listenerCounter.get(), greaterThanOrEqualTo(2));
+
+                callback.succeeded();
+                handlerLatch.countDown();
+                return true;
+            }
+        });
+        connector.setIdleTimeout(idleTimeout);
+
+        server.start();
+
+        AtomicReference<Result> resultRef = new AtomicReference<>();
+        client.newRequest(newURI(transportType))
+            .method(HttpMethod.POST)
+            .body(new AsyncRequestContent()) // Never provide the content.
+            .timeout(5, TimeUnit.SECONDS)
+            .send(resultRef::set);
+
+        Result result = await().atMost(10, TimeUnit.SECONDS).until(resultRef::get, notNullValue());
+        assertTrue(result.isFailed());
+        assertTrue(handlerLatch.await(10, TimeUnit.SECONDS));
     }
 }
