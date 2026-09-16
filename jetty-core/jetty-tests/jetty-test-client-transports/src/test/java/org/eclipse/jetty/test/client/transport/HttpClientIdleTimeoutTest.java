@@ -43,6 +43,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -193,7 +194,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
 
         CountDownLatch handlerLatch = new CountDownLatch(1);
         AtomicInteger listenerCounter = new AtomicInteger();
-        start(transportType, new Handler.Abstract()
+        prepareServer(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -216,6 +217,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
                     }
                     chunk = request.read();
                 }
+                assertNotNull(chunk);
                 assertFalse(chunk.isLast());
                 assertInstanceOf(TimeoutException.class, chunk.getFailure());
 
@@ -235,9 +237,9 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
             }
         });
         connector.setIdleTimeout(idleTimeout);
-
         server.start();
 
+        startClient(transportType);
         AtomicReference<Result> resultRef = new AtomicReference<>();
         client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
