@@ -263,44 +263,32 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 case FRAME ->
                 {
                     FrameAction action = frameAction.getAndSet(null);
-                    // Retain because the DATA frame bytes reference the QUIC chunk.
-                    Content.Chunk quicChunk = retainData();
-                    try
-                    {
-                        action.task().run();
+                    action.task().run();
 
-                        Frame frame = action.frame();
-                        if (frame instanceof DataFrame dataFrame)
+                    Frame frame = action.frame();
+                    if (frame instanceof DataFrame dataFrame)
+                    {
+                        if (dataFrame.isLast() && !dataFrame.getByteBuffer().hasRemaining())
                         {
-                            // A concurrent release invalidated the frame bytes.
+                            tryReleaseData(true);
+                            yield Content.Chunk.EOF;
+                        }
+                        else
+                        {
+                            // Retain because multiple frames can be parsed from the same QUIC chunk.
+                            Content.Chunk quicChunk = tryRetainData();
                             if (quicChunk == null)
                                 throw new EofException("stream closed while reading");
-
-                            if (dataFrame.isLast() && !dataFrame.getByteBuffer().hasRemaining())
-                            {
+                            Content.Chunk h3Chunk = Content.Chunk.asChunk(dataFrame.getByteBuffer(), dataFrame.isLast(), quicChunk);
+                            if (h3Chunk.isLast())
                                 tryReleaseData(true);
-                                yield Content.Chunk.EOF;
-                            }
-                            else
-                            {
-                                Content.Chunk h3Chunk = Content.Chunk.asChunk(dataFrame.getByteBuffer(), dataFrame.isLast(), quicChunk);
-                                // The retain above is now owned by h3Chunk.
-                                quicChunk = null;
-                                if (h3Chunk.isLast())
-                                    tryReleaseData(true);
-                                yield h3Chunk;
-                            }
+                            yield h3Chunk;
                         }
+                    }
 
-                        // It is a trailer HEADERS frame.
-                        tryReleaseData(true);
-                        yield Content.Chunk.EOF;
-                    }
-                    finally
-                    {
-                        if (quicChunk != null)
-                            quicChunk.release();
-                    }
+                    // It is a trailer HEADERS frame.
+                    tryReleaseData(true);
+                    yield Content.Chunk.EOF;
                 }
                 case EOF ->
                 {
@@ -332,7 +320,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             while (true)
             {
                 // Retain so that a concurrent release does not recycle the buffer being parsed.
-                Content.Chunk chunk = retainData();
+                Content.Chunk chunk = tryRetainData();
                 if (chunk != null)
                 {
                     try
@@ -367,12 +355,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     continue;
                 }
 
-                // Not stored, so nothing else can observe it; release it here.
                 if (Content.Chunk.isFailure(filled))
-                {
-                    filled.release();
                     throw new UncheckedIOException(IO.rethrow(filled.getFailure()));
-                }
 
                 ParseResult result = filled.isLast() ? ParseResult.EOF : ParseResult.NO_FRAME;
                 filled.release();
@@ -439,14 +423,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
      * <p>Retains the QUIC chunk, so that it is not recycled while in use.</p>
      *
      * @return the retained QUIC chunk that the caller must release,
-     * or {@code null} if it was already released
+     * or {@code null} if it was already released.
      */
-    private Content.Chunk retainData()
+    private Content.Chunk tryRetainData()
     {
         try (AutoLock ignored = lock.lock())
         {
-            // A non-null quicChunk is still referenced by this connection, because
-            // tryReleaseData() nulls it before releasing, so this cannot race to zero.
             if (quicChunk != null)
                 quicChunk.retain();
             return quicChunk;
@@ -469,7 +451,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     /**
      * <p>Releases the QUIC chunk reference owned by this connection; the references
-     * taken by {@link #retainData()} are released by their callers.</p>
+     * taken by {@link #tryRetainData()} are released by their callers.</p>
      *
      * @param force whether to release even if the chunk has bytes left to parse
      */
