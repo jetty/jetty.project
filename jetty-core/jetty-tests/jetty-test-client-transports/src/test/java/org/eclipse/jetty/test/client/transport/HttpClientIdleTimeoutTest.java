@@ -190,11 +190,10 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     @MethodSource("transports")
     public void testStreamIdleTimeoutIsRescheduled(TransportType transportType) throws Exception
     {
-        Assumptions.assumeTrue(transportType != H3_QUICHE, "Test is broken on H3");
-
+        httpConfig.setIdleTimeout(idleTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
         AtomicInteger listenerCounter = new AtomicInteger();
-        prepareServer(transportType, new Handler.Abstract()
+        start(transportType, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
@@ -225,7 +224,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
                 assertNull(request.read());
 
                 // Content must eventually be TimeoutException after the timeout listener fired twice since it returned true.
-                chunk = await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(3 * idleTimeout, TimeUnit.MILLISECONDS).until(request::read, notNullValue());
+                chunk = await().atMost(3 * idleTimeout, TimeUnit.MILLISECONDS).until(request::read, notNullValue());
                 assertTrue(chunk.isLast());
                 assertInstanceOf(TimeoutException.class, chunk.getFailure());
 
@@ -236,19 +235,25 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
                 return true;
             }
         });
-        connector.setIdleTimeout(idleTimeout);
-        server.start();
 
-        startClient(transportType);
         AtomicReference<Result> resultRef = new AtomicReference<>();
+        AsyncRequestContent content = new AsyncRequestContent();
         client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
-            .body(new AsyncRequestContent()) // Never provide the content.
+            .body(content)
             .timeout(5, TimeUnit.SECONDS)
             .send(resultRef::set);
 
-        Result result = await().atMost(10, TimeUnit.SECONDS).until(resultRef::get, notNullValue());
-        assertTrue(result.isFailed());
-        assertTrue(handlerLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+
+        // Handler is done, close the content so the client can finish the request.
+        content.close();
+        Result result = await().atMost(5, TimeUnit.SECONDS).until(resultRef::get, notNullValue());
+        int status = switch (transportType)
+        {
+            case HTTP, HTTPS -> HttpStatus.OK_200;
+            default -> HttpStatus.INTERNAL_SERVER_ERROR_500;
+        };
+        assertEquals(status, result.getResponse().getStatus());
     }
 }
