@@ -116,38 +116,39 @@ public class VirtualThreadPoolTest
         TrackingExecutor trackingExecutor = (TrackingExecutor)vtp.getVirtualThreadsExecutor();
         assertThat(trackingExecutor.size(), is(0));
 
-        CountDownLatch running = new CountDownLatch(4);
-        Waiter waiter = new Waiter(running, false);
-        Waiter spinner = new Waiter(running, true);
+        CountDownLatch waiterRunning = new CountDownLatch(1);
+        CountDownLatch spinnerRunning = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        Waiter waiter = new Waiter(waiterRunning, release, false);
+        Waiter spinner = new Waiter(spinnerRunning, release, true);
         try
         {
             vtp.execute(waiter);
-            vtp.execute(spinner);
-            vtp.execute(waiter);
-            vtp.execute(spinner);
+            assertTrue(waiterRunning.await(5, TimeUnit.SECONDS));
+            await().atMost(5, TimeUnit.SECONDS).until(waiter.getThread()::getState, is(Thread.State.WAITING));
 
-            assertTrue(running.await(5, TimeUnit.SECONDS));
-            assertThat(trackingExecutor.size(), is(4));
+            vtp.execute(spinner);
+            assertTrue(spinnerRunning.await(5, TimeUnit.SECONDS));
+            assertThat(trackingExecutor.size(), is(2));
 
             vtp.setDetailedDump(false);
             String dump = vtp.dump();
-            assertThat(count(dump, "VirtualThread[#"), is(4));
-            assertThat(count(dump, "/runnable@"), is(2));
-            assertThat(count(dump, "waiting"), is(2));
+            assertThat(count(dump, "VirtualThread[#"), is(2));
+            assertThat(count(dump, "/runnable@"), is(1));
+            assertThat(count(dump, "waiting"), is(1));
             assertThat(count(dump, "VirtualThreadPoolTest.java"), is(0));
 
             vtp.setDetailedDump(true);
             dump = vtp.dump();
-            assertThat(count(dump, "VirtualThread[#"), is(4));
-            assertThat(count(dump, "/runnable@"), is(2));
-            assertThat(count(dump, "waiting"), is(2));
-            assertThat(count(dump, "VirtualThreadPoolTest.java"), is(4));
-            assertThat(count(dump, "CountDownLatch.await("), is(2));
+            assertThat(count(dump, "VirtualThread[#"), is(2));
+            assertThat(count(dump, "/runnable@"), is(1));
+            assertThat(count(dump, "waiting"), is(1));
+            assertThat(count(dump, "VirtualThreadPoolTest.java"), is(2));
+            assertThat(count(dump, "CountDownLatch.await("), is(1));
         }
         finally
         {
-            waiter.countDown();
-            spinner.countDown();
+            release.countDown();
             vtp.stop();
         }
     }
@@ -209,16 +210,23 @@ public class VirtualThreadPoolTest
         return count;
     }
 
-    private static class Waiter extends CountDownLatch implements Runnable
+    private static class Waiter implements Runnable
     {
         private final CountDownLatch _running;
+        private final CountDownLatch _release;
         private final boolean _spin;
+        private Thread _thread;
 
-        public Waiter(CountDownLatch running, boolean spin)
+        public Waiter(CountDownLatch running, CountDownLatch release, boolean spin)
         {
-            super(1);
             _running = running;
+            _release = release;
             _spin = spin;
+        }
+
+        public Thread getThread()
+        {
+            return _thread;
         }
 
         @Override
@@ -226,11 +234,11 @@ public class VirtualThreadPoolTest
         {
             try
             {
+                _thread = Thread.currentThread();
                 _running.countDown();
-                while (_spin && getCount() > 0)
+                while (_spin && _release.getCount() > 0)
                     Thread.onSpinWait();
-                if (!await(10, TimeUnit.SECONDS))
-                    throw new IllegalStateException();
+                _release.await();
             }
             catch (InterruptedException e)
             {
