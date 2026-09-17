@@ -308,6 +308,10 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
             boolean[] state = new boolean[1];
             while (true)
             {
+                // This entry may still be present in the pool's queue
+                // if it is accessed with Pool.stream().
+                pool.queue.remove(this);
+
                 P p = pooled.get(state);
                 boolean terminated = isTerminated(p, state[0]);
                 if (terminated)
