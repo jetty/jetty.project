@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http3;
 
+import org.eclipse.jetty.io.RateControl;
+import org.eclipse.jetty.io.WindowRateControl;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -33,6 +35,7 @@ public class HTTP3Configuration
     private int maxEncoderTableCapacity = 64 * 1024;
     private int maxRequestHeadersSize = 8 * 1024;
     private int maxResponseHeadersSize = 8 * 1024;
+    private RateControl.Factory rateControlFactory = new WindowRateControl.Factory(128);
 
     @ManagedAttribute("The stream idle timeout in milliseconds")
     public long getStreamIdleTimeout()
@@ -221,5 +224,25 @@ public class HTTP3Configuration
     public void setMaxResponseHeadersSize(int maxResponseHeadersSize)
     {
         this.maxResponseHeadersSize = maxResponseHeadersSize;
+    }
+
+    /**
+     * @return the factory for {@link RateControl} instances
+     */
+    public RateControl.Factory getRateControlFactory()
+    {
+        return rateControlFactory;
+    }
+
+    /**
+     * <p>Sets the factory that creates a {@link RateControl} instance for every HTTP/2 session.</p>
+     * <p>The {@code RateControl} instance may limit the rate of specific HTTP/3 events such as
+     * the receipt of unknown, <em>grease</em>, empty or incomplete frames, etc.</p>
+     *
+     * @param rateControlFactory the factor for {@link RateControl} instances
+     */
+    public void setRateControlFactory(RateControl.Factory rateControlFactory)
+    {
+        this.rateControlFactory = rateControlFactory;
     }
 }
