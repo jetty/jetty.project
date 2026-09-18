@@ -84,8 +84,17 @@ public interface HttpCookie
      */
     default boolean isExpired()
     {
+        // A zero max-age is an automatically expired
         if (getMaxAge() == 0)
             return true;
+        // We have a positive max-age, this cookie, as it is configured cannot expire
+        // The storage of the cookie on the User-Agent will have a timestamp of when
+        // this cookie was received, and when the User-Agent wants to use this cookie
+        // it has to validate that the cookie is expired based on that timestamp
+        // and this max-age
+        if (getMaxAge() > 0)
+            return false;
+        // At this point we have no max-age, so we fall back to expires.
         Instant expires = getExpires();
         return expires != null && Instant.now().isAfter(expires);
     }
