@@ -647,8 +647,7 @@ public class ServletApiResponse implements HttpServletResponse
         @Override
         public boolean isPartitioned()
         {
-            String value = getAttributes().get(HttpCookie.PARTITIONED_ATTRIBUTE);
-            return value != null && !StringUtil.asciiEqualsIgnoreCase("false", value);
+            return HttpCookie.isAttributeTrue(getAttributes().get(HttpCookie.PARTITIONED_ATTRIBUTE));
         }
 
         @Override

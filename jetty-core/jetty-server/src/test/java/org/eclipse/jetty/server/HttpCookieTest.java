@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -494,6 +495,33 @@ public class HttpCookieTest
             "Domain=sun.com; Expires=(.*); Max-Age=50000; Secure; a1=b2$");
         assertTrue(pattern.matcher(actualSetCookie).matches(),
             "Actual Set-Cookie doesn't match expected pattern: " + actualSetCookie);
+    }
+
+    /**
+     * A {@code Max-Age} large enough to overflow (clamped by {@link RFC6265SetCookieParser} to
+     * {@link Long#MAX_VALUE} and kept) must not throw {@link ArithmeticException} when a synthetic
+     * {@code Expires} is derived from it during re-serialization; the {@code Expires} is clamped to a
+     * far-future, RFC 1123 valid date (year 9999). See PR #15811 review finding 1.
+     */
+    @Test
+    public void testSetCookieOverflowingMaxAgeExpiresIsClamped()
+    {
+        RFC6265SetCookieParser setCookieParser = new RFC6265SetCookieParser();
+        HttpCookie httpCookie = setCookieParser.parse("name1=value1; Max-Age=99999999999999999999");
+        assertNotNull(httpCookie);
+        assertThat(httpCookie.getMaxAge(), is(Long.MAX_VALUE));
+
+        // RFC 2965 serialization synthesizes an Expires from Max-Age; must not overflow.
+        String rfc2965 = HttpCookieUtils.getRFC2965SetCookie(httpCookie);
+        assertThat(rfc2965, allOf(
+            containsString(";Max-Age=" + Long.MAX_VALUE),
+            containsString(";Expires=Fri, 31 Dec 9999 23:59:59 GMT")));
+
+        // RFC 6265 serialization also synthesizes an Expires from Max-Age; must not overflow.
+        String rfc6265 = HttpCookieUtils.getRFC6265SetCookie(httpCookie);
+        assertThat(rfc6265, allOf(
+            containsString("Max-Age=" + Long.MAX_VALUE),
+            containsString("Expires=Fri, 31 Dec 9999 23:59:59 GMT")));
     }
 
     public static Stream<HttpCookie> setCookieMaxAgeZeroProvider()
