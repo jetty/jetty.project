@@ -66,6 +66,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
@@ -2558,6 +2559,29 @@ public class ConstraintTest
             assertThat("%s %s roles".formatted(httpMethod, requestPath), roleInfo.getRoles(), rolesMatcher);
             assertThat("%s %s user data constraint".formatted(httpMethod, requestPath), roleInfo.getUserDataConstraint(), dataConstraintMatcher);
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+        PROPPATCH, PATCH
+        PATCH, PATCHED
+        """)
+    public void testSubstringMethod(String methodConstraint, String methodRequest) throws Exception
+    {
+        ServletConstraint forbidConstraint = new ServletConstraint();
+        forbidConstraint.setAuthenticate(true);
+        forbidConstraint.setName("forbid");
+        ConstraintMapping forbiddenMapping = new ConstraintMapping();
+        forbiddenMapping.setPathSpec("/test/*");
+        forbiddenMapping.setMethod(methodConstraint);
+        forbiddenMapping.setConstraint(forbidConstraint);
+        _security.setConstraintMappings(List.of(forbiddenMapping));
+        _server.start();
+
+        String requestPath = "/test/foo";
+        RoleInfo roleInfo = _security.prepareConstraintInfo(requestPath, methodRequest);
+        assertThat("%s %s roleInfo isChecked".formatted(methodRequest, requestPath), roleInfo.isChecked(), is(false));
+        assertThat("%s %s roleInfo forbidden".formatted(methodRequest, requestPath), roleInfo.isForbidden(), is(false));
     }
 
     public static Stream<Arguments> singleForbiddenMethodOmissionCases()

@@ -103,17 +103,15 @@ public class HttpStreamOverFCGI implements HttpStream
             processField(field);
     }
 
-    public void onHeaders()
+    public Runnable onHeaders()
     {
         String pathQuery = URIUtil.addPathQuery(_path, _query);
         HttpScheme scheme = StringUtil.isEmpty(_secure) ? HttpScheme.HTTP : HttpScheme.HTTPS;
         MetaData.Request request = new MetaData.Request(_connection.getBeginNanoTime(), _method, scheme.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, -1);
         Runnable task = _httpChannel.onRequest(request);
         _allHeaders.forEach(field -> _httpChannel.getRequest().setAttribute(field.getName(), field.getValue()));
-        // TODO: here we just execute the task.
-        //  However, we should really return all the way back to onFillable()
-        //  and feed the Runnable to an ExecutionStrategy.
-        execute(task);
+        // Return the task to dispatch it after ServerParser.parse() has returned.
+        return task;
     }
 
     private void processField(HttpField field)
@@ -356,11 +354,6 @@ public class HttpStreamOverFCGI implements HttpStream
         if (handlingRequest)
             ThreadPool.executeImmediately(_connection.getConnector().getExecutor(), task.action());
         return !handlingRequest;
-    }
-
-    private void execute(Runnable task)
-    {
-        _connection.getConnector().getExecutor().execute(task);
     }
 
     private class DemandCallback implements Callback

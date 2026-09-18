@@ -17,11 +17,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpHeader;
@@ -49,12 +52,12 @@ import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Session;
+import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CharsetStringBuilder.Iso88591StringBuilder;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -86,8 +89,8 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
     private static final String DEFAULT_NONCE_PATH = "/auth/nonce";
     private static final String NONCE_SET_ATTR = "org.eclipse.jetty.security.siwe.nonce";
 
-    private final IncludeExcludeSet<String, String> _chainIds = new IncludeExcludeSet<>();
-    private final IncludeExcludeSet<String, String> _domains = new IncludeExcludeSet<>();
+    private final Set<String> _chainIds = new HashSet<>();
+    private final Set<String> _domains = new AsciiLowerCaseSet();
 
     private String _loginPath;
     private String _authenticationPath = DEFAULT_AUTHENTICATION_PATH;
@@ -105,12 +108,12 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
 
     public void includeDomains(String... domains)
     {
-        _domains.include(domains);
+        _domains.addAll(Arrays.asList(domains));
     }
 
     public void includeChainIds(String... chainIds)
     {
-        _chainIds.include(chainIds);
+        _chainIds.addAll(Arrays.asList(chainIds));
     }
 
     @Override
@@ -522,7 +525,7 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
 
         try
         {
-            siwe.validate(signedMessage, nonce -> redeemNonce(session, nonce), _domains, _chainIds);
+            siwe.validate(signedMessage, nonce -> redeemNonce(session, nonce), getDomainValidator(request), getChainIdValidator());
         }
         catch (Throwable t)
         {
@@ -532,15 +535,36 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
         return null;
     }
 
+    private Predicate<String> getChainIdValidator()
+    {
+        if (_chainIds.isEmpty())
+            return chainId -> true;
+        return _chainIds::contains;
+    }
+
+    private Predicate<String> getDomainValidator(Request request)
+    {
+        if (!_domains.isEmpty())
+            return _domains::contains;
+
+        // Default to use the authority of the request.
+        String host = Request.getServerName(request);
+        int port = Request.getServerPort(request);
+        int defaultPort = request.isSecure() ? 443 : 80;
+        String authority = StringUtil.isBlank(host) ? null
+            : (port <= 0 || port == defaultPort) ? host : host + ":" + port;
+        return domain -> authority != null && StringUtil.asciiEqualsIgnoreCase(authority, domain);
+    }
+
     @Override
     public AuthenticationState validateRequest(Request request, Response response, Callback callback) throws ServerAuthException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("validateRequest({},{})", request, response);
 
-        String uri = request.getHttpURI().toString();
-        if (uri == null)
-            uri = "/";
+        String pathInContext = Request.getPathInContext(request);
+        if (pathInContext == null)
+            pathInContext = "/";
 
         try
         {
@@ -552,9 +576,9 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
                     return sendError(request, response, callback, "session could not be created");
             }
 
-            if (isNonceRequest(uri))
+            if (isNonceRequest(pathInContext))
                 return handleNonceRequest(request, response, callback);
-            if (isAuthenticationRequest(uri))
+            if (isAuthenticationRequest(pathInContext))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("authentication request");
@@ -704,31 +728,29 @@ public class EthereumAuthenticator extends LoginAuthenticator implements Dumpabl
         }
     }
 
-    public boolean isLoginPage(String uri)
+    public boolean isLoginPage(String pathInContext)
     {
-        return matchURI(uri, _loginPath);
+        return pathInContext != null && pathInContext.equals(_loginPath);
     }
 
-    public boolean isAuthenticationRequest(String uri)
+    public boolean isAuthenticationRequest(String pathInContext)
     {
-        return matchURI(uri, _authenticationPath);
+        return matchURI(pathInContext, _authenticationPath);
     }
 
-    public boolean isNonceRequest(String uri)
+    public boolean isNonceRequest(String pathInContext)
     {
-        return matchURI(uri, _noncePath);
+        return matchURI(pathInContext, _noncePath);
     }
 
-    private boolean matchURI(String uri, String path)
+    private boolean matchURI(String pathInContext, String path)
     {
-        int jsc = uri.indexOf(path);
-        if (jsc < 0)
+        if (pathInContext == null || !pathInContext.startsWith(path))
             return false;
-        int e = jsc + path.length();
-        if (e == uri.length())
+        int e = path.length();
+        if (e == pathInContext.length())
             return true;
-        char c = uri.charAt(e);
-        return c == ';' || c == '#' || c == '/' || c == '?';
+        return pathInContext.charAt(e) == '/';
     }
 
     public boolean isErrorPage(String pathInContext)

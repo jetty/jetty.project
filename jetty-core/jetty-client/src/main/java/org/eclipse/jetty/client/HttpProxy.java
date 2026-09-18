@@ -140,6 +140,17 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         return URI.create(getOrigin().asString());
     }
 
+    /**
+     * <p>Returns whether tunneling is required to reach the given server {@link Origin}.</p>
+     * <p>Returns {@code true} when the server is secure, or when the client-proxy protocol
+     * is different from the proxy-server protocol.
+     * An example of the latter case is sending an HTTP/2 clear-text request to the server
+     * via a proxy that only speaks HTTP/1.1, or an HTTP/1.1 request to a server via a proxy
+     * that only speaks HTTP/2.</p>
+     *
+     * @param serverOrigin the server {@link Origin}
+     * @return true if tunneling is required to reach the server
+     */
     public boolean requiresTunnel(Origin serverOrigin)
     {
         if (serverOrigin.isSecure())
