@@ -385,10 +385,10 @@ public class QueuedPoolTest
         assertThat(pool.size(), is(2));
 
         // Remove an entry that is still in the queue multiple times.
-        pool.stream().filter(e -> e.getPooled().equals("aaa")).forEach(stringEntry ->
+        pool.stream().filter(e -> e.getPooled().equals("aaa")).forEach(entry ->
         {
-            stringEntry.remove();
-            stringEntry.remove();
+            entry.remove();
+            entry.remove();
         });
         assertThat(pool.size(), is(1));
     }
