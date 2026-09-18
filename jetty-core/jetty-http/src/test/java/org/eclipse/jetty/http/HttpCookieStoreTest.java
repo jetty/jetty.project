@@ -315,6 +315,24 @@ public class HttpCookieStoreTest
     }
 
     @Test
+    public void testExpiredWithMaxAgeCookieWillMatch()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI uri = URI.create("https://example.com/");
+        HttpCookie cookie = HttpCookie.build("n1", "v1")
+            .maxAge(3600)
+            .expires(Instant.EPOCH)
+            .build();
+
+        assertTrue(store.add(uri, cookie));
+        List<HttpCookie> matches = store.match(uri);
+        assertEquals(1, matches.size());
+        HttpCookie matched = matches.get(0);
+        assertEquals("n1", matched.getName());
+        assertEquals("v1", matched.getValue());
+    }
+
+    @Test
     public void testRemove()
     {
         // Note that the URI path is "/path/", but the cookie path "/remove" is used.
