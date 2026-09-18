@@ -170,31 +170,66 @@ public interface CharsetStringBuilder
 
     class Iso88591StringBuilder implements CharsetStringBuilder
     {
-        private final StringBuilder _builder = new StringBuilder();
+        private final int _maxLength;
+        private byte[] _bytes = new byte[16];
+        private int _length;
+
+        public Iso88591StringBuilder()
+        {
+            this(Integer.MAX_VALUE);
+        }
+
+        public Iso88591StringBuilder(int maxLength)
+        {
+            _maxLength = maxLength;
+        }
 
         @Override
         public void append(byte b)
         {
-            _builder.append((char)(0xff & b));
+            if (_length == _maxLength)
+                throw new IllegalStateException("max buffer size overflow");
+
+            if (_length == _bytes.length)
+                _bytes = ArrayUtil.grow(_bytes, 1, _maxLength);
+
+            _bytes[_length] = (byte)(0xff & b);
+            _length++;
         }
 
         @Override
         public void append(char c)
         {
-            _builder.append(c);
+            append((byte)c);
         }
 
         @Override
         public void append(CharSequence chars, int offset, int length)
         {
-            _builder.append(chars, offset, offset + length);
+            for (int i = 0; i < length; i++)
+            {
+                append(chars.charAt(offset + i));
+            }
+        }
+
+        public void append(ByteBuffer buffer, int offset, int length)
+        {
+            int newLength = _length + length;
+            if (newLength > _maxLength)
+                throw new IllegalStateException("max buffer size overflow");
+
+            if (newLength > _bytes.length)
+                _bytes = ArrayUtil.grow(_bytes, newLength - _bytes.length, _maxLength);
+
+            buffer.get(offset, _bytes, _length, length);
+            _length = newLength;
         }
 
         @Override
         public String build()
         {
-            String s = _builder.toString();
-            _builder.setLength(0);
+            String s = new String(_bytes, 0, _length, StandardCharsets.ISO_8859_1);
+            _length = 0;
             return s;
         }
 
@@ -207,13 +242,13 @@ public interface CharsetStringBuilder
         @Override
         public int length()
         {
-            return _builder.length();
+            return _length;
         }
 
         @Override
         public void reset()
         {
-            _builder.setLength(0);
+            _length = 0;
         }
     }
     
@@ -232,13 +267,18 @@ public interface CharsetStringBuilder
         @Override
         public void append(char c)
         {
+            if (c > 127)
+                throw new IllegalArgumentException();
             _builder.append(c);
         }
 
         @Override
         public void append(CharSequence chars, int offset, int length)
         {
-            _builder.append(chars, offset, offset + length);
+            for (int i = 0; i < length; i++)
+            {
+                append(chars.charAt(offset + i));
+            }
         }
 
         @Override

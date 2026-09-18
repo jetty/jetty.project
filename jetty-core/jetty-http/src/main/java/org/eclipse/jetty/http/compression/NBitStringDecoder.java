@@ -15,7 +15,7 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.CharsetStringBuilder;
+import org.eclipse.jetty.util.CharsetStringBuilder.Iso88591StringBuilder;
 
 /**
  * <p>Used to decode string literals as described in RFC7541.</p>
@@ -31,7 +31,7 @@ public class NBitStringDecoder
 {
     private final NBitIntegerDecoder _integerDecoder;
     private final HuffmanDecoder _huffmanBuilder;
-    private final CharsetStringBuilder.Iso88591StringBuilder _builder;
+    private final Iso88591StringBuilder _builder;
     private boolean _huffman;
     private int _count;
     private int _length;
@@ -50,7 +50,7 @@ public class NBitStringDecoder
     {
         _integerDecoder = new NBitIntegerDecoder();
         _huffmanBuilder = new HuffmanDecoder();
-        _builder = new CharsetStringBuilder.Iso88591StringBuilder();
+        _builder = new Iso88591StringBuilder();
     }
 
     /**
@@ -109,13 +109,18 @@ public class NBitStringDecoder
 
     private String stringDecode(ByteBuffer buffer)
     {
-        for (; _count < _length; _count++)
-        {
-            if (!buffer.hasRemaining())
-                return null;
-            _builder.append(buffer.get());
-        }
+        if (_count < _length && !buffer.hasRemaining())
+            return null;
+        // An ISO-8859-1 String is byte for byte the encoded bytes, so accumulate
+        // the bytes in bulk and decode them in one go, rather than appending one
+        // character at a time.
+        int available = Math.min(_length - _count, buffer.remaining());
+        _builder.append(buffer, buffer.position(), available);
+        buffer.position(buffer.position() + available);
+        _count += available;
 
+        if (_count < _length)
+            return null;
         return _builder.build();
     }
 
