@@ -374,4 +374,22 @@ public class QueuedPoolTest
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getInUseCount(), is(0));
     }
+
+    @Test
+    public void testRemovePresentEntriesUsingStream()
+    {
+        Pool<String> pool = new QueuedPool<>(5);
+
+        pool.reserve().enable("aaa", false);
+        pool.reserve().enable("bbb", false);
+        assertThat(pool.size(), is(2));
+
+        // Remove an entry that is still in the queue multiple times.
+        pool.stream().filter(e->e.getPooled().equals("aaa")).forEach(stringEntry ->
+        {
+            stringEntry.remove();
+            stringEntry.remove();
+        });
+        assertThat(pool.size(), is(1));
+    }
 }
