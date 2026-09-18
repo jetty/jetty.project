@@ -1698,4 +1698,30 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @Test
+    public void testValidateModules() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        List<String> args = new ArrayList<>();
+        args.add("--validate-modules");
+
+        String remoteRepoUri = System.getProperty("maven.repo.uri");
+        if (remoteRepoUri != null)
+        {
+            args.add("maven.repo.uri=" + remoteRepoUri);
+        }
+
+        try (JettyHomeTester.Run run1 = distribution.start(args))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue(), run1.logs());
+        }
+    }
 }

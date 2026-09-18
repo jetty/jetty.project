@@ -36,6 +36,15 @@ public class BaseHomeFileInitializer extends FileInitializer
     }
 
     @Override
+    public boolean exists(URI uri) throws IOException
+    {
+        if (uri.getSchemeSpecificPart().startsWith("/"))
+            throw new IllegalArgumentException(String.format("Bad file arg: %s", uri));
+        Path source = _basehome.getPath(uri.getSchemeSpecificPart());
+        return FS.exists(source);
+    }
+
+    @Override
     public boolean create(URI uri, String location) throws IOException
     {
         if (uri.getSchemeSpecificPart().startsWith("/"))

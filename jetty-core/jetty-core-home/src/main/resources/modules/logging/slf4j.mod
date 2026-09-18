@@ -12,7 +12,7 @@ logging
 slf4j
 
 [lib]
-lib/logging/slf4j-api-${slf4j.version}.jar
+lib/support/slf4j-api-${slf4j.version}.jar
 
 [ini]
 slf4j.version?=@slf4j.version@

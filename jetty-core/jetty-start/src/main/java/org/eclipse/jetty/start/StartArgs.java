@@ -167,6 +167,7 @@ public class StartArgs
     private boolean stopCommand = false;
     private List<String> listModules = null;
     private List<String> showModules = null;
+    private List<String> validateModules = null;
     private boolean listClasspath = false;
     private boolean listConfig = false;
     private boolean version = false;
@@ -239,7 +240,7 @@ public class StartArgs
             files.add(arg);
     }
 
-    private StartEnvironment getEnvironment(Module module)
+    public StartEnvironment getEnvironment(Module module)
     {
         String envName = module == null ? null : module.getEnvironment();
         StartEnvironment environment = envName == null ? getJettyEnvironment() : getEnvironment(envName);
@@ -852,6 +853,11 @@ public class StartArgs
         return showModules;
     }
 
+    public List<String> getValidateModules()
+    {
+        return validateModules;
+    }
+
     public boolean isRun()
     {
         return run;
@@ -1120,6 +1126,20 @@ public class StartArgs
         if (arg.startsWith("--show-module=") || arg.startsWith("--show-modules="))
         {
             showModules = Props.getValues(arg);
+            run = false;
+            return environment;
+        }
+
+        if ("--validate-module".equals(arg) || "--validate-modules".equals(arg))
+        {
+            validateModules = List.of();
+            run = false;
+            return environment;
+        }
+
+        if (arg.startsWith("--validate-module=") || arg.startsWith("--validate-modules="))
+        {
+            validateModules = Props.getValues(arg);
             run = false;
             return environment;
         }

@@ -31,6 +31,24 @@ public class LocalFileInitializer extends FileInitializer
     }
 
     @Override
+    public boolean exists(URI uri) throws IOException
+    {
+        if (uri == null)
+            return false;
+
+        if (uri.getScheme() != null)
+        {
+            if (!"file".equals(uri.getScheme()))
+            {
+                throw new IllegalArgumentException("Unexpected scheme: " + uri);
+            }
+        }
+
+        Path path = Path.of(uri);
+        return Files.exists(path);
+    }
+
+    @Override
     public boolean create(URI uri, String location) throws IOException
     {
         Path destination = getDestination(uri, location);
