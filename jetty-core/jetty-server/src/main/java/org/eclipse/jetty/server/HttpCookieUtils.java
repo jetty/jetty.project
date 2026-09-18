@@ -168,17 +168,26 @@ public final class HttpCookieUtils
                 builder.append(path);
         }
 
+        // Append Expires attribute (optional attribute in original Netscape spec, and RFC 2109, and RFC 2965)
+        String declaredExpires = httpCookie.getAttributes().get("Expires");
+        if (declaredExpires != null)
+            builder.append(";Expires=").append(declaredExpires);
+
         // Handle max-age and/or expires
         long maxAge = httpCookie.getMaxAge();
         if (maxAge >= 0)
         {
-            // Always add the Expires attribute too, as some
-            // browsers do not handle max-age even with v1 cookies.
-            builder.append(";Expires=");
-            if (maxAge == 0)
-                builder.append(EPOCH_EXPIRES);
-            else
-                builder.append(HttpCookie.formatExpires(Instant.now().plusSeconds(maxAge)));
+            // Always include expires (if not declared)
+            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
+            if (declaredExpires == null)
+            {
+                // Generate a valid Expires header based on the value of maxAge.
+                builder.append(";Expires=");
+                if (maxAge == 0)
+                    builder.append(EPOCH_EXPIRES);
+                else
+                    builder.append(HttpCookie.formatExpires(Instant.now().plusSeconds(maxAge)));
+            }
 
             builder.append(";Max-Age=");
             builder.append(maxAge);
@@ -242,17 +251,26 @@ public final class HttpCookieUtils
         if (domain != null && !domain.isEmpty())
             builder.append("; Domain=").append(domain);
 
+        // Append Expires attribute (optional attribute in RFC 6265)
+        String declaredExpires = httpCookie.getAttributes().get("Expires");
+        if (declaredExpires != null)
+            builder.append("; Expires=").append(declaredExpires);
+
         // Handle max-age and/or expires
         long maxAge = httpCookie.getMaxAge();
         if (maxAge >= 0)
         {
-            // Always use expires
+            // Always include expires (if not declared)
             // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
-            builder.append("; Expires=");
-            if (maxAge == 0)
-                builder.append(EPOCH_EXPIRES);
-            else
-                builder.append(HttpCookie.formatExpires(Instant.now().plusSeconds(maxAge)));
+            if (declaredExpires == null)
+            {
+                // Generate a valid Expires header based on the value of maxAge.
+                builder.append("; Expires=");
+                if (maxAge == 0)
+                    builder.append(EPOCH_EXPIRES);
+                else
+                    builder.append(HttpCookie.formatExpires(Instant.now().plusSeconds(maxAge)));
+            }
 
             if (maxAge > 0)
             {
