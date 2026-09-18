@@ -42,7 +42,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHTTP2.class);
 
-    private final Stream.Listener listener = new Listener();
+    private final Listener listener = new Listener();
     private final HttpConnectionOverHTTP2 connection;
     private final Session session;
     private final HttpSenderOverHTTP2 sender;
@@ -71,6 +71,15 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public Stream.Listener getStreamListener()
     {
         return listener;
+    }
+
+    /**
+     * Aborts the exchange, serialized with other stream events so that an
+     * already-received response is delivered before the exchange is aborted.
+     */
+    void abort(Throwable failure)
+    {
+        listener.abort(failure);
     }
 
     @Override
@@ -250,6 +259,18 @@ public class HttpChannelOverHTTP2 extends HttpChannel
             Runnable task = channel.onFailure(failure, callback);
             if (LOG.isDebugEnabled())
                 LOG.debug("executing failure task {} {}", stream, task);
+            ThreadPool.executeImmediately(connection.getHttpClient().getExecutor(), invoker.offer(task));
+        }
+
+        private void abort(Throwable failure)
+        {
+            // Serialize with other stream events so an already-received response is delivered first.
+            Runnable task = () ->
+            {
+                HttpExchange exchange = getHttpExchange();
+                if (exchange != null)
+                    exchange.getRequest().abort(failure);
+            };
             ThreadPool.executeImmediately(connection.getHttpClient().getExecutor(), invoker.offer(task));
         }
     }
