@@ -16,6 +16,7 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -540,7 +541,11 @@ public class HttpGenerator
 
     private void generateRequestLine(MetaData.Request request, ByteBuffer header)
     {
-        header.put(StringUtil.getBytes(request.getMethod()));
+        HttpMethod m = HttpMethod.CACHE.get(request.getMethod());
+        if (m == null)
+            header.put(StringUtil.getBytes(request.getMethod()));
+        else
+            header.put(m.getBytes());
         header.put((byte)' ');
         header.put(StringUtil.getBytes(request.getHttpURI().toString()));
         header.put((byte)' ');
