@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io.internal;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -27,6 +28,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -255,7 +257,7 @@ public class QueuedPoolTest
         assertThat(entry.enable("bbb", true), is(false));
 
         assertThat(entry.release(), is(false));
-        assertThat(entry.remove(), is(true));
+        assertThat(entry.remove(), is(false));
         assertThat(entry.remove(), is(false));
     }
 
@@ -391,5 +393,27 @@ public class QueuedPoolTest
             entry.remove();
         });
         assertThat(pool.size(), is(1));
+    }
+
+    @Test
+    public void testRemovePresentEntriesAfterTerminate()
+    {
+        Pool<String> pool = new QueuedPool<>(5);
+
+        pool.reserve().enable("aaa", false);
+        pool.reserve().enable("bbb", false);
+        assertThat(pool.size(), is(2));
+
+        List<Pool.Entry<String>> entries = pool.stream().toList();
+
+        List<Pool.Entry<String>> terminatedEntries = new ArrayList<>(pool.terminate());
+        assertThat(terminatedEntries.size(), is(2));
+        assertThat(terminatedEntries.get(0).isTerminated(), is(true));
+        assertThat(terminatedEntries.get(1).isTerminated(), is(true));
+        assertThat(pool.size(), is(0));
+
+        assertFalse(entries.get(0).remove());
+        assertFalse(entries.get(1).remove());
+        assertThat(pool.size(), is(0));
     }
 }

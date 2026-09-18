@@ -100,8 +100,18 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
 
     private void remove(QueuedEntry<P> entry)
     {
-        if (queue.remove(entry))
-            queueSize.decrementAndGet();
+        rwLock.readLock().lock();
+        try
+        {
+            if (terminated)
+                return;
+            if (queue.remove(entry))
+                queueSize.decrementAndGet();
+        }
+        finally
+        {
+            rwLock.readLock().unlock();
+        }
     }
 
     @Override
@@ -151,10 +161,9 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
             // as well as the copy and the clearing of the queue MUST be
             // atomic otherwise we may not return the exact list of entries
             // that remained in the pool when terminate() was called.
-            terminated = true;
             Collection<Entry<P>> copy = new ArrayList<>(queue);
-            queue.clear();
-            queueSize.set(0);
+            queue.forEach(Entry::remove);
+            terminated = true;
             return copy;
         }
         finally
