@@ -191,7 +191,7 @@ public interface CharsetStringBuilder
                 throw new IllegalStateException("max buffer size overflow");
 
             if (_length == _bytes.length)
-                _bytes = ArrayUtil.grow(_bytes, _length, _maxLength);
+                _bytes = ArrayUtil.grow(_bytes, 1, _maxLength);
 
             _bytes[_length] = (byte)(0xff & b);
             _length++;
