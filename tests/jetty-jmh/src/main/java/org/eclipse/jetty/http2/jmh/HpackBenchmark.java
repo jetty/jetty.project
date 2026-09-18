@@ -22,6 +22,8 @@ import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.compression.HuffmanDecoder;
+import org.eclipse.jetty.http.compression.HuffmanEncoder;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.HeaderParser;
@@ -64,6 +66,8 @@ public class HpackBenchmark
     private ByteBuffer warmEncodedResponse;
     private MetaData.Response response;
     private ByteBuffer encodeBuffer;
+    private HuffmanDecoder huffmanDecoder;
+    private ByteBuffer huffmanEncoded;
     private String[] fieldNames;
     private String[] fieldValues;
 
@@ -94,6 +98,12 @@ public class HpackBenchmark
 
         encodeBuffer = ByteBuffer.allocateDirect(BUFFER_CAPACITY);
 
+        String value = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+        huffmanEncoded = ByteBuffer.allocateDirect(HuffmanEncoder.octetsNeeded(value));
+        HuffmanEncoder.encode(huffmanEncoded, value);
+        huffmanEncoded.flip();
+        huffmanDecoder = new HuffmanDecoder();
+
         coldEncodedRequest = encode(request);
         coldEncodedResponse = encode(response);
 
@@ -118,7 +128,7 @@ public class HpackBenchmark
 
         fieldNames = new String[]{"content-type", "x-request-id", "accept-encoding", "cache-control", "x-forwarded-for"};
         fieldValues = new String[]{"text/html; charset=utf-8", "b3a1c9e2-4f6d-4a1b-9c3e-7d2f8a5b6c4d",
-            "gzip, deflate, br", "max-age=3600, must-revalidate", "203.0.113.42, 198.51.100.7"};
+                                   "gzip, deflate, br", "max-age=3600, must-revalidate", "203.0.113.42, 198.51.100.7"};
     }
 
     private ByteBuffer encode(MetaData metaData) throws Exception
@@ -183,6 +193,41 @@ public class HpackBenchmark
         encodeBuffer.clear();
         warmHpackEncoder.encode(encodeBuffer, response);
         return encodeBuffer.position();
+    }
+
+    @Benchmark
+    public String decodeHuffman() throws Exception
+    {
+        ByteBuffer buffer = huffmanEncoded.slice();
+        huffmanDecoder.reset();
+        huffmanDecoder.setLength(buffer.remaining());
+        return huffmanDecoder.decode(buffer);
+    }
+
+    @Benchmark
+    public int encodeHuffman()
+    {
+        encodeBuffer.clear();
+        for (String value : fieldValues)
+        {
+            HuffmanEncoder.encode(encodeBuffer, value);
+        }
+        return encodeBuffer.position();
+    }
+
+    @Benchmark
+    public int huffmanOctetsNeeded()
+    {
+        int needed = 0;
+        for (String value : fieldValues)
+        {
+            needed += HuffmanEncoder.octetsNeeded(value);
+        }
+        for (String name : fieldNames)
+        {
+            needed += HuffmanEncoder.octetsNeededLowerCase(name);
+        }
+        return needed;
     }
 
     @Benchmark

@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.ee10.osgi</groupId>
     <artifactId>jetty-ee10-osgi</artifactId>
-    <version>12.1.13-SNAPSHOT</version>
+    <version>12.1.14-SNAPSHOT</version>
   </parent>
   <artifactId>test-jetty-ee10-osgi</artifactId>
   <name>EE10 :: OSGi :: Test</name>
@@ -236,6 +236,11 @@
     <dependency>
       <groupId>jakarta.transaction</groupId>
       <artifactId>jakarta.transaction-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -553,14 +558,6 @@
               <exclude>**/TestJettyOSGiBootWithJakartaWebSocket.java</exclude>
             </excludes>
           </configuration>
-          <!-- paxexam still using junit 4 so we have to force the provider here -->
-          <dependencies>
-            <dependency>
-              <groupId>org.apache.maven.surefire</groupId>
-              <artifactId>surefire-junit47</artifactId>
-              <version>${maven.surefire.plugin.version}</version>
-            </dependency>
-          </dependencies>
         </plugin>
         <plugin>
           <groupId>org.apache.servicemix.tooling</groupId>
