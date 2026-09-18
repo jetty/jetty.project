@@ -228,14 +228,9 @@ public interface CharsetStringBuilder
         @Override
         public String build()
         {
-            String s = new String(_bytes, 0, _length, getCharset());
+            String s = new String(_bytes, 0, _length, StandardCharsets.ISO_8859_1);
             _length = 0;
             return s;
-        }
-
-        protected Charset getCharset()
-        {
-            return StandardCharsets.ISO_8859_1;
         }
 
         @Override
@@ -256,23 +251,60 @@ public interface CharsetStringBuilder
             _length = 0;
         }
     }
-
-    class UsAsciiStringBuilder extends Iso88591StringBuilder
+    
+    class UsAsciiStringBuilder implements CharsetStringBuilder
     {
-        public UsAsciiStringBuilder()
-        {
-            this(Integer.MAX_VALUE);
-        }
+        private final StringBuilder _builder = new StringBuilder();
 
-        public UsAsciiStringBuilder(int maxLength)
+        @Override
+        public void append(byte b)
         {
-            super(maxLength);
+            if (b < 0)
+                throw new IllegalArgumentException();
+            _builder.append((char)b);
         }
 
         @Override
-        protected Charset getCharset()
+        public void append(char c)
         {
-            return StandardCharsets.US_ASCII;
+            if (c > 127)
+                throw new IllegalArgumentException();
+            _builder.append(c);
+        }
+
+        @Override
+        public void append(CharSequence chars, int offset, int length)
+        {
+            for (int i = 0; i < length; i++)
+            {
+                append(chars.charAt(offset + i));
+            }
+        }
+
+        @Override
+        public String build()
+        {
+            String s = _builder.toString();
+            _builder.setLength(0);
+            return s;
+        }
+
+        @Override
+        public String build(boolean ignored)
+        {
+            return build();
+        }
+
+        @Override
+        public int length()
+        {
+            return _builder.length();
+        }
+
+        @Override
+        public void reset()
+        {
+            _builder.setLength(0);
         }
     }
 
