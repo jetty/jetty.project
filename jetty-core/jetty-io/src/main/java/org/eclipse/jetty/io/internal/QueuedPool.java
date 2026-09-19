@@ -98,6 +98,22 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
         }
     }
 
+    private void remove(QueuedEntry<P> entry)
+    {
+        rwLock.readLock().lock();
+        try
+        {
+            if (terminated)
+                return;
+            if (queue.remove(entry))
+                queueSize.decrementAndGet();
+        }
+        finally
+        {
+            rwLock.readLock().unlock();
+        }
+    }
+
     @Override
     public Entry<P> acquire()
     {
@@ -106,13 +122,17 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
         {
             if (terminated)
                 return null;
-            QueuedEntry<P> entry = (QueuedEntry<P>)queue.poll();
-            if (entry != null)
+            while (true)
             {
-                queueSize.decrementAndGet();
-                entry.acquire();
+                QueuedEntry<P> entry = (QueuedEntry<P>)queue.poll();
+                if (entry == null)
+                    return null;
+                if (entry.acquire())
+                {
+                    queueSize.decrementAndGet();
+                    return entry;
+                }
             }
-            return entry;
         }
         finally
         {
@@ -149,6 +169,8 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
             Collection<Entry<P>> copy = new ArrayList<>(queue);
             queue.clear();
             queueSize.set(0);
+            // The returned entries are kept in idle state as the pooled
+            // reference must be preserved.
             return copy;
         }
         finally
@@ -273,7 +295,7 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
             return pooled.getReference();
         }
 
-        void acquire()
+        private boolean acquire()
         {
             boolean[] state = new boolean[1];
             while (true)
@@ -281,9 +303,9 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
                 P p = pooled.get(state);
                 boolean idle = isIdle(p, state[0]);
                 if (!idle)
-                    return;
+                    return false;
                 if (pooled.compareAndSet(p, p, false, true))
-                    return;
+                    return true;
             }
         }
 
@@ -313,7 +335,10 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
                 if (terminated)
                     return false;
                 if (pooled.compareAndSet(p, null, state[0], true))
+                {
+                    pool.remove(this);
                     return true;
+                }
             }
         }
 
