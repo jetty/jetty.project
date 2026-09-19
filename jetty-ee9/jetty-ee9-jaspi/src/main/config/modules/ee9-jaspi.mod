@@ -3,6 +3,9 @@
 [description]
 Enables JASPI authentication for deployed web applications.
 
+[environment]
+ee9
+
 [tags]
 security
 
