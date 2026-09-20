@@ -166,6 +166,8 @@
     <asm.version>9.10.1</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
     <bndlib.version>6.4.1</bndlib.version>
+    <!-- bctls 1.86 shipped a broken multi-release jar, see bcgit/bc-java#2448 -->
+    <bouncycastle.tls.version>1.86.1</bouncycastle.tls.version>
     <bouncycastle.version>1.86</bouncycastle.version>
     <build-helper.maven.plugin.version>3.6.2</build-helper.maven.plugin.version>
     <build-support.version>1.6</build-support.version>
@@ -619,7 +621,7 @@
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bctls-jdk18on</artifactId>
-        <version>${bouncycastle.version}</version>
+        <version>${bouncycastle.tls.version}</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
