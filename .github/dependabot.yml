@@ -410,6 +410,10 @@ updates:
         versions:  [ "> 10.1.0"]
       - dependency-name: "org.mortbay.jetty.quiche:jetty-quiche-native"
         versions: [ "> 0.24.5" ]
+      # bctls 1.86 ships a broken multi-release jar and throws NoSuchMethodError
+      # on JDK 9+, see bcgit/bc-java#2448. Use the respun 1.86.1 instead.
+      - dependency-name: "org.bouncycastle:bctls-jdk18on"
+        versions: [ "1.86" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee8"
