@@ -61,6 +61,10 @@ updates:
       # Do not upgrade major versions of dependencies
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
+      # bctls 1.86 ships a broken multi-release jar and throws NoSuchMethodError
+      # on JDK 9+, see bcgit/bc-java#2448. Use the respun 1.86.1 instead.
+      - dependency-name: "org.bouncycastle:bctls-jdk18on"
+        versions: [ "1.86" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee8"

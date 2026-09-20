@@ -175,6 +175,8 @@
 
     -->
     <bndlib.version>6.4.1</bndlib.version>
+    <!-- bctls 1.86 shipped a broken multi-release jar, see bcgit/bc-java#2448 -->
+    <bouncycastle.tls.version>1.86.1</bouncycastle.tls.version>
     <bouncycastle.version>1.86</bouncycastle.version>
     <brotli4j.version>1.23.0</brotli4j.version>
     <build-helper.maven.plugin.version>3.6.2</build-helper.maven.plugin.version>
@@ -663,7 +665,7 @@
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bctls-jdk18on</artifactId>
-        <version>${bouncycastle.version}</version>
+        <version>${bouncycastle.tls.version}</version>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
