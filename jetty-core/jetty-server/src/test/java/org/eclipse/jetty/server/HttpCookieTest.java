@@ -21,11 +21,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.http.ComplianceViolationException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.http.HttpDateTime;
+import org.eclipse.jetty.http.RFC6265SetCookieParser;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -37,6 +38,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -144,33 +146,6 @@ public class HttpCookieTest
                 .build(),
                 "minimal=value",
                 "minimal=value"),
-            // Values with spaces (not valid RFC6265)
-            new SetCookieCase(HttpCookie.from("name", "v a l u e"),
-                null,
-                "name=\"v a l u e\";Version=1"),
-            new SetCookieCase(HttpCookie.build("name", "v a l u e").build(),
-                null,
-                "name=\"v a l u e\";Version=1"),
-            new SetCookieCase(HttpCookie.from("name", "v a l u e", -1, Map.of()),
-                null,
-                "name=\"v a l u e\""),
-            new SetCookieCase(HttpCookie.build("ev erything", "va lue")
-                .domain("do main")
-                .path("pa th")
-                .comment("co mment")
-                .build(),
-                null,
-                "\"ev erything\"=\"va lue\";Version=1;Domain=\"do main\";Path=\"pa th\";Comment=\"co mment\""),
-            // JSON values (not valid RFC6265)
-            new SetCookieCase(HttpCookie.from("json", "{\"services\":[\"cwa\",  \"aa\"]}"),
-                null,
-                "json=\"{\\\"services\\\":[\\\"cwa\\\",  \\\"aa\\\"]}\";Version=1"),
-            new SetCookieCase(HttpCookie.build("json", "{\"services\":[\"cwa\",  \"aa\"]}").build(),
-                null,
-                "json=\"{\\\"services\\\":[\\\"cwa\\\",  \\\"aa\\\"]}\";Version=1"),
-            new SetCookieCase(HttpCookie.from("json", "{\"services\":[\"cwa\",  \"aa\"]}", -1, Map.of()),
-                null,
-                "json=\"{\\\"services\\\":[\\\"cwa\\\",  \\\"aa\\\"]}\""),
             // Values with special characters
             new SetCookieCase(HttpCookie.from("name", "value%="),
                 "name=value%=",
@@ -193,7 +168,7 @@ public class HttpCookieTest
                     HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0),
                     HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true),
                     HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true))),
-                "everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly",
+                "everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",
                 "everything=something;Domain=domain;Path=path;Expires=Thu, 01 Jan 1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly"),
             new SetCookieCase(HttpCookie.build("everything", "something")
                     .attribute(HttpCookie.DOMAIN_ATTRIBUTE, "domain")
@@ -202,7 +177,7 @@ public class HttpCookieTest
                     .attribute(HttpCookie.HTTP_ONLY_ATTRIBUTE, "true")
                     .attribute(HttpCookie.SECURE_ATTRIBUTE, "true")
                     .build(),
-                "everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly",
+                "everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",
                 "everything=something;Domain=domain;Path=path;Expires=Thu, 01 Jan 1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly"),
             new SetCookieCase(HttpCookie.from("everything", "value", -1,
                 Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain",
@@ -210,7 +185,7 @@ public class HttpCookieTest
                     HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0),
                     HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true),
                     HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true))),
-                "everything=value; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly",
+                "everything=value; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",
                 "everything=value;Domain=domain;Path=path;Expires=Thu, 01 Jan 1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly"),
             new SetCookieCase(HttpCookie.from("everything", "something", 0,
                 Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain",
@@ -219,7 +194,7 @@ public class HttpCookieTest
                     HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true),
                     HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true),
                     HttpCookie.COMMENT_ATTRIBUTE, "noncomment")),
-                "everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly" /* RFC6265 produces no Comment attribute */,
+                "everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly" /* RFC6265 produces no Comment attribute */,
                 "everything=something;Version=1;Domain=domain;Path=path;Expires=Thu, 01 Jan 1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=noncomment"),
             // Tests of SameSite attribute
             new SetCookieCase(HttpCookie.from("everything", "value",
@@ -314,6 +289,43 @@ public class HttpCookieTest
         );
     }
 
+    /**
+     * Cookies that are SO FAR out of spec that they fail in some way or another.
+     * Normally due to invalid characters, spacing, quoting, or similar things.
+     */
+    public static Stream<SetCookieCase> setCookieViolationProvider()
+    {
+        return Stream.of(
+            // Values with spaces (not valid RFC6265)
+            new SetCookieCase(HttpCookie.from("name", "v a l u e"),
+                null,
+                "name=\"v a l u e\";Version=1"),
+            new SetCookieCase(HttpCookie.build("name", "v a l u e").build(),
+                null,
+                "name=\"v a l u e\";Version=1"),
+            new SetCookieCase(HttpCookie.from("name", "v a l u e", -1, Map.of()),
+                null,
+                "name=\"v a l u e\""),
+            new SetCookieCase(HttpCookie.build("ev erything", "va lue")
+                .domain("do main")
+                .path("pa th")
+                .comment("co mment")
+                .build(),
+                null,
+                "\"ev erything\"=\"va lue\";Version=1;Domain=\"do main\";Path=\"pa th\";Comment=\"co mment\""),
+            // JSON values (not valid RFC6265)
+            new SetCookieCase(HttpCookie.from("json", "{\"services\":[\"cwa\",  \"aa\"]}"),
+                null,
+                "json=\"{\\\"services\\\":[\\\"cwa\\\",  \\\"aa\\\"]}\";Version=1"),
+            new SetCookieCase(HttpCookie.build("json", "{\"services\":[\"cwa\",  \"aa\"]}").build(),
+                null,
+                "json=\"{\\\"services\\\":[\\\"cwa\\\",  \\\"aa\\\"]}\";Version=1"),
+            new SetCookieCase(HttpCookie.from("json", "{\"services\":[\"cwa\",  \"aa\"]}", -1, Map.of()),
+                null,
+                "json=\"{\\\"services\\\":[\\\"cwa\\\",  \\\"aa\\\"]}\"")
+        );
+    }
+
     @ParameterizedTest
     @MethodSource("setCookieProvider")
     public void testRFC2965SetCookie(SetCookieCase setCookieCase)
@@ -323,21 +335,56 @@ public class HttpCookieTest
     }
 
     @ParameterizedTest
+    @MethodSource("setCookieViolationProvider")
+    public void testRFC2965SetCookieViolation(SetCookieCase setCookieCase)
+    {
+        String actualSetCookie = HttpCookieUtils.getRFC2965SetCookie(setCookieCase.httpCookie());
+        assertEquals(setCookieCase.expectedRFC2965SetCookie(), actualSetCookie);
+    }
+
+    @ParameterizedTest
     @MethodSource("setCookieProvider")
     public void testRFC6265SetCookie(SetCookieCase setCookieCase)
     {
-        if (setCookieCase.expectedRFC6265SetCookie() != null)
-        {
-            String actualSetCookie = HttpCookieUtils.getRFC6265SetCookie(setCookieCase.httpCookie());
-            assertEquals(setCookieCase.expectedRFC6265SetCookie(), actualSetCookie);
-        }
-        else
-        {
-            // A null expectation means we have an HttpCookie with some value that is illegal
-            // for a RFC6265 Set-Cookie header (eg: a space in a cookie value)
-            assertThrows(ComplianceViolationException.class, () ->
-                HttpCookieUtils.getRFC6265SetCookie(setCookieCase.httpCookie()));
-        }
+        String actualSetCookie = HttpCookieUtils.getRFC6265SetCookie(setCookieCase.httpCookie());
+        assertEquals(setCookieCase.expectedRFC6265SetCookie(), actualSetCookie);
+    }
+
+    @ParameterizedTest
+    @MethodSource("setCookieProvider")
+    public void testRFC2965SetCookieParse(SetCookieCase setCookieCase)
+    {
+        RFC6265SetCookieParser setCookieParser = new RFC6265SetCookieParser();
+        HttpCookie cookie = setCookieParser.parse(setCookieCase.expectedRFC2965SetCookie());
+        assertSameCookie(cookie, setCookieCase.httpCookie);
+    }
+
+    @ParameterizedTest
+    @MethodSource("setCookieProvider")
+    public void testRFC6265SetCookieParse(SetCookieCase setCookieCase)
+    {
+        RFC6265SetCookieParser setCookieParser = new RFC6265SetCookieParser();
+        HttpCookie cookie = setCookieParser.parse(setCookieCase.expectedRFC6265SetCookie());
+        assertSameCookie(cookie, setCookieCase.httpCookie);
+    }
+
+    private void assertSameCookie(HttpCookie cookie, HttpCookie httpCookie)
+    {
+        assertThat("cookie.name", cookie.getName(), is(httpCookie.getName()));
+        String expectedValue = httpCookie.getValue();
+        expectedValue = StringUtil.unquote(expectedValue == null ? "" : expectedValue);
+        assertThat("cookie.value", cookie.getValue(), is(expectedValue));
+        assertThat("cookie.domain", cookie.getDomain(), is(httpCookie.getDomain()));
+        assertThat("cookie.path", cookie.getPath(), is(httpCookie.getPath()));
+        assertThat("cookie.maxAge", cookie.getMaxAge(), is(httpCookie.getMaxAge()));
+        assertThat("cookie.sameSite", cookie.getSameSite(), is(httpCookie.getSameSite()));
+        assertThat("cookie.secure", cookie.isSecure(), is(httpCookie.isSecure()));
+        assertThat("cookie.httpOnly", cookie.isHttpOnly(), is(httpCookie.isHttpOnly()));
+        assertThat("cookie.partitioned", cookie.isPartitioned(), is(httpCookie.isPartitioned()));
+        Instant expectedExpires = httpCookie.getExpires();
+        if (expectedExpires == null && httpCookie.getMaxAge() == 0)
+            expectedExpires = Instant.EPOCH;
+        assertThat("cookie.expire", cookie.getExpires(), is(expectedExpires));
     }
 
     public static Stream<HttpCookie> setCookieMaxAge1Provider()
