@@ -77,7 +77,12 @@ public class ZstandardEncoderSink extends EncoderSink
     {
         State initialState = state.get();
         if (initialState == State.FINISHED)
+        {
+            // TODO this is OK defensively, but really should not be necessary
+            if (BufferUtil.isEmpty(content) && last)
+                return null;
             throw new IllegalStateException("Already released");
+        }
 
         boolean done = false;
         WriteRecord writeRecord = null;

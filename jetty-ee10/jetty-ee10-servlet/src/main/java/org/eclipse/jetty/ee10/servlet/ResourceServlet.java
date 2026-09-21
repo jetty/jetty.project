@@ -562,9 +562,15 @@ public class ResourceServlet extends HttpServlet
                 // otherwise we can use the core response directly.
                 boolean writingOrStreaming = servletContextResponse.isWritingOrStreaming();
                 boolean useServletResponse = !(httpServletResponse instanceof ServletApiResponse) || writingOrStreaming;
-                Response coreResponse = useServletResponse
-                    ? new ServletCoreResponse(coreRequest, httpServletResponse, included)
-                    : servletChannel.getResponse();
+                Response coreResponse;
+
+                if (useServletResponse)
+                    coreResponse = new ServletCoreResponse(coreRequest, httpServletResponse, included);
+                else
+                {
+                    coreResponse = servletChannel.getResponse();
+                    ((ServletApiResponse)httpServletResponse).getServletChannel().getHttpOutput().addBytesWritten(Math.toIntExact(content.getContentLengthValue()));
+                }
 
                 // If the core response is already committed then do nothing more
                 if (coreResponse.isCommitted())
