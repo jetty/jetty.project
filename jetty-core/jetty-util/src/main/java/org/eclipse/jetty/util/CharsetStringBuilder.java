@@ -200,6 +200,8 @@ public interface CharsetStringBuilder
         @Override
         public void append(char c)
         {
+            if (c > 0xFF)
+                throw new IllegalArgumentException();
             append((byte)c);
         }
 
@@ -212,7 +214,7 @@ public interface CharsetStringBuilder
             }
         }
 
-        public void append(ByteBuffer buffer, int offset, int length)
+        public void append(ByteBuffer buffer, int length)
         {
             int newLength = _length + length;
             if (newLength > _maxLength)
@@ -221,7 +223,7 @@ public interface CharsetStringBuilder
             if (newLength > _bytes.length)
                 _bytes = ArrayUtil.grow(_bytes, newLength - _bytes.length, _maxLength);
 
-            buffer.get(offset, _bytes, _length, length);
+            buffer.get(_bytes, _length, length);
             _length = newLength;
         }
 
@@ -449,5 +451,3 @@ public interface CharsetStringBuilder
         }
     }
 }
-
-
