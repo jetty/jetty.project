@@ -456,8 +456,7 @@ public class HpackEncoder
             // leave name index bits as 0
             // Encode the name always with lowercase huffman
             buffer.put((byte)0x80);
-            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeededLowerCase(name));
-            HuffmanEncoder.encodeLowerCase(buffer, name);
+            HuffmanEncoder.encodeLowerCaseWithLength(buffer, 7, name);
         }
         else
         {

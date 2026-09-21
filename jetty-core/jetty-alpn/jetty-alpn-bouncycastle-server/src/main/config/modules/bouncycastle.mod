@@ -14,7 +14,7 @@ alpn-impl
 
 [files]
 maven://org.bouncycastle/bcprov-jdk18on/${bouncycastle.version}|lib/bouncycastle/bcprov-jdk18on-${bouncycastle.version}.jar
-maven://org.bouncycastle/bctls-jdk18on/${bouncycastle.version}|lib/bouncycastle/bctls-jdk18on-${bouncycastle.version}.jar
+maven://org.bouncycastle/bctls-jdk18on/${bouncycastle.tls.version}|lib/bouncycastle/bctls-jdk18on-${bouncycastle.tls.version}.jar
 basehome:modules/bouncycastle/jetty-bouncycastle.xml|etc/jetty-bouncycastle.xml
 
 [xml]
@@ -22,7 +22,7 @@ etc/jetty-bouncycastle.xml
 
 [lib]
 lib/bouncycastle/bcprov-jdk18on-${bouncycastle.version}.jar
-lib/bouncycastle/bctls-jdk18on-${bouncycastle.version}.jar
+lib/bouncycastle/bctls-jdk18on-${bouncycastle.tls.version}.jar
 lib/jetty-alpn-bouncycastle-server-${jetty.version}.jar
 
 [license]
@@ -31,4 +31,5 @@ https://github.com/bcgit/bc-java/blob/main/LICENSE.md
 
 [ini]
 bouncycastle.version?=@bouncycastle.version@
+bouncycastle.tls.version?=@bouncycastle.tls.version@
 jetty.sslContext.provider?=BCJSSE
