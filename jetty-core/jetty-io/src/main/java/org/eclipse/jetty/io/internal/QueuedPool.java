@@ -258,34 +258,31 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
             Objects.requireNonNull(pooled);
 
             boolean[] state = new boolean[1];
-            while (true)
+            P p = this.pooled.get(state);
+            if (p != null)
             {
-                P p = this.pooled.get(state);
-                if (p != null)
-                {
-                    if (pool.isTerminated())
-                        return false;
-                    throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
-                }
-                if (state[0])
-                    return false; // terminated
+                if (pool.isTerminated())
+                    return false;
+                throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
+            }
+            if (state[0])
+                return false; // terminated
 
-                if (!this.pooled.compareAndSet(null, pooled, false, acquire))
-                    continue;
+            if (!this.pooled.compareAndSet(null, pooled, false, acquire))
+                throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
 
-                if (acquire)
+            if (acquire)
+            {
+                if (pool.isTerminated())
                 {
-                    if (pool.isTerminated())
-                    {
-                        this.pooled.set(null, true);
-                        return false;
-                    }
-                    return true;
+                    this.pooled.set(null, true);
+                    return false;
                 }
-                else
-                {
-                    return pool.requeue(this);
-                }
+                return true;
+            }
+            else
+            {
+                return pool.requeue(this);
             }
         }
 
@@ -298,48 +295,35 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
         private boolean acquire()
         {
             boolean[] state = new boolean[1];
-            while (true)
-            {
-                P p = pooled.get(state);
-                boolean idle = isIdle(p, state[0]);
-                if (!idle)
-                    return false;
-                if (pooled.compareAndSet(p, p, false, true))
-                    return true;
-            }
+            P p = pooled.get(state);
+            if (!isIdle(p, state[0]))
+                return false;
+            return pooled.compareAndSet(p, p, false, true);
         }
 
         @Override
         public boolean release()
         {
             boolean[] state = new boolean[1];
-            while (true)
-            {
-                P p = pooled.get(state);
-                boolean inUse = isInUse(p, state[0]);
-                if (!inUse)
-                    return false;
-                if (pooled.compareAndSet(p, p, true, false))
-                    return pool.requeue(this);
-            }
+            P p = pooled.get(state);
+            if (!isInUse(p, state[0]))
+                return false;
+            return pooled.compareAndSet(p, p, true, false) && pool.requeue(this);
         }
 
         @Override
         public boolean remove()
         {
             boolean[] state = new boolean[1];
-            while (true)
+            P p = pooled.get(state);
+            if (isTerminated(p, state[0]))
+                return false;
+            if (pooled.compareAndSet(p, null, state[0], true))
             {
-                P p = pooled.get(state);
-                boolean terminated = isTerminated(p, state[0]);
-                if (terminated)
-                    return false;
-                if (pooled.compareAndSet(p, null, state[0], true))
-                {
-                    pool.remove(this);
-                    return true;
-                }
+                pool.remove(this);
+                return true;
             }
+            return false;
         }
 
         @Override
