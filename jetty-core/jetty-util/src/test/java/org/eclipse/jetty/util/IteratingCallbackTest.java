@@ -32,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -515,6 +516,325 @@ public class IteratingCallbackTest
         assertThat(completed.getReference(), sameInstance(cause));
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testWhenPendingAbortThenCloseNotifiesOnce(boolean closeDuringOnAborted) throws Exception
+    {
+        AtomicInteger aborts = new AtomicInteger();
+        AtomicInteger failures = new AtomicInteger();
+        AtomicInteger completes = new AtomicInteger();
+        AtomicReference<Throwable> completed = new AtomicReference<>();
+        CountDownLatch abortLatch = new CountDownLatch(1);
+
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onAborted(Throwable cause)
+            {
+                aborts.incrementAndGet();
+                if (closeDuringOnAborted)
+                    ExceptionUtil.call(abortLatch::await, Throwable::printStackTrace);
+            }
+
+            @Override
+            protected void onFailure(Throwable cause)
+            {
+                failures.incrementAndGet();
+            }
+
+            @Override
+            protected void onCompleted(Throwable causeOrNull)
+            {
+                completes.incrementAndGet();
+                completed.set(causeOrNull);
+            }
+        };
+
+        icb.iterate();
+        assertTrue(icb.isPending());
+
+        Throwable cause = new Throwable("test abort");
+        if (closeDuringOnAborted)
+        {
+            new Thread(() -> icb.abort(cause)).start();
+            await().atMost(5, TimeUnit.SECONDS).until(() -> aborts.get() == 1);
+        }
+        else
+        {
+            assertTrue(icb.abort(cause));
+        }
+
+        icb.close();
+
+        abortLatch.countDown();
+        await().atMost(5, TimeUnit.SECONDS).until(() -> failures.get() == 1);
+        assertTrue(icb.isPending());
+
+        icb.succeeded();
+
+        await().atMost(5, TimeUnit.SECONDS).until(() -> completes.get() == 1);
+        assertThat(completed.get(), sameInstance(cause));
+        assertThat(aborts.get(), is(1));
+        assertThat(failures.get(), is(1));
+        assertThat(completes.get(), is(1));
+        assertTrue(icb.isClosed());
+        assertFalse(icb.reset());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"IDLE", "SCHEDULED", "SUCCEEDED"})
+    public void testAbortThenCloseWhileProcessingIsClosed(String actionName)
+    {
+        Throwable cause = new Throwable("test abort");
+        AtomicReference<Throwable> completed = new AtomicReference<>();
+
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                abort(cause);
+                close();
+                return Action.valueOf(actionName);
+            }
+
+            @Override
+            protected void onCompleted(Throwable causeOrNull)
+            {
+                completed.set(causeOrNull);
+            }
+        };
+
+        icb.iterate();
+        if (icb.isPending())
+            icb.succeeded();
+
+        assertThat(completed.get(), sameInstance(cause));
+        assertTrue(icb.isClosed());
+        assertFalse(icb.reset());
+    }
+
+    @Test
+    public void testFailedThenCloseWhileProcessingKeepsFailure()
+    {
+        Throwable failure = new Throwable("test failure");
+        AtomicReference<Throwable> aborted = new AtomicReference<>();
+        AtomicReference<Throwable> failed = new AtomicReference<>();
+        AtomicMarkableReference<Throwable> completed = new AtomicMarkableReference<>(null, false);
+
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                failed(failure);
+                close();
+                return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onAborted(Throwable cause)
+            {
+                aborted.set(cause);
+            }
+
+            @Override
+            protected void onFailure(Throwable cause)
+            {
+                failed.set(cause);
+            }
+
+            @Override
+            protected void onCompleted(Throwable causeOrNull)
+            {
+                completed.set(causeOrNull, true);
+            }
+        };
+
+        icb.iterate();
+
+        assertTrue(completed.isMarked());
+        assertThat(aborted.get(), sameInstance(failure));
+        assertThat(failed.get(), sameInstance(failure));
+        assertThat(completed.getReference(), sameInstance(failure));
+        assertTrue(icb.isClosed());
+        assertFalse(icb.reset());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"IDLE,true", "IDLE,false", "SUCCEEDED,true", "SUCCEEDED,false"})
+    public void testAbortWithWrongActionWhenCalledNotifiesOnAborted(String actionName, boolean abortFirst)
+    {
+        Throwable cause = new Throwable("test abort");
+        AtomicReference<Throwable> aborted = new AtomicReference<>();
+        AtomicReference<Throwable> failed = new AtomicReference<>();
+        AtomicMarkableReference<Throwable> completed = new AtomicMarkableReference<>(null, false);
+
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                if (abortFirst)
+                {
+                    abort(cause);
+                    succeeded();
+                }
+                else
+                {
+                    succeeded();
+                    abort(cause);
+                }
+                // Wrong action, since the callback has been completed.
+                return Action.valueOf(actionName);
+            }
+
+            @Override
+            protected void onAborted(Throwable cause)
+            {
+                aborted.set(cause);
+            }
+
+            @Override
+            protected void onFailure(Throwable cause)
+            {
+                failed.set(cause);
+            }
+
+            @Override
+            protected void onCompleted(Throwable causeOrNull)
+            {
+                completed.set(causeOrNull, true);
+            }
+        };
+
+        icb.iterate();
+
+        assertTrue(completed.isMarked());
+        assertThat(aborted.get(), sameInstance(cause));
+        assertThat(failed.get(), sameInstance(cause));
+        assertThat(completed.getReference(), sameInstance(cause));
+        assertThat(cause.getSuppressed()[0], instanceOf(IllegalStateException.class));
+        assertTrue(icb.isClosed());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"failed", "abort", "close"})
+    public void testTerminateFromOnSuccessDoesNotProcessAgain(String terminate)
+    {
+        Throwable cause = new Throwable("test " + terminate);
+        AtomicInteger processed = new AtomicInteger();
+        AtomicReference<Throwable> failed = new AtomicReference<>();
+        AtomicMarkableReference<Throwable> completed = new AtomicMarkableReference<>(null, false);
+
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                if (processed.incrementAndGet() > 1)
+                    return Action.IDLE;
+                succeeded();
+                return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onSuccess()
+            {
+                switch (terminate)
+                {
+                    case "failed" -> failed(cause);
+                    case "abort" -> abort(cause);
+                    case "close" -> close();
+                }
+            }
+
+            @Override
+            protected void onFailure(Throwable cause)
+            {
+                failed.set(cause);
+            }
+
+            @Override
+            protected void onCompleted(Throwable causeOrNull)
+            {
+                completed.set(causeOrNull, true);
+            }
+        };
+
+        icb.iterate();
+
+        assertThat(processed.get(), is(1));
+        assertTrue(completed.isMarked());
+        assertNotNull(completed.getReference());
+        assertThat(failed.get(), sameInstance(completed.getReference()));
+        if (!"close".equals(terminate))
+            assertThat(completed.getReference(), sameInstance(cause));
+        assertThat(icb.isClosed(), is("close".equals(terminate)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testResetWhileOnAbortedIsRefused(boolean succeed) throws Exception
+    {
+        CountDownLatch abortLatch = new CountDownLatch(1);
+        AtomicBoolean aborting = new AtomicBoolean();
+        AtomicMarkableReference<Throwable> completed = new AtomicMarkableReference<>(null, false);
+
+        IteratingCallback icb = new IteratingCallback()
+        {
+            @Override
+            protected Action process()
+            {
+                return Action.SCHEDULED;
+            }
+
+            @Override
+            protected void onAborted(Throwable cause)
+            {
+                aborting.set(true);
+                ExceptionUtil.call(abortLatch::await, Throwable::printStackTrace);
+            }
+
+            @Override
+            protected void onCompleted(Throwable causeOrNull)
+            {
+                completed.set(causeOrNull, true);
+            }
+        };
+
+        icb.iterate();
+        assertTrue(icb.isPending());
+
+        Throwable cause = new Throwable("test abort");
+        new Thread(() -> icb.abort(cause)).start();
+        await().atMost(5, TimeUnit.SECONDS).until(aborting::get);
+
+        // The callback completes while onAborted() is still running.
+        if (succeed)
+            icb.succeeded();
+        else
+            icb.failed(new Throwable("test failure"));
+
+        // Too early to reset, as onCompleted() has not been called yet.
+        assertFalse(icb.reset());
+        assertFalse(completed.isMarked());
+
+        abortLatch.countDown();
+        await().atMost(5, TimeUnit.SECONDS).until(completed::isMarked);
+        assertThat(completed.getReference(), sameInstance(cause));
+
+        // Now the reset is possible.
+        assertTrue(icb.reset());
+        assertTrue(icb.isIdle());
+    }
+
     public enum Event
     {
         PROCESSED,
@@ -611,7 +931,7 @@ public class IteratingCallbackTest
                 case ABORTED ->
                 {
                     abortLatch.countDown();
-                    Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> !icb.toString().contains("AbortingException"));
+                    Awaitility.waitAtMost(5, TimeUnit.SECONDS).pollInterval(10, TimeUnit.MILLISECONDS).until(() -> icb.toString().contains("aborting=false,"));
                 }
                 case SUCCEEDED -> icb.succeeded();
 
