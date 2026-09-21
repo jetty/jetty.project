@@ -21,6 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http.ComplianceViolationException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.http.HttpDateTime;
@@ -351,6 +352,13 @@ public class HttpCookieTest
     }
 
     @ParameterizedTest
+    @MethodSource("setCookieViolationProvider")
+    public void testRFC6265SetCookieViolation(SetCookieCase setCookieCase)
+    {
+        assertThrows(ComplianceViolationException.class, () -> HttpCookieUtils.getRFC6265SetCookie(setCookieCase.httpCookie()));
+    }
+
+    @ParameterizedTest
     @MethodSource("setCookieProvider")
     public void testRFC2965SetCookieParse(SetCookieCase setCookieCase)
     {
@@ -368,23 +376,23 @@ public class HttpCookieTest
         assertSameCookie(cookie, setCookieCase.httpCookie);
     }
 
-    private void assertSameCookie(HttpCookie cookie, HttpCookie httpCookie)
+    private void assertSameCookie(HttpCookie actualCookie, HttpCookie expectedCookie)
     {
-        assertThat("cookie.name", cookie.getName(), is(httpCookie.getName()));
-        String expectedValue = httpCookie.getValue();
+        assertThat("cookie.name", actualCookie.getName(), is(expectedCookie.getName()));
+        String expectedValue = expectedCookie.getValue();
         expectedValue = StringUtil.unquote(expectedValue == null ? "" : expectedValue);
-        assertThat("cookie.value", cookie.getValue(), is(expectedValue));
-        assertThat("cookie.domain", cookie.getDomain(), is(httpCookie.getDomain()));
-        assertThat("cookie.path", cookie.getPath(), is(httpCookie.getPath()));
-        assertThat("cookie.maxAge", cookie.getMaxAge(), is(httpCookie.getMaxAge()));
-        assertThat("cookie.sameSite", cookie.getSameSite(), is(httpCookie.getSameSite()));
-        assertThat("cookie.secure", cookie.isSecure(), is(httpCookie.isSecure()));
-        assertThat("cookie.httpOnly", cookie.isHttpOnly(), is(httpCookie.isHttpOnly()));
-        assertThat("cookie.partitioned", cookie.isPartitioned(), is(httpCookie.isPartitioned()));
-        Instant expectedExpires = httpCookie.getExpires();
-        if (expectedExpires == null && httpCookie.getMaxAge() == 0)
+        assertThat("cookie.value", actualCookie.getValue(), is(expectedValue));
+        assertThat("cookie.domain", actualCookie.getDomain(), is(expectedCookie.getDomain()));
+        assertThat("cookie.path", actualCookie.getPath(), is(expectedCookie.getPath()));
+        assertThat("cookie.maxAge", actualCookie.getMaxAge(), is(expectedCookie.getMaxAge()));
+        assertThat("cookie.sameSite", actualCookie.getSameSite(), is(expectedCookie.getSameSite()));
+        assertThat("cookie.secure", actualCookie.isSecure(), is(expectedCookie.isSecure()));
+        assertThat("cookie.httpOnly", actualCookie.isHttpOnly(), is(expectedCookie.isHttpOnly()));
+        assertThat("cookie.partitioned", actualCookie.isPartitioned(), is(expectedCookie.isPartitioned()));
+        Instant expectedExpires = expectedCookie.getExpires();
+        if (expectedExpires == null && expectedCookie.getMaxAge() == 0)
             expectedExpires = Instant.EPOCH;
-        assertThat("cookie.expire", cookie.getExpires(), is(expectedExpires));
+        assertThat("cookie.expire", actualCookie.getExpires(), is(expectedExpires));
     }
 
     public static Stream<HttpCookie> setCookieMaxAge1Provider()
