@@ -1,10 +1,15 @@
 version: 2
 updates:
-
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      # Keep all action bumps in a single PR. Actions from the same release,
+      # such as codeql-action init and analyze, have to move together.
+      github-actions:
+        patterns:
+          - "*"
 
 ## jetty-12.1.x branch
 
