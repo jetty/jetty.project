@@ -127,11 +127,9 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
                 QueuedEntry<P> entry = (QueuedEntry<P>)queue.poll();
                 if (entry == null)
                     return null;
+                queueSize.decrementAndGet();
                 if (entry.acquire())
-                {
-                    queueSize.decrementAndGet();
                     return entry;
-                }
             }
         }
         finally
