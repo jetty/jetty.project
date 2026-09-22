@@ -56,6 +56,7 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -97,6 +98,8 @@ public class HttpOutputTest
         IO.close(_contentServlet._contentChannel);
         _server.stop();
         _server.join();
+        // Assert after stopping the server to catch any exception thrown during shutdown.
+        assertNull(_contentServlet._serviceFailure);
     }
 
     @Test
@@ -1158,6 +1161,7 @@ public class HttpOutputTest
     static class ContentServlet extends HttpServlet
     {
         AtomicInteger _owp = new AtomicInteger();
+        volatile Throwable _serviceFailure;
         boolean _writeLengthIfKnown = true;
         boolean _async;
         ByteBuffer _byteBuffer;
@@ -1169,7 +1173,20 @@ public class HttpOutputTest
         final FuturePromise<Boolean> _closedAfterWrite = new FuturePromise<>();
 
         @Override
-        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+        {
+            try
+            {
+                doService(request, response);
+                _serviceFailure = null;
+            }
+            catch (Throwable e)
+            {
+                _serviceFailure = e;
+            }
+        }
+
+        private void doService(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             response.setContentType("text/plain");
 
