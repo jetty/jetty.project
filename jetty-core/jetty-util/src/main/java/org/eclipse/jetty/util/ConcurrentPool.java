@@ -201,8 +201,8 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                         // and without a lock by reserve()/sweep()/remove(), so by the time this
                         // runs, index may no longer point at holder, and removing by index could
                         // silently evict an unrelated, live entry instead of this leaked one.
-                        entries.remove(holder);
-                        leaked(holder);
+                        if (entries.remove(holder))
+                            leaked(holder);
                         continue;
                     }
 
