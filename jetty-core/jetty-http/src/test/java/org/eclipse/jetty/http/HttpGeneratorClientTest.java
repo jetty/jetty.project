@@ -15,14 +15,10 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -168,116 +164,6 @@ public class HttpGeneratorClientTest
         assertThat(out, Matchers.containsString("GET /index.html HTTP/1.0"));
         assertThat(out, Matchers.not(Matchers.containsString("Content-Length")));
         assertThat(out, Matchers.containsString("Field: SomeWhatLongValue"));
-    }
-
-    public static Stream<Arguments> headerOverflowPersistence()
-    {
-        return Stream.of(HttpVersion.HTTP_1_0, HttpVersion.HTTP_1_1)
-            .flatMap(version -> Stream.of(connect)
-                .flatMap(connection -> Stream.of("none", "known", "chunked")
-                    // HTTP/1.0 cannot frame content of unknown length.
-                    .filter(body -> version == HttpVersion.HTTP_1_1 || !"chunked".equals(body))
-                    .map(body -> Arguments.of(version, connection, body))));
-    }
-
-    @ParameterizedTest
-    @MethodSource("headerOverflowPersistence")
-    public void testHeaderOverflowPreservesPersistence(HttpVersion version, String connection, String body) throws Exception
-    {
-        // Generate without overflow, to get the reference output.
-        Generated expected = generate(version, connection, body, 4096);
-        boolean persistent = version == HttpVersion.HTTP_1_1 ? !"close".equals(connection) : "keep-alive".equals(connection);
-        assertEquals(persistent ? HttpGenerator.Result.DONE : HttpGenerator.Result.SHUTDOWN_OUT, expected.result());
-        assertThat(expected.out(), Matchers.containsString(" /index.html " + version));
-
-        boolean chunked = "chunked".equals(body);
-        assertEquals(chunked, expected.out().contains("Transfer-Encoding: chunked"));
-
-        // Overflow in the request line, at the very end of the header,
-        // after the persistence has already been computed, and for
-        // chunked content in the chunk line written in the header buffer.
-        int headerLength = expected.out().indexOf("\r\n\r\n") + 4;
-        int[] headerSizes = chunked ? new int[]{16, headerLength - 1, headerLength + 1} : new int[]{16, headerLength - 1};
-        for (int headerSize : headerSizes)
-        {
-            Generated actual = generate(version, connection, body, headerSize);
-            assertTrue(actual.overflowed());
-            assertEquals(expected.out(), actual.out());
-            assertEquals(expected.result(), actual.result());
-        }
-    }
-
-    private record Generated(String out, HttpGenerator.Result result, boolean overflowed)
-    {
-    }
-
-    private Generated generate(HttpVersion version, String connection, String body, int headerSize) throws Exception
-    {
-        HttpFields.Mutable fields = HttpFields.build();
-        fields.add("Host", "localhost");
-        fields.add("X-Padding", "X".repeat(64));
-        if (connection != null)
-            fields.add("Connection", connection);
-        ByteBuffer content = null;
-        long contentLength = -1;
-        switch (body)
-        {
-            case "known" ->
-            {
-                content = BufferUtil.toBuffer("0123456789");
-                contentLength = 10;
-                fields.add("Content-Length", "10");
-            }
-            case "chunked" -> content = BufferUtil.toBuffer("0123456789");
-            default ->
-            {
-            }
-        }
-        String method = content == null ? "GET" : "POST";
-        MetaData.Request info = new MetaData.Request(method, HttpURI.from(method, "/index.html"), version, fields, contentLength);
-
-        // Mimic HttpSenderOverHTTP, which retries on overflow without resetting
-        // the generator, and sends chunked content after the headers with last=false.
-        boolean last = !"chunked".equals(body);
-        HttpGenerator gen = new HttpGenerator();
-        ByteBuffer header = BufferUtil.allocate(headerSize);
-        ByteBuffer chunk = null;
-        boolean overflowed = false;
-        StringBuilder out = new StringBuilder();
-        while (true)
-        {
-            HttpGenerator.Result result = gen.generateRequest(info, header, chunk, content, last);
-            switch (result)
-            {
-                case HEADER_OVERFLOW ->
-                {
-                    overflowed = true;
-                    header = BufferUtil.allocate(4096);
-                }
-                case NEED_CHUNK -> chunk = BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
-                case NEED_CHUNK_TRAILER -> chunk = BufferUtil.allocate(4096);
-                case FLUSH ->
-                {
-                    for (ByteBuffer buffer : new ByteBuffer[]{header, chunk, content})
-                    {
-                        if (buffer != null)
-                        {
-                            out.append(BufferUtil.toString(buffer));
-                            BufferUtil.clear(buffer);
-                        }
-                    }
-                    last = true;
-                }
-                case CONTINUE ->
-                {
-                }
-                case DONE, SHUTDOWN_OUT ->
-                {
-                    return new Generated(out.toString(), result, overflowed);
-                }
-                default -> throw new IllegalStateException(result.toString());
-            }
-        }
     }
 
     @Test

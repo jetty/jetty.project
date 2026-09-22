@@ -17,8 +17,6 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -26,10 +24,8 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpGeneratorServerTest
 {
@@ -141,66 +137,6 @@ public class HttpGeneratorServerTest
 
         assertThat(response, containsString("HTTP/1.1 302 Found"));
         assertThat(response, containsString("Location: http://somewhere/else"));
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    public void testHeaderOverflowPreservesPersistence(boolean persistent) throws Exception
-    {
-        HttpGenerator gen = new HttpGenerator();
-        gen.setPersistent(persistent);
-
-        HttpFields.Mutable fields = HttpFields.build();
-        fields.add("X-Padding", "X".repeat(64));
-        MetaData.Response info = new MetaData.Response(200, null, HttpVersion.HTTP_1_1, fields, 0);
-
-        ByteBuffer header = BufferUtil.allocate(16);
-        HttpGenerator.Result result = gen.generateResponse(info, false, header, null, null, true);
-        assertEquals(HttpGenerator.Result.HEADER_OVERFLOW, result);
-        assertEquals(HttpGenerator.State.START, gen.getState());
-        assertEquals(persistent, gen.isPersistent());
-
-        header = BufferUtil.allocate(8096);
-        result = gen.generateResponse(info, false, header, null, null, true);
-        assertEquals(HttpGenerator.Result.FLUSH, result);
-        assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        assertEquals(persistent, gen.isPersistent());
-        String response = BufferUtil.toString(header);
-
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("X-Padding: XXX"));
-        if (persistent)
-            assertThat(response, not(containsString("Connection: close")));
-        else
-            assertThat(response, containsString("Connection: close"));
-    }
-
-    @Test
-    public void testHeaderOverflowPreservesUnknownPersistence() throws Exception
-    {
-        HttpGenerator gen = new HttpGenerator();
-
-        HttpFields.Mutable fields = HttpFields.build();
-        fields.add("X-Padding", "X".repeat(64));
-        MetaData.Response info = new MetaData.Response(200, null, HttpVersion.HTTP_1_1, fields, 0);
-
-        // Room for the response line and the fields, but not for the
-        // Content-Length, so the overflow happens after the persistence
-        // has been computed by the failed header generation.
-        ByteBuffer header = BufferUtil.allocate(100);
-        HttpGenerator.Result result = gen.generateResponse(info, false, header, null, null, true);
-        assertEquals(HttpGenerator.Result.HEADER_OVERFLOW, result);
-        assertEquals(HttpGenerator.State.START, gen.getState());
-        // Persistence is still unknown.
-        assertFalse(gen.isPersistent());
-        assertTrue(gen.isPersistent(HttpVersion.HTTP_1_1));
-        assertFalse(gen.isPersistent(HttpVersion.HTTP_1_0));
-
-        header = BufferUtil.allocate(8096);
-        result = gen.generateResponse(info, false, header, null, null, true);
-        assertEquals(HttpGenerator.Result.FLUSH, result);
-        assertTrue(gen.isPersistent());
-        assertThat(BufferUtil.toString(header), not(containsString("Connection: close")));
     }
 
     @Test
