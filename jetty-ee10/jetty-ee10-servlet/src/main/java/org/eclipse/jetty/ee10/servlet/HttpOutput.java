@@ -208,7 +208,7 @@ public class HttpOutput extends ServletOutputStream
     }
 
     /**
-     * Used by ServletCoreResponse when it bypasses HttpOutput to update bytes written.
+     * Used by ServletCoreResponse and ResourceServlet when they bypass HttpOutput to update bytes written.
      * @param written The bytes written
      */
     void addBytesWritten(int written)
