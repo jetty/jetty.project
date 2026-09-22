@@ -14,6 +14,8 @@
 package org.eclipse.jetty.ee9.test.client.transport;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -27,10 +29,11 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.jupiter.api.Assumptions;
@@ -120,24 +123,32 @@ public class VirtualThreadsTest extends AbstractTest
                     {
                         if (!VirtualThreads.isVirtualThread())
                             throw new IOException("not a virtual thread");
-                        // Write a large response content to cause onWritePossible() to be called.
-                        output.write(data);
-                    }
+                        // Set the WriteListener only after all the request content has been read,
+                        // otherwise onWritePossible() may be called before onAllDataRead().
+                        output.setWriteListener(new WriteListener()
+                        {
+                            private boolean written;
 
-                    @Override
-                    public void onError(Throwable t)
-                    {
-                    }
-                });
+                            @Override
+                            public void onWritePossible() throws IOException
+                            {
+                                if (!VirtualThreads.isVirtualThread())
+                                    throw new IOException("not a virtual thread");
+                                if (!written)
+                                {
+                                    written = true;
+                                    // Write a large response content to cause onWritePossible() to be called again.
+                                    output.write(data);
+                                }
+                                if (output.isReady())
+                                    asyncContext.complete();
+                            }
 
-                output.setWriteListener(new WriteListener()
-                {
-                    @Override
-                    public void onWritePossible() throws IOException
-                    {
-                        if (!VirtualThreads.isVirtualThread())
-                            throw new IOException("not a virtual thread");
-                        asyncContext.complete();
+                            @Override
+                            public void onError(Throwable t)
+                            {
+                            }
+                        });
                     }
 
                     @Override
@@ -155,9 +166,12 @@ public class VirtualThreadsTest extends AbstractTest
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicInteger length = new AtomicInteger();
+        // Delay the request content, so that the server application
+        // returns from service() before the request content arrives.
+        AsyncRequestContent requestContent = new AsyncRequestContent();
         client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
-            .body(new StringRequestContent("hello"))
+            .body(requestContent)
             .onResponseContent((response, content) -> length.addAndGet(content.remaining()))
             .timeout(20, TimeUnit.SECONDS)
             .send(result ->
@@ -166,7 +180,11 @@ public class VirtualThreadsTest extends AbstractTest
                     latch.countDown();
             });
 
+        Thread.sleep(500);
+        requestContent.write(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+        requestContent.close();
+
         assertTrue(latch.await(15, TimeUnit.SECONDS));
-        assertEquals(length.get(), data.length);
+        assertEquals(data.length, length.get());
     }
 }
