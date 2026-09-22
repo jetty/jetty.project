@@ -547,6 +547,7 @@ public abstract class IteratingCallback implements Callback
         }
         catch (Throwable x)
         {
+            ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
             if (LOG.isDebugEnabled())
                 LOG.debug("onFailure() failure", x);
         }
@@ -560,6 +561,7 @@ public abstract class IteratingCallback implements Callback
         }
         catch (Throwable x)
         {
+            ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
             if (LOG.isDebugEnabled())
                 LOG.debug("onAborted() failure", x);
         }
@@ -573,6 +575,7 @@ public abstract class IteratingCallback implements Callback
         }
         catch (Throwable x)
         {
+            ExceptionUtil.addSuppressedIfNotAssociated(failure, x);
             if (LOG.isDebugEnabled())
                 LOG.debug("onCompleted() failure", x);
         }
