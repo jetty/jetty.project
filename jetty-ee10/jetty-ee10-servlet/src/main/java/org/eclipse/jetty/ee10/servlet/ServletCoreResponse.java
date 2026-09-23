@@ -144,7 +144,7 @@ public class ServletCoreResponse implements Response
             if (!_wrapped && !_servletContextResponse.isWritingOrStreaming())
             {
                 // We can bypass the HttpOutput stream, but we need to update its bytes written
-                _servletContextResponse.getHttpOutput().addBytesWritten(BufferUtil.length(byteBuffer));
+                _servletContextResponse.getHttpOutput().addBytesWrittenViaBypass(BufferUtil.length(byteBuffer));
                 _servletContextResponse.write(last, byteBuffer, callback);
             }
             else

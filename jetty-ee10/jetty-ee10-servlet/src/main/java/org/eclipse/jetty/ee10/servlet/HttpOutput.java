@@ -125,6 +125,7 @@ public class HttpOutput extends ServletOutputStream
     private State _state = State.OPEN;
     private boolean _softClose = false;
     private long _written;
+    private boolean _bypassed;
     private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
@@ -211,9 +212,19 @@ public class HttpOutput extends ServletOutputStream
      * Used by ServletCoreResponse and ResourceServlet when they bypass HttpOutput to update bytes written.
      * @param written The bytes written
      */
-    void addBytesWritten(int written)
+    void addBytesWrittenViaBypass(long written)
     {
+        _bypassed = true;
         _written += written;
+    }
+
+    /**
+     * Used by ServletContextResponse to figure out if HttpOutput should be completed or if it has been bypassed.
+     * @return true when HttpOutput has been bypassed
+     */
+    boolean isBypassed()
+    {
+        return _bypassed;
     }
 
     public void reopen()
