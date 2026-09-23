@@ -1346,6 +1346,7 @@ public class HttpOutput extends ServletOutputStream
             if (_commitSize > _bufferSize)
                 _commitSize = _bufferSize;
             _written = 0;
+            _bypassed = false;
             _writeListener = null;
             _onError = null;
             _closedCallback = null;
