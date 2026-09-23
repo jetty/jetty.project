@@ -191,7 +191,6 @@ public class HttpSenderOverHTTP extends HttpSender
                     {
                         if (maxRequestHeadersSize > 0 && maxRequestHeadersSize > requestHeadersSize)
                         {
-                            generator.reset();
                             headerBuffer.release();
                             headerBuffer = bufferPool.acquire(maxRequestHeadersSize, useDirectByteBuffers);
                             requestHeadersSize = maxRequestHeadersSize;
