@@ -256,7 +256,7 @@ public class QueuedPoolTest
         assertThat(entry.enable("bbb", true), is(false));
 
         assertThat(entry.release(), is(false));
-        assertThat(entry.remove(), is(true));
+        assertThat(entry.remove(), is(false));
         assertThat(entry.remove(), is(false));
     }
 
@@ -407,15 +407,13 @@ public class QueuedPoolTest
 
         List<Pool.Entry<String>> terminatedEntries = new ArrayList<>(pool.terminate());
         assertThat(terminatedEntries.size(), is(2));
-        assertThat(terminatedEntries.get(0).isTerminated(), is(false));
+        assertThat(terminatedEntries.get(0).isTerminated(), is(true));
         assertThat(terminatedEntries.get(0).getPooled(), notNullValue());
-        assertThat(terminatedEntries.get(1).isTerminated(), is(false));
+        assertThat(terminatedEntries.get(1).isTerminated(), is(true));
         assertThat(terminatedEntries.get(1).getPooled(), notNullValue());
         assertThat(pool.size(), is(0));
 
-        assertThat(entries.get(0).remove(), is(true));
         assertThat(entries.get(0).remove(), is(false));
-        assertThat(entries.get(1).remove(), is(true));
         assertThat(entries.get(1).remove(), is(false));
         assertThat(pool.size(), is(0));
     }

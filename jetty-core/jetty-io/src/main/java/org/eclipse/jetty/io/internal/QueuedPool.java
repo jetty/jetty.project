@@ -164,10 +164,9 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
             // that remained in the pool when terminate() was called.
             terminated = true;
             Collection<Entry<P>> copy = new ArrayList<>(queue);
+            copy.forEach(Entry::remove);
             queue.clear();
             queueSize.set(0);
-            // The returned entries are kept in idle state as the pooled
-            // reference must be preserved.
             return copy;
         }
         finally
@@ -312,7 +311,8 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
                 return false;
             if (state.compareAndSet(s, TERMINATED))
             {
-                pool.remove(this);
+                if (s == IDLE)
+                    pool.remove(this);
                 return true;
             }
             return false;
