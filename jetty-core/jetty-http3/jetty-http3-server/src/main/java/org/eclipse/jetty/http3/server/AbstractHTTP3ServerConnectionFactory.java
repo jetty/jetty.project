@@ -50,9 +50,6 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
             maxResponseHeaderSize = getHttpConfiguration().getResponseHeaderSize();
         http3Configuration.setMaxResponseHeadersSize(maxResponseHeaderSize);
         http3Configuration.setInputBufferSize(httpConfiguration.getInputBufferSize());
-        long idleTimeout = httpConfiguration.getIdleTimeout();
-        if (idleTimeout > 0)
-            http3Configuration.setStreamIdleTimeout(idleTimeout);
         setInputBufferSize(http3Configuration.getInputBufferSize());
     }
 

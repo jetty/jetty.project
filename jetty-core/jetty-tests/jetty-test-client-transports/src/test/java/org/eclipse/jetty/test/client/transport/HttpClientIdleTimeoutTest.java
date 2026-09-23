@@ -190,7 +190,6 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
     @MethodSource("transports")
     public void testStreamIdleTimeoutIsRescheduled(TransportType transportType) throws Exception
     {
-        httpConfig.setIdleTimeout(idleTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
         AtomicInteger listenerCounter = new AtomicInteger();
         start(transportType, new Handler.Abstract()
@@ -235,6 +234,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
                 return true;
             }
         });
+        setStreamIdleTimeout(idleTimeout);
 
         AtomicReference<Result> resultRef = new AtomicReference<>();
         AsyncRequestContent content = new AsyncRequestContent();
