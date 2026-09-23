@@ -1737,12 +1737,14 @@ public class HttpOutput extends ServletOutputStream
         protected void onFailure(Throwable cause)
         {
             IO.close(_in);
+            super.onFailure(cause);
         }
 
         @Override
         public void onCompleteFailure(Throwable x)
         {
             _buffer.release();
+            super.onCompleteFailure(x);
         }
     }
 
@@ -1814,12 +1816,14 @@ public class HttpOutput extends ServletOutputStream
         protected void onFailure(Throwable cause)
         {
             IO.close(_in);
+            super.onFailure(cause);
         }
 
         @Override
         public void onCompleteFailure(Throwable x)
         {
             _buffer.release();
+            super.onCompleteFailure(x);
         }
     }
 
