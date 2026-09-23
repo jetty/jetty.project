@@ -38,6 +38,7 @@ public class QuicheConfig
     private String trustedCertsPemPath;
     private String certChainPemPath;
     private String privKeyPemPath;
+    private String curvesList;
     private String[] applicationProtos;
     private CongestionControl congestionControl;
     private Long maxIdleTimeout;
@@ -79,6 +80,11 @@ public class QuicheConfig
     public String getPrivKeyPemPath()
     {
         return privKeyPemPath;
+    }
+
+    public String getCurvesList()
+    {
+        return curvesList;
     }
 
     public String[] getApplicationProtos()
@@ -169,6 +175,11 @@ public class QuicheConfig
     public void setPrivKeyPemPath(String path)
     {
         this.privKeyPemPath = path;
+    }
+
+    public void setCurvesList(String curvesList)
+    {
+        this.curvesList = curvesList;
     }
 
     public void setApplicationProtos(String... protos)
