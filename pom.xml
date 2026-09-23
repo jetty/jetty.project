@@ -180,11 +180,13 @@
 
     -->
     <bndlib.version>6.4.1</bndlib.version>
-    <bouncycastle.version>1.85</bouncycastle.version>
+    <!-- bctls 1.86 shipped a broken multi-release jar, see bcgit/bc-java#2448 -->
+    <bouncycastle.tls.version>1.86.1</bouncycastle.tls.version>
+    <bouncycastle.version>1.86</bouncycastle.version>
     <brotli4j.version>1.23.0</brotli4j.version>
-    <build-helper.maven.plugin.version>3.6.1</build-helper.maven.plugin.version>
+    <build-helper.maven.plugin.version>3.6.2</build-helper.maven.plugin.version>
     <build-support.version>1.6</build-support.version>
-    <buildnumber.maven.plugin.version>3.3.0</buildnumber.maven.plugin.version>
+    <buildnumber.maven.plugin.version>3.3.1</buildnumber.maven.plugin.version>
     <built-by>${user.name}</built-by>
     <checkstyle.version>10.26.1</checkstyle.version>
     <commons-codec.version>1.22.1</commons-codec.version>
@@ -256,7 +258,7 @@
     <jetty.xhtml.schemas-version>1.4</jetty.xhtml.schemas-version>
     <jettyHomeZip>${project.build.directory}/${jettyHomeZipFileName}</jettyHomeZip>
     <jettyHomeZipFileName>jetty-home.zip</jettyHomeZipFileName>
-    <jffi.version>1.4.0</jffi.version>
+    <jffi.version>1.4.3</jffi.version>
     <jmh.version>1.37</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <json-simple.version>1.1.1</json-simple.version>
@@ -270,6 +272,7 @@
     <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
     <junit.platform.version>${junit.version}</junit.platform.version>
     <junit.version>6.1.3</junit.version>
+    <junit4.version>4.13.2</junit4.version>
     <kerb-simplekdc.version>2.1.2</kerb-simplekdc.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.26.1</log4j2.version>
@@ -279,7 +282,7 @@
     <mariadb.version>3.5.10</mariadb.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven-build-cache.version>1.3.0</maven-build-cache.version>
-    <maven-plugin.plugin.version>3.15.2</maven-plugin.plugin.version>
+    <maven-plugin.plugin.version>3.16.0</maven-plugin.plugin.version>
     <maven.antrun.plugin.version>3.2.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
     <maven.bundle.plugin.version>6.0.2</maven.bundle.plugin.version>
@@ -288,16 +291,16 @@
     <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
     <maven.compiler.plugin.version>3.16.0</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.11.0</maven.dependency.plugin.version>
-    <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
+    <maven.deploy.plugin.version>3.2.0</maven.deploy.plugin.version>
     <maven.deps.version>3.9.16</maven.deps.version>
     <maven.enforcer.plugin.version>3.6.3</maven.enforcer.plugin.version>
-    <maven.exec.plugin.version>3.6.3</maven.exec.plugin.version>
+    <maven.exec.plugin.version>3.6.4</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
-    <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
+    <maven.install.plugin.version>3.2.0</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.10.1</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
-    <maven.plugin-tools.version>3.15.2</maven.plugin-tools.version>
+    <maven.plugin-tools.version>3.16.0</maven.plugin-tools.version>
     <maven.release.plugin.version>3.3.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.3.0</maven.remote-resources-plugin.version>
     <maven.resolver.version>1.9.27</maven.resolver.version>
@@ -305,13 +308,13 @@
     <maven.retryFailedDeploymentCount>10</maven.retryFailedDeploymentCount>
     <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
     <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
-    <maven.surefire.plugin.version>3.5.6</maven.surefire.plugin.version>
+    <maven.surefire.plugin.version>3.6.0</maven.surefire.plugin.version>
     <maven.version>3.9.9</maven.version>
     <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <modify-sources-plugin.version>1.0.14</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
-    <mongodb.version>5.11.0</mongodb.version>
-    <netty.version>4.2.17.Final</netty.version>
+    <mongodb.version>5.12.0</mongodb.version>
+    <netty.version>4.2.18.Final</netty.version>
     <njord.version>0.9.10</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <opentelemetry-semconv.version>1.42.0</opentelemetry-semconv.version>
@@ -332,7 +335,7 @@
     <osgi-util-tracker-version>1.5.4</osgi-util-tracker-version>
     <osgi-util-version>3.7.400</osgi-util-version>
     <osgi-util-xml-version>1.0.2</osgi-util-xml-version>
-    <osgi-version>3.24.200</osgi-version>
+    <osgi-version>3.24.300</osgi-version>
     <osgi.slf4j.import.packages>org.slf4j;version="[2.0,3.0)", org.slf4j.event;version="[2.0,3.0)", org.slf4j.helpers;version="[2.0,3.0)", org.slf4j.spi;version="[2.0,3.0)"</osgi.slf4j.import.packages>
     <pax.exam.version>4.14.0</pax.exam.version>
     <pax.url.version>3.0.3</pax.url.version>
@@ -347,14 +350,16 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <sisu.plexus.version>0.9.0.M4</sisu.plexus.version>
     <slf4j.version>2.0.17</slf4j.version>
-    <spifly.version>1.3.7</spifly.version>
+    <spifly.version>1.3.8</spifly.version>
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
+    <surefire.timeout>3600</surefire.timeout>
     <swissbox.version>1.9.0</swissbox.version>
     <testcontainers.version>2.0.5</testcontainers.version>
+    <testng-engine.version>1.1.0</testng-engine.version>
     <testng.version>7.12.0</testng.version>
     <tinybundles.version>4.0.1</tinybundles.version>
-    <versions.maven.plugin.version>2.21.0</versions.maven.plugin.version>
+    <versions.maven.plugin.version>2.22.0</versions.maven.plugin.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
     <wildfly.elytron.version>2.9.2.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.9</xmemcached.version>
@@ -517,6 +522,11 @@
         <version>2.20.0</version>
       </dependency>
       <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${junit4.version}</version>
+      </dependency>
+      <dependency>
         <groupId>net.minidev</groupId>
         <artifactId>json-smart</artifactId>
         <version>${json-smart.version}</version>
@@ -673,7 +683,7 @@
       <dependency>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bctls-jdk18on</artifactId>
-        <version>${bouncycastle.version}</version>
+        <version>${bouncycastle.tls.version}</version>
       </dependency>
       <dependency>
         <groupId>org.bouncycastle</groupId>
@@ -1258,7 +1268,7 @@
       <dependency>
         <groupId>org.hibernate.models</groupId>
         <artifactId>hibernate-models</artifactId>
-        <version>1.3.0</version>
+        <version>1.3.3</version>
       </dependency>
       <dependency>
         <groupId>org.infinispan.protostream</groupId>
@@ -1794,7 +1804,12 @@
           <configuration>
             <trimStackTrace>false</trimStackTrace>
             <rerunFailingTestsCount>${surefire.rerunFailingTestsCount}</rerunFailingTestsCount>
-            <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
+            <forkedProcessTimeoutInSeconds>${surefire.timeout}</forkedProcessTimeoutInSeconds>
+            <!-- dump the threads of a forked JVM just before Surefire kills it on timeout, so we can see what hung -->
+            <forkedProcessTimeoutExtensionContext>
+              <jstack.enabled>true</jstack.enabled>
+              <jstack.output.location>${project.build.directory}/jstacks</jstack.output.location>
+            </forkedProcessTimeoutExtensionContext>
             <argLine>@{argLine} ${jetty.surefire.argLine}</argLine>
             <failIfNoTests>false</failIfNoTests>
             <forkCount>1</forkCount>
