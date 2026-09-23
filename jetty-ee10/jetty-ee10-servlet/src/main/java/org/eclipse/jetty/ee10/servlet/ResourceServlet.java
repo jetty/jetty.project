@@ -558,7 +558,6 @@ public class ResourceServlet extends HttpServlet
                     : ServletCoreRequest.wrap(httpServletRequest);
 
                 // Always wrap the response so that we can re-use bypass logic there.
-                boolean writingOrStreaming = servletContextResponse.isWritingOrStreaming();
                 Response coreResponse = new ServletCoreResponse(coreRequest, httpServletResponse, included);
 
                 // If the core response is already committed then do nothing more
@@ -573,7 +572,7 @@ public class ResourceServlet extends HttpServlet
                 long contentLength = content.getContentLengthValue();
 
                 // If the response is already written, then don't set the content-length.
-                if (writingOrStreaming)
+                if (servletContextResponse.isWritingOrStreaming())
                     content = new UnknownLengthHttpContent(content);
 
                 // The character encoding may be forced
