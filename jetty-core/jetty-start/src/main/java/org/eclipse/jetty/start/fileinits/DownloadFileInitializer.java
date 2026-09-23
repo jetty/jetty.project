@@ -34,6 +34,7 @@ import org.eclipse.jetty.start.StartLog;
 public abstract class DownloadFileInitializer extends FileInitializer
 {
     private HttpClient httpClient;
+    private String authorizationHeader;
 
     protected DownloadFileInitializer(BaseHome basehome, String... scheme)
     {
@@ -41,6 +42,16 @@ public abstract class DownloadFileInitializer extends FileInitializer
     }
 
     protected abstract boolean allowInsecureHttpDownloads();
+
+    /**
+     * Sets the {@code Authorization} header value to include on download requests.
+     *
+     * @param authorizationHeader the header value (e.g. {@code "Basic ..."} or {@code "Bearer ..."}), or {@code null}
+     */
+    public void setAuthorizationHeader(String authorizationHeader)
+    {
+        this.authorizationHeader = authorizationHeader;
+    }
 
     protected void download(URI uri, Path destination) throws IOException
     {
@@ -69,10 +80,12 @@ public abstract class DownloadFileInitializer extends FileInitializer
 
         try
         {
-            HttpRequest request = HttpRequest.newBuilder()
+            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                 .uri(uri)
-                .GET()
-                .build();
+                .GET();
+            if (authorizationHeader != null)
+                reqBuilder.header("Authorization", authorizationHeader);
+            HttpRequest request = reqBuilder.build();
 
             HttpResponse<InputStream> response =
                 httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
