@@ -30,7 +30,7 @@ import static org.eclipse.jetty.quic.quiche.foreign.NativeHelper.C_POINTER;
 
 public class quiche_h
 {
-    private static final String EXPECTED_QUICHE_VERSION = "0.29.3";
+    private static final String EXPECTED_QUICHE_VERSION = "0.30.0";
     private static final Logger LOG = LoggerFactory.getLogger(quiche_h.class);
 
     static void initialize()
@@ -106,6 +106,13 @@ public class quiche_h
             ));
         private static final MethodHandle quiche_config_load_verify_locations_from_directory = NativeHelper.downcallHandle(
             "quiche_config_load_verify_locations_from_directory",
+            FunctionDescriptor.of(
+                C_INT,
+                C_POINTER,
+                C_POINTER
+            ));
+        private static final MethodHandle quiche_config_set_curves_list = NativeHelper.downcallHandle(
+            "quiche_config_set_curves_list",
             FunctionDescriptor.of(
                 C_INT,
                 C_POINTER,
@@ -1060,6 +1067,18 @@ public class quiche_h
         try
         {
             return (int)DowncallHandles.quiche_config_load_verify_locations_from_directory.invokeExact(config, path);
+        }
+        catch (Throwable x)
+        {
+            throw new AssertionError("should not reach here", x);
+        }
+    }
+
+    public static int quiche_config_set_curves_list(MemorySegment config, MemorySegment curves)
+    {
+        try
+        {
+            return (int)DowncallHandles.quiche_config_set_curves_list.invokeExact(config, curves);
         }
         catch (Throwable x)
         {

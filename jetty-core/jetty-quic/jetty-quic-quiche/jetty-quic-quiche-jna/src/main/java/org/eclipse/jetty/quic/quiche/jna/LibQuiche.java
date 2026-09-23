@@ -30,7 +30,7 @@ public interface LibQuiche extends Library
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    String EXPECTED_QUICHE_VERSION = "0.29.3";
+    String EXPECTED_QUICHE_VERSION = "0.30.0";
 
     // The charset used to convert java.lang.String to char * and vice versa.
     Charset CHARSET = StandardCharsets.UTF_8;
@@ -75,6 +75,9 @@ public interface LibQuiche extends Library
 
     // Configures the given private key.
     int quiche_config_load_priv_key_from_pem_file(quiche_config config, String path);
+
+    // Configures the TLS curve preference list (colon-separated, e.g. "X25519MLKEM768:X25519:P-256:P-384").
+    int quiche_config_set_curves_list(quiche_config config, String curves);
 
     // Configures whether to verify the peer's certificate.
     void quiche_config_verify_peer(quiche_config config, bool v);
