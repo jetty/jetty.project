@@ -164,8 +164,8 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
             // that remained in the pool when terminate() was called.
             terminated = true;
             Collection<Entry<P>> copy = new ArrayList<>(queue);
-            copy.forEach(Entry::remove);
             queue.clear();
+            copy.forEach(Entry::remove);
             queueSize.set(0);
             return copy;
         }
