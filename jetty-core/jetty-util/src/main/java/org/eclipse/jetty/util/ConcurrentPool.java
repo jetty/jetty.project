@@ -227,8 +227,12 @@ public class ConcurrentPool<P> implements Pool<P>, Dumpable
                     ConcurrentEntry<P> entry = (ConcurrentEntry<P>)holder.getEntry();
                     if (entry == null)
                     {
-                        entries.remove(index);
-                        leaked(holder);
+                        // Remove by reference, not by index: entries is modified concurrently
+                        // and without a lock by reserve()/sweep()/remove(), so by the time this
+                        // runs, index may no longer point at holder, and removing by index could
+                        // silently evict an unrelated, live entry instead of this leaked one.
+                        if (entries.remove(holder))
+                            leaked(holder);
                         continue;
                     }
 
