@@ -207,6 +207,12 @@ public class ServletContextResponse extends ContextResponse implements ServletCo
 
     public void completeOutput(Callback callback)
     {
+        if (getHttpOutput().isBypassed())
+        {
+            callback.succeeded();
+            return;
+        }
+
         if (_outputType == OutputType.WRITER)
             _writer.markAsClosed();
         getHttpOutput().complete(callback);

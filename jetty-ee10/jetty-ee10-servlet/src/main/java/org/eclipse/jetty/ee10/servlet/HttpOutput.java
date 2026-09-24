@@ -133,6 +133,7 @@ public class HttpOutput extends ServletOutputStream
     private State _state = State.OPEN;
     private boolean _softClose = false;
     private long _written;
+    private boolean _bypassed;
     private long _flushed;
     private long _firstByteNanoTime = -1;
     private ByteBufferPool _pool;
@@ -177,12 +178,22 @@ public class HttpOutput extends ServletOutputStream
     }
 
     /**
-     * Used by ServletCoreResponse when it bypasses HttpOutput to update bytes written.
+     * Used by ServletCoreResponse and ResourceServlet when they bypass HttpOutput to update bytes written.
      * @param written The bytes written
      */
-    void addBytesWritten(int written)
+    void addBytesWrittenViaBypass(long written)
     {
+        _bypassed = true;
         _written += written;
+    }
+
+    /**
+     * Used by ServletContextResponse to figure out if HttpOutput should be completed or if it has been bypassed.
+     * @return true when HttpOutput has been bypassed
+     */
+    boolean isBypassed()
+    {
+        return _bypassed;
     }
 
     public void reopen()
@@ -1319,6 +1330,7 @@ public class HttpOutput extends ServletOutputStream
             if (_commitSize > _bufferSize)
                 _commitSize = _bufferSize;
             _written = 0;
+            _bypassed = false;
             _writeListener = null;
             _onError = null;
             _firstByteNanoTime = -1;
