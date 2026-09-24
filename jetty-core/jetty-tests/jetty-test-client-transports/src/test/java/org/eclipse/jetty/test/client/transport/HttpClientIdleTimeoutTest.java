@@ -180,7 +180,6 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
         assertEquals(HttpStatus.OK_200, response2.getStatus());
     }
 
-
     @ParameterizedTest
     @MethodSource("transports")
     public void testStreamIdleTimeoutIsRescheduled(Transport transport) throws Exception
