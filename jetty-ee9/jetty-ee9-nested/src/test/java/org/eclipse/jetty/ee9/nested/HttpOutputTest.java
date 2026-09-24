@@ -232,10 +232,10 @@ public class HttpOutputTest
     }
 
     @Test
-    public void testSendBigDirect() throws Exception
+    public void testSendBigDirectByteBuffer() throws Exception
     {
         Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
-        _handler._content = IOResources.toRetainableByteBuffer(big, ByteBufferPool.SIZED_NON_POOLING).getByteBuffer();
+        _handler._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.Sized(ByteBufferPool.SIZED_NON_POOLING, true, -1)).getByteBuffer();
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length"));
@@ -243,7 +243,7 @@ public class HttpOutputTest
     }
 
     @Test
-    public void testSendBigInDirect() throws Exception
+    public void testSendBigHeapByteBuffer() throws Exception
     {
         Resource big = ResourceFactory.of(_contextHandler).newClassPathResource("simple/big.txt");
         _handler._content = IOResources.toRetainableByteBuffer(big, ByteBufferPool.SIZED_NON_POOLING).getByteBuffer();

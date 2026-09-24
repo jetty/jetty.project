@@ -111,7 +111,7 @@ public class HttpOutputTest
     }
 
     @Test
-    public void testSendContentInDirectByteBuffer() throws Exception
+    public void testSendContentHeapByteBuffer() throws Exception
     {
         _server.start();
         byte[] buffer = new byte[16 * 1024];
@@ -265,7 +265,7 @@ public class HttpOutputTest
     }
 
     @Test
-    public void testSendBigDirect() throws Exception
+    public void testSendBigDirectByteBuffer() throws Exception
     {
         _server.start();
         Resource big = ResourceFactory.of(_servletContextHandler).newClassLoaderResource("simple/big.txt", false);
@@ -277,7 +277,7 @@ public class HttpOutputTest
     }
 
     @Test
-    public void testSendBigInDirect() throws Exception
+    public void testSendBigHeapByteBuffer() throws Exception
     {
         _server.start();
         Resource big = ResourceFactory.of(_servletContextHandler).newClassLoaderResource("simple/big.txt", false);
