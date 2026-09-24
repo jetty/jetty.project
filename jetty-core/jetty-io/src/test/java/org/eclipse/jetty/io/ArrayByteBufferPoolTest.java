@@ -93,7 +93,9 @@ public class ArrayByteBufferPoolTest
         List<RetainableByteBuffer> buffers = new ArrayList<>();
 
         for (int i = 1; i < 151; i++)
+        {
             buffers.add(pool.acquire(i, true));
+        }
 
         buffers.forEach(RetainableByteBuffer::release);
 
@@ -124,7 +126,9 @@ public class ArrayByteBufferPoolTest
         List<RetainableByteBuffer> buffers = new ArrayList<>();
 
         for (int i = 0; i < 200; i++)
+        {
             buffers.add(pool.acquire(10 + i / 10, true));
+        }
 
         assertThat(pool.getAvailableDirectByteBufferCount(), is(0L));
         assertThat(pool.getDirectByteBufferCount(), is(0L));
@@ -141,7 +145,9 @@ public class ArrayByteBufferPoolTest
 
         buffers.clear();
         for (int i = 0; i < 200; i++)
+        {
             buffers.add(pool.acquire(10 + i / 10, true));
+        }
 
         long maxSize = 0;
         for (RetainableByteBuffer buffer : buffers)
@@ -575,5 +581,23 @@ public class ArrayByteBufferPoolTest
         assertFalse(retained0.release());
         assertTrue(retained0.release());
         assertThat(pool.getHeapByteBufferCount(), is(3L));
+    }
+
+    @Test
+    public void testCompoundPoolClear()
+    {
+        ArrayByteBufferPool pool = new ArrayByteBufferPool();
+
+        // Populate the bucket past the primary ConcurrentPool, so the secondary QueuedPool holds entries.
+        List<RetainableByteBuffer> buffers = new ArrayList<>();
+        for (int i = 0; i < ConcurrentPool.OPTIMAL_MAX_SIZE + 1; i++)
+        {
+            buffers.add(pool.acquire(1, false));
+        }
+        buffers.forEach(RetainableByteBuffer::release);
+
+        pool.clear();
+
+        pool.acquire(1, false).release();
     }
 }
