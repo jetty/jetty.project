@@ -56,6 +56,7 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -97,6 +98,8 @@ public class HttpOutputTest
         IO.close(_contentServlet._contentChannel);
         _server.stop();
         _server.join();
+        // Assert after stopping the server to catch any exception thrown during shutdown.
+        assertNull(_contentServlet._serviceFailure);
     }
 
     @Test
@@ -108,7 +111,7 @@ public class HttpOutputTest
     }
 
     @Test
-    public void testSendContentByteBuffer() throws Exception
+    public void testSendContentInDirectByteBuffer() throws Exception
     {
         _server.start();
         byte[] buffer = new byte[16 * 1024];
@@ -116,6 +119,34 @@ public class HttpOutputTest
         Arrays.fill(buffer, 4 * 1024, 12 * 1024, (byte)0x58);
         Arrays.fill(buffer, 12 * 1024, 16 * 1024, (byte)0x66);
         _contentServlet._content = ByteBuffer.wrap(buffer);
+        _contentServlet._content.limit(12 * 1024);
+        _contentServlet._content.position(4 * 1024);
+        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("\r\nXXXXXXXXXXXXXXXXXXXXXXXXXXX"));
+
+        for (int i = 0; i < 4 * 1024; i++)
+        {
+            assertEquals((byte)0x99, buffer[i], "i=" + i);
+        }
+        for (int i = 12 * 1024; i < 16 * 1024; i++)
+        {
+            assertEquals((byte)0x66, buffer[i], "i=" + i);
+        }
+    }
+
+    @Test
+    public void testSendContentDirectByteBuffer() throws Exception
+    {
+        _server.start();
+        byte[] buffer = new byte[16 * 1024];
+        Arrays.fill(buffer, 0, 4 * 1024, (byte)0x99);
+        Arrays.fill(buffer, 4 * 1024, 12 * 1024, (byte)0x58);
+        Arrays.fill(buffer, 12 * 1024, 16 * 1024, (byte)0x66);
+        _contentServlet._content = ByteBuffer.allocateDirect(buffer.length);
+        BufferUtil.flipToFill(_contentServlet._content);
+        BufferUtil.append(_contentServlet._content, buffer);
+        BufferUtil.flipToFlush(_contentServlet._content, 0);
         _contentServlet._content.limit(12 * 1024);
         _contentServlet._content.position(4 * 1024);
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
@@ -238,7 +269,7 @@ public class HttpOutputTest
     {
         _server.start();
         Resource big = ResourceFactory.of(_servletContextHandler).newClassLoaderResource("simple/big.txt", false);
-        _contentServlet._content = IOResources.toRetainableByteBuffer(big, ByteBufferPool.SIZED_NON_POOLING).getByteBuffer();
+        _contentServlet._content = IOResources.toRetainableByteBuffer(big, new ByteBufferPool.Sized(ByteBufferPool.NON_POOLING, true, -1)).getByteBuffer();
         String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Content-Length"));
@@ -1165,6 +1196,7 @@ public class HttpOutputTest
     static class ContentServlet extends HttpServlet
     {
         AtomicInteger _owp = new AtomicInteger();
+        volatile Throwable _serviceFailure;
         boolean _writeLengthIfKnown = true;
         boolean _async;
         ByteBuffer _byteBuffer;
@@ -1176,7 +1208,20 @@ public class HttpOutputTest
         final FuturePromise<Boolean> _closedAfterWrite = new FuturePromise<>();
 
         @Override
-        protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+        {
+            try
+            {
+                doService(request, response);
+                _serviceFailure = null;
+            }
+            catch (Throwable e)
+            {
+                _serviceFailure = e;
+            }
+        }
+
+        private void doService(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             response.setContentType("text/plain");
 
