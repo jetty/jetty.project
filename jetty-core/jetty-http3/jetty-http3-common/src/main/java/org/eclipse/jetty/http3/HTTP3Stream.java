@@ -125,9 +125,17 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         notifyIdleTimeout(timeout, Promise.from(timedOut ->
         {
             if (timedOut)
+            {
                 endPoint.close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout);
+            }
             else
+            {
                 notIdle();
+                // This promise may not be called from the thread that called onIdleTimeout() so CyclicTimeouts.iterate()
+                // may not notice that the expireNanoTime field has been updated, so we need to explicitly reschedule the
+                // timeout.
+                session.scheduleIdleTimeout(this);
+            }
             promise.succeeded(timedOut);
         }, promise::failed));
     }

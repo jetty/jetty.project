@@ -72,6 +72,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private Content.Chunk _trailer;
     private boolean committed;
     private boolean _demand;
+    private ChannelRecyclingState _channelRecyclingState = ChannelRecyclingState.CAN_RECYCLE;
 
     public HttpStreamOverHTTP2(HTTP2ServerConnection connection, HttpChannel httpChannel, HTTP2Stream stream)
     {
@@ -594,6 +595,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void onTimeout(TimeoutException timeout, BiConsumer<Runnable, Boolean> consumer)
     {
+        boolean completed = preventChannelRecycling();
+        if (completed)
+        {
+            consumer.accept(null, false);
+            return;
+        }
         Runnable task = _httpChannel.onIdleTimeout(timeout);
         boolean idle = !_httpChannel.isRequestHandled();
         consumer.accept(task, idle);
@@ -602,9 +609,39 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
+        boolean completed = preventChannelRecycling();
+        if (completed)
+            return new FailureTask(null, callback);
         boolean remote = failure instanceof EOFException;
         Runnable task = remote ? _httpChannel.onRemoteFailure(new EofException(failure)) : _httpChannel.onFailure(failure);
         return new FailureTask(task, callback);
+    }
+
+    /**
+     * @return true if the channel recycling state is {@link ChannelRecyclingState#COMPLETED}
+     */
+    private boolean preventChannelRecycling()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            boolean completed = _channelRecyclingState == ChannelRecyclingState.COMPLETED;
+            if (!completed)
+                _channelRecyclingState = ChannelRecyclingState.CANNOT_RECYCLE;
+            return completed;
+        }
+    }
+
+    /**
+     * @return true if the channel recycling state was {@link ChannelRecyclingState#CAN_RECYCLE}
+     */
+    private boolean completeChannelRecycling()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            boolean canRecycle = _channelRecyclingState == ChannelRecyclingState.CAN_RECYCLE;
+            _channelRecyclingState = ChannelRecyclingState.COMPLETED;
+            return canRecycle;
+        }
     }
 
     @Override
@@ -637,8 +674,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.NO_ERROR.code), Callback.NOOP);
             }
         }
-        _httpChannel.recycle();
-        _connection.offerHttpChannel(_httpChannel);
+        boolean canRecycle = completeChannelRecycling();
+        if (canRecycle && _connection.isRecycleHttpChannels())
+        {
+            _httpChannel.recycle();
+            _connection.offerHttpChannel(_httpChannel);
+        }
     }
 
     @Override
@@ -648,6 +689,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 response #{}/{} failed {}", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), errorCode, x);
         _stream.reset(new ResetFrame(_stream.getId(), errorCode.code), Callback.NOOP);
+        completeChannelRecycling();
     }
 
     private class SendTrailers extends Callback.Nested
@@ -715,5 +757,10 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 callback.failed(x);
             }
         }
+    }
+
+    private enum ChannelRecyclingState
+    {
+        CAN_RECYCLE, CANNOT_RECYCLE, COMPLETED
     }
 }
