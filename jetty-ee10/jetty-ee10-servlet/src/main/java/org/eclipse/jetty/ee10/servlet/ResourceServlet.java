@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -533,23 +532,8 @@ public class ResourceServlet extends HttpServlet
                     ? servletChannel.getRequest()
                     : ServletCoreRequest.wrap(httpServletRequest);
 
-                // If the servlet response has been wrapped and has been written to,
-                // then the servlet response must be wrapped as a core response
-                // otherwise we can use the core response directly.
-                boolean writingOrStreaming = servletContextResponse.isWritingOrStreaming();
-                boolean useServletResponse = !(httpServletResponse instanceof ServletApiResponse) || writingOrStreaming;
-                Response r = useServletResponse
-                    ? new ServletCoreResponse(coreRequest, httpServletResponse, included)
-                    : servletChannel.getResponse();
-                // Ignore last writes done via the Core API as the ServletChannel will perform the last write upon completion.
-                Response coreResponse = new Response.Wrapper(coreRequest, r)
-                {
-                    @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-                    {
-                        super.write(false, byteBuffer, callback);
-                    }
-                };
+                // Always wrap the response so that we can re-use bypass logic there.
+                Response coreResponse = new ServletCoreResponse(coreRequest, httpServletResponse, included);
 
                 // If the core response is already committed then do nothing more
                 if (coreResponse.isCommitted())
@@ -563,7 +547,7 @@ public class ResourceServlet extends HttpServlet
                 long contentLength = content.getContentLengthValue();
 
                 // If the response is already written, then don't set the content-length.
-                if (writingOrStreaming)
+                if (servletContextResponse.isWritingOrStreaming())
                     content = new UnknownLengthHttpContent(content);
 
                 // The character encoding may be forced
