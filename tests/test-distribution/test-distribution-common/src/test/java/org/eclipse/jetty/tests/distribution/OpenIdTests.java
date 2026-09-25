@@ -13,13 +13,19 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
@@ -48,6 +54,11 @@ public class OpenIdTests extends AbstractJettyHomeTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenIdTests.class);
     private static final Logger KEYCLOACK_LOGGER = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.keycloak.logs");
+    // Pinned so CI and developer machines cannot drift onto different Keycloak builds,
+    // the same way this module pins its other test containers.
+    private static final String KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:26.4.7";
+    private static final Pattern FORM_TAG = Pattern.compile("<form\\b[^>]*>", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FORM_ACTION = Pattern.compile("\\baction=\"([^\"]*)\"", Pattern.CASE_INSENSITIVE);
     private static final String clientId = "jetty-api";
     private static final String clientSecret = "JettyRocks!";
     private static final String userName = "jetty";
@@ -56,7 +67,7 @@ public class OpenIdTests extends AbstractJettyHomeTest
     private static final String lastName = "Doe";
     private static final String email = "jetty@jetty.org";
 
-    private final KeycloakContainer keycloakContainer = new KeycloakContainer()
+    private final KeycloakContainer keycloakContainer = new KeycloakContainer(KEYCLOAK_IMAGE)
     {
         @Override
         protected Logger logger()
@@ -164,23 +175,25 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 String uri = "http://localhost:" + port + "/test";
                 // Initially not authenticated
-                startHttpClient();
+                startHttpClient(() ->
+                {
+                    HttpClient httpClient = new HttpClient();
+                    httpClient.setHttpCookieStore(new LoopbackCookieStore());
+                    return httpClient;
+                });
                 ContentResponse contentResponse = client.GET(uri + "/");
                 assertThat(contentResponse.getStatus(), is(HttpStatus.OK_200));
                 assertThat(contentResponse.getContentAsString(), containsString("not authenticated"));
 
                 // Request to login is success
                 contentResponse = client.GET(uri + "/login");
-                assertThat(contentResponse.getStatus(), is(HttpStatus.OK_200));
-                // need to extract form
-                String html = contentResponse.getContentAsString();
-                // need this attribute  <form ***** action="***"
-                String postUrl = html.substring(html.indexOf("action=\"")).substring(0, html.substring(html.indexOf("action=\"")).indexOf("\"", 9)).substring(8);
+                assertEquals(HttpStatus.OK_200, contentResponse.getStatus(), new ResponseDetails(contentResponse));
+                String postUrl = loginFormAction(contentResponse.getContentAsString());
                 Fields fields = new Fields();
                 fields.put("username", userName);
                 fields.add("password", password);
                 contentResponse = client.FORM(postUrl, fields);
-                assertThat(contentResponse.getStatus(), is(HttpStatus.OK_200));
+                assertEquals(HttpStatus.OK_200, contentResponse.getStatus(), new ResponseDetails(contentResponse));
                 assertThat(contentResponse.getContentAsString(), containsString("success"));
 
                 // Now authenticated we can get info
@@ -199,6 +212,55 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 content = contentResponse.getContentAsString();
                 assertThat(content, containsString("not authenticated"));
             }
+        }
+    }
+
+    /**
+     * Find where the Keycloak login page wants the username and password posted.
+     * The action is an attribute value, so its query string arrives HTML escaped
+     * (&amp;amp; rather than &amp;) and has to be decoded before we can post to it.
+     *
+     * @param html the Keycloak login page
+     * @return the URL to post the login form to
+     */
+    private static String loginFormAction(String html)
+    {
+        String firstAction = null;
+        Matcher formTag = FORM_TAG.matcher(html);
+        while (formTag.find())
+        {
+            String tag = formTag.group();
+            Matcher action = FORM_ACTION.matcher(tag);
+            if (!action.find())
+                continue;
+
+            String url = action.group(1).replace("&amp;", "&");
+            // Keycloak gives the login form this id, other forms on the page are not the one we want.
+            if (tag.contains("id=\"kc-form-login\""))
+                return url;
+            if (firstAction == null)
+                firstAction = url;
+        }
+
+        if (firstAction == null)
+            throw new IllegalStateException("No login form in Keycloak response:" + System.lineSeparator() + html);
+        return firstAction;
+    }
+
+    /**
+     * Keycloak pairs SameSite=None with Secure on the cookies that carry the login state,
+     * so a plain HTTP client drops them and Keycloak then rejects the login with
+     * "Restart login cookie not found". A browser would still send them over loopback,
+     * so forget the attribute and keep this test on plain HTTP.
+     */
+    private static class LoopbackCookieStore extends HttpCookieStore.Default
+    {
+        @Override
+        public boolean add(URI uri, HttpCookie cookie)
+        {
+            if (cookie.isSecure())
+                cookie = HttpCookie.build(cookie).secure(false).build();
+            return super.add(uri, cookie);
         }
     }
 }

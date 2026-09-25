@@ -8,5 +8,5 @@ compression
 gzip
 
 [lib]
-lib/compression/jetty-compression-common-${jetty.version}.jar
-lib/compression/jetty-compression-gzip-${jetty.version}.jar
+lib/jetty-compression-common-${jetty.version}.jar
+lib/jetty-compression-gzip-${jetty.version}.jar

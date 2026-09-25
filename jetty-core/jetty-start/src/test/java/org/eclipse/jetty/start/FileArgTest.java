@@ -13,15 +13,20 @@
 
 package org.eclipse.jetty.start;
 
+import java.net.URI;
+import java.net.URLDecoder;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FileArgTest
 {
@@ -71,5 +76,14 @@ public class FileArgTest
             assertThat("URI", arg.uri, is(expectedUri));
         }
         assertThat("Location", arg.location, is(expectedLocation));
+    }
+
+    @Test
+    public void testToSafeURI()
+    {
+        FileArg arg = new FileArg(null, "maven://org.example/foo/${version}/jar|/tmp/foo.jar");
+        URI uri = arg.toSafeURI();
+        assertEquals("maven://org.example/foo/%24%7Bversion%7D/jar", uri.toASCIIString());
+        assertEquals("maven://org.example/foo/${version}/jar", URLDecoder.decode(uri.toASCIIString(), UTF_8));
     }
 }

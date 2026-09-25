@@ -6,15 +6,24 @@ Enables use of the apache implementation of JSP.
 [environment]
 ee11
 
-[depend]
+[depends]
+ecj
 ee11-servlet
 ee11-annotations
 
-[lib]
-lib/ee11-apache-jsp/@jakarta.el:jakarta.el-api@
-lib/ee11-apache-jsp/@jakarta.servlet.jsp:jakarta.servlet.jsp-api@
-lib/ee11-apache-jsp/@org.eclipse.jdt:ecj@
-lib/ee11-apache-jsp/@org.mortbay.jasper:mortbay-apache-el@
-lib/ee11-apache-jsp/@org.mortbay.jasper:mortbay-apache-jsp@
-lib/jetty-ee11-apache-jsp-${jetty.version}.jar
+[ini]
+ee11.jsp.impl.version?=@ee11.jsp.impl.version@
 
+[files]
+maven://jakarta.el/jakarta.el-api/6.0.1/jar|lib/ee11/support/jakarta.el.jakarta.el-api-6.0.1.jar
+maven://jakarta.servlet.jsp/jakarta.servlet.jsp-api/4.0.0/jar|lib/ee11/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-4.0.0.jar
+maven://org.eclipse.jetty.ee11/jetty-ee11-apache-jsp/${jetty.version}/jar|lib/ee11/jetty-ee11-apache-jsp-${jetty.version}.jar
+maven://org.mortbay.jasper/mortbay-apache-el/${ee11.jsp.impl.version}/jar|lib/ee11/support/org.mortbay.jasper.mortbay-apache-el-${ee11.jsp.impl.version}.jar
+maven://org.mortbay.jasper/mortbay-apache-jsp/${ee11.jsp.impl.version}/jar|lib/ee11/support/org.mortbay.jasper.mortbay-apache-jsp-${ee11.jsp.impl.version}.jar
+
+[lib]
+lib/ee11/jetty-ee11-apache-jsp-${jetty.version}.jar
+lib/ee11/support/jakarta.el.jakarta.el-api-6.0.1.jar
+lib/ee11/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-4.0.0.jar
+lib/ee11/support/org.mortbay.jasper.mortbay-apache-el-${ee11.jsp.impl.version}.jar
+lib/ee11/support/org.mortbay.jasper.mortbay-apache-jsp-${ee11.jsp.impl.version}.jar

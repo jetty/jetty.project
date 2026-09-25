@@ -11,8 +11,8 @@ zstandard
 maven://com.github.luben/zstd-jni/${zstd-jni.version}|lib/compression/zstd-jni-${zstd-jni.version}.jar
 
 [lib]
-lib/compression/jetty-compression-common-${jetty.version}.jar
-lib/compression/jetty-compression-zstandard-${jetty.version}.jar
+lib/jetty-compression-common-${jetty.version}.jar
+lib/jetty-compression-zstandard-${jetty.version}.jar
 lib/compression/zstd-jni-${zstd-jni.version}.jar
 
 [ini]
