@@ -99,9 +99,9 @@ public class HeaderBlockFragments
 
     public RetainableByteBuffer complete()
     {
-        RetainableByteBuffer rb = storage;
+        RetainableByteBuffer buffer = storage;
         storage = null;
-        return rb;
+        return buffer;
     }
 
     public int getStreamId()

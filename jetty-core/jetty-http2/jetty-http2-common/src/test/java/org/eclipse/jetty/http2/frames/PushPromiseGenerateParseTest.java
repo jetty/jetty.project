@@ -64,20 +64,19 @@ public class PushPromiseGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generatePushPromise(accumulator, streamId, promisedStreamId, metaData);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
 
             assertEquals(1, frames.size());
-            PushPromiseFrame frame = frames.get(0);
+            PushPromiseFrame frame = frames.getFirst();
             assertEquals(streamId, frame.getStreamId());
             assertEquals(promisedStreamId, frame.getPromisedStreamId());
-            MetaData.Request request = (MetaData.Request)frame.getMetaData();
+            MetaData.Request request = frame.getMetaData();
             assertEquals(metaData.getMethod(), request.getMethod());
             assertEquals(metaData.getHttpURI(), request.getHttpURI());
             for (int j = 0; j < fields.size(); ++j)
@@ -114,17 +113,16 @@ public class PushPromiseGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generatePushPromise(accumulator, streamId, promisedStreamId, metaData);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
 
             assertEquals(1, frames.size());
-            PushPromiseFrame frame = frames.get(0);
+            PushPromiseFrame frame = frames.getFirst();
             assertEquals(streamId, frame.getStreamId());
             assertEquals(promisedStreamId, frame.getPromisedStreamId());
             MetaData.Request request = frame.getMetaData();

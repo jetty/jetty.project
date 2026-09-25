@@ -54,7 +54,7 @@ public class StreamContentParser extends ContentParser
                 case CONTENT:
                 {
                     long length = Math.min(contentLength, buffer.remaining());
-                    try (RetainableByteBuffer slice = buffer.slice(buffer.readPosition(), length))
+                    try (RetainableByteBuffer slice = buffer.slice(length))
                     {
                         // Only parse the content of this FCGI frame.
                         boolean result = onContent(slice);

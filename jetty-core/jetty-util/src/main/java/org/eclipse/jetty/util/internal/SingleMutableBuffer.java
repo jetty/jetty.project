@@ -15,7 +15,6 @@ package org.eclipse.jetty.util.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -71,12 +70,6 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
             byteBuffer.limit(byteBuffer.capacity());
         }
         return byteBuffer;
-    }
-
-    @Override
-    public void byteOrder(ByteOrder byteOrder)
-    {
-        byteBuffer.order(byteOrder);
     }
 
     @Override
@@ -146,12 +139,6 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     public boolean hasRemaining()
     {
         return flipPosition < 0 ? byteBuffer.hasRemaining() : byteBuffer.position() > flipPosition;
-    }
-
-    @Override
-    public boolean isDirect()
-    {
-        return byteBuffer.isDirect();
     }
 
     @Override
@@ -228,9 +215,9 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public long writeTo(Target target) throws IOException
+    public long read(Reader reader) throws IOException
     {
-        return target.write(flipToRead());
+        return reader.readFrom(flipToRead());
     }
 
     @Override
@@ -312,7 +299,7 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
             return this;
         }
 
-        buffer.quietWriteTo(src ->
+        buffer.quietRead(src ->
         {
             long result = src.remaining();
             byteBuffer.put(src);
@@ -366,6 +353,10 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     {
         if (isRetained())
             throw new IllegalStateException("cannot compact retained buffer");
+        if (readPosition() == 0)
+            return this;
+        if (!hasRemaining())
+            return clear();
         // ByteBuffer.compact() leaves the ByteBuffer in write mode.
         flipToRead().compact();
         flipPosition = 0;
@@ -381,9 +372,9 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public long readFrom(Fount fount) throws IOException
+    public long write(Writer writer) throws IOException
     {
-        return fount.read(flipToWrite());
+        return writer.writeTo(flipToWrite());
     }
 
     @Override

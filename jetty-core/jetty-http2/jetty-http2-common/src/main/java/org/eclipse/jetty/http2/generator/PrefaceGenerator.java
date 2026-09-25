@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.util.List;
-
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -29,10 +27,9 @@ public class PrefaceGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(List<RetainableByteBuffer> accumulator, Frame frame)
+    public int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame)
     {
-        RetainableByteBuffer slice = PREFACE.slice();
-        accumulator.add(slice);
+        accumulator.addRetained(PREFACE.slice());
         return PrefaceFrame.PREFACE_BYTES.length;
     }
 }

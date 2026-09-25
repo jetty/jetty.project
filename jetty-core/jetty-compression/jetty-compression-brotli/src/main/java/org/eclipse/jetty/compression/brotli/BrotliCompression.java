@@ -67,7 +67,11 @@ public class BrotliCompression extends Compression
         RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(length, true);
         // Per https://datatracker.ietf.org/doc/html/rfc7932#section-1.5
         // Brotli is LITTLE_ENDIAN
-        buffer.byteOrder(ByteOrder.LITTLE_ENDIAN);
+        buffer.quietWrite(b ->
+        {
+            b.order(ByteOrder.LITTLE_ENDIAN);
+            return 0;
+        });
         return buffer;
     }
 

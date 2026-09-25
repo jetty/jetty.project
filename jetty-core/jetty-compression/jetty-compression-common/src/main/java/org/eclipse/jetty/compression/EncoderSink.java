@@ -61,7 +61,35 @@ public abstract class EncoderSink implements Content.Sink
     {
     }
 
-    public record WriteRecord(boolean last, RetainableByteBuffer output) {}
+    protected static class WriteRecord implements AutoCloseable
+    {
+        private final RetainableByteBuffer buffer;
+        private final boolean last;
+
+        public WriteRecord(boolean last, RetainableByteBuffer buffer)
+        {
+            buffer.retain();
+            this.buffer = buffer;
+            this.last = last;
+        }
+
+        public RetainableByteBuffer acquire()
+        {
+            buffer.retain();
+            return buffer;
+        }
+
+        public boolean last()
+        {
+            return last;
+        }
+
+        @Override
+        public void close()
+        {
+            buffer.release();
+        }
+    }
 
     private class EncodeBufferCallback extends IteratingCallback
     {
@@ -113,15 +141,16 @@ public abstract class EncoderSink implements Content.Sink
                 return Action.SUCCEEDED;
 
             // Attempt to encode the next write event
-            WriteRecord writeRecord = encode(last, content);
-            if (writeRecord != null)
+            try (WriteRecord writeRecord = encode(last, content))
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("process() - write() {}", writeRecord);
-                state.compareAndSet(State.INITIAL, State.COMPRESSING);
-                write(writeRecord);
-                writeRecord.output().release();
-                return Action.SCHEDULED;
+                if (writeRecord != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("process() - write() {}", writeRecord);
+                    state.compareAndSet(State.INITIAL, State.COMPRESSING);
+                    write(writeRecord);
+                    return Action.SCHEDULED;
+                }
             }
 
             boolean hasRemaining = content.hasRemaining();
@@ -133,12 +162,15 @@ public abstract class EncoderSink implements Content.Sink
         private void write(WriteRecord writeRecord)
         {
             Callback callback = this;
-            if (writeRecord.last)
+            if (writeRecord.last())
             {
                 state.set(State.FINISHING);
                 callback = Callback.from(this::finished, callback);
             }
-            sink.write(writeRecord.last(), writeRecord.output(), callback);
+            try (RetainableByteBuffer buffer = writeRecord.acquire())
+            {
+                sink.write(writeRecord.last(), buffer, callback);
+            }
         }
 
         protected void finished()

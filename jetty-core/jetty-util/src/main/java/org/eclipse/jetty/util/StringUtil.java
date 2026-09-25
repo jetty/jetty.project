@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -21,6 +20,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
+
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * Fast String Utilities.
@@ -569,27 +570,6 @@ public class StringUtil
         return true;
     }
 
-    public static String toUTF8String(byte[] b, int offset, int length)
-    {
-        return new String(b, offset, length, StandardCharsets.UTF_8);
-    }
-
-    /**
-     * @deprecated use {@link String#String(byte[], int, int, Charset)} instead
-     */
-    @Deprecated(since = "10", forRemoval = true)
-    public static String toString(byte[] b, int offset, int length, String charset)
-    {
-        try
-        {
-            return new String(b, offset, length, charset);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
     /**
      * Find the index of a control characters in String
      * <p>
@@ -775,6 +755,19 @@ public class StringUtil
             buf.append((char)c);
         }
         return buf.toString();
+    }
+
+    public static String toHexString(RetainableByteBuffer buffer)
+    {
+        try (RetainableByteBuffer slice = buffer.slice())
+        {
+            return toHexString(slice.getArray());
+        }
+    }
+
+    public static String toString(RetainableByteBuffer buffer, Charset charset)
+    {
+        return buffer == null ? null : buffer.getString(buffer.readPosition(), charset);
     }
 
     public static String printable(String name)

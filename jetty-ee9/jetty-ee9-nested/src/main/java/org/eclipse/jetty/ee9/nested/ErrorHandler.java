@@ -38,10 +38,11 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.io.ByteBufferOutputStream;
+import org.eclipse.jetty.io.RetainableByteBufferOutputStream;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -283,55 +284,56 @@ public class ErrorHandler extends AbstractHandler
                 return;
         }
 
-        // write into the response aggregate buffer and flush it asynchronously.
-        while (true)
+        // Write into the response aggregate buffer and flush it asynchronously.
+        try (RetainableByteBuffer.Mutable buffer = baseRequest.getResponse().getHttpOutput().acquire())
         {
-            ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getByteBuffer();
-            try
+            while (true)
             {
-                ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
-                PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
-
-                switch (type)
+                try (RetainableByteBufferOutputStream out = new RetainableByteBufferOutputStream(buffer))
                 {
-                    case TEXT_HTML:
-                        response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
-                        response.setCharacterEncoding(charset.name());
-                        request.setAttribute(ERROR_CHARSET, charset);
-                        handleErrorPage(request, writer, code, message);
-                        break;
-                    case TEXT_JSON:
-                        response.setContentType(contentType);
-                        writeErrorJson(request, writer, code, message);
-                        break;
-                    case TEXT_PLAIN:
-                        response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
-                        response.setCharacterEncoding(charset.name());
-                        writeErrorPlain(request, writer, code, message);
-                        break;
-                    default:
-                        throw new IllegalStateException();
+                    PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
+
+                    switch (type)
+                    {
+                        case TEXT_HTML:
+                            response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
+                            response.setCharacterEncoding(charset.name());
+                            request.setAttribute(ERROR_CHARSET, charset);
+                            handleErrorPage(request, writer, code, message);
+                            break;
+                        case TEXT_JSON:
+                            response.setContentType(contentType);
+                            writeErrorJson(request, writer, code, message);
+                            break;
+                        case TEXT_PLAIN:
+                            response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
+                            response.setCharacterEncoding(charset.name());
+                            writeErrorPlain(request, writer, code, message);
+                            break;
+                        default:
+                            throw new IllegalStateException();
+                    }
+
+                    writer.flush();
+                    break;
                 }
-
-                writer.flush();
-                break;
-            }
-            catch (BufferOverflowException e)
-            {
-                baseRequest.getResponse().resetContent();
-                if (!_disableStacks)
+                catch (BufferOverflowException e)
                 {
+                    baseRequest.getResponse().resetContent();
+                    if (!_disableStacks)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Disabling showsStacks for {}", this);
+                        _disableStacks = true;
+                        continue;
+                    }
+
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Disabling showsStacks for {}", this);
-                    _disableStacks = true;
-                    continue;
+                        LOG.debug("Error page too large: >{} {} {} {}", buffer.capacity(), code, message, request, e);
+                    else
+                        LOG.warn("Error page too large: >{} {} {} {}", buffer.capacity(), code, message, request);
+                    break;
                 }
-
-                if (LOG.isDebugEnabled())
-                    LOG.warn("Error page too large: >{} {} {} {}", buffer.capacity(), code, message, request, e);
-                else
-                    LOG.warn("Error page too large: >{} {} {} {}", buffer.capacity(), code, message, request);
-                break;
             }
         }
 

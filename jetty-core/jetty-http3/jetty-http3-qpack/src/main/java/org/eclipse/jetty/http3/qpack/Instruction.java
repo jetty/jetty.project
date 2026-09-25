@@ -20,7 +20,7 @@ import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public interface Instruction
 {
-    void encode(WritableBufferPool byteBufferPool, List<RetainableByteBuffer> accumulator);
+    void encode(WritableBufferPool bufferPool, RetainableByteBuffer.Accumulator accumulator);
 
     /**
      * <p>A handler for instructions issued by an {@link QpackEncoder} or {@link QpackDecoder}.</p>

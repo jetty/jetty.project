@@ -144,10 +144,10 @@ public class HpackEncoderTest
         HpackContext ctx = encoder.getHpackContext();
         ctx.resize(encoder.getMaxTableCapacity());
 
-        RetainableByteBuffer.Mutable wb = RetainableByteBuffer.Mutable.allocate(4096, false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(4096, false);
 
         // Index little fields
-        encoder.encode(wb, new HttpField("Name", "Value"));
+        encoder.encode(buffer, new HttpField("Name", "Value"));
         int dynamicTableSize = ctx.getDynamicTableSize();
         assertThat(dynamicTableSize, Matchers.greaterThan(0));
 
@@ -156,7 +156,7 @@ public class HpackEncoderTest
         String filler = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
         while (largeName.length() < ctx.getMaxDynamicTableSize())
             largeName.append(filler, 0, Math.min(filler.length(), ctx.getMaxDynamicTableSize() - largeName.length()));
-        encoder.encode(wb, new HttpField(largeName.toString(), "Value"));
+        encoder.encode(buffer, new HttpField(largeName.toString(), "Value"));
         assertThat(ctx.getDynamicTableSize(), Matchers.is(dynamicTableSize));
     }
 

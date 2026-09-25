@@ -56,18 +56,17 @@ public class PingGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generatePing(accumulator, payload, true);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
         }
 
         assertEquals(1, frames.size());
-        PingFrame frame = frames.get(0);
+        PingFrame frame = frames.getFirst();
         assertArrayEquals(payload, frame.getPayload());
         assertTrue(frame.isReply());
     }
@@ -94,17 +93,16 @@ public class PingGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generatePing(accumulator, payload, true);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
 
             assertEquals(1, frames.size());
-            PingFrame frame = frames.get(0);
+            PingFrame frame = frames.getFirst();
             assertArrayEquals(payload, frame.getPayload());
             assertTrue(frame.isReply());
         }
@@ -126,17 +124,17 @@ public class PingGenerateParseTest
             }
         });
 
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         PingFrame ping = new PingFrame(NanoTime.now(), true);
         generator.generate(accumulator, ping);
 
-        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-        accumulator.forEach(RetainableByteBuffer::release);
-        UnknownParseTest.parse(parser, rb);
-        rb.release();
+        try (RetainableByteBuffer buffer = accumulator.drain())
+        {
+            UnknownParseTest.parse(parser, buffer);
+        }
 
         assertEquals(1, frames.size());
-        PingFrame pong = frames.get(0);
+        PingFrame pong = frames.getFirst();
         assertEquals(ping.getPayloadAsLong(), pong.getPayloadAsLong());
         assertTrue(pong.isReply());
     }

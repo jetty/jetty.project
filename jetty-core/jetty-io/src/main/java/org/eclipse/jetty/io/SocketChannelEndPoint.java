@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 public class SocketChannelEndPoint extends SelectableChannelEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(SocketChannelEndPoint.class);
-    private final Target target = new Target();
+    private final Reader reader = new Reader();
 
     public SocketChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
@@ -82,7 +82,7 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         int filled;
         try
         {
-            filled = (int)buffer.readFrom(output -> getChannel().read(output));
+            filled = (int)buffer.write(output -> getChannel().read(output));
             if (filled > 0)
                 notIdle();
             else if (filled == -1)
@@ -106,7 +106,7 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         long flushed;
         try
         {
-            flushed = buffer.writeTo(target);
+            flushed = buffer.read(reader);
             if (LOG.isDebugEnabled())
                 LOG.debug("flushed {} {}", flushed, this);
         }
@@ -121,22 +121,22 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         return !buffer.hasRemaining();
     }
 
-    private class Target implements RetainableByteBuffer.GatheringTarget, RetainableByteBuffer.TransferringTarget
+    private class Reader implements RetainableByteBuffer.GatheringReader, RetainableByteBuffer.TransferringReader
     {
         @Override
-        public long write(FileChannel input, long position, long count) throws IOException
+        public long readFrom(FileChannel input, long position, long count) throws IOException
         {
             return input.transferTo(position, count, getChannel());
         }
 
         @Override
-        public long write(ByteBuffer[] inputs, int offset, int length) throws IOException
+        public long readFrom(ByteBuffer[] inputs, int offset, int length) throws IOException
         {
             return getChannel().write(inputs, offset, length);
         }
 
         @Override
-        public long write(ByteBuffer input) throws IOException
+        public long readFrom(ByteBuffer input) throws IOException
         {
             return getChannel().write(input);
         }

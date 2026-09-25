@@ -203,7 +203,7 @@ public class GZIPContentDecoder implements Destroyable
                             if (uncompressed == null)
                                 uncompressed = acquire(_bufferSize);
 
-                            uncompressed.quietReadFrom(b ->
+                            uncompressed.quietWrite(b ->
                             {
                                 try
                                 {
@@ -227,7 +227,7 @@ public class GZIPContentDecoder implements Destroyable
                             {
                                 if (!compressed.hasRemaining())
                                     return;
-                                compressed.quietWriteTo(b ->
+                                compressed.quietRead(b ->
                                 {
                                     int r = b.remaining();
                                     _inflater.setInput(b);

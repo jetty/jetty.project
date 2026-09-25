@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -46,13 +47,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class CancelWriteTest
 {
     private Server server;
-    private ArrayByteBufferPool.Tracking bufferPool;
+    private ArrayByteBufferPool.Tracking trackingBufferPool;
+    private WritableBufferPool bufferPool;
 
     @BeforeEach
     public void setUp()
     {
-        bufferPool = new ArrayByteBufferPool.Tracking();
-        server = new Server(null, null, bufferPool);
+        trackingBufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(null, null, trackingBufferPool);
+        bufferPool = WritableBufferPool.wrap(trackingBufferPool);
     }
 
     @AfterEach
@@ -60,7 +63,7 @@ public class CancelWriteTest
     {
         try
         {
-            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0)));
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + trackingBufferPool.dumpLeaks(), trackingBufferPool.getLeaks().size(), is(0)));
         }
         finally
         {
@@ -86,23 +89,21 @@ public class CancelWriteTest
                 SocketChannelEndPoint serverEndPoint = (SocketChannelEndPoint)request.getConnectionMetaData().getConnection().getEndPoint();
 
                 // Large write, it blocks due to TCP congestion.
-                org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(128 * 1024 * 1024, true);
-                ByteBuffer byteBuffer = buffer.getByteBuffer();
-                byteBuffer.clear();
-                response.write(true, RetainableByteBuffer.wrap(byteBuffer), Callback.from(callback::succeeded, x ->
+                try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(128 * 1024 * 1024, true))
                 {
-                    // Check that the WriteFlusher won't access the
-                    // buffer anymore, so that it can be released.
-                    if (serverEndPoint.getWriteFlusher().isFailed())
-                        serverWriteFailureLatch.countDown();
+                    buffer.pad(buffer.space());
+                    response.write(true, buffer, Callback.from(callback::succeeded, x ->
+                    {
+                        // Check that the WriteFlusher won't access the
+                        // buffer anymore, so that it can be released.
+                        if (serverEndPoint.getWriteFlusher().isFailed())
+                            serverWriteFailureLatch.countDown();
 
-                    // Release the buffer.
-                    buffer.release();
-
-                    // Complete the Handler callback.
-                    callback.failed(x);
-                }));
-                return true;
+                        // Complete the Handler callback.
+                        callback.failed(x);
+                    }));
+                    return true;
+                }
             }
         });
         server.start();
@@ -113,25 +114,26 @@ public class CancelWriteTest
             request.setMethod("GET");
             request.setHeader("Host", "localhost");
             request.setURI("/");
-            RetainableByteBuffer buffer = request.generate();
-
-            buffer.writeTo(client::write);
-
-            assertTrue(serverWriteFailureLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-
-            // Verify that the server eventually closes the connection.
-            long totalRead = 0L;
-            client.socket().setSoTimeout(1000);
-            ByteBuffer byteBuffer = ByteBuffer.allocate(8192);
-            while (true)
+            try (RetainableByteBuffer buffer = request.generate())
             {
-                byteBuffer.clear();
-                int read = client.read(byteBuffer);
-                if (read < 0)
-                    break;
-                totalRead += read;
+                buffer.read(client::write);
+
+                assertTrue(serverWriteFailureLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+
+                // Verify that the server eventually closes the connection.
+                long totalRead = 0L;
+                client.socket().setSoTimeout(1000);
+                ByteBuffer byteBuffer = ByteBuffer.allocate(8192);
+                while (true)
+                {
+                    byteBuffer.clear();
+                    int read = client.read(byteBuffer);
+                    if (read < 0)
+                        break;
+                    totalRead += read;
+                }
+                assertThat(totalRead, greaterThan(0L));
             }
-            assertThat(totalRead, greaterThan(0L));
         }
     }
 
@@ -178,21 +180,19 @@ public class CancelWriteTest
             @Override
             public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(1024, true);
-                ByteBuffer byteBuffer = buffer.getByteBuffer();
-                byteBuffer.clear();
-                response.write(true, RetainableByteBuffer.wrap(byteBuffer), Callback.from(callback::succeeded, x ->
+                try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(1024, true))
                 {
-                    if (serverEndPointWriteFailureLatch.getCount() == 0L)
-                        serverWriteFailureLatch.countDown();
+                    buffer.pad(buffer.space());
+                    response.write(true, buffer, Callback.from(callback::succeeded, x ->
+                    {
+                        if (serverEndPointWriteFailureLatch.getCount() == 0L)
+                            serverWriteFailureLatch.countDown();
 
-                    // Release the buffer.
-                    buffer.release();
-
-                    // Complete the Handler callback.
-                    callback.failed(x);
-                }));
-                return true;
+                        // Complete the Handler callback.
+                        callback.failed(x);
+                    }));
+                    return true;
+                }
             }
         });
         server.start();
@@ -203,26 +203,27 @@ public class CancelWriteTest
             request.setMethod("GET");
             request.setHeader("Host", "localhost");
             request.setURI("/");
-            RetainableByteBuffer buffer = request.generate();
-
-            buffer.writeTo(client::write);
-
-            assertTrue(serverWriteFailureLatch.await(5, TimeUnit.SECONDS));
-            assertTrue(serverEndPointWriteFailureLatch.await(5, TimeUnit.SECONDS));
-
-            // Verify that the server eventually closes the connection after writing 0 byte.
-            long totalRead = 0L;
-            client.socket().setSoTimeout(1000);
-            ByteBuffer byteBuffer = ByteBuffer.allocate(8192);
-            while (true)
+            try (RetainableByteBuffer buffer = request.generate())
             {
-                byteBuffer.clear();
-                int read = client.read(byteBuffer);
-                if (read < 0)
-                    break;
-                totalRead += read;
+                buffer.read(client::write);
+
+                assertTrue(serverWriteFailureLatch.await(5, TimeUnit.SECONDS));
+                assertTrue(serverEndPointWriteFailureLatch.await(5, TimeUnit.SECONDS));
+
+                // Verify that the server eventually closes the connection after writing 0 byte.
+                long totalRead = 0L;
+                client.socket().setSoTimeout(1000);
+                ByteBuffer byteBuffer = ByteBuffer.allocate(8192);
+                while (true)
+                {
+                    byteBuffer.clear();
+                    int read = client.read(byteBuffer);
+                    if (read < 0)
+                        break;
+                    totalRead += read;
+                }
+                assertThat(totalRead, is(0L));
             }
-            assertThat(totalRead, is(0L));
         }
     }
 
@@ -269,15 +270,12 @@ public class CancelWriteTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(1024, true);
-                ByteBuffer byteBuffer = buffer.getByteBuffer();
-                byteBuffer.clear();
-                response.write(true, RetainableByteBuffer.wrap(byteBuffer), Callback.from(() ->
+                try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(1024, true))
+                {
+                    buffer.pad(buffer.space());
+                    response.write(true, buffer, Callback.from(() ->
                     {
                         serverWriteSuccessLatch.countDown();
-
-                        // Release the buffer.
-                        buffer.release();
 
                         // Complete the Handler callback.
                         callback.succeeded();
@@ -286,13 +284,11 @@ public class CancelWriteTest
                         if (serverEndPointWriteSuccessLatch.getCount() == 0L)
                             serverWriteFailureLatch.countDown();
 
-                        // Release the buffer.
-                        buffer.release();
-
                         // Complete the Handler callback.
                         callback.failed(x);
                     }));
-                return true;
+                    return true;
+                }
             }
         });
         server.start();
@@ -303,15 +299,16 @@ public class CancelWriteTest
             request.setMethod("GET");
             request.setHeader("Host", "localhost");
             request.setURI("/");
-            RetainableByteBuffer buffer = request.generate();
+            try (RetainableByteBuffer buffer = request.generate())
+            {
+                buffer.read(client::write);
 
-            buffer.writeTo(client::write);
+                assertTrue(serverEndPointWriteSuccessLatch.await(5, TimeUnit.SECONDS));
+                assertFalse(serverWriteSuccessLatch.await(1, TimeUnit.SECONDS));
 
-            assertTrue(serverEndPointWriteSuccessLatch.await(5, TimeUnit.SECONDS));
-            assertFalse(serverWriteSuccessLatch.await(1, TimeUnit.SECONDS));
-
-            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
-            assertThat(response.getStatus(), is(200));
+                HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
+                assertThat(response.getStatus(), is(200));
+            }
         }
     }
 }
