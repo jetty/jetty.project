@@ -165,7 +165,7 @@ public class PrefaceTest extends AbstractTest
 
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
@@ -301,7 +301,7 @@ public class PrefaceTest extends AbstractTest
             generator.control(accumulator, new SettingsFrame(clientSettings, false));
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
             // However, we should not call onPreface() again.
@@ -342,7 +342,7 @@ public class PrefaceTest extends AbstractTest
                 assertFalse(buffer.hasRemaining());
                 buffer.clear();
 
-                long read = buffer.readFrom(output ->
+                long read = buffer.write(output ->
                 {
                     int r = socket.getInputStream().read(output.array(), output.arrayOffset(), output.capacity());
                     if (r > 0)

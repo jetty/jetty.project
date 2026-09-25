@@ -72,7 +72,7 @@ public class RetainingResponseListenerTest extends AbstractHttpClientServerTest
             assertEquals(1, buffer.remaining());
             // Modify the content so that we can check if there was a copy.
             byte modified = 1;
-            buffer.writeTo(b ->
+            buffer.read(b ->
             {
                 b.put(b.position(), modified);
                 return 0;

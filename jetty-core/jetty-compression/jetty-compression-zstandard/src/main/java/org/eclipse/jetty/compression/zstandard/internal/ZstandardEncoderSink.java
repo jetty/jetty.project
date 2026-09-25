@@ -103,7 +103,7 @@ public class ZstandardEncoderSink extends EncoderSink
         if (buffer == null || !buffer.hasRemaining())
             return RetainableByteBuffer.empty();
         RetainableByteBuffer[] result = new RetainableByteBuffer[1];
-        buffer.quietWriteTo(input ->
+        buffer.quietRead(input ->
         {
             if (input.isDirect())
             {
@@ -138,10 +138,10 @@ public class ZstandardEncoderSink extends EncoderSink
                     while (inputBuf.hasRemaining())
                     {
                         RetainableByteBuffer.Mutable b = outputBuf;
-                        inputBuf.quietWriteTo(input ->
+                        inputBuf.quietRead(input ->
                         {
                             int r = input.remaining();
-                            b.readFrom(output ->
+                            b.write(output ->
                             {
                                 int p = output.position();
                                 compressCtx.compressDirectByteBufferStream(output, input, EndDirective.CONTINUE);
@@ -187,7 +187,7 @@ public class ZstandardEncoderSink extends EncoderSink
         RetainableByteBuffer.Mutable outputBuf = compression.acquireBuffer(bufferSize);
         // use zstd-jni END directive once.
         // only run END compress once
-        outputBuf.quietReadFrom(output ->
+        outputBuf.quietWrite(output ->
         {
             int p = output.position();
             compressCtx.compressDirectByteBufferStream(output, EMPTY_DIRECT_BUFFER, EndDirective.END);
@@ -208,7 +208,7 @@ public class ZstandardEncoderSink extends EncoderSink
         // use zstd-jni FLUSH directive to flush remaining compressed bytes out
         // of the internal zstd buffers.
         boolean[] result = new boolean[1];
-        outputBuf.quietReadFrom(output ->
+        outputBuf.quietWrite(output ->
         {
             int p = output.position();
             result[0] = compressCtx.compressDirectByteBufferStream(output, EMPTY_DIRECT_BUFFER, EndDirective.FLUSH);

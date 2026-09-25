@@ -103,7 +103,7 @@ public class GzipEncoderSink extends EncoderSink
         content.retain();
         inputBuffer = content;
 
-        content.quietWriteTo(buffer ->
+        content.quietRead(buffer ->
         {
             int position = buffer.position();
             crc.update(buffer);
@@ -229,7 +229,7 @@ public class GzipEncoderSink extends EncoderSink
     {
         if (deflater.needsInput())
             addInput(content);
-        long encoded = outputBuffer.quietReadFrom(output -> deflater.deflate(output, flushMode));
+        long encoded = outputBuffer.quietWrite(output -> deflater.deflate(output, flushMode));
         return encoded > 0L;
     }
 
@@ -243,7 +243,7 @@ public class GzipEncoderSink extends EncoderSink
     {
         while (!deflater.finished())
         {
-            if (outputBuffer.quietReadFrom(output -> deflater.deflate(output, flushMode)) > 0L)
+            if (outputBuffer.quietWrite(output -> deflater.deflate(output, flushMode)) > 0L)
                 return true;
         }
         return false;

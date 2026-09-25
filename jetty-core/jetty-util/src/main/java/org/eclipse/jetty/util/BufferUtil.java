@@ -841,7 +841,7 @@ public class BufferUtil
      */
     public static void writeTo(RetainableByteBuffer buffer, OutputStream out) throws IOException
     {
-        buffer.writeTo(input -> writeTo(input, out));
+        buffer.read(input -> writeTo(input, out));
     }
 
     public static int writeTo(ByteBuffer buffer, OutputStream out) throws IOException

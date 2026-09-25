@@ -452,10 +452,10 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
 
         private long deflateContent(Deflater deflater, RetainableByteBuffer.Mutable outputBuffer) throws IOException
         {
-            return outputBuffer.readFrom(output ->
+            return outputBuffer.write(output ->
             {
                 int p = output.position();
-                _content.writeTo(input ->
+                _content.read(input ->
                 {
                     int startPosition = input.position();
                     deflater.setInput(input);

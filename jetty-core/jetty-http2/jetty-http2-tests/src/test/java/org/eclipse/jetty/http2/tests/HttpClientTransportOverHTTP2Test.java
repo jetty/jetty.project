@@ -706,7 +706,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
                             accumulator.forEach(RetainableByteBuffer::release);
                             accumulator.clear();
-                            rb.writeTo(input -> BufferUtil.writeTo(input, output));
+                            rb.read(input -> BufferUtil.writeTo(input, output));
                             rb.release();
                         }
                         catch (IOException e)

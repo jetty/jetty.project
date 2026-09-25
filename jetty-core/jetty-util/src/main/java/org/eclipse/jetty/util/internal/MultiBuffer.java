@@ -418,11 +418,11 @@ public class MultiBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public long writeTo(Target target) throws IOException
+    public long read(Reader reader) throws IOException
     {
         long totalWritten = 0;
         boolean invoked = false;
-        GatheringTarget gatherer = target instanceof GatheringTarget gt ? gt : null;
+        GatheringReader gatherer = reader instanceof GatheringReader gt ? gt : null;
         for (int i = 0; i < buffers.size(); ++i)
         {
             RetainableByteBuffer buffer = buffers.get(i);
@@ -462,7 +462,7 @@ public class MultiBuffer implements RetainableByteBuffer
                     if (idx > 0)
                     {
                         invoked = true;
-                        long written = gatherer.write(gathers, 0, idx);
+                        long written = gatherer.readFrom(gathers, 0, idx);
                         if (written > 0)
                             totalWritten += written;
                         if (written < length)
@@ -475,7 +475,7 @@ public class MultiBuffer implements RetainableByteBuffer
 
             invoked = true;
             long length = buffer.remaining();
-            long written = buffer.writeTo(target);
+            long written = buffer.read(reader);
             if (written > 0)
                 totalWritten += written;
             if (written < length)
@@ -483,7 +483,7 @@ public class MultiBuffer implements RetainableByteBuffer
         }
 
         if (!invoked)
-            target.write(BufferUtil.EMPTY_BUFFER);
+            reader.readFrom(BufferUtil.EMPTY_BUFFER);
 
         return totalWritten;
     }

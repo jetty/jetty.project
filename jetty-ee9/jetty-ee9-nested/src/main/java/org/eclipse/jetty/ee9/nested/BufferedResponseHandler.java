@@ -251,7 +251,7 @@ public class BufferedResponseHandler extends HandlerWrapper
                         getNextInterceptor().write(content, true, callback);
                         return;
                     }
-                    content.quietWriteTo(bytes ->
+                    content.quietRead(bytes ->
                     {
                         int r = bytes.remaining();
                         _aggregate.append(bytes);
@@ -276,7 +276,7 @@ public class BufferedResponseHandler extends HandlerWrapper
                         _aggregate = new org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity(_channel.getByteBufferPool(), false, -1, max);
                     }
 
-                    content.quietWriteTo(bytes ->
+                    content.quietRead(bytes ->
                     {
                         int r = bytes.remaining();
                         _aggregate.append(bytes);

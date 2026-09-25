@@ -112,7 +112,7 @@ public class FrameCaptureExtension extends AbstractExtension
             Frame f = Frame.copy(frame);
             f.setMask(null); // TODO is this needed?
             generator.generateHeader(f, buffer);
-            buffer.writeTo(channel::write);
+            buffer.read(channel::write);
             if (frame.hasPayload())
                 channel.write(frame.getPayload().slice());
             if (LOG.isDebugEnabled())

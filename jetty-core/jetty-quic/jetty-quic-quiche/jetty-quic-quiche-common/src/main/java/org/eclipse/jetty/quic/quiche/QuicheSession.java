@@ -295,7 +295,7 @@ public abstract class QuicheSession extends AbstractSession
         long remaining = cipherBuffer.remaining();
         if (LOG.isDebugEnabled())
             LOG.debug("feeding {} cipher bytes to {}", remaining, this);
-        long accepted = cipherBuffer.writeTo(b -> quiche.feedCipherBytes(b, localAddress, remoteAddress));
+        long accepted = cipherBuffer.read(b -> quiche.feedCipherBytes(b, localAddress, remoteAddress));
         if (accepted != remaining)
             throw new IllegalStateException();
     }
@@ -363,7 +363,7 @@ public abstract class QuicheSession extends AbstractSession
         if (LOG.isDebugEnabled())
             LOG.debug("reading from {} on {}", stream, this);
 
-        long filled = buffer.readFrom(b -> quiche.drainClearBytesForStream(stream.getId(), b, outLast));
+        long filled = buffer.write(b -> quiche.drainClearBytesForStream(stream.getId(), b, outLast));
 
         if (LOG.isDebugEnabled())
             LOG.debug("read {} bytes last={} from {} on {}", filled, outLast[0], stream, this);
@@ -503,7 +503,7 @@ public abstract class QuicheSession extends AbstractSession
         protected Action process() throws IOException
         {
             cipherBuffer = getByteBufferPool().acquire(getQuicConfiguration().getOutputBufferSize(), getQuicConfiguration().isUseOutputDirectByteBuffers());
-            long drained = cipherBuffer.readFrom(quiche::drainCipherBytes);
+            long drained = cipherBuffer.write(quiche::drainCipherBytes);
             if (LOG.isDebugEnabled())
                 LOG.debug("drained {} byte(s) of cipher bytes from {}", drained, QuicheSession.this);
             long nextTimeoutInMs = quiche.nextTimeout();

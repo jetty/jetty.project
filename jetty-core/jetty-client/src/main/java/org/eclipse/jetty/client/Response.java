@@ -176,7 +176,7 @@ public interface Response
         {
             try
             {
-                content.writeTo(b ->
+                content.read(b ->
                 {
                     try
                     {

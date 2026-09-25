@@ -228,9 +228,9 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public long writeTo(Target target) throws IOException
+    public long read(Reader reader) throws IOException
     {
-        return target.write(flipToRead());
+        return reader.readFrom(flipToRead());
     }
 
     @Override
@@ -312,7 +312,7 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
             return this;
         }
 
-        buffer.quietWriteTo(src ->
+        buffer.quietRead(src ->
         {
             long result = src.remaining();
             byteBuffer.put(src);
@@ -381,9 +381,9 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public long readFrom(Fount fount) throws IOException
+    public long write(Writer writer) throws IOException
     {
-        return fount.read(flipToWrite());
+        return writer.writeTo(flipToWrite());
     }
 
     @Override

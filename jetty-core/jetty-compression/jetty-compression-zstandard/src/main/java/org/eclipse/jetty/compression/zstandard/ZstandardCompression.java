@@ -196,7 +196,7 @@ public class ZstandardCompression extends Compression
             RetainableByteBuffer.Mutable wb = bufferPool.acquire(capacity, direct);
             // Hack to extract the ByteBuffer from the WritableBuffer. TODO: how to clean this up?
             ByteBuffer[] ba = new ByteBuffer[1];
-            wb.quietReadFrom(output ->
+            wb.quietWrite(output ->
             {
                 ba[0] = output;
                 return 0;

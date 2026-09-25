@@ -115,7 +115,7 @@ public class CancelWriteTest
             request.setURI("/");
             RetainableByteBuffer buffer = request.generate();
 
-            buffer.writeTo(client::write);
+            buffer.read(client::write);
 
             assertTrue(serverWriteFailureLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
@@ -205,7 +205,7 @@ public class CancelWriteTest
             request.setURI("/");
             RetainableByteBuffer buffer = request.generate();
 
-            buffer.writeTo(client::write);
+            buffer.read(client::write);
 
             assertTrue(serverWriteFailureLatch.await(5, TimeUnit.SECONDS));
             assertTrue(serverEndPointWriteFailureLatch.await(5, TimeUnit.SECONDS));
@@ -305,7 +305,7 @@ public class CancelWriteTest
             request.setURI("/");
             RetainableByteBuffer buffer = request.generate();
 
-            buffer.writeTo(client::write);
+            buffer.read(client::write);
 
             assertTrue(serverEndPointWriteSuccessLatch.await(5, TimeUnit.SECONDS));
             assertFalse(serverWriteSuccessLatch.await(1, TimeUnit.SECONDS));

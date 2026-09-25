@@ -685,7 +685,7 @@ public class Content
                     }
                     try
                     {
-                        buffer.writeTo(input -> BufferUtil.writeTo(input, out));
+                        buffer.read(input -> BufferUtil.writeTo(input, out));
                         if (last)
                         {
                             closed = true;
@@ -726,7 +726,7 @@ public class Content
                         int tries = 0;
                         while (remaining > 0L)
                         {
-                            long written = buffer.writeTo(src -> channel.write(src));
+                            long written = buffer.read(src -> channel.write(src));
                             if (written > 0L)
                                 remaining -= written;
                             else if (tries++ > 2)
@@ -770,15 +770,15 @@ public class Content
                     try
                     {
                         buffer.retain();
-                        buffer.writeTo(new RetainableByteBuffer.Target()
+                        buffer.read(new RetainableByteBuffer.Reader()
                         {
                             @Override
-                            public long write(ByteBuffer input)
+                            public long readFrom(ByteBuffer input)
                             {
                                 return write(channel, input, this);
                             }
 
-                            private long write(AsynchronousByteChannel channel, ByteBuffer input, RetainableByteBuffer.Target target)
+                            private long write(AsynchronousByteChannel channel, ByteBuffer input, RetainableByteBuffer.Reader reader)
                             {
                                 channel.write(input, input, new CompletionHandler<>()
                                 {
@@ -795,7 +795,7 @@ public class Content
                                             {
                                                 try
                                                 {
-                                                    buffer.writeTo(target);
+                                                    buffer.read(reader);
                                                 }
                                                 catch (IOException e)
                                                 {

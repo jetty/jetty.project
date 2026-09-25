@@ -130,7 +130,7 @@ public class HttpTester
             @Override
             public int fillBuffer() throws IOException
             {
-                int len = (int)_buffer.compact().readFrom(output ->
+                int len = (int)_buffer.compact().write(output ->
                 {
                     int read = stream.read(output.array(), output.arrayOffset(), output.remaining());
                     if (read > 0)
@@ -159,7 +159,7 @@ public class HttpTester
             @Override
             public int fillBuffer() throws IOException
             {
-                int len = (int)_buffer.compact().readFrom(channel::read);
+                int len = (int)_buffer.compact().write(channel::read);
                 if (len < 0)
                     _eof = true;
                 return len;

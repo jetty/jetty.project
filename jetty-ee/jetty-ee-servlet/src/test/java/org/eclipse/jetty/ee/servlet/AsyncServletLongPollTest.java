@@ -182,7 +182,7 @@ public class AsyncServletLongPollTest
         {
             HttpTester.Request request = HttpTester.newRequest();
             request.setURI(uri);
-            request.generate().writeTo(client::write);
+            request.generate().read(client::write);
 
             await().atMost(5, TimeUnit.SECONDS).until(asyncContextRef::get, Matchers.notNullValue());
 
