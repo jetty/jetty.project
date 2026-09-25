@@ -1166,6 +1166,42 @@ public class StringUtil
             .toString();
     }
 
+    public static String unquote(String s)
+    {
+        if (s == null)
+            return null;
+        if (s.length() < 2)
+            return s;
+
+        char first = s.charAt(0);
+        char last = s.charAt(s.length() - 1);
+        if (first != '"' || last != '"')
+            return s;
+
+        StringBuilder b = new StringBuilder(s.length() - 2);
+        boolean escape = false;
+        for (int i = 1; i < s.length() - 1; i++)
+        {
+            char c = s.charAt(i);
+
+            if (escape)
+            {
+                escape = false;
+                b.append(c);
+            }
+            else if (c == '\\')
+            {
+                escape = true;
+            }
+            else
+            {
+                b.append(c);
+            }
+        }
+
+        return b.toString();
+    }
+
     private StringUtil()
     {
         // prevent instantiation
