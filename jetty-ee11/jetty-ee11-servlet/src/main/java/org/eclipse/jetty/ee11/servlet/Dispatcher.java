@@ -29,6 +29,7 @@ import java.util.Objects;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
@@ -50,6 +51,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
 public class Dispatcher implements RequestDispatcher
@@ -122,7 +124,7 @@ public class Dispatcher implements RequestDispatcher
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
-        _mappedServlet.handle(_servletHandler, _decodedPathInContext, new ErrorRequest(httpRequest), httpResponse);
+        handleInTargetContext(new ErrorRequest(httpRequest), httpResponse, request);
     }
 
     @Override
@@ -133,7 +135,7 @@ public class Dispatcher implements RequestDispatcher
 
         ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(request);
         servletContextRequest.getServletContextResponse().resetForForward();
-        _mappedServlet.handle(_servletHandler, _decodedPathInContext, new ForwardRequest(httpRequest), httpResponse);
+        handleInTargetContext(new ForwardRequest(httpRequest), httpResponse, servletContextRequest);
 
         // If we are not async and not closed already, then close via the possibly wrapped response.
         if (!servletContextRequest.getState().isAsync() && !servletContextRequest.getServletContextResponse().hasLastWrite())
@@ -161,7 +163,7 @@ public class Dispatcher implements RequestDispatcher
         IncludeResponse includeResponse = new IncludeResponse(httpResponse);
         try
         {
-            _mappedServlet.handle(_servletHandler, _decodedPathInContext, new IncludeRequest(httpRequest), includeResponse);
+            handleInTargetContext(new IncludeRequest(httpRequest), includeResponse, request);
         }
         finally
         {
@@ -175,7 +177,53 @@ public class Dispatcher implements RequestDispatcher
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
-        _mappedServlet.handle(_servletHandler, _decodedPathInContext, new AsyncRequest(httpRequest), httpResponse);
+        handleInTargetContext(new AsyncRequest(httpRequest), httpResponse, request);
+    }
+
+    /**
+     * Runs the dispatch in the scope of the {@link ServletContextHandler} this {@link Dispatcher}
+     * dispatches to, so the target's ClassLoader and current {@link org.eclipse.jetty.server.Context}
+     * apply while its servlet runs. Entering the scope is skipped when the target context is already
+     * the current one, which is every dispatch that stays within a single context.
+     * <p>The request's session is not switched to the target context here. Cross context session
+     * handling is enabled with {@link ServletContextHandler#setCrossContextDispatchSupported(boolean)}
+     * and used through {@link jakarta.servlet.ServletContext#getContext(String)}.</p>
+     */
+    private void handleInTargetContext(HttpServletRequest request, HttpServletResponse response, Object source)
+        throws ServletException, IOException
+    {
+        try
+        {
+            _contextHandler.getContext().call(
+                () -> _mappedServlet.handle(_servletHandler, _decodedPathInContext, request, response),
+                asScopedRequest(source));
+        }
+        catch (ServletException | IOException | RuntimeException | Error e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new ServletException(e);
+        }
+    }
+
+    private static ServletContextRequest asScopedRequest(Object source)
+    {
+        if (source instanceof ServletContextRequest servletContextRequest)
+            return servletContextRequest;
+        if (source instanceof ServletRequest servletRequest)
+        {
+            try
+            {
+                return ServletContextRequest.getServletContextRequest(servletRequest);
+            }
+            catch (IllegalStateException ignored)
+            {
+                // Tell the scope listeners there is no request rather than failing the dispatch.
+            }
+        }
+        return null;
     }
 
     public class ParameterRequestWrapper extends HttpServletRequestWrapper
@@ -269,6 +317,39 @@ public class Dispatcher implements RequestDispatcher
             return vals.toArray(new String[0]);
         }
 
+        /**
+         * @return the {@link ServletContext} this {@link Dispatcher} dispatches to, which is the
+         *     context the request was last dispatched to. It is the same context the wrapped request
+         *     reports unless this dispatcher was obtained from another context's {@code ServletContext}.
+         */
+        @Override
+        public ServletContext getServletContext()
+        {
+            return _contextHandler.getContext().getServletContext();
+        }
+
+        /**
+         * Resolves {@code path} within the context this {@link Dispatcher} dispatches to.
+         * A relative path is resolved against the path of this request, which is the dispatch target
+         * for a forward, error or async dispatch, and remains the original path for an include.
+         */
+        @Override
+        public RequestDispatcher getRequestDispatcher(String path)
+        {
+            if (path == null)
+                return null;
+
+            if (!path.startsWith("/"))
+            {
+                String relTo = URIUtil.addPaths(getServletPath(), getPathInfo());
+                int slash = (relTo == null) ? -1 : relTo.lastIndexOf('/');
+                relTo = (slash > 1) ? relTo.substring(0, slash + 1) : "/";
+                path = URIUtil.addPaths(relTo, path);
+            }
+
+            return _contextHandler.getContext().getServletContext().getRequestDispatcher(path);
+        }
+
         @Override
         public String toString()
         {
@@ -306,6 +387,15 @@ public class Dispatcher implements RequestDispatcher
             if (_servletPathMapping == null)
                 return super.getServletPath();
             return _servletPathMapping.getServletPath();
+        }
+
+        @Override
+        public String getContextPath()
+        {
+            //Servlet Spec 9.4.2 a named dispatcher leaves the request path elements alone
+            if (_named != null)
+                return super.getContextPath();
+            return _contextHandler.getRequestContextPath();
         }
 
         @Override
@@ -471,7 +561,7 @@ public class Dispatcher implements RequestDispatcher
                 case RequestDispatcher.INCLUDE_SERVLET_PATH -> _servletPathMapping.getServletPath();
                 case RequestDispatcher.INCLUDE_PATH_INFO -> _servletPathMapping.getPathInfo();
                 case RequestDispatcher.INCLUDE_REQUEST_URI -> (_uri == null) ? null : _uri.getPath();
-                case RequestDispatcher.INCLUDE_CONTEXT_PATH -> _httpServletRequest.getContextPath();
+                case RequestDispatcher.INCLUDE_CONTEXT_PATH -> _contextHandler.getRequestContextPath();
                 case RequestDispatcher.INCLUDE_QUERY_STRING -> (_uri == null) ? null : _uri.getQuery();
                 case ServletContextRequest.MULTIPART_CONFIG_ELEMENT ->
                 {
@@ -807,6 +897,12 @@ public class Dispatcher implements RequestDispatcher
         }
 
         @Override
+        public String getContextPath()
+        {
+            return _contextHandler.getRequestContextPath();
+        }
+
+        @Override
         public HttpServletMapping getHttpServletMapping()
         {
             // TODO what about a 404 dispatch?
@@ -955,6 +1051,12 @@ public class Dispatcher implements RequestDispatcher
         public String getServletPath()
         {
             return Objects.requireNonNull(_servletPathMapping).getServletPath();
+        }
+
+        @Override
+        public String getContextPath()
+        {
+            return _contextHandler.getRequestContextPath();
         }
 
         @Override
