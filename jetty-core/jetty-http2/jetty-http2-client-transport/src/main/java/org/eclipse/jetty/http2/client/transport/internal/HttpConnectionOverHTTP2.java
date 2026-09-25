@@ -369,11 +369,9 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
             activeChannels.clear();
         }
         Throwable failure = failureSupplier.get();
-        for (HttpChannel channel : channels)
+        for (HttpChannelOverHTTP2 channel : channels)
         {
-            HttpExchange exchange = channel.getHttpExchange();
-            if (exchange != null)
-                exchange.getRequest().abort(failure);
+            channel.abort(failure);
         }
         return false;
     }
