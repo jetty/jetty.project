@@ -576,10 +576,20 @@ public interface HttpCookieStore
             public boolean isExpired()
             {
                 long maxAge = getMaxAge();
-                if (maxAge >= 0 && NanoTime.secondsSince(creationNanoTime) > maxAge)
+                if (maxAge == 0)
+                {
                     return true;
-                Instant expires = getExpires();
-                return expires != null && Instant.now().isAfter(expires);
+                }
+                else if (maxAge > 0)
+                {
+                    return (NanoTime.secondsSince(creationNanoTime) > maxAge);
+                }
+                else
+                {
+                    // We have no max-age, so we fall back to Expires
+                    Instant expires = getExpires();
+                    return expires != null && Instant.now().isAfter(expires);
+                }
             }
 
             @Override
