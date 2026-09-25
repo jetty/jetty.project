@@ -187,11 +187,16 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         return (Runnable)proxyRequest.getAttributes().get(CONTINUE_ACTION_ATTRIBUTE);
     }
 
-    private void transform(ContentTransformer transformer, ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException
+    private void transform(ContentTransformer transformer, RetainableByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException
     {
         try
         {
-            transformer.transform(input, finished, output);
+            input.read(b ->
+            {
+                int r = b.remaining();
+                transformer.transform(b, finished, output);
+                return r;
+            });
         }
         catch (Throwable x)
         {
@@ -294,7 +299,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         {
             if (!content.isClosed())
             {
-                process(BufferUtil.EMPTY_BUFFER, new Callback()
+                process(RetainableByteBuffer.empty(), new Callback()
                 {
                     @Override
                     public void failed(Throwable x)
@@ -334,7 +339,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 if (contentLength > 0 && read > 0)
                     length += read;
 
-                ByteBuffer content = read > 0 ? ByteBuffer.wrap(buffer, 0, read) : BufferUtil.EMPTY_BUFFER;
+                RetainableByteBuffer content = read > 0 ? RetainableByteBuffer.wrap(buffer, 0, read) : RetainableByteBuffer.empty();
                 boolean finished = length == contentLength;
                 process(content, this, finished);
 
@@ -356,7 +361,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             }
         }
 
-        private void process(ByteBuffer content, Callback callback, boolean finished) throws IOException
+        private void process(RetainableByteBuffer content, Callback callback, boolean finished) throws IOException
         {
             ContentTransformer transformer = (ContentTransformer)clientRequest.getAttribute(CLIENT_TRANSFORMER_ATTRIBUTE);
             if (transformer == null)
@@ -365,7 +370,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 clientRequest.setAttribute(CLIENT_TRANSFORMER_ATTRIBUTE, transformer);
             }
 
-            int contentBytes = content.remaining();
+            long contentBytes = content.remaining();
 
             // Skip transformation for empty non-last buffers.
             if (contentBytes == 0 && !finished)
@@ -460,9 +465,9 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         {
             chunk.retain();
             Callback callback = Callback.from(chunk::release, Callback.from(demander, serverResponse::abort));
-            try
+            try (RetainableByteBuffer buffer = chunk.acquire())
             {
-                long contentBytes = chunk.remaining();
+                long contentBytes = buffer.remaining();
                 if (_log.isDebugEnabled())
                     _log.debug("{} received server content: {} bytes", getRequestId(clientRequest), contentBytes);
 
@@ -486,27 +491,17 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 length += contentBytes;
 
                 boolean finished = contentLength >= 0 && length == contentLength;
-
-                try (RetainableByteBuffer buffer = chunk.acquire())
-                {
-                    ContentTransformer t = transformer;
-                    buffer.writeTo(b ->
-                    {
-                        transform(t, b, finished, buffers);
-                        // The return value is not used.
-                        return 0;
-                    });
-                }
+                transform(transformer, buffer, finished, buffers);
 
                 int newContentBytes = 0;
                 int size = buffers.size();
                 if (size > 0)
                 {
                     Callback counter = size == 1 ? callback : new CountingCallback(callback, size);
-                    for (ByteBuffer buffer : buffers)
+                    for (ByteBuffer byteBuffer : buffers)
                     {
-                        newContentBytes += buffer.remaining();
-                        proxyWriter.offer(buffer, counter);
+                        newContentBytes += byteBuffer.remaining();
+                        proxyWriter.offer(byteBuffer, counter);
                     }
                     buffers.clear();
                 }
@@ -559,7 +554,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                         ProxyWriter proxyWriter = (ProxyWriter)clientRequest.getAttribute(WRITE_LISTENER_ATTRIBUTE);
                         ContentTransformer transformer = (ContentTransformer)clientRequest.getAttribute(SERVER_TRANSFORMER_ATTRIBUTE);
 
-                        transform(transformer, BufferUtil.EMPTY_BUFFER, true, buffers);
+                        transform(transformer, RetainableByteBuffer.empty(), true, buffers);
 
                         long newContentBytes = 0;
                         int size = buffers.size();
@@ -861,7 +856,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                         logger.debug("Ungzipped {} bytes, complete={}", decoded.remaining(), complete);
                     if (decoded.hasRemaining() || complete)
                     {
-                        decoded.writeTo(b ->
+                        decoded.read(b ->
                         {
                             int r = b.remaining();
                             transformer.transform(b, complete, buffers);
@@ -898,7 +893,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
         private static class GZIPDecoder extends GZIPContentDecoder
         {
-            public GZIPDecoder(ByteBufferPool bufferPool)
+            private GZIPDecoder(ByteBufferPool bufferPool)
             {
                 super(bufferPool, IO.DEFAULT_BUFFER_SIZE);
             }

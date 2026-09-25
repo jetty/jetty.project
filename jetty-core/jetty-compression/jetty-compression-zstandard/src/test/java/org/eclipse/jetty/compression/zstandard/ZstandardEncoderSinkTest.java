@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
@@ -191,5 +192,30 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
 
         byte[] decompressed = decompress(compressed);
         assertArrayEquals(originalData, decompressed);
+    }
+
+    @Test
+    public void testMultiBuffer() throws Exception
+    {
+        startZstd();
+
+        RetainableByteBuffer original = RetainableByteBuffer.merge(List.of(
+            RetainableByteBuffer.wrap("Hello ", UTF_8),
+            RetainableByteBuffer.wrap("world!", UTF_8)
+        ));
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink fileSink = Content.Sink.from(baos);
+            Content.Sink encoderSink = zstd.newEncoderSink(fileSink);
+
+            Callback.Completable callback = new Callback.Completable();
+            encoderSink.write(true, original, callback);
+            callback.get();
+            byte[] compressed = baos.toByteArray();
+
+            byte[] decompressed = decompress(compressed);
+            assertArrayEquals("Hello world!".getBytes(UTF_8), decompressed);
+        }
     }
 }

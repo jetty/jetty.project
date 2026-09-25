@@ -30,10 +30,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.io.ReadableBufferInputStream;
+import org.eclipse.jetty.io.RetainableByteBufferInputStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
@@ -144,7 +143,7 @@ public class ServletCoreResponse implements Response
             if (!_wrapped && !_servletContextResponse.isWritingOrStreaming())
             {
                 // We can bypass the HttpOutput stream, but we need to update its bytes written
-                _servletContextResponse.getHttpOutput().addBytesWrittenViaBypass(buffer.remaining());
+                _servletContextResponse.getHttpOutput().addBytesWrittenViaBypass(buffer == null ? 0 : buffer.remaining());
                 _servletContextResponse.write(last, buffer, callback);
             }
             else
@@ -154,7 +153,7 @@ public class ServletCoreResponse implements Response
                     if (isWriting())
                     {
                         String characterEncoding = _httpServletResponse.getCharacterEncoding();
-                        try (ReadableBufferInputStream bbis = new ReadableBufferInputStream(buffer);
+                        try (RetainableByteBufferInputStream bbis = new RetainableByteBufferInputStream(buffer);
                              InputStreamReader reader = new InputStreamReader(bbis, characterEncoding))
                         {
                             IO.copy(reader, _httpServletResponse.getWriter());
@@ -165,7 +164,7 @@ public class ServletCoreResponse implements Response
                     }
                     else
                     {
-                        BufferUtil.writeTo(buffer, _httpServletResponse.getOutputStream());
+                        buffer.putTo(_httpServletResponse.getOutputStream());
                         if (last)
                             _httpServletResponse.getOutputStream().close();
                     }

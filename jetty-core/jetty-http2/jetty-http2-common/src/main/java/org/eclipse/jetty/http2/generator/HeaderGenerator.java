@@ -47,13 +47,13 @@ public class HeaderGenerator
 
     public RetainableByteBuffer.Mutable generate(FrameType frameType, int capacity, int length, int flags, int streamId)
     {
-        RetainableByteBuffer.Mutable wb = bufferPool.acquire(capacity, useDirectByteBuffers);
+        RetainableByteBuffer.Mutable buffer = bufferPool.acquire(capacity, useDirectByteBuffers);
 
-        wb.putInt((length & 0x00_FF_FF_FF) << 8 | (frameType.getType() & 0xFF));
-        wb.put((byte)flags);
-        wb.putInt(streamId);
+        buffer.putInt((length & 0x00_FF_FF_FF) << 8 | (frameType.getType() & 0xFF));
+        buffer.put((byte)flags);
+        buffer.putInt(streamId);
 
-        return wb;
+        return buffer;
     }
 
     public int getMaxFrameSize()

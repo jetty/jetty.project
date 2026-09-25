@@ -32,7 +32,6 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
@@ -422,7 +421,7 @@ public class StreamEndPoint implements EndPoint
                     {
                         if (!writeState.compareAndSet(current, WriteState.PENDING))
                             continue;
-                        stream.data(last, List.of(BufferUtil.toBuffer(buffer, true)), new Promise.Invocable.Abstract<>(callback.getInvocationType())
+                        stream.data(last, buffer, new Promise.Invocable.Abstract<>(callback.getInvocationType())
                         {
                             @Override
                             public void succeeded(Stream result)

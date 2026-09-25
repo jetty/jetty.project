@@ -166,7 +166,7 @@ public class ServerQuicheConnection extends QuicheConnection
                     LOG.debug("peer ip address: {}, ciphertext packet size: {}", remoteAddress, buffer.remaining());
 
                 QuicheConnectionId[] result = new QuicheConnectionId[1];
-                buffer.writeTo(b ->
+                buffer.read(b ->
                 {
                     result[0] = QuicheConnectionId.fromPacket(b);
                     return 0;
@@ -237,7 +237,7 @@ public class ServerQuicheConnection extends QuicheConnection
         InetSocketAddress inetRemoteAddress = (InetSocketAddress)remoteAddress;
 
         Quiche[] result = new Quiche[1];
-        cipherBuffer.writeTo(b ->
+        cipherBuffer.read(b ->
         {
             int r = b.remaining();
             // TODO make the token validator configurable
@@ -254,10 +254,10 @@ public class ServerQuicheConnection extends QuicheConnection
             SimpleTokenMinter tokenMinter = new SimpleTokenMinter(inetRemoteAddress);
 
             boolean[] boolResult = new boolean[1];
-            cipherBuffer.writeTo(input ->
+            cipherBuffer.read(input ->
             {
                 int r = input.remaining();
-                negotiationBuffer.readFrom(output ->
+                negotiationBuffer.write(output ->
                 {
                     boolResult[0] = Quiche.negotiate(tokenMinter, input, output);
                     return output.remaining();

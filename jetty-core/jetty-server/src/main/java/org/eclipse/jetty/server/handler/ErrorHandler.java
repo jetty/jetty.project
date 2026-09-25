@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -41,23 +40,21 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.io.ByteBufferOutputStream;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.RetainableByteBufferOutputStream;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -239,20 +236,17 @@ public class ErrorHandler implements Request.Handler
         }
 
         int bufferSize = getBufferSize() <= 0 ? computeBufferSize(request) : getBufferSize();
-        ByteBufferPool byteBufferPool = request.getComponents().getByteBufferPool();
-        org.eclipse.jetty.io.RetainableByteBuffer buffer = byteBufferPool.acquire(bufferSize, false);
+        WritableBufferPool bufferPool = WritableBufferPool.wrap(request.getComponents().getByteBufferPool());
 
-        try
+        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(bufferSize, false))
         {
-            // write into the response aggregate buffer and flush it asynchronously.
+            // Write into the response aggregate buffer and flush it asynchronously.
             // Looping to reduce size if buffer overflows
             boolean showStacks = isShowStacks();
             while (true)
             {
-                try
+                try (RetainableByteBufferOutputStream out = new RetainableByteBufferOutputStream(buffer))
                 {
-                    buffer.clear();
-                    ByteBufferOutputStream out = new ByteBufferOutputStream(buffer.getByteBuffer());
                     PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
 
                     switch (type)
@@ -287,21 +281,14 @@ public class ErrorHandler implements Request.Handler
 
             if (!buffer.hasRemaining())
             {
-                buffer.release();
                 callback.succeeded();
                 return true;
             }
 
             response.getHeaders().put(type.getContentTypeField(charset));
-            response.write(true, RetainableByteBuffer.wrap(buffer.getByteBuffer()), new WriteErrorCallback(callback, buffer));
+            response.write(true, buffer, callback);
 
             return true;
-        }
-        catch (Throwable x)
-        {
-            if (buffer != null)
-                buffer.release();
-            throw x;
         }
     }
 
@@ -677,50 +664,6 @@ public class ErrorHandler implements Request.Handler
         public String toString()
         {
             return "%s@%x:%s".formatted(TypeUtil.toShortName(getClass()), hashCode(), getWrapped());
-        }
-    }
-
-    /**
-     * The callback used by
-     * {@link ErrorHandler#generateAcceptableResponse(Request, Response, Callback, String, List, int, String, Throwable)}
-     * when calling {@link Response#write(boolean, ByteBuffer, Callback)} to wrap the passed in {@link Callback}
-     * so that the {@link org.eclipse.jetty.io.RetainableByteBuffer} used can be released.
-     */
-    private static class WriteErrorCallback implements Callback
-    {
-        private final AtomicReference<Callback> _callback;
-        private final org.eclipse.jetty.io.RetainableByteBuffer _buffer;
-
-        public WriteErrorCallback(Callback callback, org.eclipse.jetty.io.RetainableByteBuffer retainable)
-        {
-            _callback = new AtomicReference<>(callback);
-            _buffer = retainable;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            Callback callback = _callback.getAndSet(null);
-            if (callback == null)
-                _buffer.release();
-            else
-                ExceptionUtil.callAndThen(_buffer::release, callback::succeeded);
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            Callback callback = _callback.getAndSet(null);
-            if (callback == null)
-                _buffer.release();
-            else
-                ExceptionUtil.callAndThen(x, t -> _buffer.release(), callback::failed);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return Invocable.getInvocationType(_callback.get());
         }
     }
 }

@@ -320,7 +320,11 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
             {
                 _buffer = WritableBufferPool.wrap(getRequest().getComponents().getByteBufferPool()).acquire(_bufferSize, false);
                 // Per RFC-1952, GZIP is LITTLE_ENDIAN.
-                _buffer.byteOrder(ByteOrder.LITTLE_ENDIAN);
+                _buffer.quietWrite(b ->
+                {
+                    b.order(ByteOrder.LITTLE_ENDIAN);
+                    return 0;
+                });
                 // Add GZIP Header.
                 _buffer.put(GZIP_HEADER);
             }
@@ -452,10 +456,10 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
 
         private long deflateContent(Deflater deflater, RetainableByteBuffer.Mutable outputBuffer) throws IOException
         {
-            return outputBuffer.readFrom(output ->
+            return outputBuffer.write(output ->
             {
                 int p = output.position();
-                _content.writeTo(input ->
+                _content.read(input ->
                 {
                     int startPosition = input.position();
                     deflater.setInput(input);

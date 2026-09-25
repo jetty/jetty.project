@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -24,6 +23,7 @@ import org.eclipse.jetty.http.HttpParser.State;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -36,6 +36,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_INSENSITIVE_METHOD;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.HTTP_0_9;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.LF_CHUNK_TERMINATION;
@@ -102,11 +104,11 @@ public class HttpParserTest
     @MethodSource("httpMethodValues")
     public void testHttpMethod(HttpMethod m)
     {
-        assertNull(HttpMethod.lookAheadGet(RetainableByteBuffer.wrap(m.asString().substring(0, 2), StandardCharsets.ISO_8859_1)));
-        assertNull(HttpMethod.lookAheadGet(RetainableByteBuffer.wrap(m.asString(), StandardCharsets.ISO_8859_1)));
-        assertNull(HttpMethod.lookAheadGet(RetainableByteBuffer.wrap(m.asString() + "FOO", StandardCharsets.ISO_8859_1)));
-        assertEquals(m, HttpMethod.lookAheadGet(RetainableByteBuffer.wrap(m.asString() + " ", StandardCharsets.ISO_8859_1)));
-        assertEquals(m, HttpMethod.lookAheadGet(RetainableByteBuffer.wrap(m.asString() + " /foo/bar", StandardCharsets.ISO_8859_1)));
+        assertNull(HttpMethod.lookAheadGet(RetainableByteBuffer.wrap(m.asString().substring(0, 2), ISO_8859_1)));
+        assertNull(HttpMethod.lookAheadGet(RetainableByteBuffer.wrap(m.asString(), ISO_8859_1)));
+        assertNull(HttpMethod.lookAheadGet(RetainableByteBuffer.wrap(m.asString() + "FOO", ISO_8859_1)));
+        assertEquals(m, HttpMethod.lookAheadGet(RetainableByteBuffer.wrap(m.asString() + " ", ISO_8859_1)));
+        assertEquals(m, HttpMethod.lookAheadGet(RetainableByteBuffer.wrap(m.asString() + " /foo/bar", ISO_8859_1)));
 
         RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(128, false);
         buffer.put(BufferUtil.toBuffer("GET"));
@@ -129,7 +131,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testLineParseMockIP(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /mock/127.0.0.1 HTTP/1.0" + scenario.eol + scenario.eol, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /mock/127.0.0.1 HTTP/1.0" + scenario.eol + scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -150,7 +152,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testLineParse0(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /foo HTTP/1.0" + scenario.eol + scenario.eol, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /foo HTTP/1.0" + scenario.eol + scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -170,7 +172,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testLineParse1Http9(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET /999" + scenario.eol, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET /999" + scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance.with("test", HTTP_0_9));
@@ -201,7 +203,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testLineParse1(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET /999" + scenario.eol, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET /999" + scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance.without("no 0.9", HTTP_0_9));
@@ -223,7 +225,7 @@ public class HttpParserTest
     @Test
     public void testLineParse2RFC2616()
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /222 \r\n", StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /222 \r\n", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
@@ -249,7 +251,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testLineParse2(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /222 " + scenario.eol, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /222 " + scenario.eol, ISO_8859_1);
 
         _versionOrReason = null;
         HttpParser.RequestHandler handler = new Handler();
@@ -273,7 +275,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testLineParse3(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /fo\u0690 HTTP/1.0" + scenario.eol + scenario.eol, StandardCharsets.UTF_8);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /fo\u0690 HTTP/1.0" + scenario.eol + scenario.eol, UTF_8);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -293,7 +295,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testLineParse4(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /foo?param=\u0690 HTTP/1.0" + scenario.eol + scenario.eol, StandardCharsets.UTF_8);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /foo?param=\u0690 HTTP/1.0" + scenario.eol + scenario.eol, UTF_8);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -313,7 +315,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testLineParse5(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET /ctx/testLoginPage;jsessionid=123456789;other HTTP/1.0" + scenario.eol + scenario.eol, StandardCharsets.UTF_8);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET /ctx/testLoginPage;jsessionid=123456789;other HTTP/1.0" + scenario.eol + scenario.eol, UTF_8);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -333,7 +335,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testLongURLParse(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/ HTTP/1.0" + scenario.eol + scenario.eol, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("POST /123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/ HTTP/1.0" + scenario.eol + scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -353,7 +355,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testAllowedLinePreamble(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(scenario.eol + scenario.eol + "GET / HTTP/1.0" + scenario.eol, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(scenario.eol + scenario.eol + "GET / HTTP/1.0" + scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -373,7 +375,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testDisallowedLinePreamble(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(scenario.eol + " " + scenario.eol + "GET / HTTP/1.0" + scenario.eol, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(scenario.eol + " " + scenario.eol + "GET / HTTP/1.0" + scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -390,7 +392,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testConnect(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("CONNECT 192.168.1.2:80 HTTP/1.1" + scenario.eol + scenario.eol, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("CONNECT 192.168.1.2:80 HTTP/1.1" + scenario.eol + scenario.eol, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -412,7 +414,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.0" + scenario.eol +
             "Host: localhost" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -442,7 +444,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / http/1.1" + scenario.eol +
             "Host: localhost" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -486,7 +488,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.0" + scenario.eol +
             "Host: localhost" + scenario.eol +
             "Connection: closed" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -515,7 +517,7 @@ public class HttpParserTest
     {
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.0" + scenario.eol +
             "Host: localhost" + scenario.eol +
-            "Connection: close", StandardCharsets.ISO_8859_1);
+            "Connection: close", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -527,7 +529,7 @@ public class HttpParserTest
         }
 
         buffer = RetainableByteBuffer.wrap("d" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         assertTrue(parser.parseNext(buffer));
 
         assertTrue(_headerCompleted);
@@ -552,7 +554,7 @@ public class HttpParserTest
             " extra" + scenario.eol +
             "Name2: " + scenario.eol +
             "\tvalue2" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance.with("test", MULTILINE_FIELD_VALUE));
@@ -608,7 +610,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.0" + scenario.eol +
             "Host: localhost" + scenario.eol +
             "N ame: value" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -630,7 +632,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.0" + scenario.eol +
             "Host: localhost" + scenario.eol +
             "Name : value" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, 4096, HttpCompliance.RFC7230_LEGACY);
@@ -685,7 +687,7 @@ public class HttpParserTest
                 \r
                 """.formatted(rawValue);
 
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(request, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(request, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, 4096, compliance);
         _bad = null;
@@ -725,7 +727,7 @@ public class HttpParserTest
                 \r
                 """.formatted(rawValue);
 
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(request, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(request, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, 4096, compliance);
         _bad = null;
@@ -771,7 +773,7 @@ public class HttpParserTest
                 \r
                 """.formatted(whitespace);
 
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(request, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(request, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, 4096, compliance);
         _bad = null;
@@ -793,7 +795,7 @@ public class HttpParserTest
             "Name1:" + scenario.eol +
             "Authorization:  " + scenario.eol +
             "Authorization:" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -830,7 +832,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 204 No Content" + scenario.eol +
             "Access-Control-Allow-Headers : Origin" + scenario.eol +
             "Other: value" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, -1, scenario.compliance);
@@ -854,7 +856,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.0" + scenario.eol +
             "Host: localhost" + scenario.eol +
             "Name" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, HttpCompliance.RFC7230_LEGACY);
@@ -946,7 +948,7 @@ public class HttpParserTest
             "Connection: close" + scenario.eol +
             "Accept-Encoding: gzip, deflated" + scenario.eol +
             "Accept: unknown" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -998,7 +1000,7 @@ public class HttpParserTest
             "Connection: close" + scenario.eol +
             "Accept-Encoding: gzip, deflated" + scenario.eol +
             "Accept: unknown" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -1042,7 +1044,7 @@ public class HttpParserTest
             "Name0: \"value0\"\t" + scenario.eol +
             "Name1: \"value\t1\"" + scenario.eol +
             "Name2: \"value\t2A\",\"value,2B\"\t" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -1070,10 +1072,10 @@ public class HttpParserTest
     {
         RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(4096, false);
         buffer.put(BufferUtil.toBuffer("GET "));
-        buffer.put("/foo/\u0690/".getBytes(StandardCharsets.UTF_8));
+        buffer.put("/foo/\u0690/".getBytes(UTF_8));
         buffer.put(BufferUtil.toBuffer(" HTTP/1.0" + scenario.eol));
         buffer.put(BufferUtil.toBuffer("Header1: "));
-        buffer.put("\u00e6 \u00e6".getBytes(StandardCharsets.ISO_8859_1));
+        buffer.put("\u00e6 \u00e6".getBytes(ISO_8859_1));
         buffer.put(BufferUtil.toBuffer("  " + scenario.eol + "Header2: "));
         buffer.put((byte)-1);
         buffer.put(BufferUtil.toBuffer(scenario.eol + scenario.eol));
@@ -1107,7 +1109,7 @@ public class HttpParserTest
             "Content-Length: 0" + scenario.eol +
             "Sec-WebSocket-Accept: 4GnyoUP4Sc1JD+2pCbNYAhFYVVA" + scenario.eol +
             scenario.eol +
-            "FOOGRADE", StandardCharsets.ISO_8859_1);
+            "FOOGRADE", ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -1122,14 +1124,14 @@ public class HttpParserTest
             }
         }
 
-        assertThat(BufferUtil.toUTF8String(buffer), Matchers.is("FOOGRADE"));
+        assertThat(StringUtil.toString(buffer, UTF_8), Matchers.is("FOOGRADE"));
     }
 
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testBadMethodEncoding(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("G\u00e6T / HTTP/1.0" + scenario.eol + "Header0: value0" + scenario.eol + scenario.eol, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("G\u00e6T / HTTP/1.0" + scenario.eol + "Header0: value0" + scenario.eol + scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -1141,7 +1143,7 @@ public class HttpParserTest
     @MethodSource("scenarios")
     public void testBadVersionEncoding(Scenario scenario)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / H\u00e6P/1.0" + scenario.eol + "Header0: value0" + scenario.eol + scenario.eol, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / H\u00e6P/1.0" + scenario.eol + "Header0: value0" + scenario.eol + scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -1155,7 +1157,7 @@ public class HttpParserTest
     {
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.0" + scenario.eol +
             "H\u00e6der0: value0" + scenario.eol +
-            "\n\n", StandardCharsets.ISO_8859_1);
+            "\n\n", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -1183,7 +1185,7 @@ public class HttpParserTest
     })
     public void testBadHeaderNames(String bad)
     {
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.0\r\n" + bad + "\r\n", StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.0\r\n" + bad + "\r\n", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1198,7 +1200,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1" + scenario.eol +
             "Host: localhost" + scenario.eol +
             "Header: value\talternate" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -1225,7 +1227,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("gEt / http/1.0" + scenario.eol +
             "Host: localhost" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, -1, scenario.compliance.with("test", CASE_INSENSITIVE_METHOD));
         parseAll(parser, buffer);
@@ -1256,7 +1258,7 @@ public class HttpParserTest
             Host: localhost\r
             Connection: close\r
             \r
-            """, StandardCharsets.ISO_8859_1);
+            """, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, HttpCompliance.LEGACY);
         parseAll(parser, buffer);
@@ -1277,7 +1279,7 @@ public class HttpParserTest
             HOST: localhost\r
             cOnNeCtIoN: ClOsE\r
             \r
-            """, StandardCharsets.ISO_8859_1);
+            """, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, HttpCompliance.RFC7230_LEGACY);
         parseAll(parser, buffer);
@@ -1304,7 +1306,7 @@ public class HttpParserTest
             HOST: localhost\r
             cOnNeCtIoN: ClOsE\r
             \r
-            """, StandardCharsets.ISO_8859_1);
+            """, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, HttpCompliance.LEGACY);
         parser.setHeaderCacheCaseSensitive(true);
@@ -1327,66 +1329,62 @@ public class HttpParserTest
         assertComplianceViolationEvents(expectedEvents);
     }
 
-//    @ParameterizedTest
-//    @MethodSource("scenarios")
-//    public void testSplitHeaderParse(Scenario scenario)
-//    {
-//        ReadableBuffer buffer = BufferUtil.toReadableBuffer(
-//            "XXXXSPLIT / HTTP/1.0" + scenario.eol +
-//                "Host: localhost" + scenario.eol +
-//                "Header1: value1" + scenario.eol +
-//                "Header2:   value 2a  " + scenario.eol +
-//                "Header3: 3" + scenario.eol +
-//                "Header4:value4" + scenario.eol +
-//                "Server5: notServer" + scenario.eol +
-//                scenario.eol +
-//                "ZZZZ");
-//        buffer.position(2);
-//        buffer.limit(buffer.capacity() - 2);
-//        buffer = buffer.slice();
-//
-//        for (int i = 0; i < buffer.capacity() - 4; i++)
-//        {
-//            HttpParser.RequestHandler handler = new Handler();
-//            HttpParser parser = new HttpParser(handler, scenario.compliance);
-//
-//            buffer.limit(2 + i);
-//            buffer.position(2);
-//
-//            if (!parser.parseNext(buffer))
-//            {
-//                // consumed all
-//                assertEquals(0, buffer.remaining());
-//
-//                // parse the rest
-//                buffer.limit(buffer.capacity() - 2);
-//                parser.parseNext(buffer);
-//            }
-//
-//            if (scenario.expectBad())
-//            {
-//                assertThat(_bad, containsString("LF line terminator"));
-//                return;
-//            }
-//
-//            assertEquals("SPLIT", _methodOrVersion);
-//            assertEquals("/", _uriOrStatus);
-//            assertEquals("HTTP/1.0", _versionOrReason);
-//            assertEquals("Host", _hdr[0]);
-//            assertEquals("localhost", _val[0]);
-//            assertEquals("Header1", _hdr[1]);
-//            assertEquals("value1", _val[1]);
-//            assertEquals("Header2", _hdr[2]);
-//            assertEquals("value 2a", _val[2]);
-//            assertEquals("Header3", _hdr[3]);
-//            assertEquals("3", _val[3]);
-//            assertEquals("Header4", _hdr[4]);
-//            assertEquals("value4", _val[4]);
-//            assertEquals("Server5", _hdr[5]);
-//            assertEquals("notServer", _val[5]);
-//            assertEquals(5, _headers);
-//        }
-//    }
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void testSplitHeaderParse(Scenario scenario)
+    {
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(
+            ("XXXXSPLIT / HTTP/1.0" + scenario.eol +
+                "Host: localhost" + scenario.eol +
+                "Header1: value1" + scenario.eol +
+                "Header2:   value 2a  " + scenario.eol +
+                "Header3: 3" + scenario.eol +
+                "Header4:value4" + scenario.eol +
+                "Server5: notServer" + scenario.eol +
+                scenario.eol +
+                "ZZZZ"), ISO_8859_1);
+        buffer = buffer.slice(2, buffer.capacity() - 2);
+
+        for (int i = 0; i < buffer.capacity() - 4; i++)
+        {
+            HttpParser.RequestHandler handler = new Handler();
+            HttpParser parser = new HttpParser(handler, scenario.compliance);
+
+            buffer.readPosition(2);
+            RetainableByteBuffer slice = buffer.sliceAndConsume(i);
+            if (!parser.parseNext(slice))
+            {
+                // The parsing consumed all bytes of the slice.
+                assertEquals(0, slice.remaining());
+
+                // Parse the rest of the buffer.
+                parser.parseNext(buffer.slice());
+            }
+
+            if (scenario.expectBad())
+            {
+                assertThat(_bad, containsString("LF line terminator"));
+                return;
+            }
+
+            assertEquals("SPLIT", _methodOrVersion);
+            assertEquals("/", _uriOrStatus);
+            assertEquals("HTTP/1.0", _versionOrReason);
+            assertEquals("Host", _hdr[0]);
+            assertEquals("localhost", _val[0]);
+            assertEquals("Header1", _hdr[1]);
+            assertEquals("value1", _val[1]);
+            assertEquals("Header2", _hdr[2]);
+            assertEquals("value 2a", _val[2]);
+            assertEquals("Header3", _hdr[3]);
+            assertEquals("3", _val[3]);
+            assertEquals("Header4", _hdr[4]);
+            assertEquals("value4", _val[4]);
+            assertEquals("Server5", _hdr[5]);
+            assertEquals("notServer", _val[5]);
+            assertEquals(5, _headers);
+        }
+    }
 
     @ParameterizedTest
     @MethodSource("scenarios")
@@ -1401,7 +1399,7 @@ public class HttpParserTest
             "1a" + scenario.eolChunk +
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
             "0" + scenario.eolChunk +
-            scenario.eolChunk, StandardCharsets.ISO_8859_1);
+            scenario.eolChunk, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -1444,7 +1442,7 @@ public class HttpParserTest
             "xx" + scenario.eolChunk +
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
             "0" + scenario.eolChunk +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -1483,7 +1481,7 @@ public class HttpParserTest
             "1a" + scenario.eolChunk +
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
             "0" + scenario.eolChunk +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -1513,7 +1511,7 @@ public class HttpParserTest
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
             "0" + scenario.eolChunk +
             "Trailer: value" + scenario.eolChunk +
-            scenario.eolChunk, StandardCharsets.ISO_8859_1);
+            scenario.eolChunk, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -1558,7 +1556,7 @@ public class HttpParserTest
             "0" + scenario.eolChunk +
             "Trailer: value" + scenario.eolChunk +
             "Foo: bar" + scenario.eolChunk +
-            scenario.eolChunk, StandardCharsets.ISO_8859_1);
+            scenario.eolChunk, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -1605,7 +1603,7 @@ public class HttpParserTest
             "1a" + scenario.eolChunk +
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
             "0" + scenario.eolChunk +
-            "Trailer: value", StandardCharsets.ISO_8859_1);
+            "Trailer: value", ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -1647,7 +1645,7 @@ public class HttpParserTest
             "0123456789" + scenario.eolChunk +
             "1a" + scenario.eolChunk +
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + scenario.eolChunk +
-            "0" + scenario.eolChunk, StandardCharsets.ISO_8859_1);
+            "0" + scenario.eolChunk, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parseAll(parser, buffer);
@@ -1695,7 +1693,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET /uri HTTP/1.0" + scenario.eol +
             "Content-Length: 20" + scenario.eol +
             scenario.eol +
-            "0123456789", StandardCharsets.ISO_8859_1);
+            "0123456789", ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.atEOF();
@@ -1723,7 +1721,7 @@ public class HttpParserTest
             "Transfer-Encoding: chunked" + scenario.eol +
             scenario.eol +
             "a;ext" + scenario.eolChunk +
-            "0123456789" + scenario.eolChunk, StandardCharsets.ISO_8859_1);
+            "0123456789" + scenario.eolChunk, ISO_8859_1);
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
         parser.atEOF();
@@ -1780,7 +1778,7 @@ public class HttpParserTest
             "Header3: value3" + scenario.eol +
             "Content-Length: 10" + scenario.eol +
             scenario.eol +
-            "0123456789" + scenario.eol, StandardCharsets.ISO_8859_1);
+            "0123456789" + scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -1832,7 +1830,7 @@ public class HttpParserTest
     public void testMultiParseEarlyEOF(Scenario scenario)
     {
         RetainableByteBuffer buffer0 = RetainableByteBuffer.wrap("GET /mp HTTP/1.0" + scenario.eol +
-            "Connection: Keep-Alive" + scenario.eol, StandardCharsets.ISO_8859_1);
+            "Connection: Keep-Alive" + scenario.eol, ISO_8859_1);
 
         RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap("Header1: value1" + scenario.eol +
             "Transfer-Encoding: chunked" + scenario.eol +
@@ -1855,7 +1853,7 @@ public class HttpParserTest
             "Connection: close" + scenario.eol + "Header3: value3" + scenario.eol +
             "Content-Length: 10" + scenario.eol +
             scenario.eol +
-            "0123456789" + scenario.eol, StandardCharsets.ISO_8859_1);
+            "0123456789" + scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -1916,7 +1914,7 @@ public class HttpParserTest
             "Content-Length: 10" + scenario.eol +
             "Content-Type: text/plain" + scenario.eol +
             scenario.eol +
-            "0123456789" + scenario.eol, StandardCharsets.ISO_8859_1);
+            "0123456789" + scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, -1, scenario.compliance);
@@ -1940,7 +1938,7 @@ public class HttpParserTest
     {
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 304 Not-Modified" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, -1, scenario.compliance);
@@ -1969,7 +1967,7 @@ public class HttpParserTest
             "Content-Length: 10" + scenario.eol +
             "Content-Type: text/plain" + scenario.eol +
             scenario.eol +
-            "0123456789" + scenario.eol, StandardCharsets.ISO_8859_1);
+            "0123456789" + scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2006,7 +2004,7 @@ public class HttpParserTest
             "Content-Length: 10" + scenario.eol +
             "Content-Type: text/plain" + scenario.eol +
             scenario.eol +
-            "0123456789" + scenario.eol, StandardCharsets.ISO_8859_1);
+            "0123456789" + scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2032,7 +2030,7 @@ public class HttpParserTest
             "Content-Length: 10" + scenario.eol +
             "Content-Type: text/plain" + scenario.eol +
             scenario.eol +
-            "0123456789" + scenario.eol, StandardCharsets.ISO_8859_1);
+            "0123456789" + scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2057,7 +2055,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 200 " + scenario.eol +
             "Content-Type: text/plain" + scenario.eol +
             scenario.eol +
-            "0123456789" + scenario.eol, StandardCharsets.ISO_8859_1);
+            "0123456789" + scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2084,7 +2082,7 @@ public class HttpParserTest
     {
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 304 found" + scenario.eol +
             "Content-Length: 10" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2108,7 +2106,7 @@ public class HttpParserTest
     {
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 101 switching protocols" + scenario.eol +
             "Transfer-Encoding: chunked" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2134,7 +2132,7 @@ public class HttpParserTest
             HTTP/1.1 %s %s\r
             Content-Length:0\r
             \r
-            """.formatted(status, status), StandardCharsets.ISO_8859_1);
+            """.formatted(status, status), ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -2148,7 +2146,7 @@ public class HttpParserTest
     {
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 302 déplacé temporairement" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2175,7 +2173,7 @@ public class HttpParserTest
             "Connection: close" + scenario.eol +
             scenario.eol +
             scenario.eol + // extra CRLF ignored
-            "HTTP/1.1 400 OK" + scenario.eol, StandardCharsets.ISO_8859_1);  // extra data causes close ??
+            "HTTP/1.1 400 OK" + scenario.eol, ISO_8859_1);  // extra data causes close ??
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2210,7 +2208,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2237,7 +2235,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET " + scenario.eol +
             "Content-Length: 0" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2263,7 +2261,7 @@ public class HttpParserTest
     {
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP" + scenario.eol +
             "Host: localhost" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2285,7 +2283,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HPPT/7.7 200 OK" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2308,7 +2306,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2335,7 +2333,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 " + scenario.eol +
             "Content-Length: 0" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2362,7 +2360,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HPPT/7.7" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2384,7 +2382,7 @@ public class HttpParserTest
         buffer = RetainableByteBuffer.wrap("GET / HTTP/1.01" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         handler = new Handler();
         parser = new HttpParser(handler, scenario.compliance);
@@ -2406,7 +2404,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.0" + scenario.eol +
             "Content-Length: 0\r" +
             "Connection: close\r" +
-            "\r", StandardCharsets.ISO_8859_1);
+            "\r", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2429,7 +2427,7 @@ public class HttpParserTest
         buffer = RetainableByteBuffer.wrap("GET / HTTP/1.0\r" +
             "Content-Length: 0\r" +
             "Connection: close\r" +
-            "\r", StandardCharsets.ISO_8859_1);
+            "\r", ISO_8859_1);
 
         handler = new Handler();
         parser = new HttpParser(handler, scenario.compliance);
@@ -2461,7 +2459,7 @@ public class HttpParserTest
             "Host: localhost\r\n" +
             "Content-Length: " + contentLength + "\r\n" +
             "\r\n" +
-            "1234567890\r\n", StandardCharsets.ISO_8859_1);
+            "1234567890\r\n", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
@@ -2494,7 +2492,7 @@ public class HttpParserTest
             \r
             1234567890
             """.replace("@LEN@", contentLength);
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(rawRequest, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(rawRequest, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -2534,7 +2532,7 @@ public class HttpParserTest
             0\r
             \r
             """.replace("@TE@", transferEncoding);
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(rawRequest, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(rawRequest, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -2569,7 +2567,7 @@ public class HttpParserTest
             Host: @HOST@\r
             \r
             """.replace("@HOST@", host);
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(rawRequest, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(rawRequest, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -2594,7 +2592,7 @@ public class HttpParserTest
             "Content-Length: 1" + scenario.eol +
             "Connection: close" + scenario.eol +
             scenario.eol +
-            "X", StandardCharsets.ISO_8859_1);
+            "X", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2623,7 +2621,7 @@ public class HttpParserTest
             "Content-Length: 2" + scenario.eol +
             "Connection: close" + scenario.eol +
             scenario.eol +
-            "X", StandardCharsets.ISO_8859_1);
+            "X", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2655,7 +2653,7 @@ public class HttpParserTest
             "1" + scenario.eolChunk +
             "X" + scenario.eolChunk +
             "0" + scenario.eolChunk +
-            scenario.eolChunk, StandardCharsets.ISO_8859_1);
+            scenario.eolChunk, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance.with("test", TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
@@ -2715,7 +2713,7 @@ public class HttpParserTest
             "1" + scenario.eolChunk +
             "X" + scenario.eolChunk +
             "0" + scenario.eolChunk +
-            scenario.eolChunk, StandardCharsets.ISO_8859_1);
+            scenario.eolChunk, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance.with("test", TRANSFER_ENCODING_WITH_CONTENT_LENGTH));
@@ -2764,7 +2762,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1" + scenario.eol +
             "Host: host" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2784,7 +2782,7 @@ public class HttpParserTest
     {
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET http://host/ HTTP/1.1" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2804,7 +2802,7 @@ public class HttpParserTest
     public void testUriHost10(Scenario scenario)
     {
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET http://host/ HTTP/1.0" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2825,7 +2823,7 @@ public class HttpParserTest
     {
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2845,7 +2843,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1" + scenario.eol +
             "Host: 192.168.0.1" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2867,7 +2865,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1" + scenario.eol +
             "Host: [::1]" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2890,7 +2888,7 @@ public class HttpParserTest
             RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1" + scenario.eol +
                 "Host: [::1" + scenario.eol +
                 "Connection: close" + scenario.eol +
-                scenario.eol, StandardCharsets.ISO_8859_1);
+                scenario.eol, ISO_8859_1);
 
             HttpParser.RequestHandler handler = new Handler();
             HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2911,7 +2909,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1" + scenario.eol +
             "Host: myhost:8888" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -2972,7 +2970,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1\n" +
             "Host: " + hostline + "\n" +
             "Connection: close\n" +
-            "\n", StandardCharsets.ISO_8859_1);
+            "\n", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -2987,7 +2985,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1\n" +
             "Host: " + hostline + "\n" +
             "Connection: close\n" +
-            "\n", StandardCharsets.ISO_8859_1);
+            "\n", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpCompliance httpCompliance = HttpCompliance.from("RFC7230,UNSAFE_HOST_HEADER");
@@ -3016,7 +3014,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1\n" +
             hostline + "\n" +
             "Connection: close\n" +
-            "\n", StandardCharsets.ISO_8859_1);
+            "\n", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -3031,7 +3029,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1\n" +
             hostline + "\n" +
             "Connection: close\n" +
-            "\n", StandardCharsets.ISO_8859_1);
+            "\n", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpCompliance httpCompliance = HttpCompliance.from("RFC7230,DUPLICATE_HOST_HEADERS");
@@ -3056,7 +3054,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1\n" +
             hostline + "\n" +
             "Connection: close\n" +
-            "\n", StandardCharsets.ISO_8859_1);
+            "\n", ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -3071,7 +3069,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1" + scenario.eol +
             "Host: 192.168.0.1:8888" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -3093,7 +3091,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1" + scenario.eol +
             "Host: [::1]:8888" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -3114,7 +3112,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1" + scenario.eol +
             "Host:" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -3135,7 +3133,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET /long/nested/path/uri HTTP/1.1" + scenario.eol +
             "Host: example.com" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         int maxHeaderBytes = 5;
         HttpParser.RequestHandler handler = new Handler();
@@ -3153,7 +3151,7 @@ public class HttpParserTest
             "Host: example.com" + scenario.eol +
             "X-Large-Header: lorem-ipsum-dolor-sit" + scenario.eol +
             "Connection: close" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         int maxHeaderBytes = 64;
         HttpParser.RequestHandler handler = new Handler();
@@ -3170,7 +3168,7 @@ public class HttpParserTest
     {
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1" + scenario.eol +
             "Content-Type: text/plain;Charset=UTF-8" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -3192,7 +3190,7 @@ public class HttpParserTest
     {
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET / HTTP/1.1" + scenario.eol +
             "Host: www.smh.com.au" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -3220,7 +3218,7 @@ public class HttpParserTest
             "Connection: close" + scenario.eol +
             "Accept-Encoding: gzip, deflated" + scenario.eol +
             "Accept: unknown" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -3251,7 +3249,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("PRI * HTTP/2.0" + scenario.eol +
             scenario.eol +
             "SM" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -3286,7 +3284,7 @@ public class HttpParserTest
         };
 
         HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET /path" + scenario.eol, StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap("GET /path" + scenario.eol, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         assertTrue(handle);
         assertFalse(buffer.hasRemaining());
@@ -3322,7 +3320,7 @@ public class HttpParserTest
 
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 200 OK" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3360,7 +3358,7 @@ public class HttpParserTest
             "Transfer-Encoding: chunked" + scenario.eol +
             scenario.eol +
             "0" + scenario.eolChunk +
-            scenario.eolChunk, StandardCharsets.ISO_8859_1);
+            scenario.eolChunk, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3401,7 +3399,7 @@ public class HttpParserTest
 
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 200 OK" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
 
         if (scenario.expectBad())
@@ -3439,7 +3437,7 @@ public class HttpParserTest
             "Transfer-Encoding: chunked" + scenario.eol +
             scenario.eol +
             "0" + scenario.eolChunk +
-            scenario.eolChunk, StandardCharsets.ISO_8859_1);
+            scenario.eolChunk, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3480,7 +3478,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 200 OK" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
             scenario.eol +
-            header, StandardCharsets.ISO_8859_1);
+            header, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3489,7 +3487,7 @@ public class HttpParserTest
         }
         assertTrue(handle);
         assertTrue(buffer.hasRemaining());
-        assertEquals(header, BufferUtil.toString(buffer));
+        assertEquals(header, StringUtil.toString(buffer, ISO_8859_1));
         assertTrue(_contentCompleted);
         assertFalse(_messageCompleted);
 
@@ -3497,7 +3495,7 @@ public class HttpParserTest
         handle = parser.parseNext(buffer);
         assertTrue(handle);
         assertTrue(buffer.hasRemaining());
-        assertEquals(header, BufferUtil.toString(buffer));
+        assertEquals(header, StringUtil.toString(buffer, ISO_8859_1));
         assertTrue(_messageCompleted);
     }
 
@@ -3521,7 +3519,7 @@ public class HttpParserTest
             "Content-Length: 1" + scenario.eol +
             scenario.eol +
             "0" +
-            header, StandardCharsets.ISO_8859_1);
+            header, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3530,7 +3528,7 @@ public class HttpParserTest
         }
         assertTrue(handle);
         assertTrue(buffer.hasRemaining());
-        assertEquals(header, BufferUtil.toString(buffer));
+        assertEquals(header, StringUtil.toString(buffer, ISO_8859_1));
         assertTrue(_contentCompleted);
         assertFalse(_messageCompleted);
 
@@ -3538,7 +3536,7 @@ public class HttpParserTest
         handle = parser.parseNext(buffer);
         assertTrue(handle);
         assertTrue(buffer.hasRemaining());
-        assertEquals(header, BufferUtil.toString(buffer));
+        assertEquals(header, StringUtil.toString(buffer, ISO_8859_1));
         assertTrue(_messageCompleted);
     }
 
@@ -3560,7 +3558,7 @@ public class HttpParserTest
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 200 OK" + scenario.eol +
             "Content-Length: 1" + scenario.eol +
             scenario.eol +
-            "0", StandardCharsets.ISO_8859_1);
+            "0", ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3596,7 +3594,7 @@ public class HttpParserTest
 
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 200 OK" + scenario.eol +
             scenario.eol +
-            "0", StandardCharsets.ISO_8859_1);
+            "0", ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3649,7 +3647,7 @@ public class HttpParserTest
         parser.setHeadResponse(true);
 
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 200 OK" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3699,7 +3697,7 @@ public class HttpParserTest
 
         // HTTP 304 does not have a body.
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap("HTTP/1.1 304 Not Modified" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3751,7 +3749,7 @@ public class HttpParserTest
             scenario.eol +
             "HTTP/1.1 303 See Other" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3832,7 +3830,7 @@ public class HttpParserTest
             scenario.eol +
             "HTTP/1.1 303 See Other" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3910,7 +3908,7 @@ public class HttpParserTest
             scenario.eol +
             "HTTP/1.1 303 See Other" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3965,7 +3963,7 @@ public class HttpParserTest
             " " + // Single SP.
             "HTTP/1.1 200 OK" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -3993,7 +3991,7 @@ public class HttpParserTest
             " " + // Single SP.
             "HTTP/1.1 303 See Other" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         parser = new HttpParser(handler, scenario.compliance);
         handle = parser.parseNext(buffer);
         assertFalse(handle);
@@ -4024,7 +4022,7 @@ public class HttpParserTest
             "Name: value;param = bad" + scenario.eol +
             "Connection: close" + scenario.eol +
             "Content-Length: 0" + scenario.eol +
-            scenario.eol, StandardCharsets.ISO_8859_1);
+            scenario.eol, ISO_8859_1);
         boolean handle = parser.parseNext(buffer);
         if (scenario.expectBad())
         {
@@ -4091,7 +4089,7 @@ public class HttpParserTest
         {
             if (_content == null)
                 _content = "";
-            String c = BufferUtil.toString(ref, StandardCharsets.UTF_8);
+            String c = StringUtil.toString(ref, UTF_8);
             _content = _content + c;
             ref.readPosition(ref.readPosition() + ref.remaining());
             return false;
@@ -4291,7 +4289,7 @@ public class HttpParserTest
             Connection-Partial-Cache-Hit: value\r
             Content-Length: 0\r
             \r
-            """, StandardCharsets.ISO_8859_1);
+            """, ISO_8859_1);
         long bytes = buffer.remaining();
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, 10_000, HttpCompliance.RFC2616);

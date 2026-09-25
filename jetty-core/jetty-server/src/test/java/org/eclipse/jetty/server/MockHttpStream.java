@@ -181,7 +181,7 @@ public class MockHttpStream implements HttpStream
 
         if (content != null)
         {
-            content.quietWriteTo(bytes ->
+            content.quietRead(bytes ->
             {
                 int r = bytes.remaining();
                 _accumulator.append(bytes);

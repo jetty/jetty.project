@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.quic.api;
 
-import java.nio.ByteBuffer;
 import java.util.EventListener;
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.Content;
@@ -25,6 +23,7 @@ import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>A stream represents a unidirectional or bidirectional exchange
@@ -76,7 +75,7 @@ public interface Stream
      * <p>Returns whether the stream is locally closed.</p>
      * <p>A locally closed stream will not send further data.</p>
      * <p>A stream becomes locally closed when either it has sent
-     * {@link #data(boolean, List, Promise.Invocable) the last data}, or issued
+     * {@link #data(boolean, RetainableByteBuffer, Promise.Invocable) the last data}, or issued
      * a {@link #reset(long, Promise.Invocable)}.</p>
      *
      * @return whether the stream is locally closed
@@ -164,7 +163,7 @@ public interface Stream
      * @param promise the {@link Promise.Invocable} that gets notified when the
      * data has been sent
      */
-    void data(boolean last, List<ByteBuffer> data, Promise.Invocable<Stream> promise);
+    void data(boolean last, RetainableByteBuffer data, Promise.Invocable<Stream> promise);
 
     /**
      * <p>Sends a MAX_STREAM_DATA frame with the new total max data bytes

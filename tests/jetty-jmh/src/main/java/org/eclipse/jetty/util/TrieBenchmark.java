@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +31,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
 @State(Scope.Benchmark)
 public class TrieBenchmark
@@ -126,12 +127,12 @@ public class TrieBenchmark
 
     static
     {
-        X = RetainableByteBuffer.wrap("Xx\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", StandardCharsets.ISO_8859_1);
-        Z = RetainableByteBuffer.wrap("Zasdfadsfasfasfbae9mn3m0mdmmfkk092nvfs0smnsmm3k23m3m23m\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", StandardCharsets.ISO_8859_1);
-        M = RetainableByteBuffer.wrap(LONG_MISS + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", StandardCharsets.ISO_8859_1);
-        P = RetainableByteBuffer.wrap("Pragma: no-cache;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", StandardCharsets.ISO_8859_1);
-        A = RetainableByteBuffer.wrap("Accept-Language: en-US,enq=0.5;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", StandardCharsets.ISO_8859_1);
-        H = RetainableByteBuffer.wrap(LONG_HIT + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", StandardCharsets.ISO_8859_1);
+        X = RetainableByteBuffer.wrap("Xx\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", ISO_8859_1);
+        Z = RetainableByteBuffer.wrap("Zasdfadsfasfasfbae9mn3m0mdmmfkk092nvfs0smnsmm3k23m3m23m\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", ISO_8859_1);
+        M = RetainableByteBuffer.wrap(LONG_MISS + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", ISO_8859_1);
+        P = RetainableByteBuffer.wrap("Pragma: no-cache;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", ISO_8859_1);
+        A = RetainableByteBuffer.wrap("Accept-Language: en-US,enq=0.5;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", ISO_8859_1);
+        H = RetainableByteBuffer.wrap(LONG_HIT + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", ISO_8859_1);
     }
 
     @Benchmark
@@ -226,7 +227,7 @@ public class TrieBenchmark
                     case '\r':
                     case '\n':
                     case ';':
-                        String s = BufferUtil.toString(buf, buf.readPosition(), i, StandardCharsets.ISO_8859_1);
+                        String s = buf.getString(buf.readPosition(), i, ISO_8859_1);
                         if (isCaseInsensitive())
                             s = StringUtil.asciiToLowerCase(s);
                         return trie.get(s);

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.generator;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
@@ -38,13 +37,13 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public long generate(List<RetainableByteBuffer> accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(RetainableByteBuffer.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
         return generateHeadersFrame(accumulator, streamId, headersFrame, fail);
     }
 
-    private long generateHeadersFrame(List<RetainableByteBuffer> accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
+    private long generateHeadersFrame(RetainableByteBuffer.Accumulator accumulator, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
     {
         // Reserve initial bytes for the frame header bytes.
         int frameTypeLength = VarLenInt.length(FrameType.HEADERS.type());
@@ -52,10 +51,10 @@ public class HeadersGenerator extends FrameGenerator
         // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
         int maxLength = encoder.getMaxHeadersSize();
         // Acquire buffer and immediately add to the accumulator so that it is released if a failure occurs.
-        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
-        accumulator.add(buffer);
-        try
+        try (RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(maxHeaderLength + maxLength, useDirectByteBuffers))
         {
+            accumulator.add(buffer);
+
             // Prepare the buffer for encoding.
             // Start writing and reading from the maxHeaderLength position.
             buffer.writePosition(maxHeaderLength);

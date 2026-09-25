@@ -64,18 +64,17 @@ public class HeadersGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
             generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
 
             assertEquals(1, frames.size());
-            HeadersFrame frame = frames.get(0);
+            HeadersFrame frame = frames.getFirst();
             assertEquals(streamId, frame.getStreamId());
             assertTrue(frame.isEndStream());
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
@@ -120,18 +119,17 @@ public class HeadersGenerateParseTest
                 .put("User-Agent", "Jetty");
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
             generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
 
             assertEquals(1, frames.size());
-            HeadersFrame frame = frames.get(0);
+            HeadersFrame frame = frames.getFirst();
             assertEquals(streamId, frame.getStreamId());
             assertTrue(frame.isEndStream());
             MetaData.Request request = (MetaData.Request)frame.getMetaData();

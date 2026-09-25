@@ -88,7 +88,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -652,7 +651,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 });
 
             WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             Generator generator = new Generator(bufferPool);
 
             try (Socket socket = server.accept())
@@ -703,11 +702,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         try
                         {
                             // Write the frames.
-                            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-                            accumulator.forEach(RetainableByteBuffer::release);
-                            accumulator.clear();
-                            rb.writeTo(input -> BufferUtil.writeTo(input, output));
-                            rb.release();
+                            try (RetainableByteBuffer buffer = accumulator.drain())
+                            {
+                                buffer.putTo(output);
+                            }
                         }
                         catch (IOException e)
                         {

@@ -55,18 +55,17 @@ public class GoAwayGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generateGoAway(accumulator, lastStreamId, error, null);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
         }
 
         assertEquals(1, frames.size());
-        GoAwayFrame frame = frames.get(0);
+        GoAwayFrame frame = frames.getFirst();
         assertEquals(lastStreamId, frame.getLastStreamId());
         assertEquals(error, frame.getError());
         assertNull(frame.getPayload());
@@ -96,17 +95,16 @@ public class GoAwayGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generateGoAway(accumulator, lastStreamId, error, payload);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
 
             assertEquals(1, frames.size());
-            GoAwayFrame frame = frames.get(0);
+            GoAwayFrame frame = frames.getFirst();
             assertEquals(lastStreamId, frame.getLastStreamId());
             assertEquals(error, frame.getError());
             assertArrayEquals(payload, frame.getPayload());

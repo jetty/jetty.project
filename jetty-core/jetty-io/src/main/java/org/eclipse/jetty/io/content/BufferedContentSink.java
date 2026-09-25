@@ -195,9 +195,9 @@ public class BufferedContentSink implements Content.Sink
     private boolean aggregatorAppend(RetainableByteBuffer buffer)
     {
         long totalRemaining = 0L;
-        for (RetainableByteBuffer readableBuffer : _aggregator)
+        for (RetainableByteBuffer b : _aggregator)
         {
-            totalRemaining += readableBuffer.remaining();
+            totalRemaining += b.remaining();
         }
 
         if (totalRemaining == _maxSize)
@@ -219,9 +219,9 @@ public class BufferedContentSink implements Content.Sink
     private long aggregatorSpace()
     {
         long totalRemaining = 0L;
-        for (RetainableByteBuffer readableBuffer : _aggregator)
+        for (RetainableByteBuffer buffer : _aggregator)
         {
-            totalRemaining += readableBuffer.remaining();
+            totalRemaining += buffer.remaining();
         }
         return _maxSize - totalRemaining;
     }

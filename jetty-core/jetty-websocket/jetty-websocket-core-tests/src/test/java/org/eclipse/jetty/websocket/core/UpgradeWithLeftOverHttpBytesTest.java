@@ -331,6 +331,9 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
 
     byte[] toByteArray(Frame frame)
     {
-        return BufferUtil.toArray(generateFrame(frame));
+        try (RetainableByteBuffer buffer = generateFrame(frame))
+        {
+            return buffer.getArray();
+        }
     }
 }

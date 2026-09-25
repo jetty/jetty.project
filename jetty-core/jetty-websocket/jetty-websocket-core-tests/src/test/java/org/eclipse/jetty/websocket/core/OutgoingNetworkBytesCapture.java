@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -45,8 +44,8 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
     {
         assertThat("Capture index does not exist", idx, lessThan(captured.size()));
         RetainableByteBuffer buffer = captured.get(idx);
-        String actualHex = StringUtil.toHexString(BufferUtil.toArray(buffer)).toUpperCase(Locale.ENGLISH);
-        assertThat("captured[" + idx + "]", actualHex, is(expectedHex.toUpperCase(Locale.ENGLISH)));
+        String actualHex = StringUtil.toHexString(buffer.getArray()).toUpperCase(Locale.ROOT);
+        assertThat("captured[" + idx + "]", actualHex, is(expectedHex.toUpperCase(Locale.ROOT)));
     }
 
     public List<RetainableByteBuffer> getCaptured()

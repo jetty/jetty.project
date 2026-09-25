@@ -14,7 +14,6 @@
 package org.eclipse.jetty.fcgi.parser;
 
 import java.io.EOFException;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpCompliance;
@@ -25,7 +24,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,13 +142,7 @@ public class ResponseContentParser extends StreamContentParser
                     }
                     case HTTP_CONTENT ->
                     {
-                        // TODO: use directly the ReadableBuffer in httpParser.parseNext().
-                        long position = buffer.readPosition();
-                        ByteBuffer byteBuffer = BufferUtil.toBuffer(buffer, false);
-                        long length = byteBuffer.remaining();
-                        boolean handle = httpParser.parseNext(RetainableByteBuffer.wrap(byteBuffer));
-                        long consumed = length - byteBuffer.remaining();
-                        buffer.readPosition(position + consumed);
+                        boolean handle = httpParser.parseNext(buffer);
                         if (handle)
                             return true;
                         remaining = buffer.remaining();

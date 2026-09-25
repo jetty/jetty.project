@@ -33,14 +33,15 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -76,7 +77,7 @@ public class EventsHandlerTest extends AbstractTest
             protected void onResponseWrite(Request request, boolean last, RetainableByteBuffer content)
             {
                 if (content != null)
-                    innerStringBuffer.append(BufferUtil.toString(content));
+                    innerStringBuffer.append(StringUtil.toString(content, ISO_8859_1));
             }
         };
         GzipHandler gzipHandler = new GzipHandler();
@@ -123,7 +124,7 @@ public class EventsHandlerTest extends AbstractTest
             protected void onResponseWrite(Request request, boolean last, RetainableByteBuffer content)
             {
                 if (content != null)
-                    stringBuffer.append(BufferUtil.toString(content));
+                    stringBuffer.append(StringUtil.toString(content, ISO_8859_1));
             }
 
             @Override

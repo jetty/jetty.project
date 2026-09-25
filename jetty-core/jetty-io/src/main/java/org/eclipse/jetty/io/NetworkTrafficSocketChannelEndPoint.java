@@ -58,7 +58,7 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
             RetainableByteBuffer dupe = buffer.slice();
             flushed = super.flush(buffer);
             long l = buffer.readPosition() - position;
-            RetainableByteBuffer view = dupe.slice(dupe.readPosition(), l);
+            RetainableByteBuffer view = dupe.slice(l);
             notifyOutgoing(view);
             view.release();
             dupe.release();

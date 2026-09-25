@@ -15,9 +15,9 @@ package org.eclipse.jetty.websocket.core.messages;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.core.util.MethodHolder;
  */
 public class ByteArrayMessageSink extends AbstractMessageSink
 {
-    private RetainableByteBuffer.DynamicCapacity accumulator;
+    private RetainableByteBuffer.Accumulator accumulator;
 
     /**
      * Creates a new {@link ByteArrayMessageSink}.
@@ -49,7 +49,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     {
         try
         {
-            long size = (accumulator == null ? 0 : accumulator.size()) + frame.getPayloadLength();
+            long size = (accumulator == null ? 0 : accumulator.remaining()) + frame.getPayloadLength();
             long maxSize = getCoreSession().getMaxBinaryMessageSize();
             if (maxSize > 0 && size > maxSize)
             {
@@ -60,7 +60,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             // If the frame is fin and no accumulator has been
             // created or used, then we don't need to aggregate.
             ByteBuffer payload = frame.getPayload();
-            if (frame.isFin() && (accumulator == null || accumulator.isEmpty()))
+            if (frame.isFin() && (accumulator == null || !accumulator.hasRemaining()))
             {
                 byte[] buf = BufferUtil.toArray(payload);
                 getMethodHolder().invoke(buf, 0, buf.length);
@@ -77,17 +77,20 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             }
 
             if (accumulator == null)
-                accumulator = new RetainableByteBuffer.DynamicCapacity();
-            accumulator.add(RetainableByteBuffer.wrap(payload, callback::succeeded));
+                accumulator = new RetainableByteBuffer.Accumulator();
+            accumulator.addRetained(RetainableByteBuffer.wrap(payload, callback::succeeded));
 
             if (frame.isFin())
             {
                 // Do not complete twice the callback if the invocation fails.
                 callback = Callback.NOOP;
-                int length = accumulator.remaining();
-                byte[] buf = accumulator.takeByteArray();
-                getMethodHolder().invoke(buf, 0, length);
-                autoDemand();
+
+                try (RetainableByteBuffer buffer = accumulator.drain())
+                {
+                    byte[] bytes = buffer.getArray();
+                    getMethodHolder().invoke(bytes, 0, bytes.length);
+                    autoDemand();
+                }
             }
             else
             {

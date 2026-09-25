@@ -50,7 +50,7 @@ public class HeadersGenerateParseTest
         QpackEncoder encoder = new QpackEncoder(_ -> {});
         encoder.setMaxHeadersSize(4 * 1024);
         WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         new MessageGenerator(bufferPool, encoder, true).generate(accumulator, 0, input, null);
 
         QpackDecoder decoder = new QpackDecoder(_ -> {});
@@ -66,9 +66,11 @@ public class HeadersGenerateParseTest
             }
         }, decoder, 13);
         parser.init(UnaryOperator.identity());
-        RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator);
-        parser.parse(buffer, false);
-        assertFalse(buffer.hasRemaining());
+        try (RetainableByteBuffer buffer = accumulator.drain())
+        {
+            parser.parse(buffer, false);
+            assertFalse(buffer.hasRemaining());
+        }
 
         assertEquals(1, frames.size());
         HeadersFrame output = frames.getFirst();

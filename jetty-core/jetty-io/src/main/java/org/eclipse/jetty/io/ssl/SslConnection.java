@@ -343,9 +343,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         assert _lock.isHeldByCurrentThread();
         if (_encryptedInput == null)
             return _bufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
-        RetainableByteBuffer.Mutable wb = _encryptedInput;
+        RetainableByteBuffer.Mutable buffer = _encryptedInput;
         _encryptedInput = null;
-        return wb;
+        return buffer;
     }
 
     private RetainableByteBuffer.Mutable lockedAcquireEncryptedOutput()
@@ -353,9 +353,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         assert _lock.isHeldByCurrentThread();
         if (_encryptedOutput == null)
             return _bufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
-        RetainableByteBuffer.Mutable wb = _encryptedOutput.compact();
+        RetainableByteBuffer.Mutable buffer = _encryptedOutput.compact();
         _encryptedOutput = null;
-        return wb;
+        return buffer;
     }
 
     @Override
@@ -765,25 +765,25 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         // Let's try reading some encrypted data... even if we have some already.
                         int netFilled;
                         {
-                            RetainableByteBuffer.Mutable wb;
+                            RetainableByteBuffer.Mutable b;
                             if (encryptedInput == null)
                             {
-                                wb = lockedAcquireEncryptedInput();
+                                b = lockedAcquireEncryptedInput();
                             }
                             else
                             {
-                                wb = encryptedInput.compact();
+                                b = encryptedInput.compact();
                                 encryptedInput = null;
                             }
                             try
                             {
-                                netFilled = networkFill(wb);
-                                encryptedInputRemainingSpace = wb.space();
-                                encryptedInput = wb;
+                                netFilled = networkFill(b);
+                                encryptedInputRemainingSpace = b.space();
+                                encryptedInput = b;
                             }
                             catch (Throwable x)
                             {
-                                wb.release();
+                                b.release();
                                 throw x;
                             }
                         }
@@ -848,9 +848,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 // case we want to fall through to the handshake handling
                                 _underflown = false;
                                 SSLEngineResult[] unwrapResultRef = new SSLEngineResult[1];
-                                encryptedInput.writeTo(input ->
+                                encryptedInput.read(input ->
                                 {
-                                    writableAppIn.readFrom(output ->
+                                    writableAppIn.write(output ->
                                     {
                                         unwrapResultRef[0] = SslConnection.this.unwrap(_sslEngine, input, output);
                                         return unwrapResultRef[0].bytesProduced();
@@ -1265,12 +1265,12 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             try
                             {
                                 SSLEngineResult[] wrapResultRef = new SSLEngineResult[1];
-                                b.readFrom(output ->
+                                b.write(output ->
                                 {
-                                    appOut.writeTo(new RetainableByteBuffer.GatheringTarget()
+                                    appOut.read(new RetainableByteBuffer.GatheringReader()
                                     {
                                         @Override
-                                        public long write(ByteBuffer[] inputs, int offset, int length) throws IOException
+                                        public long readFrom(ByteBuffer[] inputs, int offset, int length) throws IOException
                                         {
                                             if (wrapResultRef[0] != null)
                                                 return 0;
@@ -1279,7 +1279,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                         }
 
                                         @Override
-                                        public long write(ByteBuffer input) throws IOException
+                                        public long readFrom(ByteBuffer input) throws IOException
                                         {
                                             if (wrapResultRef[0] != null)
                                                 return 0;

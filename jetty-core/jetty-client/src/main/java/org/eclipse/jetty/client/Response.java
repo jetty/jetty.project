@@ -176,12 +176,13 @@ public interface Response
         {
             try
             {
-                content.writeTo(b ->
+                content.read(b ->
                 {
                     try
                     {
+                        long r = b.remaining();
                         onContent(response, b);
-                        return 0;
+                        return r - b.remaining();
                     }
                     catch (Throwable x)
                     {

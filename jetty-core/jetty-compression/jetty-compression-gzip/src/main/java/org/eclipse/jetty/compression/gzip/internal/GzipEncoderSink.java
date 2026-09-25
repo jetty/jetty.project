@@ -81,7 +81,6 @@ public class GzipEncoderSink extends EncoderSink
     private final int flushMode;
     private final CRC32 crc = new CRC32();
     private final AtomicReference<State> state = new AtomicReference<>(State.HEADERS);
-    private RetainableByteBuffer inputBuffer;
     private boolean released;
 
     public GzipEncoderSink(GzipCompression compression, Content.Sink sink, GzipEncoderConfig config)
@@ -98,26 +97,8 @@ public class GzipEncoderSink extends EncoderSink
         this.crc.reset();
     }
 
-    protected void addInput(RetainableByteBuffer content)
-    {
-        content.retain();
-        inputBuffer = content;
-
-        content.quietWriteTo(buffer ->
-        {
-            int position = buffer.position();
-            crc.update(buffer);
-            buffer.position(position);
-
-            deflater.setInput(buffer);
-
-            return 0;
-        });
-    }
-
     private void clearInput()
     {
-        inputBuffer = Retainable.dispose(inputBuffer);
         deflater.setInput(BufferUtil.EMPTY_BUFFER);
     }
 
@@ -150,11 +131,7 @@ public class GzipEncoderSink extends EncoderSink
                             if (output == null)
                                 output = compression.acquireBuffer(bufferSize);
                             if (encode(content, output))
-                            {
-                                WriteRecord writeRecord = new WriteRecord(false, output);
-                                output = null;
-                                return writeRecord;
-                            }
+                                return new WriteRecord(false, output);
                         }
                         else
                         {
@@ -178,11 +155,7 @@ public class GzipEncoderSink extends EncoderSink
                         if (!flush(output))
                             state.compareAndSet(State.FLUSHING, State.TRAILERS);
                         if (output.hasRemaining())
-                        {
-                            WriteRecord writeRecord = new WriteRecord(false, output);
-                            output = null;
-                            return writeRecord;
-                        }
+                            return new WriteRecord(false, output);
                     }
                     case TRAILERS ->
                     {
@@ -190,9 +163,7 @@ public class GzipEncoderSink extends EncoderSink
                             output = compression.acquireBuffer(16);
                         trailers(output);
                         state.compareAndSet(State.TRAILERS, State.FINISHED);
-                        WriteRecord writeRecord = new WriteRecord(true, output);
-                        output = null;
-                        return writeRecord;
+                        return new WriteRecord(true, output);
                     }
                     case FINISHED ->
                     {
@@ -203,8 +174,7 @@ public class GzipEncoderSink extends EncoderSink
         }
         finally
         {
-            if (output != null)
-                output.release();
+            Retainable.dispose(output);
         }
     }
 
@@ -227,10 +197,23 @@ public class GzipEncoderSink extends EncoderSink
      */
     private boolean encode(RetainableByteBuffer content, RetainableByteBuffer.Mutable outputBuffer)
     {
-        if (deflater.needsInput())
-            addInput(content);
-        long encoded = outputBuffer.quietReadFrom(output -> deflater.deflate(output, flushMode));
-        return encoded > 0L;
+        long space = outputBuffer.space();
+        content.quietRead(input ->
+        {
+            deflater.setInput(input);
+
+            int p = input.position();
+            outputBuffer.quietWrite(output -> deflater.deflate(output, flushMode));
+            int consumed = input.position() - p;
+
+            // Update CRC with the consumed bytes.
+            if (consumed > 0)
+                crc.update(input.slice(p, consumed));
+
+            return consumed;
+        });
+        long compressed = space - outputBuffer.space();
+        return compressed > 0;
     }
 
     /**
@@ -243,7 +226,7 @@ public class GzipEncoderSink extends EncoderSink
     {
         while (!deflater.finished())
         {
-            if (outputBuffer.quietReadFrom(output -> deflater.deflate(output, flushMode)) > 0L)
+            if (outputBuffer.quietWrite(output -> deflater.deflate(output, flushMode)) > 0L)
                 return true;
         }
         return false;

@@ -47,7 +47,7 @@ public class SettingsGenerateParseTest
         SettingsFrame input = new SettingsFrame(settings);
 
         WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         new ControlGenerator(bufferPool, true).generate(accumulator, 0, input, null);
 
         List<SettingsFrame> frames = new ArrayList<>();
@@ -59,9 +59,11 @@ public class SettingsGenerateParseTest
                 frames.add(frame);
             }
         });
-        RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator);
-        parser.parse(buffer);
-        assertFalse(buffer.hasRemaining());
+        try (RetainableByteBuffer buffer = accumulator.drain())
+        {
+            parser.parse(buffer);
+            assertFalse(buffer.hasRemaining());
+        }
 
         assertEquals(1, frames.size());
         SettingsFrame output = frames.getFirst();

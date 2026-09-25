@@ -54,7 +54,7 @@ public class DataGenerateParseTest
         DataFrame input = new DataFrame(RetainableByteBuffer.wrap(inputBytes), true);
 
         WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         new MessageGenerator(bufferPool, null, true).generate(accumulator, 0, input, null);
 
         List<DataFrame> frames = new ArrayList<>();
@@ -70,9 +70,11 @@ public class DataGenerateParseTest
             }
         }, decoder, 13);
         parser.init(UnaryOperator.identity());
-        RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator);
-        parser.parse(buffer, false);
-        assertFalse(buffer.hasRemaining());
+        try (RetainableByteBuffer buffer = accumulator.drain())
+        {
+            parser.parse(buffer, false);
+            assertFalse(buffer.hasRemaining());
+        }
 
         assertEquals(1, frames.size());
         DataFrame output = frames.getFirst();

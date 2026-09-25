@@ -16,6 +16,7 @@ package org.eclipse.jetty.compression.gzip;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.Deflater;
 
@@ -35,6 +36,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -175,6 +177,31 @@ public class GzipEncoderSinkTest extends AbstractGzipTest
 
         String result = new String(decompress(compressed), UTF_8);
         assertThat(result, is("Hello World!"));
+    }
+
+    @Test
+    public void testMultiBuffer() throws Exception
+    {
+        startGzip();
+
+        RetainableByteBuffer original = RetainableByteBuffer.merge(List.of(
+            RetainableByteBuffer.wrap("Hello ", UTF_8),
+            RetainableByteBuffer.wrap("world!", UTF_8)
+        ));
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink fileSink = Content.Sink.from(baos);
+            Content.Sink encoderSink = gzip.newEncoderSink(fileSink);
+
+            Callback.Completable callback = new Callback.Completable();
+            encoderSink.write(true, original, callback);
+            callback.get();
+            byte[] compressed = baos.toByteArray();
+
+            byte[] decompressed = decompress(compressed);
+            assertArrayEquals("Hello world!".getBytes(UTF_8), decompressed);
+        }
     }
 
     private static class WriteLoggerSink implements Content.Sink

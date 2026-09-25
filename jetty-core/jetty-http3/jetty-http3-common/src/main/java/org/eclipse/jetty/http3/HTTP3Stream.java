@@ -142,9 +142,9 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
     @Override
     public void data(RetainableByteBuffer data, boolean last, Promise.Invocable<Stream> promise)
     {
-        // The data must be retained here because the flusher deals with
-        // Frame instances that in general do not wrap Retainable instances.
-        // As such, the release must be done here wrapping the Promise.
+        // The data buffer is retained here by DataFrame, but because the
+        // flusher deals with Frames instances that in general do not wrap
+        // Retainable instances, the release is done here wrapping the Promise.
         DataFrame frame = new DataFrame(data, last);
         write(frame, Promise.Invocable.from(promise, frame::close));
     }

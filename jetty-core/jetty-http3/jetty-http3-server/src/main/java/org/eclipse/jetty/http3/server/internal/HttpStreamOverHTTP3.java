@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -359,14 +360,23 @@ public class HttpStreamOverHTTP3 implements HttpStream
         boolean dl = dataLast;
         HeadersFrame tf = trailersFrame;
 
+        // The content is sent after the headers have been written,
+        // possibly asynchronously, so it must be retained until then.
+        if (content != null)
+            content.retain();
+
         stream.respond(headersFrame, Promise.Invocable.from(callback.getInvocationType(), _ ->
         {
             if (content != null)
             {
-                if (tf != null)
-                    sendDataAndTrailer(content, tf, callback);
-                else
-                    sendData(content, dl, lastContent, callback);
+                // Releases the content retained above.
+                try (content)
+                {
+                    if (tf != null)
+                        sendDataAndTrailer(content, tf, callback);
+                    else
+                        sendData(content, dl, lastContent, callback);
+                }
             }
             else
             {
@@ -375,7 +385,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 else
                     callback.succeeded();
             }
-        }, callback::failed));
+        }, x ->
+        {
+            Retainable.dispose(content);
+            callback.failed(x);
+        }));
     }
 
     private void sendContent(MetaData.Request request, MetaData.Response response, RetainableByteBuffer content, boolean lastContent, Callback callback)

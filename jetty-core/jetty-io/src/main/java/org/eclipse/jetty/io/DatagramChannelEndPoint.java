@@ -65,7 +65,7 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
             return EOF;
 
         SocketAddress[] peers = new SocketAddress[1];
-        long filled = buffer.readFrom(output ->
+        long filled = buffer.write(output ->
         {
             int remaining = output.remaining();
             peers[0] = getChannel().receive(output);
@@ -91,7 +91,7 @@ public class DatagramChannelEndPoint extends SelectableChannelEndPoint
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("flushing {} to {}", buffer, address);
-            flushed = buffer.writeTo(input -> getChannel().send(input, address));
+            flushed = buffer.read(input -> getChannel().send(input, address));
             if (LOG.isDebugEnabled())
                 LOG.debug("flushed {} byte(s) - {}", flushed, this);
         }

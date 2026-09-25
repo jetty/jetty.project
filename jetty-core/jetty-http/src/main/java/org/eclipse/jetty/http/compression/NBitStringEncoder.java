@@ -36,10 +36,10 @@ public class NBitStringEncoder
         return encodedLengthSize + encodedValueSize + (prefix == 1 ? 1 : 0);
     }
 
-    public static void encode(ByteBuffer buffer, int prefix, String value, boolean huffman)
+    public static void encode(ByteBuffer byteBuffer, int prefix, String value, boolean huffman)
     {
-        RetainableByteBuffer.Mutable wb = RetainableByteBuffer.Mutable.wrap(buffer);
-        encode(wb, prefix, value, huffman);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.wrap(byteBuffer);
+        encode(buffer, prefix, value, huffman);
     }
 
     public static void encode(RetainableByteBuffer.Mutable buffer, int prefix, String value, boolean huffman)

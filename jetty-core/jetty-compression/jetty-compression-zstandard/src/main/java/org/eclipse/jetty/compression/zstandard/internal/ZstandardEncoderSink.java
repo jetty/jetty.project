@@ -15,6 +15,7 @@ package org.eclipse.jetty.compression.zstandard.internal;
 
 import java.lang.ref.Cleaner;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.github.luben.zstd.EndDirective;
@@ -82,7 +83,7 @@ public class ZstandardEncoderSink extends EncoderSink
             State state = this.state.get();
             writeRecord = switch (state)
             {
-                case CONTINUE -> continueOp(last, content);
+                case CONTINUE -> continueOp(last, Objects.requireNonNullElse(content, RetainableByteBuffer.empty()));
                 case END -> endOp(last);
                 case FLUSH -> flushOp(last);
                 case FINISHED -> null;
@@ -98,84 +99,73 @@ public class ZstandardEncoderSink extends EncoderSink
         return writeRecord;
     }
 
-    protected RetainableByteBuffer ensureDirect(RetainableByteBuffer buffer, int size)
-    {
-        if (buffer == null || !buffer.hasRemaining())
-            return RetainableByteBuffer.empty();
-        RetainableByteBuffer[] result = new RetainableByteBuffer[1];
-        buffer.quietWriteTo(input ->
-        {
-            if (input.isDirect())
-            {
-                result[0] = buffer.sliceAndConsume(Math.min(input.remaining(), size));
-            }
-            else
-            {
-                RetainableByteBuffer.Mutable direct = compression.acquireBuffer(size);
-                direct.append(input);
-                result[0] = direct;
-            }
-            return result[0].remaining();
-        });
-        return result[0];
-    }
-
     private WriteRecord continueOp(boolean last, RetainableByteBuffer content)
     {
-        RetainableByteBuffer.Mutable outputBuf = compression.acquireBuffer(bufferSize);
-
         // Process content (input) buffer using zstd-jni CONTINUE directive.
-        try
+        try (RetainableByteBuffer.Mutable outputBuffer = compression.acquireBuffer(bufferSize))
         {
             while (content.hasRemaining())
             {
-                // content must be a direct bytebuffer, and we have to assume that the size
-                // of the content buffer can be huge (multi megabyte or bigger), so lets
-                // process the content one limited direct buffer at a time.
-                RetainableByteBuffer inputBuf = ensureDirect(content, bufferSize);
-                try
+                // The content must be a direct bytebuffer, and we have to assume that
+                // the size of the content buffer can be huge (multi megabyte or bigger),
+                // so let's process the content one limited direct buffer at a time.
+                content.quietRead(input ->
                 {
-                    while (inputBuf.hasRemaining())
+                    int remaining = input.remaining();
+
+                    ByteBuffer inputBB;
+                    RetainableByteBuffer inputBuffer;
+                    if (input.isDirect())
                     {
-                        RetainableByteBuffer.Mutable b = outputBuf;
-                        inputBuf.quietWriteTo(input ->
-                        {
-                            int r = input.remaining();
-                            b.readFrom(output ->
-                            {
-                                int p = output.position();
-                                compressCtx.compressDirectByteBufferStream(output, input, EndDirective.CONTINUE);
-                                return output.position() - p;
-                            });
-                            return r - input.remaining();
-                        });
-
-                        if (outputBuf.hasRemaining())
-                        {
-                            if (inputBuf.hasRemaining())
-                                content.readPosition(content.readPosition() - inputBuf.remaining());
-
-                            WriteRecord writeRecord = new WriteRecord(false, outputBuf);
-                            outputBuf = null;
-                            return writeRecord;
-                        }
+                        int length = Math.min(input.remaining(), bufferSize);
+                        inputBB = input.slice(input.position(), length);
+                        inputBuffer = null;
                     }
-                }
-                finally
-                {
-                    inputBuf.release();
-                }
-            }
-        }
-        finally
-        {
-            if (outputBuf != null)
-                outputBuf.release();
-        }
+                    else
+                    {
+                        RetainableByteBuffer.Mutable direct = compression.acquireBuffer(bufferSize);
+                        int length = Math.min(input.remaining(), bufferSize);
+                        direct.append(input.slice(input.position(), length));
+                        ByteBuffer[] result = new ByteBuffer[1];
+                        direct.quietRead(i ->
+                        {
+                            result[0] = i;
+                            return 0;
+                        });
+                        inputBB = result[0];
+                        inputBuffer = direct;
+                    }
 
-        if (last)
-            state.compareAndSet(State.CONTINUE, State.END);
-        return null;
+                    try (inputBuffer)
+                    {
+                        while (inputBB.hasRemaining())
+                        {
+                            int r = inputBB.remaining();
+                            outputBuffer.write(outputBB ->
+                            {
+                                int p = outputBB.position();
+                                compressCtx.compressDirectByteBufferStream(outputBB, inputBB, EndDirective.CONTINUE);
+                                return outputBB.position() - p;
+                            });
+                            int consumed = r - inputBB.remaining();
+                            input.position(input.position() + consumed);
+
+                            if (outputBuffer.space() == 0)
+                                break;
+                        }
+
+                        return remaining - input.remaining();
+                    }
+                });
+
+                if (outputBuffer.hasRemaining())
+                    return new WriteRecord(false, outputBuffer);
+            }
+
+            if (last)
+                state.compareAndSet(State.CONTINUE, State.END);
+            return null;
+        }
     }
 
     private WriteRecord endOp(boolean last)
@@ -184,19 +174,20 @@ public class ZstandardEncoderSink extends EncoderSink
             throw new IllegalStateException("Directive.END not possible on non-last encode");
 
         state.compareAndSet(State.END, State.FLUSH);
-        RetainableByteBuffer.Mutable outputBuf = compression.acquireBuffer(bufferSize);
-        // use zstd-jni END directive once.
-        // only run END compress once
-        outputBuf.quietReadFrom(output ->
+        try (RetainableByteBuffer.Mutable outputBuffer = compression.acquireBuffer(bufferSize))
         {
-            int p = output.position();
-            compressCtx.compressDirectByteBufferStream(output, EMPTY_DIRECT_BUFFER, EndDirective.END);
-            return output.position() - p;
-        });
-        if (outputBuf.hasRemaining())
-            return new WriteRecord(false, outputBuf);
-        outputBuf.release();
-        return null;
+            // use zstd-jni END directive once.
+            // only run END compress once
+            outputBuffer.quietWrite(output ->
+            {
+                int p = output.position();
+                compressCtx.compressDirectByteBufferStream(output, EMPTY_DIRECT_BUFFER, EndDirective.END);
+                return output.position() - p;
+            });
+            if (outputBuffer.hasRemaining())
+                return new WriteRecord(false, outputBuffer);
+            return null;
+        }
     }
 
     private WriteRecord flushOp(boolean last)
@@ -204,24 +195,25 @@ public class ZstandardEncoderSink extends EncoderSink
         if (!last)
             throw new IllegalStateException("Directive.END not possible on non-last encode");
 
-        RetainableByteBuffer.Mutable outputBuf = compression.acquireBuffer(bufferSize);
-        // use zstd-jni FLUSH directive to flush remaining compressed bytes out
-        // of the internal zstd buffers.
-        boolean[] result = new boolean[1];
-        outputBuf.quietReadFrom(output ->
+        try (RetainableByteBuffer.Mutable outputBuffer = compression.acquireBuffer(bufferSize))
         {
-            int p = output.position();
-            result[0] = compressCtx.compressDirectByteBufferStream(output, EMPTY_DIRECT_BUFFER, EndDirective.FLUSH);
-            return output.position() - p;
-        });
-        boolean actualLast = result[0];
-        if (actualLast || outputBuf.hasRemaining())
-        {
-            if (actualLast)
-                state.compareAndSet(State.FLUSH, State.FINISHED);
-            return new WriteRecord(actualLast, outputBuf);
+            // use zstd-jni FLUSH directive to flush remaining compressed bytes out
+            // of the internal zstd buffers.
+            boolean[] result = new boolean[1];
+            outputBuffer.quietWrite(output ->
+            {
+                int p = output.position();
+                result[0] = compressCtx.compressDirectByteBufferStream(output, EMPTY_DIRECT_BUFFER, EndDirective.FLUSH);
+                return output.position() - p;
+            });
+            boolean actualLast = result[0];
+            if (actualLast || outputBuffer.hasRemaining())
+            {
+                if (actualLast)
+                    state.compareAndSet(State.FLUSH, State.FINISHED);
+                return new WriteRecord(actualLast, outputBuffer);
+            }
+            return null;
         }
-        outputBuf.release();
-        return null;
     }
 }

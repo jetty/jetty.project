@@ -14,13 +14,16 @@
 package org.eclipse.jetty.util.buffer;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.ReadOnlyBufferException;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.FileChannel;
+import java.nio.channels.GatheringByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -30,6 +33,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.internal.MultiBuffer;
 import org.eclipse.jetty.util.internal.PathBuffer;
@@ -91,6 +95,25 @@ public interface RetainableByteBuffer extends Retainable
         try (ReferenceCounter rc = new ReferenceCounter())
         {
             return wrap(byteBuffer, rc);
+        }
+    }
+
+    static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Runnable releaser)
+    {
+        ReferenceCounter refCount = new ReferenceCounter()
+        {
+            @Override
+            public boolean release()
+            {
+                boolean released = super.release();
+                if (released)
+                    releaser.run();
+                return released;
+            }
+        };
+        try (refCount)
+        {
+            return wrap(byteBuffer, refCount);
         }
     }
 
@@ -164,7 +187,7 @@ public interface RetainableByteBuffer extends Retainable
     /// @return a new buffer
     static RetainableByteBuffer wrap(Path path, WritableBufferPool.Sized pool) throws IOException
     {
-        return new PathBuffer(path, 0L, -1L, pool);
+        return wrap(path, 0, -1, pool);
     }
 
     /// Wraps the given [Path], using a new [ReferenceCounter] for retainability.
@@ -178,7 +201,10 @@ public interface RetainableByteBuffer extends Retainable
     {
         if (length == 0L)
             return empty();
-        return new PathBuffer(path, offset, length, pool);
+        try (ReferenceCounter rc = new ReferenceCounter())
+        {
+            return new PathBuffer(path, offset, length, pool, rc);
+        }
     }
 
     /// Returns the current read position of this buffer.
@@ -194,9 +220,9 @@ public interface RetainableByteBuffer extends Retainable
     /// @return this buffer
     RetainableByteBuffer readPosition(long newPosition);
 
-    /// Consumes `length` bytes from the current [#readPosition()].
+    /// Reads and discards `length` bytes from the current [#readPosition()].
     ///
-    /// @param length the number of bytes to consume
+    /// @param length the number of bytes to read and discard
     default RetainableByteBuffer consume(long length)
     {
         return readPosition(readPosition() + length);
@@ -215,9 +241,6 @@ public interface RetainableByteBuffer extends Retainable
     {
         return remaining() > 0;
     }
-
-    /// @return whether this buffer is direct
-    boolean isDirect();
 
     /// Reads a single `byte` at the current [#readPosition()], and advances the read position by one.
     ///
@@ -243,7 +266,7 @@ public interface RetainableByteBuffer extends Retainable
 
     /// Reads a single `byte` at the specified absolute [#readPosition()].
     ///
-    /// Does not advance the read position.
+    /// Does not advance the read position of this buffer.
     ///
     /// @param position the absolute read position of the byte to read
     /// @return the `byte` converted to `int`
@@ -338,7 +361,12 @@ public interface RetainableByteBuffer extends Retainable
 
     default byte[] getArray(long index)
     {
-        byte[] bytes = new byte[Math.toIntExact(remaining() + readPosition() - index)];
+        return getArray(index, remaining() + readPosition() - index);
+    }
+
+    default byte[] getArray(long index, long length)
+    {
+        byte[] bytes = new byte[Math.toIntExact(length)];
         get(index, bytes, 0, bytes.length);
         return bytes;
     }
@@ -354,9 +382,9 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /// Reads the bytes of this buffer into a string using the given [Charset],
-    /// from the specified absolute [#readPosition()]
+    /// from the specified absolute [#readPosition()] to the last readable byte.
     ///
-    /// Does not advance the read position.
+    /// Does not advance the read position of this buffer.
     ///
     /// @param position the absolute read position to start reading from
     /// @param charset the [Charset] to use to convert the bytes
@@ -366,11 +394,23 @@ public interface RetainableByteBuffer extends Retainable
         return new String(getArray(position), charset);
     }
 
+    /// Reads the bytes of this buffer into a string using the given [Charset],
+    /// from the specified absolute [#readPosition()] for the given number of bytes.
+    ///
+    /// @param position the absolute read position to start reading from
+    /// @param length the number of bytes to read
+    /// @param charset the [Charset] to use to convert the bytes
+    /// @return a new [String] from the buffer bytes
+    default String getString(long position, long length, Charset charset)
+    {
+        return new String(getArray(position, length), charset);
+    }
+
     default ByteBuffer getByteBuffer(boolean direct)
     {
         int length = Math.toIntExact(remaining());
         ByteBuffer result = direct ? ByteBuffer.allocateDirect(length) : ByteBuffer.allocate(length);
-        quietWriteTo(b ->
+        quietRead(b ->
         {
             int r = b.remaining();
             result.put(b);
@@ -387,6 +427,15 @@ public interface RetainableByteBuffer extends Retainable
         return slice(readPosition(), remaining());
     }
 
+    /// Slices this buffer, equivalent to [`slice(readPosition(), length)`][#slice(long, long)].
+    ///
+    /// @param length the length of the slice
+    /// @return a slice of this buffer
+    default RetainableByteBuffer slice(long length)
+    {
+        return slice(readPosition(), length);
+    }
+
     /// Creates a new buffer that is a shared view of this buffer from the given read position and for the given length.
     ///
     /// The slice operation retains this buffer, and the returned slice must be released.
@@ -396,7 +445,7 @@ public interface RetainableByteBuffer extends Retainable
     /// This buffer read position is not modified.
     ///
     /// @param position the read position of the current buffer
-    /// @param length the length of the slice.
+    /// @param length the length of the slice
     /// @return a slice of this buffer
     RetainableByteBuffer slice(long position, long length);
 
@@ -407,7 +456,7 @@ public interface RetainableByteBuffer extends Retainable
     /// @return a slice of this buffer
     default RetainableByteBuffer sliceAndConsume(long length)
     {
-        RetainableByteBuffer slice = slice(readPosition(), length);
+        RetainableByteBuffer slice = slice(length);
         consume(length);
         return slice;
     }
@@ -427,13 +476,13 @@ public interface RetainableByteBuffer extends Retainable
     ///
     /// The slice is automatically released when the mapping function returns.
     ///
-    /// @param index the read position of the current buffer
+    /// @param position the read position of the current buffer
     /// @param length the length of the slice
     /// @param mapper the mapping function
     /// @return the result of the mapping function
-    default <T> T mapSlice(long index, long length, Function<RetainableByteBuffer, T> mapper)
+    default <T> T mapSlice(long position, long length, Function<RetainableByteBuffer, T> mapper)
     {
-        return mapSlice(slice(index, length), mapper);
+        return mapSlice(slice(position, length), mapper);
     }
 
     private static <T> T mapSlice(RetainableByteBuffer slice, Function<RetainableByteBuffer, T> mapper)
@@ -448,23 +497,53 @@ public interface RetainableByteBuffer extends Retainable
         }
     }
 
-    /// Offers the contents of this buffer to be read by the given [Target].
+    /// Offers the contents of this buffer to be read by the given [Reader].
     ///
-    /// @param target the [Target] that reads this buffer
-    /// @return the number of bytes read
+    /// When this buffer is backed by a single byte source, the value returned
+    /// by invoking the [Reader] is also returned by this method.
+    ///
+    /// When this buffer is backed by multiple byte sources, the [Reader] may
+    /// be invoked multiple times.
+    /// If an invocation returns less than the byte source available bytes,
+    /// then the next invocation is not performed.
+    ///
+    /// If the value returned by the [Reader] is negative, it is returned
+    /// by this method, no matter if previous invocations returned non-negative
+    /// values.
+    ///
+    /// Otherwise, the [Reader] invocations returned non-negative values,
+    /// and this method returns the sum of the invocations.
+    ///
+    /// @param reader the [Reader] that reads this buffer
+    /// @return the number of bytes read, or a negative value returned by the [Reader]
     /// @throws IOException when an IOException occurs
-    long writeTo(Target target) throws IOException;
+    long read(Reader reader) throws IOException;
 
-    default long quietWriteTo(Target target)
+    default long quietRead(Reader reader)
     {
         try
         {
-            return writeTo(target);
+            return read(reader);
         }
         catch (IOException e)
         {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /// Copies the content of this buffer to the given [OutputStream].
+    ///
+    /// @param stream the [OutputStream] to write bytes to
+    /// @return the number of bytes written
+    /// @throws IOException if the write fails
+    default long putTo(OutputStream stream) throws IOException
+    {
+        return read(b ->
+        {
+            int r = b.remaining();
+            stream.write(BufferUtil.toArray(b));
+            return r;
+        });
     }
 
     /// Copies the content of this buffer to the given [ByteBuffer].
@@ -480,7 +559,7 @@ public interface RetainableByteBuffer extends Retainable
     /// @return the number of bytes copied
     default int putTo(ByteBuffer output)
     {
-        return Math.toIntExact(quietWriteTo(b ->
+        return Math.toIntExact(quietRead(b ->
         {
             int r = b.remaining();
             output.put(b);
@@ -501,7 +580,7 @@ public interface RetainableByteBuffer extends Retainable
     /// @return the number of bytes copied
     default int appendTo(ByteBuffer output)
     {
-        return Math.toIntExact(quietWriteTo(b ->
+        return Math.toIntExact(quietRead(b ->
         {
             int remaining = b.remaining();
             int space = output.remaining();
@@ -521,57 +600,54 @@ public interface RetainableByteBuffer extends Retainable
         }));
     }
 
-    /**
-     * Base interface of the Target (i.e.: byte destination) used to flush a ReadableBuffer via the NIO ByteBuffer API.
-     */
-    // TODO: rename to Reader? And Fount to Writer?
-    interface Target
+    /// Base interface to read from this buffer via its internal [ByteBuffer]\(s).
+    ///
+    /// This interface is used to bridge this buffer to APIs that work with [ByteBuffer],
+    /// such as [ByteChannel#write(ByteBuffer)].
+    ///
+    /// If this buffer contains multiple [ByteBuffer]s, the reader is invoked multiple times.
+    interface Reader
     {
-        /// Implementations get bytes from the given [ByteBuffer].
+        /// Implementations read bytes from the given [ByteBuffer].
         ///
         /// This method may be called multiple times if it wraps multiple [ByteBuffer]s.
         ///
-        ///
-        ///
-        /// Note that this method can be called more than once if the `input` byte buffer
-        /// is depleted, for instance, if the WritableBuffer is backed by more than one NIO ByteBuffer.
-        ///
-        /// @param input the buffer to be written
+        /// @param input the [ByteBuffer] to be read
+        /// @return the number of bytes read, or a negative value
         /// @throws IOException when IOException occurs
-        long write(ByteBuffer input) throws IOException;
+        long readFrom(ByteBuffer input) throws IOException;
     }
 
-    /**
-     * Interface of the Target (i.e.: byte destination) used to flush a ReadableBuffer via the NIO ByteBuffer API when the
-     * target supports gathering writes.
-     */
-    interface GatheringTarget extends Target
+    /// Specialized interface to read from this buffer from its internal [ByteBuffer]s at once.
+    ///
+    /// This interface is used to bridge this buffer to APIs that work with multiple [ByteBuffer]s,
+    /// such as [GatheringByteChannel#write(ByteBuffer\[\], int, int)].
+    interface GatheringReader extends Reader
     {
-        /**
-         * Flushes a given NIO ByteBuffer array.
-         *
-         * @param inputs the buffer to be written
-         * @throws IOException when IOException occurs
-         */
-        long write(ByteBuffer[] inputs, int offset, int length) throws IOException;
+        /// Implementations read bytes from the given [ByteBuffer]s.
+        ///
+        /// @param inputs the array of [ByteBuffer]s to be read
+        /// @param offset the index of the array containing the first [ByteBuffer] to read
+        /// @param length the number of [ByteBuffer] to read
+        /// @return the number of bytes read, or a negative value
+        /// @throws IOException when IOException occurs
+        long readFrom(ByteBuffer[] inputs, int offset, int length) throws IOException;
     }
 
-    /**
-     * Interface of the Target (i.e.: byte destination) used to flush a ReadableBuffer backed by a FileChannel.
-     * This is meant to be used when the target can perform the copy via NIO FileChannel.transferTo().
-     */
-    interface TransferringTarget extends Target
+    /// Specialized interface to read from this buffer via its internal [FileChannel].
+    ///
+    /// This interface is used to bridge this buffer to APIs that work with [FileChannel],
+    /// such as [FileChannel#transferTo(long, long, WritableByteChannel)].
+    interface TransferringReader extends Reader
     {
-        /**
-         * Flushes a given FileChannel from the given position, up to the given count.
-         *
-         * @param input the source FileChannel
-         * @param position the position in the source FileChannel; always non-negative
-         * @param count the maximum number of bytes to be transferred; always non-negative
-         * @return the number of bytes that were transferred
-         * @throws IOException when IOException occurs
-         */
-        long write(FileChannel input, long position, long count) throws IOException;
+        /// Implementations transfer bytes from the given [FileChannel].
+        ///
+        /// @param input the [FileChannel] to transfer from
+        /// @param position the position in the [FileChannel] to start transfer from, must be non-negative
+        /// @param count the maximum number of bytes to be transferred, must be non-negative
+        /// @return the number of transferred bytes, or a negative value
+        /// @throws IOException when IOException occurs
+        long readFrom(FileChannel input, long position, long count) throws IOException;
     }
 
     /**
@@ -637,13 +713,6 @@ public interface RetainableByteBuffer extends Retainable
                 return new SingleMutableBuffer(direct ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size), rc, true);
             }
         }
-
-        /**
-         * Changes the byte order of this WritableBuffer.
-         *
-         * @param byteOrder true for little endian, false for big endian
-         */
-        void byteOrder(ByteOrder byteOrder);
 
         /**
          * Returns the current position of this WritableBuffer, where the next bytes are to be written.
@@ -745,10 +814,10 @@ public interface RetainableByteBuffer extends Retainable
         /**
          * Writes a {@link RetainableByteBuffer} at the current position.
          *
-         * @param readableBuffer the buffer to write
+         * @param buffer the buffer to write
          * @throws BufferOverflowException if there is insufficient space in this buffer for the remaining bytes in the source buffer
          */
-        Mutable put(RetainableByteBuffer readableBuffer);
+        Mutable put(RetainableByteBuffer buffer);
 
         /// Copies the given [ByteBuffer] into this buffer.
         ///
@@ -776,13 +845,6 @@ public interface RetainableByteBuffer extends Retainable
         /// @return the number of copied bytes
         long append(RetainableByteBuffer buffer);
 
-        /**
-         * Compacts this ReadableBuffer, by flipping it to a {@link Mutable} with the unread bytes (between
-         * {@link #readPosition()} and {@link #space()}) moved to position 0.
-         *
-         * @return this, typed as a {@link Mutable}
-         */
-
         /// Compacts this buffer.
         ///
         /// Unread bytes, if any, are moved to position `0`.
@@ -798,19 +860,19 @@ public interface RetainableByteBuffer extends Retainable
         Mutable clear();
 
         /**
-         * Fills this buffer with the given Fount.
+         * Fills this buffer with the given Writer.
          *
-         * @param fount the fount
+         * @param writer the writer
          * @return the # of bytes read, or -1 if EOF was reached
          * @throws IOException when an IOException occurs
          */
-        long readFrom(Fount fount) throws IOException;
+        long write(Writer writer) throws IOException;
 
-        default long quietReadFrom(Fount fount)
+        default long quietWrite(Writer writer)
         {
             try
             {
-                return readFrom(fount);
+                return write(writer);
             }
             catch (IOException e)
             {
@@ -818,16 +880,98 @@ public interface RetainableByteBuffer extends Retainable
             }
         }
 
-        /**
-         * Base interface of the Fount (i.e.: byte source) used to fill a WritableBuffer via the NIO ByteBuffer API.
-         */
-        interface Fount
+        /// Base interface to write into this buffer via its internal [ByteBuffer].
+        ///
+        /// This interface is used to bridge this buffer to APIs that work with [ByteBuffer],
+        /// such as [ByteChannel#read(ByteBuffer)].
+        interface Writer
         {
-            /// Implementations put bytes into the given [ByteBuffer].
+            /// Implementations write bytes into the given [ByteBuffer].
             ///
             /// @param output the [ByteBuffer] to write into
             /// @return the number of bytes written
-            long read(ByteBuffer output) throws IOException;
+            /// @throws IOException when IOException occurs
+            long writeTo(ByteBuffer output) throws IOException;
+        }
+    }
+
+    /// Accumulates [RetainableByteBuffer]s that can be later merged into a
+    /// single buffer for a final operation such as writing it to the network.
+    class Accumulator
+    {
+        private final List<RetainableByteBuffer> buffers = new ArrayList<>();
+
+        /// Retains and adds the given buffer to this accumulator.
+        ///
+        /// @param buffer the buffer to add
+        public void add(RetainableByteBuffer buffer)
+        {
+            buffer.retain();
+            addRetained(buffer);
+        }
+
+        /// Adds the given buffer to this accumulator.
+        ///
+        /// Differently from [#add(RetainableByteBuffer)], this method does not
+        /// retain the given buffer, which therefore must be already retained
+        /// by the calling code.
+        ///
+        /// @param buffer the buffer to add
+        public void addRetained(RetainableByteBuffer buffer)
+        {
+            buffers.add(buffer);
+        }
+
+        /// @return whether this accumulator has bytes that can be read
+        public boolean hasRemaining()
+        {
+            for (RetainableByteBuffer buffer : buffers)
+            {
+                if (buffer.hasRemaining())
+                    return true;
+            }
+            return false;
+        }
+
+        /// @return the number of bytes that can be read
+        public long remaining()
+        {
+            long remaining = 0;
+            for (RetainableByteBuffer buffer : buffers)
+            {
+                remaining += buffer.remaining();
+            }
+            return remaining;
+        }
+
+        /// Returns the accumulated buffers, leaving this accumulator empty.
+        ///
+        /// The returned buffer must be released.
+        ///
+        /// @return the accumulated buffers
+        public RetainableByteBuffer drain()
+        {
+            if (buffers.isEmpty())
+                return RetainableByteBuffer.empty();
+            RetainableByteBuffer buffer;
+            if (buffers.size() == 1)
+            {
+                buffer = buffers.getFirst();
+                buffers.clear();
+            }
+            else
+            {
+                buffer = RetainableByteBuffer.merge(buffers);
+                clear();
+            }
+            return buffer;
+        }
+
+        /// Clears this accumulator, releasing any accumulated buffer.
+        public void clear()
+        {
+            buffers.forEach(RetainableByteBuffer::release);
+            buffers.clear();
         }
     }
 }

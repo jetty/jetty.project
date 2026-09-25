@@ -33,6 +33,7 @@ import org.eclipse.jetty.quic.quiche.Quiche;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 @ExtendWith(WorkDirExtension.class)
 @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
@@ -131,13 +133,12 @@ public class LowLevelQuicheTest
         ForeignQuicheConnection serverQuicheConnection = entry.getValue();
 
         // client sends 16 bytes of payload over stream 0
-        ByteBuffer data = ByteBuffer.allocate(16)
+        RetainableByteBuffer data = RetainableByteBuffer.Mutable.allocate(16, true)
             .putInt(0xdeadbeef)
             .putInt(0xcafebabe)
             .putInt(0xdeadc0de)
-            .putInt(0xbaddecaf)
-            .flip();
-        assertThat(clientQuicheConnection.feedClearBytesForStream(0, data.slice()), is(16));
+            .putInt(0xbaddecaf);
+        assertThat(clientQuicheConnection.feedClearBytesForStream(0, data.slice(), false), is(16L));
         drainClientToFeedServer(entry, 59);
 
         // server checks that stream 0 is readable
@@ -147,11 +148,10 @@ public class LowLevelQuicheTest
 
         // server reads 16 bytes from stream 0
         boolean[] outLast = new boolean[1];
-        ByteBuffer readData = ByteBuffer.allocate(1000);
-        int read = serverQuicheConnection.drainClearBytesForStream(0, readData, outLast);
-        assertThat(read, is(16));
-        readData.flip();
-        assertThat(data, is(readData));
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1000, true);
+        long read = serverQuicheConnection.drainClearBytesForStream(0, buffer, outLast);
+        assertThat(read, is(16L));
+        assertArrayEquals(data.getArray(), buffer.getArray());
 
         // assert that stream 0 is not finished on server
         assertThat(outLast[0], is(false));
@@ -165,9 +165,9 @@ public class LowLevelQuicheTest
         assertThat(readableStreamIds.size(), is(1));
         assertThat(readableStreamIds.get(0), is(0L));
 
-        readData.clear();
-        read = serverQuicheConnection.drainClearBytesForStream(0, readData, outLast);
-        assertThat(read, is(0));
+        buffer.clear();
+        read = serverQuicheConnection.drainClearBytesForStream(0, buffer, outLast);
+        assertThat(read, is(0L));
 
         // assert that stream 0 is finished on server
         assertThat(outLast[0], is(true));
@@ -191,12 +191,11 @@ public class LowLevelQuicheTest
         ForeignQuicheConnection serverQuicheConnection = entry.getValue();
 
         // client sends 16 bytes of payload over stream 0 and finish it
-        assertThat(clientQuicheConnection.feedClearBytesForStream(0, ByteBuffer.allocate(16)
+        assertThat(clientQuicheConnection.feedClearBytesForStream(0, RetainableByteBuffer.Mutable.allocate(16, true)
             .putInt(0xdeadbeef)
             .putInt(0xcafebabe)
             .putInt(0xdeadc0de)
-            .putInt(0xbaddecaf)
-            .flip()), is(16));
+            .putInt(0xbaddecaf), false), is(16L));
         clientQuicheConnection.feedFinForStream(0);
         drainClientToFeedServer(entry, 59);
 
@@ -210,7 +209,8 @@ public class LowLevelQuicheTest
 
         // server reads 16 bytes from stream 0
         boolean[] outLast = new boolean[1];
-        assertThat(serverQuicheConnection.drainClearBytesForStream(0, ByteBuffer.allocate(1000), outLast), is(16));
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1000, true);
+        assertThat(serverQuicheConnection.drainClearBytesForStream(0, buffer, outLast), is(16L));
 
         // assert that stream 0 is finished on server
         assertThat(outLast[0], is(true));

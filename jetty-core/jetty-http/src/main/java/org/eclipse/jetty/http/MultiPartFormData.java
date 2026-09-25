@@ -799,7 +799,7 @@ public class MultiPartFormData
                     SeekableByteChannel channel = fileChannel();
                     if (channel == null)
                         throw new IllegalStateException();
-                    long written = buffer.writeTo(channel::write);
+                    long written = buffer.read(channel::write);
                     if (written == 0)
                         throw new NonWritableChannelException();
                     remaining -= written;

@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-import java.util.List;
-
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.util.Promise;
@@ -53,7 +51,7 @@ public class StreamFrame extends Frame.WithStreamId implements Retainable
      * <p>Applications should use this constructor in conjunction with
      * {@link Session#newStream(long, Stream.Listener)}.
      * For subsequent data to be sent on the same stream, applications should use
-     * {@link Stream#data(boolean, java.util.List, org.eclipse.jetty.util.Promise.Invocable)},
+     * {@link Stream#data(boolean, RetainableByteBuffer, Promise.Invocable)},
      * so that the implementation can compute the {@code offset} on behalf of the application.</p>
      *
      * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}
@@ -68,7 +66,7 @@ public class StreamFrame extends Frame.WithStreamId implements Retainable
     /**
      * <p>Creates a stream frame with the given {@code offset} for a {@link Stream}.</p>
      * <p>Applications should not use this constructor, but instead use
-     * {@link Stream#data(boolean, List, Promise.Invocable)}.</p>
+     * {@link Stream#data(boolean, RetainableByteBuffer, Promise.Invocable)}.</p>
      *
      * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}
      * @param data the data bytes to send
@@ -83,7 +81,7 @@ public class StreamFrame extends Frame.WithStreamId implements Retainable
     /**
      * <p>Creates a stream frame for a {@link Stream}.</p>
      * <p>Applications should not use this constructor, but instead
-     * use {@link Stream#data(boolean, List, Promise.Invocable)}.</p>
+     * use {@link Stream#data(boolean, RetainableByteBuffer, Promise.Invocable)}.</p>
      *
      * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}
      * @param data the data bytes to send
@@ -99,7 +97,7 @@ public class StreamFrame extends Frame.WithStreamId implements Retainable
     /**
      * <p>Creates a stream frame for a {@link Stream}.</p>
      * <p>Applications should not use this constructor, but instead
-     * use {@link Stream#data(boolean, List, Promise.Invocable)}.</p>
+     * use {@link Stream#data(boolean, RetainableByteBuffer, Promise.Invocable)}.</p>
      *
      * @param frameType the frame type
      * @param streamId the stream id generated using {@link Session#newStreamId(boolean)}

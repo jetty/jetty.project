@@ -42,7 +42,7 @@ public class SingleMutableBufferTest
         assertEquals(0, b.remaining());
         assertThrows(BufferUnderflowException.class, b::getInt);
 
-        // Pad with 4 bytes: it's equivalent to a putInt().
+        // Pad with 4 bytes: it's equivalent to a putInt(0).
         b.pad(4);
         assertEquals(0, b.getInt());
     }
@@ -116,7 +116,7 @@ public class SingleMutableBufferTest
     {
         RetainableByteBuffer.Mutable b = RetainableByteBuffer.Mutable.allocate(10, false);
 
-        long read = b.readFrom(output ->
+        long read = b.write(output ->
         {
             output.put((byte)1);
             output.put((byte)2);
@@ -133,7 +133,7 @@ public class SingleMutableBufferTest
         assertEquals((byte)4, b.get());
         assertEquals(0L, b.remaining());
 
-        read = b.readFrom(_ -> -1);
+        read = b.write(_ -> -1);
         assertEquals(-1L, read);
     }
 
@@ -147,7 +147,7 @@ public class SingleMutableBufferTest
         );
 
         List<ByteBuffer> writtenByteBuffers = new ArrayList<>();
-        long written = b.writeTo(input ->
+        long written = b.read(input ->
         {
             long result = 0;
             assertEquals(0, input.position());

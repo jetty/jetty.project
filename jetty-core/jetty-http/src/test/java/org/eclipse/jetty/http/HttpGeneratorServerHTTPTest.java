@@ -18,12 +18,13 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.either;
@@ -207,7 +208,7 @@ public class HttpGeneratorServerHTTPTest
         {
             if (_content == null)
                 _content = "";
-            _content += BufferUtil.toString(ref);
+            _content += StringUtil.toString(ref, ISO_8859_1);
             ref.readPosition(ref.readPosition() + ref.remaining());
             return false;
         }

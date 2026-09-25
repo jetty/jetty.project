@@ -60,7 +60,11 @@ public class GzipCompression extends Compression
     {
         RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(length, true);
         // Per RFC-1952, GZIP is LITTLE_ENDIAN
-        buffer.byteOrder(ByteOrder.LITTLE_ENDIAN);
+        buffer.quietWrite(b ->
+        {
+            b.order(ByteOrder.LITTLE_ENDIAN);
+            return 0;
+        });
         return buffer;
     }
 

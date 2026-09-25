@@ -14,14 +14,15 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
@@ -39,7 +40,7 @@ public class HttpGeneratorServerTest
     public void test09() throws Exception
     {
         ByteBuffer header = BufferUtil.allocate(8096);
-        RetainableByteBuffer content = RetainableByteBuffer.wrap("0123456789", StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer content = RetainableByteBuffer.wrap("0123456789", ISO_8859_1);
 
         HttpGenerator gen = new HttpGenerator();
 
@@ -57,7 +58,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         String response = BufferUtil.toString(header);
         BufferUtil.clear(header);
-        response += BufferUtil.toString(content);
+        response += StringUtil.toString(content, ISO_8859_1);
         content.readPosition(content.readPosition() + content.remaining());
 
         result = gen.generateResponse(null, false, null, null, content, false);
@@ -76,7 +77,7 @@ public class HttpGeneratorServerTest
     public void testSimple() throws Exception
     {
         RetainableByteBuffer.Mutable header = RetainableByteBuffer.Mutable.allocate(8096, false);
-        RetainableByteBuffer content = RetainableByteBuffer.wrap("0123456789", StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer content = RetainableByteBuffer.wrap("0123456789", ISO_8859_1);
 
         HttpGenerator gen = new HttpGenerator();
 
@@ -95,8 +96,8 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(info, false, header, null, content, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        String response = BufferUtil.toString(header);
-        response += BufferUtil.toString(content);
+        String response = StringUtil.toString(header, ISO_8859_1);
+        response += StringUtil.toString(content, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, null, content, false);
         assertEquals(HttpGenerator.Result.DONE, result);
@@ -130,7 +131,7 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(info, false, header, null, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        String response = BufferUtil.toString(header);
+        String response = StringUtil.toString(header, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, null, null, false);
         assertEquals(HttpGenerator.Result.DONE, result);
@@ -164,7 +165,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         assertEquals(persistent, gen.isPersistent());
-        String response = BufferUtil.toString(header);
+        String response = StringUtil.toString(header, ISO_8859_1);
 
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("X-Padding: XXX"));
@@ -199,14 +200,14 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(info, false, header, null, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertTrue(gen.isPersistent());
-        assertThat(BufferUtil.toString(header), not(containsString("Connection: close")));
+        assertThat(StringUtil.toString(header, ISO_8859_1), not(containsString("Connection: close")));
     }
 
     @Test
     public void test204() throws Exception
     {
         RetainableByteBuffer.Mutable header = RetainableByteBuffer.Mutable.allocate(8096, false);
-        RetainableByteBuffer content = RetainableByteBuffer.wrap("0123456789", StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer content = RetainableByteBuffer.wrap("0123456789", ISO_8859_1);
 
         HttpGenerator gen = new HttpGenerator();
 
@@ -220,7 +221,7 @@ public class HttpGeneratorServerTest
         assertTrue(gen.isNoContent());
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        String responseheaders = BufferUtil.toString(header);
+        String responseheaders = StringUtil.toString(header, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, null, content, false);
         assertEquals(HttpGenerator.Result.DONE, result);
@@ -238,7 +239,7 @@ public class HttpGeneratorServerTest
     public void testComplexChars() throws Exception
     {
         RetainableByteBuffer.Mutable header = RetainableByteBuffer.Mutable.allocate(8096, false);
-        RetainableByteBuffer content = RetainableByteBuffer.wrap("0123456789", StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer content = RetainableByteBuffer.wrap("0123456789", ISO_8859_1);
 
         HttpGenerator gen = new HttpGenerator();
 
@@ -257,8 +258,8 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(info, false, header, null, content, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        String response = BufferUtil.toString(header);
-        response += BufferUtil.toString(content);
+        String response = StringUtil.toString(header, ISO_8859_1);
+        response += StringUtil.toString(content, ISO_8859_1);
         content = RetainableByteBuffer.empty();
 
         result = gen.generateResponse(null, false, null, null, content, false);
@@ -319,7 +320,7 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(info, false, header, null, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        String head = BufferUtil.toString(header);
+        String head = StringUtil.toString(header, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, null, null, false);
         assertEquals(HttpGenerator.Result.DONE, result);
@@ -353,7 +354,7 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(info, false, header, null, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        String head = BufferUtil.toString(header);
+        String head = StringUtil.toString(header, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, null, null, false);
         assertEquals(HttpGenerator.Result.SHUTDOWN_OUT, result);
@@ -385,7 +386,7 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(info, false, header, null, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        String head = BufferUtil.toString(header);
+        String head = StringUtil.toString(header, ISO_8859_1);
 
         result = gen.generateResponse(info, false, null, null, null, false);
         assertEquals(HttpGenerator.Result.DONE, result);
@@ -403,8 +404,8 @@ public class HttpGeneratorServerTest
     {
         RetainableByteBuffer.Mutable header = RetainableByteBuffer.Mutable.allocate(4096, false);
         RetainableByteBuffer.Mutable chunk = RetainableByteBuffer.Mutable.allocate(HttpGenerator.CHUNK_SIZE, false);
-        RetainableByteBuffer content0 = RetainableByteBuffer.wrap("Hello World! ", StandardCharsets.ISO_8859_1);
-        RetainableByteBuffer content1 = RetainableByteBuffer.wrap("The quick brown fox jumped over the lazy dog. ", StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer content0 = RetainableByteBuffer.wrap("Hello World! ", ISO_8859_1);
+        RetainableByteBuffer content1 = RetainableByteBuffer.wrap("The quick brown fox jumped over the lazy dog. ", ISO_8859_1);
         HttpGenerator gen = new HttpGenerator();
 
         HttpGenerator.Result result = gen.generateResponse(null, false, null, null, content0, false);
@@ -422,15 +423,15 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
 
-        String out = BufferUtil.toString(header);
-        out += BufferUtil.toString(content0);
+        String out = StringUtil.toString(header, ISO_8859_1);
+        out += StringUtil.toString(content0, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, chunk, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
-        out += BufferUtil.toString(chunk);
+        out += StringUtil.toString(chunk, ISO_8859_1);
         chunk.clear();
-        out += BufferUtil.toString(content1);
+        out += StringUtil.toString(content1, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
@@ -439,7 +440,7 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(null, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        out += BufferUtil.toString(chunk);
+        out += StringUtil.toString(chunk, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.DONE, result);
@@ -464,8 +465,8 @@ public class HttpGeneratorServerTest
     {
         RetainableByteBuffer.Mutable header = RetainableByteBuffer.Mutable.allocate(4096, false);
         RetainableByteBuffer.Mutable chunk = RetainableByteBuffer.Mutable.allocate(HttpGenerator.CHUNK_SIZE, false);
-        RetainableByteBuffer content0 = RetainableByteBuffer.wrap("Hello World! ", StandardCharsets.ISO_8859_1);
-        RetainableByteBuffer content1 = RetainableByteBuffer.wrap("The quick brown fox jumped over the lazy dog. ", StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer content0 = RetainableByteBuffer.wrap("Hello World! ", ISO_8859_1);
+        RetainableByteBuffer content1 = RetainableByteBuffer.wrap("The quick brown fox jumped over the lazy dog. ", ISO_8859_1);
         HttpGenerator gen = new HttpGenerator();
         gen.setPersistent(false);
 
@@ -485,8 +486,8 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
 
-        String out = BufferUtil.toString(header);
-        out += BufferUtil.toString(content0);
+        String out = StringUtil.toString(header, ISO_8859_1);
+        out += StringUtil.toString(content0, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, null, content1, false);
         assertEquals(HttpGenerator.Result.NEED_CHUNK, result);
@@ -494,9 +495,9 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(null, false, null, chunk, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
-        out += BufferUtil.toString(chunk);
+        out += StringUtil.toString(chunk, ISO_8859_1);
         chunk.clear();
-        out += BufferUtil.toString(content1);
+        out += StringUtil.toString(content1, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
@@ -505,7 +506,7 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(null, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        out += BufferUtil.toString(chunk);
+        out += StringUtil.toString(chunk, ISO_8859_1);
         chunk.clear();
 
         result = gen.generateResponse(null, false, null, chunk, null, true);
@@ -532,8 +533,8 @@ public class HttpGeneratorServerTest
         RetainableByteBuffer.Mutable header = RetainableByteBuffer.Mutable.allocate(4096, false);
         RetainableByteBuffer.Mutable chunk = RetainableByteBuffer.Mutable.allocate(HttpGenerator.CHUNK_SIZE, false);
         RetainableByteBuffer.Mutable trailer = RetainableByteBuffer.Mutable.allocate(4096, false);
-        RetainableByteBuffer content0 = RetainableByteBuffer.wrap("Hello World! ", StandardCharsets.ISO_8859_1);
-        RetainableByteBuffer content1 = RetainableByteBuffer.wrap("The quick brown fox jumped over the lazy dog. ", StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer content0 = RetainableByteBuffer.wrap("Hello World! ", ISO_8859_1);
+        RetainableByteBuffer content1 = RetainableByteBuffer.wrap("The quick brown fox jumped over the lazy dog. ", ISO_8859_1);
         HttpGenerator gen = new HttpGenerator();
         gen.setPersistent(false);
 
@@ -562,8 +563,8 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
 
-        String out = BufferUtil.toString(header);
-        out += BufferUtil.toString(content0);
+        String out = StringUtil.toString(header, ISO_8859_1);
+        out += StringUtil.toString(content0, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, null, content1, false);
         assertEquals(HttpGenerator.Result.NEED_CHUNK, result);
@@ -571,9 +572,9 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(null, false, null, chunk, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
-        out += BufferUtil.toString(chunk);
+        out += StringUtil.toString(chunk, ISO_8859_1);
         chunk.clear();
-        out += BufferUtil.toString(content1);
+        out += StringUtil.toString(content1, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
@@ -588,7 +589,7 @@ public class HttpGeneratorServerTest
 
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        out += BufferUtil.toString(trailer);
+        out += StringUtil.toString(trailer, ISO_8859_1);
         trailer.clear();
 
         result = gen.generateResponse(null, false, null, trailer, null, true);
@@ -646,7 +647,7 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
 
-        String out = BufferUtil.toString(header);
+        String out = StringUtil.toString(header, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_CHUNK_TRAILER, result);
@@ -660,7 +661,7 @@ public class HttpGeneratorServerTest
 
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        out += BufferUtil.toString(trailer);
+        out += StringUtil.toString(trailer, ISO_8859_1);
         trailer.clear();
 
         result = gen.generateResponse(null, false, null, trailer, null, true);
@@ -685,8 +686,8 @@ public class HttpGeneratorServerTest
     public void testResponseWithKnownContentLengthFromMetaData() throws Exception
     {
         RetainableByteBuffer.Mutable header = RetainableByteBuffer.Mutable.allocate(4096, false);
-        RetainableByteBuffer content0 = RetainableByteBuffer.wrap("Hello World! ", StandardCharsets.ISO_8859_1);
-        RetainableByteBuffer content1 = RetainableByteBuffer.wrap("The quick brown fox jumped over the lazy dog. ", StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer content0 = RetainableByteBuffer.wrap("Hello World! ", ISO_8859_1);
+        RetainableByteBuffer content1 = RetainableByteBuffer.wrap("The quick brown fox jumped over the lazy dog. ", ISO_8859_1);
         HttpGenerator gen = new HttpGenerator();
 
         HttpGenerator.Result result = gen.generateResponse(null, false, null, null, content0, false);
@@ -704,14 +705,14 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
 
-        String out = BufferUtil.toString(header);
-        out += BufferUtil.toString(content0);
+        String out = StringUtil.toString(header, ISO_8859_1);
+        out += StringUtil.toString(content0, ISO_8859_1);
         content0.readPosition(0);
 
         result = gen.generateResponse(null, false, null, null, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
-        out += BufferUtil.toString(content1);
+        out += StringUtil.toString(content1, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
@@ -732,8 +733,8 @@ public class HttpGeneratorServerTest
     public void testResponseWithKnownContentLengthFromHeader() throws Exception
     {
         RetainableByteBuffer.Mutable header = RetainableByteBuffer.Mutable.allocate(4096, false);
-        RetainableByteBuffer content0 = RetainableByteBuffer.wrap("Hello World! ", StandardCharsets.ISO_8859_1);
-        RetainableByteBuffer content1 = RetainableByteBuffer.wrap("The quick brown fox jumped over the lazy dog. ", StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer content0 = RetainableByteBuffer.wrap("Hello World! ", ISO_8859_1);
+        RetainableByteBuffer content1 = RetainableByteBuffer.wrap("The quick brown fox jumped over the lazy dog. ", ISO_8859_1);
         HttpGenerator gen = new HttpGenerator();
 
         HttpGenerator.Result result = gen.generateResponse(null, false, null, null, content0, false);
@@ -752,14 +753,14 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
 
-        String out = BufferUtil.toString(header);
-        out += BufferUtil.toString(content0);
+        String out = StringUtil.toString(header, ISO_8859_1);
+        out += StringUtil.toString(content0, ISO_8859_1);
         content0.readPosition(0);
 
         result = gen.generateResponse(null, false, null, null, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
-        out += BufferUtil.toString(content1);
+        out += StringUtil.toString(content1, ISO_8859_1);
         content1.readPosition(0);
 
         result = gen.generateResponse(null, false, null, null, null, true);
@@ -781,8 +782,8 @@ public class HttpGeneratorServerTest
     public void test100ThenResponseWithContent() throws Exception
     {
         RetainableByteBuffer.Mutable header = RetainableByteBuffer.Mutable.allocate(4096, false);
-        RetainableByteBuffer content0 = RetainableByteBuffer.wrap("Hello World! ", StandardCharsets.ISO_8859_1);
-        RetainableByteBuffer content1 = RetainableByteBuffer.wrap("The quick brown fox jumped over the lazy dog. ", StandardCharsets.ISO_8859_1);
+        RetainableByteBuffer content0 = RetainableByteBuffer.wrap("Hello World! ", ISO_8859_1);
+        RetainableByteBuffer content1 = RetainableByteBuffer.wrap("The quick brown fox jumped over the lazy dog. ", ISO_8859_1);
         HttpGenerator gen = new HttpGenerator();
 
         HttpGenerator.Result result = gen.generateResponse(HttpGenerator.CONTINUE_100_INFO, false, null, null, null, false);
@@ -792,7 +793,7 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(HttpGenerator.CONTINUE_100_INFO, false, header, null, null, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING_1XX, gen.getState());
-        String out = BufferUtil.toString(header);
+        String out = StringUtil.toString(header, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, null, null, false);
         assertEquals(HttpGenerator.Result.DONE, result);
@@ -815,13 +816,13 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
 
-        out = BufferUtil.toString(header);
-        out += BufferUtil.toString(content0);
+        out = StringUtil.toString(header, ISO_8859_1);
+        out += StringUtil.toString(content0, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, null, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
-        out += BufferUtil.toString(content1);
+        out += StringUtil.toString(content1, ISO_8859_1);
 
         result = gen.generateResponse(null, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.CONTINUE, result);
@@ -852,7 +853,7 @@ public class HttpGeneratorServerTest
         RetainableByteBuffer.Mutable header = RetainableByteBuffer.Mutable.allocate(4096, false);
         HttpGenerator.Result result = generator.generateResponse(info, false, header, null, null, true);
         assertSame(HttpGenerator.Result.FLUSH, result);
-        String headers = BufferUtil.toString(header);
+        String headers = StringUtil.toString(header, ISO_8859_1);
         assertThat(headers, containsString(HttpHeaderValue.KEEP_ALIVE.asString()));
         assertThat(headers, containsString(customValue));
     }
@@ -869,7 +870,7 @@ public class HttpGeneratorServerTest
         RetainableByteBuffer.Mutable header = RetainableByteBuffer.Mutable.allocate(4096, false);
         HttpGenerator.Result result = generator.generateResponse(info, false, header, null, null, false);
         assertSame(HttpGenerator.Result.FLUSH, result);
-        String headers = BufferUtil.toString(header);
+        String headers = StringUtil.toString(header, ISO_8859_1);
         // System.err.println(headers);
         assertThat(headers, not(containsString("keep-alive")));
     }
@@ -884,7 +885,7 @@ public class HttpGeneratorServerTest
         RetainableByteBuffer.Mutable header = RetainableByteBuffer.Mutable.allocate(4096, false);
         HttpGenerator.Result result = generator.generateResponse(info, false, header, null, null, true);
         assertSame(HttpGenerator.Result.FLUSH, result);
-        String headers = BufferUtil.toString(header);
+        String headers = StringUtil.toString(header, ISO_8859_1);
         assertThat(headers, containsString("Connection: other, close\r\n"));
         assertThat(headers, not(containsString("keep-alive")));
     }

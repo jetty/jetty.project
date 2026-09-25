@@ -61,6 +61,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -81,7 +82,6 @@ import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -2118,9 +2118,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
-        int capacity = buffer.capacity();
-        buffer.release();
+        int capacity = getRequestBufferCapacity();
         client.setMaxRequestHeadersSize(3 * capacity);
         connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setRequestHeaderSize(3 * capacity);
 
@@ -2150,9 +2148,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         HttpConfiguration httpConfig = connector.getBean(HttpConnectionFactory.class).getHttpConfiguration();
-        org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(httpConfig.getResponseHeaderSize(), false);
-        int capacity = buffer.capacity();
-        buffer.release();
+        int capacity = getResponseBufferCapacity();
         httpConfig.setMaxResponseHeaderSize(3 * capacity);
         client.setMaxResponseHeadersSize(3 * capacity);
 
@@ -2171,9 +2167,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
-        int capacity = buffer.capacity();
-        buffer.release();
+        int capacity = getRequestBufferCapacity();
         client.setMaxRequestHeadersSize(2 * capacity);
         connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setRequestHeaderSize(4 * capacity);
 
@@ -2191,9 +2185,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
-        int capacity = buffer.capacity();
-        buffer.release();
+        int capacity = getRequestBufferCapacity();
         client.setMaxRequestHeadersSize(capacity / 4);
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
@@ -2228,9 +2220,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         HttpConfiguration httpConfig = connector.getBean(HttpConnectionFactory.class).getHttpConfiguration();
-        org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(httpConfig.getResponseHeaderSize(), false);
-        int capacity = buffer.capacity();
-        buffer.release();
+        int capacity = getResponseBufferCapacity();
         httpConfig.setMaxResponseHeaderSize(2 * capacity);
         client.setMaxResponseHeadersSize(4 * capacity);
 
@@ -2368,6 +2358,25 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 break;
             if (read < 0)
                 break;
+        }
+    }
+
+    private int getRequestBufferCapacity()
+    {
+        WritableBufferPool bufferPool = WritableBufferPool.wrap(client.getByteBufferPool());
+        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(client.getRequestBufferSize(), false))
+        {
+            return (int)buffer.capacity();
+        }
+    }
+
+    private int getResponseBufferCapacity()
+    {
+        HttpConfiguration httpConfig = connector.getBean(HttpConnectionFactory.class).getHttpConfiguration();
+        WritableBufferPool bufferPool = WritableBufferPool.wrap(server.getByteBufferPool());
+        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(httpConfig.getResponseHeaderSize(), false))
+        {
+            return (int)buffer.capacity();
         }
     }
 

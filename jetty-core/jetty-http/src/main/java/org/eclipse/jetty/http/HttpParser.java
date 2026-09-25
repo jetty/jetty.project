@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.NanoTime;
@@ -1443,7 +1442,7 @@ public class HttpParser
                                         if (CASE_SENSITIVE_FIELD_NAME.isAllowedBy(_complianceMode))
                                         {
                                             // Have to get the fields exactly from the buffer to match case
-                                            String en = BufferUtil.toString(buffer, buffer.readPosition() - 1, n.length(), StandardCharsets.US_ASCII);
+                                            String en = buffer.getString(buffer.readPosition() - 1, n.length(), StandardCharsets.US_ASCII);
                                             if (!n.equals(en))
                                             {
                                                 reportComplianceViolation(CASE_SENSITIVE_FIELD_NAME, en);
@@ -1454,7 +1453,7 @@ public class HttpParser
 
                                         if (isHeaderCacheCaseSensitive())
                                         {
-                                            String ev = BufferUtil.toString(buffer, buffer.readPosition() + n.length() + 1, v.length(), StandardCharsets.ISO_8859_1);
+                                            String ev = buffer.getString(buffer.readPosition() + n.length() + 1, v.length(), StandardCharsets.ISO_8859_1);
                                             if (!v.equals(ev))
                                             {
                                                 v = ev;

@@ -46,6 +46,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
@@ -613,7 +614,7 @@ public class RetainableByteBufferTest
             @Override
             public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
             {
-                out.append(BufferUtil.toString(buffer));
+                out.append(StringUtil.toString(buffer, ISO_8859_1));
                 buffer.readPosition(buffer.readPosition() + buffer.remaining());
                 callback.succeeded();
             }
@@ -651,7 +652,7 @@ public class RetainableByteBufferTest
         {
             Callback.Completable callback = new Callback.Completable();
             buffer.writeTo(endPoint, false, callback);
-            endPoint.write(true, RetainableByteBuffer.wrap(" OK!", StandardCharsets.ISO_8859_1), Callback.NOOP);
+            endPoint.write(true, RetainableByteBuffer.wrap(" OK!", ISO_8859_1), Callback.NOOP);
             callback.get(5, TimeUnit.SECONDS);
         }
 
@@ -672,7 +673,7 @@ public class RetainableByteBufferTest
             @Override
             public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
             {
-                out.append(BufferUtil.toString(buffer));
+                out.append(StringUtil.toString(buffer, ISO_8859_1));
                 buffer.readPosition(buffer.readPosition() + buffer.remaining());
                 callback.succeeded();
             }
@@ -1095,7 +1096,7 @@ public class RetainableByteBufferTest
         FutureCallback callback = new FutureCallback();
         buffer.writeTo(Content.Sink.from(out), true, callback);
         callback.get(5, TimeUnit.SECONDS);
-        assertThat(out.toString(StandardCharsets.ISO_8859_1), is("Hello World!"));
+        assertThat(out.toString(ISO_8859_1), is("Hello World!"));
         buffer.release();
     }
 
@@ -1115,7 +1116,7 @@ public class RetainableByteBufferTest
         FutureCallback callback = new FutureCallback();
         buffer.writeTo(Content.Sink.from(out), true, callback);
         callback.get(5, TimeUnit.SECONDS);
-        assertThat(out.toString(StandardCharsets.ISO_8859_1), is("Hello World!"));
+        assertThat(out.toString(ISO_8859_1), is("Hello World!"));
 
         buffer.release();
         assertTrue(released.await(5, TimeUnit.SECONDS));

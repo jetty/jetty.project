@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -362,18 +360,19 @@ public class DataDemandTest extends AbstractTest
         // which will test that it won't throw StackOverflowError.
         WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         Generator generator = new Generator(bufferPool);
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         for (int i = 512; i >= 0; --i)
+        {
             generator.data(accumulator, new DataFrame(clientStream.getId(), RetainableByteBuffer.allocate(1, false), i == 0), 1);
+        }
 
         // Since this is a naked write, we need to wait that the
         // client finishes writing the SETTINGS reply to the server
         // during connection initialization, or we risk a WritePendingException.
         Thread.sleep(1000);
-        try (RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator))
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
-            accumulator.forEach(RetainableByteBuffer::release);
-            ((HTTP2Session)clientStream.getSession()).getEndPoint().write(rb, Callback.NOOP);
+            ((HTTP2Session)clientStream.getSession()).getEndPoint().write(buffer, Callback.NOOP);
         }
 
         assertTrue(latch.await(15, TimeUnit.SECONDS));
