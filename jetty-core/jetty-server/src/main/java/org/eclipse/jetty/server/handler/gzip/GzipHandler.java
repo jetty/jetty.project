@@ -84,6 +84,7 @@ public class GzipHandler extends Handler.Wrapper implements GzipFactory
         super(handler);
         _methods.include(HttpMethod.GET.asString());
         _methods.include(HttpMethod.POST.asString());
+        _methods.include(HttpMethod.QUERY.asString());
         for (String type : MimeTypes.DEFAULTS.getMimeMap().values())
         {
             if ("image/svg+xml".equals(type))

@@ -713,6 +713,50 @@ public class RequestTest
             """));
     }
 
+    @Test
+    public void testQueryParameters() throws Exception
+    {
+        final AtomicReference<String> parameterMap = new AtomicReference<>();
+
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse resp) throws IOException
+            {
+                parameterMap.set(request.getParameterMap().toString());
+                PrintWriter out = resp.getWriter();
+                out.println(request.getParameter("a"));
+                out.println(request.getParameterValues("a")[1]);
+                out.println(request.getParameterValues("a")[2]);
+                out.println(Arrays.asList(request.getParameterValues("b")));
+                out.println(Arrays.asList(request.getParameterValues("c")));
+                out.println(Arrays.asList(request.getParameterValues("d")));
+            }
+        });
+
+        String rawResponse = _connector.getResponse(
+            """
+                QUERY /test/parameters?a=1&a=2&b=one&c= HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                Content-Type: application/x-www-form-urlencoded\r
+                Content-Length: 23\r
+                \r
+                a=3&b=two&b=three&d=xyz\r
+                """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(parameterMap.get(), is("{a=[1, 2, 3],b=[one, two, three],c=[],d=[xyz]}"));
+        assertThat(response.getContent().replace("\r\n", "\n"), is("""
+            1
+            2
+            3
+            [one, two, three]
+            []
+            [xyz]
+            """));
+    }
+
     static Stream<Arguments> suspiciousCharactersLegacy()
     {
         return Stream.of(
