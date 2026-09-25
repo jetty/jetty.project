@@ -67,10 +67,10 @@ public class ZstandardDecoderSource extends DecoderSource
             {
                 boolean last = inputChunk.isLast();
                 boolean[] fullyFlushed = new boolean[1];
-                input.quietWriteTo(in ->
+                input.quietRead(in ->
                 {
                     int r = in.remaining();
-                    output.readFrom(out ->
+                    output.write(out ->
                     {
                         int p = out.position();
                         fullyFlushed[0] = decompressCtx.decompressDirectByteBufferStream(out, in);

@@ -65,7 +65,7 @@ public class PathBuffer implements RetainableByteBuffer
             throw new BufferUnderflowException();
 
         Mutable buffer = bufferPool.acquire(length);
-        buffer.quietReadFrom(output ->
+        buffer.quietWrite(output ->
         {
             output.limit(length);
             try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ))
@@ -230,13 +230,13 @@ public class PathBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public long writeTo(Target target) throws IOException
+    public long read(Reader reader) throws IOException
     {
-        if (target instanceof TransferringTarget transferringTarget)
+        if (reader instanceof TransferringReader transferringReader)
         {
             try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ))
             {
-                long transferred = transferringTarget.write(fileChannel, offset + position, remaining());
+                long transferred = transferringReader.readFrom(fileChannel, offset + position, remaining());
                 position += transferred;
                 return transferred;
             }
@@ -249,7 +249,7 @@ public class PathBuffer implements RetainableByteBuffer
             long totalWritten = 0L;
             while (true)
             {
-                long read = fileBuffer.readFrom(b ->
+                long read = fileBuffer.write(b ->
                 {
                     long remaining = remaining();
                     if (remaining == 0)
@@ -268,7 +268,7 @@ public class PathBuffer implements RetainableByteBuffer
                 if (read < 0)
                     throw new EOFException();
 
-                long written = fileBuffer.writeTo(target);
+                long written = fileBuffer.read(reader);
 
                 totalWritten += written;
                 position += written;

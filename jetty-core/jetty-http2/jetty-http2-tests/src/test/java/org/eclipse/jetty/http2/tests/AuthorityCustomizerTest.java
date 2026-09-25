@@ -70,7 +70,7 @@ public class AuthorityCustomizerTest extends AbstractServerTest
         {
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
             CountDownLatch latch = new CountDownLatch(1);

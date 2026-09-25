@@ -256,7 +256,7 @@ public class ServerConnectorTest
             {
                 HttpTester.Request request = HttpTester.newRequest();
                 request.put(HttpHeader.HOST, "localhost");
-                request.generate().writeTo(client::write);
+                request.generate().read(client::write);
                 HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
                 assertNotNull(response);
                 assertEquals(HttpStatus.OK_200, response.getStatus());

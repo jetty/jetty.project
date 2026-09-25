@@ -174,7 +174,7 @@ public class PathBufferTest
         long totalWritten = 0L;
         for (int i = 0; i < 20; i++)
         {
-            totalWritten += rb.writeTo(input ->
+            totalWritten += rb.read(input ->
             {
                 int written = targetFc.write(input.slice().limit(1));
                 input.position(input.position() + written);
@@ -198,16 +198,16 @@ public class PathBufferTest
         Path testResourcePathFile = MavenTestingUtils.getTestResourcePathFile("resource.txt");
         RetainableByteBuffer rb = RetainableByteBuffer.wrap(testResourcePathFile, WritableBufferPool.SIZED_NON_POOLING);
 
-        long written = rb.writeTo(new RetainableByteBuffer.TransferringTarget()
+        long written = rb.read(new RetainableByteBuffer.TransferringReader()
         {
             @Override
-            public long write(FileChannel input, long position, long count) throws IOException
+            public long readFrom(FileChannel input, long position, long count) throws IOException
             {
                 return input.transferTo(position, count, targetFc);
             }
 
             @Override
-            public long write(ByteBuffer input) throws IOException
+            public long readFrom(ByteBuffer input) throws IOException
             {
                 throw new IOException("Should not be called");
             }
@@ -236,7 +236,7 @@ public class PathBufferTest
         RetainableByteBuffer acc = RetainableByteBuffer.merge(b1, b2, b3);
 
         StringBuilder sb = new StringBuilder();
-        long written = acc.writeTo(input ->
+        long written = acc.read(input ->
         {
             String string = BufferUtil.toString(input, StandardCharsets.UTF_8);
             input.position(input.position() + string.length());

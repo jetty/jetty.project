@@ -193,7 +193,7 @@ public class ClientQuicheConnection extends QuicheConnection
                     LOG.debug("peer ip address: {}, ciphertext packet size: {}", remoteAddress, buffer.remaining());
 
                 QuicheConnectionId[] result = new QuicheConnectionId[1];
-                buffer.writeTo(b ->
+                buffer.read(b ->
                 {
                     result[0] = QuicheConnectionId.fromPacket(b);
                     return 0;

@@ -296,7 +296,7 @@ public class Parser
             return new Frame.Parsed(firstByte, mask, null, releaser);
 
         Frame.Parsed[] result = new Frame.Parsed[1];
-        payload.quietWriteTo(b ->
+        payload.quietRead(b ->
         {
             result[0] = new Frame.Parsed(firstByte, mask, b, releaser);
             return b.remaining();

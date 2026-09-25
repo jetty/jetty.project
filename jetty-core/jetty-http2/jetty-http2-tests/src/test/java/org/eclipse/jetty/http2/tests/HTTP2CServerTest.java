@@ -201,7 +201,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             generator.control(accumulator, new HeadersFrame(3, metaData, null, true));
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(in -> BufferUtil.writeTo(in, client.getOutputStream()));
+            rb.read(in -> BufferUtil.writeTo(in, client.getOutputStream()));
             rb.release();
             output.flush();
 
@@ -244,7 +244,7 @@ public class HTTP2CServerTest extends AbstractServerTest
 
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
             final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
@@ -337,7 +337,7 @@ public class HTTP2CServerTest extends AbstractServerTest
 
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
             // We sent an HTTP/2 preface, but the server has no "h2c" connection

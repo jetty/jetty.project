@@ -20,7 +20,10 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ReadOnlyBufferException;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.FileChannel;
+import java.nio.channels.GatheringByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -370,7 +373,7 @@ public interface RetainableByteBuffer extends Retainable
     {
         int length = Math.toIntExact(remaining());
         ByteBuffer result = direct ? ByteBuffer.allocateDirect(length) : ByteBuffer.allocate(length);
-        quietWriteTo(b ->
+        quietRead(b ->
         {
             int r = b.remaining();
             result.put(b);
@@ -448,18 +451,18 @@ public interface RetainableByteBuffer extends Retainable
         }
     }
 
-    /// Offers the contents of this buffer to be read by the given [Target].
+    /// Offers the contents of this buffer to be read by the given [Reader].
     ///
-    /// @param target the [Target] that reads this buffer
+    /// @param reader the [Reader] that reads this buffer
     /// @return the number of bytes read
     /// @throws IOException when an IOException occurs
-    long writeTo(Target target) throws IOException;
+    long read(Reader reader) throws IOException;
 
-    default long quietWriteTo(Target target)
+    default long quietRead(Reader reader)
     {
         try
         {
-            return writeTo(target);
+            return read(reader);
         }
         catch (IOException e)
         {
@@ -480,7 +483,7 @@ public interface RetainableByteBuffer extends Retainable
     /// @return the number of bytes copied
     default int putTo(ByteBuffer output)
     {
-        return Math.toIntExact(quietWriteTo(b ->
+        return Math.toIntExact(quietRead(b ->
         {
             int r = b.remaining();
             output.put(b);
@@ -501,7 +504,7 @@ public interface RetainableByteBuffer extends Retainable
     /// @return the number of bytes copied
     default int appendTo(ByteBuffer output)
     {
-        return Math.toIntExact(quietWriteTo(b ->
+        return Math.toIntExact(quietRead(b ->
         {
             int remaining = b.remaining();
             int space = output.remaining();
@@ -521,57 +524,53 @@ public interface RetainableByteBuffer extends Retainable
         }));
     }
 
-    /**
-     * Base interface of the Target (i.e.: byte destination) used to flush a ReadableBuffer via the NIO ByteBuffer API.
-     */
-    // TODO: rename to Reader? And Fount to Writer?
-    interface Target
+    /// Base interface to read from this buffer via its internal [ByteBuffer]\(s).
+    ///
+    /// This interface is used to bridge this buffer to APIs that work with [ByteBuffer],
+    /// such as [ByteChannel#write(ByteBuffer)].
+    ///
+    /// If this buffer contains multiple [ByteBuffer]s, the reader is invoked multiple times.
+    interface Reader
     {
-        /// Implementations get bytes from the given [ByteBuffer].
+        /// Implementations read bytes from the given [ByteBuffer].
         ///
         /// This method may be called multiple times if it wraps multiple [ByteBuffer]s.
         ///
-        ///
-        ///
-        /// Note that this method can be called more than once if the `input` byte buffer
-        /// is depleted, for instance, if the WritableBuffer is backed by more than one NIO ByteBuffer.
-        ///
-        /// @param input the buffer to be written
+        /// @param input the [ByteBuffer] to be read
+        /// @return the number of bytes read
         /// @throws IOException when IOException occurs
-        long write(ByteBuffer input) throws IOException;
+        long readFrom(ByteBuffer input) throws IOException;
     }
 
-    /**
-     * Interface of the Target (i.e.: byte destination) used to flush a ReadableBuffer via the NIO ByteBuffer API when the
-     * target supports gathering writes.
-     */
-    interface GatheringTarget extends Target
+    /// Specialized interface to read from this buffer from its internal [ByteBuffer]s at once.
+    ///
+    /// This interface is used to bridge this buffer to APIs that work with multiple [ByteBuffer]s,
+    /// such as [GatheringByteChannel#write(ByteBuffer\[\], int, int)].
+    interface GatheringReader extends Reader
     {
-        /**
-         * Flushes a given NIO ByteBuffer array.
-         *
-         * @param inputs the buffer to be written
-         * @throws IOException when IOException occurs
-         */
-        long write(ByteBuffer[] inputs, int offset, int length) throws IOException;
+        /// Implementations read bytes from the given [ByteBuffer]s.
+        ///
+        /// @param inputs the array of [ByteBuffer]s to be read
+        /// @param offset the index of the array containing the first [ByteBuffer] to read
+        /// @param length the number of [ByteBuffer] to read
+        /// @throws IOException when IOException occurs
+        long readFrom(ByteBuffer[] inputs, int offset, int length) throws IOException;
     }
 
-    /**
-     * Interface of the Target (i.e.: byte destination) used to flush a ReadableBuffer backed by a FileChannel.
-     * This is meant to be used when the target can perform the copy via NIO FileChannel.transferTo().
-     */
-    interface TransferringTarget extends Target
+    /// Specialized interface to read from this buffer via its internal [FileChannel].
+    ///
+    /// This interface is used to bridge this buffer to APIs that work with [FileChannel],
+    /// such as [FileChannel#transferTo(long, long, WritableByteChannel)].
+    interface TransferringReader extends Reader
     {
-        /**
-         * Flushes a given FileChannel from the given position, up to the given count.
-         *
-         * @param input the source FileChannel
-         * @param position the position in the source FileChannel; always non-negative
-         * @param count the maximum number of bytes to be transferred; always non-negative
-         * @return the number of bytes that were transferred
-         * @throws IOException when IOException occurs
-         */
-        long write(FileChannel input, long position, long count) throws IOException;
+        /// Implementations transfer bytes from the given [FileChannel].
+        ///
+        /// @param input the [FileChannel] to transfer from
+        /// @param position the position in the [FileChannel] to start transfer from, must be non-negative
+        /// @param count the maximum number of bytes to be transferred, must be non-negative
+        /// @return the number of transferred bytes
+        /// @throws IOException when IOException occurs
+        long readFrom(FileChannel input, long position, long count) throws IOException;
     }
 
     /**
@@ -798,19 +797,19 @@ public interface RetainableByteBuffer extends Retainable
         Mutable clear();
 
         /**
-         * Fills this buffer with the given Fount.
+         * Fills this buffer with the given Writer.
          *
-         * @param fount the fount
+         * @param writer the writer
          * @return the # of bytes read, or -1 if EOF was reached
          * @throws IOException when an IOException occurs
          */
-        long readFrom(Fount fount) throws IOException;
+        long write(Writer writer) throws IOException;
 
-        default long quietReadFrom(Fount fount)
+        default long quietWrite(Writer writer)
         {
             try
             {
-                return readFrom(fount);
+                return write(writer);
             }
             catch (IOException e)
             {
@@ -818,16 +817,18 @@ public interface RetainableByteBuffer extends Retainable
             }
         }
 
-        /**
-         * Base interface of the Fount (i.e.: byte source) used to fill a WritableBuffer via the NIO ByteBuffer API.
-         */
-        interface Fount
+        /// Base interface to write into this buffer via its internal [ByteBuffer].
+        ///
+        /// This interface is used to bridge this buffer to APIs that work with [ByteBuffer],
+        /// such as [ByteChannel#read(ByteBuffer)].
+        interface Writer
         {
-            /// Implementations put bytes into the given [ByteBuffer].
+            /// Implementations write bytes into the given [ByteBuffer].
             ///
             /// @param output the [ByteBuffer] to write into
             /// @return the number of bytes written
-            long read(ByteBuffer output) throws IOException;
+            /// @throws IOException when IOException occurs
+            long writeTo(ByteBuffer output) throws IOException;
         }
     }
 }

@@ -120,7 +120,7 @@ public class BadURITest
         {
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
             // Wait for the first request be processed on the server.
@@ -140,7 +140,7 @@ public class BadURITest
             generator.control(accumulator, new HeadersFrame(3, metaData2, null, true));
             rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
             assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
         }

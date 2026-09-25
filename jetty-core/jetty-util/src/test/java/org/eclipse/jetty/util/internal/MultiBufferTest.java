@@ -672,10 +672,10 @@ public class MultiBufferTest
         RetainableByteBuffer acc = RetainableByteBuffer.merge(List.of());
 
         AtomicInteger writeCount = new AtomicInteger();
-        long written = acc.writeTo(new TestGatheringTarget()
+        long written = acc.read(new TestGatheringReader()
         {
             @Override
-            public long write(FileChannel input, long position, long count)
+            public long readFrom(FileChannel input, long position, long count)
             {
                 assertEquals(0L, count);
                 writeCount.incrementAndGet();
@@ -683,7 +683,7 @@ public class MultiBufferTest
             }
 
             @Override
-            public long write(ByteBuffer[] inputs, int offset, int length)
+            public long readFrom(ByteBuffer[] inputs, int offset, int length)
             {
                 long totalRemaining = Arrays.stream(inputs, offset, offset + length).mapToLong(ByteBuffer::remaining).sum();
                 assertEquals(0L, totalRemaining);
@@ -692,7 +692,7 @@ public class MultiBufferTest
             }
 
             @Override
-            public long write(ByteBuffer input)
+            public long readFrom(ByteBuffer input)
             {
                 assertEquals(0L, input.remaining());
                 writeCount.incrementAndGet();
@@ -719,10 +719,10 @@ public class MultiBufferTest
         assertEquals(16, acc.remaining());
 
         List<Integer> writtenIntegers = new ArrayList<>();
-        long written = acc.writeTo(new RetainableByteBuffer.GatheringTarget()
+        long written = acc.read(new RetainableByteBuffer.GatheringReader()
         {
             @Override
-            public long write(ByteBuffer[] inputs, int offset, int length)
+            public long readFrom(ByteBuffer[] inputs, int offset, int length)
             {
                 long result = 0;
                 for (int i = offset; i < offset + length; ++i)
@@ -738,7 +738,7 @@ public class MultiBufferTest
             }
 
             @Override
-            public long write(ByteBuffer input)
+            public long readFrom(ByteBuffer input)
             {
                 fail("gathering write should have been called instead");
                 return -1;
@@ -782,10 +782,10 @@ public class MultiBufferTest
         assertEquals(52, acc.remaining());
 
         List<Object> writtenObjects = new ArrayList<>();
-        long written = acc.writeTo(new TestGatheringTarget()
+        long written = acc.read(new TestGatheringReader()
         {
             @Override
-            public long write(FileChannel input, long position, long count) throws IOException
+            public long readFrom(FileChannel input, long position, long count) throws IOException
             {
                 ByteBuffer bb = ByteBuffer.allocate((int)count);
                 input.read(bb, position);
@@ -796,7 +796,7 @@ public class MultiBufferTest
             }
 
             @Override
-            public long write(ByteBuffer[] inputs, int offset, int length)
+            public long readFrom(ByteBuffer[] inputs, int offset, int length)
             {
                 long result = 0;
                 for (int i = offset; i < offset + length; ++i)
@@ -812,7 +812,7 @@ public class MultiBufferTest
             }
 
             @Override
-            public long write(ByteBuffer input)
+            public long readFrom(ByteBuffer input)
             {
                 fail("gathering write should have been called instead");
                 return -1;
@@ -834,7 +834,7 @@ public class MultiBufferTest
         assertEquals(18, writtenObjects.get(8));
     }
 
-    private abstract static class TestGatheringTarget implements RetainableByteBuffer.GatheringTarget, RetainableByteBuffer.TransferringTarget
+    private abstract static class TestGatheringReader implements RetainableByteBuffer.GatheringReader, RetainableByteBuffer.TransferringReader
     {
     }
 
@@ -855,7 +855,7 @@ public class MultiBufferTest
 
         List<Integer> writtenIntegers = new ArrayList<>();
         assertEquals(4L,
-            acc.writeTo(input ->
+            acc.read(input ->
             {
                 writtenIntegers.add(input.getInt());
                 return Integer.BYTES;
@@ -868,7 +868,7 @@ public class MultiBufferTest
 
         writtenIntegers.clear();
         assertEquals(12L,
-            acc.writeTo(input ->
+            acc.read(input ->
             {
                 long result = 0;
                 while (input.hasRemaining())
@@ -908,7 +908,7 @@ public class MultiBufferTest
         AtomicInteger counter = new AtomicInteger();
         List<Number> written = new ArrayList<>();
         assertEquals(2L,
-            acc.writeTo(input ->
+            acc.read(input ->
             {
                 counter.incrementAndGet();
                 written.add(input.getShort());
@@ -924,7 +924,7 @@ public class MultiBufferTest
         written.clear();
         counter.set(0);
         assertEquals(6L,
-            acc.writeTo(input ->
+            acc.read(input ->
             {
                 if (counter.getAndIncrement() == 0)
                 {
@@ -962,7 +962,7 @@ public class MultiBufferTest
         AtomicInteger counter = new AtomicInteger();
         List<Number> written = new ArrayList<>();
         assertEquals(2L,
-            acc.writeTo(input ->
+            acc.read(input ->
             {
                 counter.getAndIncrement();
                 written.add(input.getShort());
@@ -978,7 +978,7 @@ public class MultiBufferTest
         counter.set(0);
         written.clear();
         assertEquals(4L,
-            acc.writeTo(input ->
+            acc.read(input ->
             {
                 if (counter.getAndIncrement() == 0)
                 {

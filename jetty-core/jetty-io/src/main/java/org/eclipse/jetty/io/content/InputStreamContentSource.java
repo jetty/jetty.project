@@ -101,7 +101,7 @@ public class InputStreamContentSource implements Content.Source
 
         try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(false))
         {
-            long read = buffer.readFrom(b ->
+            long read = buffer.write(b ->
             {
                 int position = b.position();
                 int r = fillBufferFromInputStream(inputStream, b.array(), b.arrayOffset() + position);

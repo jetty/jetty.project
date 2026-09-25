@@ -91,7 +91,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         {
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
             CountDownLatch latch = new CountDownLatch(1);
@@ -136,7 +136,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         {
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
             AtomicReference<HeadersFrame> frameRef = new AtomicReference<>();
@@ -194,7 +194,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         {
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
             AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
@@ -268,7 +268,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         {
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
             Parser parser = new Parser(bufferPool, 8192);
@@ -318,7 +318,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         {
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
             Parser parser = new Parser(bufferPool, 8192);
@@ -387,7 +387,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         {
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
             // The server will close the connection abruptly since it
@@ -427,7 +427,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             {
                 RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
                 accumulator.forEach(RetainableByteBuffer::release);
-                rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+                rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
                 rb.release();
 
                 AtomicInteger resetFrame = new AtomicInteger();
@@ -655,7 +655,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         {
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
             rb.release();
 
             assertTrue(serverLatch.await(5, TimeUnit.SECONDS));

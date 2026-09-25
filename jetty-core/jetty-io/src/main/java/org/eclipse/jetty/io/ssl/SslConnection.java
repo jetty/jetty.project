@@ -848,9 +848,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 // case we want to fall through to the handshake handling
                                 _underflown = false;
                                 SSLEngineResult[] unwrapResultRef = new SSLEngineResult[1];
-                                encryptedInput.writeTo(input ->
+                                encryptedInput.read(input ->
                                 {
-                                    writableAppIn.readFrom(output ->
+                                    writableAppIn.write(output ->
                                     {
                                         unwrapResultRef[0] = SslConnection.this.unwrap(_sslEngine, input, output);
                                         return unwrapResultRef[0].bytesProduced();
@@ -1265,12 +1265,12 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             try
                             {
                                 SSLEngineResult[] wrapResultRef = new SSLEngineResult[1];
-                                b.readFrom(output ->
+                                b.write(output ->
                                 {
-                                    appOut.writeTo(new RetainableByteBuffer.GatheringTarget()
+                                    appOut.read(new RetainableByteBuffer.GatheringReader()
                                     {
                                         @Override
-                                        public long write(ByteBuffer[] inputs, int offset, int length) throws IOException
+                                        public long readFrom(ByteBuffer[] inputs, int offset, int length) throws IOException
                                         {
                                             if (wrapResultRef[0] != null)
                                                 return 0;
@@ -1279,7 +1279,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                         }
 
                                         @Override
-                                        public long write(ByteBuffer input) throws IOException
+                                        public long readFrom(ByteBuffer input) throws IOException
                                         {
                                             if (wrapResultRef[0] != null)
                                                 return 0;

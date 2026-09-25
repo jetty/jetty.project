@@ -877,7 +877,7 @@ public class StreamResetTest extends AbstractTest
 
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
             // Wait until the server is TCP congested.
@@ -887,7 +887,7 @@ public class StreamResetTest extends AbstractTest
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
             rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
             // Resolve TCP congestion to allow the server to send its reset frame initiated by
@@ -973,7 +973,7 @@ public class StreamResetTest extends AbstractTest
 
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
             // Wait until the server is TCP congested.
@@ -983,7 +983,7 @@ public class StreamResetTest extends AbstractTest
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
             rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
             // Idle timeout should unblock the server's write.
@@ -1066,7 +1066,7 @@ public class StreamResetTest extends AbstractTest
             RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
             accumulator.clear();
-            rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
 
             SelectableChannelEndPoint endPoint = exchanger.exchange(null);
@@ -1080,7 +1080,7 @@ public class StreamResetTest extends AbstractTest
             generator.control(accumulator, headersFrame);
             rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
             assertTrue(requestLatch1.await(5, TimeUnit.SECONDS));
 
@@ -1089,7 +1089,7 @@ public class StreamResetTest extends AbstractTest
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
             rb = RetainableByteBuffer.merge(accumulator);
             accumulator.forEach(RetainableByteBuffer::release);
-            rb.writeTo(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
             rb.release();
             // Wait to be sure that the server processed the reset.
             Thread.sleep(1000);

@@ -233,7 +233,7 @@ public class BufferedContentSinkTest
                 assertThat(chunk, notNullValue());
                 try (RetainableByteBuffer buffer = chunk.acquire())
                 {
-                    buffer.quietWriteTo(b ->
+                    buffer.quietRead(b ->
                     {
                         int r = b.remaining();
                         accumulatingBuffer.put(b);

@@ -1366,7 +1366,7 @@ public class HttpOutputTest
 
             if (_content != null)
             {
-                _content.writeTo(b ->
+                _content.read(b ->
                 {
                     int r = b.remaining();
                     if (b.hasArray())
