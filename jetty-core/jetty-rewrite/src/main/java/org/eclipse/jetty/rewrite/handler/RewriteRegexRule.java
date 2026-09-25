@@ -28,6 +28,7 @@ public class RewriteRegexRule extends RegexRule
 {
     private String replacement;
     private boolean addQueries = false;
+    private boolean preserveViolations = false;
 
     public RewriteRegexRule()
     {
@@ -37,6 +38,26 @@ public class RewriteRegexRule extends RegexRule
     {
         super(regex);
         setReplacement(replacement);
+    }
+
+    /**
+     * Flag to preserve original HTTP UriCompliance Violations on any rewritten HTTP URI from this rule.
+     *
+     * @return true to preserve, false to not.
+     */
+    public boolean isPreserveViolations()
+    {
+        return preserveViolations;
+    }
+
+    /**
+     * Flag to preserve original HTTP UriCompliance Violations on any rewritten HTTP URI from this rule.
+     *
+     * @param preserveViolations true to preserve, false to not.
+     */
+    public void setPreserveViolations(boolean preserveViolations)
+    {
+        this.preserveViolations = preserveViolations;
     }
 
     /**
@@ -80,15 +101,19 @@ public class RewriteRegexRule extends RegexRule
         HttpURI httpURI = input.getHttpURI();
         String replacedPath = matcher.replaceAll(replacement);
 
-        HttpURI newURI = HttpURI.build(httpURI, replacedPath);
+        HttpURI.Mutable uriBuilder = HttpURI.build(httpURI, replacedPath);
         if (isAddQueries())
         {
             String inputQuery = input.getHttpURI().getQuery();
-            String targetQuery = newURI.getQuery();
+            String targetQuery = uriBuilder.getQuery();
             String resultingQuery = URIUtil.addQueries(inputQuery, targetQuery);
-            newURI = HttpURI.build(newURI).query(resultingQuery);
+            uriBuilder.query(resultingQuery);
         }
-        return new HttpURIHandler(input, newURI);
+        if (isPreserveViolations())
+        {
+            uriBuilder.addViolations(input.getHttpURI().getViolations());
+        }
+        return new HttpURIHandler(input, uriBuilder.asImmutable());
     }
 
     @Override

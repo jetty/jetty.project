@@ -109,13 +109,17 @@ public class NBitStringDecoder
 
     private String stringDecode(ByteBuffer buffer)
     {
-        for (; _count < _length; _count++)
-        {
-            if (!buffer.hasRemaining())
-                return null;
-            _builder.append(buffer.get());
-        }
+        if (_count < _length && !buffer.hasRemaining())
+            return null;
+        // An ISO-8859-1 String is byte for byte the encoded bytes, so accumulate
+        // the bytes in bulk and decode them in one go, rather than appending one
+        // character at a time.
+        int available = Math.min(_length - _count, buffer.remaining());
+        _builder.append(buffer, available);
+        _count += available;
 
+        if (_count < _length)
+            return null;
         return _builder.build();
     }
 
