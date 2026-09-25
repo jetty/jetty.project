@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,17 +174,12 @@ public abstract class Quiche
 
     public final void feedFinForStream(long streamId) throws IOException
     {
-        feedClearBytesForStream(streamId, BufferUtil.EMPTY_BUFFER, true);
+        feedClearBytesForStream(streamId, RetainableByteBuffer.empty(), true);
     }
 
-    public final int feedClearBytesForStream(long streamId, ByteBuffer buffer) throws IOException
-    {
-        return feedClearBytesForStream(streamId, buffer, false);
-    }
+    public abstract long feedClearBytesForStream(long streamId, RetainableByteBuffer buffer, boolean last) throws IOException;
 
-    public abstract int feedClearBytesForStream(long streamId, ByteBuffer buffer, boolean last) throws IOException;
-
-    public abstract int drainClearBytesForStream(long streamId, ByteBuffer buffer, boolean[] last) throws IOException;
+    public abstract long drainClearBytesForStream(long streamId, RetainableByteBuffer.Mutable buffer, boolean[] last) throws IOException;
 
     /**
      * @param streamId the stream id

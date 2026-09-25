@@ -495,7 +495,7 @@ public class ResponseTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                Response.sendRedirect(request, response, callback, 0, "/somewhere/else", false, null);
+                Response.sendRedirect(request, response, callback, 0, "/somewhere/else", false);
                 return true;
             }
         });

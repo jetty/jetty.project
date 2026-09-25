@@ -45,7 +45,6 @@ import org.eclipse.jetty.io.internal.ContentSourceRange;
 import org.eclipse.jetty.io.internal.ContentSourceRetainableByteBuffer;
 import org.eclipse.jetty.io.internal.ContentSourceString;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
@@ -685,7 +684,7 @@ public class Content
                     }
                     try
                     {
-                        buffer.writeTo(input -> BufferUtil.writeTo(input, out));
+                        buffer.putTo(out);
                         if (last)
                         {
                             closed = true;
@@ -726,7 +725,7 @@ public class Content
                         int tries = 0;
                         while (remaining > 0L)
                         {
-                            long written = buffer.writeTo(src -> channel.write(src));
+                            long written = buffer.read(channel::write);
                             if (written > 0L)
                                 remaining -= written;
                             else if (tries++ > 2)
@@ -770,15 +769,15 @@ public class Content
                     try
                     {
                         buffer.retain();
-                        buffer.writeTo(new RetainableByteBuffer.Target()
+                        buffer.read(new RetainableByteBuffer.Reader()
                         {
                             @Override
-                            public long write(ByteBuffer input)
+                            public long readFrom(ByteBuffer input)
                             {
                                 return write(channel, input, this);
                             }
 
-                            private long write(AsynchronousByteChannel channel, ByteBuffer input, RetainableByteBuffer.Target target)
+                            private long write(AsynchronousByteChannel channel, ByteBuffer input, RetainableByteBuffer.Reader reader)
                             {
                                 channel.write(input, input, new CompletionHandler<>()
                                 {
@@ -795,7 +794,7 @@ public class Content
                                             {
                                                 try
                                                 {
-                                                    buffer.writeTo(target);
+                                                    buffer.read(reader);
                                                 }
                                                 catch (IOException e)
                                                 {
@@ -905,17 +904,16 @@ public class Content
             sink.write(last, RetainableByteBuffer.wrap(utf8Content, StandardCharsets.UTF_8), callback);
         }
 
-        /**
-         * <p>Writes the given {@link ByteBuffer}, notifying the {@link Callback}
-         * when the write is complete.</p>
-         * <p>Implementations guarantee that calls to this method are safely reentrant so that
-         * stack overflows are avoided in the case of mutual recursion between the execution of
-         * the {@code Callback} and a call to this method.</p>
-         *
-         * @param last whether the ByteBuffer is the last to write
-         * @param buffer the ReadableBuffer to write
-         * @param callback the callback to notify when the write operation is complete
-         */
+        /// Writes the given [RetainableByteBuffer], notifying the [Callback]
+        /// when the write operation is complete.
+        ///
+        /// Implementations guarantee that calls to this method are safely reentrant so that
+        /// stack overflows are avoided in the case of mutual recursion between the execution
+        /// of the [Callback] and a call to this method.
+        ///
+        /// @param last whether the buffer is the last to write
+        /// @param buffer the [RetainableByteBuffer] to write
+        /// @param callback the callback to notify when the write operation is complete
         void write(boolean last, RetainableByteBuffer buffer, Callback callback);
     }
 

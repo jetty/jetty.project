@@ -2464,7 +2464,7 @@ public class ResponseTest
             if (content != null)
             {
                 int pos = BufferUtil.flipToFill(_content);
-                BufferUtil.put(content, _content);
+                content.appendTo(_content);
                 BufferUtil.flipToFlush(_content, pos);
             }
             _committed = true;

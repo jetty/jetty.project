@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.http2.Flags;
@@ -30,13 +29,13 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(List<RetainableByteBuffer> accumulator, Frame frame)
+    public int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(accumulator, settingsFrame.getSettings(), settingsFrame.isReply());
     }
 
-    public int generateSettings(List<RetainableByteBuffer> accumulator, Map<Integer, Integer> settings, boolean reply)
+    public int generateSettings(RetainableByteBuffer.Accumulator accumulator, Map<Integer, Integer> settings, boolean reply)
     {
         // Two bytes for the identifier, four bytes for the value.
         int entryLength = 2 + 4;
@@ -45,13 +44,12 @@ public class SettingsGenerator extends FrameGenerator
             throw new IllegalArgumentException("Invalid settings, too big");
 
         RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.SETTINGS, length, reply ? Flags.ACK : Flags.NONE, 0);
+        accumulator.addRetained(buffer);
         for (Map.Entry<Integer, Integer> entry : settings.entrySet())
         {
             buffer.putShort(entry.getKey().shortValue());
             buffer.putInt(entry.getValue());
         }
-        accumulator.add(buffer);
-
         return Frame.HEADER_LENGTH + length;
     }
 }

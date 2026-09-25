@@ -114,12 +114,7 @@ public class HTTP1Servlet extends HttpServlet
                                 // Process the content.
                                 try (RetainableByteBuffer buffer = data.acquire())
                                 {
-                                    buffer.writeTo(b ->
-                                    {
-                                        int r = b.remaining();
-                                        output.write(b);
-                                        return r;
-                                    });
+                                    buffer.putTo(output);
                                 }
 
                                 if (!data.isLast())

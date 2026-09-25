@@ -238,7 +238,7 @@ public abstract class WriteFlusher
             super(StateType.PENDING);
             _address = address;
             _buffer = buffer;
-            _callback = Callback.from(callback, _buffer::release);
+            _callback = Callback.from(_buffer::release, callback);
             buffer.retain();
         }
 

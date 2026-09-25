@@ -50,11 +50,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
@@ -128,10 +125,11 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         assertThat("Response[ETag]", response.get("ETag"), startsWith("W/"));
         assertThat("Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP.getEtagSuffix()));
 
-        assertThat("Response[Content-Length]", response.getLongField("Content-Length"), both(lessThan((long)fileSize)).and(greaterThan(0L)));
+        assertThat("Response[Content-Length]", response.get("Content-Length"), is(nullValue()));
         // A HEAD request should have similar headers, but no body
-        if (!method.equals(HttpMethod.HEAD.asString()))
+        if (!HttpMethod.HEAD.is(method))
         {
+            assertThat("Response[Content-Length]", response.get("Content-Length"), is(nullValue()));
             // Response Content checks
             UncompressedMetadata metadata = parseResponseContent(response);
             assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));

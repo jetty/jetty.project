@@ -38,7 +38,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.hamcrest.Matchers;
@@ -46,6 +45,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -436,7 +436,7 @@ public class ThreadLimitHandlerTest
 
         // Validate the first 100 bytes of the response.
         byte[] bytes = client.getInputStream().readNBytes(100);
-        String utf8String = StringUtil.toUTF8String(bytes, 0, bytes.length);
+        String utf8String = new String(bytes, UTF_8);
         assertThat(utf8String, Matchers.containsString(" 200 OK"));
         assertThat(utf8String, Matchers.containsString("xxxxx"));
 

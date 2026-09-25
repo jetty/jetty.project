@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,6 +44,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -181,9 +181,9 @@ public class DefaultServletCompressionCompleteTest
                 Response wrappedResponse = new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
                     {
-                        super.write(last, byteBuffer, Callback.from(callback::succeeded, x ->
+                        super.write(last, buffer, Callback.from(callback::succeeded, x ->
                         {
                             writeFailures.add(x);
                             callback.failed(x);

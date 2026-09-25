@@ -37,7 +37,6 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -165,9 +164,9 @@ public class InterleavingTest extends AbstractTest
                 if (dataFrame.isEndStream())
                     ++finished;
 
-                try (RetainableByteBuffer rb = dataFrame.acquire())
+                try (RetainableByteBuffer buffer = dataFrame.acquire())
                 {
-                    BufferUtil.writeTo(rb, contents.get(streamId));
+                    buffer.putTo(contents.get(streamId));
                 }
             }
         }

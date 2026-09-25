@@ -42,12 +42,12 @@ import org.eclipse.jetty.ee9.websocket.tests.util.FutureWriteCallback;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -357,7 +357,7 @@ public class WebSocketClientTest
             int size = 80 * 1024;
             byte[] buf = new byte[size];
             Arrays.fill(buf, (byte)'x');
-            String msg = StringUtil.toUTF8String(buf, 0, buf.length);
+            String msg = new String(buf, UTF_8);
 
             sess.getRemote().sendString(msg);
 

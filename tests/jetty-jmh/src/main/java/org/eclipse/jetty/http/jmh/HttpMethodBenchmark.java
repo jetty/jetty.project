@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -34,6 +33,8 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+
+import static java.nio.charset.StandardCharsets.US_ASCII;
 
 @State(Scope.Benchmark)
 @Threads(4)
@@ -93,7 +94,7 @@ public class HttpMethodBenchmark
         for (int i = 0; i < GET.remaining(); i++)
         {
             if (GET.get(i) == (byte)' ')
-                return MAP.get(BufferUtil.toString(GET, 0, i, StandardCharsets.US_ASCII));
+                return MAP.get(GET.getString(0, i, US_ASCII));
         }
         return null;
     }

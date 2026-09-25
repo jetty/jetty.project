@@ -191,11 +191,11 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
     {
         try
         {
-            input.writeTo(b ->
+            input.read(b ->
             {
                 int r = b.remaining();
                 transformer.transform(b, finished, output);
-                return r - b.remaining();
+                return r;
             });
         }
         catch (Throwable x)
@@ -856,7 +856,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                         logger.debug("Ungzipped {} bytes, complete={}", decoded.remaining(), complete);
                     if (decoded.hasRemaining() || complete)
                     {
-                        decoded.writeTo(b ->
+                        decoded.read(b ->
                         {
                             int r = b.remaining();
                             transformer.transform(b, complete, buffers);

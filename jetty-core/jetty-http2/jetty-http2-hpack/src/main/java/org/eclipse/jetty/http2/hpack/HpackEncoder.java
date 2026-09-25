@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http.compression.NBitStringEncoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
@@ -485,7 +484,7 @@ public class HpackEncoder
         if (_debug)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("encode {}:'{}' to '{}'", encoding, field, BufferUtil.toHexString(buffer));
+                LOG.debug("encode {}:'{}' to '{}'", encoding, field, StringUtil.toHexString(buffer));
         }
     }
 

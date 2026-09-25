@@ -22,9 +22,9 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
@@ -62,7 +62,7 @@ public abstract class Compression extends ContainerLifeCycle
      * @param length the requested size of the buffer
      * @return the ByteBuffer suitable for this compression implementation.
      */
-    public abstract org.eclipse.jetty.util.buffer.RetainableByteBuffer.Mutable acquireBuffer(int length);
+    public abstract RetainableByteBuffer.Mutable acquireBuffer(int length);
 
     /**
      * Get an etag with suffix that represents this compression implementation.

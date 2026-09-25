@@ -17,8 +17,8 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -26,6 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -76,12 +77,12 @@ public class ByteArrayEndPointTest
             RetainableByteBuffer.Mutable buffer1 = RetainableByteBuffer.Mutable.allocate(1024, false);
 
             assertEquals(10, endPoint.fill(buffer1));
-            assertEquals("test input", BufferUtil.toString(buffer1));
+            assertEquals("test input", StringUtil.toString(buffer1, ISO_8859_1));
             assertEquals(0, endPoint.fill(buffer1));
 
             endPoint.addInput(" more");
             assertEquals(5, endPoint.fill(buffer1));
-            assertEquals("test input more", BufferUtil.toString(buffer1));
+            assertEquals("test input more", StringUtil.toString(buffer1, ISO_8859_1));
             assertEquals(0, endPoint.fill(buffer1));
 
             endPoint.addInput((RetainableByteBuffer)null);

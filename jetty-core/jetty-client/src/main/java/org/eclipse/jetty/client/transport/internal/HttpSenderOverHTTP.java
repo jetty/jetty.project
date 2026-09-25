@@ -115,9 +115,6 @@ public class HttpSenderOverHTTP extends HttpSender
     {
         headersCallback.reset();
         contentCallback.reset();
-        content = null;
-        lastContent = false;
-        callback = null;
         generator.reset();
         super.reset();
     }
@@ -125,9 +122,6 @@ public class HttpSenderOverHTTP extends HttpSender
     @Override
     protected void dispose()
     {
-        content = null;
-        lastContent = false;
-        callback = null;
         generator.abort();
         super.dispose();
         shutdownOutput();

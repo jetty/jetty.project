@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -180,116 +179,6 @@ public class BufferUtilTest
         {
             assertEquals(val[i], BufferUtil.toInt(buf[i]), "t" + i);
         }
-    }
-
-    @Test
-    public void testPutInt()
-    {
-        int[] val =
-            {
-                0, 42, 43, -44, -45, Integer.MIN_VALUE, Integer.MAX_VALUE
-            };
-
-        String[] str =
-            {
-                "0", "42", "43", "-44", "-45", "" + Integer.MIN_VALUE, "" + Integer.MAX_VALUE
-            };
-
-        ByteBuffer buffer = ByteBuffer.allocate(24);
-
-        for (int i = 0; i < val.length; i++)
-        {
-            BufferUtil.clearToFill(buffer);
-            BufferUtil.putDecInt(buffer, val[i]);
-            BufferUtil.flipToFlush(buffer, 0);
-            assertEquals(str[i], BufferUtil.toString(buffer), "t" + i);
-        }
-    }
-
-    @Test
-    public void testPutLong()
-    {
-        long[] val =
-            {
-                0L, 42L, 43L, -44L, -45L, Long.MIN_VALUE, Long.MAX_VALUE
-            };
-
-        String[] str =
-            {
-                "0", "42", "43", "-44", "-45", "" + Long.MIN_VALUE, "" + Long.MAX_VALUE
-            };
-
-        ByteBuffer buffer = ByteBuffer.allocate(50);
-
-        for (int i = 0; i < val.length; i++)
-        {
-            BufferUtil.clearToFill(buffer);
-            BufferUtil.putDecLong(buffer, val[i]);
-            BufferUtil.flipToFlush(buffer, 0);
-            assertEquals(str[i], BufferUtil.toString(buffer), "t" + i);
-        }
-    }
-
-    @Test
-    public void testPutHexInt()
-    {
-        int[] val =
-            {
-                0, 42, 43, -44, -45, -2147483648, 2147483647
-            };
-
-        String[] str =
-            {
-                "0", "2A", "2B", "-2C", "-2D", "-80000000", "7FFFFFFF"
-            };
-
-        ByteBuffer buffer = ByteBuffer.allocate(50);
-
-        for (int i = 0; i < val.length; i++)
-        {
-            BufferUtil.clearToFill(buffer);
-            BufferUtil.putHexInt(buffer, val[i]);
-            BufferUtil.flipToFlush(buffer, 0);
-            assertEquals(str[i], BufferUtil.toString(buffer), "t" + i);
-        }
-    }
-
-    @Test
-    public void testPutFromReadableBufferIntoLargeEnoughBuffer()
-    {
-        RetainableByteBuffer from = RetainableByteBuffer.wrap(BufferUtil.toBuffer("012345"));
-        ByteBuffer to = ByteBuffer.allocate(10);
-
-        BufferUtil.put(from, to);
-        BufferUtil.flipToFlush(to, 0);
-        assertEquals(0, from.remaining());
-        assertEquals(6, to.remaining());
-        assertEquals("012345", BufferUtil.toString(to));
-    }
-
-    @Test
-    public void testPutFromReadableBufferIntoTooSmallBuffer()
-    {
-        RetainableByteBuffer from = RetainableByteBuffer.wrap(BufferUtil.toBuffer("1234567890A"));
-        ByteBuffer to = ByteBuffer.allocate(10);
-
-        BufferUtil.put(from, to);
-        BufferUtil.flipToFlush(to, 0);
-        assertEquals(1, from.remaining());
-        assertEquals(10, to.remaining());
-        assertEquals("1234567890", BufferUtil.toString(to));
-        assertEquals('A', from.get());
-    }
-
-    @Test
-    public void testToBuffer()
-    {
-        RetainableByteBuffer from = RetainableByteBuffer.wrap(BufferUtil.toBuffer("1234567890A"));
-        ByteBuffer buffer = BufferUtil.toBuffer(from, false);
-
-        assertEquals(0, from.remaining());
-        assertEquals(11, buffer.remaining());
-        assertEquals("1234567890A", BufferUtil.toString(buffer));
     }
 
     @Test

@@ -105,7 +105,7 @@ public class GzipDecoderSource extends DecoderSource
                         {
                             try (RetainableByteBuffer.Mutable b = compression.acquireBuffer(bufferSize))
                             {
-                                b.readFrom(output ->
+                                b.write(output ->
                                 {
                                     try
                                     {
@@ -141,7 +141,7 @@ public class GzipDecoderSource extends DecoderSource
                                     buffer.retain();
                                     input = buffer;
 
-                                    buffer.quietWriteTo(compressed ->
+                                    buffer.quietRead(compressed ->
                                     {
                                         inflater.setInput(compressed);
                                         return 0;

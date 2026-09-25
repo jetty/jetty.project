@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +51,7 @@ public class ClientParserTest
 
         WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.generateResponseHeaders(accumulator, id, statusCode, statusMessage, fields);
 
         // Use the fundamental theorem of arithmetic to test the results.
@@ -97,15 +95,12 @@ public class ClientParserTest
             }
         });
 
-        for (RetainableByteBuffer buffer : accumulator)
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
+            assertEquals(value, params.get());
         }
-
-        assertEquals(value, params.get());
-
-        accumulator.forEach(RetainableByteBuffer::release);
     }
 
     @Test
@@ -117,7 +112,7 @@ public class ClientParserTest
 
         WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.generateResponseHeaders(accumulator, id, 200, "OK", fields);
         generator.generateResponseContent(accumulator, id, null, true, false);
 
@@ -141,15 +136,12 @@ public class ClientParserTest
             }
         });
 
-        for (RetainableByteBuffer buffer : accumulator)
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
+            assertEquals(3, verifier.get());
         }
-
-        assertEquals(3, verifier.get());
-
-        accumulator.forEach(RetainableByteBuffer::release);
     }
 
     @Test
@@ -168,7 +160,7 @@ public class ClientParserTest
 
         WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
         generator.generateResponseContent(accumulator, id, content, true, false);
 
@@ -193,15 +185,12 @@ public class ClientParserTest
             }
         });
 
-        for (RetainableByteBuffer buffer : accumulator)
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
+            assertEquals(5, verifier.get());
         }
-
-        assertEquals(5, verifier.get());
-
-        accumulator.forEach(RetainableByteBuffer::release);
     }
 
     @Test
@@ -220,7 +209,7 @@ public class ClientParserTest
 
         WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
         generator.generateResponseContent(accumulator, id, content, true, false);
 
@@ -246,15 +235,12 @@ public class ClientParserTest
             }
         });
 
-        for (RetainableByteBuffer buffer : accumulator)
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
+            assertTrue(verifier.get());
         }
-
-        assertTrue(verifier.get());
-
-        accumulator.forEach(RetainableByteBuffer::release);
     }
 
     @ParameterizedTest

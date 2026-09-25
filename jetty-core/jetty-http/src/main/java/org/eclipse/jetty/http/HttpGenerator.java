@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -499,14 +498,14 @@ public class HttpGenerator
     {
         // if we need CRLF add this to header
         if (_needCRLF)
-            BufferUtil.putCRLF(chunk);
+            putCRLF(chunk);
 
         // Add the chunk size to the header
         if (remaining > 0)
         {
             int length = (int)Math.min(getChunkMaxLength(), remaining);
-            BufferUtil.putHexInt(chunk, length);
-            BufferUtil.putCRLF(chunk);
+            putIntAsHex(chunk, length);
+            putCRLF(chunk);
             _needCRLF = true;
             return length;
         }
@@ -522,7 +521,7 @@ public class HttpGenerator
     {
         // if we need CRLF add this to header
         if (_needCRLF)
-            BufferUtil.putCRLF(buffer);
+            putCRLF(buffer);
 
         // Add the chunk size to the header
         buffer.put(ZERO_CHUNK);
@@ -534,7 +533,7 @@ public class HttpGenerator
             putTo(field, buffer);
         }
 
-        BufferUtil.putCRLF(buffer);
+        putCRLF(buffer);
     }
 
     private void generateRequestLine(MetaData.Request request, RetainableByteBuffer.Mutable header)
@@ -940,7 +939,7 @@ public class HttpGenerator
         else
         {
             header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
-            BufferUtil.putDecLong(header, contentLength);
+            putLongAsDec(header, contentLength);
             header.put(HttpTokens.CRLF);
         }
     }
@@ -1044,38 +1043,97 @@ public class HttpGenerator
         }
     }
 
-    public static void putTo(HttpField field, RetainableByteBuffer.Mutable bufferInFillMode)
+    public static void putTo(HttpField field, RetainableByteBuffer.Mutable buffer)
     {
         if (field instanceof PreEncodedHttpField)
         {
-            ((PreEncodedHttpField)field).putTo(bufferInFillMode, HttpVersion.HTTP_1_0);
+            ((PreEncodedHttpField)field).putTo(buffer, HttpVersion.HTTP_1_0);
         }
         else if (field != null)
         {
             HttpHeader header = field.getHeader();
             if (header != null)
             {
-                bufferInFillMode.put(header.getBytesColonSpace());
-                putSanitisedValue(field.getValue(), bufferInFillMode);
+                buffer.put(header.getBytesColonSpace());
+                putSanitisedValue(field.getValue(), buffer);
             }
             else
             {
-                putSanitisedName(field.getName(), bufferInFillMode);
-                bufferInFillMode.put(__colon_space);
-                putSanitisedValue(field.getValue(), bufferInFillMode);
+                putSanitisedName(field.getName(), buffer);
+                buffer.put(__colon_space);
+                putSanitisedValue(field.getValue(), buffer);
             }
 
-            BufferUtil.putCRLF(bufferInFillMode);
+            putCRLF(buffer);
         }
     }
 
-    public static void putTo(HttpFields.Mutable fields, RetainableByteBuffer.Mutable bufferInFillMode)
+    public static void putTo(HttpFields.Mutable fields, RetainableByteBuffer.Mutable buffer)
     {
         for (HttpField field : fields)
         {
             if (field != null)
-                putTo(field, bufferInFillMode);
+                putTo(field, buffer);
         }
-        BufferUtil.putCRLF(bufferInFillMode);
+        putCRLF(buffer);
+    }
+
+    private static void putIntAsHex(RetainableByteBuffer.Mutable buffer, int i)
+    {
+        if (i < 0)
+            throw new IllegalArgumentException("invalid integer to put as hex digits");
+
+        if (i == 0)
+        {
+            buffer.put((byte)'0');
+            return;
+        }
+
+        // Split the 8 nibbles.
+        boolean put = false;
+        for (int j = 7; j >= 0; --j)
+        {
+            int shift = 4 * j;
+            int nibble = (i >>> shift) & 0xF;
+            // Skip initial zeros.
+            if (nibble == 0 && !put)
+                continue;
+            int hex = nibble < 10 ? nibble + '0' : nibble - 10 + 'A';
+            buffer.put((byte)hex);
+            put = true;
+        }
+    }
+
+    private static void putLongAsDec(RetainableByteBuffer.Mutable buffer, long l)
+    {
+        if (l < 0)
+            throw new IllegalArgumentException("invalid long to put as dec digits");
+
+        if (l == 0)
+        {
+            buffer.put((byte)'0');
+            return;
+        }
+
+        long divisor = 1_000_000_000_000_000_000L;
+        // Skip initial zeros.
+        while (divisor > l)
+        {
+            divisor /= 10;
+        }
+        // Put the digits.
+        while (divisor > 0)
+        {
+            long r = l / divisor;
+            int digit = (int)r + '0';
+            buffer.put((byte)digit);
+            l -= r * divisor;
+            divisor /= 10;
+        }
+    }
+
+    private static void putCRLF(RetainableByteBuffer.Mutable chunk)
+    {
+        chunk.putShort((short)0x0D0A);
     }
 }

@@ -22,12 +22,10 @@ import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -63,7 +61,7 @@ public class DataGenerateParseTest
         DataFrame frame = frames.getFirst();
         assertTrue(frame.getStreamId() != 0);
         assertTrue(frame.isEndStream());
-        assertThat(BufferUtil.toArray(frame.acquire()), is(BufferUtil.toArray(content)));
+        assertArrayEquals(frame.acquire().getArray(), content.getArray());
         frames.forEach(DataFrame::close);
     }
 
@@ -79,11 +77,12 @@ public class DataGenerateParseTest
             DataFrame frame = frames.get(i - 1);
             assertTrue(frame.getStreamId() != 0);
             assertEquals(i == frames.size(), frame.isEndStream());
-            RetainableByteBuffer rb = frame.acquire();
-            aggregate.put(rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = frame.acquire())
+            {
+                aggregate.put(buffer);
+            }
         }
-        assertThat(aggregate.getArray(), is(BufferUtil.toArray(content)));
+        assertArrayEquals(aggregate.getArray(), content.getArray());
         frames.forEach(DataFrame::close);
     }
 
@@ -106,7 +105,7 @@ public class DataGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             try (RetainableByteBuffer slice = data.slice())
             {
                 int generated = 0;
@@ -120,10 +119,9 @@ public class DataGenerateParseTest
             }
 
             frames.clear();
-            try (RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator))
+            try (RetainableByteBuffer buffer = accumulator.drain())
             {
-                accumulator.forEach(RetainableByteBuffer::release);
-                UnknownParseTest.parse(parser, rb);
+                UnknownParseTest.parse(parser, buffer);
             }
         }
 
@@ -150,7 +148,7 @@ public class DataGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             RetainableByteBuffer data = RetainableByteBuffer.wrap(largeContent);
             try (RetainableByteBuffer slice = data.slice())
             {
@@ -164,10 +162,9 @@ public class DataGenerateParseTest
                 }
             }
 
-            try (RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator))
+            try (RetainableByteBuffer buffer = accumulator.drain())
             {
-                accumulator.forEach(RetainableByteBuffer::release);
-                UnknownParseTest.parse(parser, rb);
+                UnknownParseTest.parse(parser, buffer);
             }
 
             assertEquals(largeContent.length, frames.stream().mapToLong(DataFrame::remaining).sum());

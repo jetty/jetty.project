@@ -374,4 +374,29 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
         // A closed context cannot be used anymore.
         assertThrows(IllegalStateException.class, () -> created.get(0).setLevel(1));
     }
+
+    @Test
+    public void testMultiBuffer() throws Exception
+    {
+        startZstd();
+
+        RetainableByteBuffer original = RetainableByteBuffer.merge(List.of(
+            RetainableByteBuffer.wrap("Hello ", UTF_8),
+            RetainableByteBuffer.wrap("world!", UTF_8)
+        ));
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink fileSink = Content.Sink.from(baos);
+            Content.Sink encoderSink = zstd.newEncoderSink(fileSink);
+
+            Callback.Completable callback = new Callback.Completable();
+            encoderSink.write(true, original, callback);
+            callback.get();
+            byte[] compressed = baos.toByteArray();
+
+            byte[] decompressed = decompress(compressed);
+            assertArrayEquals("Hello world!".getBytes(UTF_8), decompressed);
+        }
+    }
 }

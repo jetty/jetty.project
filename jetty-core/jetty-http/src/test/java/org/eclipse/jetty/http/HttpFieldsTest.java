@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
@@ -151,7 +153,7 @@ public class HttpFieldsTest
 
         RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
         HttpGenerator.putTo(header, buffer);
-        String result = BufferUtil.toString(buffer);
+        String result = StringUtil.toString(buffer, ISO_8859_1);
 
         assertThat(result, Matchers.containsString("name0: value0"));
         assertThat(result, Matchers.containsString("name1: value:A"));
@@ -425,7 +427,7 @@ public class HttpFieldsTest
 
         RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
         HttpGenerator.putTo(header, buffer);
-        String out = BufferUtil.toString(buffer);
+        String out = StringUtil.toString(buffer, ISO_8859_1);
         assertThat(out, containsString("name0: value  0"));
         assertThat(out, containsString("name..1: value1"));
         assertThat(out, containsString("name.2: value:  2"));
@@ -441,7 +443,7 @@ public class HttpFieldsTest
 
         RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
         HttpGenerator.putTo(header, buffer);
-        String out = BufferUtil.toString(buffer).toLowerCase(Locale.ROOT);
+        String out = StringUtil.toString(buffer, ISO_8859_1).toLowerCase(Locale.ROOT);
 
         assertThat(out, Matchers.containsString((HttpHeader.CONNECTION + ": " + HttpHeaderValue.KEEP_ALIVE).toLowerCase(Locale.ROOT)));
         assertThat(out, Matchers.containsString((HttpHeader.TRANSFER_ENCODING + ": " + HttpHeaderValue.CHUNKED).toLowerCase(Locale.ROOT)));

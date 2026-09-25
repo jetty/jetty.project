@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http3;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -37,7 +36,7 @@ public class MessageFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> entries = new ArrayDeque<>();
-    private final List<RetainableByteBuffer> accumulator = new ArrayList<>();
+    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
     private final MessageGenerator generator;
     private Throwable terminated;
     private Entry entry;
@@ -84,9 +83,9 @@ public class MessageFlusher extends IteratingCallback
             return Action.SCHEDULED;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} bytes for stream #{} on {}", accumulator.size(), endPoint.getStream().getId(), this);
+            LOG.debug("writing {} bytes for stream #{} on {}", accumulator.remaining(), endPoint.getStream().getId(), this);
 
-        try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
             endPoint.write(Frame.isLast(frame), buffer, Callback.from(entry.callback.getInvocationType(), this::onWriteSuccess, this::onWriteFailure));
             return Action.SCHEDULED;
@@ -101,7 +100,7 @@ public class MessageFlusher extends IteratingCallback
         entry.callback.failed(cause);
         entry = null;
 
-        releaseAndClear();
+        accumulator.clear();
 
         // Continue the iteration.
         succeeded();
@@ -115,8 +114,6 @@ public class MessageFlusher extends IteratingCallback
         entry.callback().succeeded();
         entry = null;
 
-        releaseAndClear();
-
         succeeded();
     }
 
@@ -128,7 +125,7 @@ public class MessageFlusher extends IteratingCallback
         entry.callback().failed(failure);
         entry = null;
 
-        releaseAndClear();
+        accumulator.clear();
 
         // Failure to write to one StreamEndPoint
         // must not impact other StreamEndPoints.
@@ -147,12 +144,6 @@ public class MessageFlusher extends IteratingCallback
         }
         allEntries.forEach(e -> e.callback.failed(failure));
 
-        releaseAndClear();
-    }
-
-    private void releaseAndClear()
-    {
-        accumulator.forEach(RetainableByteBuffer::release);
         accumulator.clear();
     }
 

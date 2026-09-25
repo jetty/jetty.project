@@ -299,7 +299,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             Deflater deflater = getDeflater();
             while (true)
             {
-                long compressed = buffer.quietReadFrom(b ->
+                long compressed = buffer.quietWrite(b ->
                 {
                     int offset = b.arrayOffset() + b.position();
                     int length = bufferSize - b.position();
@@ -348,7 +348,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
 
             Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
             chunk.setRsv1(first && frame.getOpCode() != OpCode.CONTINUATION);
-            buffer.quietWriteTo(b ->
+            buffer.quietRead(b ->
             {
                 chunk.setPayload(b);
                 return b.remaining();
@@ -430,7 +430,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             boolean complete = false;
             while (true)
             {
-                long decompressed = payload.quietReadFrom(b ->
+                long decompressed = payload.quietWrite(b ->
                 {
                     try
                     {
@@ -473,7 +473,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
 
             Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
             chunk.setRsv1(false);
-            payload.quietWriteTo(b ->
+            payload.quietRead(b ->
             {
                 chunk.setPayload(b);
                 return b.remaining();

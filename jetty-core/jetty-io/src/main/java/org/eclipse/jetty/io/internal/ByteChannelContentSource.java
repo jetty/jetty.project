@@ -168,7 +168,7 @@ public class ByteChannelContentSource implements Content.Source
                     // Discard all bytes read until we reach the staring offset.
                     while (_offsetRemaining > 0)
                     {
-                        long read = buffer.clear().readFrom(b ->
+                        long read = buffer.clear().write(b ->
                         {
                             b.limit((int)Math.min(b.capacity(), _offsetRemaining));
                             return _byteChannel.read(b);
@@ -185,7 +185,7 @@ public class ByteChannelContentSource implements Content.Source
                     }
                 }
 
-                long read = buffer.clear().readFrom(b ->
+                long read = buffer.clear().write(b ->
                 {
                     if (_length > 0)
                         b.limit((int)Math.min(b.capacity(), _length - _totalRead));

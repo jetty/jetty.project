@@ -43,7 +43,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -153,19 +152,19 @@ public interface Response extends Content.Sink
      */
     CompletableFuture<Void> writeInterim(int status, HttpFields headers);
 
-    /**
-     * {@inheritDoc}
-     * <p>The invocation of the passed {@code Callback} is serialized
-     * with previous calls of this method, so that it is not invoked until
-     * any invocation of the callback of a previous call to this method
-     * has returned.</p>
-     * <p>Thus a {@code Callback} should not block waiting for a callback
-     * of a future call to this method.</p>
-     *
-     * @param last whether the ByteBuffer is the last to write
-     * @param buffer the ReadableBuffer to write
-     * @param callback the callback to notify when the write operation is complete
-     */
+    /// {@inheritDoc}
+    ///
+    /// The invocation of the passed [Callback] is serialized
+    /// with previous calls of this method, so that it is not invoked until
+    /// any invocation of the callback of a previous call to this method
+    /// has returned.
+    ///
+    /// Thus, a [Callback] should not block waiting for a callback
+    /// of a future call to this method.
+    ///
+    /// @param last whether the buffer is the last to write
+    /// @param buffer the [RetainableByteBuffer] to write
+    /// @param callback the callback to notify when the write operation is complete
     @Override
     void write(boolean last, RetainableByteBuffer buffer, Callback callback);
 
@@ -318,7 +317,7 @@ public interface Response extends Content.Sink
      */
     static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable)
     {
-        sendRedirect(request, response, callback, code, location, consumeAvailable, null);
+        sendRedirect(request, response, callback, code, location, consumeAvailable, (RetainableByteBuffer)null);
     }
 
     /**
@@ -336,6 +335,11 @@ public interface Response extends Content.Sink
      * @throws IllegalStateException if the response is already {@link #isCommitted() committed}
      */
     static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable, ByteBuffer content)
+    {
+        sendRedirect(request, response, callback, code, location, consumeAvailable, RetainableByteBuffer.wrap(content));
+    }
+
+    static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable, RetainableByteBuffer content)
     {
         if (response.isCommitted())
         {
@@ -384,18 +388,18 @@ public interface Response extends Content.Sink
             {
                 response.getHeaders().put(MimeTypes.Type.TEXT_HTML_8859_1.getContentTypeField());
                 String body = """
-            <!DOCTYPE html>
-            <html lang="en">
-            <head><meta charset="ISO-8859-1"/><meta http-equiv="refresh" content="0; URL=%s"/><title>Redirecting...</title></head>
-            <body><p>If you are not redirected, <a href="%s">click here</a>.</p></body>
-            </html>
-            """.formatted(location, location);
-                content = BufferUtil.toBuffer(body, StandardCharsets.ISO_8859_1);
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head><meta charset="ISO-8859-1"/><meta http-equiv="refresh" content="0; URL=%s"/><title>Redirecting...</title></head>
+                    <body><p>If you are not redirected, <a href="%s">click here</a>.</p></body>
+                    </html>
+                    """.formatted(location, location);
+                content = RetainableByteBuffer.wrap(body, StandardCharsets.ISO_8859_1);
             }
 
             response.getHeaders().put(HttpHeader.LOCATION, location);
             response.setStatus(code);
-            response.write(true, RetainableByteBuffer.wrap(content), callback);
+            response.write(true, content, callback);
         }
         catch (Throwable failure)
         {

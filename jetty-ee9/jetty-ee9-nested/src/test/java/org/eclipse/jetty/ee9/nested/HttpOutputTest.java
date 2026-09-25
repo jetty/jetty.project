@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -42,6 +41,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -50,6 +50,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
@@ -114,10 +116,8 @@ public class HttpOutputTest
         Arrays.fill(buffer, 0, 4 * 1024, (byte)0x99);
         Arrays.fill(buffer, 4 * 1024, 12 * 1024, (byte)0x58);
         Arrays.fill(buffer, 12 * 1024, 16 * 1024, (byte)0x66);
-        _handler._content = ByteBuffer.wrap(buffer);
-        _handler._content.limit(12 * 1024);
-        _handler._content.position(4 * 1024);
-        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        _handler._content = RetainableByteBuffer.wrap(buffer, 4 * 1024, 12 * 1024);
+        String response = _connector.getResponseAsString("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("\r\nXXXXXXXXXXXXXXXXXXXXXXXXXXX"));
 
@@ -139,13 +139,8 @@ public class HttpOutputTest
         Arrays.fill(buffer, 0, 4 * 1024, (byte)0x99);
         Arrays.fill(buffer, 4 * 1024, 12 * 1024, (byte)0x58);
         Arrays.fill(buffer, 12 * 1024, 16 * 1024, (byte)0x66);
-        _handler._content = ByteBuffer.allocateDirect(buffer.length);
-        BufferUtil.flipToFill(_handler._content);
-        BufferUtil.append(_handler._content, buffer);
-        BufferUtil.flipToFlush(_handler._content, 0);
-        _handler._content.limit(12 * 1024);
-        _handler._content.position(4 * 1024);
-        String response = _connector.getResponse("GET / HTTP/1.0\nHost: localhost:80\n\n");
+        _handler._content = RetainableByteBuffer.wrap(buffer, 4 * 1024, 12 * 1024);
+        String response = _connector.getResponseAsString("GET / HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("\r\nXXXXXXXXXXXXXXXXXXXXXXXXXXX"));
 
@@ -802,10 +797,10 @@ public class HttpOutputTest
             HttpOutput.Interceptor _next;
 
             @Override
-            public void write(RetainableByteBuffer content, boolean complete, Callback callback)
+            public void write(ByteBuffer content, boolean complete, Callback callback)
             {
-                String s = BufferUtil.toString(content).toUpperCase().replace("BIG", "BIGGER");
-                _next.write(RetainableByteBuffer.wrap(s, StandardCharsets.ISO_8859_1), complete, callback);
+                String s = BufferUtil.toString(content, ISO_8859_1).toUpperCase().replace("BIG", "BIGGER");
+                _next.write(BufferUtil.toBuffer(s, ISO_8859_1), complete, callback);
             }
 
             @Override
@@ -1047,7 +1042,7 @@ public class HttpOutputTest
         }
 
         @Override
-        public void write(RetainableByteBuffer content, boolean last, Callback callback)
+        public void write(ByteBuffer content, boolean last, Callback callback)
         {
             if (content.remaining() <= MAX_SIZE)
                 throw new IllegalStateException("Not Aggregated!");
@@ -1115,7 +1110,7 @@ public class HttpOutputTest
     public void testPrint() throws Exception
     {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        PrintWriter exp = new PrintWriter(bout, true, StandardCharsets.UTF_8);
+        PrintWriter exp = new PrintWriter(bout, true, UTF_8);
         _swap.setHandler(new AbstractHandler()
         {
             @Override
@@ -1159,10 +1154,10 @@ public class HttpOutputTest
             }
         });
         _swap.getHandler().start();
-        RetainableByteBuffer buffer = _connector.getResponse(RetainableByteBuffer.wrap("GET /test HTTP/1.0\nHost: localhost:80\n\n", StandardCharsets.UTF_8));
-        String response = buffer.getString(StandardCharsets.UTF_8);
+        RetainableByteBuffer buffer = _connector.getResponse(RetainableByteBuffer.wrap("GET /test HTTP/1.0\nHost: localhost:80\n\n", UTF_8));
+        String response = buffer.getString(UTF_8);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        String expected = bout.toString(StandardCharsets.UTF_8);
+        String expected = bout.toString(UTF_8);
         assertThat(expected, not(emptyString()));
         assertThat(response.replace("\r\n", System.lineSeparator()), containsString(expected));
     }
@@ -1182,7 +1177,7 @@ public class HttpOutputTest
                 out.setInterceptor(new HttpOutput.Interceptor()
                 {
                     @Override
-                    public void write(RetainableByteBuffer content, boolean last, Callback callback)
+                    public void write(ByteBuffer content, boolean last, Callback callback)
                     {
                         interceptor.write(content, last, callback);
                     }
@@ -1198,13 +1193,13 @@ public class HttpOutputTest
                 out.println("NOT TO BE SEEN!");
                 out.resetBuffer();
 
-                byte[] data = "TO BE SEEN\n".getBytes(StandardCharsets.ISO_8859_1);
+                byte[] data = "TO BE SEEN\n".getBytes(ISO_8859_1);
                 exp.write(data);
                 out.write(data);
 
                 out.flush();
 
-                data = "Not reset after flush\n".getBytes(StandardCharsets.ISO_8859_1);
+                data = "Not reset after flush\n".getBytes(ISO_8859_1);
                 exp.write(data);
                 try
                 {
@@ -1256,7 +1251,8 @@ public class HttpOutputTest
 
     private static String toUTF8String(Resource resource)
     {
-        return BufferUtil.toUTF8String(IOResources.toRetainableByteBuffer(resource, ByteBufferPool.SIZED_NON_POOLING));
+        RetainableByteBuffer buffer = IOResources.toRetainableByteBuffer(resource, ByteBufferPool.SIZED_NON_POOLING);
+        return StringUtil.toString(buffer, UTF_8);
     }
 
     interface ChainedInterceptor extends HttpOutput.Interceptor
@@ -1408,9 +1404,9 @@ public class HttpOutputTest
                                     break;
                                 }
 
-                                BufferUtil.clearToFill(_byteBuffer);
-                                BufferUtil.put(_content, _byteBuffer);
-                                BufferUtil.flipToFlush(_byteBuffer, 0);
+                                _byteBuffer.clear();
+                                _content.appendTo(_byteBuffer);
+                                _byteBuffer.flip();
                                 out.write(_byteBuffer);
                                 isFirstWrite = false;
                             }
@@ -1429,9 +1425,9 @@ public class HttpOutputTest
 
                 while (_content != null && _content.hasRemaining())
                 {
-                    BufferUtil.clearToFill(_byteBuffer);
-                    BufferUtil.put(_content, _byteBuffer);
-                    BufferUtil.flipToFlush(_byteBuffer, 0);
+                    _byteBuffer.clear();
+                    _content.appendTo(_byteBuffer);
+                    _byteBuffer.flip();
                     out.write(_byteBuffer);
                 }
                 _closedAfterWrite.succeeded(out.isClosed());
@@ -1440,7 +1436,7 @@ public class HttpOutputTest
 
             if (_content != null)
             {
-                _content.writeTo(b ->
+                _content.read(b ->
                 {
                     int r = b.remaining();
                     if (b.hasArray())

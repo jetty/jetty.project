@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.util.List;
-
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
@@ -30,15 +28,15 @@ public class DataGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public int generate(List<RetainableByteBuffer> accumulator, DataFrame frame, int maxLength)
+    public int generate(RetainableByteBuffer.Accumulator accumulator, DataFrame frame, int maxLength)
     {
-        try (RetainableByteBuffer rb = frame.acquire())
+        try (RetainableByteBuffer buffer = frame.acquire())
         {
-            return generateData(accumulator, frame.getStreamId(), rb, frame.isEndStream(), maxLength);
+            return generateData(accumulator, frame.getStreamId(), buffer, frame.isEndStream(), maxLength);
         }
     }
 
-    public int generateData(List<RetainableByteBuffer> accumulator, int streamId, RetainableByteBuffer data, boolean last, int maxLength)
+    public int generateData(RetainableByteBuffer.Accumulator accumulator, int streamId, RetainableByteBuffer data, boolean last, int maxLength)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -61,7 +59,7 @@ public class DataGenerator
         return Frame.HEADER_LENGTH + length;
     }
 
-    private void generateFrame(List<RetainableByteBuffer> accumulator, int streamId, RetainableByteBuffer data, boolean last)
+    private void generateFrame(RetainableByteBuffer.Accumulator accumulator, int streamId, RetainableByteBuffer data, boolean last)
     {
         long length = data.remaining();
 
@@ -69,9 +67,8 @@ public class DataGenerator
         if (last)
             flags |= Flags.END_STREAM;
 
-        RetainableByteBuffer.Mutable b = headerGenerator.generate(FrameType.DATA, Frame.HEADER_LENGTH, Math.toIntExact(length), flags, streamId);
-        accumulator.add(b);
-        data.retain();
+        RetainableByteBuffer.Mutable header = headerGenerator.generate(FrameType.DATA, Frame.HEADER_LENGTH, Math.toIntExact(length), flags, streamId);
+        accumulator.addRetained(header);
         accumulator.add(data);
     }
 }

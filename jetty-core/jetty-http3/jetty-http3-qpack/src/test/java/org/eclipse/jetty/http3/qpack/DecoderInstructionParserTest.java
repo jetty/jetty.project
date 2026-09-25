@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http3.qpack.internal.instruction.DuplicateInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
@@ -54,8 +51,10 @@ public class DecoderInstructionParserTest
         RetainableByteBuffer buffer = QpackTestUtil.hexToBuffer("3fbd 01");
 
         // Assert that our generated value is equal to that of the spec example.
-        RetainableByteBuffer encodedValue = getEncodedValue(new SetCapacityInstruction(220));
-        assertArrayEquals(buffer.slice().getArray(), encodedValue.getArray());
+        try (RetainableByteBuffer encodedValue = getEncodedValue(new SetCapacityInstruction(220)))
+        {
+            assertArrayEquals(buffer.slice().getArray(), encodedValue.getArray());
+        }
 
         _instructionParser.parse(buffer);
         assertThat(_handler.setCapacities.poll(), is(220));
@@ -69,8 +68,10 @@ public class DecoderInstructionParserTest
         RetainableByteBuffer buffer = QpackTestUtil.hexToBuffer("02");
 
         // Assert that our generated value is equal to that of the spec example.
-        RetainableByteBuffer encodedValue = getEncodedValue(new DuplicateInstruction(2));
-        assertArrayEquals(buffer.slice().getArray(), encodedValue.getArray());
+        try (RetainableByteBuffer encodedValue = getEncodedValue(new DuplicateInstruction(2)))
+        {
+            assertArrayEquals(buffer.slice().getArray(), encodedValue.getArray());
+        }
 
         _instructionParser.parse(buffer);
         assertThat(_handler.duplicates.poll(), is(2));
@@ -84,8 +85,10 @@ public class DecoderInstructionParserTest
         RetainableByteBuffer buffer = QpackTestUtil.hexToBuffer("c00f 7777 772e 6578 616d 706c 652e 636f 6d");
 
         // Assert that our generated value is equal to that of the spec example.
-        RetainableByteBuffer encodedValue = getEncodedValue(new IndexedNameEntryInstruction(false, 0, false, "www.example.com"));
-        assertArrayEquals(buffer.slice().getArray(), encodedValue.getArray());
+        try (RetainableByteBuffer encodedValue = getEncodedValue(new IndexedNameEntryInstruction(false, 0, false, "www.example.com")))
+        {
+            assertArrayEquals(buffer.slice().getArray(), encodedValue.getArray());
+        }
 
         _instructionParser.parse(buffer);
         DecoderParserDebugHandler.ReferencedEntry entry = _handler.referencedNameEntries.poll();
@@ -147,8 +150,8 @@ public class DecoderInstructionParserTest
 
     private RetainableByteBuffer getEncodedValue(Instruction instruction)
     {
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         instruction.encode(bufferPool, accumulator);
-        return RetainableByteBuffer.merge(accumulator);
+        return accumulator.drain();
     }
 }
