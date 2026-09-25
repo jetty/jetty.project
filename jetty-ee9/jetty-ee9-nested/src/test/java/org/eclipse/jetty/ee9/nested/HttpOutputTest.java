@@ -105,7 +105,6 @@ public class HttpOutputTest
         assertThat(response, containsString("HTTP/1.1 200 OK"));
     }
 
-
     @Test
     public void testSendContentHeapByteBuffer() throws Exception
     {
