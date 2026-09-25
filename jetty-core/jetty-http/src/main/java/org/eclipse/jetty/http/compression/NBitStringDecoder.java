@@ -118,7 +118,7 @@ public class NBitStringDecoder
         // An ISO-8859-1 String is byte for byte the encoded bytes, so accumulate
         // the bytes in bulk and decode them in one go, rather than appending one
         // character at a time.
-        int available = Math.min(_length - _count, buffer.remaining());
+        int available = (int)Math.min(_length - _count, buffer.remaining());
         for (int i = 0; i < available; i++)
         {
             // TODO: bulk copy.

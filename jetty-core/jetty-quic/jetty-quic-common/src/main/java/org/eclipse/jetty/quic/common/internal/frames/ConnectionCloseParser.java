@@ -75,7 +75,7 @@ public class ConnectionCloseParser
                 {
                     int length = (int)Math.min(reasonLength, buffer.remaining());
                     RetainableByteBuffer slice = buffer.sliceAndConsume(length);
-                    slice.quietWriteTo(b ->
+                    slice.quietRead(b ->
                     {
                         long r = b.remaining();
                         reasonBuilder.append(b);

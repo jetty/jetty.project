@@ -92,7 +92,7 @@ public class IdleTimeoutTest
             client.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
 
             HttpTester.Request request = HttpTester.newRequest();
-            request.generate().writeTo(client::write);
+            request.generate().read(client::write);
 
             // The server never writes back anything, but should close the connection.
             client.configureBlocking(false);

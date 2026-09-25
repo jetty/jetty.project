@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,6 +24,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.AbstractEndPoint;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
@@ -70,40 +70,36 @@ public class CancelWriteTest extends AbstractTest
                     }
                 });
 
-                org.eclipse.jetty.io.RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(128 * 1024 * 1024, true);
-                ByteBuffer byteBuffer = buffer.getByteBuffer();
-                byteBuffer.clear();
-                response.write(true, RetainableByteBuffer.wrap(byteBuffer), Callback.from(() ->
+                WritableBufferPool bufferPool = WritableBufferPool.wrap(server.getByteBufferPool());
+                try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(128 * 1024 * 1024, true))
                 {
-                    serverWriteSuccessLatch.countDown();
+                    buffer.pad(buffer.space());
+                    response.write(true, buffer, Callback.from(() ->
+                    {
+                        serverWriteSuccessLatch.countDown();
 
-                    // Release the buffer.
-                    buffer.release();
+                        // Complete the Handler callback.
+                        callback.succeeded();
+                    }, x ->
+                    {
+                        assertTrue(httpStreamCancelled.get());
+                        serverWriteFailureLatch.countDown();
 
-                    // Complete the Handler callback.
-                    callback.succeeded();
-                }, x ->
-                {
-                    assertTrue(httpStreamCancelled.get());
-                    serverWriteFailureLatch.countDown();
+                        // Complete the Handler callback.
+                        callback.failed(x);
+                    }));
 
-                    // Release the buffer.
-                    buffer.release();
+                    // Wait until TCP congestion.
+                    await().atMost(5, TimeUnit.SECONDS).until(() ->
+                    {
+                        AbstractEndPoint endPoint = (AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint();
+                        WriteFlusher flusher = endPoint.getWriteFlusher();
+                        return flusher.isPending();
+                    });
+                    serverFlusherPendingLatch.countDown();
 
-                    // Complete the Handler callback.
-                    callback.failed(x);
-                }));
-
-                // Wait until TCP congestion.
-                await().atMost(5, TimeUnit.SECONDS).until(() ->
-                {
-                    AbstractEndPoint endPoint = (AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint();
-                    WriteFlusher flusher = endPoint.getWriteFlusher();
-                    return flusher.isPending();
-                });
-                serverFlusherPendingLatch.countDown();
-
-                return true;
+                    return true;
+                }
             }
         });
 

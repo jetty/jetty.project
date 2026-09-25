@@ -160,7 +160,7 @@ public class HpackBenchmark
     }
 
     @Benchmark
-    public int encodeRequestCold() throws Exception
+    public long encodeRequestCold() throws Exception
     {
         encodeBuffer.clear();
         new HpackEncoder().encode(encodeBuffer, request);
@@ -168,7 +168,7 @@ public class HpackBenchmark
     }
 
     @Benchmark
-    public int encodeResponseCold() throws Exception
+    public long encodeResponseCold() throws Exception
     {
         encodeBuffer.clear();
         new HpackEncoder().encode(encodeBuffer, response);
@@ -176,7 +176,7 @@ public class HpackBenchmark
     }
 
     @Benchmark
-    public int encodeRequestWarm() throws Exception
+    public long encodeRequestWarm() throws Exception
     {
         encodeBuffer.clear();
         warmHpackEncoder.encode(encodeBuffer, request);
@@ -184,7 +184,7 @@ public class HpackBenchmark
     }
 
     @Benchmark
-    public int encodeResponseWarm() throws Exception
+    public long encodeResponseWarm() throws Exception
     {
         encodeBuffer.clear();
         warmHpackEncoder.encode(encodeBuffer, response);

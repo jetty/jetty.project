@@ -51,7 +51,6 @@ import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.ResourceListing;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
@@ -880,7 +879,7 @@ public class ResourceService
             {
                 try
                 {
-                    BufferUtil.writeTo(buffer, out);
+                    buffer.putTo(out);
                     callback.succeeded();
                 }
                 catch (Throwable x)

@@ -24,7 +24,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +77,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
     public Detection detect(RetainableByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Detector {} detecting from buffer {} using {}", getProtocol(), BufferUtil.toHexString(buffer), _detectingConnectionFactories);
+            LOG.debug("Detector {} detecting from buffer {} using {}", getProtocol(), StringUtil.toHexString(buffer), _detectingConnectionFactories);
         boolean needMoreBytes = true;
         for (Detecting detectingConnectionFactory : _detectingConnectionFactories)
         {

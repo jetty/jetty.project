@@ -38,7 +38,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -278,20 +277,6 @@ public class BufferUtil
         buffer.position(position);
     }
 
-    /** Put an integer little endian
-     * @param buffer The buffer to put to
-     * @param value The value to put.
-     */
-    public static void putIntLittleEndian(ByteBuffer buffer, int value)
-    {
-        int p = flipToFill(buffer);
-        buffer.put((byte)(value & 0xFF));
-        buffer.put((byte)((value >>> 8) & 0xFF));
-        buffer.put((byte)((value >>> 16) & 0xFF));
-        buffer.put((byte)((value >>> 24) & 0xFF));
-        flipToFlush(buffer, p);
-    }
-
     /**
      * Slice a buffer given an offset and a length, similar to RFC 7233 ranges.
      * @param buffer the buffer to slice
@@ -387,21 +372,6 @@ public class BufferUtil
         return sliced;
     }
 
-    /**
-     * Convert a ByteBuffer to a byte array.
-     *
-     * @param buffer The buffer to convert in flush mode. The buffer is not altered.
-     * @return An array of bytes duplicated from the buffer.
-     */
-    public static byte[] toArray(RetainableByteBuffer buffer)
-    {
-        byte[] to = new byte[Math.toIntExact(buffer.remaining())];
-        RetainableByteBuffer slice = buffer.slice();
-        slice.get(to);
-        slice.release();
-        return to;
-    }
-
     public static byte[] toArray(ByteBuffer buffer)
     {
         if (buffer.hasArray())
@@ -416,17 +386,6 @@ public class BufferUtil
             buffer.slice().get(to);
             return to;
         }
-    }
-
-    /**
-     * @param buf the buffer to check
-     * @return true if buf is equal to EMPTY_BUFFER
-     */
-    public static boolean isTheEmptyBuffer(ByteBuffer buf)
-    {
-        @SuppressWarnings("ReferenceEquality")
-        boolean isTheEmptyBuffer = (buf == EMPTY_BUFFER);
-        return isTheEmptyBuffer;
     }
 
     /**
@@ -448,7 +407,7 @@ public class BufferUtil
      */
     public static boolean isEmpty(ByteBuffer[] buf)
     {
-        if (buf == null || buf.length == 0)
+        if (buf == null)
             return true;
         for (ByteBuffer b : buf)
         {
@@ -485,17 +444,6 @@ public class BufferUtil
     public static boolean hasContent(ByteBuffer buf)
     {
         return buf != null && buf.remaining() > 0;
-    }
-
-    /**
-     * Check for a non null and full buffer.
-     *
-     * @param buf the buffer to check
-     * @return true if the buffer is not null and the limit equals the capacity.
-     */
-    public static boolean isFull(ByteBuffer buf)
-    {
-        return buf != null && buf.limit() == buf.capacity();
     }
 
     /**
@@ -572,39 +520,6 @@ public class BufferUtil
         }
 
         return space;
-    }
-
-    /**
-     * Put data from a {@link RetainableByteBuffer} into a NIO buffer, avoiding over/under flows
-     *
-     * @param from ReadableBuffer to take bytes from, whose position is modified with the bytes taken.
-     * @param to Buffer to put bytes to in fill mode.
-     * @return number of bytes moved
-     * @throws ReadOnlyBufferException if the to buffer is read only
-     */
-    public static int put(RetainableByteBuffer from, ByteBuffer to)
-    {
-        RetainableByteBuffer.Mutable wb = RetainableByteBuffer.Mutable.wrap(to);
-        return (int)put(from, wb);
-    }
-
-    public static long put(RetainableByteBuffer from, RetainableByteBuffer.Mutable to)
-    {
-        long filled;
-        if (to.space() >= from.remaining())
-        {
-            filled = from.remaining();
-            to.put(from);
-        }
-        else
-        {
-            filled = to.space();
-            RetainableByteBuffer slice = from.slice(from.readPosition(), filled);
-            to.put(slice);
-            slice.release();
-            from.readPosition(from.readPosition() + filled);
-        }
-        return filled;
     }
 
     /**
@@ -715,7 +630,7 @@ public class BufferUtil
         try
         {
             int remaining = to.remaining();
-            int take = remaining < len ? remaining : len;
+            int take = Math.min(remaining, len);
             to.put(b, off, take);
             return take;
         }
@@ -833,17 +748,6 @@ public class BufferUtil
         }
     }
 
-    /**
-     * Write a {@link ByteBuffer} to an {@link OutputStream}, updating the position for the bytes written.
-     * @param buffer The buffer to write
-     * @param out The output stream
-     * @throws IOException if there was a problem writing.
-     */
-    public static void writeTo(RetainableByteBuffer buffer, OutputStream out) throws IOException
-    {
-        buffer.writeTo(input -> writeTo(input, out));
-    }
-
     public static int writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
         int remaining = buffer.remaining();
@@ -877,11 +781,6 @@ public class BufferUtil
         return toString(buffer, StandardCharsets.ISO_8859_1);
     }
 
-    public static String toString(RetainableByteBuffer buffer)
-    {
-        return toString(buffer, StandardCharsets.ISO_8859_1);
-    }
-
     /**
      * Convert buffer to a String with specified Charset
      *
@@ -898,20 +797,9 @@ public class BufferUtil
         {
             byte[] to = new byte[buffer.remaining()];
             buffer.slice().get(to);
-            return new String(to, 0, to.length, charset);
+            return new String(to, charset);
         }
         return new String(array, buffer.arrayOffset() + buffer.position(), buffer.remaining(), charset);
-    }
-
-    public static String toString(RetainableByteBuffer buffer, Charset charset)
-    {
-        if (buffer == null)
-            return null;
-        byte[] to = new byte[Math.toIntExact(buffer.remaining())];
-        long positionBefore = buffer.readPosition();
-        buffer.get(to);
-        buffer.readPosition(positionBefore);
-        return new String(to, charset);
     }
 
     /**
@@ -935,20 +823,9 @@ public class BufferUtil
             ro.limit(position + length);
             byte[] to = new byte[length];
             ro.get(to);
-            return new String(to, 0, to.length, charset);
+            return new String(to, charset);
         }
         return new String(array, buffer.arrayOffset() + position, length, charset);
-    }
-
-    public static String toString(RetainableByteBuffer buffer, long position, int length, Charset charset)
-    {
-        if (buffer == null)
-            return null;
-        byte[] to = new byte[length];
-        RetainableByteBuffer slice = buffer.slice(position, length);
-        slice.get(to);
-        slice.release();
-        return new String(to, charset);
     }
 
     /**
@@ -958,11 +835,6 @@ public class BufferUtil
      * @return The buffer as a string.
      */
     public static String toUTF8String(ByteBuffer buffer)
-    {
-        return toString(buffer, StandardCharsets.UTF_8);
-    }
-
-    public static String toUTF8String(RetainableByteBuffer buffer)
     {
         return toString(buffer, StandardCharsets.UTF_8);
     }
@@ -1024,137 +896,6 @@ public class BufferUtil
         throw new NumberFormatException(toString(buffer));
     }
 
-    /**
-     * Convert buffer to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
-     *
-     * @param buffer A buffer containing an integer in flush mode. The position is updated.
-     * @return an int
-     */
-    public static int takeInt(ByteBuffer buffer)
-    {
-        int val = 0;
-        boolean started = false;
-        boolean minus = false;
-        int i;
-        for (i = buffer.position(); i < buffer.limit(); i++)
-        {
-            byte b = buffer.get(i);
-            if (b <= SPACE)
-            {
-                if (started)
-                    break;
-            }
-            else if (b >= '0' && b <= '9')
-            {
-                val = val * 10 + (b - '0');
-                started = true;
-            }
-            else if (b == MINUS && !started)
-            {
-                minus = true;
-            }
-            else
-                break;
-        }
-
-        if (started)
-        {
-            buffer.position(i);
-            return minus ? (-val) : val;
-        }
-        throw new NumberFormatException(toString(buffer));
-    }
-
-    /**
-     * Convert buffer to an long. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
-     *
-     * @param buffer A buffer containing an integer in flush mode. The position is not changed.
-     * @return an int
-     */
-    public static long toLong(ByteBuffer buffer)
-    {
-        long val = 0;
-        boolean started = false;
-        boolean minus = false;
-
-        for (int i = buffer.position(); i < buffer.limit(); i++)
-        {
-            byte b = buffer.get(i);
-            if (b <= SPACE)
-            {
-                if (started)
-                    break;
-            }
-            else if (b >= '0' && b <= '9')
-            {
-                val = val * 10L + (b - '0');
-                started = true;
-            }
-            else if (b == MINUS && !started)
-            {
-                minus = true;
-            }
-            else
-                break;
-        }
-
-        if (started)
-            return minus ? (-val) : val;
-        throw new NumberFormatException(toString(buffer));
-    }
-
-    public static void putHexInt(ByteBuffer buffer, int n)
-    {
-        putHexInt(RetainableByteBuffer.Mutable.wrap(buffer), n);
-    }
-
-    public static void putHexInt(RetainableByteBuffer.Mutable buffer, int n)
-    {
-        if (n < 0)
-        {
-            buffer.put((byte)'-');
-
-            if (n == Integer.MIN_VALUE)
-            {
-                buffer.put((byte)(0x7f & '8'));
-                buffer.put((byte)(0x7f & '0'));
-                buffer.put((byte)(0x7f & '0'));
-                buffer.put((byte)(0x7f & '0'));
-                buffer.put((byte)(0x7f & '0'));
-                buffer.put((byte)(0x7f & '0'));
-                buffer.put((byte)(0x7f & '0'));
-                buffer.put((byte)(0x7f & '0'));
-
-                return;
-            }
-            n = -n;
-        }
-
-        if (n < 0x10)
-        {
-            buffer.put(DIGIT[n]);
-        }
-        else
-        {
-            boolean started = false;
-            // This assumes constant time int arithmatic
-            for (int hexDivisor : hexDivisors)
-            {
-                if (n < hexDivisor)
-                {
-                    if (started)
-                        buffer.put((byte)'0');
-                    continue;
-                }
-
-                started = true;
-                int d = n / hexDivisor;
-                buffer.put(DIGIT[d]);
-                n = n - d * hexDivisor;
-            }
-        }
-    }
-
     public static void putDecInt(ByteBuffer buffer, int n)
     {
         if (n < 0)
@@ -1195,62 +936,10 @@ public class BufferUtil
         }
     }
 
-    public static void putDecLong(ByteBuffer buffer, long n)
-    {
-        putDecLong(RetainableByteBuffer.Mutable.wrap(buffer), n);
-    }
-
-    public static void putDecLong(RetainableByteBuffer.Mutable buffer, long n)
-    {
-        if (n < 0)
-        {
-            buffer.put((byte)'-');
-
-            if (n == Long.MIN_VALUE)
-            {
-                buffer.put((byte)'9');
-                n = 223372036854775808L;
-            }
-            else
-                n = -n;
-        }
-
-        if (n < 10)
-        {
-            buffer.put(DIGIT[(int)n]);
-        }
-        else
-        {
-            boolean started = false;
-            // This assumes constant time int arithmatic
-            for (long aDecDivisorsL : decDivisorsL)
-            {
-                if (n < aDecDivisorsL)
-                {
-                    if (started)
-                        buffer.put((byte)'0');
-                    continue;
-                }
-
-                started = true;
-                long d = n / aDecDivisorsL;
-                buffer.put(DIGIT[(int)d]);
-                n = n - d * aDecDivisorsL;
-            }
-        }
-    }
-
     public static ByteBuffer toBuffer(int value)
     {
         ByteBuffer buf = ByteBuffer.allocate(32);
         putDecInt(buf, value);
-        return buf;
-    }
-
-    public static ByteBuffer toBuffer(long value)
-    {
-        ByteBuffer buf = ByteBuffer.allocate(32);
-        putDecLong(buf, value);
         return buf;
     }
 
@@ -1318,18 +1007,6 @@ public class BufferUtil
         return buffer;
     }
 
-    public static ByteBuffer toBuffer(RetainableByteBuffer buffer, boolean direct)
-    {
-        long capacity = buffer.remaining();
-        if (capacity > Integer.MAX_VALUE)
-            throw new BufferOverflowException();
-        ByteBuffer result = allocate((int)capacity, direct);
-        flipToFill(result);
-        put(buffer, result);
-        flipToFlush(result, 0);
-        return result;
-    }
-
     public static ByteBuffer toDirectBuffer(String s)
     {
         return toDirectBuffer(s, StandardCharsets.ISO_8859_1);
@@ -1394,40 +1071,6 @@ public class BufferUtil
         if (path == null || !"file".equalsIgnoreCase(path.toUri().getScheme()))
             return null;
         return toMappedBuffer(path);
-    }
-
-    /**
-     * Attempt to return a ByteBuffer created via {@link FileChannel#map} call.
-     *
-     * @param resource the resource to map
-     * @param pos the position to start from
-     * @param len the length to support
-     * @return the mapped bytebuffer, or null if unable to map the {@link FileChannel} (usually due to Resource not supporting memory mapped files)
-     * @throws IOException if unable to open mapped byte buffer
-     */
-    public static ByteBuffer toMappedBuffer(Resource resource, long pos, long len) throws IOException
-    {
-        Path path = resource.getPath();
-        if (path == null || !"file".equalsIgnoreCase(path.toUri().getScheme()))
-            return null;
-        return toMappedBuffer(path, pos, len);
-    }
-
-    public static String toSummaryString(ByteBuffer buffer)
-    {
-        if (buffer == null)
-            return "null";
-        StringBuilder buf = new StringBuilder();
-        buf.append("[p=");
-        buf.append(buffer.position());
-        buf.append(",l=");
-        buf.append(buffer.limit());
-        buf.append(",c=");
-        buf.append(buffer.capacity());
-        buf.append(",r=");
-        buf.append(buffer.remaining());
-        buf.append("]");
-        return buf.toString();
     }
 
     public static String toDetailString(ByteBuffer[] buffer)
@@ -1497,19 +1140,6 @@ public class BufferUtil
             out.append(Integer.toHexString(System.identityHashCode(buffer)));
     }
 
-    /**
-     * Convert Buffer to string ID independent of content
-     *
-     * @param buffer the buffet to generate a string ID from
-     * @return A string showing the buffer ID
-     */
-    public static String toIDString(ByteBuffer buffer)
-    {
-        StringBuilder buf = new StringBuilder();
-        idString(buffer, buf);
-        return buf.toString();
-    }
-
     public static void appendDebugString(StringBuilder builder, ByteBuffer buffer, int position, int limit)
     {
         try
@@ -1574,54 +1204,6 @@ public class BufferUtil
             buf.append("\\x").append(StringUtil.toHexString(b));
     }
 
-    /**
-     * Convert buffer to a Hex Summary String.
-     *
-     * @param buffer the buffer to generate a hex byte summary from
-     * @return A string showing a summary of the content in hex
-     */
-    public static String toHexSummary(ByteBuffer buffer)
-    {
-        if (buffer == null)
-            return "null";
-        StringBuilder buf = new StringBuilder();
-
-        buf.append("b[").append(buffer.remaining()).append("]=");
-        for (int i = buffer.position(); i < buffer.limit(); i++)
-        {
-            TypeUtil.toHex(buffer.get(i), buf);
-            if (i == buffer.position() + 24 && buffer.limit() > buffer.position() + 32)
-            {
-                buf.append("...");
-                i = buffer.limit() - 8;
-            }
-        }
-        return buf.toString();
-    }
-
-    /**
-     * Convert buffer to a Hex String.
-     *
-     * @param buffer the buffer to generate a hex byte summary from
-     * @return A hex string
-     */
-    public static String toHexString(RetainableByteBuffer buffer)
-    {
-        if (buffer == null)
-            return "null";
-        RetainableByteBuffer slice = buffer.slice();
-        try
-        {
-            byte[] b = new byte[Math.toIntExact(slice.remaining())];
-            slice.get(b);
-            return StringUtil.toHexString(b);
-        }
-        finally
-        {
-            slice.release();
-        }
-    }
-
     public static String toHexString(ByteBuffer buffer)
     {
         if (buffer == null)
@@ -1634,43 +1216,6 @@ public class BufferUtil
     {
         1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1
     };
-
-    private static final int[] hexDivisors =
-    {
-        0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 0x1
-    };
-
-    private static final long[] decDivisorsL =
-    {
-        1000000000000000000L, 100000000000000000L, 10000000000000000L, 1000000000000000L, 100000000000000L, 10000000000000L,
-        1000000000000L, 100000000000L,
-        10000000000L, 1000000000L, 100000000L, 10000000L, 1000000L, 100000L, 10000L, 1000L, 100L, 10L, 1L
-    };
-
-    public static void putCRLF(ByteBuffer buffer)
-    {
-        buffer.put((byte)13);
-        buffer.put((byte)10);
-    }
-
-    public static void putCRLF(RetainableByteBuffer.Mutable buffer)
-    {
-        buffer.put((byte)13);
-        buffer.put((byte)10);
-    }
-
-    public static boolean isPrefix(ByteBuffer prefix, ByteBuffer buffer)
-    {
-        if (prefix.remaining() > buffer.remaining())
-            return false;
-        int bi = buffer.position();
-        for (int i = prefix.position(); i < prefix.limit(); i++)
-        {
-            if (prefix.get(i) != buffer.get(bi++))
-                return false;
-        }
-        return true;
-    }
 
     public static ByteBuffer ensureCapacity(ByteBuffer buffer, int capacity)
     {

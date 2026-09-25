@@ -83,7 +83,11 @@ public class ZstandardCompression extends Compression
         // Typically, this is done with a BufferUtil.reset(ByteBuffer) call on.
         // https://datatracker.ietf.org/doc/html/rfc8478
         // Zstandard is LITTLE_ENDIAN
-        buffer.byteOrder(ByteOrder.LITTLE_ENDIAN);
+        buffer.quietWrite(b ->
+        {
+            b.order(ByteOrder.LITTLE_ENDIAN);
+            return 0;
+        });
         return buffer;
     }
 
@@ -193,16 +197,16 @@ public class ZstandardCompression extends Compression
         @Override
         public ByteBuffer get(int capacity)
         {
-            RetainableByteBuffer.Mutable wb = bufferPool.acquire(capacity, direct);
+            RetainableByteBuffer.Mutable buffer = bufferPool.acquire(capacity, direct);
             // Hack to extract the ByteBuffer from the WritableBuffer. TODO: how to clean this up?
             ByteBuffer[] ba = new ByteBuffer[1];
-            wb.quietReadFrom(output ->
+            buffer.quietWrite(output ->
             {
                 ba[0] = output;
                 return 0;
             });
             ByteBuffer byteBuffer = ba[0];
-            buffers.put(byteBuffer, wb);
+            buffers.put(byteBuffer, buffer);
             return byteBuffer;
         }
 

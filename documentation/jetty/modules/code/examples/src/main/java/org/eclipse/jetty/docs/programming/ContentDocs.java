@@ -180,7 +180,7 @@ public class ContentDocs
             // or copy the bytes elsewhere (e.g. the file system).
             try (RetainableByteBuffer buffer = chunk.acquire())
             {
-                buffer.writeTo(b -> fileChannel.write(b));
+                buffer.read(b -> fileChannel.write(b));
             }
 
             if (chunk.isLast())

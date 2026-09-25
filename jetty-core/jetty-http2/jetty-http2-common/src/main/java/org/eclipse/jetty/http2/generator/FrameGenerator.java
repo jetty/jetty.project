@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.util.List;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
@@ -35,7 +33,7 @@ public abstract class FrameGenerator
         this.bufferPool = headerGenerator == null ? WritableBufferPool.NON_POOLING : headerGenerator.getBufferPool();
     }
 
-    public abstract int generate(List<RetainableByteBuffer> accumulator, Frame frame) throws HpackException;
+    public abstract int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame) throws HpackException;
 
     protected RetainableByteBuffer.Mutable generateHeader(FrameType frameType, int length, int flags, int streamId)
     {
@@ -62,16 +60,11 @@ public abstract class FrameGenerator
         int bufferSize = encoder.getMaxHeaderListSize();
         if (bufferSize <= 0)
             bufferSize = HpackContext.DEFAULT_MAX_HEADER_LIST_SIZE;
-        RetainableByteBuffer.Mutable hpacked = bufferPool.acquire(bufferSize, isUseDirectByteBuffers());
-        try
+        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(bufferSize, isUseDirectByteBuffers()))
         {
-            encoder.encode(hpacked, metaData);
-            return hpacked;
-        }
-        catch (HpackException x)
-        {
-            hpacked.release();
-            throw x;
+            encoder.encode(buffer, metaData);
+            buffer.retain();
+            return buffer;
         }
     }
 }

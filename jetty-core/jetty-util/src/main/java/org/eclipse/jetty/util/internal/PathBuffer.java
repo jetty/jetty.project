@@ -30,33 +30,31 @@ import org.eclipse.jetty.util.buffer.WritableBufferPool;
 
 public class PathBuffer implements RetainableByteBuffer
 {
-    private final Retainable retainable;
     private final Path path;
     private final WritableBufferPool.Sized bufferPool;
+    private final Retainable retainable;
     private final long offset;
     private final long size;
     private long position;
+    private RetainableByteBuffer readBuffer;
 
-    public PathBuffer(Path path, long offset, long size, WritableBufferPool.Sized bufferPool) throws IOException
+    public PathBuffer(Path path, long offset, long size, WritableBufferPool.Sized bufferPool, Retainable retainable) throws IOException
     {
-        this(path, offset, size, bufferPool, new ReferenceCounter());
-    }
-
-    private PathBuffer(Path path, long offset, long size, WritableBufferPool.Sized bufferPool, Retainable retainable) throws IOException
-    {
-        this.path = Objects.requireNonNull(path);
-        this.retainable = Objects.requireNonNull(retainable);
-        this.bufferPool = Objects.requireNonNull(bufferPool);
-        long fileSize = Files.size(path);
-        this.size = size < 0L ? fileSize - offset : size;
-        this.offset = offset;
         if (offset < 0L)
             throw new IllegalArgumentException("offset " + offset + " < 0 for file " + path);
+        long fileSize = Files.size(path);
         if (offset > fileSize)
             throw new IllegalArgumentException("offset " + offset + " > file size " + fileSize + " for file " + path);
-        long offsetEnd = this.offset + this.size;
+        long realSize = size < 0L ? fileSize - offset : size;
+        long offsetEnd = offset + realSize;
         if (offsetEnd > fileSize)
             throw new IllegalArgumentException("offset + size " + offsetEnd + " > file size " + fileSize + " for file " + path);
+        this.path = path;
+        this.bufferPool = Objects.requireNonNull(bufferPool);
+        this.retainable = Objects.requireNonNull(retainable);
+        this.size = realSize;
+        this.offset = offset;
+        retain();
     }
 
     private RetainableByteBuffer getBytesAt(long position, boolean absolute, int length)
@@ -65,7 +63,7 @@ public class PathBuffer implements RetainableByteBuffer
             throw new BufferUnderflowException();
 
         Mutable buffer = bufferPool.acquire(length);
-        buffer.quietReadFrom(output ->
+        buffer.quietWrite(output ->
         {
             output.limit(length);
             try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ))
@@ -112,116 +110,116 @@ public class PathBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public boolean isDirect()
-    {
-        return bufferPool.isDirect();
-    }
-
-    @Override
     public byte get(long position)
     {
-        RetainableByteBuffer buffer = getBytesAt(position, true, Byte.BYTES);
-        byte b = buffer.get();
-        buffer.release();
-        return b;
+        try (RetainableByteBuffer buffer = getBytesAt(position, true, Byte.BYTES))
+        {
+            return buffer.get();
+        }
     }
 
     @Override
     public byte get()
     {
-        RetainableByteBuffer buffer = getBytesAt(position, false, Byte.BYTES);
-        byte b = buffer.get();
-        buffer.release();
-        return b;
+        try (RetainableByteBuffer buffer = getBytesAt(position, false, Byte.BYTES))
+        {
+            return buffer.get();
+        }
     }
 
     @Override
     public short getShort()
     {
-        RetainableByteBuffer buffer = getBytesAt(position, false, Short.BYTES);
-        short s = buffer.getShort();
-        buffer.release();
-        return s;
+        try (RetainableByteBuffer buffer = getBytesAt(position, false, Short.BYTES))
+        {
+            return buffer.getShort();
+        }
     }
 
     @Override
     public short getShort(long position)
     {
-        RetainableByteBuffer buffer = getBytesAt(position, true, Short.BYTES);
-        short s = buffer.getShort();
-        buffer.release();
-        return s;
+        try (RetainableByteBuffer buffer = getBytesAt(position, true, Short.BYTES))
+        {
+            return buffer.getShort();
+        }
     }
 
     @Override
     public int getInt()
     {
-        RetainableByteBuffer buffer = getBytesAt(position, false, Integer.BYTES);
-        int i = buffer.getInt();
-        buffer.release();
-        return i;
+        try (RetainableByteBuffer buffer = getBytesAt(position, false, Integer.BYTES))
+        {
+            return buffer.getInt();
+        }
     }
 
     @Override
     public int getInt(long position)
     {
-        RetainableByteBuffer buffer = getBytesAt(position, true, Integer.BYTES);
-        int i = buffer.getInt();
-        buffer.release();
-        return i;
+        try (RetainableByteBuffer buffer = getBytesAt(position, true, Integer.BYTES))
+        {
+            return buffer.getInt();
+        }
     }
 
     @Override
     public long getLong()
     {
-        RetainableByteBuffer buffer = getBytesAt(position, false, Long.BYTES);
-        long l = buffer.getLong();
-        buffer.release();
-        return l;
+        try (RetainableByteBuffer buffer = getBytesAt(position, false, Long.BYTES))
+        {
+            return buffer.getLong();
+        }
     }
 
     @Override
     public long getLong(long position)
     {
-        RetainableByteBuffer buffer = getBytesAt(position, true, Long.BYTES);
-        long l = buffer.getLong();
-        buffer.release();
-        return l;
+        try (RetainableByteBuffer buffer = getBytesAt(position, true, Long.BYTES))
+        {
+            return buffer.getLong();
+        }
     }
 
     @Override
     public void get(byte[] b, int off, int len)
     {
-        RetainableByteBuffer buffer = getBytesAt(position, false, len);
-        buffer.get(b, off, len);
-        buffer.release();
+        try (RetainableByteBuffer buffer = getBytesAt(position, false, len))
+        {
+            buffer.get(b, off, len);
+        }
     }
 
     @Override
     public void get(long position, byte[] b, int off, int len)
     {
-        RetainableByteBuffer buffer = getBytesAt(position, true, len);
-        buffer.get(b, off, len);
-        buffer.release();
-    }
-
-    @Override
-    public RetainableByteBuffer slice()
-    {
-        return slice(readPosition(), remaining());
+        try (RetainableByteBuffer buffer = getBytesAt(position, true, len))
+        {
+            buffer.get(b, off, len);
+        }
     }
 
     @Override
     public RetainableByteBuffer slice(long position, long length)
     {
-        if (position + length > capacity())
-            throw new IllegalArgumentException("slice outside bounds: this[%d,%d] - slice[%s,%s]".formatted(
-                readPosition(), capacity(), position, length
-            ));
-        try
+        Objects.checkFromIndexSize(position, length, capacity());
+        // Retain this PathBuffer once; the slice has a different
+        // reference counter from its parent that pairs this retain.
+        retain();
+        ReferenceCounter refCount = new ReferenceCounter()
         {
-            retain();
-            return new PathBuffer(path, offset + position, length, bufferPool, this);
+            @Override
+            public boolean release()
+            {
+                boolean released = super.release();
+                if (released)
+                    PathBuffer.this.release();
+                return released;
+            }
+        };
+        try (refCount)
+        {
+            return new PathBuffer(path, offset + position, length, bufferPool, refCount);
         }
         catch (IOException e)
         {
@@ -230,64 +228,79 @@ public class PathBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public long writeTo(Target target) throws IOException
+    public long read(Reader reader) throws IOException
     {
-        if (target instanceof TransferringTarget transferringTarget)
+        if (reader instanceof TransferringReader transferringReader)
         {
             try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ))
             {
-                long transferred = transferringTarget.write(fileChannel, offset + position, remaining());
+                long transferred = transferringReader.readFrom(fileChannel, offset + position, remaining());
                 position += transferred;
                 return transferred;
             }
         }
 
-        RetainableByteBuffer.Mutable fileBuffer = bufferPool.acquire();
-        try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ))
+        readBuffer = Retainable.dispose(readBuffer);
+
+        try (Mutable fileBuffer = bufferPool.acquire())
         {
-            fileChannel.position(offset + position);
-            long totalWritten = 0L;
-            while (true)
+            try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ))
             {
-                long read = fileBuffer.readFrom(b ->
+                fileChannel.position(offset + position);
+
+                long read = 0;
+                long totalRead = 0;
+                while (true)
                 {
-                    long remaining = remaining();
-                    if (remaining == 0)
-                        return 0;
+                    long written = fileBuffer.write(b ->
+                    {
+                        long remaining = remaining();
+                        if (remaining == 0)
+                            return 0;
 
-                    // We may be reading only a slice of the file.
-                    // Clamp the buffer to avoid reading past the size.
-                    int space = b.remaining();
-                    if (space > remaining)
-                        b.limit(b.position() + (int)remaining);
+                        // We may be reading only a slice of the file.
+                        // Clamp the buffer to avoid reading past the size.
+                        int space = b.remaining();
+                        if (space > remaining)
+                            b.limit(b.position() + (int)remaining);
 
-                    return fileChannel.read(b);
-                });
+                        return fileChannel.read(b);
+                    });
 
-                // Should not happen unless the file is modified concurrently.
-                if (read < 0)
-                    throw new EOFException();
+                    // Should not happen unless the file is modified concurrently.
+                    if (written < 0)
+                        throw new EOFException();
 
-                long written = fileBuffer.writeTo(target);
+                    if (written == 0)
+                        break;
 
-                totalWritten += written;
-                position += written;
+                    read = fileBuffer.read(reader);
 
-                // Target could not consume all the bytes, bail out.
-                if (written < read)
-                    break;
+                    if (read > 0)
+                    {
+                        totalRead += read;
+                        position += read;
+                    }
 
-                // File was fully read.
-                if (!hasRemaining())
-                    break;
+                    // The Reader could not consume all the bytes, bail out.
+                    if (read < written)
+                    {
+                        // Store the buffer, as the Reader may
+                        // use the ByteBuffer asynchronously.
+                        fileBuffer.retain();
+                        readBuffer = fileBuffer;
+                        break;
+                    }
 
-                fileBuffer.clear();
+                    // File was fully read.
+                    if (!hasRemaining())
+                        break;
+
+                    fileBuffer.clear();
+                }
+
+                return read < 0 ? read : totalRead;
             }
-            return totalWritten;
-        }
-        finally
-        {
-            fileBuffer.release();
         }
     }
 
@@ -306,7 +319,10 @@ public class PathBuffer implements RetainableByteBuffer
     @Override
     public boolean release()
     {
-        return retainable.release();
+        boolean released = retainable.release();
+        if (released)
+            readBuffer = Retainable.dispose(readBuffer);
+        return released;
     }
 
     @Override

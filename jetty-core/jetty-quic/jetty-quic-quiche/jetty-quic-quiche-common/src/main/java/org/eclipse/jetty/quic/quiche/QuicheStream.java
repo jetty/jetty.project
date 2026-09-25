@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.quic.quiche;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.WritePendingException;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -256,7 +254,7 @@ public class QuicheStream extends AbstractStream
     }
 
     @Override
-    public void data(boolean last, List<ByteBuffer> buffers, Promise.Invocable<Stream> promise)
+    public void data(boolean last, RetainableByteBuffer buffer, Promise.Invocable<Stream> promise)
     {
         Writer current;
         while (true)
@@ -267,11 +265,16 @@ public class QuicheStream extends AbstractStream
                 promise.failed(new WritePendingException());
                 return;
             }
-            current = Writer.forWriting(last, buffers, promise);
+            current = Writer.forWriting(last, buffer, promise);
             if (writer.compareAndSet(null, current))
                 break;
+            else
+                current.close();
         }
-        write(current);
+        try (Writer writer = current)
+        {
+            write(writer);
+        }
     }
 
     @Override
@@ -283,41 +286,38 @@ public class QuicheStream extends AbstractStream
 
     private void write(Writer current)
     {
-        try
+        try (RetainableByteBuffer buffer = current.acquire())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("writing {} for {}", current, this);
 
-            int length = current.buffers().size();
-            for (int i = 0; i < length; ++i)
+            long remaining = buffer.remaining();
+            long written = session.data(this, current.last(), buffer);
+            if (written < remaining)
             {
-                ByteBuffer buffer = current.buffers().get(i);
+                // Write stalled, save state and return.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("pending {} for {}", current, this);
 
-                int remaining = buffer.remaining();
-                boolean lastBuffer = i == length - 1;
-
-                if (remaining == 0 && !lastBuffer)
-                    continue;
-
-                int written = session.data(this, current.last() && lastBuffer, buffer);
-                if (written != remaining)
+                if (current.pending())
                 {
-                    // Write stalled, save state and return.
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("pending {} for {}", current, this);
-                    if (!current.pending())
-                    {
-                        Writer pending = Writer.forPending(current);
-                        // If the CAS fails (e.g. due to asynchronous failures), just return.
-                        writer.compareAndSet(current, pending);
-                    }
-                    session.flush();
-                    return;
+                    // The current Writer was already pending from a previous write,
+                    // avoid creating another Writer instance by retaining the current.
+                    current.acquire();
                 }
+                else
+                {
+                    // Creating a pending Writer implicitly retains it.
+                    Writer pending = Writer.forPending(current);
+                    // The CAS may fail due to asynchronous failures.
+                    if (!writer.compareAndSet(current, pending))
+                        pending.close();
+                }
+                session.flush();
+                return;
             }
 
             session.flush();
-
             writer.set(null);
 
             if (current.last())
@@ -419,9 +419,20 @@ public class QuicheStream extends AbstractStream
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with error 0x{} stop&reset={} {} {}", Long.toHexString(appErrorCode), stopAndReset, this, String.valueOf(failure));
 
-        Writer writer = this.writer.get();
-        if (writer != null)
-            writer.promise().failed(failure != null ? failure : new AsynchronousCloseException());
+        while (true)
+        {
+            Writer w = writer.get();
+            if (w == null || !w.pending())
+                break;
+            if (writer.compareAndSet(w, null))
+            {
+                try (w)
+                {
+                    w.promise().failed(failure != null ? failure : new AsynchronousCloseException());
+                }
+                break;
+            }
+        }
 
         CloseState previous = closeState.getAndSet(CloseState.CLOSED);
         if (previous != CloseState.CLOSED)
@@ -492,27 +503,29 @@ public class QuicheStream extends AbstractStream
     void resumeWrite()
     {
         Writer current = writer.get();
-        if (current == null)
-            return;
-        if (!current.pending)
+        if (current == null || !current.pending())
             return;
         if (LOG.isDebugEnabled())
             LOG.debug("resuming write pending for {}", this);
-        write(current);
+        try (current)
+        {
+            write(current);
+        }
     }
 
     void tryFailWrite()
     {
         Writer current = writer.get();
-        if (current == null)
-            return;
-        if (!current.pending)
+        if (current == null || !current.pending())
             return;
         if (!session.isFailed(this))
             return;
         if (LOG.isDebugEnabled())
             LOG.debug("failing write pending for {}", this);
-        write(current);
+        try (current)
+        {
+            write(current);
+        }
     }
 
     void onNewStream()
@@ -599,27 +612,68 @@ public class QuicheStream extends AbstractStream
         return "%s[%s,writer=%s]".formatted(super.toString(), closeState, writer);
     }
 
-    private record Writer(boolean last, List<ByteBuffer> buffers, Promise.Invocable<Stream> promise, boolean pending)
+    private static final class Writer implements AutoCloseable
     {
-        private static Writer forWriting(boolean last, List<ByteBuffer> buffers, Promise.Invocable<Stream> promise)
+        private final boolean last;
+        private final RetainableByteBuffer buffer;
+        private final Promise.Invocable<Stream> promise;
+        private final boolean pending;
+
+        private Writer(boolean last, RetainableByteBuffer buffer, Promise.Invocable<Stream> promise, boolean pending)
         {
-            return new Writer(last, buffers, promise, false);
+            this.last = last;
+            this.buffer = buffer;
+            this.promise = promise;
+            this.pending = pending;
+            buffer.retain();
+        }
+
+        private static Writer forWriting(boolean last, RetainableByteBuffer buffer, Promise.Invocable<Stream> promise)
+        {
+            return new Writer(last, buffer, promise, false);
         }
 
         public static Writer forPending(Writer writer)
         {
-            return new Writer(writer.last, writer.buffers, writer.promise, true);
+            return new Writer(writer.last(), writer.buffer, writer.promise(), true);
+        }
+
+        public boolean last()
+        {
+            return last;
+        }
+
+        public RetainableByteBuffer acquire()
+        {
+            buffer.retain();
+            return buffer;
+        }
+
+        public Promise.Invocable<Stream> promise()
+        {
+            return promise;
+        }
+
+        public boolean pending()
+        {
+            return pending;
+        }
+
+        @Override
+        public void close()
+        {
+            buffer.release();
         }
 
         @Override
         public String toString()
         {
-            return "%s@%x[last=%b,pending=%b,buffers=%s]".formatted(
+            return "%s@%x[last=%b,pending=%b,buffer=%s]".formatted(
                 TypeUtil.toShortName(getClass()),
                 hashCode(),
                 last,
                 pending,
-                buffers
+                buffer
             );
         }
     }

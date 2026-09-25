@@ -823,7 +823,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _request.setHandled(true);
             _state.completing();
-            sendResponse(null, RetainableByteBuffer.wrap(_response.getHttpOutput().getByteBuffer()), true, Callback.from(() -> _state.completed(null), _state::completed));
+            RetainableByteBuffer buffer = _response.getHttpOutput().takeContentAndClose();
+            Callback callback = Callback.from(buffer::release, Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
+            buffer.quietRead(b ->
+            {
+                int r = b.remaining();
+                sendResponse(null, b, true, callback);
+                return r;
+            });
         }
         catch (Throwable x)
         {
@@ -891,7 +898,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             LOG.debug("onContent {} {}", this, content);
         try (RetainableByteBuffer buffer = content.acquire())
         {
-            _combinedListener.onRequestContent(_request, buffer);
+            buffer.quietRead(b ->
+            {
+                int r = b.remaining();
+                _combinedListener.onRequestContent(_request, b);
+                return r;
+            });
         }
     }
 
@@ -1002,14 +1014,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    protected boolean sendResponse(MetaData.Response response, RetainableByteBuffer content, boolean complete, final Callback callback)
+    protected boolean sendResponse(MetaData.Response response, ByteBuffer content, boolean complete, final Callback callback)
     {
         boolean committing = _state.commitResponse();
 
         if (LOG.isDebugEnabled())
             LOG.debug("sendResponse info={} content={} complete={} committing={} callback={}",
                 response,
-                content,
+                BufferUtil.toDetailString(content),
                 complete,
                 committing,
                 callback);
@@ -1044,7 +1056,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return committing;
     }
 
-    private void send(MetaData.Request ignored, MetaData.Response response, RetainableByteBuffer content, boolean complete, Callback callback)
+    private void send(MetaData.Request ignored, MetaData.Response response, ByteBuffer content, boolean complete, Callback callback)
     {
         org.eclipse.jetty.server.Response coreResponse = _coreResponse;
         if (coreResponse == null)
@@ -1058,14 +1070,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             coreResponse.setStatus(response.getStatus());
             coreResponse.setTrailersSupplier(response.getTrailersSupplier());
         }
-        coreResponse.write(complete, content, callback);
+        coreResponse.write(complete, RetainableByteBuffer.wrap(content), callback);
     }
 
     public boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException
     {
         try (Blocker blocker = _response.getHttpOutput().acquireWriteBlockingCallback())
         {
-            boolean committing = sendResponse(info, RetainableByteBuffer.wrap(content), complete, blocker);
+            boolean committing = sendResponse(info, content, complete, blocker);
             blocker.block();
             return committing;
         }
@@ -1122,7 +1134,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * @param callback Callback when complete or failed
      */
     @Override
-    public void write(RetainableByteBuffer content, boolean complete, Callback callback)
+    public void write(ByteBuffer content, boolean complete, Callback callback)
     {
         sendResponse(null, content, complete, callback);
     }
@@ -1199,11 +1211,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    private void notifyEvent2(Function<Listener, BiConsumer<Request, RetainableByteBuffer>> function, Request request, RetainableByteBuffer content)
+    private void notifyEvent2(Function<Listener, BiConsumer<Request, ByteBuffer>> function, Request request, ByteBuffer content)
     {
         for (Listener listener : _transientListeners)
         {
-            RetainableByteBuffer view = content.slice();
+            ByteBuffer view = content.slice();
             try
             {
                 function.apply(listener).accept(request, view);
@@ -1212,10 +1224,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Failure invoking listener {}", listener, x);
-            }
-            finally
-            {
-                view.release();
             }
         }
     }
@@ -1311,7 +1319,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          * @param request the request object
          * @param content a {@link ByteBuffer#slice() slice} of the request content chunk
          */
-        default void onRequestContent(Request request, RetainableByteBuffer content)
+        default void onRequestContent(Request request, ByteBuffer content)
         {
         }
 
@@ -1378,7 +1386,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
          * @param request the request object
          * @param content a {@link ByteBuffer#slice() slice} of the response content chunk
          */
-        default void onResponseContent(Request request, RetainableByteBuffer content)
+        default void onResponseContent(Request request, ByteBuffer content)
         {
         }
 
@@ -1413,15 +1421,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     private class SendCallback extends Callback.Nested
     {
-        private final RetainableByteBuffer _content;
-        private final long _length;
+        private final ByteBuffer _content;
+        private final int _length;
         private final boolean _commit;
         private final boolean _complete;
 
-        private SendCallback(Callback callback, RetainableByteBuffer content, boolean commit, boolean complete)
+        private SendCallback(Callback callback, ByteBuffer content, boolean commit, boolean complete)
         {
             super(callback);
-            _content = content == null ? RetainableByteBuffer.Mutable.empty() : content.slice();
+            _content = content == null ? BufferUtil.EMPTY_BUFFER : content.slice();
             _length = _content.remaining();
             _commit = commit;
             _complete = complete;
@@ -1445,7 +1453,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Commit failed", x);
-
             if (x instanceof HttpException httpException)
             {
                 MetaData.Response responseMeta = new MetaData.Response(httpException.getCode(), httpException.getReason(), HttpVersion.HTTP_1_1, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);
@@ -1522,7 +1529,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
 
         @Override
-        public void onRequestContent(Request request, RetainableByteBuffer content)
+        public void onRequestContent(Request request, ByteBuffer content)
         {
             request.getHttpChannel().notifyEvent2(listener -> listener::onRequestContent, request, content);
         }
@@ -1564,7 +1571,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
 
         @Override
-        public void onResponseContent(Request request, RetainableByteBuffer content)
+        public void onResponseContent(Request request, ByteBuffer content)
         {
             request.getHttpChannel().notifyEvent2(listener -> listener::onResponseContent, request, content);
         }

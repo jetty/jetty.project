@@ -18,6 +18,7 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -130,17 +131,6 @@ public class MultiBuffer implements RetainableByteBuffer
                 return true;
         }
         return false;
-    }
-
-    @Override
-    public boolean isDirect()
-    {
-        boolean r = true;
-        for (RetainableByteBuffer buffer : buffers)
-        {
-            r &= buffer.isDirect();
-        }
-        return r;
     }
 
     private RetainableByteBuffer current()
@@ -380,8 +370,7 @@ public class MultiBuffer implements RetainableByteBuffer
     @Override
     public RetainableByteBuffer slice(long position, long length)
     {
-        if (position < 0 || length < 0 || position + length > capacity())
-            throw new IllegalArgumentException();
+        Objects.checkFromIndexSize(position, length, capacity());
 
         if (length == 0)
             return RetainableByteBuffer.empty();
@@ -418,11 +407,12 @@ public class MultiBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public long writeTo(Target target) throws IOException
+    public long read(Reader reader) throws IOException
     {
-        long totalWritten = 0;
+        long read = 0;
+        long totalRead = 0;
         boolean invoked = false;
-        GatheringTarget gatherer = target instanceof GatheringTarget gt ? gt : null;
+        GatheringReader gatherer = reader instanceof GatheringReader gr ? gr : null;
         for (int i = 0; i < buffers.size(); ++i)
         {
             RetainableByteBuffer buffer = buffers.get(i);
@@ -462,10 +452,10 @@ public class MultiBuffer implements RetainableByteBuffer
                     if (idx > 0)
                     {
                         invoked = true;
-                        long written = gatherer.write(gathers, 0, idx);
-                        if (written > 0)
-                            totalWritten += written;
-                        if (written < length)
+                        read = gatherer.readFrom(gathers, 0, idx);
+                        if (read > 0)
+                            totalRead += read;
+                        if (read < length)
                             break;
                         else
                             continue;
@@ -475,17 +465,21 @@ public class MultiBuffer implements RetainableByteBuffer
 
             invoked = true;
             long length = buffer.remaining();
-            long written = buffer.writeTo(target);
-            if (written > 0)
-                totalWritten += written;
-            if (written < length)
+            read = buffer.read(reader);
+            if (read > 0)
+                totalRead += read;
+            if (read < length)
                 break;
         }
 
         if (!invoked)
-            target.write(BufferUtil.EMPTY_BUFFER);
+        {
+            read = reader.readFrom(BufferUtil.EMPTY_BUFFER);
+            if (read > 0)
+                totalRead = read;
+        }
 
-        return totalWritten;
+        return read < 0 ? read : totalRead;
     }
 
     @Override

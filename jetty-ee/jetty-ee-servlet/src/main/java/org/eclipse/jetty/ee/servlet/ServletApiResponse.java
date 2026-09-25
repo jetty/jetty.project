@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -46,6 +45,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * The Jetty implementation of the ee {@link HttpServletResponse} object.
@@ -190,7 +190,7 @@ public class ServletApiResponse implements HttpServletResponse
         }
         else
         {
-            ByteBuffer buffer = getServletChannel().getHttpOutput().takeContentAndClose();
+            RetainableByteBuffer buffer = getServletChannel().getHttpOutput().takeContentAndClose();
             sendRedirect(code, location, buffer);
         }
     }
@@ -216,7 +216,7 @@ public class ServletApiResponse implements HttpServletResponse
      * @param content the content of the response, or null for a generated HTML message if {@link HttpConfiguration#isGenerateRedirectBody()} is {@code true}.
      * @throws IOException if unable to send the redirect
      */
-    private void sendRedirect(int code, String location, ByteBuffer content) throws IOException
+    private void sendRedirect(int code, String location, RetainableByteBuffer content) throws IOException
     {
         resetBuffer();
         try (Blocker.Callback callback = Blocker.callback())

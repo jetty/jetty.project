@@ -46,9 +46,9 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Attachable;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -534,7 +534,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
                         return true;
                     }
                 }
-                case STD_ERR -> LOG.info(BufferUtil.toString(buffer, UTF_8));
+                case STD_ERR -> LOG.info(StringUtil.toString(buffer, UTF_8));
                 default -> throw new IllegalArgumentException();
             }
             return false;

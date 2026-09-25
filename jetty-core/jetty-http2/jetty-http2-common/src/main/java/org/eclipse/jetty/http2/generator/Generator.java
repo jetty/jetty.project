@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.util.List;
-
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
@@ -75,7 +73,7 @@ public class Generator
         headerGenerator.setMaxFrameSize(maxFrameSize);
     }
 
-    public int control(List<RetainableByteBuffer> accumulator, Frame frame) throws HpackException
+    public int control(RetainableByteBuffer.Accumulator accumulator, Frame frame) throws HpackException
     {
         int type = frame.getType().getType();
         if (type == FrameType.PREFACE.getType())
@@ -83,7 +81,7 @@ public class Generator
         return generators[type].generate(accumulator, frame);
     }
 
-    public int data(List<RetainableByteBuffer> accumulator, DataFrame frame, int maxLength)
+    public int data(RetainableByteBuffer.Accumulator accumulator, DataFrame frame, int maxLength)
     {
         return dataGenerator.generate(accumulator, frame, maxLength);
     }

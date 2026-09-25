@@ -1554,7 +1554,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             return 0;
         }
 
-        public abstract boolean generate(List<RetainableByteBuffer> accumulator) throws HpackException;
+        public abstract boolean generate(RetainableByteBuffer.Accumulator accumulator) throws HpackException;
 
         boolean hasHighPriority()
         {
@@ -1645,7 +1645,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
 
         @Override
-        public boolean generate(List<RetainableByteBuffer> accumulator) throws HpackException
+        public boolean generate(RetainableByteBuffer.Accumulator accumulator) throws HpackException
         {
             frameBytes = generator.control(accumulator, frame);
             beforeSend();
@@ -1749,7 +1749,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
 
         @Override
-        public boolean generate(List<RetainableByteBuffer> accumulator)
+        public boolean generate(RetainableByteBuffer.Accumulator accumulator)
         {
             long dataRemaining = getDataBytesRemaining();
 

@@ -54,18 +54,17 @@ public class PriorityGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generatePriority(accumulator, streamId, parentStreamId, weight, exclusive);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
         }
 
         assertEquals(1, frames.size());
-        PriorityFrame frame = frames.get(0);
+        PriorityFrame frame = frames.getFirst();
         assertEquals(streamId, frame.getStreamId());
         assertEquals(parentStreamId, frame.getParentStreamId());
         assertEquals(weight, frame.getWeight());
@@ -96,17 +95,16 @@ public class PriorityGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generatePriority(accumulator, streamId, parentStreamId, weight, exclusive);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
 
             assertEquals(1, frames.size());
-            PriorityFrame frame = frames.get(0);
+            PriorityFrame frame = frames.getFirst();
             assertEquals(streamId, frame.getStreamId());
             assertEquals(parentStreamId, frame.getParentStreamId());
             assertEquals(weight, frame.getWeight());

@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
 import org.eclipse.jetty.io.WritableBufferPool;
@@ -32,9 +29,12 @@ public class InstructionGeneratorTest
 
     private String toHexString(Instruction instruction)
     {
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         instruction.encode(_bufferPool, accumulator);
-        return StringUtil.toHexString(RetainableByteBuffer.merge(accumulator).getArray());
+        try (RetainableByteBuffer buffer = accumulator.drain())
+        {
+            return StringUtil.toHexString(buffer.getArray());
+        }
     }
 
     @Test

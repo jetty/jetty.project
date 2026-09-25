@@ -367,6 +367,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 int filled;
                 if (isRequestBufferEmpty())
                 {
+                    // The application may still retain chunks of the previous
+                    // request, even after the request/response completed, for
+                    // example releasing them from another thread.
+                    // The buffer cannot be compacted, so acquire a new one.
+                    if (_requestBuffer != null && _requestBuffer.isRetained())
+                    {
+                        releaseRequestBuffer();
+                        ensureRequestBuffer();
+                    }
                     filled = fillRequestBuffer(true);
                     if (LOG.isDebugEnabled())
                         LOG.debug("onFillable filled {} {} {} {}", filled, _httpChannel, _requestBuffer, this);

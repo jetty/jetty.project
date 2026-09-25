@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.generator;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
@@ -34,5 +33,5 @@ public abstract class FrameGenerator
         return bufferPool;
     }
 
-    public abstract long generate(List<RetainableByteBuffer> accumulator, long streamId, Frame frame, Consumer<Throwable> fail);
+    public abstract long generate(RetainableByteBuffer.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail);
 }

@@ -52,18 +52,17 @@ public class ResetGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generateReset(accumulator, streamId, error);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
         }
 
         assertEquals(1, frames.size());
-        ResetFrame frame = frames.get(0);
+        ResetFrame frame = frames.getFirst();
         assertEquals(streamId, frame.getStreamId());
         assertEquals(error, frame.getError());
     }
@@ -90,17 +89,16 @@ public class ResetGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generateReset(accumulator, streamId, error);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
 
             assertEquals(1, frames.size());
-            ResetFrame frame = frames.get(0);
+            ResetFrame frame = frames.getFirst();
             assertEquals(streamId, frame.getStreamId());
             assertEquals(error, frame.getError());
         }

@@ -165,7 +165,7 @@ public class WebSocketTester
             if (frame != null)
                 return frame;
 
-            long len = buffer.readFrom(b -> in.read(b.array(), b.arrayOffset() + b.position(), b.remaining()));
+            long len = buffer.write(b -> in.read(b.array(), b.arrayOffset() + b.position(), b.remaining()));
             if (len < 0)
                 return null;
             buffer.writePosition(len);
@@ -175,7 +175,7 @@ public class WebSocketTester
     protected void receiveEof(InputStream in) throws IOException
     {
         RetainableByteBuffer.Mutable buffer = bufferPool.acquire(4096, false);
-        long len = buffer.readFrom(b -> in.read(b.array(), b.arrayOffset() + b.position(), b.remaining()));
+        long len = buffer.write(b -> in.read(b.array(), b.arrayOffset() + b.position(), b.remaining()));
         if (len < 0)
             return;
         throw new IllegalStateException("unexpected content");

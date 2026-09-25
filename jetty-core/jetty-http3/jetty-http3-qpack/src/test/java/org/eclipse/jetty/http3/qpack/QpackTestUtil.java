@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -23,7 +22,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matcher;
@@ -43,13 +41,9 @@ public class QpackTestUtil
     public static RetainableByteBuffer toBuffer(List<Instruction> instructions)
     {
         WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         instructions.forEach(i -> i.encode(bufferPool, accumulator));
-        if (accumulator.isEmpty())
-            return RetainableByteBuffer.empty();
-        if (accumulator.size() == 1)
-            return accumulator.getFirst();
-        return RetainableByteBuffer.merge(accumulator);
+        return accumulator.drain();
     }
 
     public static Matcher<String> equalsHex(String expectedString)
@@ -66,7 +60,7 @@ public class QpackTestUtil
 
     public static String toHexString(Instruction instruction)
     {
-        return BufferUtil.toHexString(toBuffer(List.of(instruction)));
+        return StringUtil.toHexString(toBuffer(List.of(instruction)));
     }
 
     public static RetainableByteBuffer encode(QpackEncoder encoder, long streamId, MetaData metaData) throws QpackException

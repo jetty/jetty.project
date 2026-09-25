@@ -362,7 +362,7 @@ public class MinimumDataRateHandlerTest
                         // Only partially write the response to simulate TCP congestion.
                         // The data rate timeout should fire and fail the Handler callback.
                         long length = buffer.remaining() / 2;
-                        RetainableByteBuffer partial = buffer.slice(buffer.readPosition(), length);
+                        RetainableByteBuffer partial = buffer.slice(length);
                         buffer.readPosition(buffer.readPosition() + length);
                         super.write(false, partial, Callback.NOOP);
                         partial.release();

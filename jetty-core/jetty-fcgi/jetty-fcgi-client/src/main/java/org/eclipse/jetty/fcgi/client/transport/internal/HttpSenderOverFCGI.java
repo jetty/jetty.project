@@ -14,9 +14,7 @@
 package org.eclipse.jetty.fcgi.client.transport.internal;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -101,7 +99,7 @@ public class HttpSenderOverFCGI extends HttpSender
         HttpClientTransportOverFCGI transport = (HttpClientTransportOverFCGI)httpClient.getHttpClientTransport();
         transport.customize(request, fcgiHeaders);
 
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         int id = getHttpChannel().getRequest();
         if (contentBuffer.hasRemaining() || lastContent)
         {
@@ -112,9 +110,8 @@ public class HttpSenderOverFCGI extends HttpSender
         {
             generator.generateRequestHeaders(accumulator, id, fcgiHeaders);
         }
-        try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
-            accumulator.forEach(RetainableByteBuffer::release);
             getHttpChannel().flush(buffer, callback);
         }
     }
@@ -124,12 +121,11 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         if (contentBuffer.hasRemaining() || lastContent)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             int request = getHttpChannel().getRequest();
             generator.generateRequestContent(accumulator, request, contentBuffer, lastContent);
-            try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+            try (RetainableByteBuffer buffer = accumulator.drain())
             {
-                accumulator.forEach(RetainableByteBuffer::release);
                 getHttpChannel().flush(buffer, callback);
             }
         }

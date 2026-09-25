@@ -88,7 +88,7 @@ public class IOResources
                     long totalRead = 0L;
                     while (totalRead < longLength)
                     {
-                        long read = buffer.readFrom(seekableByteChannel::read);
+                        long read = buffer.write(seekableByteChannel::read);
                         if (read == -1)
                             break;
                         totalRead += read;
@@ -114,7 +114,7 @@ public class IOResources
             {
                 try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(false))
                 {
-                    long read = buffer.readFrom(b ->
+                    long read = buffer.write(b ->
                     {
                         int position = b.position();
                         int r = inputStream.read(b.array(), b.arrayOffset() + position, b.remaining());

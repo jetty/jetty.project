@@ -682,7 +682,7 @@ public interface Request
         @Override
         default void onContent(Request request, RetainableByteBuffer content)
         {
-            content.quietWriteTo(b ->
+            content.quietRead(b ->
             {
                 int r = b.remaining();
                 onContent(request, b);
