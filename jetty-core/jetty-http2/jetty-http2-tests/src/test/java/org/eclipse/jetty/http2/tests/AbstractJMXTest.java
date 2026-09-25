@@ -14,7 +14,11 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.lang.management.ManagementFactory;
+import java.util.function.BiFunction;
 
+import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.ConnectionFactory;
 
@@ -32,9 +36,9 @@ public class AbstractJMXTest extends AbstractTest
     }
 
     @Override
-    protected void prepareClient()
+    protected void prepareClient(BiFunction<HTTP2Client, ClientConnector, HttpClientTransport> httpClientTransportFunction)
     {
-        super.prepareClient();
+        super.prepareClient(httpClientTransportFunction);
         clientMBeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         httpClient.addBean(clientMBeanContainer, true);
     }

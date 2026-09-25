@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -48,6 +49,7 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -289,6 +291,133 @@ public class GoAwayTest extends AbstractTest
 
         assertFalse(((HTTP2Session)serverSessionRef.get()).getEndPoint().isOpen());
         assertFalse(((HTTP2Session)clientSession).getEndPoint().isOpen());
+    }
+
+    @Test
+    public void testServerSendsGracefulGoAwayAfterLastData() throws Exception
+    {
+        AtomicReference<Stream> serverStream = new AtomicReference<>();
+        AtomicReference<Stream> clientStream = new AtomicReference<>();
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                serverStream.set(stream);
+                if (!frame.isEndStream())
+                    stream.demand();
+
+                stream.headers(new HeadersFrame(stream.getId(), new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY), null, false), Callback.NOOP);
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1024), true), Callback.NOOP);
+                return Stream.Listener.AUTO_DISCARD;
+            }
+        });
+
+        Session clientSession = newClientSession(new Session.Listener()
+        {
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
+                if (!frame.isGraceful())
+                    clientStream.get().demand();
+            }
+        });
+
+        CountDownLatch clientStreamClosedLatch = new CountDownLatch(1);
+        clientSession.newStream(new HeadersFrame(newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY), null, true), new Promise<>()
+        {
+            @Override
+            public void succeeded(Stream result)
+            {
+                clientStream.set(result);
+            }
+        }, new Stream.Listener()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                // server sends a go away
+                try (Blocker.Callback bcb = Blocker.callback())
+                {
+                    ((HTTP2Session)serverStream.get().getSession()).goAway(GoAwayFrame.GRACEFUL, bcb);
+                    bcb.block();
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            @Override
+            public void onClosed(Stream stream)
+            {
+                clientStreamClosedLatch.countDown();
+            }
+        });
+
+        assertTrue(clientStreamClosedLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testServerShutdownAfterLastData() throws Exception
+    {
+        AtomicReference<Stream> clientStream = new AtomicReference<>();
+        start(new ServerSessionListener()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                if (!frame.isEndStream())
+                    stream.demand();
+
+                stream.headers(new HeadersFrame(stream.getId(), new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY), null, false), Callback.NOOP);
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1024), true), Callback.NOOP);
+                return Stream.Listener.AUTO_DISCARD;
+            }
+        });
+
+        Session clientSession = newClientSession(new Session.Listener()
+        {
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
+            {
+                if (!frame.isGraceful())
+                    clientStream.get().demand();
+            }
+        });
+
+        CountDownLatch clientStreamClosedLatch = new CountDownLatch(1);
+        clientSession.newStream(new HeadersFrame(newRequest(HttpMethod.GET.asString(), HttpFields.EMPTY), null, true), new Promise<>()
+        {
+            @Override
+            public void succeeded(Stream result)
+            {
+                clientStream.set(result);
+            }
+        }, new Stream.Listener()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                // server shuts down
+                try
+                {
+                    server.stop();
+                }
+                catch (Exception e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            @Override
+            public void onClosed(Stream stream)
+            {
+                clientStreamClosedLatch.countDown();
+            }
+        });
+
+        assertTrue(clientStreamClosedLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
