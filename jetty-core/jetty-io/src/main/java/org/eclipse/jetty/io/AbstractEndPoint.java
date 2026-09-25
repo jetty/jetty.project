@@ -15,14 +15,14 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -345,9 +345,9 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
-    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
     {
-        _writeFlusher.write(callback, buffers);
+        _writeFlusher.write(buffer, callback);
     }
 
     @Override
@@ -402,25 +402,35 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     {
         Connection oldConnection = getConnection();
 
-        ByteBuffer buffer = (oldConnection instanceof Connection.UpgradeFrom)
+        RetainableByteBuffer.Mutable buffer = (oldConnection instanceof Connection.UpgradeFrom)
             ? ((Connection.UpgradeFrom)oldConnection).onUpgradeFrom()
             : null;
-        oldConnection.onClose(null);
-        oldConnection.getEndPoint().setConnection(newConnection);
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} upgrading from {} to {} with {}",
-                this, oldConnection, newConnection, BufferUtil.toDetailString(buffer));
-
-        if (BufferUtil.hasContent(buffer))
+        try
         {
-            if (newConnection instanceof Connection.UpgradeTo)
-                ((Connection.UpgradeTo)newConnection).onUpgradeTo(buffer);
-            else
-                throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
-        }
+            if (oldConnection != null)
+                oldConnection.onClose(null);
 
-        newConnection.onOpen();
+            setConnection(newConnection);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} upgrading from {} to {} with {}",
+                    this, oldConnection, newConnection, buffer);
+
+            if (buffer != null && buffer.hasRemaining())
+            {
+                if (newConnection instanceof Connection.UpgradeTo)
+                    ((Connection.UpgradeTo)newConnection).onUpgradeTo(buffer);
+                else
+                    throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
+            }
+
+            newConnection.onOpen();
+        }
+        finally
+        {
+            Retainable.dispose(buffer);
+        }
     }
 
     @Override

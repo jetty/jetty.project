@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
@@ -33,7 +32,6 @@ import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -51,6 +49,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -395,9 +394,10 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                data.release();
-                dataLatch.countDown();
+                try (Content.Chunk _ = stream.read())
+                {
+                    dataLatch.countDown();
+                }
             }
 
             @Override
@@ -503,7 +503,7 @@ public class IdleTimeoutTest extends AbstractTest
 
         sleep(idleTimeout / 2);
         CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), new Callback()
+        stream.data(RetainableByteBuffer.allocate(1, false), false, new Callback()
         {
             private int sends;
 
@@ -512,7 +512,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 sleep(idleTimeout / 2);
                 boolean last = ++sends == 2;
-                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), last), !last ? this : new Callback()
+                stream.data(RetainableByteBuffer.allocate(1, false), last, !last ? this : new Callback()
                 {
                     @Override
                     public void succeeded()
@@ -573,15 +573,15 @@ public class IdleTimeoutTest extends AbstractTest
         Stream stream = promise.get(5, TimeUnit.SECONDS);
 
         sleep(idleTimeout / 2);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false))
+        stream.data(RetainableByteBuffer.allocate(1, false), false)
             .thenCompose(s ->
             {
                 sleep(idleTimeout / 2);
-                return s.data(new DataFrame(s.getId(), ByteBuffer.allocate(1), false));
+                return s.data(RetainableByteBuffer.allocate(1, false), false);
             }).thenAccept(s ->
             {
                 sleep(idleTimeout / 2);
-                s.data(new DataFrame(s.getId(), ByteBuffer.allocate(1), true));
+                s.data(RetainableByteBuffer.allocate(1, false), true);
             });
 
         assertFalse(resetLatch.await(1, TimeUnit.SECONDS));
@@ -610,22 +610,23 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = _request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = _request.read())
                     {
-                        _request.demand(this::onContentAvailable);
-                        return;
-                    }
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        _callback.failed(chunk.getFailure());
-                        return;
-                    }
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        _callback.succeeded();
-                        return;
+                        if (chunk == null)
+                        {
+                            _request.demand(this::onContentAvailable);
+                            return;
+                        }
+                        if (Content.Chunk.isFailure(chunk))
+                        {
+                            _callback.failed(chunk.getFailure());
+                            return;
+                        }
+                        if (chunk.isLast())
+                        {
+                            _callback.succeeded();
+                            return;
+                        }
                     }
                     sleep(delay);
                 }
@@ -657,8 +658,8 @@ public class IdleTimeoutTest extends AbstractTest
         // and they will be buffered by the server; the Servlet will consume them slowly.
         // Servlet reads should reset the idle timeout.
         int contentLength = FlowControlStrategy.DEFAULT_WINDOW_SIZE + 1;
-        ByteBuffer data = ByteBuffer.allocate(contentLength);
-        stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
+        RetainableByteBuffer data = RetainableByteBuffer.allocate(contentLength, false);
+        stream.data(data, true, Callback.NOOP);
 
         assertTrue(latch.await(2 * (contentLength / bufferSize + 1) * delay, TimeUnit.MILLISECONDS));
     }
@@ -725,8 +726,8 @@ public class IdleTimeoutTest extends AbstractTest
                 }
             });
             Stream stream = promise.get(5, TimeUnit.SECONDS);
-            ByteBuffer data = ByteBuffer.allocate(10);
-            stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
+            RetainableByteBuffer data = RetainableByteBuffer.allocate(10, false);
+            stream.data(data, true, Callback.NOOP);
 
             if (!phaser.get().await(idleTimeout / 2, TimeUnit.MILLISECONDS))
                 break;
@@ -749,8 +750,8 @@ public class IdleTimeoutTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.allocate(((HTTP2Session)client).updateSendWindow(0));
-        stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
+        RetainableByteBuffer data = RetainableByteBuffer.allocate(((HTTP2Session)client).updateSendWindow(0), false);
+        stream.data(data, true, Callback.NOOP);
 
         assertTrue(extraLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
@@ -784,18 +785,19 @@ public class IdleTimeoutTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Stream.Data data = stream.readData();
-                            if (data == null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                stream.demand();
-                                return;
-                            }
-                            data.release();
-                            if (data.frame().isEndStream())
-                            {
-                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                                stream.headers(new HeadersFrame(stream.getId(), response, null, true));
-                                return;
+                                if (chunk == null)
+                                {
+                                    stream.demand();
+                                    return;
+                                }
+                                if (chunk.isLast())
+                                {
+                                    MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                    stream.headers(new HeadersFrame(stream.getId(), response, null, true));
+                                    return;
+                                }
                             }
                         }
                     }
@@ -837,15 +839,15 @@ public class IdleTimeoutTest extends AbstractTest
         for (int i = 0; i < 3; ++i)
         {
             Thread.sleep(idleTimeout / 2);
-            stream2.data(new DataFrame(stream2.getId(), ByteBuffer.allocate(64), false));
+            stream2.data(RetainableByteBuffer.allocate(64, false), false);
         }
 
         // Stream1 must not have idle timed out.
         assertFalse(resetLatch.await(idleTimeout / 2, TimeUnit.MILLISECONDS));
 
         // Finish the streams.
-        stream1.data(new DataFrame(stream1.getId(), ByteBuffer.allocate(128), true));
-        stream2.data(new DataFrame(stream2.getId(), ByteBuffer.allocate(64), true));
+        stream1.data(RetainableByteBuffer.allocate(128, false), true);
+        stream2.data(RetainableByteBuffer.allocate(64, false), true);
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
@@ -865,7 +867,7 @@ public class IdleTimeoutTest extends AbstractTest
                 SocketChannelEndPoint endpoint = new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
                     @Override
-                    public boolean flush(ByteBuffer... buffers)
+                    public boolean flush(RetainableByteBuffer buffer)
                     {
                         // Fake TCP congestion.
                         return false;

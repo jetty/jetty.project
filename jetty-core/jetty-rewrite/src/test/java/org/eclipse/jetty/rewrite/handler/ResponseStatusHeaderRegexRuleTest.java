@@ -53,7 +53,7 @@ public class ResponseStatusHeaderRegexRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(200, response.getStatus());
     }
 
@@ -72,7 +72,7 @@ public class ResponseStatusHeaderRegexRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(403, response.getStatus());
     }
 
@@ -92,7 +92,7 @@ public class ResponseStatusHeaderRegexRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(403, response.getStatus());
     }
 
@@ -112,7 +112,7 @@ public class ResponseStatusHeaderRegexRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(403, response.getStatus());
     }
 
@@ -132,7 +132,7 @@ public class ResponseStatusHeaderRegexRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(403, response.getStatus());
         assertThat(response.getContent(), containsString(rule.getMessage()));
     }

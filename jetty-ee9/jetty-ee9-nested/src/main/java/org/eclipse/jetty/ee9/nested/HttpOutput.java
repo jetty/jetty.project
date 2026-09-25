@@ -35,7 +35,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.IOResources;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -45,6 +44,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ThreadIdPool;
@@ -138,8 +138,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      * last link in any Interceptor chain.
      * <p>
      * Responses are committed by the first call to
-     * {@link #write(ByteBuffer, boolean, Callback)}
-     * and closed by a call to {@link #write(ByteBuffer, boolean, Callback)}
+     * {@link #write(RetainableByteBuffer, boolean, Callback)}
+     * and closed by a call to {@link #write(RetainableByteBuffer, boolean, Callback)}
      * with the last boolean set true.  If no content is available to commit
      * or close, then a null buffer is passed.
      */
@@ -156,10 +156,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
          * @param callback The callback to use to indicate {@link Callback#succeeded()}
          * or {@link Callback#failed(Throwable)}.
          */
-        void write(ByteBuffer content, boolean last, Callback callback);
+        void write(RetainableByteBuffer content, boolean last, Callback callback);
 
         @Override
-        default void write(boolean last, ByteBuffer content, Callback callback)
+        default void write(boolean last, RetainableByteBuffer content, Callback callback)
         {
             write(content, last, callback);
         }
@@ -197,7 +197,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private Interceptor _interceptor;
     private long _written;
     private ByteBufferPool.Sized _pool;
-    private RetainableByteBuffer _aggregate;
+    private org.eclipse.jetty.io.RetainableByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;
     private WriteListener _writeListener;
@@ -249,7 +249,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      * Used by ServletCoreResponse when it bypasses HttpOutput to update bytes written.
      * @param written The bytes written
      */
-    void addBytesWritten(int written)
+    void addBytesWritten(long written)
     {
         _written += written;
     }
@@ -277,6 +277,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     }
 
     private void channelWrite(ByteBuffer content, boolean last, Callback callback)
+    {
+        _interceptor.write(RetainableByteBuffer.wrap(content), last, callback);
+    }
+
+    private void channelWrite(RetainableByteBuffer content, boolean last, Callback callback)
     {
         _interceptor.write(content, last, callback);
     }
@@ -685,7 +690,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _pool;
     }
 
-    private RetainableByteBuffer lockedAcquireBuffer()
+    private org.eclipse.jetty.io.RetainableByteBuffer lockedAcquireBuffer()
     {
         assert _channelState.isLockHeldByCurrentThread();
 
@@ -1130,7 +1135,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             encoder.reset();
         }
 
-        RetainableByteBuffer out = getHttpChannel().getByteBufferPool().acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
+        org.eclipse.jetty.io.RetainableByteBuffer out = getHttpChannel().getByteBufferPool().acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
         try
         {
             CharBuffer in = CharBuffer.wrap(s);
@@ -1166,7 +1171,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (result.isOverflow())
                 {
                     BufferUtil.flipToFlush(byteBuffer, 0);
-                    RetainableByteBuffer bigger = _channel.getByteBufferPool().acquire(out.capacity() + s.length() + 2, out.isDirect());
+                    org.eclipse.jetty.io.RetainableByteBuffer bigger = _channel.getByteBufferPool().acquire(out.capacity() + s.length() + 2, out.isDirect());
                     BufferUtil.flipToFill(bigger.getByteBuffer());
                     bigger.getByteBuffer().put(byteBuffer);
                     out.release();
@@ -1340,10 +1345,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (prepareSendContent(0, callback))
             {
-                IOResources.copy(resource, (last, byteBuffer, cb) ->
+                IOResources.copy(resource, (last, buffer, cb) ->
                 {
-                    _written += byteBuffer.remaining();
-                    channelWrite(byteBuffer, last, cb);
+                    _written += buffer.remaining();
+                    channelWrite(buffer, last, cb);
                 }, getSizedByteBufferPool(), 0L, -1L, new Callback.Nested(callback)
                 {
                     @Override
@@ -1384,10 +1389,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (prepareSendContent(0, callback))
             {
-                Content.Sink sink = (last, byteBuffer, cb) ->
+                Content.Sink sink = (last, buffer, cb) ->
                 {
-                    _written += byteBuffer.remaining();
-                    channelWrite(byteBuffer, last, cb);
+                    _written += buffer.remaining();
+                    channelWrite(buffer, last, cb);
                 };
                 httpContent.writeTo(sink, 0L, -1L, new Callback.Nested(callback)
                 {
@@ -1825,7 +1830,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private class InputStreamWritingCB extends NestedChannelWriteCB
     {
         private final InputStream _in;
-        private final RetainableByteBuffer _buffer;
+        private final org.eclipse.jetty.io.RetainableByteBuffer _buffer;
         private boolean _eof;
         private boolean _closed;
 
@@ -1907,7 +1912,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private class ReadableByteChannelWritingCB extends NestedChannelWriteCB
     {
         private final ReadableByteChannel _in;
-        private final RetainableByteBuffer _buffer;
+        private final org.eclipse.jetty.io.RetainableByteBuffer _buffer;
         private boolean _eof;
         private boolean _closed;
 

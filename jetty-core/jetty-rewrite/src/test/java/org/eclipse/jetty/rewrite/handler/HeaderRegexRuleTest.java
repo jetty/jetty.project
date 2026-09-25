@@ -55,7 +55,7 @@ public class HeaderRegexRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(200, response.getStatus());
         assertEquals(value, response.get(name));
     }
@@ -77,7 +77,7 @@ public class HeaderRegexRuleTest extends AbstractRuleTest
                             
                 """;
 
-            HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+            HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
             assertEquals(200, response.getStatus());
             assertEquals(value, response.get(name));
 
@@ -100,7 +100,7 @@ public class HeaderRegexRuleTest extends AbstractRuleTest
                         
             """.replace("$V", value);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(200, response.getStatus());
         assertEquals(value, response.get(name));
     }
@@ -119,7 +119,7 @@ public class HeaderRegexRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(200, response.getStatus());
         assertNull(response.get(name));
     }

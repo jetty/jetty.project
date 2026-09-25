@@ -34,8 +34,8 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -98,7 +98,7 @@ public class SlowClientsTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toBuffer(contentLength), callback);
+                response.write(true, RetainableByteBuffer.wrap("" + contentLength, StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         });

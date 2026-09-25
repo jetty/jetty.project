@@ -53,7 +53,7 @@ public class ResponsePatternRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(rule.getCode(), response.getStatus());
     }
 
@@ -70,7 +70,7 @@ public class ResponsePatternRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(rule.getCode(), response.getStatus());
         assertThat(response.getContent(), containsString(rule.getMessage()));
     }

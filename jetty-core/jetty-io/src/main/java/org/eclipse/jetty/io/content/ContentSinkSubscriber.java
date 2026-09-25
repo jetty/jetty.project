@@ -13,19 +13,19 @@
 
 package org.eclipse.jetty.io.content;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>A {@link Flow.Subscriber} that wraps a {@link Content.Sink}.</p>
  * <p>Content delivered to the {@link #onNext(Content.Chunk)} method is
- * written to {@link Content.Sink#write(boolean, ByteBuffer, Callback)}
+ * written to {@link Content.Sink#write(boolean, RetainableByteBuffer, Callback)}
  * and the chunk is released once the write callback is succeeded or failed.</p>
  */
 public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
@@ -52,32 +52,31 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
     @Override
     public void onNext(Content.Chunk chunk)
     {
-        // Retain the chunk because the write may not complete immediately.
-        chunk.retain();
-        sink.write(chunk.isLast(), chunk.getByteBuffer(), new Callback()
+        try (RetainableByteBuffer buffer = chunk.acquire())
         {
-            public void succeeded()
+            sink.write(chunk.isLast(), buffer, new Callback()
             {
-                chunk.release();
-                if (chunk.isLast())
-                    complete();
-                else
-                    subscription.request(1);
-            }
+                public void succeeded()
+                {
+                    if (chunk.isLast())
+                        complete();
+                    else
+                        subscription.request(1);
+                }
 
-            public void failed(Throwable failure)
-            {
-                chunk.release();
-                subscription.cancel();
-                error(failure);
-            }
+                public void failed(Throwable failure)
+                {
+                    subscription.cancel();
+                    error(failure);
+                }
 
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return Invocable.getInvocationType(callback);
-            }
-        });
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return Invocable.getInvocationType(callback);
+                }
+            });
+        }
     }
 
     @Override

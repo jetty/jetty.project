@@ -92,6 +92,7 @@ import org.eclipse.jetty.server.MemoryConnector;
 import org.eclipse.jetty.server.MemoryTransport;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -608,40 +609,38 @@ public class HTTPClientDocs
             private void forwardContent(Response response, Content.Source contentSource)
             {
                 // Read one chunk of content.
-                Content.Chunk chunk = contentSource.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = contentSource.read())
                 {
-                    // The read chunk is null, demand to be called back
-                    // when the next one is ready to be read.
-                    contentSource.demand(() -> forwardContent(response, contentSource));
-                    // Once a demand is in progress, the content source must not be read
-                    // nor demanded again until the demand callback is invoked.
-                    return;
-                }
-                // Check if the chunk is last and empty, in which case the
-                // read/demand loop is done. Demanding again when the terminal
-                // chunk has been read will invoke the demand callback with
-                // the same terminal chunk, so this check must be present to
-                // avoid infinitely demanding and reading the terminal chunk.
-                if (chunk.isLast() && !chunk.hasRemaining())
-                {
-                    chunk.release();
-                    return;
-                }
+                    if (chunk == null)
+                    {
+                        // The read chunk is null, demand to be called back
+                        // when the next one is ready to be read.
+                        contentSource.demand(() -> forwardContent(response, contentSource));
+                        // Once a demand is in progress, the content source must not be read
+                        // nor demanded again until the demand callback is invoked.
+                        return;
+                    }
 
-                // When a response chunk is received from server1, forward it to server2.
-                content2.write(chunk.getByteBuffer(), Callback.from(() ->
-                {
-                    // When the request chunk is successfully sent to server2,
-                    // release the chunk to recycle the buffer.
-                    chunk.release();
-                    // Then demand more response content from server1.
-                    contentSource.demand(() -> forwardContent(response, contentSource));
-                }, x ->
-                {
-                    chunk.release();
-                    response.abort(x);
-                }));
+                    // Check if the chunk is last and empty, in which case the
+                    // read/demand loop is done. Demanding again when the terminal
+                    // chunk has been read will invoke the demand callback with
+                    // the same terminal chunk, so this check must be present to
+                    // avoid infinitely demanding and reading the terminal chunk.
+                    if (chunk.isLast() && !chunk.hasRemaining())
+                        return;
+
+                    // When a response chunk is received from server1, forward it to server2.
+                    // Closing the buffer will release this acquire.
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        content2.write(chunk.isLast(), buffer, Callback.from(() ->
+                        {
+                            // When the request chunk is successfully sent to
+                            // server2, demand more response content from server1.
+                            contentSource.demand(() -> forwardContent(response, contentSource));
+                        }, response::abort));
+                    }
+                }
             }
         });
 

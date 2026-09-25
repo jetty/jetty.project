@@ -74,6 +74,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.compression.DeflaterPool;
@@ -226,7 +227,7 @@ public class GzipHandlerTest
                 return super.handle(request, new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
                     {
                         throw new ArithmeticException("expected");
                     }
@@ -252,7 +253,8 @@ public class GzipHandlerTest
 
         try (StacklessLogging ignore = new StacklessLogging(Response.class))
         {
-            response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+            RetainableByteBuffer responseBuffer = _connector.getResponse(request.generate());
+            response = HttpTester.parseResponse(responseBuffer);
         }
 
         assertThat(response.getStatus(), is(500));
@@ -377,7 +379,7 @@ public class GzipHandlerTest
         _contextHandler.setHandler(new SingleWriteHandler(CONTENT_BYTES));
         _server.start();
 
-        try (LocalConnector.LocalEndPoint localEndPoint = _connector.connect())
+        try (LocalConnector.LocalEndPoint localEndPoint = _connector.connectToServer())
         {
             // Send HEAD Request
             String rawHeadRequest = """
@@ -386,7 +388,7 @@ public class GzipHandlerTest
                 Accept-Encoding: gzip
             
                 """;
-            localEndPoint.addInput(BufferUtil.toBuffer(rawHeadRequest, UTF_8));
+            localEndPoint.writeRequestString(rawHeadRequest);
             HttpTester.Response response = HttpTester.parseHeadResponse(localEndPoint.getResponse(true, 2, TimeUnit.SECONDS));
 
             assertThat(response.getStatus(), is(200));
@@ -403,7 +405,7 @@ public class GzipHandlerTest
             
                 """;
 
-            localEndPoint.addInput(BufferUtil.toBuffer(rawGetRequest, UTF_8));
+            localEndPoint.writeRequestString(rawGetRequest);
             response = HttpTester.parseResponse(localEndPoint.getResponse(false, 2, TimeUnit.SECONDS));
             assertThat(response.getStatus(), is(200));
             assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
@@ -439,7 +441,7 @@ public class GzipHandlerTest
             """;
 
         // Parse HEAD response
-        response = HttpTester.parseHeadResponse(_connector.getResponse(rawRequest));
+        response = HttpTester.parseHeadResponse(_connector.getResponseAsString(rawRequest));
 
         assertThat(response.getStatus(), is(200));
         assertNull(response.getField("Vary")); // HEAD should not have a Vary header
@@ -453,9 +455,6 @@ public class GzipHandlerTest
         _contextHandler.setHandler(new SingleWriteHandler(CONTENT_BYTES));
         _server.start();
 
-        // generated and parsed test
-        HttpTester.Response response;
-
         // Request to a handler that writes a single buffer, with a valid Content-Length header, and Content-Encoding header.
         String rawRequest = """
             GET /ctx/buffer/info HTTP/1.1
@@ -465,7 +464,7 @@ public class GzipHandlerTest
             
             """;
 
-        response = HttpTester.parseResponse(_connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(rawRequest));
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getCSV("Vary", false), contains("Accept-Encoding"));
@@ -700,7 +699,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/file.txt");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -742,7 +741,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/file.txt");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -791,7 +790,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/file.txt");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -833,7 +832,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/test_quotes.txt");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -1078,7 +1077,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/file.txt");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(rawResponse), head);
@@ -1137,7 +1136,7 @@ public class GzipHandlerTest
             request.setHeader("Accept-Encoding", "gzip");
             request.setURI("/ctx/file.txt");
 
-            ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+            RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -1161,7 +1160,7 @@ public class GzipHandlerTest
             request.setHeader("Accept-Encoding", "gzip");
             request.setURI("/ctx/bad.txt");
 
-            ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+            RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -1208,7 +1207,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/file.mp3");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -1267,7 +1266,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/test.svgz");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -1347,8 +1346,7 @@ public class GzipHandlerTest
         request.setHeader("Host", "tester");
         request.setHeader("Accept-Encoding", "gzip");
 
-        ByteBuffer rawresponse = _connector.getResponse(request.generate());
-        response = HttpTester.parseResponse(rawresponse);
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.get("Transfer-Encoding"), containsString("chunked"));
@@ -1429,7 +1427,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/file.txt");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -1485,7 +1483,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/file.txt");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -1539,7 +1537,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/file.txt");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -1590,7 +1588,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/file.txt");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -1672,7 +1670,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/test.svg");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -1748,7 +1746,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/file.txt");
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -1810,7 +1808,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/" + filename);
 
         // Issue request
-        ByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = _connector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -1991,7 +1989,9 @@ public class GzipHandlerTest
             byte[] bytes;
             String size = parameters.getValue("bufferSize");
             if (size == null)
+            {
                 bytes = CONTENT_BYTES;
+            }
             else
             {
                 int s = Integer.parseInt(size);
@@ -2032,7 +2032,7 @@ public class GzipHandlerTest
                             buffer = buffer.asReadOnlyBuffer();
                     }
 
-                    response.write(last, buffer, cb);
+                    response.write(last, RetainableByteBuffer.wrap(buffer), cb);
                 }
             };
 
@@ -2085,7 +2085,7 @@ public class GzipHandlerTest
             }
 
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
-            response.write(false, byteBuffer.slice(), Callback.from(() -> response.write(true, null, callback)));
+            response.write(false, RetainableByteBuffer.wrap(byteBuffer.slice()), Callback.from(() -> response.write(true, null, callback)));
             return true;
         }
     }
@@ -2135,7 +2135,7 @@ public class GzipHandlerTest
             ByteBuffer slice = byteBuffer.slice();
             response.getHeaders().put(HttpHeader.CONTENT_LENGTH, slice.remaining());
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, this.contentType);
-            response.write(true, slice, callback);
+            response.write(true, RetainableByteBuffer.wrap(slice), callback);
             return true;
         }
     }

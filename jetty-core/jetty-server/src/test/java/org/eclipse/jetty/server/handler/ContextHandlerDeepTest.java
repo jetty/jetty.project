@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.nio.charset.StandardCharsets;
+
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -21,8 +23,8 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -81,7 +83,7 @@ public class ContextHandlerDeepTest
                         request.getHttpURI().getPath()
                     );
 
-                response.write(true, BufferUtil.toBuffer(msg), callback);
+                response.write(true, RetainableByteBuffer.wrap(msg, StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         });
@@ -94,7 +96,7 @@ public class ContextHandlerDeepTest
             Connection: close\r
                         
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.getContent(), containsString("contextPath=/a/b/c\n"));
         assertThat(response.getContent(), containsString("pathInContext=/d\n"));

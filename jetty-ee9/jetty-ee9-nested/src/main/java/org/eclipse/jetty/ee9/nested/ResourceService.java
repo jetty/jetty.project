@@ -876,11 +876,11 @@ public class ResourceService
             // this happens because Content.copy() and IOResources.copy() assume that when they
             // read a last Chunk from a Content.Source, it should be written as a last Chunk
             // to the Content.Sink.
-            Content.Sink sink = (last, byteBuffer, callback) ->
+            Content.Sink sink = (last, buffer, callback) ->
             {
                 try
                 {
-                    BufferUtil.writeTo(byteBuffer, out);
+                    BufferUtil.writeTo(buffer, out);
                     callback.succeeded();
                 }
                 catch (Throwable x)

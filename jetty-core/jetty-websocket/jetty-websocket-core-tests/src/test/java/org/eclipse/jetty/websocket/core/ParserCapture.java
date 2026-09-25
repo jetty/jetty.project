@@ -13,11 +13,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.eclipse.jetty.websocket.core.util.FrameValidation;
 
@@ -52,10 +53,10 @@ public class ParserCapture
         this.coreSession = new WebSocketCoreSession(new TestMessageHandler(), behavior, Negotiated.from(exStack), components);
         coreSession.setAutoFragment(false);
         coreSession.setMaxFrameSize(0);
-        this.parser = new Parser(components.getByteBufferPool(), coreSession);
+        this.parser = new Parser(WritableBufferPool.wrap(components.getByteBufferPool()), coreSession);
     }
 
-    public void parse(ByteBuffer buffer)
+    public void parse(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {

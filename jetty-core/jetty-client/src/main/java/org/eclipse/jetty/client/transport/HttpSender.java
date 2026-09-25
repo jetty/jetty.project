@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client.transport;
 
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,19 +23,20 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p>HttpSender abstracts the algorithm to send HTTP requests, so that subclasses only
  * implement the transport-specific code to send requests over the wire, implementing
- * {@link #sendHeaders(HttpExchange, ByteBuffer, boolean, Callback)} and
- * {@link #sendContent(HttpExchange, ByteBuffer, boolean, Callback)}.</p>
+ * {@link #sendHeaders(HttpExchange, RetainableByteBuffer, boolean, Callback)} and
+ * {@link #sendContent(HttpExchange, RetainableByteBuffer, boolean, Callback)}.</p>
  * <p>HttpSender governs the request state machines, which is updated as the various
  * steps of sending a request are executed, see {@code RequestState}.
  * At any point in time, a user thread may abort the request, which may (if the request
@@ -145,7 +145,7 @@ public abstract class HttpSender
         return false;
     }
 
-    protected boolean someToContent(HttpExchange exchange, ByteBuffer content)
+    protected boolean someToContent(HttpExchange exchange, RetainableByteBuffer content)
     {
         RequestState current = requestState.get();
         return switch (current)
@@ -157,7 +157,7 @@ public abstract class HttpSender
 
                 HttpRequest request = exchange.getRequest();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Request content {}{}{}", request, System.lineSeparator(), BufferUtil.toDetailString(content));
+                    LOG.debug("Request content {}{}{}", request, System.lineSeparator(), content);
                 request.notifyContent(content);
 
                 if (updateRequestState(RequestState.TRANSIENT, RequestState.CONTENT))
@@ -289,7 +289,7 @@ public abstract class HttpSender
     /**
      * <p>Implementations should send the HTTP headers over the wire, possibly with some content,
      * in a single write, and notify the given {@code callback} of the result of this operation.</p>
-     * <p>If there is more content to send, then {@link #sendContent(HttpExchange, ByteBuffer, boolean, Callback)}
+     * <p>If there is more content to send, then {@link #sendContent(HttpExchange, RetainableByteBuffer, boolean, Callback)}
      * will be invoked.</p>
      *
      * @param exchange the exchange
@@ -297,7 +297,7 @@ public abstract class HttpSender
      * @param lastContent whether the content is the last content to send
      * @param callback the callback to notify
      */
-    protected abstract void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback);
+    protected abstract void sendHeaders(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback);
 
     /**
      * <p>Implementations should send the given HTTP content over the wire.</p>
@@ -307,7 +307,7 @@ public abstract class HttpSender
      * @param lastContent whether the content is the last content to send
      * @param callback the callback to notify
      */
-    protected abstract void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback);
+    protected abstract void sendContent(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback);
 
     protected void reset()
     {
@@ -480,7 +480,7 @@ public abstract class HttpSender
         private volatile boolean expect100;
         // Fields only used internally.
         private Content.Chunk chunk;
-        private ByteBuffer notifyBuffer;
+        private RetainableByteBuffer notifyBuffer;
         private boolean committed;
         private boolean success;
         private boolean complete;
@@ -566,15 +566,17 @@ public abstract class HttpSender
                 throw failure.getFailure();
             }
 
-            ByteBuffer buffer = chunk.getByteBuffer();
-            // Save the buffer used to notify request content listeners.
-            notifyBuffer = buffer.slice().asReadOnlyBuffer();
-            boolean last = chunk.isLast();
-            if (committed)
-                sendContent(exchange, buffer, last, this);
-            else
-                sendHeaders(exchange, buffer, last, this);
-            return Action.SCHEDULED;
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                // Save the buffer used to notify request content listeners.
+                notifyBuffer = buffer.slice();
+                boolean last = chunk.isLast();
+                if (committed)
+                    sendContent(exchange, buffer, last, this);
+                else
+                    sendHeaders(exchange, buffer, last, this);
+                return Action.SCHEDULED;
+            }
         }
 
         @Override
@@ -607,8 +609,8 @@ public abstract class HttpSender
                 }
 
                 boolean last = chunk.isLast();
-                chunk.release();
-                chunk = null;
+                chunk = Retainable.dispose(chunk);
+                notifyBuffer = Retainable.dispose(notifyBuffer);
 
                 if (proceed)
                 {
@@ -640,9 +642,9 @@ public abstract class HttpSender
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            if (chunk != null)
-                chunk.release();
+            Retainable.dispose(chunk);
             chunk = Content.Chunk.next(chunk);
+            notifyBuffer = Retainable.dispose(notifyBuffer);
         }
 
         @Override

@@ -25,9 +25,6 @@ import org.testcontainers.containers.DatastoreEmulatorContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
-/**
- *
- */
 public class GCloudSessionDistributionTests extends AbstractSessionDistributionTests
 {
 
@@ -59,9 +56,9 @@ public class GCloudSessionDistributionTests extends AbstractSessionDistributionT
         String endPoint = emulator.getEmulatorEndpoint();
         InetAddress hostAddr = InetAddress.getByName(new URL("http://" + endPoint).getHost());
         LOGGER.info("endPoint: {} ,hostAddr.isAnyLocalAddress(): {},hostAddr.isLoopbackAddress(): {}",
-                endPoint,
-                hostAddr.isAnyLocalAddress(),
-                hostAddr.isLoopbackAddress());
+            endPoint,
+            hostAddr.isAnyLocalAddress(),
+            hostAddr.isLoopbackAddress());
         if (hostAddr.isAnyLocalAddress() || hostAddr.isLoopbackAddress())
             host = endPoint;
         else
@@ -73,7 +70,7 @@ public class GCloudSessionDistributionTests extends AbstractSessionDistributionT
     {
         emulator.stop();
     }
-    
+
     @Override
     public void configureExternalSessionStorage(Path jettyBase) throws Exception
     {
@@ -84,8 +81,8 @@ public class GCloudSessionDistributionTests extends AbstractSessionDistributionT
     public List<String> getFirstStartExtraArgs()
     {
         return Arrays.asList(
-                "jetty.session.gcloud.host=" + host,
-                "jetty.session.gcloud.projectId=foobar"
+            "jetty.session.gcloud.host=" + host,
+            "jetty.session.gcloud.projectId=foobar"
         );
     }
 
@@ -99,9 +96,8 @@ public class GCloudSessionDistributionTests extends AbstractSessionDistributionT
     public List<String> getSecondStartExtraArgs()
     {
         return Arrays.asList(
-                "jetty.session.gcloud.host=" + host,
-                "jetty.session.gcloud.projectId=foobar"
-            );
+            "jetty.session.gcloud.host=" + host,
+            "jetty.session.gcloud.projectId=foobar"
+        );
     }
-
 }

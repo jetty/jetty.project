@@ -13,15 +13,15 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -63,15 +63,15 @@ public class SocketChannelEndPointOpenCloseTest
     public void testClientServerExchange() throws Exception
     {
         EndPointPair c = newConnection();
-        ByteBuffer buffer = BufferUtil.allocate(4096);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(4096, false);
 
         // Client sends a request
-        c.client.flush(BufferUtil.toBuffer("request"));
+        c.client.flush(RetainableByteBuffer.wrap("request", UTF_8));
 
         // Server receives the request
         int len = c.server.fill(buffer);
         assertEquals(7, len);
-        assertEquals("request", BufferUtil.toString(buffer));
+        assertEquals("request", buffer.getString(UTF_8));
 
         // Client and server are open
         assertTrue(c.client.isOpen());
@@ -80,7 +80,7 @@ public class SocketChannelEndPointOpenCloseTest
         assertFalse(c.server.isOutputShutdown());
 
         // Server sends response and closes output
-        c.server.flush(BufferUtil.toBuffer("response"));
+        c.server.flush(RetainableByteBuffer.wrap("response", UTF_8));
         c.server.shutdownOutput();
 
         // client server are open, server is oshut
@@ -90,10 +90,9 @@ public class SocketChannelEndPointOpenCloseTest
         assertTrue(c.server.isOutputShutdown());
 
         // Client reads response
-        BufferUtil.clear(buffer);
         len = c.client.fill(buffer);
         assertEquals(8, len);
-        assertEquals("response", BufferUtil.toString(buffer));
+        assertEquals("response", buffer.getString(UTF_8));
 
         // Client and server are open, server is oshut
         assertTrue(c.client.isOpen());
@@ -102,7 +101,6 @@ public class SocketChannelEndPointOpenCloseTest
         assertTrue(c.server.isOutputShutdown());
 
         // Client reads -1
-        BufferUtil.clear(buffer);
         len = c.client.fill(buffer);
         assertEquals(-1, len);
 
@@ -122,7 +120,6 @@ public class SocketChannelEndPointOpenCloseTest
         assertTrue(c.server.isOutputShutdown());
 
         // Server reads close
-        BufferUtil.clear(buffer);
         len = c.server.fill(buffer);
         assertEquals(-1, len);
 
@@ -137,12 +134,12 @@ public class SocketChannelEndPointOpenCloseTest
     public void testClientClose() throws Exception
     {
         EndPointPair c = newConnection();
-        ByteBuffer buffer = BufferUtil.allocate(4096);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(4096, false);
 
-        c.client.flush(BufferUtil.toBuffer("request"));
+        c.client.flush(RetainableByteBuffer.wrap("request", UTF_8));
         int len = c.server.fill(buffer);
         assertEquals(7, len);
-        assertEquals("request", BufferUtil.toString(buffer));
+        assertEquals("request", buffer.getString(UTF_8));
 
         assertTrue(c.client.isOpen());
         assertFalse(c.client.isOutputShutdown());

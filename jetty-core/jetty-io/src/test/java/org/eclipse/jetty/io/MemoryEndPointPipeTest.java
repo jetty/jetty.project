@@ -14,13 +14,12 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.junit.jupiter.api.AfterEach;
@@ -31,6 +30,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,23 +69,21 @@ public class MemoryEndPointPipeTest
         Callback.Completable remoteFillCallback = new Callback.Completable();
         remoteEndPoint.fillInterested(remoteFillCallback);
 
-        RetainableByteBuffer buffer = buffers.acquire(512, false);
+        RetainableByteBuffer.Mutable buffer = WritableBufferPool.wrap(buffers).acquire(512, false);
         try
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-
-            byte[] smallZeros = new byte[byteBuffer.capacity() / 2];
-            byte[] largeOnes = new byte[byteBuffer.capacity() * 2];
+            byte[] smallZeros = new byte[(int)(buffer.capacity()) / 2];
+            byte[] largeOnes = new byte[(int)(buffer.capacity()) * 2];
             Arrays.fill(largeOnes, (byte)1);
             Blocker.Shared blocker = new Blocker.Shared();
             try (Blocker.Callback callback = blocker.callback())
             {
-                localEndPoint.write(callback, ByteBuffer.wrap(smallZeros));
+                localEndPoint.write(RetainableByteBuffer.wrap(smallZeros), callback);
                 callback.block();
             }
             try (Blocker.Callback callback = blocker.callback())
             {
-                localEndPoint.write(callback, ByteBuffer.wrap(largeOnes));
+                localEndPoint.write(RetainableByteBuffer.wrap(largeOnes), callback);
                 callback.block();
             }
             int totalWritten = smallZeros.length + largeOnes.length;
@@ -95,16 +93,12 @@ public class MemoryEndPointPipeTest
             int totalFilled = 0;
             while (true)
             {
-                int filled = remoteEndPoint.fill(byteBuffer);
+                int filled = remoteEndPoint.fill(buffer);
+                buffer.clear();
                 if (filled > 0)
-                {
-                    byteBuffer.position(byteBuffer.position() + filled);
                     totalFilled += filled;
-                }
                 else
-                {
                     break;
-                }
             }
 
             assertThat(totalFilled, equalTo(totalWritten));
@@ -127,26 +121,25 @@ public class MemoryEndPointPipeTest
         Callback.Completable remoteFillCallback = new Callback.Completable();
         remoteEndPoint.fillInterested(remoteFillCallback);
 
-        Callback.Completable localWriteCallback = new Callback.Completable();
         int totalWritten = 2048;
-        localEndPoint.write(localWriteCallback, ByteBuffer.allocate(totalWritten));
+        Callback.Completable localWriteCallback = new Callback.Completable();
         localWriteCallback.thenRun(localEndPoint::close);
+        localEndPoint.write(RetainableByteBuffer.allocate(totalWritten, false), localWriteCallback);
 
         assertTrue(((AbstractEndPoint)localEndPoint).getWriteFlusher().isPending());
 
         remoteFillCallback.get(5, TimeUnit.SECONDS);
 
-        RetainableByteBuffer buffer = buffers.acquire(512, false);
+        RetainableByteBuffer.Mutable buffer = WritableBufferPool.wrap(buffers).acquire(512, false);
         try
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
             int totalFilled = 0;
             while (true)
             {
-                int filled = remoteEndPoint.fill(byteBuffer);
+                int filled = remoteEndPoint.fill(buffer);
                 if (filled > 0)
                 {
-                    byteBuffer.position(byteBuffer.position() + filled);
+                    buffer.consume(filled);
                     totalFilled += filled;
                 }
                 else if (filled == 0)
@@ -188,7 +181,7 @@ public class MemoryEndPointPipeTest
         Blocker.Shared blocker = new Blocker.Shared();
         try (Blocker.Callback callback = blocker.callback())
         {
-            localEndPoint.write(callback, ByteBuffer.wrap(data));
+            localEndPoint.write(RetainableByteBuffer.wrap(data), callback);
             callback.block();
         }
 
@@ -198,14 +191,13 @@ public class MemoryEndPointPipeTest
         // Wait for data to be available.
         remoteFillCallback.get(5, TimeUnit.SECONDS);
 
-        RetainableByteBuffer buffer = buffers.acquire(2 * data.length, false);
+        RetainableByteBuffer.Mutable buffer = WritableBufferPool.wrap(buffers).acquire(2 * data.length, false);
         try
         {
-            ByteBuffer readBuffer = buffer.getByteBuffer();
             int totalFilled = 0;
             while (true)
             {
-                int filled = remoteEndPoint.fill(readBuffer);
+                int filled = remoteEndPoint.fill(buffer);
                 if (filled >= 0)
                     totalFilled += filled;
                 else
@@ -215,7 +207,7 @@ public class MemoryEndPointPipeTest
             // Verify all data was read.
             assertThat(totalFilled, equalTo(data.length));
 
-            assertThat(remoteEndPoint.fill(readBuffer), equalTo(-1));
+            assertThat(remoteEndPoint.fill(buffer), equalTo(-1));
         }
         finally
         {
@@ -236,8 +228,8 @@ public class MemoryEndPointPipeTest
         assertTrue(localEndPoint.isOutputShutdown());
 
         // Remote endpoint should get EOF immediately
-        ByteBuffer readBuffer = ByteBuffer.allocate(100);
-        int filled = remoteEndPoint.fill(readBuffer);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(100, false);
+        int filled = remoteEndPoint.fill(buffer);
         assertThat(filled, equalTo(-1));
     }
 
@@ -258,7 +250,7 @@ public class MemoryEndPointPipeTest
         Blocker.Shared blocker = new Blocker.Shared();
         try (Blocker.Callback callback = blocker.callback())
         {
-            localEndPoint.write(callback, ByteBuffer.wrap(data));
+            localEndPoint.write(RetainableByteBuffer.wrap(data), callback);
             callback.block();
         }
 
@@ -270,15 +262,14 @@ public class MemoryEndPointPipeTest
         remoteFillCallback.get(5, TimeUnit.SECONDS);
 
         // Remote endpoint should be able to read existing data.
-        RetainableByteBuffer buffer = buffers.acquire(2 * data.length, false);
+        RetainableByteBuffer.Mutable buffer = WritableBufferPool.wrap(buffers).acquire(2 * data.length, false);
         try
         {
-            ByteBuffer readBuffer = buffer.getByteBuffer();
-            int filled = remoteEndPoint.fill(readBuffer);
+            int filled = remoteEndPoint.fill(buffer);
             assertThat(filled, equalTo(data.length));
 
             // After reading all data, should get EOF.
-            filled = remoteEndPoint.fill(readBuffer);
+            filled = remoteEndPoint.fill(buffer);
             assertThat(filled, equalTo(-1));
         }
         finally
@@ -298,8 +289,8 @@ public class MemoryEndPointPipeTest
         remoteEndPoint.close();
 
         // fill() on closed endpoint should throw IOException.
-        ByteBuffer readBuffer = ByteBuffer.allocate(100);
-        assertThrows(IOException.class, () -> remoteEndPoint.fill(readBuffer));
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(100, false);
+        assertThrows(IOException.class, () -> remoteEndPoint.fill(buffer));
     }
 
     @Test
@@ -313,8 +304,8 @@ public class MemoryEndPointPipeTest
         localEndPoint.close();
 
         // flush() on closed endpoint should throw IOException.
-        ByteBuffer writeBuffer = ByteBuffer.wrap(new byte[50]);
-        assertThrows(IOException.class, () -> localEndPoint.flush(writeBuffer));
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(new byte[50]);
+        assertThrows(IOException.class, () -> localEndPoint.flush(buffer));
     }
 
     @Test
@@ -330,17 +321,18 @@ public class MemoryEndPointPipeTest
 
         // Try to flush more data than capacity allows.
         byte[] bytes = new byte[2 * maxCapacity + maxCapacity / 2];
-        ByteBuffer writeBuffer = ByteBuffer.wrap(bytes);
+        RetainableByteBuffer writeBuffer = RetainableByteBuffer.wrap(bytes);
         boolean flushed = localEndPoint.flush(writeBuffer);
         assertFalse(flushed);
 
         // Only maxCapacity bytes should have been flushed.
-        assertThat(writeBuffer.remaining(), equalTo(bytes.length - maxCapacity));
+        assertEquals(writeBuffer.remaining(), bytes.length - maxCapacity);
 
         // Complete the flush to release buffers.
         while (true)
         {
-            remoteEndPoint.fill(BufferUtil.allocate(maxCapacity));
+            RetainableByteBuffer.Mutable readBuffer = RetainableByteBuffer.Mutable.allocate(maxCapacity, false);
+            remoteEndPoint.fill(readBuffer);
             if (flushed)
                 break;
             flushed = localEndPoint.flush(writeBuffer);
@@ -356,18 +348,18 @@ public class MemoryEndPointPipeTest
         EndPoint remoteEndPoint = pipe.getRemoteEndPoint();
 
         // Flush empty buffers.
-        ByteBuffer emptyBuffer = ByteBuffer.allocate(0);
+        RetainableByteBuffer.Mutable emptyBuffer = RetainableByteBuffer.Mutable.allocate(0, false);
         boolean flushed = localEndPoint.flush(emptyBuffer);
         assertTrue(flushed);
 
         // Flush with position == limit (consumed buffer).
-        ByteBuffer consumedBuffer = ByteBuffer.allocate(50);
-        consumedBuffer.position(consumedBuffer.limit());
+        RetainableByteBuffer.Mutable consumedBuffer = RetainableByteBuffer.Mutable.allocate(50, false);
+        consumedBuffer.readPosition(consumedBuffer.readPosition() + consumedBuffer.remaining());
         flushed = localEndPoint.flush(consumedBuffer);
         assertTrue(flushed);
 
         // Remote should have no data to read.
-        ByteBuffer readBuffer = ByteBuffer.allocate(100);
+        RetainableByteBuffer.Mutable readBuffer = RetainableByteBuffer.Mutable.allocate(100, false);
         int filled = remoteEndPoint.fill(readBuffer);
         assertThat(filled, equalTo(0));
     }

@@ -32,7 +32,6 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.HTTP3ClientQuicConfiguration;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -181,14 +181,14 @@ public class HTTP3ClientDocs
 
         // Send the first DATA frame on the stream, with last=false
         // to signal that there are more frames in this stream.
-        stream.data(new DataFrame(buffer1, false), new Promise.Invocable.NonBlocking<>()
+        stream.data(RetainableByteBuffer.wrap(buffer1), false, new Promise.Invocable.NonBlocking<>()
         {
             @Override
             public void succeeded(Stream result)
             {
                 // Only when the first chunk has been sent we can send the second,
                 // with last=true to signal that there will be no more frames.
-                result.data(new DataFrame(buffer2, true), Promise.Invocable.noop());
+                result.data(RetainableByteBuffer.wrap(buffer2), true, Promise.Invocable.noop());
             }
         });
         // end::newStreamWithData[]
@@ -230,24 +230,27 @@ public class HTTP3ClientDocs
             public void onDataAvailable(Stream.Client stream)
             {
                 // Read a chunk of the content.
-                Content.Chunk chunk = stream.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    // No data available now, demand to be called back.
-                    stream.demand();
-                }
-                else
-                {
-                    // Process the content.
-                    process(chunk.getByteBuffer());
-
-                    // Notify the implementation that the content has been consumed.
-                    chunk.release();
-
-                    if (!chunk.isLast())
+                    if (chunk == null)
                     {
-                        // Demand to be called back.
+                        // No data available now, demand to be called back.
                         stream.demand();
+                    }
+                    else
+                    {
+                        // Process the content.
+                        // Closing the buffer will release this acquire.
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            process(buffer);
+
+                            if (!chunk.isLast())
+                            {
+                                // Demand to be called back.
+                                stream.demand();
+                            }
+                        }
                     }
                 }
             }
@@ -255,7 +258,7 @@ public class HTTP3ClientDocs
         // end::responseListener[]
     }
 
-    private void process(ByteBuffer byteBuffer)
+    private void process(RetainableByteBuffer byteBuffer)
     {
     }
 

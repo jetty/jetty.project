@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
 import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -26,12 +25,11 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.AsciiLowerCaseSet;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -204,7 +202,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         private final Interceptor _next;
         private final HttpChannel _channel;
         private Boolean _aggregating;
-        private RetainableByteBuffer.Mutable _aggregate;
+        private org.eclipse.jetty.io.RetainableByteBuffer.Mutable _aggregate;
 
         public ArrayBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
         {
@@ -227,10 +225,10 @@ public class BufferedResponseHandler extends HandlerWrapper
         }
 
         @Override
-        public void write(ByteBuffer content, boolean last, Callback callback)
+        public void write(RetainableByteBuffer content, boolean last, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} write last={} {}", this, last, BufferUtil.toDetailString(content));
+                LOG.debug("{} write last={} {}", this, last, content);
 
             // If we are not committed, have to decide if we should aggregate or not.
             if (_aggregating == null)
@@ -246,16 +244,19 @@ public class BufferedResponseHandler extends HandlerWrapper
             if (last)
             {
                 // Add the current content to the buffer list without a copy.
-                if (BufferUtil.length(content) > 0)
+                if (content != null && content.hasRemaining())
                 {
                     if (_aggregate == null)
                     {
                         getNextInterceptor().write(content, true, callback);
                         return;
                     }
-                    RetainableByteBuffer retainable = RetainableByteBuffer.wrap(content, () -> {});
-                    _aggregate.append(retainable);
-                    retainable.release();
+                    content.quietWriteTo(bytes ->
+                    {
+                        int r = bytes.remaining();
+                        _aggregate.append(bytes);
+                        return r;
+                    });
                 }
 
                 if (LOG.isDebugEnabled())
@@ -267,12 +268,22 @@ public class BufferedResponseHandler extends HandlerWrapper
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} aggregating", this);
 
-                while (BufferUtil.hasContent(content))
+                while (content != null && content.hasRemaining())
                 {
                     if (_aggregate == null)
-                        _aggregate = new RetainableByteBuffer.DynamicCapacity(_channel.getByteBufferPool(), false, -1, Math.max(_channel.getHttpConfiguration().getOutputBufferSize(), BufferUtil.length(content)));
+                    {
+                        int max = Math.max(_channel.getHttpConfiguration().getOutputBufferSize(), content.remaining() >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int)content.remaining());
+                        _aggregate = new org.eclipse.jetty.io.RetainableByteBuffer.DynamicCapacity(_channel.getByteBufferPool(), false, -1, max);
+                    }
 
-                    if (!_aggregate.append(content))
+                    content.quietWriteTo(bytes ->
+                    {
+                        int r = bytes.remaining();
+                        _aggregate.append(bytes);
+                        return r;
+                    });
+
+                    if (content.hasRemaining())
                     {
                         _aggregate.release();
                         _aggregate = null;
@@ -287,7 +298,7 @@ public class BufferedResponseHandler extends HandlerWrapper
         private void commit(Callback callback)
         {
             if (_aggregate == null)
-                getNextInterceptor().write(BufferUtil.EMPTY_BUFFER, true, callback);
+                getNextInterceptor().write(RetainableByteBuffer.empty(), true, callback);
             else
                 _aggregate.writeTo(getNextInterceptor(), true, Callback.from(this::completed, callback));
         }

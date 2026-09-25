@@ -28,11 +28,11 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.AbstractEndPoint;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -43,6 +43,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -50,6 +51,8 @@ import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -59,13 +62,16 @@ public class BlockedWritesWithSmallThreadPoolTest
     private Server server;
     private ServerConnector connector;
     private QueuedThreadPool serverThreads;
+    private ArrayByteBufferPool.Tracking serverPool;
     private HTTP2Client client;
+    private ArrayByteBufferPool.Tracking clientPool;
 
     private void start(Handler handler) throws Exception
     {
         // Threads: 1 acceptor, 1 selector, 1 reserved, 1 application.
         serverThreads = newSmallThreadPool("server", 4);
-        server = new Server(serverThreads);
+        serverPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(serverThreads, null, serverPool);
         HTTP2CServerConnectionFactory http2 = new HTTP2CServerConnectionFactory(new HttpConfiguration());
         connector = new ServerConnector(server, 1, 1, http2);
         server.addConnector(connector);
@@ -77,7 +83,8 @@ public class BlockedWritesWithSmallThreadPoolTest
     {
         // Threads: 1 acceptor, 1 selector, 1 reserved, 1 application.
         serverThreads = newSmallThreadPool("server", 4);
-        server = new Server(serverThreads);
+        serverPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(serverThreads, null, serverPool);
         connector = new ServerConnector(server, 1, 1, factory);
         server.addConnector(connector);
         server.start();
@@ -95,6 +102,16 @@ public class BlockedWritesWithSmallThreadPoolTest
     @AfterEach
     public void dispose()
     {
+        if (clientPool != null)
+        {
+            await().atMost(5, java.util.concurrent.TimeUnit.SECONDS).untilAsserted(() ->
+                assertThat("client leaks: " + clientPool.dumpLeaks(), clientPool.getLeaks().size(), is(0))
+            );
+        }
+        await().atMost(5, java.util.concurrent.TimeUnit.SECONDS).untilAsserted(() ->
+            assertThat("server leaks: " + serverPool.dumpLeaks(), serverPool.getLeaks().size(), is(0))
+        );
+
         LifeCycle.stop(client);
         LifeCycle.stop(server);
     }
@@ -117,7 +134,9 @@ public class BlockedWritesWithSmallThreadPoolTest
             }
         });
 
+        clientPool = new ArrayByteBufferPool.Tracking();
         client = new HTTP2Client();
+        client.setByteBufferPool(clientPool);
         // Set large flow control windows so the server hits TCP congestion.
         int window = 2 * contentLength;
         client.setInitialSessionRecvWindow(window);
@@ -143,12 +162,13 @@ public class BlockedWritesWithSmallThreadPoolTest
                     // Block here to stop reading from the network
                     // to cause the server to TCP congest.
                     clientBlockLatch.await(5, SECONDS);
-                    Stream.Data data = stream.readData();
-                    data.release();
-                    if (data.frame().isEndStream())
-                        clientDataLatch.countDown();
-                    else
-                        stream.demand();
+                    try (Content.Chunk chunk = stream.read())
+                    {
+                        if (chunk.isLast())
+                            clientDataLatch.countDown();
+                        else
+                            stream.demand();
+                    }
                 }
                 catch (InterruptedException ignored)
                 {
@@ -208,7 +228,7 @@ public class BlockedWritesWithSmallThreadPoolTest
             {
                 serverEndPointRef.set((AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
                 // Large write that will TCP congest, but it is non-blocking.
-                response.write(true, ByteBuffer.allocate(contentLength), callback);
+                response.write(true, RetainableByteBuffer.allocate(contentLength, false), callback);
                 return true;
             }
         });
@@ -236,12 +256,13 @@ public class BlockedWritesWithSmallThreadPoolTest
                     // Block here to stop reading from the network
                     // to cause the server to TCP congest.
                     clientBlockLatch.await(5, SECONDS);
-                    Stream.Data data = stream.readData();
-                    data.release();
-                    if (data.frame().isEndStream())
-                        clientDataLatch.countDown();
-                    else
-                        stream.demand();
+                    try (Content.Chunk data = stream.read())
+                    {
+                        if (data.isLast())
+                            clientDataLatch.countDown();
+                        else
+                            stream.demand();
+                    }
                 }
                 catch (InterruptedException ignored)
                 {
@@ -325,16 +346,17 @@ public class BlockedWritesWithSmallThreadPoolTest
                             // Block here to stop reading from the network
                             // to cause the client to TCP congest.
                             serverBlockLatch.await(5, SECONDS);
-                            Stream.Data data = stream.readData();
-                            data.release();
-                            if (data.frame().isEndStream())
+                            try (Content.Chunk data = stream.read())
                             {
-                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                            }
-                            else
-                            {
-                                stream.demand();
+                                if (data.isLast())
+                                {
+                                    MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                    stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                                }
+                                else
+                                {
+                                    stream.demand();
+                                }
                             }
                         }
                         catch (InterruptedException ignored)
@@ -376,7 +398,7 @@ public class BlockedWritesWithSmallThreadPoolTest
             }
         });
         Stream stream = streamPromise.get(5, SECONDS);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(contentLength), true), Callback.NOOP);
+        stream.data(RetainableByteBuffer.allocate(contentLength, false), true, Callback.NOOP);
 
         await().atMost(5, SECONDS).until(() ->
         {

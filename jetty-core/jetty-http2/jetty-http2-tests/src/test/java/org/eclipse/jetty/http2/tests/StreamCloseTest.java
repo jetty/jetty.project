@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,13 +30,14 @@ import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -132,21 +132,23 @@ public class StreamCloseTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-
-                        assertTrue(stream.isRemotelyClosed());
-
-                        completable.thenRun(() -> stream.data(data.frame(), new Callback()
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            @Override
-                            public void succeeded()
+                            assertTrue(stream.isRemotelyClosed());
+                            try (RetainableByteBuffer buffer = chunk.acquire())
                             {
-                                assertTrue(stream.isClosed());
-                                assertEquals(0, stream.getSession().getStreams().size());
-                                data.release();
-                                serverDataLatch.countDown();
+                                completable.thenRun(() -> stream.data(buffer, chunk.isLast(), new Callback()
+                                {
+                                    @Override
+                                    public void succeeded()
+                                    {
+                                        assertTrue(stream.isClosed());
+                                        assertEquals(0, stream.getSession().getStreams().size());
+                                        serverDataLatch.countDown();
+                                    }
+                                }));
                             }
-                        }));
+                        }
                     }
                 };
             }
@@ -161,9 +163,10 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                // The sent data callback may not be notified yet here.
-                data.release();
+                try (Content.Chunk _ = stream.read())
+                {
+                    // The sent data callback may not be notified yet here.
+                }
                 completeLatch.countDown();
             }
         });
@@ -172,7 +175,7 @@ public class StreamCloseTest extends AbstractTest
         assertFalse(((HTTP2Stream)stream).isLocallyClosed());
 
         CountDownLatch clientDataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(new byte[512]), true), new Callback()
+        stream.data(RetainableByteBuffer.wrap(new byte[512]), true, new Callback()
         {
             @Override
             public void succeeded()
@@ -207,7 +210,7 @@ public class StreamCloseTest extends AbstractTest
                         // When created, pushed stream must be implicitly remotely closed.
                         assertTrue(pushedStream.isRemotelyClosed());
                         // Send some data with endStream = true.
-                        pushedStream.data(new DataFrame(pushedStream.getId(), ByteBuffer.allocate(16), true), new Callback()
+                        pushedStream.data(RetainableByteBuffer.allocate(16, false), true, new Callback()
                         {
                             @Override
                             public void succeeded()
@@ -239,10 +242,11 @@ public class StreamCloseTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream pushedStream)
                     {
-                        Stream.Data data = pushedStream.readData();
-                        assertTrue(pushedStream.isClosed());
-                        data.release();
-                        clientLatch.countDown();
+                        try (Content.Chunk chunk = pushedStream.read())
+                        {
+                            assertTrue(pushedStream.isClosed());
+                            clientLatch.countDown();
+                        }
                     }
                 };
             }
@@ -330,7 +334,7 @@ public class StreamCloseTest extends AbstractTest
                     // stop() on different thread which tries to concurrently fail the stream.
                     ((HTTP2Session)stream.getSession()).getEndPoint().shutdownOutput();
                     // Try to write something to force an error.
-                    stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1024), true), Callback.NOOP);
+                    stream.data(RetainableByteBuffer.allocate(1024, false), true, Callback.NOOP);
                 }
                 return null;
             }

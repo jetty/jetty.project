@@ -242,10 +242,10 @@ public class WebAppContextTest
                 \r
                 01234""";
 
-            LocalConnector.LocalEndPoint endPoint = connector.connect();
-            endPoint.addInputAndExecute(rawRequest);
+            LocalConnector.LocalEndPoint endPoint = connector.connectToServer();
+            endPoint.writeRequestString(rawRequest);
             await().atMost(5, TimeUnit.SECONDS).until(() -> servlet.readCounter.get() == 5);
-            endPoint.close(new ArithmeticException());
+            endPoint.getRemoteEndPoint().close(new ArithmeticException());
             await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(servlet.failureRef.get(), instanceOf(ArithmeticException.class)));
         }
     }
@@ -284,7 +284,7 @@ public class WebAppContextTest
                 \r
                 """;
 
-            String rawResponse = connector.getResponse(rawRequest);
+            String rawResponse = connector.getResponseAsString(rawRequest);
 
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(404));
@@ -522,7 +522,7 @@ public class WebAppContextTest
 
         server.start();
 
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET " + target + " HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
+        assertThat(HttpTester.parseResponse(connector.getResponseAsString("GET " + target + " HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(), is(HttpStatus.OK_200));
     }
 
     @ParameterizedTest
@@ -563,7 +563,7 @@ public class WebAppContextTest
 
         server.start();
 
-        assertThat(HttpTester.parseResponse(connector.getResponse("GET " + target + " HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(),
+        assertThat(HttpTester.parseResponse(connector.getResponseAsString("GET " + target + " HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n")).getStatus(),
             either(is(HttpStatus.NOT_FOUND_404)).or(is(HttpStatus.BAD_REQUEST_400)));
     }
         
@@ -591,7 +591,7 @@ public class WebAppContextTest
 
         server.start();
 
-        assertThat(HttpTester.parseResponse(connector.getResponse(
+        assertThat(HttpTester.parseResponse(connector.getResponseAsString(
                 """
                     GET %s HTTP/1.1\r
                     Host: localhost:8080\r
@@ -619,7 +619,7 @@ public class WebAppContextTest
 
         server.start();
 
-        String rawResponse = connector.getResponse("""
+        String rawResponse = connector.getResponseAsString("""
             GET http://localhost:8080 HTTP/1.1\r
             Host: localhost:8080\r
             Connection: close\r
@@ -900,7 +900,7 @@ public class WebAppContextTest
         URL url = servletContext.getResource(resource);
         assertThat(url.toString(), endsWith(expected));
 
-        HttpTester.Response response1 = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response1 = HttpTester.parseResponse(connector.getResponseAsString("""
             GET /resource?r=%s HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -947,7 +947,7 @@ public class WebAppContextTest
         // TODO the following assertion fails because of a bug in the JDK (see JDK-8311079 and MountedPathResourceTest.testJarFileResourceAccessBackSlash())
         //assertThat(servletContext.getResource("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"), notNullValue());
 
-        HttpTester.Response response1 = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response1 = HttpTester.parseResponse(connector.getResponseAsString("""
             GET /resources HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -960,7 +960,7 @@ public class WebAppContextTest
         assertThat(response1.getContent(), containsString("/WEB-INF/lib/odd-resource.jar"));
         assertThat(response1.getContent(), containsString("/nested-reserved-!#\\\\$%&()*+,:=?@[]-meta-inf-resource.txt"));
 
-        HttpTester.Response response2 = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response2 = HttpTester.parseResponse(connector.getResponseAsString("""
             GET /real HTTP/1.1\r
             Host: local\r
             Connection: close\r

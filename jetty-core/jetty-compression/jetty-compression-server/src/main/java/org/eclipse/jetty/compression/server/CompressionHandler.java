@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
@@ -190,8 +191,8 @@ public class CompressionHandler extends Handler.Wrapper
         }
         supportedEncodings.values().forEach(compression ->
         {
-            if (compression.getByteBufferPool() == null)
-                compression.setByteBufferPool(getServer().getByteBufferPool());
+            if (compression.getBufferPool() == null)
+                compression.setBufferPool(WritableBufferPool.wrap(getServer().getByteBufferPool()));
         });
 
         if (pathConfigs.isEmpty())

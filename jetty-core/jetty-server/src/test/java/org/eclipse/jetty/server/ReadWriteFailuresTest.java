@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -25,12 +24,14 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,9 +72,8 @@ public class ReadWriteFailuresTest
                 // Upon idle timeout, the demand callback is invoked.
                 request.demand(() ->
                 {
-                    try
+                    try (Content.Chunk chunk = request.read())
                     {
-                        Content.Chunk chunk = request.read();
                         assertTrue(Content.Chunk.isFailure(chunk, false));
 
                         response.setStatus(HttpStatus.ACCEPTED_202);
@@ -95,7 +95,7 @@ public class ReadWriteFailuresTest
             Content-Length: 1
             
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request, 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.ACCEPTED_202, response.getStatus());
         assertEquals(content, response.getContent());
@@ -115,7 +115,7 @@ public class ReadWriteFailuresTest
                 request.addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
                 {
                     @Override
-                    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+                    public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
                     {
                         callback.failed(writeFailure);
                     }
@@ -153,7 +153,7 @@ public class ReadWriteFailuresTest
             """.formatted(content.length(), content);
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(request))
         {
-            endPoint.waitUntilClosedOrIdleFor(5, TimeUnit.SECONDS);
+            await().atMost(5, TimeUnit.SECONDS).until(() -> !endPoint.getRemoteEndPoint().isOpen());
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
@@ -172,7 +172,7 @@ public class ReadWriteFailuresTest
                 request.addHttpStreamWrapper(stream -> new HttpStream.Wrapper(stream)
                 {
                     @Override
-                    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+                    public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
                     {
                         // Do nothing to make the write pending.
                     }
@@ -206,7 +206,7 @@ public class ReadWriteFailuresTest
             """;
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(request))
         {
-            endPoint.waitUntilClosedOrIdleFor(5, TimeUnit.SECONDS);
+            await().atMost(5, TimeUnit.SECONDS).until(() -> !endPoint.getRemoteEndPoint().isOpen());
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
@@ -237,7 +237,7 @@ public class ReadWriteFailuresTest
             
             %s
             """.formatted(content.length(), content);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request, 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
         assertThat(response.getContent(), containsString("QuietException"));

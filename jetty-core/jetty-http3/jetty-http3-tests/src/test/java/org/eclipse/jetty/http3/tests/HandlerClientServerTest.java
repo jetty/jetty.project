@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.tests;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +25,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
@@ -35,6 +33,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -98,7 +97,7 @@ public class HandlerClientServerTest extends AbstractClientServerTest
 
         Session.Client session = newSession(new Session.Client.Listener() {});
 
-        List<ByteBuffer> clientReceivedBuffers = new ArrayList<>();
+        List<RetainableByteBuffer> clientReceivedBuffers = new ArrayList<>();
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest(HttpMethod.POST, "/"), false);
@@ -115,50 +114,51 @@ public class HandlerClientServerTest extends AbstractClientServerTest
             @Override
             public void onDataAvailable(Stream.Client stream)
             {
-                Content.Chunk chunk = stream.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = stream.read())
                 {
+                    if (chunk == null)
+                    {
+                        stream.demand();
+                        return;
+                    }
+
+                    clientReceivedBuffers.add(chunk.acquire());
+
+                    if (chunk.isLast())
+                    {
+                        clientResponseLatch.countDown();
+                        return;
+                    }
+
                     stream.demand();
-                    return;
                 }
-
-                ByteBuffer byteBuffer = chunk.getByteBuffer();
-                ByteBuffer copy = ByteBuffer.allocate(byteBuffer.remaining());
-                copy.put(byteBuffer);
-                copy.flip();
-                clientReceivedBuffers.add(copy);
-                chunk.release();
-
-                if (chunk.isLast())
-                {
-                    clientResponseLatch.countDown();
-                    return;
-                }
-
-                stream.demand();
             }
         }, p));
 
         byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
-        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> stream.data(new DataFrame(ByteBuffer.wrap(bytes, 0, bytes.length / 2), false), new Promise.Invocable.NonBlocking<>()
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> stream.data(RetainableByteBuffer.wrap(bytes, 0, bytes.length / 2), false, new Promise.Invocable.NonBlocking<>()
         {
             @Override
             public void succeeded(Stream result)
             {
-                result.data(new DataFrame(ByteBuffer.wrap(bytes, bytes.length / 2, bytes.length / 2), true), p);
+                result.data(RetainableByteBuffer.wrap(bytes, bytes.length / 2, bytes.length / 2), true, p);
             }
         }));
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
 
-        int sum = clientReceivedBuffers.stream().mapToInt(Buffer::remaining).sum();
+        int sum = Math.toIntExact(clientReceivedBuffers.stream().mapToLong(RetainableByteBuffer::remaining).sum());
         assertThat(sum, is(bytes.length));
 
         byte[] mirroredBytes = new byte[sum];
         ByteBuffer clientBuffer = ByteBuffer.wrap(mirroredBytes);
-        clientReceivedBuffers.forEach(clientBuffer::put);
+        clientReceivedBuffers.forEach(b ->
+        {
+            b.putTo(clientBuffer);
+            b.release();
+        });
         assertArrayEquals(bytes, mirroredBytes);
     }
 }

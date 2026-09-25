@@ -18,6 +18,7 @@ import java.nio.charset.Charset;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 
 public class ContentSourceString
@@ -40,25 +41,29 @@ public class ContentSourceString
     {
         while (true)
         {
-            Content.Chunk chunk = content.read();
-            if (chunk == null)
+            try (Content.Chunk chunk = content.read())
             {
-                content.demand(_demandTask);
-                return;
-            }
-            if (Content.Chunk.isFailure(chunk))
-            {
-                promise.failed(chunk.getFailure());
-                if (!chunk.isLast())
-                    content.fail(chunk.getFailure());
-                return;
-            }
-            text.append(chunk.getByteBuffer());
-            chunk.release();
-            if (chunk.isLast())
-            {
-                succeed();
-                return;
+                if (chunk == null)
+                {
+                    content.demand(_demandTask);
+                    return;
+                }
+                if (Content.Chunk.isFailure(chunk))
+                {
+                    if (!chunk.isLast())
+                        content.fail(chunk.getFailure());
+                    promise.failed(chunk.getFailure());
+                    return;
+                }
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    text.append(buffer);
+                    if (chunk.isLast())
+                    {
+                        succeed();
+                        return;
+                    }
+                }
             }
         }
     }

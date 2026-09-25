@@ -14,14 +14,13 @@
 package org.eclipse.jetty.compression.zstandard.internal;
 
 import java.lang.ref.Cleaner;
-import java.nio.ByteBuffer;
 
 import com.github.luben.zstd.ZstdDecompressCtx;
 import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
 import org.eclipse.jetty.compression.zstandard.ZstandardDecoderConfig;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ZstandardDecoderSource extends DecoderSource
 {
@@ -43,19 +42,47 @@ public class ZstandardDecoderSource extends DecoderSource
     @Override
     protected Content.Chunk transform(Content.Chunk inputChunk)
     {
-        ByteBuffer input = inputChunk.getByteBuffer();
-        if (!inputChunk.hasRemaining())
+        if (!inputChunk.hasRemaining() && inputChunk.isLast())
             return inputChunk;
-        if (!input.isDirect())
-            throw new IllegalArgumentException("Read Chunk is not a Direct ByteBuffer");
-        RetainableByteBuffer dst = compression.acquireByteBuffer(bufferSize);
-        boolean last = inputChunk.isLast();
-        dst.getByteBuffer().clear();
-        boolean fullyFlushed = decompressCtx.decompressDirectByteBufferStream(dst.getByteBuffer(), input);
-        if (!fullyFlushed)
-            last = false;
-        dst.getByteBuffer().flip();
-        return Content.Chunk.asChunk(dst.getByteBuffer(), last, dst);
+
+        RetainableByteBuffer inputBuffer;
+        try (RetainableByteBuffer buffer = inputChunk.acquire())
+        {
+            if (buffer.isDirect())
+            {
+                buffer.retain();
+                inputBuffer = buffer;
+            }
+            else
+            {
+                RetainableByteBuffer.Mutable copy = compression.acquireBuffer(Math.toIntExact(inputChunk.remaining()));
+                copy.put(buffer);
+                inputBuffer = copy;
+            }
+        }
+
+        try (RetainableByteBuffer input = inputBuffer)
+        {
+            try (RetainableByteBuffer.Mutable output = compression.acquireBuffer(bufferSize))
+            {
+                boolean last = inputChunk.isLast();
+                boolean[] fullyFlushed = new boolean[1];
+                input.quietWriteTo(in ->
+                {
+                    int r = in.remaining();
+                    output.readFrom(out ->
+                    {
+                        int p = out.position();
+                        fullyFlushed[0] = decompressCtx.decompressDirectByteBufferStream(out, in);
+                        return out.position() - p;
+                    });
+                    return r - in.remaining();
+                });
+                if (!fullyFlushed[0])
+                    last = false;
+                return Content.Chunk.from(output, last);
+            }
+        }
     }
 
     @Override

@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -26,17 +26,17 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -52,7 +52,7 @@ public class SocketChannelEndPointInterestsTest
         threadPool = new QueuedThreadPool();
         threadPool.start();
 
-        scheduler = new TimerScheduler();
+        scheduler = new ScheduledExecutorScheduler();
         scheduler.start();
 
         connector = ServerSocketChannel.open();
@@ -117,17 +117,17 @@ public class SocketChannelEndPointInterestsTest
     @Test
     public void testReadBlockedThenWriteBlockedThenReadableThenWritable() throws Exception
     {
-        final AtomicInteger size = new AtomicInteger(1024 * 1024);
-        final AtomicReference<Exception> failure = new AtomicReference<>();
-        final CountDownLatch latch1 = new CountDownLatch(1);
-        final CountDownLatch latch2 = new CountDownLatch(1);
-        final AtomicBoolean writeBlocked = new AtomicBoolean();
+        int size = 32 * 1024 * 1024;
+        AtomicReference<Exception> failure = new AtomicReference<>();
+        CountDownLatch latch1 = new CountDownLatch(1);
+        CountDownLatch latch2 = new CountDownLatch(1);
+        AtomicBoolean writeBlocked = new AtomicBoolean();
         init(new Interested()
         {
             @Override
             public void onFillable(EndPoint endPoint, AbstractConnection connection)
             {
-                ByteBuffer input = BufferUtil.allocate(2);
+                RetainableByteBuffer.Mutable input = RetainableByteBuffer.Mutable.allocate(2, false);
                 int read = fill(endPoint, input);
 
                 if (read == 1)
@@ -137,8 +137,7 @@ public class SocketChannelEndPointInterestsTest
                     {
                         connection.fillInterested();
 
-                        ByteBuffer output = ByteBuffer.allocate(size.get());
-                        endPoint.write(new Callback() {}, output);
+                        endPoint.write(RetainableByteBuffer.allocate(size, false), Callback.NOOP);
 
                         latch1.countDown();
                     }
@@ -159,7 +158,7 @@ public class SocketChannelEndPointInterestsTest
                 writeBlocked.set(true);
             }
 
-            private int fill(EndPoint endPoint, ByteBuffer buffer)
+            private int fill(EndPoint endPoint, RetainableByteBuffer.Mutable buffer)
             {
                 try
                 {
@@ -186,21 +185,28 @@ public class SocketChannelEndPointInterestsTest
                 clientOutput.write(1);
                 clientOutput.flush();
                 assertTrue(latch1.await(5, TimeUnit.SECONDS));
+                await().atMost(5, TimeUnit.SECONDS).until(writeBlocked::get);
 
-                // We do not read to keep the socket write blocked
+                // We do not read to keep the socket write blocked.
 
                 clientOutput.write(2);
                 clientOutput.flush();
                 assertTrue(latch2.await(5, TimeUnit.SECONDS));
 
-                // Sleep before reading to allow waking up the server only for read
+                // Sleep before reading to wake up the server only for reads.
                 Thread.sleep(1000);
 
-                // Now read what was written, waking up the server for write
+                // Now read what was written, waking up the server for writes.
                 InputStream clientInput = client.getInputStream();
-                while (size.getAndDecrement() > 0)
+                byte[] bytes = new byte[8192];
+                int totalRead = 0;
+                while (totalRead < size)
                 {
-                    clientInput.read();
+                    int read = clientInput.read(bytes);
+                    if (read < 0)
+                        throw new EOFException();
+                    else
+                        totalRead += read;
                 }
 
                 assertNull(failure.get());
@@ -208,7 +214,7 @@ public class SocketChannelEndPointInterestsTest
         }
     }
 
-    private interface Interested
+    public interface Interested
     {
         void onFillable(EndPoint endPoint, AbstractConnection connection);
 

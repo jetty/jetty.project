@@ -15,7 +15,6 @@ package org.eclipse.jetty.docs.programming;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -29,7 +28,8 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 @SuppressWarnings("unused")
 public class HTTP2Docs
@@ -48,47 +48,43 @@ public class HTTP2Docs
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::dataUnwrap[]
-        record Chunk(ByteBuffer byteBuffer, Callback callback)
+        record Data(RetainableByteBuffer buffer, Runnable demander)
         {
         }
 
         // A queue that consumers poll to consume content asynchronously.
-        Queue<Chunk> dataQueue = new ConcurrentLinkedQueue<>();
+        Queue<Data> dataQueue = new ConcurrentLinkedQueue<>();
 
         // Implementation of Stream.Listener.onDataAvailable(Stream stream)
-        // in case of unwrapping of the Data object for asynchronous content
+        // in case of unwrapping of the Chunk object for asynchronous content
         // consumption and demand.
-        Stream.Listener listener = new Stream.Listener()
+        session.newStream(headersFrame, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-
-                if (data == null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    stream.demand();
-                    return;
-                }
-
-                // Get the content buffer.
-                ByteBuffer byteBuffer = data.frame().getByteBuffer();
-
-                // Unwrap the Data object, converting it to a Chunk.
-                // The Data.release() semantic is maintained in the completion of the Callback.
-                dataQueue.offer(new Chunk(byteBuffer, Callback.from(() ->
-                {
-                    // When the buffer has been consumed, then:
-                    // A) release the Data object.
-                    data.release();
-                    // B) possibly demand more DATA frames.
-                    if (!data.frame().isEndStream())
+                    if (chunk == null)
+                    {
                         stream.demand();
-                })));
+                        return;
+                    }
 
-                // Do not demand more data here, to avoid to overflow the queue.
+                    // Get the content buffer and wrap it into a record.
+                    // The release of this buffer is performed by the
+                    // code that consumes the Data objects from the queue.
+                    RetainableByteBuffer buffer = chunk.acquire();
+                    dataQueue.offer(new Data(buffer, () ->
+                    {
+                        if (!chunk.isLast())
+                            stream.demand();
+                    }));
+
+                    // Do not demand more data here, to avoid to overflow the queue.
+                }
             }
-        };
+        });
         // end::dataUnwrap[]
     }
 }

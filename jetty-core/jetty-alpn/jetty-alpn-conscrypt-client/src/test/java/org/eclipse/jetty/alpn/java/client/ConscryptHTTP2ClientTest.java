@@ -29,6 +29,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
@@ -84,13 +85,13 @@ public class ConscryptHTTP2ClientTest
                 @Override
                 public void onDataAvailable(Stream stream)
                 {
-                    Stream.Data data = stream.readData();
-                    // System.err.println(data);
-                    data.release();
-                    if (data.frame().isEndStream())
-                        latch.countDown();
-                    else
-                        stream.demand();
+                    try (Content.Chunk chunk = stream.read())
+                    {
+                        if (chunk.isLast())
+                            latch.countDown();
+                        else
+                            stream.demand();
+                    }
                 }
             });
 

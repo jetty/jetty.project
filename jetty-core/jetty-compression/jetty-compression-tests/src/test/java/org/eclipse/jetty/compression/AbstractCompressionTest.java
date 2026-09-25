@@ -28,6 +28,7 @@ import org.eclipse.jetty.compression.brotli.BrotliCompression;
 import org.eclipse.jetty.compression.gzip.GzipCompression;
 import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -189,7 +190,7 @@ public abstract class AbstractCompressionTest
     {
         compression = compressionClass.getDeclaredConstructor().newInstance();
         pool = new ArrayByteBufferPool.Tracking();
-        compression.setByteBufferPool(pool);
+        compression.setBufferPool(WritableBufferPool.wrap(pool));
     }
 
     protected void startCompression(Class<? extends Compression> compressionClass) throws Exception

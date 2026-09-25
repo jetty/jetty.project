@@ -28,7 +28,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.HTTP3ServerQuicConfiguration;
@@ -38,6 +37,7 @@ import org.eclipse.jetty.quic.quiche.server.QuicheServerConnector;
 import org.eclipse.jetty.quic.quiche.server.QuicheServerQuicConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import static java.lang.System.Logger.Level.INFO;
@@ -161,28 +161,29 @@ public class HTTP3ServerDocs
                     public void onDataAvailable(Stream.Server stream)
                     {
                         // Read a chunk of the request content.
-                        Content.Chunk chunk = stream.read();
-
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            // No data available now, demand to be called back.
-                            stream.demand();
-                        }
-                        else
-                        {
-                            // Get the content buffer.
-                            ByteBuffer buffer = chunk.getByteBuffer();
-
-                            // Consume the buffer, here - as an example - just log it.
-                            System.getLogger("http3").log(INFO, "Consuming buffer {0}", buffer);
-
-                            // Tell the implementation that the buffer has been consumed.
-                            chunk.release();
-
-                            if (!chunk.isLast())
+                            if (chunk == null)
                             {
-                                // Demand to be called back.
+                                // No data available now, demand to be called back.
                                 stream.demand();
+                            }
+                            else
+                            {
+                                // Get the content buffer.
+                                // Closing the buffer will release this acquire.
+                                try (RetainableByteBuffer buffer = chunk.acquire())
+                                {
+
+                                    // Consume the buffer, here - as an example - just log it.
+                                    System.getLogger("http3").log(INFO, "Consuming buffer {0}", buffer);
+
+                                    if (!chunk.isLast())
+                                    {
+                                        // Demand to be called back.
+                                        stream.demand();
+                                    }
+                                }
                             }
                         }
                     }
@@ -222,20 +223,21 @@ public class HTTP3ServerDocs
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            stream.demand();
-                        }
-                        else
-                        {
-                            // Consume the request content.
-                            chunk.release();
-
-                            if (chunk.isLast())
-                                respond(stream, request);
-                            else
+                            if (chunk == null)
+                            {
                                 stream.demand();
+                            }
+                            else
+                            {
+                                // Consume the request content.
+
+                                if (chunk.isLast())
+                                    respond(stream, request);
+                                else
+                                    stream.demand();
+                            }
                         }
                     }
                 };
@@ -260,7 +262,7 @@ public class HTTP3ServerDocs
                         @Override
                         public void succeeded(Stream result)
                         {
-                            result.data(new DataFrame(resourceBytes, true), Promise.Invocable.noop());
+                            result.data(RetainableByteBuffer.wrap(resourceBytes), true, Promise.Invocable.noop());
                         }
                     });
                 }

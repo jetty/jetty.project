@@ -13,20 +13,18 @@
 
 package org.eclipse.jetty.client;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -40,14 +38,15 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
     @ArgumentsSource(ScenarioProvider.class)
     public void testContentDecoderReturningEmptyRetainableDecodedBuffer(Scenario scenario) throws Exception
     {
-        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
+        ArrayByteBufferPool.Tracking trackingBufferPool = new ArrayByteBufferPool.Tracking();
+        WritableBufferPool bufferPool = WritableBufferPool.wrap(trackingBufferPool);
         start(scenario, new Handler.Abstract()
         {
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().add(HttpHeader.CONTENT_ENCODING, "UPPERCASE");
-                response.write(true, ByteBuffer.wrap("**THE ANSWER IS FORTY TWO**".getBytes(US_ASCII)), callback);
+                response.write(true, RetainableByteBuffer.wrap("**THE ANSWER IS FORTY TWO**".getBytes(US_ASCII)), callback);
                 return true;
             }
         });
@@ -62,23 +61,26 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
                     @Override
                     protected Content.Chunk transform(Content.Chunk chunk)
                     {
-                        if (chunk.isEmpty())
+                        if (!chunk.hasRemaining())
                             return chunk.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
 
-                        ByteBuffer byteBufferIn = chunk.getByteBuffer();
-                        byte b = byteBufferIn.get();
-                        if (b == '*')
+                        try (RetainableByteBuffer byteBufferIn = chunk.acquire())
                         {
-                            RetainableByteBuffer.Mutable empty = bufferPool.acquire(0, true);
-                            return Content.Chunk.asChunk(empty.getByteBuffer(), false, empty);
-                        }
+                            byte b = byteBufferIn.get();
+                            if (b == '*')
+                            {
+                                try (RetainableByteBuffer.Mutable empty = bufferPool.acquire(0, true))
+                                {
+                                    return Content.Chunk.from(empty, false);
+                                }
+                            }
 
-                        RetainableByteBuffer bufferOut = bufferPool.acquire(1, true);
-                        ByteBuffer byteBufferOut = bufferOut.getByteBuffer();
-                        int pos = BufferUtil.flipToFill(byteBufferOut);
-                        byteBufferOut.put(StringUtil.asciiToLowerCase(b));
-                        BufferUtil.flipToFlush(byteBufferOut, pos);
-                        return Content.Chunk.asChunk(byteBufferOut, false, bufferOut);
+                            try (RetainableByteBuffer.Mutable bufferOut = bufferPool.acquire(1, true))
+                            {
+                                bufferOut.put(StringUtil.asciiToLowerCase(b));
+                                return Content.Chunk.from(bufferOut, false);
+                            }
+                        }
                     }
                 };
             }
@@ -90,7 +92,7 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContentAsString(), is("the answer is forty two"));
 
-        assertThat("Decoder leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
+        assertThat("Decoder leaks: " + trackingBufferPool.dumpLeaks(), trackingBufferPool.getLeaks().size(), is(0));
     }
 
     @ParameterizedTest
@@ -103,7 +105,7 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().add(HttpHeader.CONTENT_ENCODING, "UPPERCASE");
-                response.write(true, ByteBuffer.wrap("THE ANSWER IS FORTY TWO".getBytes(US_ASCII)), callback);
+                response.write(true, RetainableByteBuffer.wrap("THE ANSWER IS FORTY TWO".getBytes(US_ASCII)), callback);
                 return true;
             }
         });
@@ -118,14 +120,15 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
                     @Override
                     protected Content.Chunk transform(Content.Chunk chunk)
                     {
-                        if (chunk.isEmpty())
+                        if (!chunk.hasRemaining())
                             return chunk.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
 
-                        ByteBuffer byteBuffer = chunk.getByteBuffer();
-                        String upperCase = US_ASCII.decode(byteBuffer).toString();
-                        String lowerCase = StringUtil.asciiToLowerCase(upperCase);
-
-                        return Content.Chunk.from(US_ASCII.encode(lowerCase), false);
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            String upperCase = buffer.getString(US_ASCII);
+                            String lowerCase = StringUtil.asciiToLowerCase(upperCase);
+                            return Content.Chunk.from(RetainableByteBuffer.wrap(lowerCase, US_ASCII), false);
+                        }
                     }
                 };
             }

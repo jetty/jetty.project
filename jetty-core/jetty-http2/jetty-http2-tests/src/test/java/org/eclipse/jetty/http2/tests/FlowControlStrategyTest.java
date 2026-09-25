@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,14 +50,16 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -284,13 +285,13 @@ public class FlowControlStrategyTest
             .get(5, TimeUnit.SECONDS);
 
         // Send first chunk that will exceed the flow control window when the new SETTINGS is received.
-        CompletableFuture<Stream> completable = stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), false));
+        CompletableFuture<Stream> completable = stream.data(RetainableByteBuffer.allocate(size * 2, false), false);
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
         completable.thenAccept(s ->
         {
             // Send the second chunk of data, must not leave the client since it is flow control stalled.
-            s.data(new DataFrame(s.getId(), ByteBuffer.allocate(size * 2), true));
+            s.data(RetainableByteBuffer.allocate(size * 2, false), true);
         });
 
         // Verify that the server only received one data available notification.
@@ -324,11 +325,7 @@ public class FlowControlStrategyTest
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
                 CompletableFuture<Void> completable = new CompletableFuture<>();
                 stream.headers(responseFrame, Callback.from(completable));
-                completable.thenRun(() ->
-                {
-                    DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(length), true);
-                    stream.data(dataFrame, Callback.NOOP);
-                });
+                completable.thenRun(() -> stream.data(RetainableByteBuffer.allocate(length, false), true, Callback.NOOP));
                 return null;
             }
         });
@@ -366,9 +363,10 @@ public class FlowControlStrategyTest
         await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> streamRef.get() == null);
 
         // Read the first chunk.
-        Stream.Data data = stream.readData();
-        assertNotNull(data);
-        data.release();
+        try (Content.Chunk chunk = stream.read())
+        {
+            assertNotNull(chunk);
+        }
 
         // Did not demand, so onDataAvailable() should not be called.
         await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> streamRef.get() == null);
@@ -382,9 +380,10 @@ public class FlowControlStrategyTest
         await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> streamRef.get() == null);
 
         // Read the second chunk.
-        data = stream.readData();
-        assertNotNull(data);
-        data.release();
+        try (Content.Chunk chunk = stream.read())
+        {
+            assertNotNull(chunk);
+        }
 
         consumeAll(stream);
     }
@@ -440,8 +439,7 @@ public class FlowControlStrategyTest
             .thenCompose(s ->
             {
                 int length = 5 * windowSize;
-                DataFrame dataFrame = new DataFrame(s.getId(), ByteBuffer.allocate(length), true);
-                return s.data(dataFrame);
+                return s.data(RetainableByteBuffer.allocate(length, false), true);
             });
 
         // Verify that the data arrived to the server.
@@ -452,9 +450,10 @@ public class FlowControlStrategyTest
         await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
 
         // Read the first chunk.
-        Stream.Data data = serverStream.readData();
-        assertNotNull(data);
-        data.release();
+        try (Content.Chunk chunk = serverStream.read())
+        {
+            assertNotNull(chunk);
+        }
 
         // Did not demand, so onDataAvailable() should not be called.
         await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
@@ -468,9 +467,10 @@ public class FlowControlStrategyTest
         await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> serverStreamRef.get() == null);
 
         // Read the second chunk.
-        data = serverStream.readData();
-        assertNotNull(data);
-        data.release();
+        try (Content.Chunk chunk = serverStream.read())
+        {
+            assertNotNull(chunk);
+        }
 
         consumeAll(serverStream);
     }
@@ -493,9 +493,7 @@ public class FlowControlStrategyTest
                         .thenCompose(s ->
                         {
                             // Send data to consume most of the session window.
-                            ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE - windowSize);
-                            DataFrame dataFrame = new DataFrame(s.getId(), data, true);
-                            return s.data(dataFrame);
+                            return s.data(RetainableByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE - windowSize, false), true);
                         });
                     return null;
                 }
@@ -504,11 +502,7 @@ public class FlowControlStrategyTest
                     // For every stream, send down half the window size of data.
                     MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     stream.headers(new HeadersFrame(stream.getId(), metaData, null, false))
-                        .thenCompose(s ->
-                        {
-                            DataFrame dataFrame = new DataFrame(s.getId(), ByteBuffer.allocate(windowSize / 2), true);
-                            return s.data(dataFrame);
-                        });
+                        .thenCompose(s -> s.data(RetainableByteBuffer.allocate(windowSize / 2, false), true));
                     return null;
                 }
             }
@@ -587,11 +581,12 @@ public class FlowControlStrategyTest
     {
         await().pollInterval(1, TimeUnit.MILLISECONDS).atMost(5, TimeUnit.SECONDS).until(() ->
         {
-            Stream.Data data = stream.readData();
-            if (data == null)
-                return false;
-            data.release();
-            return data.frame().isEndStream();
+            try (Content.Chunk chunk = stream.read())
+            {
+                if (chunk == null)
+                    return false;
+                return chunk.isLast();
+            }
         });
     }
 
@@ -610,7 +605,7 @@ public class FlowControlStrategyTest
                 MetaData.Response metaData = new MetaData.Response(200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
                 stream.headers(responseFrame)
-                    .thenAccept(s -> s.data(new DataFrame(s.getId(), ByteBuffer.wrap(data), true)));
+                    .thenAccept(s -> s.data(RetainableByteBuffer.wrap(data), true));
                 return null;
             }
         });
@@ -627,16 +622,19 @@ public class FlowControlStrategyTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                DataFrame frame = data.frame();
-                int remaining = frame.remaining();
-                frame.getByteBuffer().get(bytes, received, remaining);
-                this.received += remaining;
-                data.release();
-                if (frame.isEndStream())
-                    latch.countDown();
-                else
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    int remaining = (int)chunk.remaining();
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        buffer.get(bytes, received, remaining);
+                        this.received += remaining;
+                        if (chunk.isLast())
+                            latch.countDown();
+                        else
+                            stream.demand();
+                    }
+                }
             }
         });
 
@@ -662,14 +660,18 @@ public class FlowControlStrategyTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        completable.thenAccept(s -> s.data(data.frame())
-                            .whenComplete((r, x) ->
+                        try (Content.Chunk chunk = stream.read())
+                        {
+                            try (RetainableByteBuffer buffer = chunk.acquire())
                             {
-                                data.release();
-                                if (!data.frame().isEndStream())
-                                    stream.demand();
-                            }));
+                                completable.thenAccept(s -> s.data(buffer, chunk.isLast())
+                                    .whenComplete((r, x) ->
+                                    {
+                                        if (!chunk.isLast())
+                                            stream.demand();
+                                    }));
+                            }
+                        }
                     }
                 };
             }
@@ -691,7 +693,7 @@ public class FlowControlStrategyTest
         new Random().nextBytes(requestData);
 
         byte[] responseData = new byte[requestData.length];
-        ByteBuffer responseContent = ByteBuffer.wrap(responseData);
+        RetainableByteBuffer.Mutable responseContent = RetainableByteBuffer.Mutable.wrap(responseData);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
         CountDownLatch latch = new CountDownLatch(1);
@@ -700,24 +702,27 @@ public class FlowControlStrategyTest
                 @Override
                 public void onDataAvailable(Stream stream)
                 {
-                    Stream.Data data = stream.readData();
-                    responseContent.put(data.frame().getByteBuffer());
-                    data.release();
-                    if (data.frame().isEndStream())
-                        latch.countDown();
-                    else
-                        stream.demand();
+                    try (Content.Chunk chunk = stream.read())
+                    {
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            responseContent.put(buffer);
+                            if (chunk.isLast())
+                                latch.countDown();
+                            else
+                                stream.demand();
+                        }
+                    }
                 }
             })
             .thenAccept(s ->
             {
-                ByteBuffer requestContent = ByteBuffer.wrap(requestData);
-                s.data(new DataFrame(s.getId(), requestContent, true));
+                RetainableByteBuffer requestContent = RetainableByteBuffer.wrap(requestData);
+                s.data(requestContent, true);
             });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        responseContent.flip();
         assertArrayEquals(requestData, responseData);
     }
 
@@ -775,9 +780,9 @@ public class FlowControlStrategyTest
         CompletableFuture<Stream> completable = new CompletableFuture<>();
         session.newStream(requestFrame, Promise.from(completable), null);
         Stream stream = completable.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        RetainableByteBuffer data = RetainableByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
         CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, false), new Callback()
+        stream.data(data, false, new Callback()
         {
             @Override
             public InvocationType getInvocationType()
@@ -804,10 +809,17 @@ public class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
-        ByteBuffer extraData = ByteBuffer.allocate(1024);
-        http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
-        accumulator.writeTo(http2Session.getEndPoint(), false);
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer extraData = RetainableByteBuffer.allocate(1024, false);
+        http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), (int)extraData.remaining());
+        try (Blocker.Callback callback = Blocker.callback())
+        {
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
+            http2Session.getEndPoint().write(rb, callback);
+            rb.release();
+            callback.block();
+        }
 
         // Expect the connection to be closed.
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
@@ -877,9 +889,9 @@ public class FlowControlStrategyTest
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         session.newStream(requestFrame, streamPromise, null);
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        RetainableByteBuffer data = RetainableByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
         CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, false), new Callback()
+        stream.data(data, false, new Callback()
         {
             @Override
             public InvocationType getInvocationType()
@@ -902,10 +914,17 @@ public class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
-        ByteBuffer extraData = ByteBuffer.allocate(1024);
-        http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
-        accumulator.writeTo(http2Session.getEndPoint(), false);
+        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer extraData = RetainableByteBuffer.allocate(1024, false);
+        http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), (int)extraData.remaining());
+        try (Blocker.Callback callback = Blocker.callback())
+        {
+            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
+            http2Session.getEndPoint().write(rb, callback);
+            rb.release();
+            callback.block();
+        }
 
         // Expect the connection to be closed.
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
@@ -932,12 +951,13 @@ public class FlowControlStrategyTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        // Release the data to enlarge the session window.
-                        // More data frames will be discarded because the
-                        // stream is reset, and automatically consumed to
-                        // keep the session window large for other streams.
-                        data.release();
+                        try (Content.Chunk _ = stream.read())
+                        {
+                            // Release the data to enlarge the session window.
+                            // More data frames will be discarded because the
+                            // stream is reset, and automatically consumed to
+                            // keep the session window large for other streams.
+                        }
                         stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
                     }
                 };
@@ -961,9 +981,9 @@ public class FlowControlStrategyTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
 
         // Perform a big upload that will stall the flow control windows.
-        ByteBuffer data = ByteBuffer.allocate(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        RetainableByteBuffer data = RetainableByteBuffer.allocate(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE, false);
         CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, true), new Callback()
+        stream.data(data, true, new Callback()
         {
             @Override
             public InvocationType getInvocationType()
@@ -997,12 +1017,13 @@ public class FlowControlStrategyTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        data.release();
-                        boolean last = data.frame().isEndStream();
-                        int status = last ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500;
-                        MetaData.Response response = new MetaData.Response(status, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        try (Content.Chunk chunk = stream.read())
+                        {
+                            boolean last = chunk.isLast();
+                            int status = last ? HttpStatus.OK_200 : HttpStatus.INTERNAL_SERVER_ERROR_500;
+                            MetaData.Response response = new MetaData.Response(status, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                        }
                     }
                 };
             }
@@ -1039,9 +1060,9 @@ public class FlowControlStrategyTest
         });
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
 
-        // Write a small DATA frame so the server only performs 1 readData().
-        ByteBuffer data = ByteBuffer.allocate(1);
-        stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
+        // Write a small DATA frame so the server only performs 1 read().
+        RetainableByteBuffer data = RetainableByteBuffer.allocate(1, false);
+        stream.data(data, true, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 

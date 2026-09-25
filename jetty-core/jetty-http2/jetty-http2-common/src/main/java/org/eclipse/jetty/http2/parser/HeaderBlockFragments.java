@@ -13,25 +13,24 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.frames.PriorityFrame;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HeaderBlockFragments
 {
-    private final ByteBufferPool bufferPool;
+    private final WritableBufferPool bufferPool;
+    private final boolean directness;
     private final int maxCapacity;
     private PriorityFrame priorityFrame;
     private int streamId;
     private boolean endStream;
-    private RetainableByteBuffer storage;
+    private RetainableByteBuffer.Mutable storage;
 
-    public HeaderBlockFragments(ByteBufferPool bufferPool, int maxCapacity)
+    public HeaderBlockFragments(WritableBufferPool bufferPool, boolean directness, int maxCapacity)
     {
         this.bufferPool = bufferPool;
+        this.directness = directness;
         this.maxCapacity = maxCapacity;
     }
 
@@ -43,38 +42,38 @@ public class HeaderBlockFragments
         storage = null;
     }
 
-    public boolean storeFragment(ByteBuffer fragment, int length, boolean last)
+    public boolean storeFragment(RetainableByteBuffer fragment, int length, boolean last)
     {
         if (storage == null)
         {
             if (maxCapacity > 0 && length > maxCapacity)
                 return false;
             int capacity = last ? length : length * 2;
-            storage = bufferPool.acquire(capacity, fragment.isDirect());
-            BufferUtil.flipToFill(storage.getByteBuffer());
+            storage = bufferPool.acquire(capacity, directness);
         }
 
         // Grow the storage if necessary.
-        if (storage.remaining() < length)
+        if (storage.space() < length)
         {
-            ByteBuffer byteBuffer = storage.getByteBuffer();
-            if (maxCapacity > 0 && (byteBuffer.position() + length) > maxCapacity)
+            if (maxCapacity > 0 && (storage.remaining() + length) > maxCapacity)
                 return false;
             int space = last ? length : length * 2;
-            int capacity = byteBuffer.position() + space;
-            RetainableByteBuffer newStorage = bufferPool.acquire(capacity, storage.isDirect());
-            BufferUtil.flipToFill(newStorage.getByteBuffer());
-            byteBuffer.flip();
-            newStorage.getByteBuffer().put(byteBuffer);
+            // TODO overflow?
+            int capacity = Math.toIntExact(storage.remaining() + space);
+            RetainableByteBuffer.Mutable largerStorage = bufferPool.acquire(capacity, directness);
+            largerStorage.put(storage);
             storage.release();
-            storage = newStorage;
+            storage = largerStorage;
         }
 
+        long l = fragment.remaining() > length ? length : fragment.remaining();
+        RetainableByteBuffer slice = fragment.sliceAndConsume(l);
+
         // Copy the fragment into the storage.
-        int limit = fragment.limit();
-        fragment.limit(fragment.position() + length);
-        storage.getByteBuffer().put(fragment);
-        fragment.limit(limit);
+        // TODO find a way to limit the size of the copy without slicing?
+        storage.put(slice);
+        slice.release();
+
         return true;
     }
 
@@ -100,8 +99,9 @@ public class HeaderBlockFragments
 
     public RetainableByteBuffer complete()
     {
-        storage.getByteBuffer().flip();
-        return storage;
+        RetainableByteBuffer rb = storage;
+        storage = null;
+        return rb;
     }
 
     public int getStreamId()

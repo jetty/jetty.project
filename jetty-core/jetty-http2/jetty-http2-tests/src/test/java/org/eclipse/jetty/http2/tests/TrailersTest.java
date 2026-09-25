@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -45,6 +44,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -124,34 +124,33 @@ public class TrailersTest extends AbstractTest
 
             private void firstRead()
             {
-                Content.Chunk chunk = _request.read();
-
-                // No trailers yet.
-                assertThat(chunk, not(instanceOf(Trailers.class)));
-                chunk.release();
-
-                trailerLatch.countDown();
-
-                _request.demand(this::otherReads);
+                try (Content.Chunk chunk = _request.read())
+                {
+                    // No trailers yet.
+                    assertThat(chunk, not(instanceOf(Trailers.class)));
+                    trailerLatch.countDown();
+                    _request.demand(this::otherReads);
+                }
             }
 
             private void otherReads()
             {
                 while (true)
                 {
-                    Content.Chunk chunk = _request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = _request.read())
                     {
-                        _request.demand(this::otherReads);
-                        return;
-                    }
-                    chunk.release();
-                    if (chunk instanceof Trailers contentTrailers)
-                    {
-                        HttpFields trailers = contentTrailers.getTrailers();
-                        assertNotNull(trailers.get("X-Trailer"));
-                        _callback.succeeded();
-                        return;
+                        if (chunk == null)
+                        {
+                            _request.demand(this::otherReads);
+                            return;
+                        }
+                        if (chunk instanceof Trailers contentTrailers)
+                        {
+                            HttpFields trailers = contentTrailers.getTrailers();
+                            assertNotNull(trailers.get("X-Trailer"));
+                            _callback.succeeded();
+                            return;
+                        }
                     }
                 }
             }
@@ -179,7 +178,7 @@ public class TrailersTest extends AbstractTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
 
         // Send some data.
-        CompletableFuture<Stream> completable = stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), false));
+        CompletableFuture<Stream> completable = stream.data(RetainableByteBuffer.allocate(16, false), false);
 
         assertTrue(trailerLatch.await(5, TimeUnit.SECONDS));
 
@@ -295,12 +294,19 @@ public class TrailersTest extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                DataFrame frame = data.frame();
-                frames.add(frame);
-                data.release();
-                if (frame.isEndStream())
-                    latch.countDown();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        try (DataFrame frame = new DataFrame(stream.getId(), buffer, chunk.isLast()))
+                        {
+                            frame.acquire();
+                            frames.add(frame);
+                            if (frame.isEndStream())
+                                latch.countDown();
+                        }
+                    }
+                }
             }
         });
 
@@ -313,11 +319,16 @@ public class TrailersTest extends AbstractTest
         HeadersFrame trailers = (HeadersFrame)frames.get(2);
         DataFrame eof = (DataFrame)frames.get(3);
 
+        frames.stream()
+            .filter(DataFrame.class::isInstance)
+            .map(DataFrame.class::cast)
+            .forEach(DataFrame::close);
+
         assertFalse(headers.isEndStream());
         assertFalse(data.isEndStream());
         assertTrue(trailers.isEndStream());
         assertTrue(eof.isEndStream());
-        assertEquals(trailers.getMetaData().getHttpFields().get(trailerName), trailerValue);
+        assertEquals(trailerValue, trailers.getMetaData().getHttpFields().get(trailerName));
     }
 
     @Test
@@ -339,9 +350,9 @@ public class TrailersTest extends AbstractTest
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(requestFrame, promise, null);
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
+        RetainableByteBuffer data = RetainableByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
         CountDownLatch failureLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, false))
+        stream.data(data, false)
             .thenAccept(s ->
             {
                 // Invalid trailer: cannot contain pseudo headers.
@@ -395,8 +406,8 @@ public class TrailersTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
-        stream.data(new DataFrame(stream.getId(), data, false))
+        RetainableByteBuffer data = RetainableByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
+        stream.data(data, false)
             .thenAccept(s ->
             {
                 // Disable checks for invalid headers.

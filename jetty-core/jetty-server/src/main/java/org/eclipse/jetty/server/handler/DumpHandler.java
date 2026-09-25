@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,14 +110,12 @@ public class DumpHandler extends Handler.Abstract
             {
                 read = new Utf8StringBuilder();
                 int len = Integer.parseInt(params.getValue("read"));
-                byte[] buffer = new byte[8192];
+                byte[] bytes = new byte[8192];
 
-                Content.Chunk chunk = null;
                 while (len > 0)
                 {
-                    if (chunk == null)
+                    try (Content.Chunk chunk = request.read())
                     {
-                        chunk = request.read();
                         if (chunk == null)
                         {
                             try (Blocker.Runnable blocker = _blocker.runnable())
@@ -124,32 +123,32 @@ public class DumpHandler extends Handler.Abstract
                                 request.demand(blocker);
                                 blocker.block();
                             }
-                            continue;
+                        }
+                        else if (Content.Chunk.isFailure(chunk))
+                        {
+                            callback.failed(chunk.getFailure());
+                            return true;
+                        }
+                        else
+                        {
+                            while (chunk.hasRemaining())
+                            {
+                                int l = (int)Math.min(bytes.length, Math.min(len, chunk.remaining()));
+                                if (l == 0)
+                                    break;
+                                try (RetainableByteBuffer buffer = chunk.acquire())
+                                {
+                                    buffer.get(bytes, 0, l);
+                                    read.append(bytes, 0, l);
+                                    len -= l;
+                                }
+                            }
+
+                            if (chunk.isLast())
+                                break;
                         }
                     }
-
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        callback.failed(chunk.getFailure());
-                        return true;
-                    }
-
-                    int l = Math.min(buffer.length, Math.min(len, chunk.remaining()));
-                    int r = chunk.get(buffer, 0, l);
-                    read.append(buffer, 0, r);
-                    len -= r;
-
-                    if (!chunk.hasRemaining())
-                    {
-                        boolean last = chunk.isLast();
-                        chunk.release();
-                        chunk = null;
-                        if (last)
-                            break;
-                    }
                 }
-                if (chunk != null)
-                    chunk.release();
             }
 
             if (params.getValue("date") != null)
@@ -219,7 +218,7 @@ public class DumpHandler extends Handler.Abstract
 
             try (Blocker.Callback blocker = _blocker.callback())
             {
-                response.write(false, BufferUtil.toBuffer(buf.toByteArray()), blocker);
+                response.write(false, RetainableByteBuffer.wrap(BufferUtil.toBuffer(buf.toByteArray())), blocker);
                 blocker.block();
             }
             response.getHeaders().add("After-Flush", "These headers should not be seen in the response!!!");
@@ -231,7 +230,7 @@ public class DumpHandler extends Handler.Abstract
 
             try (Blocker.Callback blocker = _blocker.callback())
             {
-                response.write(true, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)), blocker);
+                response.write(true, RetainableByteBuffer.wrap(BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1))), blocker);
                 blocker.block();
             }
 

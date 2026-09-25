@@ -14,15 +14,14 @@
 package org.eclipse.jetty.http3.parser;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http3.Grease;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +95,7 @@ public class MessageParser
      * @param buffer the buffer to parse
      * @return the result of the parsing
      */
-    public Result parse(ByteBuffer buffer, boolean last)
+    public Result parse(RetainableByteBuffer buffer, boolean quicLast)
     {
         try
         {
@@ -135,7 +134,7 @@ public class MessageParser
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ignoring {} frame type {}", Grease.isGreaseValue(frameType) ? "grease" : "unknown", Long.toHexString(frameType));
 
-                            BodyParser.Result result = unknownBodyParser.parse(buffer, last);
+                            BodyParser.Result result = unknownBodyParser.parse(buffer, quicLast);
                             if (result == BodyParser.Result.NO_FRAME)
                                 return Result.NO_FRAME;
                             if (LOG.isDebugEnabled())
@@ -147,17 +146,17 @@ public class MessageParser
                         {
                             if (headerParser.getFrameLength() == 0)
                             {
-                                bodyParser.emptyBody(buffer, last);
+                                bodyParser.emptyBody(buffer, quicLast);
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("parsed {} empty frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
+                                    LOG.debug("parsed {} empty frame body from {}", FrameType.from(frameType), buffer);
                                 reset();
                                 return Result.FRAME;
                             }
                             else
                             {
-                                BodyParser.Result result = bodyParser.parse(buffer, last);
+                                BodyParser.Result result = bodyParser.parse(buffer, quicLast);
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("parsed {} {} body from {}", result, FrameType.from(frameType), BufferUtil.toDetailString(buffer));
+                                    LOG.debug("parsed {} {} body from {}", result, FrameType.from(frameType), buffer);
 
                                 // Not enough bytes, there is no frame.
                                 if (result == BodyParser.Result.NO_FRAME)
@@ -192,7 +191,7 @@ public class MessageParser
         }
     }
 
-    private void sessionFailure(ByteBuffer buffer, long error, String reason, Throwable failure)
+    private void sessionFailure(RetainableByteBuffer buffer, long error, String reason, Throwable failure)
     {
         unknownBodyParser.sessionFailure(buffer, error, reason, failure);
     }

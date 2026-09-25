@@ -26,6 +26,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,45 +47,45 @@ public class ContentDocs
             while (true)
             {
                 // Read a chunk, must be eventually released.
-                Content.Chunk chunk = source.read(); // <1>
-
-                // If no chunk, demand to be called back when there are more chunks.
-                if (chunk == null)
+                // The release happens by closing the chunk
+                // using try-with-resources.
+                try (Content.Chunk chunk = source.read()) // <1>
                 {
-                    source.demand(() -> read(source));
-                    return;
-                }
-
-                // If there is a failure reading, handle it.
-                if (Content.Chunk.isFailure(chunk))
-                {
-                    boolean fatal = chunk.isLast();
-                    if (fatal)
+                    // If no chunk, demand to be called back when there are more chunks.
+                    if (chunk == null)
                     {
-                        // A fatal failure, such as a network failure.
-                        handleFatalFailure(chunk.getFailure());
-                        // No recovery is possible, stop reading
-                        // by returning without demanding.
+                        source.demand(() -> read(source));
                         return;
                     }
-                    else
+
+                    // If there is a failure reading, handle it.
+                    if (Content.Chunk.isFailure(chunk))
                     {
-                        // A transient failure such as a read timeout.
-                        handleTransientFailure(chunk.getFailure());
-                        // Recovery is possible, try to read again.
-                        continue;
+                        boolean fatal = chunk.isLast();
+                        if (fatal)
+                        {
+                            // A fatal failure, such as a network failure.
+                            handleFatalFailure(chunk.getFailure());
+                            // No recovery is possible, stop reading
+                            // by returning without demanding.
+                            return;
+                        }
+                        else
+                        {
+                            // A transient failure such as a read timeout.
+                            handleTransientFailure(chunk.getFailure());
+                            // Recovery is possible, try to read again.
+                            continue;
+                        }
                     }
-                }
 
-                // A normal chunk of content, consume it.
-                consume(chunk);
+                    // A normal chunk of content, consume it.
+                    consume(chunk);
 
-                // Release the chunk.
-                chunk.release(); // <2>
-
-                // Stop reading if EOF was reached.
-                if (chunk.isLast())
-                    return;
+                    // Stop reading if EOF was reached.
+                    if (chunk.isLast())
+                        return;
+                } // Release the chunk by closing it. <2>
 
                 // Loop around to read another chunk.
             }
@@ -99,51 +100,51 @@ public class ContentDocs
         public void read(Content.Source source)
         {
             // Read a chunk, must be eventually released.
-            Content.Chunk chunk = source.read(); // <1>
-
-            // If no chunk, demand to be called back when there are more chunks.
-            if (chunk == null)
+            // The release happens by closing the chunk
+            // using try-with-resources.
+            try (Content.Chunk chunk = source.read()) // <1>
             {
-                source.demand(() -> read(source));
-                return;
-            }
-
-            // If there is a failure reading, always treat it as fatal.
-            if (Content.Chunk.isFailure(chunk))
-            {
-                // If the failure is transient, fail the source
-                // to indicate that there will be no more reads.
-                if (!chunk.isLast())
-                    source.fail(chunk.getFailure());
-
-                // Handle the failure and stop reading by not demanding.
-                handleFatalFailure(chunk.getFailure());
-                return;
-            }
-
-            // Consume the chunk asynchronously, and do not
-            // read more chunks until this has been consumed.
-            CompletableFuture<Void> consumed = consumeAsync(chunk);
-
-            // Release the chunk.
-            chunk.release(); // <2>
-
-            // Only when the chunk has been consumed try to read more.
-            consumed.whenComplete((result, failure) ->
-            {
-                if (failure == null)
+                // If no chunk, demand to be called back when there are more chunks.
+                if (chunk == null)
                 {
-                    // Continue reading if EOF was not reached.
+                    source.demand(() -> read(source));
+                    return;
+                }
+
+                // If there is a failure reading, always treat it as fatal.
+                if (Content.Chunk.isFailure(chunk))
+                {
+                    // If the failure is transient, fail the source
+                    // to indicate that there will be no more reads.
                     if (!chunk.isLast())
-                        source.demand(() -> read(source));
+                        source.fail(chunk.getFailure());
+
+                    // Handle the failure and stop reading by not demanding.
+                    handleFatalFailure(chunk.getFailure());
+                    return;
                 }
-                else
+
+                // Consume the chunk asynchronously, and do not
+                // read more chunks until this has been consumed.
+                CompletableFuture<Void> consumed = consumeAsync(chunk);
+
+                // Only when the chunk has been consumed try to read more.
+                consumed.whenComplete((result, failure) ->
                 {
-                    // If there is a failure reading, handle it,
-                    // and stop reading by not demanding.
-                    handleFatalFailure(failure);
-                }
-            });
+                    if (failure == null)
+                    {
+                        // Continue reading if EOF was not reached.
+                        if (!chunk.isLast())
+                            source.demand(() -> read(source));
+                    }
+                    else
+                    {
+                        // If there is a failure reading, handle it,
+                        // and stop reading by not demanding.
+                        handleFatalFailure(failure);
+                    }
+                });
+            } // Release the chunk by closing it. <2>
         }
         // end::async[]
 
@@ -177,7 +178,10 @@ public class ContentDocs
 
             // For example, parse the bytes into other objects,
             // or copy the bytes elsewhere (e.g. the file system).
-            fileChannel.write(chunk.getByteBuffer());
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                buffer.writeTo(b -> fileChannel.write(b));
+            }
 
             if (chunk.isLast())
                 fileChannel.close();
@@ -204,38 +208,37 @@ public class ContentDocs
             while (true)
             {
                 // Read a chunk, must be eventually released.
-                Content.Chunk chunk = source.read(); // <1>
-
-                if (chunk == null)
+                // The release happens by closing the chunk
+                // using try-with-resources.
+                try (Content.Chunk chunk = source.read()) // <1>
                 {
-                    source.demand(this);
-                    return;
-                }
+                    if (chunk == null)
+                    {
+                        source.demand(this);
+                        return;
+                    }
 
-                if (Content.Chunk.isFailure(chunk))
-                {
-                    handleFatalFailure(chunk.getFailure());
-                    return;
-                }
+                    if (Content.Chunk.isFailure(chunk))
+                    {
+                        handleFatalFailure(chunk.getFailure());
+                        return;
+                    }
 
-                // A normal chunk of content, consume it.
-                consume(chunk);
+                    // A normal chunk of content, consume it.
+                    consume(chunk);
 
-                // Release the chunk.
-                // This pairs the call to read() above.
-                chunk.release(); // <2>
+                    if (chunk.isLast())
+                    {
+                        // Produce the result.
+                        String result = getResult();
 
-                if (chunk.isLast())
-                {
-                    // Produce the result.
-                    String result = getResult();
+                        // Complete this CompletableFuture with the result.
+                        complete(result);
 
-                    // Complete this CompletableFuture with the result.
-                    complete(result);
-
-                    // The reading is complete.
-                    return;
-                }
+                        // The reading is complete.
+                        return;
+                    }
+                } // Release the chunk by closing it. <2>
             }
         }
 
@@ -254,7 +257,10 @@ public class ContentDocs
             for (Content.Chunk chunk : chunks)
             {
                 // Copy the chunk bytes into the builder.
-                builder.append(chunk.getByteBuffer());
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    builder.append(buffer);
+                }
 
                 // The chunk has been consumed, release it.
                 // This pairs the retain() in consume().
@@ -268,7 +274,7 @@ public class ContentDocs
     static class SinkWrong
     {
         // tag::sinkWrong[]
-        public void wrongWrite(Content.Sink sink, ByteBuffer content1, ByteBuffer content2)
+        public void wrongWrite(Content.Sink sink, RetainableByteBuffer content1, RetainableByteBuffer content2)
         {
             // Initiate a first write.
             sink.write(false, content1, Callback.NOOP);
@@ -282,7 +288,7 @@ public class ContentDocs
     static class SinkMany
     {
         // tag::sinkMany[]
-        public void manyWrites(Content.Sink sink, ByteBuffer content1, ByteBuffer content2)
+        public void manyWrites(Content.Sink sink, RetainableByteBuffer content1, RetainableByteBuffer content2)
         {
             // Initiate a first write.
             // Callback.Completable is-a CompletableFuture.
@@ -343,7 +349,7 @@ public class ContentDocs
             boolean last = length == 0;
 
             // Start the non-blocking write, passing "this" as the callback.
-            sink.write(last, byteBuffer, this);
+            sink.write(last, RetainableByteBuffer.wrap(byteBuffer), this);
             return Action.SCHEDULED;
         }
 
@@ -376,7 +382,7 @@ public class ContentDocs
         private final Content.Source source;
         private final Content.Sink sink;
         private final Callback callback;
-        private Content.Chunk chunk;
+        private boolean completed;
 
         public Copy(Content.Source source, Content.Sink sink, Callback callback)
         {
@@ -391,35 +397,33 @@ public class ContentDocs
         {
             // If the last write completed, succeed this IteratingCallback,
             // causing onCompleteSuccess() to be invoked.
-            if (chunk != null && chunk.isLast())
+            if (completed)
                 return Action.SUCCEEDED;
 
             // Read a chunk.
-            chunk = source.read();
-
-            // If no chunk, schedule a demand callback when there are more chunks.
-            if (chunk == null)
+            try (Content.Chunk chunk = source.read())
             {
-                source.demand(this::succeeded);
-                return Action.SCHEDULED;
+                // If no chunk, schedule a demand callback when there are more chunks.
+                if (chunk == null)
+                {
+                    source.demand(this::succeeded);
+                    return Action.SCHEDULED;
+                }
+
+                // The read failed, re-throw the failure
+                // causing onCompleteFailure() to be invoked.
+                if (Content.Chunk.isFailure(chunk))
+                    throw chunk.getFailure();
+
+                completed = chunk.isLast();
+
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    // Copy the chunk by scheduling an asynchronous write.
+                    sink.write(chunk.isLast(), buffer, this);
+                    return Action.SCHEDULED;
+                }
             }
-
-            // The read failed, re-throw the failure
-            // causing onCompleteFailure() to be invoked.
-            if (Content.Chunk.isFailure(chunk))
-                throw chunk.getFailure();
-
-            // Copy the chunk by scheduling an asynchronous write.
-            sink.write(chunk.isLast(), chunk.getByteBuffer(), this);
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onSuccess()
-        {
-            // After every successful write, release
-            // the chunk and reset to the next chunk.
-            chunk = Content.Chunk.releaseAndNext(chunk);
         }
 
         @Override
@@ -430,20 +434,9 @@ public class ContentDocs
         }
 
         @Override
-        protected void onFailure(Throwable cause)
-        {
-            // The copy has failed, fail the copy callback.
-            // This method is invoked before a write() has completed, so
-            // the chunk is not released here, but in onCompleteFailure().
-            callback.failed(cause);
-        }
-
-        @Override
         protected void onCompleteFailure(Throwable failure)
         {
-            // In case of a failure, this method is invoked when the write()
-            // is completed, and it is now possible to release the chunk.
-            chunk = Content.Chunk.releaseAndNext(chunk);
+            callback.failed(failure);
         }
 
         @Override

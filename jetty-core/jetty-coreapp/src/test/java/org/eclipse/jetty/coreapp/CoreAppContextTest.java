@@ -171,7 +171,7 @@ public class CoreAppContextTest
             
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -216,7 +216,7 @@ public class CoreAppContextTest
             
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response.get("Location"), is("https://jetty.org/docs/"));
@@ -269,7 +269,7 @@ public class CoreAppContextTest
             
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
@@ -304,7 +304,7 @@ public class CoreAppContextTest
         startServerWithDeploy(root, webapps, null);
 
         // Request static file via directory (which results in ResourceHandler welcomeFiles logic returning index.html)
-        String rawResponse = localConnector.getResponse("""
+        String rawResponse = localConnector.getResponseAsString("""
             GET /demo/ HTTP/1.1
             Host: local
             Connection: close
@@ -316,7 +316,7 @@ public class CoreAppContextTest
         assertThat(responseBody, containsString("This is the static index.html"));
 
         // Request specific static file
-        rawResponse = localConnector.getResponse("""
+        rawResponse = localConnector.getResponseAsString("""
             GET /demo/test.txt HTTP/1.1
             Host: local
             Connection: close
@@ -328,7 +328,7 @@ public class CoreAppContextTest
         assertThat(responseBody, containsString("This is the test TXT"));
 
         // Request specific static file that doesn't exist
-        rawResponse = localConnector.getResponse("""
+        rawResponse = localConnector.getResponseAsString("""
             GET /demo/bogus.png HTTP/1.1
             Host: local
             Connection: close
@@ -338,7 +338,7 @@ public class CoreAppContextTest
         assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
         // Request jetty-web.xml
-        rawResponse = localConnector.getResponse("""
+        rawResponse = localConnector.getResponseAsString("""
             GET /demo/jetty-web.xml HTTP/1.1
             Host: local
             Connection: close
@@ -348,7 +348,7 @@ public class CoreAppContextTest
         assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
         // Request jetty-web.xml in different way
-        rawResponse = localConnector.getResponse("""
+        rawResponse = localConnector.getResponseAsString("""
             GET /demo/../jetty-web.xml HTTP/1.1
             Host: local
             Connection: close
@@ -405,7 +405,7 @@ public class CoreAppContextTest
             
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
@@ -473,7 +473,7 @@ public class CoreAppContextTest
             
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
@@ -697,7 +697,7 @@ public class CoreAppContextTest
             
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
@@ -749,7 +749,7 @@ public class CoreAppContextTest
             
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
@@ -822,7 +822,7 @@ public class CoreAppContextTest
             
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
@@ -890,7 +890,7 @@ public class CoreAppContextTest
             
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
@@ -966,7 +966,7 @@ public class CoreAppContextTest
             
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();
@@ -1036,7 +1036,7 @@ public class CoreAppContextTest
             
             """;
 
-        String rawResponse = localConnector.getResponse(rawRequest);
+        String rawResponse = localConnector.getResponseAsString(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         String responseBody = response.getContent();

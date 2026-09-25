@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -85,7 +85,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -116,7 +116,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -146,7 +146,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -191,7 +191,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -231,7 +231,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        String response = connector.getResponse("""
+        String response = connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -261,7 +261,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -293,7 +293,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -335,7 +335,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        String response = connector.getResponse("""
+        String response = connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -366,23 +366,24 @@ public class StateTrackingHandlerTest
                     @Override
                     public void run()
                     {
-                        Content.Chunk chunk = request.read();
-                        if (chunk != null)
+                        try (Content.Chunk chunk = request.read())
                         {
-                            chunk.release();
-                            if (chunk.isLast())
+                            if (chunk != null)
                             {
-                                try
+                                if (chunk.isLast())
                                 {
-                                    // Block.
-                                    latch.await();
-                                    callback.succeeded();
+                                    try
+                                    {
+                                        // Block.
+                                        latch.await();
+                                        callback.succeeded();
+                                    }
+                                    catch (Throwable x)
+                                    {
+                                        callback.failed(x);
+                                    }
+                                    return;
                                 }
-                                catch (Throwable x)
-                                {
-                                    callback.failed(x);
-                                }
-                                return;
                             }
                         }
                         request.demand(this);
@@ -423,13 +424,13 @@ public class StateTrackingHandlerTest
                 Response.Wrapper wrapper = new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
                     {
                         try
                         {
                             // Block.
                             writeLatch.await();
-                            super.write(last, byteBuffer, callback);
+                            super.write(last, buffer, callback);
                         }
                         catch (Throwable x)
                         {
@@ -483,11 +484,11 @@ public class StateTrackingHandlerTest
                 Response wrapped = new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
                     {
                         // The callback parameter is the write callback from
                         // StateTrackingHandler that will not be completed.
-                        super.write(last, byteBuffer, Callback.NOOP);
+                        super.write(last, buffer, Callback.NOOP);
                     }
                 };
                 return super.handle(request, wrapped, callback);
@@ -593,20 +594,21 @@ public class StateTrackingHandlerTest
                         {
                             while (true)
                             {
-                                Content.Chunk chunk = request.read();
-                                if (chunk == null)
+                                try (Content.Chunk chunk = request.read())
                                 {
-                                    request.demand(this);
-                                    // Bad behavior: must not block a demand
-                                    // callback because they are serialized.
-                                    demandLatch.await();
-                                    return;
-                                }
-                                chunk.release();
-                                if (chunk.isLast())
-                                {
-                                    callback.succeeded();
-                                    return;
+                                    if (chunk == null)
+                                    {
+                                        request.demand(this);
+                                        // Bad behavior: must not block a demand
+                                        // callback because they are serialized.
+                                        demandLatch.await();
+                                        return;
+                                    }
+                                    if (chunk.isLast())
+                                    {
+                                        callback.succeeded();
+                                        return;
+                                    }
                                 }
                             }
                         }
@@ -630,13 +632,13 @@ public class StateTrackingHandlerTest
         {
             // Wait to return from handle(), then send the first chunk of content.
             Thread.sleep(500);
-            endPoint.addInputAndExecute("A");
+            endPoint.writeRequestString("A");
 
             // Wait to detect the blocked demand callback, then add the last chunk of content.
             await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(listener::events, contains("demand-blocked"));
             assertThat(stateTrackingHandler.dump(), containsString("demands size=2"));
             demandLatch.countDown();
-            endPoint.addInputAndExecute("B");
+            endPoint.writeRequestString("B");
 
             HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
@@ -687,7 +689,7 @@ public class StateTrackingHandlerTest
             await().atMost(2 * timeout, TimeUnit.MILLISECONDS).until(listener::events, contains("write-callback-blocked"));
             assertThat(stateTrackingHandler.dump(), containsString("writes size=2"));
             writeLatch.countDown();
-            endPoint.addInputAndExecute("B");
+            endPoint.writeRequestString("B");
 
             HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse(false, 5, TimeUnit.SECONDS));
 
@@ -711,7 +713,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET / HTTP/1.1
             Host: localhost
             

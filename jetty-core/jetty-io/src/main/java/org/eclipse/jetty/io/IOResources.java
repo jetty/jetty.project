@@ -20,14 +20,15 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -44,11 +45,11 @@ public class IOResources
      * {@link Resource#newInputStream()} is used as a fallback.</p>
      *
      * @param resource the resource to be read.
-     * @param bufferPool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
+     * @param pool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
      * @return a {@link RetainableByteBuffer} containing the resource's contents.
      * @throws IllegalArgumentException if the resource is a directory or does not exist or there is no way to access its contents.
      */
-    public static RetainableByteBuffer toRetainableByteBuffer(Resource resource, ByteBufferPool.Sized bufferPool) throws IllegalArgumentException
+    public static RetainableByteBuffer toRetainableByteBuffer(Resource resource, ByteBufferPool.Sized pool) throws IllegalArgumentException
     {
         if (resource.isDirectory() || !resource.exists())
             throw new IllegalArgumentException("Resource must exist and cannot be a directory: " + resource);
@@ -56,9 +57,9 @@ public class IOResources
         // Optimize for Content.Source.Factory.
         if (resource instanceof Content.Source.Factory factory)
         {
-            try (Blocker.Promise<RetainableByteBuffer> promise = Blocker.promise(Retainable::retain))
+            try (Blocker.Promise<RetainableByteBuffer> promise = Blocker.promise(RetainableByteBuffer::retain))
             {
-                Content.Source.asRetainableByteBuffer(factory.newContentSource(bufferPool, 0L, -1L), bufferPool, bufferPool.isDirect(), Integer.MAX_VALUE, promise);
+                Content.Source.asRetainableByteBuffer(factory.newContentSource(pool, 0L, -1L), promise);
                 return promise.block();
             }
             catch (IOException e)
@@ -73,77 +74,72 @@ public class IOResources
 
         long longLength = resource.length();
 
-        bufferPool = bufferPool == null ? ByteBufferPool.SIZED_NON_POOLING : bufferPool;
+        WritableBufferPool.Sized bufferPool = pool == null ? WritableBufferPool.SIZED_NON_POOLING : WritableBufferPool.wrap(pool);
 
         // Optimize for PathResource.
         Path path = resource.getPath();
         if (path != null && longLength < Integer.MAX_VALUE)
         {
-            // TODO convert to a Dynamic once HttpContent uses writeTo semantics
-            RetainableByteBuffer retainableByteBuffer = bufferPool.acquire((int)longLength);
-            try (SeekableByteChannel seekableByteChannel = Files.newByteChannel(path))
+            // TODO: SIMON Just RBB.wrap(path...)?
+            try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire((int)longLength))
             {
-                long totalRead = 0L;
-                ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
-                int pos = BufferUtil.flipToFill(byteBuffer);
-                while (totalRead < longLength)
+                try (SeekableByteChannel seekableByteChannel = Files.newByteChannel(path))
                 {
-                    int read = seekableByteChannel.read(byteBuffer);
-                    if (read == -1)
-                        break;
-                    totalRead += read;
+                    long totalRead = 0L;
+                    while (totalRead < longLength)
+                    {
+                        long read = buffer.readFrom(seekableByteChannel::read);
+                        if (read == -1)
+                            break;
+                        totalRead += read;
+                    }
+                    buffer.retain();
+                    return buffer;
                 }
-                BufferUtil.flipToFlush(byteBuffer, pos);
-                return retainableByteBuffer;
-            }
-            catch (IOException e)
-            {
-                retainableByteBuffer.release();
-                throw new UncheckedIOException(e);
+                catch (IOException e)
+                {
+                    throw new UncheckedIOException(e);
+                }
             }
         }
 
         // Fallback to InputStream.
-        RetainableByteBuffer buffer = null;
         try (InputStream inputStream = resource.newInputStream())
         {
             if (inputStream == null)
                 throw new IllegalArgumentException("Resource does not support InputStream: " + resource);
 
-            RetainableByteBuffer.DynamicCapacity retainableByteBuffer = new RetainableByteBuffer.DynamicCapacity(bufferPool, bufferPool.isDirect(), longLength);
+            List<RetainableByteBuffer> accumulator = new ArrayList<>();
             while (true)
             {
-                if (buffer == null)
-                    buffer = bufferPool.acquire(false);
-                int read = inputStream.read(buffer.getByteBuffer().array());
-                if (read == -1)
-                    break;
-                buffer.getByteBuffer().limit(read);
-                retainableByteBuffer.append(buffer);
-                if (buffer.isRetained())
+                try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(false))
                 {
-                    // buffer has been retained by DynamicCapacity, fetch
-                    // a new one on the next loop iteration.
-                    buffer.release();
-                    buffer = null;
-                }
-                else
-                {
-                    // buffer has been copied by DynamicCapacity, clear it
-                    // before reusing it for the next loop iteration.
-                    buffer.clear();
+                    long read = buffer.readFrom(b ->
+                    {
+                        int position = b.position();
+                        int r = inputStream.read(b.array(), b.arrayOffset() + position, b.remaining());
+                        if (r > 0)
+                            b.position(position + r);
+                        return r;
+                    });
+                    if (read < 0)
+                        break;
+                    buffer.retain();
+                    accumulator.add(buffer);
                 }
             }
-            return retainableByteBuffer;
+
+            if (accumulator.isEmpty())
+                return RetainableByteBuffer.empty();
+            if (accumulator.size() == 1)
+                return accumulator.getFirst();
+            RetainableByteBuffer result = RetainableByteBuffer.merge(accumulator);
+            accumulator.forEach(RetainableByteBuffer::release);
+            return result;
         }
         catch (IOException e)
         {
             throw new UncheckedIOException(e);
-        }
-        finally
-        {
-            if (buffer != null)
-                buffer.release();
         }
     }
 
@@ -259,7 +255,9 @@ public class IOResources
             Path path = resource.getPath();
             if (path != null)
             {
-                new PathToSinkCopier(path, sink, bufferPool, offset, length, callback).iterate();
+                RetainableByteBuffer pathBuffer = RetainableByteBuffer.wrap(path, offset, length, WritableBufferPool.wrap(bufferPool == null ? ByteBufferPool.SIZED_NON_POOLING : bufferPool));
+                sink.write(true, pathBuffer, callback);
+                pathBuffer.release();
                 return;
             }
 
@@ -267,7 +265,7 @@ public class IOResources
             if (resource instanceof MemoryResource memoryResource)
             {
                 ByteBuffer byteBuffer = BufferUtil.slice(ByteBuffer.wrap(memoryResource.getBytes()), Math.toIntExact(offset), Math.toIntExact(length));
-                sink.write(true, byteBuffer, callback);
+                sink.write(true, RetainableByteBuffer.wrap(byteBuffer), callback);
                 return;
             }
 
@@ -281,106 +279,6 @@ public class IOResources
         catch (Throwable x)
         {
             callback.failed(x);
-        }
-    }
-
-    private static class PathToSinkCopier extends IteratingNestedCallback
-    {
-        private final SeekableByteChannel channel;
-        private final Content.Sink sink;
-        private final ByteBufferPool.Sized pool;
-        private long remainingLength;
-        private RetainableByteBuffer retainableByteBuffer;
-        private boolean terminated;
-
-        public PathToSinkCopier(Path path, Content.Sink sink, ByteBufferPool.Sized pool, long offset, long length, Callback callback) throws IOException
-        {
-            super(callback);
-            this.sink = sink;
-            this.pool = pool == null ? ByteBufferPool.SIZED_NON_POOLING : pool;
-            this.remainingLength = length;
-            this.channel = Files.newByteChannel(path);
-            skipToOffset(channel, offset, length, this.pool);
-        }
-
-        private static void skipToOffset(SeekableByteChannel channel, long offset, long length, ByteBufferPool.Sized pool)
-        {
-            if (offset > 0L && length != 0L)
-            {
-                RetainableByteBuffer.Mutable byteBuffer = pool.acquire(1);
-                try
-                {
-                    channel.position(offset - 1);
-                    if (channel.read(byteBuffer.getByteBuffer().limit(1)) == -1)
-                        throw new IllegalArgumentException("Offset out of range");
-                }
-                catch (IOException e)
-                {
-                    throw new UncheckedIOException(e);
-                }
-                finally
-                {
-                    byteBuffer.release();
-                }
-            }
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-
-        @Override
-        protected Action process() throws Throwable
-        {
-            if (terminated)
-                return Action.SUCCEEDED;
-
-            if (retainableByteBuffer == null)
-                retainableByteBuffer = pool.acquire();
-
-            ByteBuffer byteBuffer = retainableByteBuffer.getByteBuffer();
-            BufferUtil.clearToFill(byteBuffer);
-            if (remainingLength >= 0 && remainingLength < Integer.MAX_VALUE)
-                byteBuffer.limit((int)Math.min(byteBuffer.capacity(), remainingLength));
-            boolean eof = false;
-            while (byteBuffer.hasRemaining() && !eof)
-            {
-                int read = channel.read(byteBuffer);
-                if (read == -1)
-                    eof = true;
-                else if (remainingLength >= 0)
-                    remainingLength -= read;
-            }
-            BufferUtil.flipToFlush(byteBuffer, 0);
-            terminated = eof || remainingLength == 0;
-            sink.write(terminated, byteBuffer, this);
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            if (retainableByteBuffer != null)
-                retainableByteBuffer.release();
-            IO.close(channel);
-            super.onCompleteSuccess();
-        }
-
-        @Override
-        protected void onFailure(Throwable x)
-        {
-            IO.close(channel);
-            super.onFailure(x);
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable cause)
-        {
-            if (retainableByteBuffer != null)
-                retainableByteBuffer.release();
-            super.onCompleteFailure(cause);
         }
     }
 }

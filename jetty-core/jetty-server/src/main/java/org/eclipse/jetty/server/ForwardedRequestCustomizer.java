@@ -567,12 +567,14 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         if (forwarded.hasFor())
         {
             int forPort = forwarded._for._port;
-            if (forPort <= 0)
+            if (forPort < 0)
             {
                 // TODO utility methods for this would be nice.
                 SocketAddress addr = request.getConnectionMetaData().getRemoteSocketAddress();
-                if (addr instanceof InetSocketAddress)
-                    forPort = ((InetSocketAddress)addr).getPort();
+                if (addr instanceof InetSocketAddress inet)
+                    forPort = inet.getPort();
+                else
+                    forPort = 0;
             }
             remote = InetSocketAddress.createUnresolved(forwarded._for._host, forPort);
         }

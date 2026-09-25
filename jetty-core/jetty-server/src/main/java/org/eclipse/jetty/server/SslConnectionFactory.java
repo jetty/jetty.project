@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
@@ -27,6 +26,7 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -132,12 +132,12 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
     }
 
     @Override
-    public Detection detect(ByteBuffer buffer)
+    public Detection detect(RetainableByteBuffer buffer)
     {
         if (buffer.remaining() < 2)
             return Detection.NEED_MORE_BYTES;
-        int tlsFrameType = buffer.get(0) & 0xFF;
-        int tlsMajorVersion = buffer.get(1) & 0xFF;
+        int tlsFrameType = buffer.getByteAsInt();
+        int tlsMajorVersion = buffer.getByteAsInt();
         boolean seemsSsl = (tlsFrameType == TLS_HANDSHAKE_FRAME_TYPE || tlsFrameType == TLS_ALERT_FRAME_TYPE) && tlsMajorVersion == TLS_MAJOR_VERSION;
         return seemsSsl ? Detection.RECOGNIZED : Detection.NOT_RECOGNIZED;
     }

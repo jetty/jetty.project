@@ -39,9 +39,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -791,7 +791,7 @@ public class EagerContentHandlerTest
                 }
 
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
-                response.write(true, BufferUtil.toBuffer("success"), callback);
+                response.write(true, RetainableByteBuffer.wrap("success", StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         });

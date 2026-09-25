@@ -87,32 +87,33 @@ import org.slf4j.LoggerFactory;
  *     @Override
  *     public void onDataAvailable(Stream.Client stream)
  *     {
- *         Content.Chunk chunk = stream.read();
- *         if (chunk == null)
+ *         try (Content.Chunk chunk = stream.read())
  *         {
- *             stream.demand();
- *             return;
- *         }
- *         // Process the response content chunk.
- *         process(chunk);
- *         // Release the chunk.
- *         chunk.release();
- *         // Demand for more response content.
- *         if (!chunk.isLast())
- *             stream.demand();
+ *             if (chunk == null)
+ *             {
+ *                 stream.demand();
+     *             return;
+ *             }
+ *             // Process the response content chunk.
+ *             process(chunk);
+ *
+ *             // Demand for more response content.
+ *             if (!chunk.isLast())
+ *                 stream.demand();
+ *         } // Release the chunk by closing it.
  *     }
  * }, p));
  *
  * // Use the Stream.Client object to send request content, if any, using a DATA frame.
- * ByteBuffer requestChunk1 = UTF_8.encode("hello");
- * stream.data(new DataFrame(requestChunk1, false), new Promise.Invocable.NonBlocking()
+ * RetainableByteBuffer requestChunk1 = RetainableByteBuffer.wrap("hello", UTF_8);
+ * stream.data(requestChunk1, false, new Promise.Invocable.NonBlocking()
  * {
  *     @Override
  *     public void succeeded(Stream s)
  *     {
  *         // Subsequent sends must wait for previous sends to complete.
- *         ByteBuffer requestChunk2 = UTF_8.encode("world");
- *         return s.data(new DataFrame(requestChunk2, true), Promise.Invocable.noop());
+ *         RetainableByteBuffer requestChunk2 = RetainableByteBuffer.wrap("world", UTF_8);
+ *         return s.data(requestChunk2, true, Promise.Invocable.noop());
  *     }
  * });
  * }</pre>

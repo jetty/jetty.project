@@ -17,7 +17,6 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
@@ -71,6 +70,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,56 +87,54 @@ import org.slf4j.LoggerFactory;
  *
  *     while (true)
  *     {
- *         Content.Chunk chunk = request.read();
- *         if (chunk == null)
+ *         try (Content.Chunk chunk = request.read())
  *         {
- *             // The chunk is not currently available, demand to be called back.
- *             request.demand(() -> handle(request, response, callback));
- *             return true;
- *         }
+ *             if (chunk == null)
+ *             {
+ *                 // The chunk is not currently available, demand to be called back.
+ *                 request.demand(() -> handle(request, response, callback));
+ *                 return true;
+ *             }
  *
- *         if (Content.Chunk.isError(chunk))
- *         {
- *             Throwable failure = error.getCause();
+ *             if (Content.Chunk.isFailure(chunk))
+ *             {
+ *                 Throwable failure = chunk.getFailure();
  *
- *             // Handle errors.
- *             // If the chunk is not last, then the error can be ignored and reading can be tried again.
- *             // Otherwise, if the chunk is last, or we do not wish to ignore a non-last error, then
- *             // mark the handling as complete, either generating a custom
- *             // response and succeeding the callback, or failing the callback.
- *             callback.failed(failure);
- *             return true;
- *         }
+ *                 // Handle errors.
+ *                 // If the chunk is not last, then the error can be ignored and reading can be tried again.
+ *                 // Otherwise, if the chunk is last, or we do not wish to ignore a non-last error, then
+ *                 // mark the handling as complete, either generating a custom
+ *                 // response and succeeding the callback, or failing the callback.
+ *                 callback.failed(failure);
+ *                 return true;
+ *             }
  *
- *         if (chunk instanceof Trailers trailers)
- *         {
- *             HttpFields fields = trailers.getTrailers();
+ *             if (chunk instanceof Trailers trailers)
+ *             {
+ *                 HttpFields fields = trailers.getTrailers();
  *
- *             // Handle trailers.
+ *                 // Handle trailers.
  *
- *             // Generate a response.
+ *                 // Generate a response.
  *
- *             // Mark the handling as complete.
- *             callback.succeeded();
+ *                 // Mark the handling as complete.
+ *                 callback.succeeded();
+ *                 return true;
+ *             }
  *
- *             return true;
- *         }
+ *             // Normal chunk, process it.
+ *             processChunk(chunk);
  *
- *         // Normal chunk, process it.
- *         processChunk(chunk);
- *         // Release the content after processing.
- *         chunk.release();
+ *             // Reached end-of-file?
+ *             if (chunk.isLast())
+ *             {
+ *                 // Generate a response.
  *
- *         // Reached end-of-file?
- *         if (chunk.isLast())
- *         {
- *             // Generate a response.
- *
- *             // Mark the handling as complete.
- *             callback.succeeded();
- *
- *             return true;
- *         }
+ *                 // Mark the handling as complete.
+ *                 callback.succeeded();
+ *                 return true;
+ *             }
+ *         } // Release the chunk by closing it.
  *     }
  * }
  * }</pre>
@@ -303,7 +301,7 @@ public interface Request extends Attributes, Content.Source
      * (see {@link #addFailureListener(Consumer)}); or {@code false} to ignore that specific
      * timeout and for another timeout to occur after another idle period.</p>
      * <p>Idle timeout listeners are only invoked if there are no pending
-     * {@link #demand(Runnable)} or {@link Response#write(boolean, ByteBuffer, Callback)}
+     * {@link #demand(Runnable)} or {@link Response#write(boolean, RetainableByteBuffer, Callback)}
      * operations.</p>
      * <p>Listeners are processed in the same order they are added, and the first that
      * returns {@code true} stops the processing of subsequent listeners, which are
@@ -320,9 +318,9 @@ public interface Request extends Attributes, Content.Source
      * <ul>
      *     <li>Pending {@link #demand(Runnable)} have been woken up.</li>
      *     <li>Calls to {@link #read()} will return the {@code Throwable} failure.</li>
-     *     <li>Pending and new {@link Response#write(boolean, ByteBuffer, Callback)} calls
+     *     <li>Pending and new {@link Response#write(boolean, RetainableByteBuffer, Callback)} calls
      *     will be failed by calling {@link Callback#failed(Throwable)} on the callback
-     *     passed to {@link Response#write(boolean, ByteBuffer, Callback)}.</li>
+     *     passed to {@link Response#write(boolean, RetainableByteBuffer, Callback)}.</li>
      * </ul>
      * <p>Listeners are processed in the same order they are added.</p>
      *

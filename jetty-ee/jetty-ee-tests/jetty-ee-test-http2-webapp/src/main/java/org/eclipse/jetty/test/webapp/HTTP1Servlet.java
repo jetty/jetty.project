@@ -15,7 +15,6 @@ package org.eclipse.jetty.test.webapp;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
@@ -33,7 +32,9 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HTTP1Servlet extends HttpServlet
@@ -100,10 +101,9 @@ public class HTTP1Servlet extends HttpServlet
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        try
+                        // Read a chunk of the content.
+                        try (Content.Chunk data = stream.read())
                         {
-                            // Read a chunk of the content.
-                            Stream.Data data = stream.readData();
                             if (data == null)
                             {
                                 // No data available now, demand to be called back.
@@ -112,13 +112,17 @@ public class HTTP1Servlet extends HttpServlet
                             else
                             {
                                 // Process the content.
-                                ByteBuffer buffer = data.frame().getByteBuffer();
-                                byte[] bytes = new byte[buffer.remaining()];
-                                buffer.get(bytes);
-                                output.write(bytes);
-                                // Notify that the content has been consumed.
-                                data.release();
-                                if (!data.frame().isEndStream())
+                                try (RetainableByteBuffer buffer = data.acquire())
+                                {
+                                    buffer.writeTo(b ->
+                                    {
+                                        int r = b.remaining();
+                                        output.write(b);
+                                        return r;
+                                    });
+                                }
+
+                                if (!data.isLast())
                                 {
                                     // Demand to be called back.
                                     stream.demand();

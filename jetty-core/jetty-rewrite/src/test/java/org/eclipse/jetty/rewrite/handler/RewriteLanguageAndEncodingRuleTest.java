@@ -89,7 +89,7 @@ public class RewriteLanguageAndEncodingRuleTest extends AbstractRuleTest
     @Test
     public void testNone() throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx/unknown.html HTTP/1.0\r
             \r
             """));
@@ -97,7 +97,7 @@ public class RewriteLanguageAndEncodingRuleTest extends AbstractRuleTest
         assertEquals(404, response.getStatus());
         assertThat(response.get(HttpHeader.VARY), containsString("Accept-Language, Accept-Encoding"));
 
-        response = HttpTester.parseResponse(_connector.getResponse("""
+        response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx/only.html HTTP/1.0\r
             \r
             """));
@@ -109,7 +109,7 @@ public class RewriteLanguageAndEncodingRuleTest extends AbstractRuleTest
         assertThat(response.get(HttpHeader.ETAG), not(nullValue()));
         assertThat(response.get(HttpHeader.ETAG), not(containsString("-")));
 
-        response = HttpTester.parseResponse(_connector.getResponse("""
+        response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx/all.html HTTP/1.0\r
             \r
             """));
@@ -121,7 +121,7 @@ public class RewriteLanguageAndEncodingRuleTest extends AbstractRuleTest
         assertThat(response.get(HttpHeader.ETAG), not(nullValue()));
         assertThat(response.get(HttpHeader.ETAG), not(containsString("-")));
 
-        response = HttpTester.parseResponse(_connector.getResponse("""
+        response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx/br-only.html HTTP/1.0\r
             \r
             """));
@@ -133,7 +133,7 @@ public class RewriteLanguageAndEncodingRuleTest extends AbstractRuleTest
     @Test
     public void testBoth() throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx/unknown.html HTTP/1.0\r
             Accept-Encoding: br\r
             Accept-Language: en\r
@@ -143,7 +143,7 @@ public class RewriteLanguageAndEncodingRuleTest extends AbstractRuleTest
         assertEquals(404, response.getStatus());
         assertThat(response.get(HttpHeader.VARY), containsString("Accept-Language, Accept-Encoding"));
 
-        response = HttpTester.parseResponse(_connector.getResponse("""
+        response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx/only.html HTTP/1.0\r
             Accept-Encoding: br\r
             Accept-Language: en\r
@@ -155,7 +155,7 @@ public class RewriteLanguageAndEncodingRuleTest extends AbstractRuleTest
         assertEquals("only", response.getContent());
         assertThat(response.get(HttpHeader.CONTENT_ENCODING), nullValue());
 
-        response = HttpTester.parseResponse(_connector.getResponse("""
+        response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx/all.html HTTP/1.0\r
             Accept-Encoding: br\r
             Accept-Language: en\r
@@ -173,7 +173,7 @@ public class RewriteLanguageAndEncodingRuleTest extends AbstractRuleTest
     @Test
     public void testEtags() throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx/all.html HTTP/1.0\r
             Accept-Encoding: br\r
             Accept-Language: en\r
@@ -189,7 +189,7 @@ public class RewriteLanguageAndEncodingRuleTest extends AbstractRuleTest
         String etag = response.get(HttpHeader.ETAG);
         assertThat(etag, containsString("-br-en\""));
 
-        response = HttpTester.parseResponse(_connector.getResponse("""
+        response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /ctx/all.html HTTP/1.0\r
             Accept-Encoding: br\r
             Accept-Language: en\r

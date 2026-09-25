@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.client.transport.internal;
 
-import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpUpgrader;
@@ -31,10 +30,10 @@ import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HttpSenderOverHTTP2 extends HttpSender
 {
@@ -50,7 +49,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendHeaders(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         HttpRequest request = exchange.getRequest();
         boolean isTunnel = HttpMethod.CONNECT.is(request.getMethod());
@@ -87,8 +86,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
         }
         else
         {
-            boolean hasContent = BufferUtil.hasContent(contentBuffer);
-            if (hasContent)
+            if (contentBuffer.hasRemaining())
             {
                 headersFrame = new HeadersFrame(metaData, null, false);
                 if (lastContent)
@@ -134,7 +132,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendContent(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         Stream stream = getHttpChannel().getStream();
         boolean hasContent = contentBuffer.hasRemaining();
@@ -145,31 +143,24 @@ public class HttpSenderOverHTTP2 extends HttpSender
             boolean hasTrailers = trailers != null && trailers.size() > 0;
             if (hasContent)
             {
-                DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, !hasTrailers);
                 if (hasTrailers)
-                    stream.data(dataFrame, Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed));
+                    stream.data(contentBuffer, false, Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed));
                 else
-                    stream.data(dataFrame, callback);
+                    stream.data(contentBuffer, true, callback);
             }
             else
             {
                 if (hasTrailers)
-                {
                     sendTrailers(stream, trailers, callback);
-                }
                 else
-                {
-                    DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, true);
-                    stream.data(dataFrame, callback);
-                }
+                    stream.data(contentBuffer, true, callback);
             }
         }
         else
         {
             if (hasContent)
             {
-                DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, false);
-                stream.data(dataFrame, callback);
+                stream.data(contentBuffer, false, callback);
             }
             else
             {

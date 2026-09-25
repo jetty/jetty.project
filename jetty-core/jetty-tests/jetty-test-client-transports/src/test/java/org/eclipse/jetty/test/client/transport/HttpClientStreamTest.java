@@ -56,16 +56,15 @@ import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CompletableTask;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -98,7 +97,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.allocate(1024), callback);
+                response.write(true, RetainableByteBuffer.allocate(1024, false), callback);
                 return true;
             }
         });
@@ -126,7 +125,7 @@ public class HttpClientStreamTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws IOException
             {
                 Content.Sink.write(response, false, ByteBuffer.allocate(16));
-                response.write(true, ByteBuffer.allocate(8), callback);
+                response.write(true, RetainableByteBuffer.allocate(8, false), callback);
                 return true;
             }
         });
@@ -207,7 +206,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -250,7 +249,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -406,7 +405,7 @@ public class HttpClientStreamTest extends AbstractTest
             input.close();
 
             HandlerContext handlerContext = contextRef.get();
-            handlerContext.response().write(true, ByteBuffer.allocate(1024), handlerContext.callback());
+            handlerContext.response().write(true, RetainableByteBuffer.allocate(1024, false), handlerContext.callback());
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -428,7 +427,7 @@ public class HttpClientStreamTest extends AbstractTest
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, chunk1.length + chunk2.length);
                 Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
-                response.write(true, ByteBuffer.wrap(chunk2), callback);
+                response.write(true, RetainableByteBuffer.wrap(chunk2), callback);
                 return true;
             }
         });
@@ -483,7 +482,7 @@ public class HttpClientStreamTest extends AbstractTest
             {
                 byte[] data = new byte[1024];
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, data.length);
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -605,7 +604,7 @@ public class HttpClientStreamTest extends AbstractTest
                     throw new InterruptedIOException();
                 }
 
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -657,7 +656,7 @@ public class HttpClientStreamTest extends AbstractTest
                     throw new InterruptedIOException();
                 }
 
-                response.write(true, ByteBuffer.wrap(data2), callback);
+                response.write(true, RetainableByteBuffer.wrap(data2), callback);
                 return true;
             }
         });
@@ -696,7 +695,7 @@ public class HttpClientStreamTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -1143,11 +1142,11 @@ public class HttpClientStreamTest extends AbstractTest
                         // With H2, once the connector is stopping, there is no guarantee that the demand will be serviced
                         // as the execution strategy is busy shutting down but is needed to run the dispatched thread that
                         // services the demand; so we cannot expect that a last chunk will be read here.
-                        Content.Chunk chunk = request.read();
-                        if (chunk != null)
-                            chunk.release();
-                        if (chunk == null || !chunk.isLast())
-                            request.demand(this);
+                        try (Content.Chunk chunk = request.read())
+                        {
+                            if (chunk == null || !chunk.isLast())
+                                request.demand(this);
+                        }
                     }
                 });
                 serverLatch.countDown();
@@ -1245,7 +1244,7 @@ public class HttpClientStreamTest extends AbstractTest
 
             byte[] chunk = new byte[64];
             random.nextBytes(chunk);
-            context.response().write(false, ByteBuffer.wrap(chunk), Callback.NOOP);
+            context.response().write(false, RetainableByteBuffer.wrap(chunk), Callback.NOOP);
 
             // Use a buffer larger than the data
             // written to test that the read returns.
@@ -1260,7 +1259,7 @@ public class HttpClientStreamTest extends AbstractTest
             }
             assertEquals(chunk.length, totalRead);
 
-            context.response().write(true, BufferUtil.EMPTY_BUFFER, context.callback());
+            context.response().write(true, RetainableByteBuffer.empty(), context.callback());
 
             Result result = listener.await(5, TimeUnit.SECONDS);
             assertEquals(200, result.getResponse().getStatus());
@@ -1375,22 +1374,23 @@ public class HttpClientStreamTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = request.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = request.read())
                             {
-                                request.demand(this);
-                                return;
-                            }
-                            if (Content.Chunk.isFailure(chunk))
-                            {
-                                completeExceptionally(chunk.getFailure());
-                                return;
-                            }
-                            chunk.release();
-                            if (chunk.isLast())
-                            {
-                                complete(null);
-                                return;
+                                if (chunk == null)
+                                {
+                                    request.demand(this);
+                                    return;
+                                }
+                                if (Content.Chunk.isFailure(chunk))
+                                {
+                                    completeExceptionally(chunk.getFailure());
+                                    return;
+                                }
+                                if (chunk.isLast())
+                                {
+                                    complete(null);
+                                    return;
+                                }
                             }
 
                             var r = clientRequestRef.getAndSet(null);
@@ -1440,13 +1440,9 @@ public class HttpClientStreamTest extends AbstractTest
     }
 
     @ParameterizedTest
-    @MethodSource("transportsNoFCGI")
-    @Tag("DisableLeakTracking:server:HTTP")
-    @Tag("DisableLeakTracking:server:HTTPS")
+    @MethodSource("transports")
     public void testUploadWithRetainedData(TransportType transportType) throws Exception
     {
-        // TODO: broken for FCGI, investigate.
-
         List<Content.Chunk> chunks = Collections.synchronizedList(new ArrayList<>());
 
         start(transportType, new Handler.Abstract()
@@ -1461,42 +1457,38 @@ public class HttpClientStreamTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = request.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = request.read())
                             {
-                                request.demand(this);
-                                return;
-                            }
-
-                            if (Content.Chunk.isFailure(chunk))
-                            {
-                                completeExceptionally(chunk.getFailure());
-                                return;
-                            }
-
-                            if (chunk.hasRemaining())
-                            {
-                                ByteBuffer byteBuffer = chunk.getByteBuffer();
-                                if (chunk.canRetain())
+                                if (chunk == null)
                                 {
-                                    chunk.retain();
-                                    chunks.add(Content.Chunk.asChunk(byteBuffer.slice(), chunk.isLast(), chunk));
+                                    request.demand(this);
+                                    return;
                                 }
-                                else
+
+                                if (Content.Chunk.isFailure(chunk))
                                 {
-                                    chunks.add(Content.Chunk.from(BufferUtil.copy(byteBuffer), chunk.isLast()));
+                                    completeExceptionally(chunk.getFailure());
+                                    return;
                                 }
-                                // Consume the original view; retained/copied data must still be intact.
-                                byteBuffer.position(byteBuffer.limit());
-                            }
 
-                            boolean last = chunk.isLast();
-                            chunk.release();
+                                if (chunk.hasRemaining())
+                                {
+                                    try (RetainableByteBuffer buffer = chunk.acquire())
+                                    {
+                                        try (RetainableByteBuffer slice = buffer.sliceAndConsume(buffer.remaining()))
+                                        {
+                                            chunks.add(Content.Chunk.from(slice, chunk.isLast()));
+                                        }
+                                    }
+                                }
 
-                            if (last)
-                            {
-                                complete(null);
-                                return;
+                                boolean last = chunk.isLast();
+
+                                if (last)
+                                {
+                                    complete(null);
+                                    return;
+                                }
                             }
                         }
                     }
@@ -1517,15 +1509,21 @@ public class HttpClientStreamTest extends AbstractTest
 
         assertEquals(HttpStatus.OK_200, contentResponse.getStatus());
 
-        try (ByteBufferAccumulator accumulator = new ByteBufferAccumulator())
+        int capacity = (int)chunks.stream().mapToLong(Content.Chunk::remaining).sum();
+        byte[] bytes = new byte[capacity];
+        AtomicInteger offset = new AtomicInteger();
+        for (Content.Chunk chunk : chunks)
         {
-            for (Content.Chunk c : chunks)
+            try (Content.Chunk c = chunk)
             {
-                accumulator.copyBuffer(c.getByteBuffer());
-                c.release();
+                try (RetainableByteBuffer buffer = c.acquire())
+                {
+                    int length = (int)buffer.remaining();
+                    buffer.get(bytes, offset.getAndAdd(length), length);
+                }
             }
-            assertArrayEquals(data, accumulator.toByteArray());
         }
+        assertArrayEquals(data, bytes);
     }
 
     private record HandlerContext(Request request, org.eclipse.jetty.server.Response response, Callback callback)

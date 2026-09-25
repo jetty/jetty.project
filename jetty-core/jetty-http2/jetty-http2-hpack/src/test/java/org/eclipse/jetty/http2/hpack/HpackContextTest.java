@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.compression.EncodingException;
 import org.eclipse.jetty.http.compression.HuffmanDecoder;
 import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class HpackContextTest
 {
-    public static String decode(ByteBuffer buffer, int length) throws EncodingException
+    public static String decode(RetainableByteBuffer buffer, long length) throws EncodingException
     {
         HuffmanDecoder huffmanDecoder = new HuffmanDecoder();
         huffmanDecoder.setLength(length);
@@ -47,11 +46,11 @@ public class HpackContextTest
         return decoded;
     }
 
-    public static int decodeInt(ByteBuffer buffer, int prefix) throws EncodingException
+    public static int decodeInt(RetainableByteBuffer buffer, int prefix) throws EncodingException
     {
         // This is a fix for HPACK as it already takes the first byte of the encoded integer.
         if (prefix != 8)
-            buffer.position(buffer.position() - 1);
+            buffer.readPosition(buffer.readPosition() - 1);
 
         NBitIntegerDecoder decoder = new NBitIntegerDecoder();
         decoder.setPrefix(prefix);
@@ -448,8 +447,8 @@ public class HpackContextTest
             Entry entry = ctx.get(i);
             assertTrue(entry.isStatic());
 
-            ByteBuffer buffer = ByteBuffer.wrap(entry.getStaticHuffmanValue());
-            int huff = 0xff & buffer.get();
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(entry.getStaticHuffmanValue());
+            int huff = buffer.getByteAsInt();
             assertTrue((0x80 & huff) == 0x80);
 
             int len = decodeInt(buffer, 7);
