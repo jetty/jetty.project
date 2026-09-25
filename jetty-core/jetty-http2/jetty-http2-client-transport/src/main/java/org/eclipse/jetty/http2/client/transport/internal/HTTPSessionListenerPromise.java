@@ -120,7 +120,7 @@ public class HTTPSessionListenerPromise implements Session.Listener, Promise<Ses
 
     public void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
     {
-        connection.close();
+        connection.upwardClose();
     }
 
     @Override

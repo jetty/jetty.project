@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -32,11 +33,14 @@ import org.eclipse.jetty.http2.SessionContainer;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
+import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
+import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.GracefulHandler;
@@ -45,6 +49,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -257,19 +263,17 @@ public class GracefulShutdownTest extends AbstractTest
         assertTrue(completable.isDone());
     }
 
-    @Test
-    public void testGracefulServerStopUsingInputStreamResponseListener() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testGracefulServerStopUsingInputStreamResponseListener(boolean dynamicTransport) throws Exception
     {
         CountDownLatch serverHandlingLatch = new CountDownLatch(1);
         GracefulHandler gracefulHandler = new GracefulHandler();
         gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request1, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
-                // Let the client thread start the server's graceful stopping sequence.
-                serverHandlingLatch.countDown();
-
                 // Wait for the server to receive the client's go away frame before succeeding this request.
                 SessionContainer sessionContainer = server.getContainedBeans(SessionContainer.class).stream().findFirst().orElseThrow();
                 Session session = sessionContainer.getSessions().stream().findFirst().orElseThrow();
@@ -283,13 +287,22 @@ public class GracefulShutdownTest extends AbstractTest
                     }
                 });
 
+                // Let the client thread start the server's graceful stopping sequence,
+                // only once the listener is registered so the client's go away frame is not missed.
+                serverHandlingLatch.countDown();
+
                 byte[] bytes = new byte[1024];
                 Arrays.fill(bytes, (byte)'X');
                 response.write(true, ByteBuffer.wrap(bytes), Callback.NOOP);
                 return true;
             }
         });
-        start(gracefulHandler);
+        start(gracefulHandler, (http2Client, connector) ->
+        {
+            if (dynamicTransport)
+                return new HttpClientTransportDynamic(connector, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client));
+            return new HttpClientTransportOverHTTP2(http2Client);
+        }, new HttpConfiguration());
         server.setStopTimeout(5_000);
 
         var request = httpClient.newRequest(server.getURI());
@@ -304,11 +317,12 @@ public class GracefulShutdownTest extends AbstractTest
         String body = new String(listener.getInputStream().readAllBytes());
 
         assertThat(response.getStatus(), is(200));
-        assertThat("X".repeat(1024), is(body));
+        assertThat(body, is("X".repeat(1024)));
     }
 
-    @Test
-    public void testGracefulServerStop() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testGracefulServerStop(boolean dynamicTransport) throws Exception
     {
         CountDownLatch serverStoppedLatch = new CountDownLatch(1);
         CountDownLatch serverHandlingLatch = new CountDownLatch(1);
@@ -316,11 +330,8 @@ public class GracefulShutdownTest extends AbstractTest
         gracefulHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request1, Response response, Callback callback)
+            public boolean handle(Request request, Response response, Callback callback)
             {
-                // Let the client thread start the server's graceful stopping sequence.
-                serverHandlingLatch.countDown();
-
                 // Wait for the server to receive the client's go away frame before succeeding this request.
                 SessionContainer sessionContainer = server.getContainedBeans(SessionContainer.class).stream().findFirst().orElseThrow();
                 Session session = sessionContainer.getSessions().stream().findFirst().orElseThrow();
@@ -338,13 +349,22 @@ public class GracefulShutdownTest extends AbstractTest
                     }
                 });
 
+                // Let the client thread start the server's graceful stopping sequence,
+                // only once the listener is registered so the client's go away frame is not missed.
+                serverHandlingLatch.countDown();
+
                 byte[] bytes = new byte[1024];
                 Arrays.fill(bytes, (byte)'X');
                 response.write(true, ByteBuffer.wrap(bytes), Callback.NOOP);
                 return true;
             }
         });
-        start(gracefulHandler);
+        start(gracefulHandler, (http2Client, connector) ->
+        {
+            if (dynamicTransport)
+                return new HttpClientTransportDynamic(connector, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client));
+            return new HttpClientTransportOverHTTP2(http2Client);
+        }, new HttpConfiguration());
         server.setStopTimeout(5_000);
 
         AtomicReference<Result> clientResultRef = new AtomicReference<>();
@@ -373,7 +393,7 @@ public class GracefulShutdownTest extends AbstractTest
         await().atMost(5, TimeUnit.SECONDS).until(clientResultRef::get, notNullValue());
 
         assertThat(clientResultRef.get().getResponse().getStatus(), is(200));
-        assertThat("X".repeat(1024), is(body.toString()));
+        assertThat(body.toString(), is("X".repeat(1024)));
         assertThat(clientResultRef.get().getFailure(), nullValue());
     }
 }

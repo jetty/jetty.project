@@ -304,33 +304,21 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         try (AutoLock ignored = lock.lock())
         {
             removed = activeChannels.remove(channel);
-            if (closed && activeChannels.isEmpty())
-            {
-                destroy = false;
-                runZeroChannelAction = true;
-            }
-            else
-            {
-                runZeroChannelAction = false;
-                destroy = closed || !removed || channel.isFailed();
-                // Recycle only non-failed channels.
-                if (isRecycleHttpChannels() && !destroy)
-                    idleChannels.offer(channel);
-            }
+            destroy = closed || !removed || channel.isFailed();
+            // Recycle only non-failed channels.
+            if (isRecycleHttpChannels() && !destroy)
+                idleChannels.offer(channel);
+            // Run the zero channel action only when the last active channel is released.
+            runZeroChannelAction = removed && closed && activeChannels.isEmpty();
         }
         if (LOG.isDebugEnabled())
             LOG.debug("released={} destroy={} runZeroChannelAction={} {}", removed, destroy, runZeroChannelAction, channel);
-
+        if (destroy)
+            channel.destroy();
         if (runZeroChannelAction)
-        {
             zeroChannelAction();
-        }
         else
-        {
-            if (destroy)
-                channel.destroy();
             getHttpDestination().release(this);
-        }
     }
 
     private void destroyHttpChannel(HttpChannelOverHTTP2 channel)
@@ -338,13 +326,13 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         boolean runZeroChannelAction;
         try (AutoLock ignored = lock.lock())
         {
-            activeChannels.remove(channel);
-            runZeroChannelAction = closed && activeChannels.isEmpty();
+            boolean removed = activeChannels.remove(channel);
+            // Run the zero channel action only when the last active channel is destroyed.
+            runZeroChannelAction = removed && closed && activeChannels.isEmpty();
         }
+        channel.destroy();
         if (runZeroChannelAction)
             zeroChannelAction();
-        else
-            channel.destroy();
     }
 
     void remove()

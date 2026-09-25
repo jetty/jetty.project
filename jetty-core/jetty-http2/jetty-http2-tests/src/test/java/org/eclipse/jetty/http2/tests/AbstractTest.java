@@ -15,9 +15,11 @@ package org.eclipse.jetty.http2.tests;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -63,6 +65,11 @@ public class AbstractTest
 
     protected void start(Handler handler, HttpConfiguration httpConfiguration) throws Exception
     {
+        start(handler, (http2Client, clientConnector) -> new HttpClientTransportOverHTTP2(http2Client), httpConfiguration);
+    }
+
+    protected void start(Handler handler, BiFunction<HTTP2Client, ClientConnector, HttpClientTransport> httpClientTransportFunction, HttpConfiguration httpConfiguration) throws Exception
+    {
         HTTP2CServerConnectionFactory connectionFactory = new HTTP2CServerConnectionFactory(httpConfiguration);
         connectionFactory.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         connectionFactory.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
@@ -70,7 +77,7 @@ public class AbstractTest
         server.setHandler(handler);
         server.start();
 
-        prepareClient();
+        prepareClient(httpClientTransportFunction);
         httpClient.start();
     }
 
@@ -104,6 +111,11 @@ public class AbstractTest
 
     protected void prepareClient()
     {
+        prepareClient((http2Client, clientConnector) -> new HttpClientTransportOverHTTP2(http2Client));
+    }
+
+    protected void prepareClient(BiFunction<HTTP2Client, ClientConnector, HttpClientTransport> httpClientTransportFunction)
+    {
         ClientConnector connector = new ClientConnector();
         clientBufferPool = new ArrayByteBufferPool.Tracking();
         connector.setByteBufferPool(clientBufferPool);
@@ -113,8 +125,7 @@ public class AbstractTest
         http2Client = new HTTP2Client(connector);
         http2Client.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         http2Client.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
-        HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(http2Client);
-        httpClient = new HttpClient(transport);
+        httpClient = new HttpClient(httpClientTransportFunction.apply(http2Client, connector));
     }
 
     protected Session newClientSession(Session.Listener listener) throws Exception
