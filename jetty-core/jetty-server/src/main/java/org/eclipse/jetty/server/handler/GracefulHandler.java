@@ -111,7 +111,7 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Service Unavailable: {}", request.getHttpURI());
-            Response.writeError(request, response, shutdownCallback, HttpStatus.SERVICE_UNAVAILABLE_503);
+            handleShutdownRejection(request, response, shutdownCallback);
             return true;
         }
 
@@ -132,6 +132,22 @@ public class GracefulHandler extends Handler.Wrapper implements Graceful
             if (isShutdown())
                 _shutdown.check();
         }
+    }
+
+    /**
+     * Serves a request that is rejected because the server is shutting down.
+     * <p>
+     * The default response is a {@link HttpStatus#SERVICE_UNAVAILABLE_503}. Override this
+     * to customize it, for example to add a header telling a load balancer to retry
+     * elsewhere. Make sure to complete the {@code callback}.
+     *
+     * @param request the rejected request
+     * @param response the response to write
+     * @param callback the callback to complete once the response is written
+     */
+    protected void handleShutdownRejection(Request request, Response response, Callback callback)
+    {
+        Response.writeError(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503);
     }
 
     @Override

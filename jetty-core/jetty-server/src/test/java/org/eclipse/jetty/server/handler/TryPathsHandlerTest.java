@@ -40,6 +40,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -162,6 +163,35 @@ public class TryPathsHandlerTest
             assertNotNull(response);
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertEquals("maintenance", response.getContent());
+        }
+    }
+
+    @Test
+    public void testTryPathsWithQuery(WorkDir workDir) throws Exception
+    {
+        Path tmpPath = workDir.getEmptyPathDir();
+        start(List.of("/index?p=$path"), new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Fields params = Request.extractQueryParameters(request);
+                assertEquals(1, params.getSize());
+                callback.succeeded();
+                return true;
+            }
+        }, tmpPath);
+
+        try (SocketChannel channel = SocketChannel.open())
+        {
+            channel.connect(new InetSocketAddress("localhost", connector.getLocalPort()));
+
+            HttpTester.Request request = HttpTester.newRequest();
+            request.setURI(CONTEXT_PATH + "/a+b&c=d%3F%20%23/foo");
+            channel.write(request.generate());
+            HttpTester.Response response = HttpTester.parseResponse(channel);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
         }
     }
 

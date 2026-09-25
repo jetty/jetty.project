@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee9.fcgi.proxy;
 
 import java.util.EnumSet;
+import java.util.Map;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServlet;
@@ -25,6 +26,7 @@ import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.ee9.servlet.FilterHolder;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -64,11 +66,7 @@ public class TryFilesFilterTest
         context.addServlet(new ServletHolder(servlet), "/*");
 
         ClientConnector clientConnector = new ClientConnector();
-        SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client(true);
-//        clientSslContextFactory.setEndpointIdentificationAlgorithm(null);
-//        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-//        clientSslContextFactory.setKeyStorePassword("storepwd");
-        clientConnector.setSslContextFactory(clientSslContextFactory);
+        clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
         client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         server.addBean(client);
 
@@ -103,5 +101,25 @@ public class TryFilesFilterTest
             .send();
 
         assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void testTryFilesWithQuery() throws Exception
+    {
+        prepare(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            {
+                Map<String, String[]> params = req.getParameterMap();
+                assertEquals(1, params.size());
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .path("/a+b&c=d%3F%20/foo")
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 }

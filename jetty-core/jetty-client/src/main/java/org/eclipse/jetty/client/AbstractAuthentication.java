@@ -15,6 +15,8 @@ package org.eclipse.jetty.client;
 
 import java.net.URI;
 
+import org.eclipse.jetty.util.URIUtil;
+
 /**
  * <p>Abstract base class for authentication implementations.
  * Provides common functionality for URI and realm matching.</p>
@@ -69,20 +71,36 @@ public abstract class AbstractAuthentication implements Authentication
     public static boolean matchesURI(URI uri1, URI uri2)
     {
         String scheme = uri1.getScheme();
-        if (scheme.equalsIgnoreCase(uri2.getScheme()))
-        {
-            if (uri1.getHost().equalsIgnoreCase(uri2.getHost()))
-            {
-                // Handle default HTTP ports.
-                int thisPort = HttpClient.normalizePort(scheme, uri1.getPort());
-                int thatPort = HttpClient.normalizePort(scheme, uri2.getPort());
-                if (thisPort == thatPort)
-                {
-                    // Use decoded URI paths.
-                    return uri2.getPath().startsWith(uri1.getPath());
-                }
-            }
-        }
-        return false;
+        if (scheme == null || !scheme.equalsIgnoreCase(uri2.getScheme()))
+            return false;
+
+        String host = uri1.getHost();
+        if (host == null || !host.equalsIgnoreCase(uri2.getHost()))
+            return false;
+
+        // Handle default HTTP ports.
+        if (HttpClient.normalizePort(scheme, uri1.getPort()) != HttpClient.normalizePort(scheme, uri2.getPort()))
+            return false;
+
+        // Compare canonical paths.
+        String path1 = URIUtil.canonicalPath(uri1.getRawPath());
+        String path2 = URIUtil.canonicalPath(uri2.getRawPath());
+        if (path1 == null || path2 == null)
+            return false;
+
+        if (path1.endsWith("/"))
+            path1 = path1.substring(0, path1.length() - 1);
+
+        if (path1.isEmpty())
+            return true;
+
+        if (!path2.startsWith(path1))
+            return false;
+
+        if (path2.length() == path1.length())
+            return true;
+
+        // Must match at a segment boundary.
+        return path2.charAt(path1.length()) == '/';
     }
 }

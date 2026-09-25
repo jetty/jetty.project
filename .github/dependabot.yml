@@ -1,10 +1,15 @@
 version: 2
 updates:
-
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      # Keep all action bumps in a single PR. Actions from the same release,
+      # such as codeql-action init and analyze, have to move together.
+      github-actions:
+        patterns:
+          - "*"
 
 ## jetty-12.1.x branch
 
@@ -61,6 +66,10 @@ updates:
       # Do not upgrade major versions of dependencies
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
+      # bctls 1.86 ships a broken multi-release jar and throws NoSuchMethodError
+      # on JDK 9+, see bcgit/bc-java#2448. Use the respun 1.86.1 instead.
+      - dependency-name: "org.bouncycastle:bctls-jdk18on"
+        versions: [ "1.86" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee8"
@@ -209,17 +218,17 @@ updates:
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
       - dependency-name: "org.glassfish.jersey:*"
-        versions: [ ">=3.1.0" ]
+        versions: [ ">3.1.0" ]
       - dependency-name: "jakarta.activation:jakarta.activation-api"
-        versions:  [ ">= 2.1.0"]
+        versions:  [ "> 2.1.0"]
       - dependency-name: "jakarta.annotation:jakarta.annotation-api"
-        versions:  [ ">= 2.1.0"]
+        versions:  [ "> 2.1.0"]
       - dependency-name: "jakarta.interceptor:jakarta.interceptor-api"
-        versions:  [ ">= 2.1.0"]
+        versions:  [ "> 2.1.0"]
       - dependency-name: "jakarta.servlet.jsp:jakarta.servlet.jsp-api"
-        versions:  [ ">= 3.1.0"]
+        versions:  [ "> 3.1.0"]
       - dependency-name: "jakarta.ws.rs:jakarta.ws.rs-api"
-        versions:  [ ">= 3.1.0"]
+        versions:  [ "> 3.1.0"]
       - dependency-name: "org.mortbay.jasper:*"
         versions:  [ "> 10.1.0"]
       - dependency-name: "jakarta.inject:*"
@@ -406,6 +415,10 @@ updates:
         versions:  [ "> 10.1.0"]
       - dependency-name: "org.mortbay.jetty.quiche:jetty-quiche-native"
         versions: [ "> 0.24.5" ]
+      # bctls 1.86 ships a broken multi-release jar and throws NoSuchMethodError
+      # on JDK 9+, see bcgit/bc-java#2448. Use the respun 1.86.1 instead.
+      - dependency-name: "org.bouncycastle:bctls-jdk18on"
+        versions: [ "1.86" ]
 
   - package-ecosystem: maven
     directory: "/jetty-ee8"
@@ -562,7 +575,7 @@ updates:
       - dependency-name: "*"
         update-types: [ "version-update:semver-major" ]
       - dependency-name: "org.glassfish.jersey:*"
-        versions: [ ">=3.1.0" ]
+        versions: [ ">3.1.0" ]
       - dependency-name: "jakarta.activation:jakarta.activation-api"
         versions:  [ ">= 2.1.0"]
       - dependency-name: "jakarta.annotation:jakarta.annotation-api"

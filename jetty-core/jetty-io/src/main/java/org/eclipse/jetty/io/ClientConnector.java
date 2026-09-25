@@ -465,7 +465,7 @@ public class ClientConnector extends ContainerLifeCycle
         catch (Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Could not accept {}", selectable);
+                LOG.debug("Could not accept {}", selectable, failure);
             IO.close(selectable);
             acceptFailed(failure, selectable, context);
         }
@@ -534,7 +534,8 @@ public class ClientConnector extends ContainerLifeCycle
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Could not connect to {}", address);
-        notifyConnectFailure((SocketChannel)channel, address, failure);
+        if (channel instanceof SocketChannel socketChannel)
+            notifyConnectFailure(socketChannel, address, failure);
         Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
         if (promise != null)
             promise.failed(failure);
@@ -667,6 +668,15 @@ public class ClientConnector extends ContainerLifeCycle
             Map<String, Object> context = (Map<String, Object>)attachment;
             SocketAddress address = (SocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
             connectFailed(channel, address, failure, context);
+        }
+
+        @Override
+        protected void onAcceptFailed(SelectableChannel channel, Throwable failure, Object attachment)
+        {
+            super.onAcceptFailed(channel, failure, attachment);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> context = (Map<String, Object>)attachment;
+            acceptFailed(failure, channel, context);
         }
     }
 

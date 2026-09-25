@@ -180,6 +180,14 @@ public class ForeignQuicheConnection extends Quiche
                 throw new IOException("Error loading trusted certificates file " + trustedCertsPemPath + " : " + QuicheConstants.quiche_error.errToString(rc));
         }
 
+        String curvesList = config.getCurvesList();
+        if (curvesList != null)
+        {
+            int rc = quiche_h.quiche_config_set_curves_list(quicheConfig, allocator.allocateFrom(curvesList));
+            if (rc < 0)
+                throw new IOException("Error setting curves list " + curvesList + " : " + QuicheConstants.quiche_error.errToString(rc));
+        }
+
         String certChainPemPath = config.getCertChainPemPath();
         if (certChainPemPath != null)
         {
@@ -635,8 +643,11 @@ public class ForeignQuicheConnection extends Quiche
                 {
                     MemorySegment bufferSegment = scope.allocate(buffer.remaining());
                     written = quiche_h.quiche_conn_send(quicheConn, bufferSegment, buffer.remaining(), sendInfo);
-                    buffer.put(bufferSegment.asByteBuffer().slice().limit((int)written));
-                    buffer.position(prevPosition);
+                    if (written > 0)
+                    {
+                        buffer.put(bufferSegment.asByteBuffer().slice().limit((int)written));
+                        buffer.position(prevPosition);
+                    }
                 }
             }
 

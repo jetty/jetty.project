@@ -3,6 +3,9 @@
 [description]
 Enables JASPI authentication for deployed web applications.
 
+[environment]
+ee8
+
 [tags]
 security
 
@@ -12,7 +15,7 @@ ee8-auth-config-factory
 
 [lib]
 lib/jetty-ee8-jaspi-${jetty.version}.jar
-lib/ee8-jaspi/jakarta.authentication-api-@ee8.jakarta.authentication.api.version@.jar
+lib/ee8-jaspi/@jakarta.security.auth.message:jakarta.security.auth.message-api@
 
 [xml]
 etc/jaspi/jetty-ee8-jaspi-authmoduleconfig.xml

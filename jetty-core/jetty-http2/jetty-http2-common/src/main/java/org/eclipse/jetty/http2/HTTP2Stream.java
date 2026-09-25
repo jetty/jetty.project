@@ -352,9 +352,17 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
         notifyIdleTimeout(timeout, Promise.from(timedOut ->
         {
             if (timedOut)
+            {
                 reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+            }
             else
+            {
                 notIdle();
+                // This promise may not be called from the thread that called onIdleTimeout() so CyclicTimeouts.iterate()
+                // may not notice that the expireNanoTime field has been updated, so we need to explicitly reschedule the
+                // timeout.
+                session.scheduleTimeout(this);
+            }
         }, x -> reset(new ResetFrame(getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP)));
     }
 
