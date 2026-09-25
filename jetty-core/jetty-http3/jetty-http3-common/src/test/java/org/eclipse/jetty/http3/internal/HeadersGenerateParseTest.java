@@ -29,6 +29,7 @@ import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.NanoTime;
 import org.junit.jupiter.api.Test;
@@ -57,7 +58,7 @@ public class HeadersGenerateParseTest
         decoder.setMaxHeadersSize(4 * 1024);
         decoder.setBeginNanoTimeSupplier(NanoTime::now);
         List<HeadersFrame> frames = new ArrayList<>();
-        MessageParser parser = new MessageParser(new ParserListener()
+        MessageParser parser = new MessageParser(RateControl.NO_RATE_CONTROL, new ParserListener()
         {
             @Override
             public void onHeaders(long streamId, HeadersFrame frame, boolean wasBlocked)

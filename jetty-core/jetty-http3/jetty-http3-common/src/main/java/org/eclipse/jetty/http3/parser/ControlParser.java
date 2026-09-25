@@ -13,12 +13,14 @@
 
 package org.eclipse.jetty.http3.parser;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.Grease;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.HTTP3Exception;
 import org.eclipse.jetty.http3.frames.FrameType;
+import org.eclipse.jetty.io.RateControl;
+import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,17 +35,24 @@ public class ControlParser
 
     private final HeaderParser headerParser;
     private final BodyParser[] bodyParsers = new BodyParser[FrameType.maxType() + 1];
+    private final RateControl rateControl;
     private final BodyParser unknownBodyParser;
     private State state = State.HEADER;
 
-    public ControlParser(ParserListener listener)
+    public ControlParser(RateControl rateControl, ParserListener listener)
     {
+        this.rateControl = rateControl;
         this.headerParser = new HeaderParser();
         this.bodyParsers[FrameType.CANCEL_PUSH.type()] = new CancelPushBodyParser(headerParser, listener);
         this.bodyParsers[FrameType.SETTINGS.type()] = new SettingsBodyParser(headerParser, listener);
         this.bodyParsers[FrameType.GOAWAY.type()] = new GoAwayBodyParser(headerParser, listener);
         this.bodyParsers[FrameType.MAX_PUSH_ID.type()] = new MaxPushIdBodyParser(headerParser, listener);
         this.unknownBodyParser = new UnknownBodyParser(headerParser, listener);
+    }
+
+    public ParserListener getListener()
+    {
+        return unknownBodyParser.getParserListener();
     }
 
     private void reset()
@@ -88,13 +97,14 @@ public class ControlParser
                                 // SPEC: message frames on the control stream are invalid.
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("invalid message frame type {} on control stream", Long.toHexString(frameType));
-                                sessionFailure(buffer, HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_type", new IOException("invalid message frame on control stream"));
-                                return;
+                                throw new HTTP3Exception.SessionException(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR, "invalid_frame_type");
                             }
 
                             // SPEC: grease and unknown frame types are ignored.
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ignoring {} frame type {}", Grease.isGreaseValue(frameType) ? "grease" : "unknown", Long.toHexString(frameType));
+
+                            checkRateControl(frameType);
 
                             BodyParser.Result result = unknownBodyParser.parse(buffer, false);
                             if (result == BodyParser.Result.NO_FRAME)
@@ -106,6 +116,7 @@ public class ControlParser
                         {
                             if (headerParser.getFrameLength() == 0)
                             {
+                                checkRateControl(frameType);
                                 bodyParser.emptyBody(buffer, false);
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("parsed {} empty frame body from {}", FrameType.from(frameType), buffer);
@@ -114,10 +125,13 @@ public class ControlParser
                             else
                             {
                                 BodyParser.Result result = bodyParser.parse(buffer, false);
-                                if (result == BodyParser.Result.NO_FRAME)
-                                    return;
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("parsed {} frame body from {}", FrameType.from(frameType), buffer);
+                                if (result == BodyParser.Result.NO_FRAME)
+                                {
+                                    checkRateControl(frameType);
+                                    return;
+                                }
                                 if (result == BodyParser.Result.WHOLE_FRAME)
                                     reset();
                             }
@@ -133,15 +147,15 @@ public class ControlParser
         }
         catch (Throwable x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("parse failed", x);
-            sessionFailure(buffer, HTTP3ErrorCode.INTERNAL_ERROR.code(), "parser_error", x);
+            BufferUtil.clear(buffer);
+            throw x;
         }
     }
 
-    private void sessionFailure(ByteBuffer buffer, long error, String reason, Throwable failure)
+    private void checkRateControl(Object event)
     {
-        unknownBodyParser.sessionFailure(buffer, error, reason, failure);
+        if (!rateControl.onEvent(event))
+            throw new HTTP3Exception.SessionException(HTTP3ErrorCode.EXCESSIVE_LOAD_ERROR, "invalid_frame_rate");
     }
 
     private enum State

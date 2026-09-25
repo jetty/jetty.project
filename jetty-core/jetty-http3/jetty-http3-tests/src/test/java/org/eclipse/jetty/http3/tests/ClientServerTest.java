@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -48,6 +49,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -715,5 +718,100 @@ public class ClientServerTest extends AbstractClientServerTest
             }
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testClientContentLengthHeaderMismatch(TransportType transportType) throws Exception
+    {
+        start(transportType, new Session.Server.Listener()
+        {
+            @Override
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
+            {
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onDataAvailable(Stream.Server stream)
+                    {
+                        Content.Chunk chunk = stream.read();
+                        assertNotNull(chunk);
+                        assertTrue(Content.Chunk.isFailure(chunk));
+                        MetaData.Response response = new MetaData.Response(HttpStatus.BAD_REQUEST_400, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                        stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
+                    }
+                };
+            }
+        });
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+        int length = 16;
+        HttpFields fields = HttpFields.build().put(HttpHeader.CONTENT_LENGTH, length);
+        MetaData.Request request = newRequest(HttpMethod.POST, "/client", fields);
+        AtomicReference<MetaData.Response> responseRef = new AtomicReference<>();
+        Stream stream = Blocker.blockWithPromise(5, TimeUnit.SECONDS, promise ->
+            clientSession.newRequest(new HeadersFrame(request, false), new Stream.Client.Listener()
+            {
+                @Override
+                public void onResponse(Stream.Client stream, HeadersFrame frame)
+                {
+                    responseRef.set((MetaData.Response)frame.getMetaData());
+                }
+            }, promise)
+        );
+        // Send more data than declared.
+        stream.data(new DataFrame(ByteBuffer.allocate(length + 1), true), Promise.Invocable.noop());
+
+        MetaData.Response response = await().atMost(5, TimeUnit.SECONDS).until(responseRef::get, notNullValue());
+        assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testServerContentLengthHeaderMismatch(TransportType transportType) throws Exception
+    {
+        int length = 32;
+        start(transportType, new Session.Server.Listener()
+        {
+            @Override
+            public Stream.Server.Listener onRequest(Session.Server session, HeadersFrame frame)
+            {
+                return new Stream.Server.Listener()
+                {
+                    @Override
+                    public void onRequest(Stream.Server stream, HeadersFrame frame)
+                    {
+                        HttpFields fields = HttpFields.build().put(HttpHeader.CONTENT_LENGTH, length);
+                        MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, fields);
+                        stream.respond(new HeadersFrame(response, false), Promise.Invocable.from(NON_BLOCKING, (s, x) ->
+                            s.data(new DataFrame(ByteBuffer.allocate(length + 1), true), Promise.Invocable.noop()))
+                        );
+                    }
+                };
+            }
+        });
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+        MetaData.Request request = newRequest("/server");
+        AtomicReference<Content.Chunk> dataRef = new AtomicReference<>();
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, promise ->
+            clientSession.newRequest(new HeadersFrame(request, true), new Stream.Client.Listener()
+            {
+                @Override
+                public void onDataAvailable(Stream.Client stream)
+                {
+                    Content.Chunk chunk = stream.read();
+                    if (chunk == null)
+                    {
+                        stream.demand();
+                        return;
+                    }
+                    dataRef.set(chunk);
+                }
+            }, promise)
+        );
+
+        Content.Chunk chunk = await().atMost(5, TimeUnit.SECONDS).until(dataRef::get, notNullValue());
+        assertTrue(Content.Chunk.isFailure(chunk));
     }
 }
