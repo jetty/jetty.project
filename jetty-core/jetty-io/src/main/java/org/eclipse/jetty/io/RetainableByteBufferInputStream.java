@@ -22,11 +22,11 @@ import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 /**
  * Present a ReadableBuffer as an InputStream.
  */
-public class ReadableBufferInputStream extends InputStream
+public class RetainableByteBufferInputStream extends InputStream
 {
     private RetainableByteBuffer buf;
 
-    public ReadableBufferInputStream(RetainableByteBuffer buf)
+    public RetainableByteBufferInputStream(RetainableByteBuffer buf)
     {
         this.buf = Objects.requireNonNull(buf);
         buf.retain();

@@ -823,7 +823,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _request.setHandled(true);
             _state.completing();
-            sendResponse(null, RetainableByteBuffer.wrap(_response.getHttpOutput().getByteBuffer()), true, Callback.from(() -> _state.completed(null), _state::completed));
+            sendResponse(null, _response.getHttpOutput().takeContentAndClose(), true, Callback.from(() -> _state.completed(null), _state::completed));
         }
         catch (Throwable x)
         {

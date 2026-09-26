@@ -27,7 +27,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.io.ReadableBufferInputStream;
+import org.eclipse.jetty.io.RetainableByteBufferInputStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -153,7 +153,7 @@ public class ServletCoreResponse implements org.eclipse.jetty.server.Response
                     if (isWriting())
                     {
                         String characterEncoding = _httpServletResponse.getCharacterEncoding();
-                        try (ReadableBufferInputStream bbis = new ReadableBufferInputStream(buffer);
+                        try (RetainableByteBufferInputStream bbis = new RetainableByteBufferInputStream(buffer);
                              InputStreamReader reader = new InputStreamReader(bbis, characterEncoding))
                         {
                             IO.copy(reader, _httpServletResponse.getWriter());
