@@ -82,6 +82,32 @@ public class MountedPathResourceTest
     }
 
     @Test
+    public void testClassLoaderResourceInNonAsciiPathIsNotAnAlias(WorkDir workDir) throws Exception
+    {
+        Path testDir = Files.createDirectory(workDir.getEmptyPathDir().resolve("中文路径"));
+        Path testZip = Files.copy(MavenPaths.findTestResourceFile("jar-file-resource.jar"), testDir.resolve("resources.jar"));
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+        try (URLClassLoader loader = new URLClassLoader(new URL[] {testZip.toUri().toURL()}, null))
+        {
+            Thread.currentThread().setContextClassLoader(loader);
+            try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+            {
+                Resource resource = resourceFactory.newClassLoaderResource("rez/deep", false);
+                assertTrue(Resources.isReadableDirectory(resource));
+                assertFalse(resource.isAlias(), "directory inside a JAR under a non-ASCII path should not be an alias");
+
+                Resource child = resource.resolve("zzz");
+                assertTrue(Resources.isReadableFile(child));
+                assertFalse(child.isAlias(), "file inside a JAR under a non-ASCII path should not be an alias");
+            }
+            finally
+            {
+                Thread.currentThread().setContextClassLoader(oldLoader);
+            }
+        }
+    }
+
+    @Test
     public void testNewResourceByUrlHasCorrectUri() throws Exception
     {
         Path testZip = MavenPaths.findTestResourceFile("jar-file-resource.jar");

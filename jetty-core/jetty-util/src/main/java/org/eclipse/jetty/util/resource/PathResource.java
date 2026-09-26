@@ -135,6 +135,43 @@ public class PathResource extends Resource
     }
 
     /**
+     * Tests whether two URIs are the same for alias detection.
+     * <p>
+     * The ZIP file system provider may return a {@code jar:} URI containing literal non-ASCII
+     * characters, while the as-requested URI contains their equivalent percent-encoded form.
+     * Since {@link URI#equals(Object)} compares raw components, equivalent {@code jar:} URIs are
+     * converted to ASCII before comparison. This conversion does not decode or normalize the URI,
+     * so significant differences used for alias detection are preserved. Other URI schemes retain
+     * strict URI equality semantics.
+     * </p>
+     *
+     * @param uriA the first URI
+     * @param uriB the second URI
+     * @return whether the URIs are the same for alias detection
+     */
+    private static boolean isSameURI(URI uriA, URI uriB)
+    {
+        if (uriA == null || uriB == null)
+        {
+            return false;
+        }
+
+        if (Objects.equals(uriA, uriB))
+        {
+            return true;
+        }
+
+        if (!"jar".equalsIgnoreCase(uriA.getScheme()) || !"jar".equalsIgnoreCase(uriB.getScheme()))
+        {
+            return false;
+        }
+
+        URI asciiUriA = URI.create(uriA.toASCIIString());
+        URI asciiUriB = URI.create(uriB.toASCIIString());
+        return asciiUriA.equals(asciiUriB);
+    }
+
+    /**
      * Construct a new PathResource from a URI object.
      * <p>
      * Must be an absolute URI using the <code>file</code> scheme.
@@ -540,7 +577,7 @@ public class PathResource extends Resource
              *  child.getPath().toUri()       == "file:///C:/temp/aa/foo.txt"
              *  child.getRealURI()            == "file:///C:/temp/aa/foo.txt"
              */
-            alias = !isSameName(path, realPath) || !Objects.equals(uri, toUri(realPath));
+            alias = !isSameName(path, realPath) || !isSameURI(uri, toUri(realPath));
         }
     }
 
