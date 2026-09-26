@@ -97,6 +97,25 @@ public interface RetainableByteBuffer extends Retainable
         }
     }
 
+    static RetainableByteBuffer wrap(ByteBuffer byteBuffer, Runnable releaser)
+    {
+        ReferenceCounter refCount = new ReferenceCounter()
+        {
+            @Override
+            public boolean release()
+            {
+                boolean released = super.release();
+                if (released)
+                    releaser.run();
+                return released;
+            }
+        };
+        try (ReferenceCounter rc = refCount)
+        {
+            return wrap(byteBuffer, refCount);
+        }
+    }
+
     /// Wraps the given [ByteBuffer], using the provided [Retainable] for retainability.
     ///
     /// @param byteBuffer the [ByteBuffer] to wrap
@@ -829,6 +848,65 @@ public interface RetainableByteBuffer extends Retainable
             /// @return the number of bytes written
             /// @throws IOException when IOException occurs
             long writeTo(ByteBuffer output) throws IOException;
+        }
+    }
+
+    /// Accumulates [RetainableByteBuffer]s that can be later merged into a
+    /// single buffer for a final operation such as writing it to the network.
+    class Accumulator
+    {
+        private final List<RetainableByteBuffer> buffers = new ArrayList<>();
+
+        /// Retains and adds the given buffer to this accumulator.
+        ///
+        /// @param buffer the buffer to add
+        public void add(RetainableByteBuffer buffer)
+        {
+            buffer.retain();
+            buffers.add(buffer);
+        }
+
+        /// @return whether this accumulator has bytes that can be read
+        public boolean hasRemaining()
+        {
+            for (RetainableByteBuffer buffer : buffers)
+            {
+                if (buffer.hasRemaining())
+                    return true;
+            }
+            return false;
+        }
+
+        /// @return the number of bytes that can be read
+        public long remaining()
+        {
+            long remaining = 0;
+            for (RetainableByteBuffer buffer : buffers)
+            {
+                remaining += buffer.remaining();
+            }
+            return remaining;
+        }
+
+        /// Returns the accumulated buffers, leaving this accumulator empty.
+        ///
+        /// The returned buffer must be released.
+        ///
+        /// @return the accumulated buffers
+        public RetainableByteBuffer take()
+        {
+            if (buffers.isEmpty())
+                return RetainableByteBuffer.empty();
+            RetainableByteBuffer buffer = buffers.size() == 1 ? buffers.getFirst() : RetainableByteBuffer.merge(buffers);
+            clear();
+            return buffer;
+        }
+
+        /// Clears this accumulator, releasing any accumulated buffer.
+        public void clear()
+        {
+            buffers.forEach(RetainableByteBuffer::release);
+            buffers.clear();
         }
     }
 }

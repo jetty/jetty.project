@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.io.ReadableBufferInputStream;
+import org.eclipse.jetty.io.RetainableByteBufferInputStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
@@ -153,7 +153,7 @@ public class ServletCoreResponse implements Response
                     if (isWriting())
                     {
                         String characterEncoding = _httpServletResponse.getCharacterEncoding();
-                        try (ReadableBufferInputStream bbis = new ReadableBufferInputStream(buffer);
+                        try (RetainableByteBufferInputStream bbis = new RetainableByteBufferInputStream(buffer);
                              InputStreamReader reader = new InputStreamReader(bbis, characterEncoding))
                         {
                             IO.copy(reader, _httpServletResponse.getWriter());

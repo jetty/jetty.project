@@ -43,7 +43,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -318,7 +317,7 @@ public interface Response extends Content.Sink
      */
     static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable)
     {
-        sendRedirect(request, response, callback, code, location, consumeAvailable, null);
+        sendRedirect(request, response, callback, code, location, consumeAvailable, (RetainableByteBuffer)null);
     }
 
     /**
@@ -336,6 +335,11 @@ public interface Response extends Content.Sink
      * @throws IllegalStateException if the response is already {@link #isCommitted() committed}
      */
     static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable, ByteBuffer content)
+    {
+        sendRedirect(request, response, callback, code, location, consumeAvailable, RetainableByteBuffer.wrap(content));
+    }
+
+    static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable, RetainableByteBuffer content)
     {
         if (response.isCommitted())
         {
@@ -384,18 +388,18 @@ public interface Response extends Content.Sink
             {
                 response.getHeaders().put(MimeTypes.Type.TEXT_HTML_8859_1.getContentTypeField());
                 String body = """
-            <!DOCTYPE html>
-            <html lang="en">
-            <head><meta charset="ISO-8859-1"/><meta http-equiv="refresh" content="0; URL=%s"/><title>Redirecting...</title></head>
-            <body><p>If you are not redirected, <a href="%s">click here</a>.</p></body>
-            </html>
-            """.formatted(location, location);
-                content = BufferUtil.toBuffer(body, StandardCharsets.ISO_8859_1);
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head><meta charset="ISO-8859-1"/><meta http-equiv="refresh" content="0; URL=%s"/><title>Redirecting...</title></head>
+                    <body><p>If you are not redirected, <a href="%s">click here</a>.</p></body>
+                    </html>
+                    """.formatted(location, location);
+                content = RetainableByteBuffer.wrap(body, StandardCharsets.ISO_8859_1);
             }
 
             response.getHeaders().put(HttpHeader.LOCATION, location);
             response.setStatus(code);
-            response.write(true, RetainableByteBuffer.wrap(content), callback);
+            response.write(true, content, callback);
         }
         catch (Throwable failure)
         {
