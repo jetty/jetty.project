@@ -20,7 +20,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -219,6 +221,34 @@ public class SessionHandlerTest
         response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
         assertThat(response.getContent(), containsString("No Session"));
+    }
+
+    @Test
+    public void testCreateSessionForwardedSecureSetsSecureCookie() throws Exception
+    {
+        // The connector itself is plain HTTP, but ForwardedRequestCustomizer marks the
+        // request secure based on X-Forwarded-Proto, simulating a TLS-terminating reverse
+        // proxy. See https://github.com/jetty/jetty.project/issues/15871 .
+        HttpConnectionFactory http = new HttpConnectionFactory();
+        http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
+        LocalConnector forwardedConnector = new LocalConnector(_server, http);
+        _server.addConnector(forwardedConnector);
+
+        _server.start();
+
+        LocalConnector.LocalEndPoint endPoint = forwardedConnector.connect();
+        endPoint.addInput("""
+            GET /create HTTP/1.1
+            Host: localhost
+            X-Forwarded-Proto: https
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+
+        String setCookie = response.get(HttpHeader.SET_COOKIE);
+        assertThat(setCookie, containsString("; Secure"));
     }
 
     @Test

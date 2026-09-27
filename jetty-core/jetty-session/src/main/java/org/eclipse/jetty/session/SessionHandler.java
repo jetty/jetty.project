@@ -123,7 +123,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             {
                 newSession(this, _requestedSession.sessionId(), this::setManagedSession);
                 session = _session.get();
-                HttpCookie cookie = getSessionCookie(session, getConnectionMetaData().isSecure());
+                HttpCookie cookie = getSessionCookie(session, isSecure());
                 if (cookie != null)
                     Response.putCookie(_response, cookie);
             }
@@ -140,7 +140,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
             if (session != null)
             {
                 _session.set(session);
-                HttpCookie cookie = access(session, getConnectionMetaData().isSecure());
+                HttpCookie cookie = access(session, isSecure());
                 if (cookie != null)
                     Response.putCookie(_response, cookie);
             }
