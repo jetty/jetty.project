@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -41,7 +40,7 @@ import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
  */
 public abstract class AbstractResponseListener implements Response.Listener
 {
-    private final List<RetainableByteBuffer> accumulator = new ArrayList<>();
+    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
     private final long maxLength;
     private String encoding;
     private String mediaType;
@@ -129,7 +128,6 @@ public abstract class AbstractResponseListener implements Response.Listener
                     throw new IllegalArgumentException("Buffering capacity " + max + " exceeded");
 
                 length += remaining;
-                buffer.retain();
                 accumulator.add(buffer);
                 demander.run();
             }
@@ -151,7 +149,6 @@ public abstract class AbstractResponseListener implements Response.Listener
     @Override
     public void onFailure(Response response, Throwable failure)
     {
-        accumulator.forEach(RetainableByteBuffer::release);
         accumulator.clear();
     }
 
@@ -230,25 +227,17 @@ public abstract class AbstractResponseListener implements Response.Listener
     {
         Content.Source result;
         if (content == null)
-        {
-            result = Content.Source.from(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            accumulator.clear();
-        }
+            result = Content.Source.from(List.of(accumulator.drain()));
         else
-        {
             result = Content.Source.from(ByteBuffer.wrap(content));
-        }
         content = BufferUtil.EMPTY_BYTES;
         return result;
     }
 
     private byte[] toArray()
     {
-        try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
-            accumulator.forEach(RetainableByteBuffer::release);
-            accumulator.clear();
             return buffer.getArray();
         }
     }

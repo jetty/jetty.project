@@ -41,7 +41,7 @@ public class ClientGenerator extends Generator
         super(bufferPool, useDirectByteBuffers);
     }
 
-    public void generateRequestHeaders(List<RetainableByteBuffer> accumulator, int request, HttpFields fields)
+    public void generateRequestHeaders(RetainableByteBuffer.Accumulator accumulator, int request, HttpFields fields)
     {
         request &= 0xFF_FF;
 
@@ -77,60 +77,63 @@ public class ClientGenerator extends Generator
 
         // One FCGI_BEGIN_REQUEST + N FCGI_PARAMS + one last FCGI_PARAMS
 
-        RetainableByteBuffer.Mutable beginBuffer = getBufferPool().acquire(16, isUseDirectByteBuffers());
-
-        // Generate the FCGI_BEGIN_REQUEST frame
-        beginBuffer.putInt(0x01_01_00_00 + request);
-        beginBuffer.putInt(0x00_08_00_00);
-        // Hardcode RESPONDER role and KEEP_ALIVE flag
-        beginBuffer.putLong(0x00_01_01_00_00_00_00_00L);
-        accumulator.add(beginBuffer);
+        try (RetainableByteBuffer.Mutable beginBuffer = getBufferPool().acquire(16, isUseDirectByteBuffers()))
+        {
+            // Generate the FCGI_BEGIN_REQUEST frame
+            beginBuffer.putInt(0x01_01_00_00 + request);
+            beginBuffer.putInt(0x00_08_00_00);
+            // Hardcode RESPONDER role and KEEP_ALIVE flag
+            beginBuffer.putLong(0x00_01_01_00_00_00_00_00L);
+            accumulator.add(beginBuffer);
+        }
 
         int index = 0;
         while (fieldsLength > 0)
         {
             int capacity = 8 + Math.min(maxCapacity, fieldsLength);
-            RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(capacity, isUseDirectByteBuffers());
-
-            // Generate the FCGI_PARAMS frame
-            buffer.putInt(0x01_04_00_00 + request);
-            buffer.putShort((short)0);
-            buffer.putShort((short)0);
-            capacity -= 8;
-
-            int length = 0;
-            while (index < bytes.size())
+            try (RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(capacity, isUseDirectByteBuffers()))
             {
-                byte[] nameBytes = bytes.get(index);
-                int nameLength = nameBytes.length;
-                byte[] valueBytes = bytes.get(index + 1);
-                int valueLength = valueBytes.length;
+                // Generate the FCGI_PARAMS frame
+                buffer.putInt(0x01_04_00_00 + request);
+                buffer.putShort((short)0);
+                buffer.putShort((short)0);
+                capacity -= 8;
 
-                int required = bytesForLength(nameLength) + bytesForLength(valueLength) + nameLength + valueLength;
-                if (required > capacity)
-                    break;
+                int length = 0;
+                while (index < bytes.size())
+                {
+                    byte[] nameBytes = bytes.get(index);
+                    int nameLength = nameBytes.length;
+                    byte[] valueBytes = bytes.get(index + 1);
+                    int valueLength = valueBytes.length;
 
-                putParamLength(buffer, nameLength);
-                putParamLength(buffer, valueLength);
-                buffer.put(nameBytes);
-                buffer.put(valueBytes);
+                    int required = bytesForLength(nameLength) + bytesForLength(valueLength) + nameLength + valueLength;
+                    if (required > capacity)
+                        break;
 
-                length += required;
-                fieldsLength -= required;
-                capacity -= required;
-                index += 2;
+                    putParamLength(buffer, nameLength);
+                    putParamLength(buffer, valueLength);
+                    buffer.put(nameBytes);
+                    buffer.put(valueBytes);
+
+                    length += required;
+                    fieldsLength -= required;
+                    capacity -= required;
+                    index += 2;
+                }
+
+                buffer.putShort(4, (short)length);
+                accumulator.add(buffer);
             }
-
-            buffer.putShort(4, (short)length);
-            accumulator.add(buffer);
         }
 
-        RetainableByteBuffer.Mutable lastBuffer = getBufferPool().acquire(8, isUseDirectByteBuffers());
-
-        // Generate the last FCGI_PARAMS frame
-        lastBuffer.putInt(0x01_04_00_00 + request);
-        lastBuffer.putInt(0x00_00_00_00);
-        accumulator.add(lastBuffer);
+        try (RetainableByteBuffer.Mutable lastBuffer = getBufferPool().acquire(8, isUseDirectByteBuffers()))
+        {
+            // Generate the last FCGI_PARAMS frame
+            lastBuffer.putInt(0x01_04_00_00 + request);
+            lastBuffer.putInt(0x00_00_00_00);
+            accumulator.add(lastBuffer);
+        }
     }
 
     private int putParamLength(RetainableByteBuffer.Mutable buffer, int length)
@@ -148,7 +151,7 @@ public class ClientGenerator extends Generator
         return length > 127 ? 4 : 1;
     }
 
-    public void generateRequestContent(List<RetainableByteBuffer> accumulator, int request, RetainableByteBuffer content, boolean lastContent)
+    public void generateRequestContent(RetainableByteBuffer.Accumulator accumulator, int request, RetainableByteBuffer content, boolean lastContent)
     {
         generateContent(accumulator, request, content, lastContent, FCGI.FrameType.STDIN);
     }

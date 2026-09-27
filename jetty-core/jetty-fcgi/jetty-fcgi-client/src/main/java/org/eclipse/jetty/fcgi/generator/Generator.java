@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.fcgi.generator;
 
-import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.fcgi.FCGI;
@@ -43,7 +42,7 @@ public class Generator
         return useDirectByteBuffers;
     }
 
-    protected void generateContent(List<RetainableByteBuffer> accumulator, int id, RetainableByteBuffer content, boolean lastContent, FCGI.FrameType frameType)
+    protected void generateContent(RetainableByteBuffer.Accumulator accumulator, int id, RetainableByteBuffer content, boolean lastContent, FCGI.FrameType frameType)
     {
         id &= 0xFF_FF;
 
@@ -52,24 +51,27 @@ public class Generator
 
         while (contentLength > 0 || lastContent)
         {
-            RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(8, isUseDirectByteBuffers());
-
-            // Generate the frame header.
-            buffer.put((byte)0x01);
-            buffer.put((byte)frameType.code);
-            buffer.putShort((short)id);
             long length = Math.min(MAX_CONTENT_LENGTH, contentLength);
-            buffer.putShort((short)length);
-            buffer.putShort((short)0);
-            accumulator.add(buffer);
+            try (RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(8, isUseDirectByteBuffers()))
+            {
+                // Generate the frame header.
+                buffer.put((byte)0x01);
+                buffer.put((byte)frameType.code);
+                buffer.putShort((short)id);
+                buffer.putShort((short)length);
+                buffer.putShort((short)0);
+                accumulator.add(buffer);
+            }
 
             if (contentLength == 0)
                 break;
 
             // Slice the content to avoid copying.
-            RetainableByteBuffer slice = content.sliceAndConsume(length);
-            contentLength -= length;
-            accumulator.add(slice);
+            try (RetainableByteBuffer slice = content.sliceAndConsume(length))
+            {
+                contentLength -= length;
+                accumulator.add(slice);
+            }
         }
     }
 }

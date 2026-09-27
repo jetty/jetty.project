@@ -893,11 +893,20 @@ public interface RetainableByteBuffer extends Retainable
         /// The returned buffer must be released.
         ///
         /// @return the accumulated buffers
-        public RetainableByteBuffer take()
+        public RetainableByteBuffer drain()
         {
             if (buffers.isEmpty())
                 return RetainableByteBuffer.empty();
-            RetainableByteBuffer buffer = buffers.size() == 1 ? buffers.getFirst() : RetainableByteBuffer.merge(buffers);
+            RetainableByteBuffer buffer;
+            if (buffers.size() == 1)
+            {
+                buffer = buffers.getFirst();
+                buffer.retain();
+            }
+            else
+            {
+                buffer = RetainableByteBuffer.merge(buffers);
+            }
             clear();
             return buffer;
         }
