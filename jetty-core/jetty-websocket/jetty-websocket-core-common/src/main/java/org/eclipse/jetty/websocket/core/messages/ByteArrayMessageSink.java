@@ -85,7 +85,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 // Do not complete twice the callback if the invocation fails.
                 callback = Callback.NOOP;
 
-                try (RetainableByteBuffer buffer = accumulator.take())
+                try (RetainableByteBuffer buffer = accumulator.drain())
                 {
                     byte[] bytes = buffer.getArray();
                     getMethodHolder().invoke(bytes, 0, bytes.length);

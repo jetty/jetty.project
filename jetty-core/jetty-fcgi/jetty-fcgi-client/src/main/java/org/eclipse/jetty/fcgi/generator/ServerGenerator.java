@@ -44,7 +44,7 @@ public class ServerGenerator extends Generator
         this.sendStatus200 = sendStatus200;
     }
 
-    public void generateResponseHeaders(List<RetainableByteBuffer> accumulator, int request, int code, String reason, HttpFields fields)
+    public void generateResponseHeaders(RetainableByteBuffer.Accumulator accumulator, int request, int code, String reason, HttpFields fields)
     {
         request &= 0xFF_FF;
 
@@ -81,34 +81,47 @@ public class ServerGenerator extends Generator
         // End of headers
         length += EOL.length;
 
-        RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(length, isUseDirectByteBuffers());
-        for (int i = 0; i < bytes.size(); i += 2)
+        try (RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(length, isUseDirectByteBuffers()))
         {
-            buffer.put(bytes.get(i));
-            buffer.put(COLON);
-            buffer.put(bytes.get(i + 1));
+            for (int i = 0; i < bytes.size(); i += 2)
+            {
+                buffer.put(bytes.get(i));
+                buffer.put(COLON);
+                buffer.put(bytes.get(i + 1));
+                buffer.put(EOL);
+            }
             buffer.put(EOL);
-        }
-        buffer.put(EOL);
 
-        generateContent(accumulator, request, buffer, false, FCGI.FrameType.STDOUT);
-        buffer.release();
+            generateContent(accumulator, request, buffer, false, FCGI.FrameType.STDOUT);
+        }
     }
 
-    public void generateResponseContent(List<RetainableByteBuffer> accumulator, int request, RetainableByteBuffer content, boolean lastContent, boolean aborted)
+    public void generateResponseContent(RetainableByteBuffer.Accumulator accumulator, int request, RetainableByteBuffer content, boolean lastContent, boolean aborted)
     {
         if (aborted)
         {
             if (lastContent)
-                accumulator.add(generateEndRequest(request, true));
+            {
+                try (RetainableByteBuffer buffer = generateEndRequest(request, true))
+                {
+                    accumulator.add(buffer);
+                }
+            }
             else
+            {
                 accumulator.add(RetainableByteBuffer.empty());
+            }
         }
         else
         {
             generateContent(accumulator, request, content, lastContent, FCGI.FrameType.STDOUT);
             if (lastContent)
-                accumulator.add(generateEndRequest(request, false));
+            {
+                try (RetainableByteBuffer buffer = generateEndRequest(request, false))
+                {
+                    accumulator.add(buffer);
+                }
+            }
         }
     }
 

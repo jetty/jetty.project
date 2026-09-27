@@ -17,7 +17,6 @@ import java.io.OutputStream;
 
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-
 /// Simple wrapper of a [RetainableByteBuffer] as an [OutputStream].
 ///
 /// The buffer does not grow and this class will throw an
