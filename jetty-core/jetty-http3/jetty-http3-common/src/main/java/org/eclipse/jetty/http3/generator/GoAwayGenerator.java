@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.generator;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
@@ -34,22 +33,24 @@ public class GoAwayGenerator extends FrameGenerator
     }
 
     @Override
-    public long generate(List<RetainableByteBuffer> accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(RetainableByteBuffer.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
         return generateGoAwayFrame(accumulator, goAwayFrame);
     }
 
-    private long generateGoAwayFrame(List<RetainableByteBuffer> accumulator, GoAwayFrame frame)
+    private long generateGoAwayFrame(RetainableByteBuffer.Accumulator accumulator, GoAwayFrame frame)
     {
         long lastId = frame.getLastId();
         int lastIdLength = VarLenInt.length(lastId);
         int length = VarLenInt.length(FrameType.GOAWAY.type()) + VarLenInt.length(lastIdLength) + lastIdLength;
-        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, useDirectByteBuffers);
-        VarLenInt.encode(buffer, FrameType.GOAWAY.type());
-        VarLenInt.encode(buffer, lastIdLength);
-        VarLenInt.encode(buffer, lastId);
-        accumulator.add(buffer);
-        return length;
+        try (RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, useDirectByteBuffers))
+        {
+            VarLenInt.encode(buffer, FrameType.GOAWAY.type());
+            VarLenInt.encode(buffer, lastIdLength);
+            VarLenInt.encode(buffer, lastId);
+            accumulator.add(buffer);
+            return length;
+        }
     }
 }

@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http3.qpack.internal.instruction;
 
-import java.util.List;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.compression.NBitStringEncoder;
 import org.eclipse.jetty.http3.qpack.Instruction;
@@ -53,15 +51,17 @@ public class LiteralNameEntryInstruction implements Instruction
     }
 
     @Override
-    public void encode(WritableBufferPool byteBufferPool, List<RetainableByteBuffer> accumulator)
+    public void encode(WritableBufferPool bufferPool, RetainableByteBuffer.Accumulator accumulator)
     {
         int size = NBitStringEncoder.octetsNeeded(6, _name, _huffmanName) +
             NBitStringEncoder.octetsNeeded(8, _value, _huffmanValue);
-        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(size, false);
-        buffer.put((byte)0x40); // Instruction Pattern.
-        NBitStringEncoder.encode(buffer, 6, _name, _huffmanName);
-        NBitStringEncoder.encode(buffer, 8, _value, _huffmanValue);
-        accumulator.add(buffer);
+        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, false))
+        {
+            buffer.put((byte)0x40); // Instruction Pattern.
+            NBitStringEncoder.encode(buffer, 6, _name, _huffmanName);
+            NBitStringEncoder.encode(buffer, 8, _value, _huffmanValue);
+            accumulator.add(buffer);
+        }
     }
 
     @Override

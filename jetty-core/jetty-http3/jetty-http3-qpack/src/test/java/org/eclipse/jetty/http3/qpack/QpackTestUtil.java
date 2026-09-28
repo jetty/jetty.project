@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -43,13 +42,9 @@ public class QpackTestUtil
     public static RetainableByteBuffer toBuffer(List<Instruction> instructions)
     {
         WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         instructions.forEach(i -> i.encode(bufferPool, accumulator));
-        if (accumulator.isEmpty())
-            return RetainableByteBuffer.empty();
-        if (accumulator.size() == 1)
-            return accumulator.getFirst();
-        return RetainableByteBuffer.merge(accumulator);
+        return accumulator.drain();
     }
 
     public static Matcher<String> equalsHex(String expectedString)

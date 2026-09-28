@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http3.qpack.internal.instruction;
 
-import java.util.List;
-
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.WritableBufferPool;
@@ -36,13 +34,15 @@ public class DuplicateInstruction implements Instruction
     }
 
     @Override
-    public void encode(WritableBufferPool byteBufferPool, List<RetainableByteBuffer> accumulator)
+    public void encode(WritableBufferPool bufferPool, RetainableByteBuffer.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(5, _index);
-        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(size, false);
-        buffer.put((byte)0x00);
-        NBitIntegerEncoder.encode(buffer, 5, _index);
-        accumulator.add(buffer);
+        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, false))
+        {
+            buffer.put((byte)0x00);
+            NBitIntegerEncoder.encode(buffer, 5, _index);
+            accumulator.add(buffer);
+        }
     }
 
     @Override

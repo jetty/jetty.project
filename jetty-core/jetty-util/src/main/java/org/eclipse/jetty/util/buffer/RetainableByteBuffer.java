@@ -110,7 +110,7 @@ public interface RetainableByteBuffer extends Retainable
                 return released;
             }
         };
-        try (ReferenceCounter rc = refCount)
+        try (refCount)
         {
             return wrap(byteBuffer, refCount);
         }
@@ -901,13 +901,13 @@ public interface RetainableByteBuffer extends Retainable
             if (buffers.size() == 1)
             {
                 buffer = buffers.getFirst();
-                buffer.retain();
+                buffers.clear();
             }
             else
             {
                 buffer = RetainableByteBuffer.merge(buffers);
+                clear();
             }
-            clear();
             return buffer;
         }
 
