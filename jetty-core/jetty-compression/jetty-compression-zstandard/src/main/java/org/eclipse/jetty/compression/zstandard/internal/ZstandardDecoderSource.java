@@ -61,13 +61,13 @@ public class ZstandardDecoderSource extends DecoderSource
             }
         }
 
-        try (RetainableByteBuffer input = inputBuffer)
+        try (inputBuffer)
         {
             try (RetainableByteBuffer.Mutable output = compression.acquireBuffer(bufferSize))
             {
                 boolean last = inputChunk.isLast();
                 boolean[] fullyFlushed = new boolean[1];
-                input.quietRead(in ->
+                inputBuffer.quietRead(in ->
                 {
                     int r = in.remaining();
                     output.write(out ->
