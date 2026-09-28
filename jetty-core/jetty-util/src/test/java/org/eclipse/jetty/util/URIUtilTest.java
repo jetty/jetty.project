@@ -46,6 +46,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -159,6 +160,18 @@ public class URIUtilTest
     {
         String result = URIUtil.canonicalServletPath(input);
         assertEquals(expected, result);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/../a",
+        "/a/../b/../../c",
+        "/%2e%2e/a"
+    })
+    public void testCanonicalServletPathAboveRoot(String input)
+    {
+        String result = URIUtil.canonicalServletPath(input);
+        assertNull(result);
     }
 
     public static Stream<Arguments> decodePathSource()
