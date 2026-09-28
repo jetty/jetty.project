@@ -701,6 +701,166 @@ public final class URIUtil
     }
 
     /**
+     * Canonicalize a String Path using URI Canonicalization Rules.
+     *
+     * @param path the input path
+     * @return the servlet canonicalized URI path
+     * @see <a href="https://jakarta.ee/specifications/servlet/6.0/jakarta-servlet-spec-6.0.html#uri-path-canonicalization">Servlet 3.5.2. URI Path Canonicalization</a>
+     */
+    public static String canonicalServletPath(String path)
+    {
+        // 1. Discard fragment.
+        int fragmentIdx = path.indexOf('#');
+        if (fragmentIdx >= 0)
+            path = path.substring(0, fragmentIdx);
+        // 2. Separation of path and query
+        int queryIdx = path.indexOf('?');
+        String query = null;
+        if (queryIdx >= 0)
+        {
+            query = path.substring(queryIdx);
+            path = path.substring(0, queryIdx);
+        }
+        // 3. Split path into segments.
+        Utf8StringBuilder builder = null;
+        int end = path.length();
+        boolean slash = true;
+        boolean normal = true;
+        for (int i = 0; i < end; i++)
+        {
+            char c = path.charAt(i);
+            switch (c)
+            {
+                case '%':
+                    // 5. Decode.
+                    // This doesn't care what the pct-encoded sequence is (eg: it could be control-characters)
+                    if ((i + 2) >= end)
+                        throw new IllegalArgumentException("Bad URI % encoding");
+
+                    if (builder == null)
+                    {
+                        builder = new Utf8StringBuilder(path.length());
+                        builder.append(path, 0, i);
+                    }
+
+                    char u = path.charAt(i + 1);
+                    if (u == 'u')
+                    {
+                        if ((i + 5) >= end)
+                            throw new IllegalArgumentException("Bad URI %u encoding");
+
+                        // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
+                        int code = TypeUtil.parseInt(path, i + 2, 4, 16);
+                        char[] chars = Character.toChars(code);
+                        if (chars.length == 1)
+                        {
+                            // 8. Concatenate segments.
+                            if (chars[0] == '/')
+                            {
+                                // Specifically how to handle '%2F' on input
+                                builder.append("%252F");
+                            }
+                            else if (chars[0] == '%')
+                            {
+                                // Specifically how to handle '%25' on input
+                                builder.append("%25");
+                            }
+                            else
+                            {
+                                builder.append(chars[0]);
+                                if (slash && chars[0] == '.')
+                                    normal = false;
+                                slash = false;
+                            }
+                        }
+                        for (char ch : chars)
+                        {
+                            builder.append(ch);
+                            if (slash && ch == '.')
+                                normal = false;
+                            slash = false;
+                        }
+                        i += 5;
+                    }
+                    else
+                    {
+                        int code = TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2));
+                        if (code == '/')
+                        {
+                            // 8. Concatenate segments.
+                            // Specifically how to handle '%2F' on input
+                            builder.append("%252F");
+                        }
+                        else if (code == '%')
+                        {
+                            // Specifically how to handle '%25' on input
+                            builder.append("%25");
+                        }
+                        else
+                        {
+                            // All other codes
+                            builder.append((byte)(0xff & code));
+                            if (slash && code == '.')
+                                normal = false;
+                        }
+                        i += 2;
+                    }
+                    break;
+
+                case ';':
+                    if (builder == null)
+                    {
+                        builder = new Utf8StringBuilder(path.length());
+                        builder.append(path, 0, i);
+                    }
+
+                    // 4. Remove path parameters.
+                    while (++i < end)
+                    {
+                        c = path.charAt(i);
+                        if (c == '/')
+                        {
+                            builder.append('/');
+                            break;
+                        }
+                    }
+                    break;
+
+                case '/':
+                    if (builder != null)
+                        builder.append(c);
+                    break;
+
+                case '.':
+                    if (slash)
+                        normal = false;
+                    if (builder != null)
+                        builder.append(c);
+                    break;
+
+                default:
+                    if (builder == null && !isSafe(c))
+                    {
+                        builder = new Utf8StringBuilder(path.length());
+                        builder.append(path, 0, i);
+                    }
+
+                    if (builder != null && isSafeElseEncode(c, builder))
+                        builder.append(c);
+                    break;
+            }
+
+            slash = c == '/';
+        }
+
+        String canonical = (builder != null) ? builder.toCompleteString() : path;
+
+        // 6. Remove Empty Segments.
+        // 7. Remove dot-segments.
+        return normal ? canonical : normalizePath(canonical);
+    }
+
+    /**
      * Canonicalize a URI path to a form that is unambiguous and safe to use with the JVM {@link URI} class.
      * <p>
      * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
