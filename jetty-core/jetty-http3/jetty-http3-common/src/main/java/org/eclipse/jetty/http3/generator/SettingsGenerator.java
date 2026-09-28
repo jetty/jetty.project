@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.generator;
 
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -33,13 +32,13 @@ public class SettingsGenerator extends FrameGenerator
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
-    public long generate(List<RetainableByteBuffer> accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(RetainableByteBuffer.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(accumulator, settingsFrame);
     }
 
-    private long generateSettings(List<RetainableByteBuffer> accumulator, SettingsFrame frame)
+    private long generateSettings(RetainableByteBuffer.Accumulator accumulator, SettingsFrame frame)
     {
         int length = 0;
         Map<Long, Long> settings = frame.getSettings();
@@ -48,15 +47,17 @@ public class SettingsGenerator extends FrameGenerator
             length += VarLenInt.length(e.getKey()) + VarLenInt.length(e.getValue());
         }
         int capacity = VarLenInt.length(frame.getFrameType().type()) + VarLenInt.length(length) + length;
-        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, useDirectByteBuffers);
-        VarLenInt.encode(buffer, frame.getFrameType().type());
-        VarLenInt.encode(buffer, length);
-        for (Map.Entry<Long, Long> e : settings.entrySet())
+        try (RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, useDirectByteBuffers))
         {
-            VarLenInt.encode(buffer, e.getKey());
-            VarLenInt.encode(buffer, e.getValue());
+            VarLenInt.encode(buffer, frame.getFrameType().type());
+            VarLenInt.encode(buffer, length);
+            for (Map.Entry<Long, Long> e : settings.entrySet())
+            {
+                VarLenInt.encode(buffer, e.getKey());
+                VarLenInt.encode(buffer, e.getValue());
+            }
+            accumulator.add(buffer);
+            return capacity;
         }
-        accumulator.add(buffer);
-        return capacity;
     }
 }

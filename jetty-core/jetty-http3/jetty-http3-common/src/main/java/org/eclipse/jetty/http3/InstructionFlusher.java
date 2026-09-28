@@ -40,7 +40,7 @@ public class InstructionFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Instruction> queue = new ArrayDeque<>();
-    private final List<RetainableByteBuffer> accumulator = new ArrayList<>();
+    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
     private final WritableBufferPool bufferPool;
     private final StreamEndPoint endPoint;
     private final long streamType;
@@ -84,27 +84,23 @@ public class InstructionFlusher extends IteratingCallback
         if (!initialized)
         {
             initialized = true;
-            RetainableByteBuffer.Mutable buffer = bufferPool.acquire(VarLenInt.length(streamType), true);
-            VarLenInt.encode(buffer, streamType);
-            accumulator.add(buffer);
+            try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(VarLenInt.length(streamType), true))
+            {
+                VarLenInt.encode(buffer, streamType);
+                accumulator.add(buffer);
+            }
         }
 
         instructions.forEach(i -> i.encode(bufferPool, accumulator));
 
         if (LOG.isDebugEnabled())
-            LOG.debug("writing buffers ({} bytes) on {}", accumulator.size(), this);
+            LOG.debug("writing buffers ({} bytes) on {}", accumulator.remaining(), this);
 
-        try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
             endPoint.write(false, buffer, this);
             return Action.SCHEDULED;
         }
-    }
-
-    @Override
-    protected void onSuccess()
-    {
-        releaseAndClear();
     }
 
     @Override
@@ -119,16 +115,14 @@ public class InstructionFlusher extends IteratingCallback
             queue.clear();
         }
 
-        releaseAndClear();
-
         // Cannot continue without the instruction stream, disconnect the session.
         ConnectionCloseFrame frame = new ConnectionCloseFrame(HTTP3ErrorCode.INTERNAL_ERROR.code(), "instruction_stream_failure");
         endPoint.getProtocolSession().disconnect(frame, failure, Promise.Invocable.noop());
     }
 
-    private void releaseAndClear()
+    @Override
+    protected void onCompleteFailure(Throwable cause)
     {
-        accumulator.forEach(RetainableByteBuffer::release);
         accumulator.clear();
     }
 

@@ -39,7 +39,7 @@ public class ControlFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> queue = new ArrayDeque<>();
-    private final List<RetainableByteBuffer> accumulator = new ArrayList<>();
+    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
     private final StreamEndPoint endPoint;
     private final ControlGenerator generator;
     private boolean initialized;
@@ -97,9 +97,9 @@ public class ControlFlusher extends IteratingCallback
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("writing {} bytes on {}", accumulator.size(), this);
+            LOG.debug("writing {} bytes on {}", accumulator.remaining(), this);
 
-        try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
             endPoint.write(false, buffer, this);
             return Action.SCHEDULED;
@@ -115,7 +115,7 @@ public class ControlFlusher extends IteratingCallback
         entries.forEach(e -> e.callback.succeeded());
         entries.clear();
 
-        releaseAndClear();
+        clear();
 
         invocationType = InvocationType.NON_BLOCKING;
     }
@@ -137,16 +137,15 @@ public class ControlFlusher extends IteratingCallback
 
         allEntries.forEach(e -> e.callback.failed(failure));
 
-        releaseAndClear();
+        clear();
 
         // Cannot continue without the control stream, close the session.
         ConnectionCloseFrame frame = new ConnectionCloseFrame(HTTP3ErrorCode.INTERNAL_ERROR.code(), "control_stream_failure");
         endPoint.getProtocolSession().disconnect(frame, failure, Promise.Invocable.noop());
     }
 
-    private void releaseAndClear()
+    private void clear()
     {
-        accumulator.forEach(RetainableByteBuffer::release);
         accumulator.clear();
     }
 

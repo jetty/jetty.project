@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.http3.parser;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
@@ -30,7 +27,7 @@ public class HeadersBodyParser extends BodyParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(HeadersBodyParser.class);
 
-    private final List<RetainableByteBuffer> buffers = new ArrayList<>();
+    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
     private final long streamId;
     private final QpackDecoder decoder;
     private State state = State.INIT;
@@ -68,15 +65,23 @@ public class HeadersBodyParser extends BodyParser
                     if (remaining < length)
                     {
                         length -= remaining;
-                        buffer.retain();
-                        buffers.add(buffer);
+                        accumulator.add(buffer);
                         return Result.NO_FRAME;
                     }
                     else
                     {
                         RetainableByteBuffer encoded;
                         boolean last;
-                        if (buffers.isEmpty())
+                        if (accumulator.hasRemaining())
+                        {
+                            try (RetainableByteBuffer slice = buffer.sliceAndConsume(length))
+                            {
+                                accumulator.add(slice);
+                            }
+                            encoded = accumulator.drain();
+                            last = quicLast && !buffer.hasRemaining();
+                        }
+                        else
                         {
                             if (remaining == length)
                             {
@@ -92,18 +97,11 @@ public class HeadersBodyParser extends BodyParser
                                 last = false;
                             }
                         }
-                        else
-                        {
-                            buffers.add(buffer.sliceAndConsume(length));
-                            encoded = RetainableByteBuffer.merge(buffers);
-                            last = quicLast && !buffer.hasRemaining();
-                            buffers.forEach(RetainableByteBuffer::release);
-                            buffers.clear();
-                        }
 
-                        Result result = decode(encoded, last) ? Result.WHOLE_FRAME : Result.BLOCKED_FRAME;
-                        encoded.release();
-                        return result;
+                        try (encoded)
+                        {
+                            return decode(encoded, last) ? Result.WHOLE_FRAME : Result.BLOCKED_FRAME;
+                        }
                     }
                 }
                 default:

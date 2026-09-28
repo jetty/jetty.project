@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http3.qpack.internal.instruction;
 
-import java.util.List;
-
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http3.qpack.Instruction;
 import org.eclipse.jetty.io.WritableBufferPool;
@@ -31,13 +29,15 @@ public class StreamCancellationInstruction implements Instruction
     }
 
     @Override
-    public void encode(WritableBufferPool byteBufferPool, List<RetainableByteBuffer> accumulator)
+    public void encode(WritableBufferPool bufferPool, RetainableByteBuffer.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _streamId);
-        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(size, false);
-        buffer.put((byte)0x40);
-        NBitIntegerEncoder.encode(buffer, 6, _streamId);
-        accumulator.add(buffer);
+        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, false))
+        {
+            buffer.put((byte)0x40);
+            NBitIntegerEncoder.encode(buffer, 6, _streamId);
+            accumulator.add(buffer);
+        }
     }
 
     @Override

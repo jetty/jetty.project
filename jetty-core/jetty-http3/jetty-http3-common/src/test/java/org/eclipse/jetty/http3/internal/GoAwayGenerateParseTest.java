@@ -35,7 +35,7 @@ public class GoAwayGenerateParseTest
         GoAwayFrame input = GoAwayFrame.CLIENT_GRACEFUL;
 
         WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         new ControlGenerator(bufferPool, true).generate(accumulator, 0, input, null);
 
         List<GoAwayFrame> frames = new ArrayList<>();
@@ -47,9 +47,11 @@ public class GoAwayGenerateParseTest
                 frames.add(frame);
             }
         });
-        RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator);
-        parser.parse(buffer);
-        assertFalse(buffer.hasRemaining());
+        try (RetainableByteBuffer buffer = accumulator.drain())
+        {
+            parser.parse(buffer);
+            assertFalse(buffer.hasRemaining());
+        }
 
         assertEquals(1, frames.size());
         GoAwayFrame output = frames.getFirst();
