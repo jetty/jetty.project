@@ -81,6 +81,7 @@ public class AsyncJSON
         private Map<String, Convertor> convertors;
         private Function<List<?>, Object> arrayConverter = list -> list;
         private boolean detailedParseException;
+        private int nestingMaxDepth = 256;
 
         /**
          * @return the function to customize the Java representation of JSON arrays
@@ -118,6 +119,25 @@ public class AsyncJSON
         public void setDetailedParseException(boolean detailedParseException)
         {
             this.detailedParseException = detailedParseException;
+        }
+
+        /**
+         * @return the nesting maximum depth of JSON objects and arrays (default 256)
+         * @see #setNestingMaxDepth(int)
+         */
+        public int getNestingMaxDepth()
+        {
+            return nestingMaxDepth;
+        }
+
+        /**
+         * <p>Sets the maximum nesting depth of JSON objects and arrays.</p>
+         *
+         * @param nestingMaxDepth the nesting maximum depth of JSON objects and arrays
+         */
+        public void setNestingMaxDepth(int nestingMaxDepth)
+        {
+            this.nestingMaxDepth = nestingMaxDepth;
         }
 
         /**
@@ -241,6 +261,7 @@ public class AsyncJSON
     private final Utf8StringBuilder stringBuilder = new Utf8StringBuilder(32);
     private final Factory factory;
     private List<ByteBuffer> chunks;
+    private int nestingDepth;
 
     public AsyncJSON(Factory factory)
     {
@@ -505,6 +526,7 @@ public class AsyncJSON
     {
         stack.clear();
         chunks = null;
+        nestingDepth = 0;
     }
 
     private boolean parseAny(ByteBuffer buffer)
@@ -890,6 +912,7 @@ public class AsyncJSON
                 case '[':
                 {
                     buffer.get();
+                    enterNesting(buffer);
                     stack.push(State.ARRAY, newArray(stack));
                     break;
                 }
@@ -899,6 +922,7 @@ public class AsyncJSON
                     @SuppressWarnings("unchecked")
                     List<Object> array = (List<Object>)stack.peek().value;
                     stack.pop();
+                    exitNesting();
                     stack.peek().value(convertArray(array));
                     return true;
                 }
@@ -940,6 +964,7 @@ public class AsyncJSON
                 {
                     if (stack.peek().state != State.OBJECT)
                     {
+                        enterNesting(buffer);
                         stack.push(State.OBJECT, newObject(stack));
                         break;
                     }
@@ -950,6 +975,7 @@ public class AsyncJSON
                     @SuppressWarnings("unchecked")
                     Map<String, Object> object = (Map<String, Object>)stack.peek().value;
                     stack.pop();
+                    exitNesting();
                     stack.peek().value(convertObject(object));
                     return true;
                 }
@@ -974,6 +1000,19 @@ public class AsyncJSON
             }
         }
         return false;
+    }
+
+    private void enterNesting(ByteBuffer buffer)
+    {
+        int nestingMaxDepth = factory.getNestingMaxDepth();
+        if (nestingDepth >= nestingMaxDepth)
+            throw newInvalidJSON(buffer, "max nesting depth " + nestingMaxDepth + " exceeded");
+        ++nestingDepth;
+    }
+
+    private void exitNesting()
+    {
+        --nestingDepth;
     }
 
     private boolean parseObjectField(ByteBuffer buffer)
