@@ -70,6 +70,76 @@ public class AsyncJSONTest
         assertTrue(parser.isEmpty());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"[", "{\"a\":", "[{\"a\":", "{\"a\":["})
+    public void testDeeplyNestedJSONIsRejected(String open)
+    {
+        byte[] bytes = open.repeat(300_000).getBytes(UTF_8);
+        AsyncJSON parser = newAsyncJSON();
+
+        assertThrows(IllegalArgumentException.class, () -> parser.parse(ByteBuffer.wrap(bytes)));
+        assertTrue(parser.isEmpty());
+
+        // The parser is still usable after the failure.
+        assertTrue(parser.parse("{\"a\":1}".getBytes(UTF_8)));
+        assertEquals(Map.of("a", 1L), parser.complete());
+    }
+
+    @Test
+    public void testDefaultNestingMaxDepth()
+    {
+        AsyncJSON parser = newAsyncJSON();
+        int max = new AsyncJSON.Factory().getNestingMaxDepth();
+        String objects = "{\"a\":".repeat(max) + "1" + "}".repeat(max);
+        assertTrue(parser.parse(objects.getBytes(UTF_8)));
+        assertInstanceOf(Map.class, parser.complete());
+        String arrays = "[".repeat(max) + "]".repeat(max);
+        assertTrue(parser.parse(arrays.getBytes(UTF_8)));
+        assertInstanceOf(List.class, parser.complete());
+
+        assertThrows(IllegalArgumentException.class, () -> parser.parse(("[" + objects + "]").getBytes(UTF_8)));
+        assertThrows(IllegalArgumentException.class, () -> parser.parse(("{\"a\":" + arrays + "}").getBytes(UTF_8)));
+    }
+
+    @Test
+    public void testNestingMaxDepth()
+    {
+        AsyncJSON.Factory factory = new AsyncJSON.Factory();
+        assertEquals(256, factory.getNestingMaxDepth());
+        factory.setNestingMaxDepth(3);
+        AsyncJSON parser = factory.newAsyncJSON();
+
+        assertTrue(parser.parse("[{\"a\":[1]}]".getBytes(UTF_8)));
+        assertEquals(List.of(Map.of("a", List.of(1L))), parser.complete());
+
+        // Sibling containers do not accumulate depth.
+        assertTrue(parser.parse("[[[]],[[]],{\"a\":{\"b\":1},\"c\":[2]},{\"d\":[1]}]".getBytes(UTF_8)));
+        assertInstanceOf(List.class, parser.complete());
+
+        assertThrows(IllegalArgumentException.class, () -> parser.parse("[{\"a\":[[1]]}]".getBytes(UTF_8)));
+        assertTrue(parser.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> parser.parse("{\"a\":{\"b\":{\"c\":{}}}}".getBytes(UTF_8)));
+        assertTrue(parser.isEmpty());
+
+        // Parse byte by byte, the depth is tracked across chunks.
+        byte[] bytes = "[[[[".getBytes(UTF_8);
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            for (byte b : bytes)
+            {
+                parser.parse(new byte[]{b});
+            }
+        });
+        assertTrue(parser.isEmpty());
+
+        // After the failures, the depth is back to zero.
+        for (byte b : "[[[]]]".getBytes(UTF_8))
+        {
+            parser.parse(new byte[]{b});
+        }
+        assertEquals(List.of(List.of(List.of())), parser.complete());
+    }
+
     @ParameterizedTest(name = "[{index}] ''{0}'' -> ''{1}''")
     @MethodSource("validStrings")
     public void testParseString(String string, String expected)
