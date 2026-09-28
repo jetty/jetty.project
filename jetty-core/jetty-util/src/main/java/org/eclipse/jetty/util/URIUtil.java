@@ -856,8 +856,44 @@ public final class URIUtil
         String canonical = (builder != null) ? builder.toCompleteString() : path;
 
         // 6. Remove Empty Segments.
+        // An empty segment is a run of adjacent '/' characters; all empty segments other than
+        // the last are removed, which is equivalent to collapsing each run of '/' to a single '/'.
+        if (canonical.contains("//"))
+            canonical = compactSlashes(canonical);
+
         // 7. Remove dot-segments.
         return normal ? canonical : normalizePath(canonical);
+    }
+
+    /**
+     * Collapse any run of adjacent {@code '/'} characters into a single {@code '/'}, removing
+     * empty path segments as required by servlet URI path canonicalization (step 6).
+     *
+     * @param path the path to compact
+     * @return the path with empty segments removed
+     */
+    private static String compactSlashes(String path)
+    {
+        StringBuilder builder = null;
+        int end = path.length();
+        for (int i = 0; i < end; i++)
+        {
+            char c = path.charAt(i);
+            if (c == '/' && i > 0 && path.charAt(i - 1) == '/')
+            {
+                // Empty segment: drop this duplicate '/'.
+                if (builder == null)
+                {
+                    builder = new StringBuilder(path.length());
+                    builder.append(path, 0, i);
+                }
+            }
+            else if (builder != null)
+            {
+                builder.append(c);
+            }
+        }
+        return builder != null ? builder.toString() : path;
     }
 
     /**

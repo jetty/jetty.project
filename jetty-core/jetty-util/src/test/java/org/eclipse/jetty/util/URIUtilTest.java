@@ -115,6 +115,8 @@ public class URIUtilTest
             Arguments.of("/a;x=1/b;y=2/c", "/a/b/c"),
             Arguments.of("/a;jsessionid=1234", "/a"),
             Arguments.of("/a;/b;/c;", "/a/b/c"),
+            Arguments.of("/a/..;/b", "/b"),
+            Arguments.of("/a/;../b", "/a/b"),
             Arguments.of("/foo/bar;a=b;c=d/baz", "/foo/bar/baz"),
 
             // Rule 5: Decode (decoded '.' is a literal char unless it is the whole segment)
