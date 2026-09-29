@@ -1561,7 +1561,7 @@ public interface HttpURI
                                     break;
                                 default:
                                     // The RFC does not allow unencoded path characters that are outside the ABNF
-                                    if (c > __pathCharacters.length || !__pathCharacters[c])
+                                    if (c >= __pathCharacters.length || !__pathCharacters[c])
                                         addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
                                     if (c < __suspiciousPathCharacters.length && __suspiciousPathCharacters[c])
                                        addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
@@ -1693,7 +1693,7 @@ public interface HttpURI
             for (int i = start; i < end; i++)
             {
                 char c = uri.charAt(i);
-                if (c > __pathCharacters.length || !__pathCharacters[c])
+                if (c >= __pathCharacters.length || !__pathCharacters[c])
                     addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
                 if (c < __suspiciousPathCharacters.length && __suspiciousPathCharacters[c])
                     addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
