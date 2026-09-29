@@ -166,7 +166,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
 
     protected void onClose(Connection connection, GoAwayFrame frame)
     {
-        connection.close();
+        ((HttpConnectionOverHTTP2)connection).upwardClose();
     }
 
     private class SessionListenerPromise extends HTTPSessionListenerPromise
