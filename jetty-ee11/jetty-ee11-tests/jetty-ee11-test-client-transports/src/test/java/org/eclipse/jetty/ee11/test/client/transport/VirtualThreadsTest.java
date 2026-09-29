@@ -33,6 +33,8 @@ import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -161,6 +163,16 @@ public class VirtualThreadsTest extends AbstractTest
         ThreadPool threadPool = server.getThreadPool();
         if (threadPool instanceof VirtualThreads.Configurable)
             ((VirtualThreads.Configurable)threadPool).setVirtualThreadsExecutor(VirtualThreads.getDefaultVirtualThreadsExecutor());
+        CountDownLatch handlerLatch = new CountDownLatch(1);
+        server.insertHandler(new EventsHandler()
+        {
+            @Override
+            protected void onAfterHandling(Request request, boolean handled, Throwable failure)
+            {
+                handlerLatch.countDown();
+                super.onAfterHandling(request, handled, failure);
+            }
+        });
         server.start();
         startClient(transportType);
 
@@ -180,7 +192,7 @@ public class VirtualThreadsTest extends AbstractTest
                     latch.countDown();
             });
 
-        Thread.sleep(500);
+        assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
         requestContent.write(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
         requestContent.close();
 
