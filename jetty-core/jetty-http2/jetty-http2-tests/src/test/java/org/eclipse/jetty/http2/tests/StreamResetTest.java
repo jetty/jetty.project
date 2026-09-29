@@ -860,7 +860,7 @@ public class StreamResetTest extends AbstractTest
         try (Socket socket = new Socket(host, port))
         {
             Generator generator = new Generator(bufferPool);
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -875,20 +875,19 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer rb = accumulator.drain())
+            {
+                rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            }
 
             // Wait until the server is TCP congested.
             waitUntilTCPCongested(serverEndPointRef::get);
 
-            accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            }
 
             // Resolve TCP congestion to allow the server to send its reset frame initiated by
             // the cancellation of the pending write.
@@ -956,7 +955,7 @@ public class StreamResetTest extends AbstractTest
         try (Socket socket = new Socket(host, port))
         {
             Generator generator = new Generator(bufferPool);
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -971,20 +970,19 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            }
 
             // Wait until the server is TCP congested.
             waitUntilTCPCongested(serverEndPointRef::get);
 
-            accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            }
 
             // Idle timeout should unblock the server's write.
 
@@ -1049,7 +1047,7 @@ public class StreamResetTest extends AbstractTest
         try (Socket socket = new Socket(host, port))
         {
             Generator generator = new Generator(bufferPool);
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -1063,11 +1061,10 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(3, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            accumulator.clear();
-            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            }
 
             SelectableChannelEndPoint endPoint = exchanger.exchange(null);
             waitUntilTCPCongested(() -> endPoint);
@@ -1078,19 +1075,18 @@ public class StreamResetTest extends AbstractTest
             int streamId = 5;
             headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
-            rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            }
             assertTrue(requestLatch1.await(5, TimeUnit.SECONDS));
 
             // Now reset the second request, which has not started writing yet.
-            accumulator.clear();
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            }
             // Wait to be sure that the server processed the reset.
             Thread.sleep(1000);
             // Let the request write, it should not block.

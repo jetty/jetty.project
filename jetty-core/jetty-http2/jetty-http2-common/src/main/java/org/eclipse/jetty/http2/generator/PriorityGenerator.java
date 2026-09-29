@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.util.List;
-
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
@@ -29,21 +27,21 @@ public class PriorityGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(List<RetainableByteBuffer> accumulator, Frame frame)
+    public int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame)
     {
         PriorityFrame priorityFrame = (PriorityFrame)frame;
         return generatePriority(accumulator, priorityFrame.getStreamId(), priorityFrame.getParentStreamId(), priorityFrame.getWeight(), priorityFrame.isExclusive());
     }
 
-    public int generatePriority(List<RetainableByteBuffer> accumulator, int streamId, int parentStreamId, int weight, boolean exclusive)
+    public int generatePriority(RetainableByteBuffer.Accumulator accumulator, int streamId, int parentStreamId, int weight, boolean exclusive)
     {
         RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
         generatePriorityBody(buffer, streamId, parentStreamId, weight, exclusive);
-        accumulator.add(buffer);
+        accumulator.addRetained(buffer);
         return Frame.HEADER_LENGTH + PriorityFrame.PRIORITY_LENGTH;
     }
 
-    public void generatePriorityBody(RetainableByteBuffer.Mutable wb, int streamId, int parentStreamId, int weight, boolean exclusive)
+    public void generatePriorityBody(RetainableByteBuffer.Mutable buffer, int streamId, int parentStreamId, int weight, boolean exclusive)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -57,8 +55,8 @@ public class PriorityGenerator extends FrameGenerator
         if (exclusive)
             parentStreamId |= 0x80_00_00_00;
 
-        wb.putInt(parentStreamId);
+        buffer.putInt(parentStreamId);
         // SPEC: for RFC 7540 weight is 1..256, for RFC 9113 is an unused value.
-        wb.put((byte)(weight - 1));
+        buffer.put((byte)(weight - 1));
     }
 }

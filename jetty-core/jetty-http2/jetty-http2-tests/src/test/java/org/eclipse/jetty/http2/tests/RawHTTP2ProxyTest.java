@@ -241,7 +241,7 @@ public class RawHTTP2ProxyTest
         CountDownLatch latch1 = new CountDownLatch(1);
         Stream stream1 = clientSession.newStream(new HeadersFrame(request1, null, false), new Stream.Listener()
         {
-            private final List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
 
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -258,15 +258,14 @@ public class RawHTTP2ProxyTest
                 {
                     if (LOGGER.isDebugEnabled())
                         LOGGER.debug("CLIENT1 received {}", chunk);
-                    accumulator.add(chunk.acquire());
+                    accumulator.addRetained(chunk.acquire());
                     if (!chunk.isLast())
                     {
                         stream.demand();
                         return;
                     }
-                    try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+                    try (RetainableByteBuffer buffer = accumulator.drain())
                     {
-                        accumulator.forEach(RetainableByteBuffer::release);
                         assertArrayEquals(buffer1.getArray(), buffer.getArray());
                         latch1.countDown();
                     }

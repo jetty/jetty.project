@@ -14,9 +14,7 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -60,7 +58,7 @@ public class AuthorityCustomizerTest extends AbstractServerTest
         });
         httpConfig.addCustomizer(new AuthorityCustomizer());
 
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), null, path, HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
@@ -68,10 +66,10 @@ public class AuthorityCustomizerTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            }
 
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<HeadersFrame> frameRef = new AtomicReference<>();

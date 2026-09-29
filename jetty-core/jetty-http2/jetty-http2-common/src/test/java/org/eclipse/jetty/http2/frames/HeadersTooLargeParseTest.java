@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -79,17 +77,16 @@ public class HeadersTooLargeParseTest
         });
 
         int streamId = 48;
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
         int len = generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
-        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-        accumulator.forEach(RetainableByteBuffer::release);
-        parser.parse(rb);
-        if (failure.get() == 0)
-            fail();
-
-        rb.release();
+        try (RetainableByteBuffer buffer = accumulator.drain())
+        {
+            parser.parse(buffer);
+            if (failure.get() == 0)
+                fail();
+        }
 
         assertTrue(len > maxHeaderSize);
         assertEquals(ErrorCode.PROTOCOL_ERROR.code, failure.get());

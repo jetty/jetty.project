@@ -21,9 +21,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -155,7 +153,7 @@ public class PrefaceTest extends AbstractTest
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             Generator generator = new Generator(bufferPool);
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 0);
@@ -163,10 +161,10 @@ public class PrefaceTest extends AbstractTest
             // The PING frame just to make sure the client stops reading.
             generator.control(accumulator, new PingFrame(true));
 
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer rb = accumulator.drain())
+            {
+                rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            }
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
             AtomicBoolean closed = new AtomicBoolean();
@@ -294,15 +292,15 @@ public class PrefaceTest extends AbstractTest
 
             // After the 101, the client must send the connection preface.
             Generator generator = new Generator(bufferPool);
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 1);
             generator.control(accumulator, new SettingsFrame(clientSettings, false));
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            rb.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.read(input -> BufferUtil.writeTo(input, socket.getOutputStream()));
+            }
 
             // However, we should not call onPreface() again.
             assertFalse(serverPrefaceLatch.get().await(1, TimeUnit.SECONDS));

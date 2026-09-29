@@ -17,9 +17,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,7 +71,7 @@ public class CloseTest extends AbstractServerTest
             }
         });
 
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -81,10 +79,10 @@ public class CloseTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            }
 
             Parser parser = new Parser(bufferPool, 8192);
             parser.init(new Parser.Listener()
@@ -133,7 +131,7 @@ public class CloseTest extends AbstractServerTest
             }
         });
 
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -142,10 +140,10 @@ public class CloseTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer rb = accumulator.drain())
+            {
+                rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            }
 
             // Don't close the connection; the server should close.
 
@@ -199,7 +197,7 @@ public class CloseTest extends AbstractServerTest
         });
         connector.setIdleTimeout(idleTimeout);
 
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -207,10 +205,10 @@ public class CloseTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            rb.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            }
 
             final CountDownLatch responseLatch = new CountDownLatch(1);
             final CountDownLatch closeLatch = new CountDownLatch(1);

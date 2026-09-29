@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -204,13 +202,13 @@ public class StreamCountTest extends AbstractTest
         HeadersFrame frame3 = new HeadersFrame(streamId3, metaData, null, false);
         DataFrame data3 = new DataFrame(streamId3, RetainableByteBuffer.empty(), true);
         Generator generator = ((HTTP2Session)session).getGenerator();
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.control(accumulator, frame3);
         generator.data(accumulator, data3, (int)data3.remaining());
-        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-        accumulator.forEach(RetainableByteBuffer::release);
-        ((HTTP2Session)session).getEndPoint().write(rb, Callback.NOOP);
-        rb.release();
+        try (RetainableByteBuffer rb = accumulator.drain())
+        {
+            ((HTTP2Session)session).getEndPoint().write(rb, Callback.NOOP);
+        }
         // Expect 1 RST_STREAM frame.
         assertTrue(sessionResetLatch.await(5, TimeUnit.SECONDS));
 

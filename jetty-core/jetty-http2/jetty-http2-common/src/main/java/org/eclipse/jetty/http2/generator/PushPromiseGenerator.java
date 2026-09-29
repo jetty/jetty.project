@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.util.List;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
@@ -35,13 +33,13 @@ public class PushPromiseGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(List<RetainableByteBuffer> accumulator, Frame frame) throws HpackException
+    public int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame) throws HpackException
     {
         PushPromiseFrame pushPromiseFrame = (PushPromiseFrame)frame;
         return generatePushPromise(accumulator, pushPromiseFrame.getStreamId(), pushPromiseFrame.getPromisedStreamId(), pushPromiseFrame.getMetaData());
     }
 
-    public int generatePushPromise(List<RetainableByteBuffer> accumulator, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
+    public int generatePushPromise(RetainableByteBuffer.Accumulator accumulator, int streamId, int promisedStreamId, MetaData metaData) throws HpackException
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -59,10 +57,10 @@ public class PushPromiseGenerator extends FrameGenerator
         int length = hpackLength + promisedStreamIdLength;
         int flags = Flags.END_HEADERS;
 
-        RetainableByteBuffer.Mutable b = generateHeader(FrameType.PUSH_PROMISE, length, flags, streamId);
-        b.putInt(promisedStreamId);
-        accumulator.add(b);
-        accumulator.add(hpack);
+        RetainableByteBuffer.Mutable header = generateHeader(FrameType.PUSH_PROMISE, length, flags, streamId);
+        header.putInt(promisedStreamId);
+        accumulator.addRetained(header);
+        accumulator.addRetained(hpack);
 
         return Frame.HEADER_LENGTH + length;
     }
