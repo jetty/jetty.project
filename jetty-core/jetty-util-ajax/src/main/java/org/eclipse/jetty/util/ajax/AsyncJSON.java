@@ -16,7 +16,6 @@ package org.eclipse.jetty.util.ajax;
 import java.lang.reflect.RecordComponent;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +30,8 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON.Convertible;
 import org.eclipse.jetty.util.ajax.JSON.Convertor;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * <p>A non-blocking JSON parser that can parse partial JSON strings.</p>
@@ -138,6 +139,8 @@ public class AsyncJSON
          */
         public void setNestingMaxDepth(int nestingMaxDepth)
         {
+            if (nestingMaxDepth <= 0)
+                throw new IllegalArgumentException("Invalid nestingMaxDepth");
             this.nestingMaxDepth = nestingMaxDepth;
         }
 
@@ -345,11 +348,8 @@ public class AsyncJSON
                         {
                             while (buffer.hasRemaining())
                             {
-                                int position = buffer.position();
-                                byte peek = buffer.get(position);
-                                if (isWhitespace(peek))
-                                    buffer.position(position + 1);
-                                else
+                                byte peek = buffer.get();
+                                if (!isWhitespace(peek))
                                     throw newInvalidJSON(buffer, "invalid character after JSON data");
                             }
                             return true;
@@ -576,11 +576,9 @@ public class AsyncJSON
                         return true;
                     break;
                 default:
+                    buffer.get();
                     if (isWhitespace(peek))
-                    {
-                        buffer.get();
                         break;
-                    }
                     throw newInvalidJSON(buffer, "unrecognized JSON value");
             }
         }
@@ -1041,11 +1039,18 @@ public class AsyncJSON
             else
             {
                 if (isWhitespace(peek))
+                {
                     buffer.get();
+                }
                 else if (stack.peek().state == State.OBJECT_FIELD_VALUE)
+                {
                     return parseObjectFieldValue(buffer);
+                }
                 else
+                {
+                    buffer.get();
                     throw newInvalidJSON(buffer, "invalid object field");
+                }
             }
         }
         return false;
@@ -1072,6 +1077,7 @@ public class AsyncJSON
                     }
                     else
                     {
+                        buffer.get();
                         throw newInvalidJSON(buffer, "invalid object field");
                     }
                 }
@@ -1094,6 +1100,7 @@ public class AsyncJSON
                     }
                     else
                     {
+                        buffer.get();
                         throw newInvalidJSON(buffer, "invalid object field");
                     }
                 }
@@ -1240,31 +1247,78 @@ public class AsyncJSON
 
     protected RuntimeException newInvalidJSON(ByteBuffer buffer, String message)
     {
-        Utf8StringBuilder builder = new Utf8StringBuilder();
-        builder.append(System.lineSeparator());
-        int position = buffer.position();
-        if (factory.isDetailedParseException())
+        ByteBuffer json;
+        int errorPosition;
+        boolean elide;
+        if (factory.isDetailedParseException() && chunks != null)
         {
-            chunks.forEach(chunk -> builder.append(buffer));
+            // The last chunk is a copy of the buffer being parsed.
+            int length = 0;
+            for (ByteBuffer chunk : chunks)
+            {
+                length += chunk.remaining();
+            }
+            json = ByteBuffer.allocate(length);
+            for (ByteBuffer chunk : chunks)
+            {
+                json.put(chunk.slice());
+            }
+            json.flip();
+            errorPosition = length - buffer.remaining() - 1;
+            elide = false;
         }
         else
         {
-            buffer.position(0);
-            builder.append(buffer);
-            buffer.position(position);
+            json = buffer;
+            errorPosition = buffer.position() - 1;
+            elide = true;
         }
+
+        int limit = json.limit();
+        errorPosition = Math.max(0, errorPosition);
+        int from = Math.min(errorPosition, limit);
+        int to = Math.min(errorPosition + 1, limit);
+        StringBuilder builder = new StringBuilder(message);
         builder.append(System.lineSeparator());
-        String indent = "";
-        if (position > 1)
+
+        // Build a string such of this form:
+        // [[begin-bytes]...][before-error-bytes]<x>[after-error-bytes][[...[end-bytes]]
+        // where [] means optional, and <x> surrounds the error byte x,
+        // and the before/after error bytes are up to 32 bytes.
+        appendJSON(builder, json, 0, from, elide, true);
+        builder.append("<");
+        appendJSON(builder, json, from, to, false, false);
+        builder.append(">");
+        appendJSON(builder, json, to, limit, elide, false);
+
+        return new IllegalArgumentException(builder.toString());
+    }
+
+    private static void appendJSON(StringBuilder builder, ByteBuffer json, int from, int to, boolean elide, boolean beforeError)
+    {
+        int length = to - from;
+        // The bytes that exceed the 32 bytes near the error.
+        int rest = length - 32;
+        // The ellipsis must replace at least 3 bytes.
+        if (!elide || rest <= 3)
         {
-            char[] chars = new char[position - 1];
-            Arrays.fill(chars, ' ');
-            indent = new String(chars);
+            builder.append(BufferUtil.toString(json, from, length, UTF_8));
+            return;
         }
-        builder.append(indent);
-        builder.append("^ ");
-        builder.append(message);
-        return new IllegalArgumentException(builder.toCompleteString());
+        // The bytes far from the error, up to 32.
+        int far = Math.min(32, rest - 3);
+        if (beforeError)
+        {
+            builder.append(BufferUtil.toString(json, from, far, UTF_8));
+            builder.append("...");
+            builder.append(BufferUtil.toString(json, to - 32, 32, UTF_8));
+        }
+        else
+        {
+            builder.append(BufferUtil.toString(json, from, 32, UTF_8));
+            builder.append("...");
+            builder.append(BufferUtil.toString(json, to - far, far, UTF_8));
+        }
     }
 
     private static boolean isWhitespace(byte ws)
