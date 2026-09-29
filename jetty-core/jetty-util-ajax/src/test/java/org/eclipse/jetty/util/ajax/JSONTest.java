@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util.ajax;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -26,14 +27,19 @@ import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.ajax.JSON.Output;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JSONTest
@@ -475,6 +481,75 @@ public class JSONTest
         Map<String, Object> map5 = (Map<String, Object>)map4.get("g0");
         Object o = map5.get("other");
         assertEquals(Color.Green, o);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"[", "{\"a\":", "[{\"a\":"})
+    public void testDeeplyNestedJSONIsRejected(String open)
+    {
+        String deep = open.repeat(300_000);
+
+        assertThrows(IllegalStateException.class, () -> json.fromJSON(deep));
+        assertThrows(IllegalStateException.class, () -> json.fromJSON(new StringReader(deep)));
+
+        // The parser is still usable after the failure.
+        assertEquals(Map.of("a", 1L), json.fromJSON("{\"a\":1}"));
+    }
+
+    @Test
+    public void testDefaultNestingMaxDepth()
+    {
+        int max = json.getNestingMaxDepth();
+        String objects = "{\"a\":".repeat(max) + "1" + "}".repeat(max);
+        assertInstanceOf(Map.class, json.fromJSON(objects));
+        String arrays = "[".repeat(max) + "]".repeat(max);
+        assertInstanceOf(Object[].class, json.fromJSON(arrays));
+
+        assertThrows(IllegalStateException.class, () -> json.fromJSON("[" + objects + "]"));
+        assertThrows(IllegalStateException.class, () -> json.fromJSON("{\"a\":" + arrays + "}"));
+    }
+
+    @Test
+    public void testNestingMaxDepth()
+    {
+        assertEquals(256, json.getNestingMaxDepth());
+
+        json.setNestingMaxDepth(3);
+
+        Object result = json.fromJSON("[{\"a\":[1]}]");
+        Object[] array = assertInstanceOf(Object[].class, result);
+        Map<?, ?> map = assertInstanceOf(Map.class, array[0]);
+        assertArrayEquals(new Object[]{1L}, (Object[])map.get("a"));
+
+        // Sibling containers do not accumulate depth.
+        assertInstanceOf(Object[].class, json.fromJSON("[[[]],[[]],{\"a\":{\"b\":1},\"c\":[2]},{\"d\":[1]}]"));
+
+        assertThrows(IllegalStateException.class, () -> json.fromJSON("[{\"a\":[[1]]}]"));
+        assertThrows(IllegalStateException.class, () -> json.fromJSON("{\"a\":{\"b\":{\"c\":{}}}}"));
+        assertThrows(IllegalStateException.class, () -> json.fromJSON("[[[["));
+
+        // After the failures, the depth is back to zero.
+        assertInstanceOf(Object[].class, json.fromJSON("[[[]]]"));
+    }
+
+    @Test
+    public void testNestingMaxDepthWithContextFor()
+    {
+        JSON inner = new JSON();
+        inner.setNestingMaxDepth(2);
+        JSON outer = new JSON()
+        {
+            @Override
+            protected JSON contextFor(String field)
+            {
+                return inner;
+            }
+        };
+
+        // The depth is counted across JSON instances,
+        // so the inner instance sees a depth of 2 for {"a":{}}.
+        assertInstanceOf(Map.class, outer.fromJSON("{\"a\":{}}"));
+        assertThrows(IllegalStateException.class, () -> outer.fromJSON("{\"a\":{\"b\":{}}}"));
     }
 
     public static class Gizmo

@@ -83,9 +83,14 @@ public class JSON
 {
     static final Logger LOG = LoggerFactory.getLogger(JSON.class);
 
+    // The nesting depth is tracked per thread, since JSON instances are
+    // shared, and contextFor() may return a different JSON instance.
+    private static final ThreadLocal<int[]> NESTING_DEPTH = ThreadLocal.withInitial(() -> new int[1]);
+
     private final Map<String, Convertor> _convertors = new ConcurrentHashMap<>();
     private int _stringBufferSize = 1024;
     private Function<List<?>, Object> _arrayConverter = this::defaultArrayConverter;
+    private int _nestingMaxDepth = 256;
 
     /**
      * @return the initial stringBuffer size to use when creating JSON strings
@@ -103,6 +108,27 @@ public class JSON
     public void setStringBufferSize(int stringBufferSize)
     {
         _stringBufferSize = stringBufferSize;
+    }
+
+    /**
+     * @return the nesting maximum depth of JSON objects and arrays when parsing (default 256)
+     * @see #setNestingMaxDepth(int)
+     */
+    public int getNestingMaxDepth()
+    {
+        return _nestingMaxDepth;
+    }
+
+    /**
+     * <p>Sets the nesting maximum depth of JSON objects and arrays when parsing.</p>
+     *
+     * @param nestingMaxDepth the nesting maximum depth of JSON objects and arrays when parsing
+     */
+    public void setNestingMaxDepth(int nestingMaxDepth)
+    {
+        if (nestingMaxDepth <= 0)
+            throw new IllegalArgumentException("Invalid nestingMaxDepth");
+        _nestingMaxDepth = nestingMaxDepth;
     }
 
     private void quotedEscape(Appendable buffer, String input)
@@ -838,9 +864,8 @@ public class JSON
                 switch (c)
                 {
                     case '{':
-                        return parseObject(source);
                     case '[':
-                        return parseArray(source);
+                        return parseNested(source, c);
                     case '"':
                         return parseString(source);
                     case '-':
@@ -875,6 +900,23 @@ public class JSON
         }
 
         return null;
+    }
+
+    private Object parseNested(Source source, char c)
+    {
+        int[] depth = NESTING_DEPTH.get();
+        int nestingMaxDepth = getNestingMaxDepth();
+        if (depth[0] >= nestingMaxDepth)
+            throw new IllegalStateException("max nesting depth " + nestingMaxDepth + " exceeded in " + source);
+        ++depth[0];
+        try
+        {
+            return c == '{' ? parseObject(source) : parseArray(source);
+        }
+        finally
+        {
+            --depth[0];
+        }
     }
 
     protected Object handleUnknown(Source source, char c)
