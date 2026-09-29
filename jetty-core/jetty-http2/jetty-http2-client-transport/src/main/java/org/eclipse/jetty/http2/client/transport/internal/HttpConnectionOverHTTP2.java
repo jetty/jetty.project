@@ -340,6 +340,18 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         callback.succeeded();
     }
 
+    public void upwardClose()
+    {
+        try (AutoLock ignored = lock.lock())
+        {
+            if (closed)
+                return;
+            closed = true;
+        }
+        remove();
+        destroy();
+    }
+
     @Override
     public void close()
     {
