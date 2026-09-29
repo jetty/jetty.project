@@ -69,6 +69,85 @@ public class AsyncJSONTest
     }
 
     @ParameterizedTest
+    @MethodSource("invalidJSONMessages")
+    public void testInvalidJSONMessage(boolean detailed, List<String> chunks, String expectedMessage, String expectedJSON)
+    {
+        AsyncJSON.Factory factory = new AsyncJSON.Factory();
+        factory.setDetailedParseException(detailed);
+        factory.setNestingMaxDepth(4);
+        AsyncJSON parser = factory.newAsyncJSON();
+
+        IllegalArgumentException failure = assertThrows(IllegalArgumentException.class, () ->
+        {
+            for (String chunk : chunks)
+            {
+                parser.parse(chunk.getBytes(UTF_8));
+            }
+            parser.complete();
+        });
+        assertTrue(parser.isEmpty());
+
+        assertEquals(expectedMessage + System.lineSeparator() + expectedJSON, failure.getMessage());
+    }
+
+    public static List<Object[]> invalidJSONMessages()
+    {
+        // The error is at index 101.
+        String longJSON = "[" + "1,".repeat(50) + "x" + ",1".repeat(50) + "]";
+
+        List<Object[]> result = new ArrayList<>();
+
+        // Less than 32 bytes before and after the error.
+        result.add(new Object[]{false, List.of("[1,x]"), "unrecognized JSON value", "[1,<x>]"});
+        result.add(new Object[]{true, List.of("[1,x]"), "unrecognized JSON value", "[1,<x>]"});
+        result.add(new Object[]{false, List.of("x"), "unrecognized JSON value", "<x>"});
+        result.add(new Object[]{false, List.of("{}      x  "), "invalid character after JSON data", "{}      <x>  "});
+        result.add(new Object[]{false, List.of("{\"a\":1   x}"), "invalid object field", "{\"a\":1   <x>}"});
+        // More than 32 bytes before and after the error.
+        result.add(new Object[]{false, List.of(longJSON), "unrecognized JSON value",
+            longJSON.substring(0, 32) + "..." + longJSON.substring(69, 101) +
+            "<x>" +
+            longJSON.substring(102, 134) + "..." + longJSON.substring(171)});
+        // 37 bytes before the error: 32 near the error, 3 replaced by the ellipsis, 2 far from the error.
+        String before37 = "[" + "1,".repeat(18) + "x]";
+        result.add(new Object[]{false, List.of(before37), "unrecognized JSON value",
+            before37.substring(0, 2) + "..." + before37.substring(5, 37) + "<x>]"});
+        // 36 bytes before the error: 32 near the error, 3 replaced by the ellipsis, 1 far from the error.
+        String before36 = "[" + "1,".repeat(17) + "1x]";
+        result.add(new Object[]{false, List.of(before36), "unrecognized JSON value",
+            before36.substring(0, 1) + "..." + before36.substring(4, 36) + "<x>]"});
+        // 35 bytes before the error: the ellipsis would not save anything.
+        String before35 = "[" + "1,".repeat(17) + "x]";
+        result.add(new Object[]{false, List.of(before35), "unrecognized JSON value",
+            before35.substring(0, 35) + "<x>]"});
+        // 37 bytes after the error: 32 near the error, 3 replaced by the ellipsis, 2 far from the error.
+        String after37 = "[x" + ",1".repeat(18) + "]";
+        result.add(new Object[]{false, List.of(after37), "unrecognized JSON value",
+            "[<x>" + after37.substring(2, 34) + "..." + after37.substring(37)});
+        // 36 bytes after the error: 32 near the error, 3 replaced by the ellipsis, 1 far from the error.
+        String after36 = "[x" + ",1".repeat(17) + "]]";
+        result.add(new Object[]{false, List.of(after36), "unrecognized JSON value",
+            "[<x>" + after36.substring(2, 34) + "..." + after36.substring(37)});
+        // 35 bytes after the error: the ellipsis would not save anything.
+        String after35 = "[x" + ",1".repeat(17) + "]";
+        result.add(new Object[]{false, List.of(after35), "unrecognized JSON value",
+            "[<x>" + after35.substring(2)});
+        // Detailed does not elide.
+        result.add(new Object[]{true, List.of(longJSON), "unrecognized JSON value",
+            longJSON.substring(0, 101) + "<x>" + longJSON.substring(102)});
+        // Multiple chunks: detailed reports all chunks, non-detailed only the last.
+        result.add(new Object[]{true, List.of("[1,", "2,x]"), "unrecognized JSON value", "[1,2,<x>]"});
+        result.add(new Object[]{false, List.of("[1,", "2,x]"), "unrecognized JSON value", "2,<x>]"});
+        result.add(new Object[]{true, List.of("[[", "[[", "["), "max nesting depth 4 exceeded", "[[[[<[>"});
+        result.add(new Object[]{true, List.of("[1,", "2, ", "3,", "4,", "x]"), "unrecognized JSON value", "[1,2, 3,4,<x>]"});
+        // Incomplete JSON, the error is at the end.
+        result.add(new Object[]{true, List.of("[1,", "2,3456"), "incomplete JSON", "[1,2,345<6>"});
+        result.add(new Object[]{false, List.of("[1,", "2,3456"), "incomplete JSON", "<>"});
+
+        return result;
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"[", "{\"a\":", "[{\"a\":", "{\"a\":["})
     public void testDeeplyNestedJSONIsRejected(String open)
     {

@@ -126,6 +126,8 @@ public class JSON
      */
     public void setNestingMaxDepth(int nestingMaxDepth)
     {
+        if (nestingMaxDepth <= 0)
+            throw new IllegalArgumentException("Invalid nestingMaxDepth");
         _nestingMaxDepth = nestingMaxDepth;
     }
 
