@@ -102,15 +102,15 @@ public class URIUtilTest
             // Rule 1: Discard fragment
             Arguments.of("/a/b#frag", "/a/b"),
             Arguments.of("/a/b#/c/../d", "/a/b"), // fragment discarded before any dot processing
-            Arguments.of("/a?b#c", "/a"),
+            Arguments.of("/a?b#c", "/a?b"),
             Arguments.of("/a#b?c", "/a"), // '#' found first, takes the '?b' with it
             Arguments.of("/a/b#", "/a/b"),
 
             // Rule 2: Separation of path and query (query is not canonicalized)
-            Arguments.of("/a/b?x=1", "/a/b"),
-            Arguments.of("/a/b?x=/c/../d", "/a/b"),
-            Arguments.of("/a/b?", "/a/b"),
-            Arguments.of("/a/..?x=1", "/"), // path still canonicalized after query stripped
+            Arguments.of("/a/b?x=1", "/a/b?x=1"),
+            Arguments.of("/a/b?x=/c/../d", "/a/b?x=/c/../d"),
+            Arguments.of("/a/b?", "/a/b?"),
+            Arguments.of("/a/..?x=1", "/?x=1"), // path still canonicalized after query stripped
 
             // Rule 4: Remove path parameters
             Arguments.of("/a;x=1/b;y=2/c", "/a/b/c"),

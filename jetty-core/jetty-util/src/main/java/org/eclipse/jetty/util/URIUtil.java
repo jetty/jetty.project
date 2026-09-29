@@ -862,7 +862,14 @@ public final class URIUtil
             canonical = compactSlashes(canonical);
 
         // 7. Remove dot-segments.
-        return normal ? canonical : normalizePath(canonical);
+        if (!normal)
+            canonical = normalizePath(canonical);
+
+        // 2. Restore query (if present)
+        if (query != null)
+            canonical += query;
+
+        return canonical;
     }
 
     /**
