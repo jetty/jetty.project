@@ -13,28 +13,40 @@
 
 package org.eclipse.jetty.http2.tests;
 
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.SessionContainer;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -239,5 +251,56 @@ public class GracefulShutdownTest extends AbstractTest
         CompletableFuture<Void> completable = serverSession.shutdown();
         // Verify that it is completed.
         assertTrue(completable.isDone());
+    }
+
+    @Test
+    public void testGracefulServerStopUsingInputStreamResponseListener() throws Exception
+    {
+        CountDownLatch serverHandlingLatch = new CountDownLatch(1);
+        GracefulHandler gracefulHandler = new GracefulHandler();
+        gracefulHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Wait for the server to receive the client's go away frame before succeeding this request.
+                SessionContainer sessionContainer = server.getContainedBeans(SessionContainer.class).stream().findFirst().orElseThrow();
+                Session session = sessionContainer.getSessions().stream().findFirst().orElseThrow();
+                ((HTTP2Session)session).addEventListener(new HTTP2Session.FrameListener()
+                {
+                    @Override
+                    public void onIncomingFrame(Session session, Frame frame)
+                    {
+                        if (frame instanceof GoAwayFrame)
+                            callback.succeeded();
+                    }
+                });
+
+                // Let the client thread start the server's graceful stopping sequence,
+                // only once the listener is registered so the client's go away frame is not missed.
+                serverHandlingLatch.countDown();
+
+                byte[] bytes = new byte[1024];
+                Arrays.fill(bytes, (byte)'X');
+                response.write(true, ByteBuffer.wrap(bytes), Callback.NOOP);
+                return true;
+            }
+        });
+        start(gracefulHandler);
+        server.setStopTimeout(5_000);
+
+        var request = httpClient.newRequest(server.getURI());
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        request.send(listener);
+
+        // Wait for the server to start handling before stopping it.
+        assertTrue(serverHandlingLatch.await(5, TimeUnit.SECONDS));
+        new Thread(() -> LifeCycle.stop(server)).start();
+
+        var response = listener.get(5, TimeUnit.SECONDS);
+        String body = new String(listener.getInputStream().readAllBytes());
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(body, is("X".repeat(1024)));
     }
 }
