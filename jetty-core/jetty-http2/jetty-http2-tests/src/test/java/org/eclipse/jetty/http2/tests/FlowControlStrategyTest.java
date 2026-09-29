@@ -809,15 +809,15 @@ public class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         RetainableByteBuffer extraData = RetainableByteBuffer.allocate(1024, false);
         http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), (int)extraData.remaining());
         try (Blocker.Callback callback = Blocker.callback())
         {
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            http2Session.getEndPoint().write(rb, callback);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                http2Session.getEndPoint().write(buffer, callback);
+            }
             callback.block();
         }
 
@@ -914,15 +914,15 @@ public class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         RetainableByteBuffer extraData = RetainableByteBuffer.allocate(1024, false);
         http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), (int)extraData.remaining());
         try (Blocker.Callback callback = Blocker.callback())
         {
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            http2Session.getEndPoint().write(rb, callback);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                http2Session.getEndPoint().write(buffer, callback);
+            }
             callback.block();
         }
 

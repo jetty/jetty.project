@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.util.List;
-
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
@@ -29,13 +27,13 @@ public class GoAwayGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(List<RetainableByteBuffer> accumulator, Frame frame)
+    public int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
         return generateGoAway(accumulator, goAwayFrame.getLastStreamId(), goAwayFrame.getError(), goAwayFrame.getPayload());
     }
 
-    public int generateGoAway(List<RetainableByteBuffer> accumulator, int lastStreamId, int error, byte[] payload)
+    public int generateGoAway(RetainableByteBuffer.Accumulator accumulator, int lastStreamId, int error, byte[] payload)
     {
         if (lastStreamId < 0)
             lastStreamId = 0;
@@ -46,17 +44,14 @@ public class GoAwayGenerator extends FrameGenerator
         // Make sure we don't exceed the default frame max length.
         int maxPayloadLength = Frame.DEFAULT_MAX_SIZE - fixedLength;
         int payloadLength = Math.min(payload == null ? 0 : payload.length, maxPayloadLength);
-
         int length = fixedLength + payloadLength;
+
         RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.GO_AWAY, length, Flags.NONE, 0);
         buffer.putInt(lastStreamId);
         buffer.putInt(error);
-
         if (payload != null)
             buffer.put(payload, 0, payloadLength);
-
-        accumulator.add(buffer);
-
+        accumulator.addRetained(buffer);
         return Frame.HEADER_LENGTH + length;
     }
 }

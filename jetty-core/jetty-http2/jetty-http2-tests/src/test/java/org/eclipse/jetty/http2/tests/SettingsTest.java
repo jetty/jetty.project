@@ -14,9 +14,7 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -332,15 +330,15 @@ public class SettingsTest extends AbstractTest
                 try
                 {
                     HTTP2Session session = (HTTP2Session)stream.getSession();
-                    List<RetainableByteBuffer> accumulator = new ArrayList<>();
+                    RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
                     MetaData.Request push = newRequest("GET", "/push", HttpFields.EMPTY);
                     PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 2, push);
                     session.getGenerator().control(accumulator, pushFrame);
 
-                    RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-                    accumulator.forEach(RetainableByteBuffer::release);
-                    session.getEndPoint().write(rb, Callback.NOOP);
-                    rb.release();
+                    try (RetainableByteBuffer buffer = accumulator.drain())
+                    {
+                        session.getEndPoint().write(buffer, Callback.NOOP);
+                    }
                     return null;
                 }
                 catch (HpackException x)

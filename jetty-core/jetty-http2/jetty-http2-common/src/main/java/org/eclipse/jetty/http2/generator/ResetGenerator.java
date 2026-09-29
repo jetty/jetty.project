@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.util.List;
-
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
@@ -29,21 +27,20 @@ public class ResetGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(List<RetainableByteBuffer> accumulator, Frame frame)
+    public int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame)
     {
         ResetFrame resetFrame = (ResetFrame)frame;
         return generateReset(accumulator, resetFrame.getStreamId(), resetFrame.getError());
     }
 
-    public int generateReset(List<RetainableByteBuffer> accumulator, int streamId, int error)
+    public int generateReset(RetainableByteBuffer.Accumulator accumulator, int streamId, int error)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
         RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.RST_STREAM, ResetFrame.RESET_LENGTH, Flags.NONE, streamId);
         buffer.putInt(error);
-        accumulator.add(buffer);
-
+        accumulator.addRetained(buffer);
         return Frame.HEADER_LENGTH + ResetFrame.RESET_LENGTH;
     }
 }

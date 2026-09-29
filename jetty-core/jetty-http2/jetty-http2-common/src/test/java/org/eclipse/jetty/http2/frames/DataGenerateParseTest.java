@@ -106,7 +106,7 @@ public class DataGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             try (RetainableByteBuffer slice = data.slice())
             {
                 int generated = 0;
@@ -120,10 +120,9 @@ public class DataGenerateParseTest
             }
 
             frames.clear();
-            try (RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator))
+            try (RetainableByteBuffer buffer = accumulator.drain())
             {
-                accumulator.forEach(RetainableByteBuffer::release);
-                UnknownParseTest.parse(parser, rb);
+                UnknownParseTest.parse(parser, buffer);
             }
         }
 
@@ -150,7 +149,7 @@ public class DataGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             RetainableByteBuffer data = RetainableByteBuffer.wrap(largeContent);
             try (RetainableByteBuffer slice = data.slice())
             {
@@ -164,10 +163,9 @@ public class DataGenerateParseTest
                 }
             }
 
-            try (RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator))
+            try (RetainableByteBuffer buffer = accumulator.drain())
             {
-                accumulator.forEach(RetainableByteBuffer::release);
-                UnknownParseTest.parse(parser, rb);
+                UnknownParseTest.parse(parser, buffer);
             }
 
             assertEquals(largeContent.length, frames.stream().mapToLong(DataFrame::remaining).sum());

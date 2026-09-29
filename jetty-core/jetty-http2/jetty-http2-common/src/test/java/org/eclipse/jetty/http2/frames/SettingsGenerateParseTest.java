@@ -42,7 +42,7 @@ public class SettingsGenerateParseTest
     {
         List<SettingsFrame> frames = testGenerateParse(Collections.emptyMap(), true);
         assertEquals(1, frames.size());
-        SettingsFrame frame = frames.get(0);
+        SettingsFrame frame = frames.getFirst();
         assertEquals(0, frame.getSettings().size());
         assertTrue(frame.isReply());
     }
@@ -59,7 +59,7 @@ public class SettingsGenerateParseTest
         settings1.put(key2, value2);
         List<SettingsFrame> frames = testGenerateParse(settings1, false);
         assertEquals(1, frames.size());
-        SettingsFrame frame = frames.get(0);
+        SettingsFrame frame = frames.getFirst();
         Map<Integer, Integer> settings2 = frame.getSettings();
         assertEquals(2, settings2.size());
         assertEquals(value1, settings2.get(key1));
@@ -84,14 +84,13 @@ public class SettingsGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generateSettings(accumulator, settings, reply);
-
             frames.clear();
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            UnknownParseTest.parse(parser, rb);
-            rb.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
         }
 
         return frames;
@@ -115,25 +114,27 @@ public class SettingsGenerateParseTest
 
         Map<Integer, Integer> settings1 = new HashMap<>();
         settings1.put(13, 17);
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.generateSettings(accumulator, settings1, false);
         // Modify the length of the frame to make it invalid
-        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-        accumulator.forEach(RetainableByteBuffer::release);
-        rb.readPosition(1);
-        short aShort = rb.getShort();
-        rb.readPosition(0);
-
-        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate((int)rb.remaining(), false);
-        buffer.put(rb);
-        buffer.putShort(1, (short)(aShort - 1));
-
-        while (buffer.hasRemaining())
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
-            parser.parse(RetainableByteBuffer.wrap(new byte[]{buffer.get()}));
-        }
+            buffer.readPosition(1);
+            short aShort = buffer.getShort();
+            buffer.readPosition(0);
 
-        assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, errorRef.get());
+            try (RetainableByteBuffer.Mutable copy = RetainableByteBuffer.Mutable.allocate((int)buffer.remaining(), false))
+            {
+                copy.put(copy);
+                copy.putShort(1, (short)(aShort - 1));
+                while (copy.hasRemaining())
+                {
+                    parser.parse(RetainableByteBuffer.wrap(new byte[]{copy.get()}));
+                }
+            }
+
+            assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, errorRef.get());
+        }
     }
 
     @Test
@@ -160,18 +161,16 @@ public class SettingsGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            List<RetainableByteBuffer> accumulator = new ArrayList<>();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generateSettings(accumulator, settings1, false);
-
             frames.clear();
-
-            RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-            accumulator.forEach(RetainableByteBuffer::release);
-            while (rb.hasRemaining())
-                parser.parse(RetainableByteBuffer.wrap(new byte[]{rb.get()}));
-
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                while (buffer.hasRemaining())
+                    parser.parse(RetainableByteBuffer.wrap(new byte[]{buffer.get()}));
+            }
             assertEquals(1, frames.size());
-            SettingsFrame frame = frames.get(0);
+            SettingsFrame frame = frames.getFirst();
             Map<Integer, Integer> settings2 = frame.getSettings();
             assertEquals(1, settings2.size());
             assertEquals(value, settings2.get(key));
@@ -203,12 +202,12 @@ public class SettingsGenerateParseTest
             settings.put(i + 10, i);
         }
 
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.generateSettings(accumulator, settings, false);
-        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-        accumulator.forEach(RetainableByteBuffer::release);
-        UnknownParseTest.parse(parser, rb);
-        rb.release();
+        try (RetainableByteBuffer buffer = accumulator.drain())
+        {
+            UnknownParseTest.parse(parser, buffer);
+        }
 
         assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
     }
@@ -277,16 +276,16 @@ public class SettingsGenerateParseTest
         Map<Integer, Integer> settings = new HashMap<>();
         settings.put(13, 17);
 
-        List<RetainableByteBuffer> accumulator = new ArrayList<>();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         for (int i = 0; i < maxSettingsKeys + 1; ++i)
         {
             generator.generateSettings(accumulator, settings, false);
         }
 
-        RetainableByteBuffer rb = RetainableByteBuffer.merge(accumulator);
-        accumulator.forEach(RetainableByteBuffer::release);
-        UnknownParseTest.parse(parser, rb);
-        rb.release();
+        try (RetainableByteBuffer buffer = accumulator.drain())
+        {
+            UnknownParseTest.parse(parser, buffer);
+        }
 
         assertEquals(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, errorRef.get());
     }

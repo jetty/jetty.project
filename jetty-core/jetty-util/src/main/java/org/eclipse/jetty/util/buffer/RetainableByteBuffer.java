@@ -863,6 +863,18 @@ public interface RetainableByteBuffer extends Retainable
         public void add(RetainableByteBuffer buffer)
         {
             buffer.retain();
+            addRetained(buffer);
+        }
+
+        /// Adds the given buffer to this accumulator.
+        ///
+        /// Differently from [#add(RetainableByteBuffer)], this method does not
+        /// retain the given buffer, which therefore must be already retained
+        /// by the calling code.
+        ///
+        /// @param buffer the buffer to add
+        public void addRetained(RetainableByteBuffer buffer)
+        {
             buffers.add(buffer);
         }
 
