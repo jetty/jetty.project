@@ -246,6 +246,14 @@ public class UrlResourceFactoryTest
         {
             baseResource.resolve("../META-INF/MANIFEST.MF");
         });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            baseResource.resolve("%2e%2e/META-INF/MANIFEST.MF");
+        });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            baseResource.resolve("//../META-INF/MANIFEST.MF");
+        });
     }
 
     /**

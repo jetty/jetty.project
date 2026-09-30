@@ -195,7 +195,9 @@ public class URLResourceFactory implements ResourceFactory
         @Override
         public Resource resolve(String subUriPath)
         {
-            if (URIUtil.isNotNormalWithinSelf(subUriPath))
+            // URIUtil.addPath() decodes percent-encoded characters such as "%2e"
+            // and compacts empty segments, so check the path in that same form.
+            if (URIUtil.isNotNormalWithinSelf(URIUtil.encodePathSafeEncoding(URIUtil.compactPath(subUriPath))))
                 throw new IllegalArgumentException(subUriPath);
 
             if ("/".equals(subUriPath))

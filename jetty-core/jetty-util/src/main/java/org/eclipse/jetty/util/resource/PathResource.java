@@ -343,6 +343,13 @@ public class PathResource extends Resource
                 yield path.resolve(resolvedUri.getPath());
             }
         };
+
+        // The resolved URI, and Path.of(URI), decode percent-encoded characters
+        // such as "%2e" or "%2F" that the check on the raw subUriPath above does
+        // not see, so verify that the resolved path is still within this resource.
+        if (!newPath.toAbsolutePath().normalize().startsWith(path.toAbsolutePath().normalize()))
+            throw new IllegalArgumentException(subUriPath);
+
         return newResource(newPath, resolvedUri);
     }
 

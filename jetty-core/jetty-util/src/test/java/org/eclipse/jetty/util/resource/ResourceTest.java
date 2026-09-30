@@ -451,6 +451,16 @@ public class ResourceTest
         assertThrows(IllegalArgumentException.class, () -> resource.resolve(".."));
         assertThrows(IllegalArgumentException.class, () -> resource.resolve("./.."));
         assertThrows(IllegalArgumentException.class, () -> resource.resolve("./../bar"));
+        // Percent-encoded and compacted forms of the same navigation
+        assertThrows(IllegalArgumentException.class, () -> resource.resolve("/%2e%2e/bar"));
+        assertThrows(IllegalArgumentException.class, () -> resource.resolve("/%2E%2E/bar"));
+        assertThrows(IllegalArgumentException.class, () -> resource.resolve("/.%2e/bar"));
+        assertThrows(IllegalArgumentException.class, () -> resource.resolve("/%u002e%u002e/bar"));
+        assertThrows(IllegalArgumentException.class, () -> resource.resolve("/..%2Fbar"));
+        assertThrows(IllegalArgumentException.class, () -> resource.resolve("/foo%2F..%2F..%2Fbar"));
+        assertThrows(IllegalArgumentException.class, () -> resource.resolve("//../bar"));
+        // Navigation that stays within the base is still allowed
+        assertNotNull(resource.resolve("/foo/%2e%2e/bar"));
     }
 
     @Test
