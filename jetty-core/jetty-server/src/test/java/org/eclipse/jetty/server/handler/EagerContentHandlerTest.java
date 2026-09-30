@@ -235,6 +235,57 @@ public class EagerContentHandlerTest
     }
 
     @Test
+    public void testEagerRetainedContentCallbackFailed() throws Exception
+    {
+        EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.RetainedContentLoaderFactory());
+        eagerContentHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.failed(new Exception("simulated response failure"));
+                return true;
+            }
+        });
+
+        // With a single permit and no suspended requests, a request that never
+        // completes keeps the permit and every later request is rejected with a 503.
+        QoSHandler qosHandler = new QoSHandler(eagerContentHandler);
+        qosHandler.setMaxRequestCount(1);
+        qosHandler.setMaxSuspendedRequestCount(0);
+        _server.setHandler(qosHandler);
+        _server.start();
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, postStatus());
+
+        // The permit is returned when the request completes, which can be just after the response is sent.
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(this::postStatus, is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+    }
+
+    private int postStatus() throws Exception
+    {
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            socket.setSoTimeout(10_000);
+            String request = """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Length: 10\r
+                \r
+                1234567890\r
+                """;
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            return response.getStatus();
+        }
+    }
+
+    @Test
     public void testEagerContentInContext() throws Exception
     {
         ContextHandler context = new ContextHandler();
