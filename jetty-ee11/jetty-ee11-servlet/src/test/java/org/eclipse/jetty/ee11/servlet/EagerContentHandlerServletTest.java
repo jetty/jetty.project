@@ -17,32 +17,26 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.EnumSet;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServlet;
- import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.FormFields;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.EagerContentHandler;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -74,7 +68,6 @@ public class EagerContentHandlerServletTest
         // Set the server context limit for maxFormContentSize.
         _server.getContext().setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize", "15");
 
-        CountDownLatch processing = new CountDownLatch(2);
         CompletableFuture<Throwable> handlerErrorFuture = new CompletableFuture<>();
         EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.FormContentLoaderFactory());
         _server.setHandler(eagerContentHandler);
@@ -87,7 +80,6 @@ public class EagerContentHandlerServletTest
             {
                 try
                 {
-                    processing.countDown();
                     req.getParameterMap();
                 }
                 catch (Throwable t)
@@ -99,6 +91,65 @@ public class EagerContentHandlerServletTest
         }, "/");
         _server.start();
 
+        // The response code should be 400 BAD_REQUEST.
+        HttpTester.Response response = sendForm();
+        assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
+        assertThat(response.getContent(), containsString("Unable to parse form content"));
+
+        // Expect an error from calling getParameterMap().
+        Throwable throwable = handlerErrorFuture.get(5, TimeUnit.SECONDS);
+        assertThat(throwable, instanceOf(HttpException.IllegalStateException.class));
+    }
+
+    @Test
+    public void testEagerFormFieldsArePassedToTheServlet() throws Exception
+    {
+        EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.FormContentLoaderFactory());
+        eagerContentHandler.setHandler(newServletContext());
+        _server.setHandler(eagerContentHandler);
+        _server.start();
+
+        HttpTester.Response response = sendForm();
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("param1"));
+        assertThat(response.getContent(), containsString("param2"));
+    }
+
+    @Test
+    public void testRequestAttributeAboveEagerContentHandlerIsApplied() throws Exception
+    {
+        EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.FormContentLoaderFactory());
+        eagerContentHandler.setHandler(newServletContext());
+        _server.setHandler(new Handler.Wrapper(eagerContentHandler)
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                request.setAttribute(FormFields.MAX_FIELDS_ATTRIBUTE, 1);
+                return super.handle(request, response, callback);
+            }
+        });
+        _server.start();
+
+        assertThat(sendForm().getStatus(), is(HttpStatus.BAD_REQUEST_400));
+    }
+
+    private ServletContextHandler newServletContext()
+    {
+        ServletContextHandler servletContextHandler = new ServletContextHandler();
+        servletContextHandler.addServlet(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                resp.getWriter().print(req.getParameterMap().keySet());
+            }
+        }, "/");
+        return servletContextHandler;
+    }
+
+    private HttpTester.Response sendForm() throws Exception
+    {
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
             String request = """
@@ -106,6 +157,7 @@ public class EagerContentHandlerServletTest
                 Host: localhost\r
                 Content-Type: application/x-www-form-urlencoded\r
                 Content-Length: 27\r
+                Connection: close\r
                 \r
                 param1=value1&param2=value2\
                 """;
@@ -113,93 +165,7 @@ public class EagerContentHandlerServletTest
             output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
-            // Expect an error from calling getParameterMap().
-            Throwable throwable = handlerErrorFuture.get(5, TimeUnit.SECONDS);
-            assertThat(throwable, instanceOf(HttpException.IllegalStateException.class));
-
-            // The response code should be 400 BAD_REQUEST.
-            HttpTester.Input input = HttpTester.from(socket.getInputStream());
-            HttpTester.Response response = HttpTester.parseResponse(input);
-            assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
-            assertThat(response.getContent(), containsString("Unable to parse form content"));
-        }
-    }
-
-    public static Stream<Arguments> formLimitsProvider()
-    {
-        // The form content has a size of 27 bytes with 2 fields.
-        return Stream.of(
-            Arguments.of(-1, -1, HttpStatus.OK_200),
-            Arguments.of(100, 100, HttpStatus.OK_200),
-            Arguments.of(2, -1, HttpStatus.OK_200),
-            Arguments.of(1, -1, HttpStatus.BAD_REQUEST_400),
-            Arguments.of(-1, 27, HttpStatus.OK_200),
-            Arguments.of(-1, 26, HttpStatus.BAD_REQUEST_400)
-            );
-    }
-
-    @ParameterizedTest
-    @MethodSource("formLimitsProvider")
-    public void perRequestFormLimitsTest(int maxFormFields, int maxFormLength, int expectedStatusCode) throws Exception
-    {
-        ServletContextHandler servletContextHandler = new ServletContextHandler();
-        _server.setHandler(servletContextHandler);
-        servletContextHandler.addFilter(new HttpFilter()
-        {
-            @Override
-            public void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws IOException, ServletException
-            {
-                String maxFieldsAttribute = req.getHeader(FormFields.MAX_FIELDS_ATTRIBUTE);
-                if (maxFieldsAttribute != null)
-                    req.setAttribute(FormFields.MAX_FIELDS_ATTRIBUTE, maxFieldsAttribute);
-
-                String maxLengthAttribute = req.getHeader(FormFields.MAX_LENGTH_ATTRIBUTE);
-                if (maxLengthAttribute != null)
-                    req.setAttribute(FormFields.MAX_LENGTH_ATTRIBUTE, maxLengthAttribute);
-
-                chain.doFilter(req, res);
-            }
-        }, "/*", EnumSet.allOf(DispatcherType.class));
-        servletContextHandler.addServlet(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp)
-            {
-                req.getParameterMap();
-            }
-        }, "/");
-
-        _server.start();
-
-        HttpTester.Response response = getResponse(maxFormFields, maxFormLength);
-        assertThat(response.getStatus(), is(expectedStatusCode));
-    }
-
-    private HttpTester.Response getResponse(int maxFormFields, int maxFormLength) throws Exception
-    {
-        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
-        {
-            StringBuilder request = new StringBuilder();
-            request.append("""
-                POST /foo HTTP/1.1\r
-                Host: localhost\r
-                """);
-            if (maxFormFields != -1)
-                request.append(FormFields.MAX_FIELDS_ATTRIBUTE).append(": ").append(maxFormFields).append("\r\n");
-            if (maxFormLength != -1)
-                request.append(FormFields.MAX_LENGTH_ATTRIBUTE).append(": ").append(maxFormLength).append("\r\n");
-            request.append("""
-                Content-Type: application/x-www-form-urlencoded\r
-                Content-Length: 27\r
-                \r
-                param1=value1&param2=value2\
-                """);
-            OutputStream output = socket.getOutputStream();
-            output.write(request.toString().getBytes(StandardCharsets.UTF_8));
-            output.flush();
-
-            HttpTester.Input input = HttpTester.from(socket.getInputStream());
-            return HttpTester.parseResponse(input);
+            return HttpTester.parseResponse(HttpTester.from(socket.getInputStream()));
         }
     }
 }

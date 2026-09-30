@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletionException;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -381,7 +382,7 @@ public class Request implements HttpServletRequest
                 {
                     extractContentParameters();
                 }
-                catch (IllegalStateException | IllegalArgumentException e)
+                catch (IllegalStateException | IllegalArgumentException | CompletionException e)
                 {
                     LOG.warn(e.toString());
                     throw new BadMessageException("Unable to parse form content", e);
@@ -564,17 +565,26 @@ public class Request implements HttpServletRequest
 
     public void extractFormParameters(Fields params)
     {
+        // The form may already have been parsed, by jetty-core FormFields.
+        if (_coreRequest.getAttribute(FormFields.class.getName()) != null)
+        {
+            params.addAll(FormFields.getFields(_coreRequest));
+            return;
+        }
+
         try
         {
-            int maxFormContentSize = ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE;
-            int maxFormKeys = ContextHandler.DEFAULT_MAX_FORM_KEYS;
+            ContextHandler contextHandler = _context == null ? null : _context.getContextHandler();
 
-            if (_context != null)
-            {
-                ContextHandler contextHandler = _context.getContextHandler();
-                maxFormContentSize = contextHandler.getMaxFormContentSize();
-                maxFormKeys = contextHandler.getMaxFormKeys();
-            }
+            // Try per-request and per-context max form fields.
+            int maxFormKeys = parse(getAttribute(FormFields.MAX_FIELDS_ATTRIBUTE));
+            if (maxFormKeys == -1)
+                maxFormKeys = contextHandler == null ? ContextHandler.DEFAULT_MAX_FORM_KEYS : contextHandler.getMaxFormKeys();
+
+            // Try per-request and per-context max form length.
+            int maxFormContentSize = parse(getAttribute(FormFields.MAX_LENGTH_ATTRIBUTE));
+            if (maxFormContentSize == -1)
+                maxFormContentSize = contextHandler == null ? ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE : contextHandler.getMaxFormContentSize();
 
             int contentLength = getContentLength();
             if (maxFormContentSize >= 0 && contentLength > maxFormContentSize)
@@ -592,6 +602,20 @@ public class Request implements HttpServletRequest
             if (LOG.isDebugEnabled())
                 LOG.debug(msg, e);
             throw new UncheckedIOException(msg, e);
+        }
+    }
+
+    private static int parse(Object value)
+    {
+        if (value == null)
+            return -1;
+        try
+        {
+            return Integer.parseInt(value.toString());
+        }
+        catch (NumberFormatException x)
+        {
+            return -1;
         }
     }
 

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.EagerContentHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,8 +73,8 @@ public class EagerContentHandlerServletTest
         EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.FormContentLoaderFactory());
         _server.setHandler(eagerContentHandler);
         ServletContextHandler servletContextHandler = new ServletContextHandler();
-        eagerContentHandler.setHandler(servletContextHandler);
-        servletContextHandler.addServlet(new HttpServlet()
+        eagerContentHandler.setHandler(servletContextHandler.getCoreContextHandler());
+        servletContextHandler.addServlet(new ServletHolder(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest req, HttpServletResponse resp)
@@ -88,7 +89,7 @@ public class EagerContentHandlerServletTest
                     throw t;
                 }
             }
-        }, "/");
+        }), "/");
         _server.start();
 
         // The response code should be 400 BAD_REQUEST.
@@ -105,7 +106,7 @@ public class EagerContentHandlerServletTest
     public void testEagerFormFieldsArePassedToTheServlet() throws Exception
     {
         EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.FormContentLoaderFactory());
-        eagerContentHandler.setHandler(newServletContext());
+        eagerContentHandler.setHandler(newServletContext().getCoreContextHandler());
         _server.setHandler(eagerContentHandler);
         _server.start();
 
@@ -119,7 +120,7 @@ public class EagerContentHandlerServletTest
     public void testRequestAttributeAboveEagerContentHandlerIsApplied() throws Exception
     {
         EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.FormContentLoaderFactory());
-        eagerContentHandler.setHandler(newServletContext());
+        eagerContentHandler.setHandler(newServletContext().getCoreContextHandler());
         _server.setHandler(new Handler.Wrapper(eagerContentHandler)
         {
             @Override
@@ -134,17 +135,43 @@ public class EagerContentHandlerServletTest
         assertThat(sendForm().getStatus(), is(HttpStatus.BAD_REQUEST_400));
     }
 
+    @Test
+    public void testExtractFormParametersUsesEagerFormFields() throws Exception
+    {
+        EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.FormContentLoaderFactory());
+        ServletContextHandler servletContextHandler = new ServletContextHandler();
+        eagerContentHandler.setHandler(servletContextHandler.getCoreContextHandler());
+        servletContextHandler.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                // Called directly by the form and OpenID authenticators, bypassing getParameterMap().
+                Fields fields = new Fields(true);
+                org.eclipse.jetty.ee9.nested.Request.getBaseRequest(req).extractFormParameters(fields);
+                resp.getWriter().print(fields.getNames());
+            }
+        }), "/");
+        _server.setHandler(eagerContentHandler);
+        _server.start();
+
+        HttpTester.Response response = sendForm();
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("param1"));
+        assertThat(response.getContent(), containsString("param2"));
+    }
+
     private ServletContextHandler newServletContext()
     {
         ServletContextHandler servletContextHandler = new ServletContextHandler();
-        servletContextHandler.addServlet(new HttpServlet()
+        servletContextHandler.addServlet(new ServletHolder(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 resp.getWriter().print(req.getParameterMap().keySet());
             }
-        }, "/");
+        }), "/");
         return servletContextHandler;
     }
 
