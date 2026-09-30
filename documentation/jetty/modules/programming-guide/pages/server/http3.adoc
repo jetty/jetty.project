@@ -68,6 +68,14 @@ You must choose the binding you want to use (depending on the Java version you a
 </dependency>
 ----
 
+[WARNING]
+====
+HTTP/3 support is considered experimental, meaning that:
+
+* It is not suited for production use, for reasons such as bad performance, instability, incompleteness, etc.
+* The APIs can change in incompatible ways between micro releases, for example classes or methods may be removed or method signature may be changed incompatibly.
+====
+
 [NOTE]
 ====
 Since Java 22, the JVM emits a warning message when Java code tries to access code in native libraries.

@@ -20,6 +20,7 @@ import java.util.List;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.HTTP3Exception;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
@@ -59,6 +60,9 @@ public class HeadersBodyParser extends BodyParser
                 case INIT:
                 {
                     length = getBodyLength();
+                    int max = decoder.getMaxHeadersSize();
+                    if (max > 0 && length > max)
+                        throw new HTTP3Exception.SessionException(0x200, "headers_too_large");
                     state = State.HEADERS;
                     break;
                 }

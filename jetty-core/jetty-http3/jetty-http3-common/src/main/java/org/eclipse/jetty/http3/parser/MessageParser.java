@@ -13,14 +13,15 @@
 
 package org.eclipse.jetty.http3.parser;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http3.Grease;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.HTTP3Exception;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
+import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.slf4j.Logger;
@@ -37,6 +38,7 @@ public class MessageParser
 
     private final HeaderParser headerParser = new HeaderParser();
     private final BodyParser[] bodyParsers = new BodyParser[FrameType.maxType() + 1];
+    private final RateControl rateControl;
     private final ParserListener listener;
     private final QpackDecoder decoder;
     private final long streamId;
@@ -45,8 +47,9 @@ public class MessageParser
     private long beginNanoTime;
     private boolean beginNanoTimeStored;
 
-    public MessageParser(ParserListener listener, QpackDecoder decoder, long streamId)
+    public MessageParser(RateControl rateControl, ParserListener listener, QpackDecoder decoder, long streamId)
     {
+        this.rateControl = rateControl;
         this.listener = listener;
         this.decoder = decoder;
         decoder.setBeginNanoTimeSupplier(this::getBeginNanoTime);
@@ -127,13 +130,14 @@ public class MessageParser
                                 // SPEC: control frames on a message stream are invalid.
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("invalid control frame type {} on message stream", Long.toHexString(frameType));
-                                sessionFailure(buffer, HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_type", new IOException("invalid control frame in message stream"));
-                                return Result.NO_FRAME;
+                                throw new HTTP3Exception.SessionException(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR, "invalid_frame_type");
                             }
 
                             // SPEC: grease and unknown frame types are ignored.
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ignoring {} frame type {}", Grease.isGreaseValue(frameType) ? "grease" : "unknown", Long.toHexString(frameType));
+
+                            checkRateControl(frameType);
 
                             BodyParser.Result result = unknownBodyParser.parse(buffer, last);
                             if (result == BodyParser.Result.NO_FRAME)
@@ -147,6 +151,7 @@ public class MessageParser
                         {
                             if (headerParser.getFrameLength() == 0)
                             {
+                                checkRateControl(frameType);
                                 bodyParser.emptyBody(buffer, last);
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("parsed {} empty frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
@@ -161,7 +166,10 @@ public class MessageParser
 
                                 // Not enough bytes, there is no frame.
                                 if (result == BodyParser.Result.NO_FRAME)
+                                {
+                                    checkRateControl(frameType);
                                     return Result.NO_FRAME;
+                                }
 
                                 // Do not reset() if it is a fragment frame.
                                 if (result == BodyParser.Result.FRAGMENT_FRAME)
@@ -185,22 +193,21 @@ public class MessageParser
         }
         catch (Throwable x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("parse failed", x);
-            sessionFailure(buffer, HTTP3ErrorCode.INTERNAL_ERROR.code(), "parser_error", x);
-            return Result.NO_FRAME;
+            BufferUtil.clear(buffer);
+            throw x;
         }
     }
 
-    private void sessionFailure(ByteBuffer buffer, long error, String reason, Throwable failure)
+    private void checkRateControl(Object event)
     {
-        unknownBodyParser.sessionFailure(buffer, error, reason, failure);
+        if (!rateControl.onEvent(event))
+            throw new HTTP3Exception.SessionException(HTTP3ErrorCode.EXCESSIVE_LOAD_ERROR, "invalid_frame_rate");
     }
 
     public enum Result
     {
         /**
-         * Indicates that no frame was parsed, either for lack of bytes, or because of errors.
+         * Indicates that no frame was parsed as there were not enough bytes.
          */
         NO_FRAME,
         /**
