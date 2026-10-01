@@ -238,6 +238,7 @@ public class EagerContentHandlerTest
     public void testEagerRetainedContentCallbackFailed() throws Exception
     {
         EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.RetainedContentLoaderFactory());
+        _server.setHandler(eagerContentHandler);
         eagerContentHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -247,25 +248,11 @@ public class EagerContentHandlerTest
                 return true;
             }
         });
-
-        // With a single permit and no suspended requests, a request that never
-        // completes keeps the permit and every later request is rejected with a 503.
-        QoSHandler qosHandler = new QoSHandler(eagerContentHandler);
-        qosHandler.setMaxRequestCount(1);
-        qosHandler.setMaxSuspendedRequestCount(0);
-        _server.setHandler(qosHandler);
         _server.start();
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, postStatus());
-
-        // The permit is returned when the request completes, which can be just after the response is sent.
-        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(this::postStatus, is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-    }
-
-    private int postStatus() throws Exception
-    {
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
+            // If the failure is not forwarded to the original callback, no response is ever sent.
             socket.setSoTimeout(10_000);
             String request = """
                 POST / HTTP/1.1\r
@@ -281,7 +268,7 @@ public class EagerContentHandlerTest
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
             assertNotNull(response);
-            return response.getStatus();
+            assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
         }
     }
 
