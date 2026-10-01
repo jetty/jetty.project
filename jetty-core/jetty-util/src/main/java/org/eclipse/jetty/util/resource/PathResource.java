@@ -515,10 +515,11 @@ public class PathResource extends Resource
         String rawUri = pathUri.toASCIIString();
 
         if (Files.isDirectory(path) && !rawUri.endsWith("/"))
-        {
-            return URI.create(rawUri + '/');
-        }
-        return pathUri;
+            rawUri += '/';
+        // Always use the ASCII form, as some FileSystems (eg: zipfs) return
+        // URIs with raw non-ASCII characters, which are not equal to their
+        // percent-encoded equivalents used by the as-requested URI.
+        return URI.create(rawUri);
     }
 
     @Override
