@@ -1,4 +1,13 @@
-jetty-12.1.14-SNAPSHOT
+12.1.14 - 01 October 2026
+ + 15368 HTTP/2 client aborts exchange and loses response completed during server graceful shutdown (regression in 12.1.10 / 12.0.36 from #15134 / #14692)
+ + 15432 BrotliEncoderSink drops all but the last pulled buffer, silently truncating large Brotli responses
+ + 15678 CompressionHandler randomly truncates output
+ + 15733 ee11 servlet: ServletRequest.getServletContext() returns the source context, not the target, after a cross-context RequestDispatcher.include()
+ + 15807 ArrayByteBufferPool.clear() leaves the bucket's secondary QueuedPool poisoned: NPE on the next acquire()
+ + 15822 Introduce flag in Rewrite Rules to preserve UriCompliance Violations when rewriting URIs
+ + 15840 HTTP/1 response header overflow retry loses previously determined connection persistence
+ + 15869 `PathResource` incorrectly treats a classpath resource inside a JAR under a non-ASCII path as an alias
+ + 15871 SessionHandler uses ConnectionMetaData.isSecure() instead of Request.isSecure(), breaking secure session cookies behind ForwardedRequestCustomizer (@adityaanikam)
 
 12.1.13 - 04 September 2026
  + 14403 `RoundRobinConnectionPoolTest.testMultiplexWithMaxUsage()` on FCGI is flaky (@DragonFSKY)
