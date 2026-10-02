@@ -90,7 +90,7 @@ if [ ! -d "$ALT_DEPLOY_DIR" ] ; then
 fi
 
 # DEPLOY_OPTS="-Dmaven.test.failure.ignore=true"
-DEPLOY_OPTS="-DskipTests -Dasciidoctor.skip=false -Dmaven.build.cache.enabled=false"
+DEPLOY_OPTS="-DskipTests -DskipITs -Dasciidoctor.skip=false -Dmaven.build.cache.enabled=false"
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
 rm -rf .release-repository/
