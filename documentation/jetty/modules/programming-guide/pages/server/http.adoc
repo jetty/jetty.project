@@ -467,6 +467,8 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/ht
 
 You can customize the SSL/TLS provider as explained in <<connector-protocol-tls-conscrypt,this section>>.
 
+If you need to use a virtual KeyStore (such as the Windows Certificate Store, PKCS11 hardware security modules, or macOS Keychain), refer to xref:operations-guide:keystore/index.adoc#virtual[this section].
+
 [[connector-protocol-http2]]
 ==== Clear-Text HTTP/2
 
@@ -512,6 +514,7 @@ The fact that the HTTP/2 protocol comes before the HTTP/1.1 protocol indicates t
 Note also that the default protocol set in the ALPN ``ConnectionFactory``, which is used in case ALPN is not supported by the client, is HTTP/1.1 -- if the client does not support ALPN is probably an old client so HTTP/1.1 is the safest choice.
 
 You can customize the SSL/TLS provider as explained in <<connector-protocol-tls-conscrypt,this section>>.
+If you need to use a virtual KeyStore (such as the Windows Certificate Store, PKCS11 hardware security modules, or macOS Keychain), refer to xref:operations-guide:keystore/index.adoc#virtual[this section].
 
 [[connector-protocol-http3]]
 ==== HTTP/3
