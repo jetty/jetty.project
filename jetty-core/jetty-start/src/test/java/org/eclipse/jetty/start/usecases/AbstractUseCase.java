@@ -115,7 +115,7 @@ public abstract class AbstractUseCase
                 [depend]
                 main
                 [lib]
-                lib/extra/*.jar
+                lib/extra/**.jar
                 [xml]
                 etc/extra.xml
                 [ini]
@@ -153,6 +153,7 @@ public abstract class AbstractUseCase
     public static class ExecResults
     {
         public Exception exception;
+        public Main main;
         public BaseHome baseHome;
         public StartArgs startArgs;
         public String output;
@@ -240,6 +241,7 @@ public abstract class AbstractUseCase
         {
             Main main = new Main();
 
+            execResults.main = main;
             execResults.startArgs = main.processCommandLine(execArgs);
             if (start)
             {

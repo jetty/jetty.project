@@ -15,6 +15,8 @@ https
 http2
 test-keystore
 work
-demo-root
+## Disabled, as demo-root requires ee#-demo to exist.
+## TODO: Make a new demo-core-root to replace it.
+# demo-root
 demo-moved-context
 core-environment
