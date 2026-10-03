@@ -50,7 +50,7 @@
     <ee9.jakarta.websocket.api.version>2.0.0</ee9.jakarta.websocket.api.version>
     <ee9.jakarta.xml.bind.impl.version>3.0.2</ee9.jakarta.xml.bind.impl.version>
     <ee9.jakarta.xml.jaxws.impl.version>3.0.2</ee9.jakarta.xml.jaxws.impl.version>
-    <ee9.jersey.version>3.0.18</ee9.jersey.version>
+    <ee9.jersey.version>3.1.0</ee9.jersey.version>
     <!-- FIXME we need a separate property for this one -->
     <ee9.jetty.servlet.api.version>5.0.2</ee9.jetty.servlet.api.version>
     <ee9.jsp.impl.version>10.0.27.2</ee9.jsp.impl.version>
