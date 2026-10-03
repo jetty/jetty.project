@@ -757,7 +757,11 @@ public class HttpURITest
             // space character
             Arguments.of("/a b"),
             // double-quotes
-            Arguments.of("/a\"b")
+            Arguments.of("/a\"b"),
+            // first non-ASCII code point, index equal to the __pathCharacters table length
+            Arguments.of("/a\u0080b"),
+            // higher non-ASCII code point, index beyond the __pathCharacters table length
+            Arguments.of("/aÿb")
         );
     }
 
