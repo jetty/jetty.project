@@ -3416,6 +3416,131 @@ public class ResourceHandlerTest
     }
 
     @Test
+    public void testWelcomeSymlinkOutsideBaseResource() throws Exception
+    {
+        assumeTrue(!OS.WINDOWS.isCurrentOs(), "Creating a symlink on Windows requires elevated privileges");
+
+        Path outside = docRoot.resolveSibling("outside");
+        FS.ensureDirExists(outside);
+        Files.writeString(outside.resolve("secret.txt"), "SECRET-OUTSIDE-BASE-RESOURCE", UTF_8);
+
+        Path dir = docRoot.resolve("dir");
+        FS.ensureDirExists(dir);
+        Files.createSymbolicLink(dir.resolve("index.html"), outside.resolve("secret.txt"));
+
+        // Replaces the default policy deliberately: SymlinkAllowedResourceAliasChecker approves
+        // escaping symlinks, and alias checks are OR'd, so adding to it would not refuse anything.
+        _contextHandler.setAliasChecks(List.of(new AllowedResourceAliasChecker(_contextHandler)));
+        _rootResourceHandler.setWelcomeFiles("index.html");
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/dir/index.html HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+        assertThat(response.toString(), response.getContent(), not(containsString("SECRET-OUTSIDE-BASE-RESOURCE")));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+    }
+
+    @Test
+    public void testWelcomeSymlinkIntoProtectedTarget() throws Exception
+    {
+        assumeTrue(!OS.WINDOWS.isCurrentOs(), "Creating a symlink on Windows requires elevated privileges");
+
+        Path secret = docRoot.resolve("secret");
+        FS.ensureDirExists(secret);
+        Files.writeString(secret.resolve("data.txt"), "SECRET-PROTECTED-TARGET", UTF_8);
+
+        Path dir = docRoot.resolve("dir");
+        FS.ensureDirExists(dir);
+        Files.createSymbolicLink(dir.resolve("index.html"), secret.resolve("data.txt"));
+
+        _contextHandler.setProtectedTargets(new String[]{"/secret"});
+        _contextHandler.setAliasChecks(List.of(new AllowedResourceAliasChecker(_contextHandler)));
+        _rootResourceHandler.setWelcomeFiles("index.html");
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/dir/index.html HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+
+        response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+        assertThat(response.toString(), response.getContent(), not(containsString("SECRET-PROTECTED-TARGET")));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+    }
+
+    @Test
+    public void testWelcomeSymlinkAllowedByAliasCheck() throws Exception
+    {
+        assumeTrue(!OS.WINDOWS.isCurrentOs(), "Creating a symlink on Windows requires elevated privileges");
+
+        Files.writeString(docRoot.resolve("real.html"), "<h1>Hello Index</h1>", UTF_8);
+
+        Path dir = docRoot.resolve("dir");
+        FS.ensureDirExists(dir);
+        Files.createSymbolicLink(dir.resolve("index.html"), docRoot.resolve("real.html"));
+
+        _contextHandler.setAliasChecks(List.of(new AllowedResourceAliasChecker(_contextHandler)));
+        _rootResourceHandler.setWelcomeFiles("index.html");
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Connection: close\r
+                \r
+                """));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("<h1>Hello Index</h1>"));
+    }
+
+    @Test
+    public void testWelcomePrecompressed() throws Exception
+    {
+        Path dir = docRoot.resolve("dir");
+        FS.ensureDirExists(dir);
+        Files.writeString(dir.resolve("index.html"), "<h1>Hello Index</h1>", UTF_8);
+        Files.writeString(dir.resolve("index.html.gz"), "fake gzip", UTF_8);
+
+        _rootResourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP);
+        _rootResourceHandler.setWelcomeFiles("index.html");
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("""
+                GET /context/dir/ HTTP/1.1\r
+                Host: local\r
+                Accept-Encoding: gzip\r
+                Connection: close\r
+                \r
+                """));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));
+        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
+        assertThat(response.getContent(), containsString("fake gzip"));
+    }
+
+    @Test
     public void testWelcomeDirWithQuestion() throws Exception
     {
         setupQuestionMarkDir(docRoot);
