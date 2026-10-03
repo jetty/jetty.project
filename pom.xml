@@ -176,7 +176,7 @@
     <checkstyle.version>10.26.1</checkstyle.version>
     <commons-codec.version>1.22.1</commons-codec.version>
     <commons-io.version>2.22.0</commons-io.version>
-    <commons-lang3.version>3.20.0</commons-lang3.version>
+    <commons-lang3.version>3.21.0</commons-lang3.version>
     <commons.compress.version>1.28.0</commons.compress.version>
     <compiler.release>17</compiler.release>
     <compiler.source>17</compiler.source>
@@ -193,7 +193,7 @@
     <groovy.version>4.0.26</groovy.version>
     <grpc.version>1.84.0</grpc.version>
     <gson.version>2.14.0</gson.version>
-    <guava.version>33.7.1-jre</guava.version>
+    <guava.version>33.7.2-jre</guava.version>
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>3.0</hamcrest.version>
     <hazelcast.version>5.7.0</hazelcast.version>
@@ -205,7 +205,7 @@
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
-    <jackson.version>2.22.2</jackson.version>
+    <jackson.version>2.22.3</jackson.version>
     <jacoco.maven.plugin.version>0.8.15</jacoco.maven.plugin.version>
     <javadoc.verbose>false</javadoc.verbose>
     <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
@@ -245,7 +245,7 @@
     <license.maven.plugin.version>4.6</license.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.26.1</log4j2.version>
-    <logback.version>1.6.3</logback.version>
+    <logback.version>1.6.4</logback.version>
     <lucene.version>9.11.1</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.10</mariadb.version>
@@ -315,7 +315,7 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <sisu.plexus.version>1.1.0</sisu.plexus.version>
     <slf4j.version>2.0.17</slf4j.version>
-    <smallrye-common.version>2.20.0</smallrye-common.version>
+    <smallrye-common.version>2.21.1</smallrye-common.version>
     <spifly.version>1.3.8</spifly.version>
     <surefire.failIfNoSpecifiedTests>false</surefire.failIfNoSpecifiedTests>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
