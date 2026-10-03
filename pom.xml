@@ -307,7 +307,7 @@
     <maven.war.plugin.version>3.5.1</maven.war.plugin.version>
     <modify-sources-plugin.version>1.0.14</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
-    <mongodb.version>5.12.0</mongodb.version>
+    <mongodb.version>5.13.0</mongodb.version>
     <netty.version>4.2.18.Final</netty.version>
     <njord.version>0.9.10</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
@@ -353,7 +353,7 @@
     <tinybundles.version>4.0.1</tinybundles.version>
     <versions.maven.plugin.version>2.22.0</versions.maven.plugin.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
-    <wildfly.elytron.version>2.9.2.Final</wildfly.elytron.version>
+    <wildfly.elytron.version>2.9.4.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.9</xmemcached.version>
   </properties>
 
