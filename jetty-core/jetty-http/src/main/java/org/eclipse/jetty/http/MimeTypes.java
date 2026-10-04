@@ -124,6 +124,9 @@ public class MimeTypes
         TEXT_XML_8859_1("text/xml;charset=iso-8859-1", TEXT_XML),
         TEXT_XML_UTF_8("text/xml;charset=utf-8", TEXT_XML),
 
+        TEXT_EVENT_STREAM("text/event-stream"),
+        TEXT_EVENT_STREAM_UTF_8("text/event-stream;charset=utf-8", TEXT_EVENT_STREAM),
+
         TEXT_JSON("text/json", StandardCharsets.UTF_8),
         TEXT_JSON_8859_1("text/json;charset=iso-8859-1", TEXT_JSON),
         TEXT_JSON_UTF_8("text/json;charset=utf-8", TEXT_JSON),
