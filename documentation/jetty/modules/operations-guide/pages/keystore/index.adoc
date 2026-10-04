@@ -272,3 +272,64 @@ Now you can distribute `client_keystore.p12` to your client(s).
 // TODO: add a section about renewal?
 
 Refer to the section about configuring xref:protocols/index.adoc#ssl[secure protocols] to configure the secure connector to require client authentication.
+
+[[virtual]]
+== Using Virtual KeyStores
+
+Virtual KeyStores are keystores that do not have a backing file on the filesystem.
+Instead, they are managed by the operating system or by specialized hardware, and are accessed through a Java Security Provider.
+
+Examples of virtual keystores include the Windows Certificate Store, PKCS11 hardware security modules (HSMs) and smartcards, and the macOS Keychain.
+
+=== Common Virtual KeyStore Types
+
+[cols="1,1,2"]
+|===
+|Type |Provider |Description
+
+|`Windows-MY`
+|`SunMSCAPI`
+|Windows personal certificate store (current user)
+
+|`Windows-ROOT`
+|`SunMSCAPI`
+|Windows root certificate store
+
+|`PKCS11`
+|`SunPKCS11`
+|Hardware security modules and smartcards
+
+|`KeychainStore`
+|`Apple`
+|macOS Keychain
+|===
+
+=== Configuring Virtual KeyStores
+
+Virtual keystores require programmatic configuration because Jetty's `SslContextFactory` cannot load them from a file path.
+You must manually instantiate and load the `KeyStore`, then pass it to `SslContextFactory`.
+
+The following example shows how to configure a server to use the Windows Certificate Store:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=virtualKeyStore]
+----
+
+The key steps are:
+
+. Create the `SslContextFactory.Server` instance.
+. Set the keystore type and provider to match the virtual keystore.
+. Instantiate the `KeyStore` using `KeyStore.getInstance(type, provider)`.
+. Load the keystore by calling `load(null, null)` -- virtual keystores do not read from an `InputStream`.
+. Pass the loaded `KeyStore` to `SslContextFactory` using `setKeyStore()`.
+
+=== Important Considerations
+
+* Virtual keystores may require platform-specific security permissions.
+* Some virtual keystores (like Windows certificate stores) may prompt for user authentication when accessing private keys.
+* The `SunMSCAPI` provider on Windows only supports RSA-based cipher suites; other algorithms like ECDSA may not be available.
+* PKCS11 keystores require additional configuration via a provider configuration file.
+* Consider the security implications and limitations of each provider before deploying to production.
+
+For more details on Java security providers and keystore types, refer to the https://docs.oracle.com/en/java/javase/17/security/java-cryptography-architecture-jca-reference-guide.html[Java Cryptography Architecture (JCA) Reference Guide].
