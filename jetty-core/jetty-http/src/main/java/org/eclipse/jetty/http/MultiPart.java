@@ -435,6 +435,11 @@ public class MultiPart
             }
         }
 
+        /**
+         * This method was initially introduced to implement the corresponding method from servlet spec,
+         * however {@link #close()} should be used instead because it properly releases all associated resources.
+         */
+        @Deprecated(forRemoval = true, since = "12.1.13")
         public void delete() throws IOException
         {
             Path path = getPath();

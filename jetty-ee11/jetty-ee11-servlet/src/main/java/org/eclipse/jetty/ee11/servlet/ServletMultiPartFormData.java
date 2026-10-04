@@ -316,7 +316,7 @@ public class ServletMultiPartFormData
         @Override
         public void delete() throws IOException
         {
-            _part.delete();
+            _part.close();
         }
 
         @Override
