@@ -16,12 +16,12 @@ package org.eclipse.jetty.ee11.servlet;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.MappingMatch;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
@@ -81,10 +81,15 @@ public class DefaultServlet extends ResourceServlet
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        if (request.getDispatcherType() == DispatcherType.ERROR)
-            doGet(request, response);
-        else
-            super.doPost(request, response);
+        switch (request.getDispatcherType())
+        {
+            case ERROR, INCLUDE, FORWARD -> doGet(request, response);
+            default ->
+            {
+                response.addHeader(HttpHeader.ALLOW.asString(), "GET,HEAD,OPTIONS");
+                super.doPost(request, response);
+            }
+        }
     }
 
     /**
