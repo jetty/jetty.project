@@ -92,6 +92,7 @@ import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsH
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.endsWith;
@@ -286,6 +287,64 @@ public class DefaultServletTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.get(HttpHeader.ALLOW), is("GET, HEAD, OPTIONS"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testPostMethodNotAllowedHasAllowHeader(boolean fileExists) throws Exception
+    {
+        Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse = connector.getResponse("""
+            POST /context/file%s.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """.formatted(fileExists ? "" : "-does-not-exist"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.METHOD_NOT_ALLOWED_405));
+        // RFC 9110 15.5.6: the origin server MUST generate an Allow header field in a 405 response.
+        String allowHeaderValue = response.get(HttpHeader.ALLOW);
+        assertNotNull(response.toString(), allowHeaderValue);
+        List<String> allowHeaderValues = Stream.of(allowHeaderValue.split(",")).map(String::trim).toList();
+        assertThat(response.toString(), allowHeaderValues, containsInAnyOrder("GET", "HEAD", "OPTIONS"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"FORWARD", "INCLUDE"})
+    public void testPostDispatchedToDefaultServlet(String dispatch) throws Exception
+    {
+        Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
+        context.addServlet(DefaultServlet.class, "/");
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                RequestDispatcher dispatcher = req.getRequestDispatcher("/file.txt");
+                switch (DispatcherType.valueOf(dispatch))
+                {
+                    case FORWARD -> dispatcher.forward(req, resp);
+                    case INCLUDE -> dispatcher.include(req, resp);
+                    default -> throw new AssertionError();
+                }
+            }
+        }), "/dispatch");
+
+        String rawResponse = connector.getResponse("""
+            POST /context/dispatch HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
     }
 
     @Test
