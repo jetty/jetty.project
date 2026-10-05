@@ -734,20 +734,20 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         {
             ManagedSession session = _session.session();
 
-            if (session != null || !create)
-                return session;
+            if ((session == null || !session.isValid()) && create)
+            {
+                newSession(getWrapped(), _session.sessionId(), ms ->
+                    _session = new RequestedSession(ms, _session.sessionId(), true));
+                session = _session.session();
+                if (session == null)
+                    throw new IllegalStateException("Create session failed");
 
-            newSession(getWrapped(), _session.sessionId(), ms ->
-                _session = new RequestedSession(ms, _session.sessionId(), true));
+                HttpCookie cookie = getSessionCookie(session, isSecure());
+                if (cookie != null)
+                    Response.putCookie(_response, cookie);
+            }
 
-            session = _session.session();
-            if (session == null)
-                throw new IllegalStateException("Create session failed");
-
-            HttpCookie cookie = getSessionCookie(session, isSecure());
-            if (cookie != null)
-                Response.replaceCookie(_response, cookie);
-            return session;
+            return session == null || !session.isValid() ? null : session;
         }
 
         ManagedSession getManagedSession()
