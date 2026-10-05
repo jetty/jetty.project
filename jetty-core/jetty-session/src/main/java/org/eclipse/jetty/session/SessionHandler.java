@@ -119,7 +119,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
 
             ManagedSession session = _session.get();
 
-            if (session == null && create)
+            if ((session == null || !session.isValid()) && create)
             {
                 newSession(this, _requestedSession.sessionId(), this::setManagedSession);
                 session = _session.get();
