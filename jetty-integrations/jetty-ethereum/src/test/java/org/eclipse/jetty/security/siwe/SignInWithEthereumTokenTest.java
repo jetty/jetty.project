@@ -14,6 +14,8 @@
 package org.eclipse.jetty.security.siwe;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.security.siwe.internal.EthereumUtil;
@@ -115,6 +117,98 @@ public class SignInWithEthereumTokenTest
         Throwable error = assertThrows(Throwable.class, () ->
             siwe.validate(signedMessage, null, null, null));
         assertThat(error.getMessage(), containsString("SIWE message not yet valid"));
+    }
+
+    @Test
+    public void testExpirationTimeWithOffset() throws Exception
+    {
+        EthereumCredentials credentials = new EthereumCredentials();
+        LocalDateTime issuedAt = LocalDateTime.now().minusMinutes(10);
+        // Already expired, but the local time at this offset is ahead of any server time zone.
+        OffsetDateTime expiry = OffsetDateTime.now(ZoneOffset.MAX).minusMinutes(1);
+        String message = SignInWithEthereumGenerator.generateMessage(
+            null,
+            "example.com",
+            credentials.getAddress(),
+            "hello this is the statement",
+            "https://example.com",
+            "1",
+            "1",
+            EthereumUtil.createNonce(),
+            issuedAt,
+            expiry,
+            null, null, null
+        );
+
+        EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
+        SignInWithEthereumToken siwe = SignInWithEthereumToken.from(message);
+        assertNotNull(siwe);
+
+        Throwable error = assertThrows(Throwable.class, () ->
+            siwe.validate(signedMessage, null, null, null));
+        assertThat(error.getMessage(), containsString("expired SIWE message"));
+    }
+
+    @Test
+    public void testNotBeforeWithOffset() throws Exception
+    {
+        EthereumCredentials credentials = new EthereumCredentials();
+        LocalDateTime issuedAt = LocalDateTime.now();
+        // Not valid yet, but the local time at this offset is behind any server time zone.
+        OffsetDateTime notBefore = OffsetDateTime.now(ZoneOffset.MIN).plusMinutes(10);
+        String message = SignInWithEthereumGenerator.generateMessage(
+            null,
+            "example.com",
+            credentials.getAddress(),
+            "hello this is the statement",
+            "https://example.com",
+            "1",
+            "1",
+            EthereumUtil.createNonce(),
+            issuedAt,
+            null,
+            notBefore,
+            null, null
+        );
+
+        EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
+        SignInWithEthereumToken siwe = SignInWithEthereumToken.from(message);
+        assertNotNull(siwe);
+
+        Throwable error = assertThrows(Throwable.class, () ->
+            siwe.validate(signedMessage, null, null, null));
+        assertThat(error.getMessage(), containsString("SIWE message not yet valid"));
+    }
+
+    @Test
+    public void testValidTimesWithOffset() throws Exception
+    {
+        EthereumCredentials credentials = new EthereumCredentials();
+        LocalDateTime issuedAt = LocalDateTime.now();
+        // Valid for ten minutes either side of now, at offsets whose local times are far from any server time zone.
+        OffsetDateTime expiry = OffsetDateTime.now(ZoneOffset.MIN).plusMinutes(10);
+        OffsetDateTime notBefore = OffsetDateTime.now(ZoneOffset.MAX).minusMinutes(10);
+        String message = SignInWithEthereumGenerator.generateMessage(
+            null,
+            "example.com",
+            credentials.getAddress(),
+            "hello this is the statement",
+            "https://example.com",
+            "1",
+            "1",
+            EthereumUtil.createNonce(),
+            issuedAt,
+            expiry,
+            notBefore,
+            null, null
+        );
+
+        EthereumAuthenticator.SignedMessage signedMessage = credentials.signMessage(message);
+        SignInWithEthereumToken siwe = SignInWithEthereumToken.from(message);
+        assertNotNull(siwe);
+
+        assertDoesNotThrow(() ->
+            siwe.validate(signedMessage, null, null, null));
     }
 
     @Test
