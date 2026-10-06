@@ -40,13 +40,13 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK26") {
+        stage("Build / Test - JDK27") {
           agent { node { label 'linux-dind' } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk26", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk26", name: "Static Analysis jdk26", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
+              mavenBuild( "jdk27", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk27", name: "Static Analysis jdk27", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
             }
           }
         }
