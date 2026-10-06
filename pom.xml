@@ -271,7 +271,7 @@
     <kerb-simplekdc.version>2.1.2</kerb-simplekdc.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.26.1</log4j2.version>
-    <logback.version>1.6.4</logback.version>
+    <logback.version>1.6.5</logback.version>
     <lucene.version>9.12.3</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.10</mariadb.version>
