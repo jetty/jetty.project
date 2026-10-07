@@ -39,8 +39,8 @@ public class WindowUpdateGenerator extends FrameGenerator
             throw new IllegalArgumentException("Invalid window update: " + windowUpdate);
 
         RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.WINDOW_UPDATE, WindowUpdateFrame.WINDOW_UPDATE_LENGTH, Flags.NONE, streamId);
-        buffer.putInt(windowUpdate);
         accumulator.addRetained(buffer);
+        buffer.putInt(windowUpdate);
         return Frame.HEADER_LENGTH + WindowUpdateFrame.WINDOW_UPDATE_LENGTH;
     }
 }

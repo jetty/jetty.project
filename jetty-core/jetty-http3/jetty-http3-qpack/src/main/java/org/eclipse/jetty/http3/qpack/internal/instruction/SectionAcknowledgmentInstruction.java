@@ -37,12 +37,10 @@ public class SectionAcknowledgmentInstruction implements Instruction
     public void encode(WritableBufferPool bufferPool, RetainableByteBuffer.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(7, _streamId);
-        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, true))
-        {
-            buffer.put((byte)0x80);
-            NBitIntegerEncoder.encode(buffer, 7, _streamId);
-            accumulator.add(buffer);
-        }
+        RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, true);
+        accumulator.addRetained(buffer);
+        buffer.put((byte)0x80);
+        NBitIntegerEncoder.encode(buffer, 7, _streamId);
     }
 
     @Override

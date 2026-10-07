@@ -58,8 +58,8 @@ public class PushPromiseGenerator extends FrameGenerator
         int flags = Flags.END_HEADERS;
 
         RetainableByteBuffer.Mutable header = generateHeader(FrameType.PUSH_PROMISE, length, flags, streamId);
-        header.putInt(promisedStreamId);
         accumulator.addRetained(header);
+        header.putInt(promisedStreamId);
         accumulator.addRetained(hpack);
 
         return Frame.HEADER_LENGTH + length;

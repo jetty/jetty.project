@@ -54,15 +54,14 @@ public class IndexedNameEntryInstruction implements Instruction
     public void encode(WritableBufferPool bufferPool, RetainableByteBuffer.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _index) + NBitStringEncoder.octetsNeeded(8, _value, _huffman);
-        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, true))
-        {
-            // First bit indicates the instruction, second bit is whether it is a dynamic table reference or not.
-            buffer.put((byte)(0x80 | (_dynamic ? 0x00 : 0x40)));
-            NBitIntegerEncoder.encode(buffer, 6, _index);
+        RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, true);
+        accumulator.addRetained(buffer);
 
-            NBitStringEncoder.encode(buffer, 8, _value, _huffman);
-            accumulator.add(buffer);
-        }
+        // First bit indicates the instruction, second bit is whether it is a dynamic table reference or not.
+        buffer.put((byte)(0x80 | (_dynamic ? 0x00 : 0x40)));
+        NBitIntegerEncoder.encode(buffer, 6, _index);
+
+        NBitStringEncoder.encode(buffer, 8, _value, _huffman);
     }
 
     @Override

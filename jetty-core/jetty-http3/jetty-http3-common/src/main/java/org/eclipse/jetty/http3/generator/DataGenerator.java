@@ -41,18 +41,14 @@ public class DataGenerator extends FrameGenerator
 
     private long generateDataFrame(RetainableByteBuffer.Accumulator accumulator, DataFrame frame)
     {
-        try (RetainableByteBuffer data = frame.acquire())
-        {
-            long dataLength = data.remaining();
-            int headerLength = VarLenInt.length(FrameType.DATA.type()) + VarLenInt.length(dataLength);
-            try (RetainableByteBuffer.Mutable header = getByteBufferPool().acquire(headerLength, useDirectByteBuffers))
-            {
-                VarLenInt.encode(header, FrameType.DATA.type());
-                VarLenInt.encode(header, dataLength);
-                accumulator.add(header);
-                accumulator.add(data);
-                return headerLength + dataLength;
-            }
-        }
+        RetainableByteBuffer data = frame.acquire();
+        long dataLength = data.remaining();
+        int headerLength = VarLenInt.length(FrameType.DATA.type()) + VarLenInt.length(dataLength);
+        RetainableByteBuffer.Mutable header = getByteBufferPool().acquire(headerLength, useDirectByteBuffers);
+        accumulator.addRetained(header);
+        VarLenInt.encode(header, FrameType.DATA.type());
+        VarLenInt.encode(header, dataLength);
+        accumulator.addRetained(data);
+        return headerLength + dataLength;
     }
 }

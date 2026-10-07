@@ -84,11 +84,9 @@ public class InstructionFlusher extends IteratingCallback
         if (!initialized)
         {
             initialized = true;
-            try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(VarLenInt.length(streamType), true))
-            {
-                VarLenInt.encode(buffer, streamType);
-                accumulator.add(buffer);
-            }
+            RetainableByteBuffer.Mutable buffer = bufferPool.acquire(VarLenInt.length(streamType), true);
+            accumulator.addRetained(buffer);
+            VarLenInt.encode(buffer, streamType);
         }
 
         instructions.forEach(i -> i.encode(bufferPool, accumulator));

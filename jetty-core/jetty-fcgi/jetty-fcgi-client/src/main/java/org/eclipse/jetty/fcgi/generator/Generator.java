@@ -52,26 +52,22 @@ public class Generator
         while (contentLength > 0 || lastContent)
         {
             long length = Math.min(MAX_CONTENT_LENGTH, contentLength);
-            try (RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(8, isUseDirectByteBuffers()))
-            {
-                // Generate the frame header.
-                buffer.put((byte)0x01);
-                buffer.put((byte)frameType.code);
-                buffer.putShort((short)id);
-                buffer.putShort((short)length);
-                buffer.putShort((short)0);
-                accumulator.add(buffer);
-            }
+            RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(8, isUseDirectByteBuffers());
+            accumulator.addRetained(buffer);
+            // Generate the frame header.
+            buffer.put((byte)0x01);
+            buffer.put((byte)frameType.code);
+            buffer.putShort((short)id);
+            buffer.putShort((short)length);
+            buffer.putShort((short)0);
 
             if (contentLength == 0)
                 break;
 
             // Slice the content to avoid copying.
-            try (RetainableByteBuffer slice = content.sliceAndConsume(length))
-            {
-                contentLength -= length;
-                accumulator.add(slice);
-            }
+            RetainableByteBuffer slice = content.sliceAndConsume(length);
+            accumulator.addRetained(slice);
+            contentLength -= length;
         }
     }
 }

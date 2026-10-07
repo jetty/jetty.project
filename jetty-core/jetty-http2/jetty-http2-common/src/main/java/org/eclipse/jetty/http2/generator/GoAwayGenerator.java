@@ -47,11 +47,11 @@ public class GoAwayGenerator extends FrameGenerator
         int length = fixedLength + payloadLength;
 
         RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.GO_AWAY, length, Flags.NONE, 0);
+        accumulator.addRetained(buffer);
         buffer.putInt(lastStreamId);
         buffer.putInt(error);
         if (payload != null)
             buffer.put(payload, 0, payloadLength);
-        accumulator.addRetained(buffer);
         return Frame.HEADER_LENGTH + length;
     }
 }

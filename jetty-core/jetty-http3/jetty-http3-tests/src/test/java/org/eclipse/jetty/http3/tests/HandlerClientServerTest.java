@@ -119,10 +119,7 @@ public class HandlerClientServerTest extends AbstractClientServerTest
                         return;
                     }
 
-                    try (RetainableByteBuffer buffer = chunk.acquire())
-                    {
-                        clientReceivedBuffers.add(buffer);
-                    }
+                    clientReceivedBuffers.addRetained(chunk.acquire());
 
                     if (chunk.isLast())
                     {

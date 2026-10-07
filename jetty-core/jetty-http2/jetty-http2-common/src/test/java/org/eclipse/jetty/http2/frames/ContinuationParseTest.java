@@ -87,67 +87,58 @@ public class ContinuationParseTest
                         long oneThird = length / 3;
                         long lastThird = length - 2 * oneThird;
 
-                        try (RetainableByteBuffer.Mutable headersHeader = RetainableByteBuffer.Mutable.allocate(Frame.HEADER_LENGTH, header.isDirect()))
-                        {
-                            // Adjust the length of the HEADERS frame to 1/3rd.
-                            headersHeader.put((byte)((oneThird >>> 16) & 0xFF));
-                            headersHeader.put((byte)((oneThird >>> 8) & 0xFF));
-                            headersHeader.put((byte)(oneThird & 0xFF));
-                            headersHeader.put(header.get(3));
-                            // Remove the END_HEADERS flag from the HEADERS header.
-                            headersHeader.put((byte)(header.get(4) & ~Flags.END_HEADERS));
-                            headersHeader.put(header.get(5));
-                            headersHeader.put(header.get(6));
-                            headersHeader.put(header.get(7));
-                            headersHeader.put(header.get(8));
-                            accumulator.add(headersHeader);
-                        }
+                        RetainableByteBuffer.Mutable headersHeader = RetainableByteBuffer.Mutable.allocate(Frame.HEADER_LENGTH, header.isDirect());
+                        accumulator.addRetained(headersHeader);
+                        // Adjust the length of the HEADERS frame to 1/3rd.
+                        headersHeader.put((byte)((oneThird >>> 16) & 0xFF));
+                        headersHeader.put((byte)((oneThird >>> 8) & 0xFF));
+                        headersHeader.put((byte)(oneThird & 0xFF));
+                        headersHeader.put(header.get(3));
+                        // Remove the END_HEADERS flag from the HEADERS header.
+                        headersHeader.put((byte)(header.get(4) & ~Flags.END_HEADERS));
+                        headersHeader.put(header.get(5));
+                        headersHeader.put(header.get(6));
+                        headersHeader.put(header.get(7));
+                        headersHeader.put(header.get(8));
+
                         // New HEADERS body, first 1/3rd.
-                        try (RetainableByteBuffer headersBody1 = body.sliceAndConsume(oneThird))
-                        {
-                            accumulator.add(headersBody1);
-                        }
+                        RetainableByteBuffer headersBody1 = body.sliceAndConsume(oneThird);
+                        accumulator.addRetained(headersBody1);
 
                         // Split the rest of the HEADERS body into CONTINUATION frames.
                         // First CONTINUATION header.
-                        try (RetainableByteBuffer.Mutable continuationHeader1 = RetainableByteBuffer.Mutable.allocate(Frame.HEADER_LENGTH, header.isDirect()))
-                        {
-                            continuationHeader1.put((byte)((oneThird >>> 16) & 0xFF));
-                            continuationHeader1.put((byte)((oneThird >>> 8) & 0xFF));
-                            continuationHeader1.put((byte)(oneThird & 0xFF));
-                            continuationHeader1.put((byte)FrameType.CONTINUATION.getType());
-                            continuationHeader1.put((byte)Flags.NONE);
-                            continuationHeader1.put((byte)0x00);
-                            continuationHeader1.put((byte)0x00);
-                            continuationHeader1.put((byte)0x00);
-                            continuationHeader1.put((byte)streamId);
-                            accumulator.add(continuationHeader1);
-                        }
+                        RetainableByteBuffer.Mutable continuationHeader1 = RetainableByteBuffer.Mutable.allocate(Frame.HEADER_LENGTH, header.isDirect());
+                        accumulator.addRetained(continuationHeader1);
+                        continuationHeader1.put((byte)((oneThird >>> 16) & 0xFF));
+                        continuationHeader1.put((byte)((oneThird >>> 8) & 0xFF));
+                        continuationHeader1.put((byte)(oneThird & 0xFF));
+                        continuationHeader1.put((byte)FrameType.CONTINUATION.getType());
+                        continuationHeader1.put((byte)Flags.NONE);
+                        continuationHeader1.put((byte)0x00);
+                        continuationHeader1.put((byte)0x00);
+                        continuationHeader1.put((byte)0x00);
+                        continuationHeader1.put((byte)streamId);
+
                         // First CONTINUATION body.
-                        try (RetainableByteBuffer continuationBody1 = body.sliceAndConsume(oneThird))
-                        {
-                            accumulator.add(continuationBody1);
-                        }
+                        RetainableByteBuffer continuationBody1 = body.sliceAndConsume(oneThird);
+                        accumulator.addRetained(continuationBody1);
 
                         // Second CONTINUATION header.
-                        try (RetainableByteBuffer.Mutable continuationHeader2 = RetainableByteBuffer.Mutable.allocate(Frame.HEADER_LENGTH, header.isDirect()))
-                        {
-                            continuationHeader2.put((byte)((lastThird >>> 16) & 0xFF));
-                            continuationHeader2.put((byte)((lastThird >>> 8) & 0xFF));
-                            continuationHeader2.put((byte)(lastThird & 0xFF));
-                            continuationHeader2.put((byte)FrameType.CONTINUATION.getType());
-                            continuationHeader2.put((byte)Flags.END_HEADERS);
-                            continuationHeader2.put((byte)0x00);
-                            continuationHeader2.put((byte)0x00);
-                            continuationHeader2.put((byte)0x00);
-                            continuationHeader2.put((byte)streamId);
-                            accumulator.add(continuationHeader2);
-                        }
+                        RetainableByteBuffer.Mutable continuationHeader2 = RetainableByteBuffer.Mutable.allocate(Frame.HEADER_LENGTH, header.isDirect());
+                        accumulator.addRetained(continuationHeader2);
+                        continuationHeader2.put((byte)((lastThird >>> 16) & 0xFF));
+                        continuationHeader2.put((byte)((lastThird >>> 8) & 0xFF));
+                        continuationHeader2.put((byte)(lastThird & 0xFF));
+                        continuationHeader2.put((byte)FrameType.CONTINUATION.getType());
+                        continuationHeader2.put((byte)Flags.END_HEADERS);
+                        continuationHeader2.put((byte)0x00);
+                        continuationHeader2.put((byte)0x00);
+                        continuationHeader2.put((byte)0x00);
+                        continuationHeader2.put((byte)streamId);
+
                         // Second CONTINUATION body.
-                        try (RetainableByteBuffer continuationBody2 = body.sliceAndConsume(lastThird))
-                        {
-                            accumulator.add(continuationBody2);
-                        }
+                        RetainableByteBuffer continuationBody2 = body.sliceAndConsume(lastThird);
+                        accumulator.addRetained(continuationBody2);
 
                         frames.clear();
                         try (RetainableByteBuffer generated = accumulator.drain())
@@ -223,26 +214,23 @@ public class ContinuationParseTest
                     long firstHalf = length / 2;
                     long lastHalf = length - firstHalf;
 
-                    try (RetainableByteBuffer.Mutable headersHeader = RetainableByteBuffer.Mutable.allocate(Frame.HEADER_LENGTH, header.isDirect()))
-                    {
-                        // Create the split HEADERS frame.
-                        headersHeader.put((byte)((firstHalf >>> 16) & 0xFF));
-                        headersHeader.put((byte)((firstHalf >>> 8) & 0xFF));
-                        headersHeader.put((byte)(firstHalf & 0xFF));
-                        headersHeader.put(header.get(3));
-                        // Remove the END_HEADERS flag from the HEADERS header.
-                        headersHeader.put((byte)(header.get(4) & ~Flags.END_HEADERS));
-                        headersHeader.put(header.get(5));
-                        headersHeader.put(header.get(6));
-                        headersHeader.put(header.get(7));
-                        headersHeader.put(header.get(8));
-                        accumulator.add(headersHeader);
-                    }
+                    RetainableByteBuffer.Mutable headersHeader = RetainableByteBuffer.Mutable.allocate(Frame.HEADER_LENGTH, header.isDirect());
+                    accumulator.addRetained(headersHeader);
+                    // Create the split HEADERS frame.
+                    headersHeader.put((byte)((firstHalf >>> 16) & 0xFF));
+                    headersHeader.put((byte)((firstHalf >>> 8) & 0xFF));
+                    headersHeader.put((byte)(firstHalf & 0xFF));
+                    headersHeader.put(header.get(3));
+                    // Remove the END_HEADERS flag from the HEADERS header.
+                    headersHeader.put((byte)(header.get(4) & ~Flags.END_HEADERS));
+                    headersHeader.put(header.get(5));
+                    headersHeader.put(header.get(6));
+                    headersHeader.put(header.get(7));
+                    headersHeader.put(header.get(8));
+
                     // New HEADERS body.
-                    try (RetainableByteBuffer headersBody1 = body.sliceAndConsume(firstHalf))
-                    {
-                        accumulator.add(headersBody1);
-                    }
+                    RetainableByteBuffer headersBody1 = body.sliceAndConsume(firstHalf);
+                    accumulator.addRetained(headersBody1);
 
                     try (RetainableByteBuffer generated = accumulator.drain())
                     {
@@ -251,19 +239,17 @@ public class ContinuationParseTest
                     long beginNanoTime = parser.getBeginNanoTime();
 
                     // Split the rest of the HEADERS body into a CONTINUATION frame.
-                    try (RetainableByteBuffer.Mutable continuationHeader = RetainableByteBuffer.Mutable.allocate(Frame.HEADER_LENGTH, header.isDirect()))
-                    {
-                        continuationHeader.put((byte)((lastHalf >>> 16) & 0xFF));
-                        continuationHeader.put((byte)((lastHalf >>> 8) & 0xFF));
-                        continuationHeader.put((byte)(lastHalf & 0xFF));
-                        continuationHeader.put((byte)FrameType.CONTINUATION.getType());
-                        continuationHeader.put((byte)Flags.END_HEADERS);
-                        continuationHeader.put((byte)0x00);
-                        continuationHeader.put((byte)0x00);
-                        continuationHeader.put((byte)0x00);
-                        continuationHeader.put((byte)streamId);
-                        accumulator.add(continuationHeader);
-                    }
+                    RetainableByteBuffer.Mutable continuationHeader = RetainableByteBuffer.Mutable.allocate(Frame.HEADER_LENGTH, header.isDirect());
+                    accumulator.addRetained(continuationHeader);
+                    continuationHeader.put((byte)((lastHalf >>> 16) & 0xFF));
+                    continuationHeader.put((byte)((lastHalf >>> 8) & 0xFF));
+                    continuationHeader.put((byte)(lastHalf & 0xFF));
+                    continuationHeader.put((byte)FrameType.CONTINUATION.getType());
+                    continuationHeader.put((byte)Flags.END_HEADERS);
+                    continuationHeader.put((byte)0x00);
+                    continuationHeader.put((byte)0x00);
+                    continuationHeader.put((byte)0x00);
+                    continuationHeader.put((byte)streamId);
 
                     // Early parsing.
                     try (RetainableByteBuffer generated = accumulator.drain())
@@ -272,10 +258,8 @@ public class ContinuationParseTest
                     }
 
                     // CONTINUATION body.
-                    try (RetainableByteBuffer continuationBody = body.sliceAndConsume(lastHalf))
-                    {
-                        accumulator.add(continuationBody);
-                    }
+                    RetainableByteBuffer continuationBody = body.sliceAndConsume(lastHalf);
+                    accumulator.addRetained(continuationBody);
 
                     // Finish parsing.
                     try (RetainableByteBuffer generated = accumulator.drain())
@@ -298,7 +282,6 @@ public class ContinuationParseTest
                     PriorityFrame priority = frame.getPriority();
                     assertNull(priority);
                     assertEquals(beginNanoTime, request.getBeginNanoTime());
-
                 }
             }
         }

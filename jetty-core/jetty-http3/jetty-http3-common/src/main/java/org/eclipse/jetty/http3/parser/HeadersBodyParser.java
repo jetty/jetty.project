@@ -74,10 +74,7 @@ public class HeadersBodyParser extends BodyParser
                         boolean last;
                         if (accumulator.hasRemaining())
                         {
-                            try (RetainableByteBuffer slice = buffer.sliceAndConsume(length))
-                            {
-                                accumulator.add(slice);
-                            }
+                            accumulator.addRetained(buffer.sliceAndConsume(length));
                             encoded = accumulator.drain();
                             last = quicLast && !buffer.hasRemaining();
                         }

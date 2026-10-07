@@ -83,36 +83,22 @@ public class HeadersGenerator extends FrameGenerator
                 int length = maxHeaderBlock + (priority == null ? 0 : PriorityFrame.PRIORITY_LENGTH);
 
                 // Generate HEADERS frame with possible PRIORITY frame.
-                try (RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.HEADERS, length, flags, streamId))
-                {
-                    generatePriority(buffer, priority);
-                    accumulator.add(buffer);
-                    try (RetainableByteBuffer slice = hpack.sliceAndConsume(maxHeaderBlock))
-                    {
-                        accumulator.add(slice);
-                    }
-                }
+                RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.HEADERS, length, flags, streamId);
+                accumulator.addRetained(buffer);
+                generatePriority(buffer, priority);
+                accumulator.addRetained(hpack.sliceAndConsume(maxHeaderBlock));
 
                 // Generate CONTINUATION frames that are not the last.
                 while (hpack.remaining() > maxHeaderBlock)
                 {
-                    try (RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.CONTINUATION, maxHeaderBlock, Flags.NONE, streamId))
-                    {
-                        accumulator.add(buffer);
-                        try (RetainableByteBuffer slice = hpack.sliceAndConsume(maxHeaderBlock))
-                        {
-                            accumulator.add(slice);
-                        }
-                    }
+                    accumulator.addRetained(generateHeader(FrameType.CONTINUATION, maxHeaderBlock, Flags.NONE, streamId));
+                    accumulator.addRetained(hpack.sliceAndConsume(maxHeaderBlock));
                 }
 
                 // Generate the last CONTINUATION frame.
                 // The hpack buffer can never be > Integer.MAX_VALUE so casting remaining() to int is safe.
-                try (RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.CONTINUATION, (int)hpack.remaining(), Flags.END_HEADERS, streamId))
-                {
-                    accumulator.add(buffer);
-                    accumulator.add(hpack);
-                }
+                accumulator.addRetained(generateHeader(FrameType.CONTINUATION, (int)hpack.remaining(), Flags.END_HEADERS, streamId));
+                accumulator.add(hpack);
 
                 // TODO overflow?
                 return Math.toIntExact(accumulator.remaining() - start);
@@ -122,12 +108,10 @@ public class HeadersGenerator extends FrameGenerator
                 flags |= Flags.END_HEADERS;
 
                 int length = hpackLength + (priority == null ? 0 : PriorityFrame.PRIORITY_LENGTH);
-                try (RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.HEADERS, length, flags, streamId))
-                {
-                    generatePriority(buffer, priority);
-                    accumulator.add(buffer);
-                    accumulator.add(hpack);
-                }
+                RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.HEADERS, length, flags, streamId);
+                accumulator.addRetained(buffer);
+                generatePriority(buffer, priority);
+                accumulator.add(hpack);
 
                 return Frame.HEADER_LENGTH + length;
             }

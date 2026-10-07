@@ -260,10 +260,10 @@ public class HTTP2ServerTest extends AbstractServerTest
         try (RetainableByteBuffer buffer = ping.drain())
         {
             RetainableByteBuffer.Mutable copy = RetainableByteBuffer.Mutable.allocate((int)buffer.remaining(), buffer.isDirect());
+            accumulator.addRetained(copy);
             copy.put(buffer);
             // Modify the length of the ping frame by changing the length's msb.
             copy.put(0, (byte)0x07);
-            accumulator.addRetained(copy);
         }
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -312,10 +312,10 @@ public class HTTP2ServerTest extends AbstractServerTest
         try (RetainableByteBuffer buffer = ping.drain())
         {
             RetainableByteBuffer.Mutable copy = RetainableByteBuffer.Mutable.allocate((int)buffer.remaining(), buffer.isDirect());
+            accumulator.addRetained(copy);
             copy.put(buffer);
             // Modify the streamId of the ping frame to non-zero.
             copy.putInt(5, 1);
-            accumulator.addRetained(copy);
         }
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -569,6 +569,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
                 // Insert an empty CONTINUATION frame, copying the first CONTINUATION frame header with a zero length.
                 RetainableByteBuffer.Mutable emptyContinuation = RetainableByteBuffer.Mutable.allocate(Frame.HEADER_LENGTH, false);
+                accumulator.addRetained(emptyContinuation);
                 emptyContinuation.put((byte)0x00)
                     .put((byte)0x00)
                     .put((byte)0x00);
@@ -576,7 +577,6 @@ public class HTTP2ServerTest extends AbstractServerTest
                 {
                     emptyContinuation.put(headers.get(offset + i));
                 }
-                accumulator.addRetained(emptyContinuation);
 
                 // The CONTINUATION frames.
                 accumulator.addRetained(headers.slice(offset, headers.remaining() - offset));
@@ -595,6 +595,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
             RetainableByteBuffer.Mutable headers = generate(new HeadersFrame(1, metaData, null, true));
+            accumulator.addRetained(headers);
             // Look for the last CONTINUATION frame and reset the flag.
             long offset = 0;
             while (true)
@@ -607,7 +608,6 @@ public class HTTP2ServerTest extends AbstractServerTest
                 }
                 offset += Frame.HEADER_LENGTH + length;
             }
-            accumulator.addRetained(headers);
 
             // Add a last, empty, CONTINUATION frame.
             accumulator.addRetained(RetainableByteBuffer.wrap(new byte[]{

@@ -102,14 +102,12 @@ public class ServerGenerator extends Generator
         {
             if (lastContent)
             {
-                try (RetainableByteBuffer buffer = generateEndRequest(request, true))
-                {
-                    accumulator.add(buffer);
-                }
+                RetainableByteBuffer buffer = generateEndRequest(request, true);
+                accumulator.addRetained(buffer);
             }
             else
             {
-                accumulator.add(RetainableByteBuffer.empty());
+                accumulator.addRetained(RetainableByteBuffer.empty());
             }
         }
         else
@@ -117,10 +115,8 @@ public class ServerGenerator extends Generator
             generateContent(accumulator, request, content, lastContent, FCGI.FrameType.STDOUT);
             if (lastContent)
             {
-                try (RetainableByteBuffer buffer = generateEndRequest(request, false))
-                {
-                    accumulator.add(buffer);
-                }
+                RetainableByteBuffer buffer = generateEndRequest(request, false);
+                accumulator.addRetained(buffer);
             }
         }
     }

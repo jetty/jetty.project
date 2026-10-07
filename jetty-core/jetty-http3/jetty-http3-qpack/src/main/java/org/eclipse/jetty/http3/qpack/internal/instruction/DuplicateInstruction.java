@@ -37,12 +37,10 @@ public class DuplicateInstruction implements Instruction
     public void encode(WritableBufferPool bufferPool, RetainableByteBuffer.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(5, _index);
-        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, false))
-        {
-            buffer.put((byte)0x00);
-            NBitIntegerEncoder.encode(buffer, 5, _index);
-            accumulator.add(buffer);
-        }
+        RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, false);
+        accumulator.addRetained(buffer);
+        buffer.put((byte)0x00);
+        NBitIntegerEncoder.encode(buffer, 5, _index);
     }
 
     @Override

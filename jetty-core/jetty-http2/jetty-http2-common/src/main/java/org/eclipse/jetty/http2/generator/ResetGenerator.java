@@ -39,8 +39,8 @@ public class ResetGenerator extends FrameGenerator
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
         RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.RST_STREAM, ResetFrame.RESET_LENGTH, Flags.NONE, streamId);
-        buffer.putInt(error);
         accumulator.addRetained(buffer);
+        buffer.putInt(error);
         return Frame.HEADER_LENGTH + ResetFrame.RESET_LENGTH;
     }
 }

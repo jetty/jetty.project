@@ -47,17 +47,15 @@ public class SettingsGenerator extends FrameGenerator
             length += VarLenInt.length(e.getKey()) + VarLenInt.length(e.getValue());
         }
         int capacity = VarLenInt.length(frame.getFrameType().type()) + VarLenInt.length(length) + length;
-        try (RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, useDirectByteBuffers))
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, useDirectByteBuffers);
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frame.getFrameType().type());
+        VarLenInt.encode(buffer, length);
+        for (Map.Entry<Long, Long> e : settings.entrySet())
         {
-            VarLenInt.encode(buffer, frame.getFrameType().type());
-            VarLenInt.encode(buffer, length);
-            for (Map.Entry<Long, Long> e : settings.entrySet())
-            {
-                VarLenInt.encode(buffer, e.getKey());
-                VarLenInt.encode(buffer, e.getValue());
-            }
-            accumulator.add(buffer);
-            return capacity;
+            VarLenInt.encode(buffer, e.getKey());
+            VarLenInt.encode(buffer, e.getValue());
         }
+        return capacity;
     }
 }

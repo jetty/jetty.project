@@ -44,13 +44,11 @@ public class GoAwayGenerator extends FrameGenerator
         long lastId = frame.getLastId();
         int lastIdLength = VarLenInt.length(lastId);
         int length = VarLenInt.length(FrameType.GOAWAY.type()) + VarLenInt.length(lastIdLength) + lastIdLength;
-        try (RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, useDirectByteBuffers))
-        {
-            VarLenInt.encode(buffer, FrameType.GOAWAY.type());
-            VarLenInt.encode(buffer, lastIdLength);
-            VarLenInt.encode(buffer, lastId);
-            accumulator.add(buffer);
-            return length;
-        }
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, useDirectByteBuffers);
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, FrameType.GOAWAY.type());
+        VarLenInt.encode(buffer, lastIdLength);
+        VarLenInt.encode(buffer, lastId);
+        return length;
     }
 }

@@ -32,12 +32,10 @@ public class StreamCancellationInstruction implements Instruction
     public void encode(WritableBufferPool bufferPool, RetainableByteBuffer.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(6, _streamId);
-        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, false))
-        {
-            buffer.put((byte)0x40);
-            NBitIntegerEncoder.encode(buffer, 6, _streamId);
-            accumulator.add(buffer);
-        }
+        RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, false);
+        accumulator.addRetained(buffer);
+        buffer.put((byte)0x40);
+        NBitIntegerEncoder.encode(buffer, 6, _streamId);
     }
 
     @Override

@@ -107,12 +107,10 @@ public class FrameGenerator
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            return capacity;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        return capacity;
     }
 
     private long generateAckFrame(RetainableByteBuffer.Accumulator accumulator, AckFrame frame)
@@ -137,25 +135,23 @@ public class FrameGenerator
                 VarLenInt.length(frame.getCECount());
         }
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, ackNumber);
+        VarLenInt.encode(buffer, ackDelay);
+        VarLenInt.encode(buffer, rangeSize - 1);
+        for (Integer range : ranges)
         {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, ackNumber);
-            VarLenInt.encode(buffer, ackDelay);
-            VarLenInt.encode(buffer, rangeSize - 1);
-            for (Integer range : ranges)
-            {
-                VarLenInt.encode(buffer, range);
-            }
-            if (frameType == 0x03)
-            {
-                VarLenInt.encode(buffer, frame.getECT0Count());
-                VarLenInt.encode(buffer, frame.getECT1Count());
-                VarLenInt.encode(buffer, frame.getCECount());
-            }
-            return capacity;
+            VarLenInt.encode(buffer, range);
         }
+        if (frameType == 0x03)
+        {
+            VarLenInt.encode(buffer, frame.getECT0Count());
+            VarLenInt.encode(buffer, frame.getECT1Count());
+            VarLenInt.encode(buffer, frame.getCECount());
+        }
+        return capacity;
     }
 
     private long generateResetStreamFrame(RetainableByteBuffer.Accumulator accumulator, ResetFrame frame)
@@ -169,15 +165,13 @@ public class FrameGenerator
         long finalSize = frame.getFinalSize();
         capacity += VarLenInt.length(finalSize);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, streamId);
-            VarLenInt.encode(buffer, errorCode);
-            VarLenInt.encode(buffer, finalSize);
-            return capacity;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, streamId);
+        VarLenInt.encode(buffer, errorCode);
+        VarLenInt.encode(buffer, finalSize);
+        return capacity;
     }
 
     private long generateStopSendingFrame(RetainableByteBuffer.Accumulator accumulator, StopSendingFrame frame)
@@ -189,14 +183,12 @@ public class FrameGenerator
         long errorCode = frame.getApplicationErrorCode();
         capacity += VarLenInt.length(errorCode);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, streamId);
-            VarLenInt.encode(buffer, errorCode);
-            return capacity;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, streamId);
+        VarLenInt.encode(buffer, errorCode);
+        return capacity;
     }
 
     private long generateCryptoFrame(RetainableByteBuffer.Accumulator accumulator, CryptoFrame frame)
@@ -209,15 +201,13 @@ public class FrameGenerator
         int length = data.remaining();
         capacity += VarLenInt.length(length);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, offset);
-            VarLenInt.encode(buffer, length);
-            accumulator.add(RetainableByteBuffer.wrap(data));
-            return capacity + length;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, offset);
+        VarLenInt.encode(buffer, length);
+        accumulator.addRetained(RetainableByteBuffer.wrap(data));
+        return capacity + length;
     }
 
     private long generateNewTokenFrame(RetainableByteBuffer.Accumulator accumulator, NewTokenFrame frame)
@@ -228,14 +218,12 @@ public class FrameGenerator
         int length = token.remaining();
         capacity += VarLenInt.length(length);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, length);
-            accumulator.add(RetainableByteBuffer.wrap(token));
-            return capacity + length;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, length);
+        accumulator.addRetained(RetainableByteBuffer.wrap(token));
+        return capacity + length;
     }
 
     private BytesGenerated generateStreamFrame(RetainableByteBuffer.Accumulator accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
@@ -271,28 +259,19 @@ public class FrameGenerator
             if (endStream && dataExceedsFrame)
                 frameType = frameType & ~StreamFrame.END_STREAM_MASK;
 
-            try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-            {
-                accumulator.add(buffer);
-                VarLenInt.encode(buffer, frameType);
-                VarLenInt.encode(buffer, streamId);
-                if (hasOffset)
-                    VarLenInt.encode(buffer, offset);
-                if (hasLength)
-                    VarLenInt.encode(buffer, dataLength);
-            }
+            RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+            accumulator.addRetained(buffer);
+            VarLenInt.encode(buffer, frameType);
+            VarLenInt.encode(buffer, streamId);
+            if (hasOffset)
+                VarLenInt.encode(buffer, offset);
+            if (hasLength)
+                VarLenInt.encode(buffer, dataLength);
 
             if (dataExceedsFrame)
-            {
-                try (RetainableByteBuffer slice = data.sliceAndConsume(dataLength))
-                {
-                    accumulator.add(slice);
-                }
-            }
+                accumulator.addRetained(data.sliceAndConsume(dataLength));
             else
-            {
                 accumulator.add(data);
-            }
             return new BytesGenerated(dataLength, capacity + dataLength);
         }
     }
@@ -304,13 +283,11 @@ public class FrameGenerator
         long maxData = frame.getMaxData();
         capacity += VarLenInt.length(maxData);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, maxData);
-            return capacity;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, maxData);
+        return capacity;
     }
 
     private long generateStreamMaxDataFrame(RetainableByteBuffer.Accumulator accumulator, StreamMaxDataFrame frame)
@@ -322,14 +299,12 @@ public class FrameGenerator
         long maxData = frame.getMaxData();
         capacity += VarLenInt.length(maxData);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, streamId);
-            VarLenInt.encode(buffer, maxData);
-            return capacity;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, streamId);
+        VarLenInt.encode(buffer, maxData);
+        return capacity;
     }
 
     private long generateMaxStreamsFrame(RetainableByteBuffer.Accumulator accumulator, MaxStreamsFrame frame)
@@ -339,13 +314,11 @@ public class FrameGenerator
         long maxStreams = frame.getMaxStreams();
         capacity += VarLenInt.length(maxStreams);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, maxStreams);
-            return capacity;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, maxStreams);
+        return capacity;
     }
 
     private long generateDataBlockedFrame(RetainableByteBuffer.Accumulator accumulator, DataBlockedFrame frame)
@@ -355,13 +328,11 @@ public class FrameGenerator
         long maxData = frame.getOffset();
         capacity += VarLenInt.length(maxData);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, maxData);
-            return capacity;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, maxData);
+        return capacity;
     }
 
     private long generateStreamDataBlockedFrame(RetainableByteBuffer.Accumulator accumulator, StreamDataBlockedFrame frame)
@@ -373,14 +344,12 @@ public class FrameGenerator
         long maxData = frame.getOffset();
         capacity += VarLenInt.length(maxData);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, streamId);
-            VarLenInt.encode(buffer, maxData);
-            return capacity;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, streamId);
+        VarLenInt.encode(buffer, maxData);
+        return capacity;
     }
 
     private long generateStreamsBlockedFrame(RetainableByteBuffer.Accumulator accumulator, StreamsBlockedFrame frame)
@@ -390,13 +359,11 @@ public class FrameGenerator
         long maxStreams = frame.getMaxStreams();
         capacity += VarLenInt.length(maxStreams);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, maxStreams);
-            return capacity;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, maxStreams);
+        return capacity;
     }
 
     private long generateNewConnectionIdFrame(RetainableByteBuffer.Accumulator accumulator, NewConnectionIdFrame frame)
@@ -410,18 +377,16 @@ public class FrameGenerator
         byte[] connectionId = frame.getConnectionId();
         capacity += VarLenInt.length(connectionId.length);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, sequenceNumber);
-            VarLenInt.encode(buffer, retirePriorTo);
-            VarLenInt.encode(buffer, connectionId.length);
-            accumulator.add(RetainableByteBuffer.wrap(ByteBuffer.wrap(connectionId)));
-            byte[] resetToken = frame.getResetToken();
-            accumulator.add(RetainableByteBuffer.wrap(ByteBuffer.wrap(resetToken)));
-            return capacity + connectionId.length + resetToken.length;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, sequenceNumber);
+        VarLenInt.encode(buffer, retirePriorTo);
+        VarLenInt.encode(buffer, connectionId.length);
+        accumulator.addRetained(RetainableByteBuffer.wrap(ByteBuffer.wrap(connectionId)));
+        byte[] resetToken = frame.getResetToken();
+        accumulator.addRetained(RetainableByteBuffer.wrap(ByteBuffer.wrap(resetToken)));
+        return capacity + connectionId.length + resetToken.length;
     }
 
     private long generateRetireConnectionIdFrame(RetainableByteBuffer.Accumulator accumulator, RetireConnectionIdFrame frame)
@@ -431,13 +396,11 @@ public class FrameGenerator
         long sequenceNumber = frame.getSequenceNumber();
         capacity += VarLenInt.length(sequenceNumber);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, sequenceNumber);
-            return capacity;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, sequenceNumber);
+        return capacity;
     }
 
     private long generatePathChallengeFrame(RetainableByteBuffer.Accumulator accumulator, PathChallengeFrame frame)
@@ -447,13 +410,11 @@ public class FrameGenerator
         long data = frame.getData();
         capacity += 8;
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            buffer.putLong(data);
-            return capacity;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        buffer.putLong(data);
+        return capacity;
     }
 
     private long generatePathResponseFrame(RetainableByteBuffer.Accumulator accumulator, PathResponseFrame frame)
@@ -463,13 +424,11 @@ public class FrameGenerator
         long data = frame.getData();
         capacity += 8;
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            buffer.putLong(data);
-            return capacity;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        buffer.putLong(data);
+        return capacity;
     }
 
     private long generateConnectionCloseFrame(RetainableByteBuffer.Accumulator accumulator, ConnectionCloseFrame frame)
@@ -486,17 +445,15 @@ public class FrameGenerator
         int reasonLength = reasonBytes.remaining();
         capacity += VarLenInt.length(reasonLength);
 
-        try (RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers()))
-        {
-            accumulator.add(buffer);
-            VarLenInt.encode(buffer, frameType);
-            VarLenInt.encode(buffer, errorCode);
-            if (frameType == 0x1C)
-                VarLenInt.encode(buffer, causeFrameType);
-            VarLenInt.encode(buffer, reasonLength);
-            accumulator.add(RetainableByteBuffer.wrap(reasonBytes));
-            return capacity + reasonLength;
-        }
+        RetainableByteBuffer.Mutable buffer = byteBufferPool.acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frameType);
+        VarLenInt.encode(buffer, errorCode);
+        if (frameType == 0x1C)
+            VarLenInt.encode(buffer, causeFrameType);
+        VarLenInt.encode(buffer, reasonLength);
+        accumulator.addRetained(RetainableByteBuffer.wrap(reasonBytes));
+        return capacity + reasonLength;
     }
 
     public record BytesGenerated(int dataBytes, int frameBytes)

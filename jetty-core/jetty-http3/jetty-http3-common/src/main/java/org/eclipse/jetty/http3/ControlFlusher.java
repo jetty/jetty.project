@@ -89,8 +89,8 @@ public class ControlFlusher extends IteratingCallback
                 initialized = true;
                 long streamType = StreamType.CONTROL_STREAM.type();
                 RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(VarLenInt.length(streamType), true);
+                accumulator.addRetained(buffer);
                 VarLenInt.encode(buffer, streamType);
-                accumulator.add(buffer);
             }
             generator.generate(accumulator, endPoint.getStream().getId(), entry.frame, null);
             invocationType = Invocable.combine(invocationType, entry.callback.getInvocationType());

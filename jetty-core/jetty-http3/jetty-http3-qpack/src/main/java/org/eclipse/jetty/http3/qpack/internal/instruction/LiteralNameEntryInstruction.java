@@ -55,13 +55,11 @@ public class LiteralNameEntryInstruction implements Instruction
     {
         int size = NBitStringEncoder.octetsNeeded(6, _name, _huffmanName) +
             NBitStringEncoder.octetsNeeded(8, _value, _huffmanValue);
-        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, false))
-        {
-            buffer.put((byte)0x40); // Instruction Pattern.
-            NBitStringEncoder.encode(buffer, 6, _name, _huffmanName);
-            NBitStringEncoder.encode(buffer, 8, _value, _huffmanValue);
-            accumulator.add(buffer);
-        }
+        RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, false);
+        accumulator.addRetained(buffer);
+        buffer.put((byte)0x40); // Instruction Pattern.
+        NBitStringEncoder.encode(buffer, 6, _name, _huffmanName);
+        NBitStringEncoder.encode(buffer, 8, _value, _huffmanValue);
     }
 
     @Override

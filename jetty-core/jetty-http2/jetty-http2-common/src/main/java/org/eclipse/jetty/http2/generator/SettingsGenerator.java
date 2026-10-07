@@ -44,12 +44,12 @@ public class SettingsGenerator extends FrameGenerator
             throw new IllegalArgumentException("Invalid settings, too big");
 
         RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.SETTINGS, length, reply ? Flags.ACK : Flags.NONE, 0);
+        accumulator.addRetained(buffer);
         for (Map.Entry<Integer, Integer> entry : settings.entrySet())
         {
             buffer.putShort(entry.getKey().shortValue());
             buffer.putInt(entry.getValue());
         }
-        accumulator.addRetained(buffer);
         return Frame.HEADER_LENGTH + length;
     }
 }
