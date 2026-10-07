@@ -1144,6 +1144,60 @@ public class HttpURITest
         assertThat(UriCompliance.from(UriCompliance.DEFAULT.getName()), sameInstance(UriCompliance.DEFAULT));
     }
 
+    public static Stream<Arguments> normalizeHostCases()
+    {
+        return Stream.of(
+            // IPv4-mapped IPv6 addresses (RFC 4291 section 2.5.5.2) are normalized to IPv4
+            Arguments.of("http://[::ffff:127.0.0.1]/path", "127.0.0.1", -1, "http://127.0.0.1/path"),
+            Arguments.of("http://[::FFFF:127.0.0.1]/path", "127.0.0.1", -1, "http://127.0.0.1/path"),
+            Arguments.of("http://[::ffff:127.0.0.1]:8080/path", "127.0.0.1", 8080, "http://127.0.0.1:8080/path"),
+            Arguments.of("https://[::FFFF:127.0.0.1]:8443/path?query#fragment", "127.0.0.1", 8443, "https://127.0.0.1:8443/path?query#fragment"),
+            Arguments.of("http://[0:0:0:0:0:ffff:127.0.0.1]/", "127.0.0.1", -1, "http://127.0.0.1/"),
+            Arguments.of("http://[::ffff:7f00:1]/", "127.0.0.1", -1, "http://127.0.0.1/"),
+            Arguments.of("http://user@[::ffff:127.0.0.1]:8080/", "127.0.0.1", 8080, "http://user@127.0.0.1:8080/"),
+            // Other IPv6 addresses, IPv4 addresses and host names are left untouched
+            Arguments.of("http://[::1]:8080/", "[::1]", 8080, "http://[::1]:8080/"),
+            Arguments.of("http://[2001:db8::1]/", "[2001:db8::1]", -1, "http://[2001:db8::1]/"),
+            Arguments.of("http://[2001:db8::ffff:127.0.0.1]/", "[2001:db8::ffff:127.0.0.1]", -1, "http://[2001:db8::ffff:127.0.0.1]/"),
+            Arguments.of("http://[::192.9.5.5]/", "[::192.9.5.5]", -1, "http://[::192.9.5.5]/"),
+            Arguments.of("http://127.0.0.1:8080/", "127.0.0.1", 8080, "http://127.0.0.1:8080/"),
+            Arguments.of("http://example.org/", "example.org", -1, "http://example.org/")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("normalizeHostCases")
+    public void testNormalizeHost(String input, String expectedHost, int expectedPort, String expectedUri)
+    {
+        HttpURI.Mutable httpURI = HttpURI.build(input).normalize();
+        assertThat("[" + input + "] .host", httpURI.getHost(), is(expectedHost));
+        assertThat("[" + input + "] .port", httpURI.getPort(), is(expectedPort));
+        assertThat("[" + input + "] .asString", httpURI.asString(), is(expectedUri));
+        assertThat("[" + input + "] .asImmutable", httpURI.asImmutable().asString(), is(expectedUri));
+    }
+
+    @Test
+    public void testNormalizeHostWithoutBrackets()
+    {
+        HttpURI.Mutable httpURI = HttpURI.build()
+            .scheme("http")
+            .host("::ffff:127.0.0.1")
+            .port(8080)
+            .path("/path")
+            .normalize();
+        assertThat(httpURI.getHost(), is("127.0.0.1"));
+        assertThat(httpURI.asString(), is("http://127.0.0.1:8080/path"));
+
+        httpURI = HttpURI.build()
+            .scheme("http")
+            .host("::1")
+            .port(8080)
+            .path("/path")
+            .normalize();
+        assertThat(httpURI.getHost(), is("[::1]"));
+        assertThat(httpURI.asString(), is("http://[::1]:8080/path"));
+    }
+
     public static Stream<Arguments> concatNormalizedURIShortCases()
     {
         return Stream.of(

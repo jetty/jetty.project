@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -1067,7 +1068,9 @@ public interface HttpURI
         }
 
         /**
-         * Normalizes the URI by removing the default port if it matches the scheme's default port.
+         * <p>Normalizes the URI by removing the default port if it matches the scheme's default port,
+         * and by normalizing the host as per {@link HostPort#normalizeHost(String)}, so that an
+         * IPv4-mapped IPv6 address such as {@code [::ffff:127.0.0.1]} becomes {@code 127.0.0.1}.</p>
          * @return this mutable for chaining.
          */
         public Mutable normalize()
@@ -1076,6 +1079,12 @@ public interface HttpURI
             if (scheme != null && _port == scheme.getDefaultPort())
             {
                 _port = 0;
+                _uri = null;
+            }
+            String normalizedHost = HostPort.normalizeHost(_host);
+            if (!Objects.equals(normalizedHost, _host))
+            {
+                _host = normalizedHost;
                 _uri = null;
             }
             return this;
