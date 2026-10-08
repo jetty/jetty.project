@@ -788,6 +788,12 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Si
         {
             ManagedSession session = _requestedSession.session();
 
+            if (session != null && !session.isValid())
+            {
+                _requestedSession = new RequestedSession(null, _requestedSession.sessionId(), _requestedSession.sessionIdFrom());
+                session = null;
+            }
+
             if (session != null || !create)
                 return session;
 
