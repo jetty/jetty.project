@@ -25,6 +25,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
@@ -58,12 +59,21 @@ class CrossContextDispatcher implements RequestDispatcher
         "javax.servlet.include.query_string",
         "javax.servlet.include.path_info",
         ServletContextRequest.MULTIPART_CONFIG_ELEMENT,
+        FormFields.MAX_FIELDS_ATTRIBUTE,
+        FormFields.MAX_LENGTH_ATTRIBUTE,
         ContextHandler.CROSS_CONTEXT_ATTRIBUTE,
         ORIGINAL_URI,
         ORIGINAL_QUERY_STRING,
         ORIGINAL_SERVLET_MAPPING,
         ORIGINAL_CONTEXT_PATH
     );
+
+    // Attributes whose value is derived from the context and the matched servlet, so the target
+    // context of a cross context dispatch must supply its own rather than inherit the source's.
+    private static final Set<String> CONTEXT_SCOPED_ATTRIBUTES = Set.of(
+        FormFields.MAX_FIELDS_ATTRIBUTE,
+        FormFields.MAX_LENGTH_ATTRIBUTE,
+        ServletContextRequest.MULTIPART_CONFIG_ELEMENT);
 
     private final CrossContextServletContext _targetContext;
     private final HttpURI _uri;
@@ -94,6 +104,10 @@ class CrossContextDispatcher implements RequestDispatcher
                     //Servlet Spec 9.3.1 no include attributes if a named dispatcher
 /*                    if (_namedServlet != null && name.startsWith(Dispatcher.__INCLUDE_PREFIX))
                         return null;*/
+
+                    // The target context supplies its own, they are never inherited from the source.
+                    if (CONTEXT_SCOPED_ATTRIBUTES.contains(name))
+                        return REMOVED;
 
                     //Special include attributes refer to the target context and path
                     return switch (name)
@@ -158,7 +172,21 @@ class CrossContextDispatcher implements RequestDispatcher
 
         public AsyncRequest(HttpServletRequest httpServletRequest)
         {
-            super(httpServletRequest, new ServletAttributes(httpServletRequest));
+            super(httpServletRequest, new Attributes.Synthetic(new ServletAttributes(httpServletRequest))
+            {
+                @Override
+                protected Object getSyntheticAttribute(String name)
+                {
+                    // The target context supplies its own, they are never inherited from the source.
+                    return CONTEXT_SCOPED_ATTRIBUTES.contains(name) ? REMOVED : null;
+                }
+
+                @Override
+                protected Set<String> getSyntheticNameSet()
+                {
+                    return CONTEXT_SCOPED_ATTRIBUTES;
+                }
+            });
             _fullyQualifiedURI = HttpURI.build(httpServletRequest.getRequestURL().toString()).pathQuery(_uri.getPathQuery()).asImmutable();
         }
 
@@ -190,6 +218,10 @@ class CrossContextDispatcher implements RequestDispatcher
                     if (name.startsWith("javax.servlet."))
                         name = "jakarta.servlet." + name.substring(14);
 
+                    // The target context supplies its own, they are never inherited from the source.
+                    if (CONTEXT_SCOPED_ATTRIBUTES.contains(name))
+                        return REMOVED;
+
                     return switch (name)
                     {
                         case RequestDispatcher.FORWARD_REQUEST_URI -> httpServletRequest.getRequestURI();
@@ -204,8 +236,6 @@ class CrossContextDispatcher implements RequestDispatcher
                         case RequestDispatcher.INCLUDE_QUERY_STRING -> REMOVED;
                         case RequestDispatcher.INCLUDE_SERVLET_PATH -> REMOVED;
                         case RequestDispatcher.INCLUDE_PATH_INFO -> REMOVED;
-                        //TODO
-                        //case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> httpServletRequest.getAttribute(ServletMultiPartFormData.class.getName());
                         case ContextHandler.CROSS_CONTEXT_ATTRIBUTE -> DispatcherType.FORWARD.toString();
                         default -> null;
                     };
