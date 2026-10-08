@@ -26,7 +26,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpCookieTest
 {
@@ -172,5 +174,49 @@ public class HttpCookieTest
         cookie = HttpCookie.build("A", "B").attribute("max-age", "-2").build();
         assertThat(cookie.getAttributes().size(), is(1));
         assertThat(cookie.getMaxAge(), is(-2L));
+    }
+
+    @Test
+    public void testExpiresNowNoMaxAge()
+    {
+        Instant now = Instant.now();
+        HttpCookie cookie = HttpCookie.build("name", "value").expires(now).build();
+        // This cookie now has an attribute called 'Expires' which is a string of the Instant.
+        String expectedExpires = HttpDateTime.format(now);
+        assertThat(cookie.getAttributes().get("Expires"), is(expectedExpires));
+        Instant expectedExpiresInstant = HttpDateTime.parse(cookie.getAttributes().get("Expires")).toInstant();
+        assertEquals(cookie.getExpires(), expectedExpiresInstant);
+        assertTrue(cookie.isExpired());
+        assertEquals(-1L, cookie.getMaxAge());
+    }
+
+    @Test
+    public void testExpiresEpochMaxAgeOneHour()
+    {
+        HttpCookie cookie = HttpCookie.build("name", "value").expires(Instant.EPOCH).maxAge(3600).build();
+        String expectedExpires = "Thu, 1 Jan 1970 00:00:00 GMT";
+        assertThat(cookie.getAttributes().get("Expires"), is(expectedExpires));
+        Instant expectedExpiresInstant = HttpDateTime.parse(cookie.getAttributes().get("Expires")).toInstant();
+        assertEquals(cookie.getExpires(), expectedExpiresInstant);
+        assertTrue(cookie.isExpired());
+        assertEquals(3600, cookie.getMaxAge());
+    }
+
+    @Test
+    public void testMaxAgeZero()
+    {
+        HttpCookie cookie = HttpCookie.build("name", "value").maxAge(0).build();
+        assertThat(cookie.getAttributes().get("Expires"), nullValue());
+        assertTrue(cookie.isExpired());
+        assertEquals(0, cookie.getMaxAge());
+    }
+
+    @Test
+    public void testMaxAgeOneHour()
+    {
+        HttpCookie cookie = HttpCookie.build("name", "value").maxAge(3600).build();
+        assertThat(cookie.getAttributes().get("Expires"), nullValue());
+        assertFalse(cookie.isExpired());
+        assertEquals(3600, cookie.getMaxAge());
     }
 }
