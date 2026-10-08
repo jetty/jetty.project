@@ -11,12 +11,6 @@
       <includes>
         <include>**</include>
       </includes>
-      <!--
-      <excludes>
-        <exclude>**/META-INF/**</exclude>
-        <exclude>*-config.jar</exclude>
-      </excludes>
-      -->
     </fileSet>
   </fileSets>
 </assembly>

@@ -9,13 +9,18 @@ ee8
 [tags]
 websocket
 
-[depend]
+[depends]
 websocket-core-server
 ee8-annotations
 
-[lib]
-lib/ee8-websocket/jetty-ee8-websocket-servlet-${jetty.version}.jar
-lib/ee8-websocket/jetty-ee8-websocket-jetty-api-${jetty.version}.jar
-lib/ee8-websocket/jetty-ee8-websocket-jetty-common-${jetty.version}.jar
-lib/ee8-websocket/jetty-ee8-websocket-jetty-server-${jetty.version}.jar
+[files]
+maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-jetty-api/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-jetty-api-${jetty.version}.jar
+maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-jetty-common/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-jetty-common-${jetty.version}.jar
+maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-jetty-server/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-jetty-server-${jetty.version}.jar
+maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-servlet/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-servlet-${jetty.version}.jar
 
+[lib]
+lib/ee8/jetty-ee8-websocket-jetty-api-${jetty.version}.jar
+lib/ee8/jetty-ee8-websocket-jetty-common-${jetty.version}.jar
+lib/ee8/jetty-ee8-websocket-jetty-server-${jetty.version}.jar
+lib/ee8/jetty-ee8-websocket-servlet-${jetty.version}.jar

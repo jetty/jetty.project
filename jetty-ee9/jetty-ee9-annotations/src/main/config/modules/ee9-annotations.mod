@@ -6,10 +6,14 @@ Enables Annotation scanning for deployed web applications.
 [environment]
 ee9
 
-[depend]
+[depends]
 ee9-plus
 annotations
 
+[files]
+maven://jakarta.annotation/jakarta.annotation-api/2.0.0/jar|lib/ee9/support/jakarta.annotation.jakarta.annotation-api-2.0.0.jar
+maven://org.eclipse.jetty.ee9/jetty-ee9-annotations/${jetty.version}/jar|lib/ee9/jetty-ee9-annotations-${jetty.version}.jar
+
 [lib]
-lib/jetty-ee9-annotations-${jetty.version}.jar
-lib/ee9-annotations/@jakarta.annotation:jakarta.annotation-api@
+lib/ee9/jetty-ee9-annotations-${jetty.version}.jar
+lib/ee9/support/jakarta.annotation.jakarta.annotation-api-2.0.0.jar

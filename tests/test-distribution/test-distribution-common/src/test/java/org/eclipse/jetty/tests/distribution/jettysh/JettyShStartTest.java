@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.ShellStrategy;
 import org.testcontainers.images.ImagePullPolicy;
@@ -123,6 +124,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             genericContainer.withExposedPorts(80, 8080) // jetty
                 .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
                 .withStartupAttempts(2)
+                .withLogConsumer(new Slf4jLogConsumer(LOG))
                 .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
                 .start();
 

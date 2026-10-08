@@ -6,14 +6,15 @@ Enables Annotation scanning for deployed web applications.
 [environment]
 ee8
 
-[depend]
+[depends]
 plus
 ee8-plus
 annotations
 
-[ini]
-ee8.jakarta.annotation.api.version?=@jakarta.annotation.api.version@
+[files]
+maven://jakarta.annotation/jakarta.annotation-api/1.3.5/jar|lib/ee8/support/jakarta.annotation.jakarta.annotation-api-1.3.5.jar
+maven://org.eclipse.jetty.ee8/jetty-ee8-annotations/${jetty.version}/jar|lib/ee8/jetty-ee8-annotations-${jetty.version}.jar
 
 [lib]
-lib/jetty-ee8-annotations-${jetty.version}.jar
-lib/ee8-annotations/@jakarta.annotation:jakarta.annotation-api@
+lib/ee8/jetty-ee8-annotations-${jetty.version}.jar
+lib/ee8/support/jakarta.annotation.jakarta.annotation-api-1.3.5.jar

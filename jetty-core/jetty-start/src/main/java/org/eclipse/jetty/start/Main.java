@@ -369,6 +369,12 @@ public class Main
         args.getAllModules().showModules(out, args.getShowModules());
     }
 
+    public void validateModules(PrintStream out, StartArgs args) throws IOException
+    {
+        StartLog.endStartLog();
+        ModulesValidation.validateModules(out, args.getAllModules(), args.getValidateModules());
+    }
+
     /**
      * Convenience for <code>processCommandLine(cmdLine.toArray(new String[cmdLine.size()]))</code>
      *
@@ -408,15 +414,10 @@ public class Main
         Props argProps = args.getJettyEnvironment().getProperties();
         if (!argProps.containsKey(BaseHome.JETTY_HOME))
             argProps.setProperty(home);
-        argProps.setProperty(BaseHome.JETTY_HOME + ".uri",
-            normalizeURI(baseHome.getHomePath().toUri().toString()),
-            home.source);
         Prop base = props.getProp(BaseHome.JETTY_BASE);
         if (!argProps.containsKey(BaseHome.JETTY_BASE))
             argProps.setProperty(base);
-        argProps.setProperty(BaseHome.JETTY_BASE + ".uri",
-            normalizeURI(baseHome.getBasePath().toUri().toString()),
-            base.source);
+        initBaseProps(argProps, baseHome, home.source, base.source);
 
         Set<String> selectedModules = args.getSelectedModules();
         List<String> sortedSelectedModules = modules.getSortedNames(selectedModules);
@@ -461,7 +462,17 @@ public class Main
         return args;
     }
 
-    private String normalizeURI(String uri)
+    public static void initBaseProps(Props props, BaseHome baseHome, String homeSource, String baseSource)
+    {
+        props.setProperty(BaseHome.JETTY_HOME + ".uri",
+            normalizeURI(baseHome.getHomePath().toUri().toString()),
+            homeSource);
+        props.setProperty(BaseHome.JETTY_BASE + ".uri",
+            normalizeURI(baseHome.getBasePath().toUri().toString()),
+            baseSource);
+    }
+
+    private static String normalizeURI(String uri)
     {
         if (uri.endsWith("/"))
             return uri.substring(0, uri.length() - 1);
@@ -503,6 +514,12 @@ public class Main
         if (args.getShowModules() != null)
         {
             showModules(System.out, args);
+        }
+
+        // Validate modules
+        if (args.getValidateModules() != null)
+        {
+            validateModules(System.err, args);
         }
 
         // Generate Module Graph File

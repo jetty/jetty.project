@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.start;
 
+import java.net.URI;
+
 public class FileArg
 {
     public final String moduleName;
@@ -103,6 +105,28 @@ public class FileArg
             return false;
         }
         return true;
+    }
+
+    public URI toSafeURI()
+    {
+        if (uri == null)
+            return null;
+        if (uri.contains("$"))
+        {
+            StringBuilder result = new StringBuilder();
+            for (char c: uri.toCharArray())
+            {
+                switch (c)
+                {
+                    case '$' -> result.append("%24");
+                    case '{' -> result.append("%7B");
+                    case '}' -> result.append("%7D");
+                    default -> result.append(c);
+                }
+            }
+            return URI.create(result.toString());
+        }
+        return URI.create(uri);
     }
 
     @Override
