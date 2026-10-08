@@ -149,8 +149,27 @@ public class HostPortTest
             Arguments.of("127.0.0.1", "127.0.0.1"),
             Arguments.of("::1", "[::1]"),
             Arguments.of("[::1]", "[::1]"),
-            Arguments.of("::FFFF:129.144.52.38", "[::FFFF:129.144.52.38]"),
-            Arguments.of("[::FFFF:129.144.52.38]", "[::FFFF:129.144.52.38]")
+            Arguments.of("[2001:db8::1]", "[2001:db8::1]"),
+            Arguments.of("2001:db8::1", "[2001:db8::1]"),
+            Arguments.of("fe80::1%eth0", "[fe80::1%eth0]"),
+            // IPv4-mapped IPv6 addresses (RFC 4291 section 2.5.5.2) represent IPv4 nodes
+            Arguments.of("::FFFF:129.144.52.38", "129.144.52.38"),
+            Arguments.of("[::FFFF:129.144.52.38]", "129.144.52.38"),
+            Arguments.of("::ffff:129.144.52.38", "129.144.52.38"),
+            Arguments.of("[::ffff:129.144.52.38]", "129.144.52.38"),
+            Arguments.of("0:0:0:0:0:ffff:129.144.52.38", "129.144.52.38"),
+            Arguments.of("[0:0:0:0:0:FFFF:129.144.52.38]", "129.144.52.38"),
+            // IPv4-mapped IPv6 addresses in hexadecimal form
+            Arguments.of("::ffff:8190:3426", "129.144.52.38"),
+            Arguments.of("[::FFFF:8190:3426]", "129.144.52.38"),
+            // Other IPv6 addresses embedding an IPv4 address (including the deprecated IPv4-compatible form) are not IPv4 nodes
+            Arguments.of("::192.9.5.5", "[::192.9.5.5]"),
+            Arguments.of("[::192.9.5.5]", "[::192.9.5.5]"),
+            Arguments.of("::fffe:129.144.52.38", "[::fffe:129.144.52.38]"),
+            Arguments.of("2001:db8::ffff:129.144.52.38", "[2001:db8::ffff:129.144.52.38]"),
+            // Malformed IPv6 literals are left untouched
+            Arguments.of("[::ffff:1.2.3.4.5]", "[::ffff:1.2.3.4.5]"),
+            Arguments.of("[notIpv6]", "[notIpv6]")
         );
     }
 
@@ -160,5 +179,29 @@ public class HostPortTest
     {
         String actualHost = HostPort.normalizeHost(rawHost);
         assertEquals(expectedHost, actualHost);
+    }
+
+    public static Stream<Arguments> hostAndPortProvider()
+    {
+        return Stream.of(
+            Arguments.of("localhost", 8080, "localhost", 8080, "localhost:8080"),
+            Arguments.of("127.0.0.1", -1, "127.0.0.1", -1, "127.0.0.1"),
+            Arguments.of("::1", 443, "[::1]", 443, "[::1]:443"),
+            Arguments.of("[::1]", -1, "[::1]", -1, "[::1]"),
+            // IPv4-mapped IPv6 addresses (RFC 4291 section 2.5.5.2) are normalized to IPv4
+            Arguments.of("::ffff:129.144.52.38", 80, "129.144.52.38", 80, "129.144.52.38:80"),
+            Arguments.of("[::FFFF:129.144.52.38]", 8080, "129.144.52.38", 8080, "129.144.52.38:8080"),
+            Arguments.of("[::ffff:129.144.52.38]", -1, "129.144.52.38", -1, "129.144.52.38")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("hostAndPortProvider")
+    public void testHostAndPort(String rawHost, int port, String expectedHost, int expectedPort, String expectedAuthority)
+    {
+        HostPort hostPort = new HostPort(rawHost, port);
+        assertThat("Host for: " + rawHost, hostPort.getHost(), is(expectedHost));
+        assertThat("Port for: " + rawHost, hostPort.getPort(), is(expectedPort));
+        assertThat("Authority for: " + rawHost, hostPort.toString(), is(expectedAuthority));
     }
 }
