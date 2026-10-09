@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.websocket.core.extensions;
 
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 public abstract class AbstractExtensionTest
@@ -26,7 +28,14 @@ public abstract class AbstractExtensionTest
     @BeforeEach
     public void init()
     {
+        LifeCycle.start(components);
         clientExtensions = new ExtensionTool();
         serverExtensions = new ExtensionTool();
+    }
+
+    @AfterEach
+    public void destroy()
+    {
+        LifeCycle.stop(components);
     }
 }

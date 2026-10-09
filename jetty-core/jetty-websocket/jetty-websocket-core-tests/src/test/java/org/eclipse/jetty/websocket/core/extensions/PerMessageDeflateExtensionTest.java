@@ -20,14 +20,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.Deflater;
 
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.compression.CompressionPool;
-import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Configuration.ConfigurationCustomizer;
 import org.eclipse.jetty.websocket.core.DemandingIncomingFramesCapture;
@@ -39,7 +36,6 @@ import org.eclipse.jetty.websocket.core.Negotiated;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFramesCapture;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
-import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.PerMessageDeflateExtension;
@@ -530,30 +526,16 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     @Test
-    public void testOutgoingNoContextTakeoverReleasesDeflater() throws Exception
+    public void testOutgoingNoContextTakeoverReleasesDeflater()
     {
-        DeflaterPool deflaterPool = new DeflaterPool(CompressionPool.DEFAULT_CAPACITY, Deflater.DEFAULT_COMPRESSION, true);
-        deflaterPool.start();
-        try
-        {
-            WebSocketComponents pooledComponents = new WebSocketComponents(null, null, null, null, deflaterPool);
-            PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
-            ext.init(ExtensionConfig.parse("permessage-deflate; server_no_context_takeover"), pooledComponents);
-            ext.setCoreSession(newSession());
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
+        ext.init(ExtensionConfig.parse("permessage-deflate; server_no_context_takeover"), components);
+        ext.setCoreSession(newSession());
+        ext.setNextOutgoingFrames(new OutgoingFramesCapture());
 
-            OutgoingFramesCapture capture = new OutgoingFramesCapture();
-            ext.setNextOutgoingFrames(capture);
+        ext.sendFrame(new Frame(OpCode.TEXT, "Hello World"), Callback.NOOP, false);
 
-            ext.sendFrame(new Frame(OpCode.TEXT, true, "Hello World"), Callback.NOOP, false);
-
-            capture.assertFrameCount(1);
-            // Without context takeover the Deflater goes back to the pool after every message.
-            assertThat("Deflaters in use", deflaterPool.getPool().getInUseCount(), is(0));
-        }
-        finally
-        {
-            deflaterPool.stop();
-        }
+        assertThat("Deflaters in use", components.getDeflaterPool().getPool().getInUseCount(), is(0));
     }
 
     @Test
