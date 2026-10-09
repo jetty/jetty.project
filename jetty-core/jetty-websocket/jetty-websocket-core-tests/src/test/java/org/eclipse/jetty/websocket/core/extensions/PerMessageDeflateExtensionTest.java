@@ -526,6 +526,19 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     @Test
+    public void testOutgoingNoContextTakeoverReleasesDeflater()
+    {
+        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
+        ext.init(ExtensionConfig.parse("permessage-deflate; server_no_context_takeover"), components);
+        ext.setCoreSession(newSession());
+        ext.setNextOutgoingFrames(new OutgoingFramesCapture());
+
+        ext.sendFrame(new Frame(OpCode.TEXT, "Hello World"), Callback.NOOP, false);
+
+        assertThat("Deflaters in use", components.getDeflaterPool().getPool().getInUseCount(), is(0));
+    }
+
+    @Test
     public void testPyWebSocketClientNoContextTakeoverThreeOra()
     {
         ExtensionTool.Tester tester = clientExtensions.newTester("permessage-deflate; client_max_window_bits; client_no_context_takeover");
