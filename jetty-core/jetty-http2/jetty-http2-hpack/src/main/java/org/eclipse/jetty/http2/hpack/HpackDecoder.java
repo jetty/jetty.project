@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.hpack;
 
 import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.function.LongSupplier;
 
@@ -30,7 +29,6 @@ import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.internal.AuthorityHttpField;
 import org.eclipse.jetty.http2.hpack.internal.MetaDataBuilder;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -368,16 +366,7 @@ public class HpackDecoder
         // from the bytes in bulk rather than appending one character at a time.
         if (length > buffer.remaining())
             throw new BufferUnderflowException();
-        if (buffer.hasArray())
-        {
-            int position = buffer.position();
-            String string = new String(buffer.array(), buffer.arrayOffset() + position, length, StandardCharsets.ISO_8859_1);
-            buffer.position(position + length);
-            return string;
-        }
-        byte[] bytes = new byte[length];
-        buffer.get(bytes, 0, length);
-        return new String(bytes, StandardCharsets.ISO_8859_1);
+        return buffer.getString(StandardCharsets.ISO_8859_1);
     }
 
     @Override
