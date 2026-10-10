@@ -166,7 +166,7 @@
     <apache.avro.version>1.11.3</apache.avro.version>
     <apache.httpclient.version>4.5.14</apache.httpclient.version>
     <apache.httpcore.version>4.4.16</apache.httpcore.version>
-    <asm.version>9.10.1</asm.version>
+    <asm.version>9.11</asm.version>
     <awaitility.version>4.3.0</awaitility.version>
     <!--
     DO NOT UPGRADE this except tinybundle upgrade:
@@ -271,7 +271,7 @@
     <kerb-simplekdc.version>2.1.2</kerb-simplekdc.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.26.1</log4j2.version>
-    <logback.version>1.6.4</logback.version>
+    <logback.version>1.6.5</logback.version>
     <lucene.version>9.12.3</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.10</mariadb.version>
@@ -309,7 +309,7 @@
     <modify-sources-plugin.version>1.0.14</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.13.0</mongodb.version>
-    <netty.version>4.2.18.Final</netty.version>
+    <netty.version>4.2.19.Final</netty.version>
     <njord.version>0.9.10</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
