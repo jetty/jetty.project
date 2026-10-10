@@ -79,7 +79,7 @@ public class BufferedResponseHandlerTest
             bufferedResponseHandler.setHandler(new TestHandler());
         });
 
-        String response = _local.getResponse("GET /ctx/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String response = _local.getResponseAsString("GET /ctx/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
         assertThat(response, not(containsString("Content-Length: ")));
@@ -101,7 +101,7 @@ public class BufferedResponseHandlerTest
             bufferedResponseHandler.setHandler(testHandler);
         });
 
-        String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String response = _local.getResponseAsString("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
         assertThat(response, containsString("Write: 9"));
@@ -121,7 +121,7 @@ public class BufferedResponseHandlerTest
             bufferedResponseHandler.setHandler(testHandler);
         });
 
-        String response = _local.getResponse("GET /ctx/include/path.exclude HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String response = _local.getResponseAsString("GET /ctx/include/path.exclude HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
         assertThat(response, not(containsString("Content-Length: ")));
@@ -143,7 +143,7 @@ public class BufferedResponseHandlerTest
             bufferedResponseHandler.setHandler(testHandler);
         });
 
-        String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String response = _local.getResponseAsString("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
         assertThat(response, containsString("Transfer-Encoding: chunked"));
@@ -168,7 +168,7 @@ public class BufferedResponseHandlerTest
             bufferedResponseHandler.setHandler(testHandler);
         });
 
-        String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String response = _local.getResponseAsString("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
         assertThat(response, containsString("Write: 1"));
@@ -191,7 +191,7 @@ public class BufferedResponseHandlerTest
             bufferedResponseHandler.setHandler(testHandler);
         });
 
-        String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String response = _local.getResponseAsString("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
         assertThat(response, containsString("Transfer-Encoding: chunked"));
@@ -214,7 +214,7 @@ public class BufferedResponseHandlerTest
             bufferedResponseHandler.setHandler(testHandler);
         });
 
-        String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String response = _local.getResponseAsString("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Content-Length: "));
         assertThat(response, containsString("Write: 0"));
@@ -235,7 +235,7 @@ public class BufferedResponseHandlerTest
             bufferedResponseHandler.setHandler(testHandler);
         });
 
-        String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String response = _local.getResponseAsString("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Content-Length: "));
         assertThat(response, containsString("Write: 0"));
@@ -258,7 +258,7 @@ public class BufferedResponseHandlerTest
             bufferedResponseHandler.setHandler(testHandler);
         });
 
-        String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String response = _local.getResponseAsString("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Transfer-Encoding: chunked"));
         assertThat(response, containsString("Write: 0"));
@@ -295,7 +295,7 @@ public class BufferedResponseHandlerTest
             bufferedResponseHandler.setHandler(handler);
         });
 
-        String rawResponse = _local.getResponse("""
+        String rawResponse = _local.getResponseAsString("""
             GET /ctx/include/path HTTP/1.1
             Host: localhost
             
@@ -320,7 +320,7 @@ public class BufferedResponseHandlerTest
             bufferedResponseHandler.setHandler(testHandler);
         });
 
-        String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String response = _local.getResponseAsString("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
         assertThat(response, containsString("Write: 9"));

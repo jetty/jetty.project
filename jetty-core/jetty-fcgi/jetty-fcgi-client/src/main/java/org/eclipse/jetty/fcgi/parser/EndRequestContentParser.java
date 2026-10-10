@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>Parser for the END_REQUEST frame content.</p>
@@ -40,9 +40,9 @@ public class EndRequestContentParser extends ContentParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public Result parse(RetainableByteBuffer buffer)
     {
-        while (buffer.hasRemaining())
+        while (buffer.remaining() > 0)
         {
             switch (state)
             {
@@ -62,7 +62,7 @@ public class EndRequestContentParser extends ContentParser
                 }
                 case APPLICATION_BYTES:
                 {
-                    int quarterInt = buffer.get() & 0xFF;
+                    int quarterInt = buffer.getByteAsInt();
                     application = (application << 8) + quarterInt;
                     if (++cursor == 4)
                         state = State.PROTOCOL;
@@ -70,7 +70,7 @@ public class EndRequestContentParser extends ContentParser
                 }
                 case PROTOCOL:
                 {
-                    protocol = buffer.get() & 0xFF;
+                    protocol = buffer.getByteAsInt();
                     state = State.RESERVED;
                     break;
                 }
@@ -78,7 +78,7 @@ public class EndRequestContentParser extends ContentParser
                 {
                     if (buffer.remaining() >= 3)
                     {
-                        buffer.position(buffer.position() + 3);
+                        buffer.readPosition(buffer.readPosition() + 3);
                         onEnd();
                         reset();
                         return Result.COMPLETE;

@@ -16,6 +16,8 @@ package org.eclipse.jetty.quic.util;
 import java.nio.ByteBuffer;
 import java.util.function.LongConsumer;
 
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+
 /**
  * <p>Encodes and decodes {@code long} values as specified by
  * <a href="https://datatracker.ietf.org/doc/html/rfc9000#section-16">QUIC</a>.</p>
@@ -45,13 +47,13 @@ public class VarLenInt
      * Otherwise, there are not enough bytes to decode the {@code long} value, and this method
      * returns {@code false}.</p>
      *
-     * @param byteBuffer the {@code ByteBuffer} to decode from
+     * @param buffer the {@code ByteBuffer} to decode from
      * @param consumer the {@link LongConsumer} to invoke when the decoding is complete
      * @return whether the decoding was complete
      */
-    public boolean tryDecode(ByteBuffer byteBuffer, LongConsumer consumer)
+    public boolean tryDecode(RetainableByteBuffer buffer, LongConsumer consumer)
     {
-        return tryDecode(byteBuffer, (l, v) -> consumer.accept(v));
+        return tryDecode(buffer, (l, v) -> consumer.accept(v));
     }
 
     /**
@@ -61,20 +63,20 @@ public class VarLenInt
      * Otherwise, there are not enough bytes to decode the {@code long} value, and this method
      * returns {@code false}.</p>
      *
-     * @param byteBuffer the {@code ByteBuffer} to decode from
+     * @param buffer the {@code ByteBuffer} to decode from
      * @param consumer the {@link LongConsumer} to invoke when the decoding is complete
      * @return whether the decoding was complete
      */
-    public boolean tryDecode(ByteBuffer byteBuffer, IntLongConsumer consumer)
+    public boolean tryDecode(RetainableByteBuffer buffer, IntLongConsumer consumer)
     {
-        while (byteBuffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
             if (encoding < 0)
             {
-                encoding = lengthEncoding(byteBuffer);
+                encoding = lengthEncoding(buffer);
                 length = 1 << encoding;
                 // Start with the hi byte.
-                value = byteBuffer.get() & VALUE_MASK;
+                value = buffer.get() & VALUE_MASK;
                 if (--length == 0)
                     return result(consumer);
             }
@@ -83,7 +85,7 @@ public class VarLenInt
                 if (length > 0)
                 {
                     // Shift the value to the left for every byte.
-                    value = accumulateValue(value, byteBuffer.get());
+                    value = accumulateValue(value, buffer.get());
                     if (--length == 0)
                         return result(consumer);
                 }
@@ -110,26 +112,26 @@ public class VarLenInt
     /**
      * <p>Decodes an {@code int} value from the given {@code ByteBuffer}.</p>
      *
-     * @param byteBuffer the {@code ByteBuffer} to decode from
+     * @param buffer the {@code ByteBuffer} to decode from
      * @return the decoded {@code int} value
      */
-    public static int decodeInt(ByteBuffer byteBuffer)
+    public static int decodeInt(RetainableByteBuffer buffer)
     {
-        return (int)decode(byteBuffer, true);
+        return (int)decode(buffer, true);
     }
 
     /**
      * <p>Decodes a {@code long} value from the given {@code ByteBuffer}.</p>
      *
-     * @param byteBuffer the {@code ByteBuffer} to decode from
+     * @param buffer the {@code ByteBuffer} to decode from
      * @return the decoded {@code long} value
      */
-    public static long decodeLong(ByteBuffer byteBuffer)
+    public static long decodeLong(RetainableByteBuffer buffer)
     {
-        return decode(byteBuffer, false);
+        return decode(buffer, false);
     }
 
-    private static long decode(ByteBuffer buffer, boolean asInt)
+    private static long decode(RetainableByteBuffer buffer, boolean asInt)
     {
         int encoding = lengthEncoding(buffer);
         if (asInt && encoding == 3)
@@ -148,15 +150,15 @@ public class VarLenInt
      * <p>Returns {@code 0} for 1-byte encoding, {@code 1} for 2-byte encoding,
      * {@code 2} for 4-byte encoding and {@code 3} for 8-byte encoding.</p>
      *
-     * @param byteBuffer the {@link ByteBuffer} to read the two most significant bits
+     * @param buffer the {@link ByteBuffer} to read the two most significant bits
      * of the byte at the current position to determine the variable length encoding
      * @return the base-2 logarithm of the N-byte variable length encoding
      */
-    private static int lengthEncoding(ByteBuffer byteBuffer)
+    private static int lengthEncoding(RetainableByteBuffer buffer)
     {
         // The first byte is the most significant, and therefore the
         // one that holds the encoding in the 2 most significant bits.
-        byte hiByte = byteBuffer.get(byteBuffer.position());
+        byte hiByte = buffer.get(buffer.readPosition());
         return (hiByte & ENCODING_MASK) >>> 6;
     }
 
@@ -169,24 +171,23 @@ public class VarLenInt
      * <p>Variable-length encodes the given {@code long} value into the given {@code ByteBuffer},
      * starting at its current position.</p>
      *
-     * @param byteBuffer the {@code ByteBuffer} to encode into
+     * @param buffer the {@code ByteBuffer} to encode into
      * @param value the {@code long} value to encode
      */
-    public static void encode(ByteBuffer byteBuffer, long value)
+    public static int encode(RetainableByteBuffer.Mutable buffer, long value)
     {
         int length = length(value);
         int encoding = 31 - Integer.numberOfLeadingZeros(length);
-        // Put the least significant bytes first, and proceed
-        // backwards by shifting the value to the right until the
-        // most significant byte, that also stores the encoding.
-        int position = byteBuffer.position();
-        for (int i = length - 1; i > 0; --i)
+        // Shift the value and work only on the least significant byte by masking.
+        int shift = (length - 1) * Byte.SIZE;
+        byte msb = (byte)(((value >>> shift) & VALUE_MASK) | (encoding << 6));
+        buffer.put(msb);
+        while (shift > 0)
         {
-            byteBuffer.put(position + i, (byte)(value & 0xFF));
-            value = value >>> 8;
+            shift -= Byte.SIZE;
+            buffer.put((byte)((value >>> shift) & 0xFF));
         }
-        byteBuffer.put(position, (byte)((value & VALUE_MASK) | (encoding << 6)));
-        byteBuffer.position(position + length);
+        return length;
     }
 
     /**

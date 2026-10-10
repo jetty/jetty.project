@@ -13,36 +13,43 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class DataFrame extends StreamFrame
+public class DataFrame extends StreamFrame implements AutoCloseable
 {
-    private final ByteBuffer data;
+    private final RetainableByteBuffer data;
     private final boolean endStream;
-    private final int length;
+    private final long length;
     private final int padding;
 
-    public DataFrame(ByteBuffer data, boolean endStream)
+    public DataFrame(RetainableByteBuffer data, boolean endStream)
     {
         this(0, data, endStream);
     }
 
-    public DataFrame(int streamId, ByteBuffer data, boolean endStream)
+    public DataFrame(int streamId, RetainableByteBuffer data, boolean endStream)
     {
         this(streamId, data, endStream, 0);
     }
 
-    public DataFrame(int streamId, ByteBuffer data, boolean endStream, int padding)
+    public DataFrame(int streamId, RetainableByteBuffer data, boolean endStream, int padding)
     {
         super(FrameType.DATA, streamId);
+        data.retain();
         this.data = data;
         this.endStream = endStream;
         this.length = data.remaining();
         this.padding = padding;
     }
 
-    public ByteBuffer getByteBuffer()
+    public static DataFrame eof(int streamId)
     {
+        return new DataFrame(streamId, RetainableByteBuffer.empty(), true);
+    }
+
+    public RetainableByteBuffer acquire()
+    {
+        data.retain();
         return data;
     }
 
@@ -54,7 +61,7 @@ public class DataFrame extends StreamFrame
     /**
      * @return the number of data bytes remaining.
      */
-    public int remaining()
+    public long remaining()
     {
         return data.remaining();
     }
@@ -72,13 +79,20 @@ public class DataFrame extends StreamFrame
      */
     public int flowControlLength()
     {
-        return length + padding;
+        // TODO: overflow?
+        return Math.toIntExact(length + padding);
     }
 
     @Override
     public DataFrame withStreamId(int streamId)
     {
-        return new DataFrame(streamId, getByteBuffer(), isEndStream());
+        return new DataFrame(streamId, data, isEndStream());
+    }
+
+    @Override
+    public void close()
+    {
+        data.release();
     }
 
     @Override

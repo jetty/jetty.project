@@ -271,7 +271,7 @@ public class AsyncTest
                             
                 """;
 
-            HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+            HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
             assertThat(response.getStatus(), is(200));
             assertThat(events, Matchers.containsInRelativeOrder("Request Initialized: /ctxA", "Request Destroyed: /ctxA"));
             assertThat(response.getContent(), containsString("Dispatched to ctxA in test-servlet"));
@@ -396,7 +396,7 @@ public class AsyncTest
                             
                 """;
 
-            HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+            HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
             assertThat(response.getStatus(), is(200));
             assertThat(events, Matchers.containsInRelativeOrder("Request Initialized: /ctxA", "Request Destroyed: /ctxA"));
             assertThat(response.getContent(), containsString("Dispatched to ctxB in test-servlet"));

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.quic.quiche;
 
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
@@ -23,9 +22,11 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -41,13 +42,13 @@ public abstract class QuicheConnection extends AbstractConnection
 {
     private final Callback fillableCallback = new FillableCallback();
     private final Scheduler scheduler;
-    private final ByteBufferPool bufferPool;
+    private final WritableBufferPool bufferPool;
 
     protected QuicheConnection(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, EndPoint endPoint)
     {
         super(endPoint, executor);
         this.scheduler = scheduler;
-        this.bufferPool = bufferPool;
+        this.bufferPool = WritableBufferPool.wrap(bufferPool);
     }
 
     public Scheduler getScheduler()
@@ -55,7 +56,7 @@ public abstract class QuicheConnection extends AbstractConnection
         return scheduler;
     }
 
-    public ByteBufferPool getByteBufferPool()
+    public WritableBufferPool getByteBufferPool()
     {
         return bufferPool;
     }
@@ -66,7 +67,7 @@ public abstract class QuicheConnection extends AbstractConnection
         getEndPoint().fillInterested(fillableCallback);
     }
 
-    public abstract void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers);
+    public abstract void write(Callback callback, SocketAddress remoteAddress, RetainableByteBuffer buffer);
 
     @Override
     public abstract boolean onIdleExpired(TimeoutException timeoutException);

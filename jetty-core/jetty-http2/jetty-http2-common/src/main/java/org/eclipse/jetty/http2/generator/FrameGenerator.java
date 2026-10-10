@@ -13,36 +13,41 @@
 
 package org.eclipse.jetty.http2.generator;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public abstract class FrameGenerator
 {
     private final HeaderGenerator headerGenerator;
+    private final WritableBufferPool bufferPool;
 
     protected FrameGenerator(HeaderGenerator headerGenerator)
     {
         this.headerGenerator = headerGenerator;
+        this.bufferPool = headerGenerator == null ? WritableBufferPool.NON_POOLING : headerGenerator.getBufferPool();
     }
 
-    public abstract int generate(RetainableByteBuffer.Mutable accumulator, Frame frame) throws HpackException;
+    public abstract int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame) throws HpackException;
 
-    protected void generateHeader(RetainableByteBuffer.Mutable accumulator, FrameType frameType, int length, int flags, int streamId)
+    protected RetainableByteBuffer.Mutable generateHeader(FrameType frameType, int length, int flags, int streamId)
     {
-        headerGenerator.generate(accumulator, frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
+        return headerGenerator.generate(frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
     }
 
     public int getMaxFrameSize()
     {
         return headerGenerator.getMaxFrameSize();
+    }
+
+    public WritableBufferPool getBufferPool()
+    {
+        return headerGenerator.getBufferPool();
     }
 
     public boolean isUseDirectByteBuffers()
@@ -55,18 +60,11 @@ public abstract class FrameGenerator
         int bufferSize = encoder.getMaxHeaderListSize();
         if (bufferSize <= 0)
             bufferSize = HpackContext.DEFAULT_MAX_HEADER_LIST_SIZE;
-        RetainableByteBuffer hpacked = headerGenerator.getByteBufferPool().acquire(bufferSize, isUseDirectByteBuffers());
-        try
+        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(bufferSize, isUseDirectByteBuffers()))
         {
-            ByteBuffer byteBuffer = hpacked.getByteBuffer();
-            BufferUtil.clearToFill(byteBuffer);
-            encoder.encode(byteBuffer, metaData);
-            return hpacked;
-        }
-        catch (HpackException x)
-        {
-            hpacked.release();
-            throw x;
+            encoder.encode(buffer, metaData);
+            buffer.retain();
+            return buffer;
         }
     }
 }

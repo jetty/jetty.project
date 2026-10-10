@@ -676,7 +676,7 @@ public class MultiPartTest
         @Override
         public void onPartContent(Content.Chunk chunk)
         {
-            events.offer("content last: %b length: %d".formatted(chunk.isLast(), chunk.getByteBuffer().remaining()));
+            events.offer("content last: %b length: %d".formatted(chunk.isLast(), chunk.remaining()));
         }
 
         @Override

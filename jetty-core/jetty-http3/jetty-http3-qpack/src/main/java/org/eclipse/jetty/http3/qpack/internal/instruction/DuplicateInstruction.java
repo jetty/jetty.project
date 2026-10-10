@@ -13,14 +13,11 @@
 
 package org.eclipse.jetty.http3.qpack.internal.instruction;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http3.qpack.Instruction;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class DuplicateInstruction implements Instruction
 {
@@ -37,16 +34,13 @@ public class DuplicateInstruction implements Instruction
     }
 
     @Override
-    public void encode(ByteBufferPool byteBufferPool, RetainableByteBuffer.Mutable accumulator)
+    public void encode(WritableBufferPool bufferPool, RetainableByteBuffer.Accumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(5, _index);
-        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
-        ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
-        BufferUtil.clearToFill(buffer);
+        RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, false);
+        accumulator.addRetained(buffer);
         buffer.put((byte)0x00);
         NBitIntegerEncoder.encode(buffer, 5, _index);
-        BufferUtil.flipToFlush(buffer, 0);
-        accumulator.add(retainableByteBuffer);
     }
 
     @Override

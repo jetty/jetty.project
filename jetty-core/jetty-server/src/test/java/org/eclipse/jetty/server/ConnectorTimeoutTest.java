@@ -19,14 +19,14 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.channels.Channel;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.EchoHandler;
@@ -34,12 +34,14 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.time.Duration.ofSeconds;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -147,7 +149,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     public void testMaxIdleWithRequest10NoClientClose() throws Exception
     {
-        final Exchanger<EndPoint> exchanger = new Exchanger<>();
+        Exchanger<EndPoint> exchanger = new Exchanger<>();
         startServer(new HelloWorldHandler()
         {
             @Override
@@ -164,42 +166,44 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 return super.handle(request, response, callback);
             }
         });
-        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
-        client.setSoTimeout(10000);
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            client.setSoTimeout(10000);
 
-        assertFalse(client.isClosed());
+            assertFalse(client.isClosed());
 
-        OutputStream os = client.getOutputStream();
-        InputStream is = client.getInputStream();
+            OutputStream os = client.getOutputStream();
+            InputStream is = client.getInputStream();
 
-        os.write((
-            "GET / HTTP/1.0\r\n" +
-                "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                "connection: close\r\n" +
-                "\r\n").getBytes(StandardCharsets.UTF_8));
-        os.flush();
+            os.write((
+                "GET / HTTP/1.0\r\n" +
+                    "host: localhost:" + _serverURI.getPort() + "\r\n" +
+                    "connection: close\r\n" +
+                    "\r\n").getBytes(StandardCharsets.UTF_8));
+            os.flush();
 
-        // Get the server side endpoint
-        EndPoint endPoint = exchanger.exchange(null, 10, TimeUnit.SECONDS);
-        if (endPoint instanceof SslConnection.SslEndPoint sslEndPoint)
-            endPoint = sslEndPoint.getSslConnection().getEndPoint();
+            // Get the server side endpoint
+            EndPoint endPoint = exchanger.exchange(null, 10, TimeUnit.SECONDS);
+            if (endPoint instanceof SslConnection.SslEndPoint sslEndPoint)
+                endPoint = sslEndPoint.getSslConnection().getEndPoint();
 
-        // read the response
-        String result = IO.toString(is);
-        assertThat("OK", result, containsString("200 OK"));
+            // read the response
+            String result = IO.toString(is);
+            assertThat("OK", result, containsString("200 OK"));
 
-        // check client reads EOF
-        assertEquals(-1, is.read());
-        assertTrue(endPoint.isOutputShutdown());
+            // check client reads EOF
+            assertEquals(-1, is.read());
+            await().atMost(5, TimeUnit.SECONDS).until(endPoint::isOutputShutdown);
 
-        // wait for idle timeout
-        TimeUnit.MILLISECONDS.sleep(2 * MAX_IDLE_TIME);
+            // wait for idle timeout
+            TimeUnit.MILLISECONDS.sleep(2 * MAX_IDLE_TIME);
 
-        // check the server side is closed
-        assertFalse(endPoint.isOpen());
-        Object transport = endPoint.getTransport();
-        if (transport instanceof Channel)
-            assertFalse(((Channel)transport).isOpen());
+            // check the server side is closed
+            assertFalse(endPoint.isOpen());
+            Object transport = endPoint.getTransport();
+            if (transport instanceof Channel)
+                assertFalse(((Channel)transport).isOpen());
+        }
     }
 
     @Test
@@ -607,14 +611,14 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             Request request;
             Response response;
             Callback callback;
-            ByteBufferAccumulator bufferAccumulator;
+            List<RetainableByteBuffer> accumulator;
 
             public WholeProcess(Request request, Response response, Callback callback)
             {
                 this.request = request;
                 this.response = response;
                 this.callback = callback;
-                this.bufferAccumulator = new ByteBufferAccumulator();
+                this.accumulator = new ArrayList<>();
             }
 
             @Override
@@ -622,28 +626,37 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             {
                 while (true)
                 {
-                    Content.Chunk chunk = request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = request.read())
                     {
-                        request.demand(this);
-                        return;
-                    }
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        callback.failed(chunk.getFailure());
-                        return;
-                    }
-                    // copy buffer
-                    bufferAccumulator.copyBuffer(chunk.getByteBuffer().slice());
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        // write accumulated buffers
-                        RetainableByteBuffer buffer = bufferAccumulator.toRetainableByteBuffer();
-                        response.write(true, buffer.getByteBuffer(), Callback.from(buffer::release, callback));
-                        return;
+                        if (chunk == null)
+                        {
+                            request.demand(this);
+                            return;
+                        }
+                        if (Content.Chunk.isFailure(chunk))
+                        {
+                            release();
+                            callback.failed(chunk.getFailure());
+                            return;
+                        }
+                        accumulator.add(chunk.acquire());
+                        if (chunk.isLast())
+                        {
+                            // Write accumulated buffers.
+                            try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(accumulator))
+                            {
+                                release();
+                                response.write(true, buffer, callback);
+                                return;
+                            }
+                        }
                     }
                 }
+            }
+
+            private void release()
+            {
+                accumulator.forEach(RetainableByteBuffer::release);
             }
         }
     }

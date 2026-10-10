@@ -18,15 +18,15 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>Instances of this class are not reusable, so one must be allocated for each request.</p>
@@ -40,20 +40,22 @@ import org.eclipse.jetty.util.BufferUtil;
  */
 public abstract class AbstractResponseListener implements Response.Listener
 {
-    private final RetainableByteBuffer.Mutable accumulator;
+    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+    private final long maxLength;
     private String encoding;
     private String mediaType;
+    private long length;
     private byte[] content;
     private boolean append;
 
-    protected AbstractResponseListener(RetainableByteBuffer.Mutable accumulator)
+    protected AbstractResponseListener(long maxLength)
     {
-        this.accumulator = Objects.requireNonNull(accumulator);
+        this.maxLength = maxLength;
     }
 
     public long getMaxLength()
     {
-        return accumulator.maxSize();
+        return maxLength;
     }
 
     public String getEncoding()
@@ -113,18 +115,26 @@ public abstract class AbstractResponseListener implements Response.Listener
     @Override
     public void onContent(Response response, Content.Chunk chunk, Runnable demander) throws Exception
     {
-        onContent(response, chunk.getByteBuffer());
-        if (append)
+        try (RetainableByteBuffer buffer = chunk.acquire())
         {
-            append = false;
-            if (accumulator.append(chunk))
+            onContent(response, buffer);
+            if (append)
+            {
+                append = false;
+
+                long max = getMaxLength();
+                long remaining = buffer.remaining();
+                if (max > 0 && length + remaining > max)
+                    throw new IllegalArgumentException("Buffering capacity " + max + " exceeded");
+
+                length += remaining;
+                accumulator.add(buffer);
                 demander.run();
+            }
             else
-                response.abort(new IllegalArgumentException("Buffering capacity " + getMaxLength() + " exceeded"));
-        }
-        else
-        {
-            demander.run();
+            {
+                demander.run();
+            }
         }
     }
 
@@ -148,10 +158,8 @@ public abstract class AbstractResponseListener implements Response.Listener
      */
     public byte[] getContent()
     {
-        // Call take() in case onSuccess() is
-        // overridden, but super is not called.
         if (content == null)
-            content = take();
+            content = toArray();
         return content;
     }
 
@@ -218,23 +226,19 @@ public abstract class AbstractResponseListener implements Response.Listener
     public Content.Source takeContentAsContentSource()
     {
         Content.Source result;
-        // Take the DynamicCapacity's content source only if the content hasn't been already taken.
-        if (content == null && accumulator instanceof RetainableByteBuffer.DynamicCapacity dynamic)
-            result = dynamic.takeContentSource();
+        if (content == null)
+            result = Content.Source.from(List.of(accumulator.drain()));
         else
-            result = Content.Source.from(ByteBuffer.wrap(takeContent()));
-        return result;
-    }
-
-    private byte[] takeContent()
-    {
-        byte[] result = getContent();
+            result = Content.Source.from(ByteBuffer.wrap(content));
         content = BufferUtil.EMPTY_BYTES;
         return result;
     }
 
-    private byte[] take()
+    private byte[] toArray()
     {
-        return accumulator.takeByteArray();
+        try (RetainableByteBuffer buffer = accumulator.drain())
+        {
+            return buffer.getArray();
+        }
     }
 }

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee.servlet;
 
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.ListIterator;
@@ -31,7 +30,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.io.ByteBufferInputStream;
+import org.eclipse.jetty.io.RetainableByteBufferInputStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * A {@link HttpServletResponse} wrapped as a core {@link Response}.
@@ -135,7 +135,7 @@ public class ServletCoreResponse implements Response
     }
 
     @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
         if (_included)
             last = false;
@@ -144,17 +144,17 @@ public class ServletCoreResponse implements Response
             if (!_wrapped && !_servletContextResponse.isWritingOrStreaming())
             {
                 // We can bypass the HttpOutput stream, but we need to update its bytes written
-                _servletContextResponse.getHttpOutput().addBytesWrittenViaBypass(BufferUtil.length(byteBuffer));
-                _servletContextResponse.write(last, byteBuffer, callback);
+                _servletContextResponse.getHttpOutput().addBytesWrittenViaBypass(buffer.remaining());
+                _servletContextResponse.write(last, buffer, callback);
             }
             else
             {
-                if (BufferUtil.hasContent(byteBuffer))
+                if (buffer != null && buffer.hasRemaining())
                 {
                     if (isWriting())
                     {
                         String characterEncoding = _httpServletResponse.getCharacterEncoding();
-                        try (ByteBufferInputStream bbis = new ByteBufferInputStream(byteBuffer);
+                        try (RetainableByteBufferInputStream bbis = new RetainableByteBufferInputStream(buffer);
                              InputStreamReader reader = new InputStreamReader(bbis, characterEncoding))
                         {
                             IO.copy(reader, _httpServletResponse.getWriter());
@@ -165,7 +165,7 @@ public class ServletCoreResponse implements Response
                     }
                     else
                     {
-                        BufferUtil.writeTo(byteBuffer, _httpServletResponse.getOutputStream());
+                        BufferUtil.writeTo(buffer, _httpServletResponse.getOutputStream());
                         if (last)
                             _httpServletResponse.getOutputStream().close();
                     }

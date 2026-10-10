@@ -13,9 +13,10 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class TestEncoderHandler implements Instruction.Handler
 {
@@ -27,11 +28,11 @@ public class TestEncoderHandler implements Instruction.Handler
         _instructionList.addAll(instructions);
     }
 
-    public ByteBuffer getInstructionBuffer()
+    public RetainableByteBuffer acquireInstructionBuffer()
     {
-        ByteBuffer byteBuffer = QpackTestUtil.toBuffer(_instructionList);
+        RetainableByteBuffer buffer = QpackTestUtil.toBuffer(_instructionList);
         _instructionList.clear();
-        return byteBuffer;
+        return buffer;
     }
 
     public Instruction getInstruction()

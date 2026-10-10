@@ -531,8 +531,8 @@ class AsyncContentProducer implements ContentProducer
 
         /**
          * Acquires a permit from the semaphore by decreasing the permit count by 1 without ever going negative.
-         * This method returns immediately when the permit count is >= 1 or it blocks until {@link #release} or {@link #fail()}
-         * is called to increase the permit count.
+         * This method returns immediately when the permit count is >= 1 or it blocks until {@link #release} or
+         * {@link #failCurrentContent(Throwable)} is called to increase the permit count.
          * @throws InterruptedException if this call was blocked waiting for the permit count to go above 0 and the thread
          * got interrupted.
          */

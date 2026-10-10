@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.junit.jupiter.api.AfterEach;
@@ -165,33 +166,36 @@ public class HttpServerTestFixture
             int offset = 0;
             while (offset < len)
             {
-                Content.Chunk c = request.read();
-                if (c == null)
+                try (Content.Chunk c = request.read())
                 {
-                    try (Blocker.Runnable blocker = Blocker.runnable())
+                    if (c == null)
                     {
-                        request.demand(blocker);
-                        blocker.block();
+                        try (Blocker.Runnable blocker = Blocker.runnable())
+                        {
+                            request.demand(blocker);
+                            blocker.block();
+                        }
+                        continue;
                     }
-                    continue;
+
+                    if (c.hasRemaining())
+                    {
+                        try (RetainableByteBuffer b = c.acquire())
+                        {
+                            int r = Math.toIntExact(c.remaining());
+                            b.get(content, offset, r);
+                            offset += r;
+                        }
+                    }
+
+                    if (c.isLast())
+                        break;
                 }
-
-                if (c.hasRemaining())
-                {
-                    int r = c.remaining();
-                    c.get(content, offset, r);
-                    offset += r;
-                }
-
-                c.release();
-
-                if (c.isLast())
-                    break;
             }
             response.setStatus(200);
             String reply = "Read " + offset + "\r\n";
             response.getHeaders().put(HttpHeader.CONTENT_LENGTH, reply.length());
-            response.write(true, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1), callback);
+            response.write(true, RetainableByteBuffer.wrap(reply, StandardCharsets.ISO_8859_1), callback);
             return true;
         }
     }
@@ -244,7 +248,7 @@ public class HttpServerTestFixture
                 {
                     try (Blocker.Callback blocker = Blocker.callback())
                     {
-                        response.write(i == 0, bytes.slice(), blocker);
+                        response.write(i == 0, RetainableByteBuffer.wrap(bytes.slice()), blocker);
                         blocker.block();
                     }
                 }
@@ -257,7 +261,7 @@ public class HttpServerTestFixture
                 {
                     try (Blocker.Callback blocker = Blocker.callback())
                     {
-                        response.write(i == 0, bytes.slice(), blocker);
+                        response.write(i == 0, RetainableByteBuffer.wrap(bytes.slice()), blocker);
                         blocker.block();
                     }
                 }

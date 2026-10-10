@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -148,10 +149,8 @@ public class HttpFieldsTest
             .add("name1", "value:B")
             .add("name2", "");
 
-        ByteBuffer buffer = BufferUtil.allocate(1024);
-        BufferUtil.flipToFill(buffer);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
         HttpGenerator.putTo(header, buffer);
-        BufferUtil.flipToFlush(buffer, 0);
         String result = BufferUtil.toString(buffer);
 
         assertThat(result, Matchers.containsString("name0: value0"));
@@ -424,10 +423,8 @@ public class HttpFieldsTest
         header.put("name\r\n1", "value1");
         header.put("name:2", "value:\r\n2");
 
-        ByteBuffer buffer = BufferUtil.allocate(1024);
-        BufferUtil.flipToFill(buffer);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
         HttpGenerator.putTo(header, buffer);
-        BufferUtil.flipToFlush(buffer, 0);
         String out = BufferUtil.toString(buffer);
         assertThat(out, containsString("name0: value  0"));
         assertThat(out, containsString("name..1: value1"));
@@ -442,15 +439,13 @@ public class HttpFieldsTest
         header.put("tRansfer-EncOding", "CHUNKED");
         header.put("CONTENT-ENCODING", "gZIP");
 
-        ByteBuffer buffer = BufferUtil.allocate(1024);
-        BufferUtil.flipToFill(buffer);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
         HttpGenerator.putTo(header, buffer);
-        BufferUtil.flipToFlush(buffer, 0);
-        String out = BufferUtil.toString(buffer).toLowerCase(Locale.ENGLISH);
+        String out = BufferUtil.toString(buffer).toLowerCase(Locale.ROOT);
 
-        assertThat(out, Matchers.containsString((HttpHeader.CONNECTION + ": " + HttpHeaderValue.KEEP_ALIVE).toLowerCase(Locale.ENGLISH)));
-        assertThat(out, Matchers.containsString((HttpHeader.TRANSFER_ENCODING + ": " + HttpHeaderValue.CHUNKED).toLowerCase(Locale.ENGLISH)));
-        assertThat(out, Matchers.containsString((HttpHeader.CONTENT_ENCODING + ": " + HttpHeaderValue.GZIP).toLowerCase(Locale.ENGLISH)));
+        assertThat(out, Matchers.containsString((HttpHeader.CONNECTION + ": " + HttpHeaderValue.KEEP_ALIVE).toLowerCase(Locale.ROOT)));
+        assertThat(out, Matchers.containsString((HttpHeader.TRANSFER_ENCODING + ": " + HttpHeaderValue.CHUNKED).toLowerCase(Locale.ROOT)));
+        assertThat(out, Matchers.containsString((HttpHeader.CONTENT_ENCODING + ": " + HttpHeaderValue.GZIP).toLowerCase(Locale.ROOT)));
     }
 
     @ParameterizedTest

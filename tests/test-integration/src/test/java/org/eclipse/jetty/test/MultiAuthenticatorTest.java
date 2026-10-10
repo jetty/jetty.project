@@ -15,6 +15,7 @@ package org.eclipse.jetty.test;
 
 import java.io.PrintWriter;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -43,9 +44,9 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.tests.OpenIdProvider;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -269,7 +270,7 @@ public class MultiAuthenticatorTest
                         <a href="/logout">Logout</a><br>
                         <b>authType: %s</b><br>
                         """.formatted(authType);
-            response.write(true, BufferUtil.toBuffer(content), callback);
+            response.write(true, RetainableByteBuffer.wrap(content, StandardCharsets.ISO_8859_1), callback);
             return true;
         }
 
@@ -306,7 +307,7 @@ public class MultiAuthenticatorTest
                     <p>Username: user or admin<br>
                     Password: password</p>
                     """;
-            response.write(true, BufferUtil.toBuffer(content), callback);
+            response.write(true, RetainableByteBuffer.wrap(content, StandardCharsets.ISO_8859_1), callback);
             return true;
         }
 
@@ -331,7 +332,7 @@ public class MultiAuthenticatorTest
         {
             Fields parameters = Request.getParameters(request);
             String errorDescription = parameters.getValue("error_description_jetty");
-            response.write(true, BufferUtil.toBuffer("error: " + errorDescription), callback);
+            response.write(true, RetainableByteBuffer.wrap("error: " + errorDescription, StandardCharsets.ISO_8859_1), callback);
             return true;
         }
     }

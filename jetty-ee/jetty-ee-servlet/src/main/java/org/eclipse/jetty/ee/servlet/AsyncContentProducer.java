@@ -23,6 +23,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.ConstantThrowable;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -91,7 +92,7 @@ class AsyncContentProducer implements ContentProducer
     {
         assertLocked();
         Content.Chunk chunk = produceChunk();
-        int available = chunk == null ? 0 : chunk.remaining();
+        int available = chunk == null ? 0 : Math.toIntExact(chunk.remaining());
         if (LOG.isDebugEnabled())
             LOG.debug("available = {} {}", available, this);
         return available;
@@ -178,15 +179,21 @@ class AsyncContentProducer implements ContentProducer
 
     private boolean consumeCurrentChunk()
     {
-        if (_chunk != null)
+        if (_chunk == null)
+            return false;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("consuming and releasing current chunk {}", this);
+        try (Content.Chunk chunk = _chunk)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("consuming and releasing current chunk {}", this);
-            _chunk.skip(_chunk.remaining());
-            _chunk.release();
-            _chunk = _chunk.isLast() ? Content.Chunk.EOF : null;
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                buffer.consume(buffer.remaining());
+            }
+            boolean last = chunk.isLast();
+            _chunk = last ? Content.Chunk.EOF : null;
+            return last;
         }
-        return _chunk != null && _chunk.isLast();
     }
 
     private boolean consumeAvailableChunks()
@@ -322,20 +329,24 @@ class AsyncContentProducer implements ContentProducer
             return null;
         }
 
-        Content.Chunk chunk = _servletChannel.getRequest().read();
-        if (chunk != null)
+        try (Content.Chunk chunk = _servletChannel.getRequest().read())
         {
-            _bytesArrived += chunk.remaining();
-            if (_firstByteNanoTime == Long.MIN_VALUE)
-                _firstByteNanoTime = NanoTime.now();
+            if (chunk != null)
+            {
+                _bytesArrived += chunk.remaining();
+                if (_firstByteNanoTime == Long.MIN_VALUE)
+                    _firstByteNanoTime = NanoTime.now();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("readChunk() updated _bytesArrived to {} and _firstByteTimeStamp to {} {}", _bytesArrived, _firstByteNanoTime, this);
+                if (chunk instanceof Trailers trailers)
+                    _servletChannel.onTrailers(trailers.getTrailers());
+            }
             if (LOG.isDebugEnabled())
-                LOG.debug("readChunk() updated _bytesArrived to {} and _firstByteTimeStamp to {} {}", _bytesArrived, _firstByteNanoTime, this);
-            if (chunk instanceof Trailers trailers)
-                _servletChannel.onTrailers(trailers.getTrailers());
+                LOG.debug("readChunk() produced {} {}", chunk, this);
+            if (chunk != null)
+                chunk.retain();
+            return chunk;
         }
-        if (LOG.isDebugEnabled())
-            LOG.debug("readChunk() produced {} {}", chunk, this);
-        return chunk;
     }
 
     private void assertLocked()

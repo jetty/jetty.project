@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee9.nested;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
@@ -36,9 +35,9 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -146,7 +145,7 @@ public class ErrorHandlerTest
     @Test
     public void test404NoAccept() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "\r\n");
@@ -164,7 +163,7 @@ public class ErrorHandlerTest
     @Test
     public void test404EmptyAccept() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Accept: \r\n" +
                 "Host: Localhost\r\n" +
@@ -179,7 +178,7 @@ public class ErrorHandlerTest
     @Test
     public void test404UnAccept() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Accept: text/*;q=0\r\n" +
                 "Host: Localhost\r\n" +
@@ -204,7 +203,7 @@ public class ErrorHandlerTest
     @Test
     public void test404AllAccept() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: */*\r\n" +
@@ -221,7 +220,7 @@ public class ErrorHandlerTest
     @Test
     public void test404HtmlAccept() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
@@ -239,7 +238,7 @@ public class ErrorHandlerTest
     @Test
     public void test404PostHttp10() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "POST / HTTP/1.0\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
@@ -261,7 +260,7 @@ public class ErrorHandlerTest
     @Test
     public void test404PostHttp11() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "POST / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
@@ -283,7 +282,7 @@ public class ErrorHandlerTest
     @Test
     public void test404PostCantConsumeHttp10() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "POST / HTTP/1.0\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
@@ -305,7 +304,7 @@ public class ErrorHandlerTest
     @Test
     public void test404PostCantConsumeHttp11() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "POST / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
@@ -327,7 +326,7 @@ public class ErrorHandlerTest
     @Test
     public void testMoreSpecificAccept() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html, some/other;specific=true\r\n" +
@@ -346,7 +345,7 @@ public class ErrorHandlerTest
     @Test
     public void test404HtmlAcceptAnyCharset() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
@@ -366,7 +365,7 @@ public class ErrorHandlerTest
     @Test
     public void test404HtmlAcceptUtf8Charset() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
@@ -386,7 +385,7 @@ public class ErrorHandlerTest
     @Test
     public void test404HtmlAcceptNotUtf8Charset() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
@@ -408,7 +407,7 @@ public class ErrorHandlerTest
     @Test
     public void test404HtmlAcceptNotUtf8UnknownCharset() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
@@ -425,7 +424,7 @@ public class ErrorHandlerTest
     @Test
     public void test404HtmlAcceptUnknownUtf8Charset() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
@@ -445,7 +444,7 @@ public class ErrorHandlerTest
     @Test
     public void test404PreferHtml() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html;q=1.0,text/json;q=0.5,*/*\r\n" +
@@ -465,7 +464,7 @@ public class ErrorHandlerTest
     @Test
     public void test404PreferJson() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET / HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html;q=0.5,text/json;q=1.0,*/*\r\n" +
@@ -484,7 +483,7 @@ public class ErrorHandlerTest
     @Test
     public void testCharEncoding() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET /charencoding/foo HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/plain\r\n" +
@@ -502,7 +501,7 @@ public class ErrorHandlerTest
     @Test
     public void testBadMessage() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET /badmessage/444 HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "\r\n");
@@ -526,7 +525,7 @@ public class ErrorHandlerTest
     })
     public void testComplexCauseMessageNoAcceptHeader(String path) throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET " + path + " HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "\r\n");
@@ -556,7 +555,7 @@ public class ErrorHandlerTest
     })
     public void testComplexCauseMessageAcceptUtf8Header(String path) throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET " + path + " HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/html\r\n" +
@@ -655,7 +654,7 @@ public class ErrorHandlerTest
     @Test
     public void testJsonResponse() throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET /badmessage/444 HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/json\r\n" +
@@ -677,7 +676,7 @@ public class ErrorHandlerTest
     })
     public void testJsonResponseWorse(String path) throws Exception
     {
-        String rawResponse = connector.getResponse(
+        String rawResponse = connector.getResponseAsString(
             "GET " + path + " HTTP/1.1\r\n" +
                 "Host: Localhost\r\n" +
                 "Accept: text/json\r\n" +
@@ -726,27 +725,29 @@ public class ErrorHandlerTest
             public boolean handle(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(404);
-                response.write(true, ByteBuffer.wrap("Server Error".getBytes()), callback);
+                response.write(true, RetainableByteBuffer.wrap("Server Error".getBytes()), callback);
                 return true;
             }
         });
 
         server.start();
 
-        LocalConnector.LocalEndPoint connection = connector.connect();
-        connection.addInputAndExecute(BufferUtil.toBuffer(
-            "GET /foo/test HTTP/1.1\r\n" +
-                "Host: Localhost\r\n" +
-                "\r\n"));
+        LocalConnector.LocalEndPoint connection = connector.connectToServer();
+        connection.writeRequestString("""
+            GET /foo/test HTTP/1.1\r
+            Host: Localhost\r
+            \r
+            """);
         String response = connection.getResponse();
 
         assertThat(response, containsString("HTTP/1.1 444 444"));
         assertThat(response, containsString("Context Error"));
 
-        connection.addInputAndExecute(BufferUtil.toBuffer(
-            "GET /test HTTP/1.1\r\n" +
-                "Host: Localhost\r\n" +
-                "\r\n"));
+        connection.writeRequestString("""
+            GET /test HTTP/1.1\r
+            Host: Localhost\r
+            \r
+            """);
         response = connection.getResponse();
         assertThat(response, containsString("HTTP/1.1 404 Not Found"));
         assertThat(response, containsString("Server Error"));

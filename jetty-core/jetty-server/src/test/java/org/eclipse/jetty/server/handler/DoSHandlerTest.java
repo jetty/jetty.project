@@ -42,12 +42,18 @@ public class DoSHandlerTest
         );
     }
 
+    private DoSHandler newDoSHandler(DoSHandler.Tracker.Factory factory)
+    {
+        // Simulate that all requests come from the same IP address.
+        return new DoSHandler(request -> "192.168.0.1", factory, null, -1);
+    }
+
     @ParameterizedTest
     @MethodSource("factories")
     public void testTrackerSteadyBelowRate(DoSHandler.Tracker.Factory factory)
     {
         Server server = new Server();
-        DoSHandler handler = new DoSHandler(factory);
+        DoSHandler handler = newDoSHandler(factory);
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
@@ -66,7 +72,7 @@ public class DoSHandlerTest
     public void testTrackerSteadyAboveRate(DoSHandler.Tracker.Factory factory)
     {
         Server server = new Server();
-        DoSHandler handler = new DoSHandler(factory);
+        DoSHandler handler = newDoSHandler(factory);
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
@@ -89,7 +95,7 @@ public class DoSHandlerTest
     public void testTrackerUnevenBelowRate(DoSHandler.Tracker.Factory factory)
     {
         Server server = new Server();
-        DoSHandler handler = new DoSHandler(factory);
+        DoSHandler handler = newDoSHandler(factory);
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
@@ -112,7 +118,7 @@ public class DoSHandlerTest
     public void testTrackerUnevenAboveRate(DoSHandler.Tracker.Factory factory)
     {
         Server server = new Server();
-        DoSHandler handler = new DoSHandler(factory);
+        DoSHandler handler = newDoSHandler(factory);
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
@@ -139,7 +145,7 @@ public class DoSHandlerTest
     public void testTrackerBurstBelowRate(DoSHandler.Tracker.Factory factory)
     {
         Server server = new Server();
-        DoSHandler handler = new DoSHandler(factory);
+        DoSHandler handler = newDoSHandler(factory);
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
@@ -161,7 +167,7 @@ public class DoSHandlerTest
     public void testTrackerBurstAboveRate(DoSHandler.Tracker.Factory factory)
     {
         Server server = new Server();
-        DoSHandler handler = new DoSHandler(factory);
+        DoSHandler handler = newDoSHandler(factory);
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
@@ -190,7 +196,7 @@ public class DoSHandlerTest
     public void testRecoveryAfterBursts(DoSHandler.Tracker.Factory factory)
     {
         Server server = new Server();
-        DoSHandler handler = new DoSHandler(factory);
+        DoSHandler handler = newDoSHandler(factory);
         server.setHandler(handler);
         LifeCycle.start(server);
         DoSHandler.Tracker tracker = handler.newTracker("id");
@@ -226,7 +232,7 @@ public class DoSHandlerTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        DoSHandler dosHandler = new DoSHandler(factory);
+        DoSHandler dosHandler = newDoSHandler(factory);
         DumpHandler dumpHandler = new DumpHandler();
         server.setHandler(dosHandler);
         dosHandler.setHandler(dumpHandler);
@@ -244,7 +250,7 @@ public class DoSHandlerTest
                 {
                     while (NanoTime.isBefore(NanoTime.now(), end))
                     {
-                        String response = connector.getResponse("""
+                        String response = connector.getResponseAsString("""
                                 GET / HTTP/1.1\r
                                 Host: local\r
                                 
@@ -272,7 +278,7 @@ public class DoSHandlerTest
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        DoSHandler dosHandler = new DoSHandler(factory);
+        DoSHandler dosHandler = newDoSHandler(factory);
         DumpHandler dumpHandler = new DumpHandler();
         server.setHandler(dosHandler);
         dosHandler.setHandler(dumpHandler);
@@ -285,23 +291,26 @@ public class DoSHandlerTest
         AtomicInteger calm = new AtomicInteger();
         for (int thread = 0; thread < 120; thread++)
         {
+            int t = thread;
             server.getThreadPool().execute(() ->
             {
                 try
                 {
+                    long id = 0;
                     while (NanoTime.isBefore(NanoTime.now(), end))
                     {
                         try
                         {
                             outstanding.incrementAndGet();
-                            String response = connector.getResponse("""
-                                GET / HTTP/1.1\r
+                            String response = connector.getResponseAsString("""
+                                GET /%s HTTP/1.1\r
                                 Host: local\r
                                 
-                                """);
+                                """.formatted(t + "/" + id));
                             if (response.contains(" 429 "))
                                 calm.incrementAndGet();
-                            Thread.sleep(1000);
+                            Thread.sleep(500);
+                            ++id;
                         }
                         finally
                         {

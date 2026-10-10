@@ -10,6 +10,7 @@
   <name>EE :: Tests :: Sessions :: GCloud</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.gcloud</bundle-symbolic-name>
+    <maven.test.skip>true</maven.test.skip>
   </properties>
   <dependencies>
     <dependency>

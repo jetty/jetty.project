@@ -30,7 +30,6 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
@@ -41,8 +40,8 @@ import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.common.SessionContainer;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -648,17 +647,17 @@ public class GoAwayTest extends AbstractClientServerTest
                     @Override
                     public void onDataAvailable(Stream.Server stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        if (chunk != null)
-                            chunk.release();
-                        if (chunk != null && chunk.isLast())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
-                            stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
-                        }
-                        else
-                        {
-                            stream.demand();
+                            if (chunk != null && chunk.isLast())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY);
+                                stream.respond(new HeadersFrame(response, true), Promise.Invocable.noop());
+                            }
+                            else
+                            {
+                                stream.demand();
+                            }
                         }
                     }
                 };
@@ -716,7 +715,7 @@ public class GoAwayTest extends AbstractClientServerTest
         assertTrue(clientGracefulGoAwayLatch.await(5, TimeUnit.SECONDS));
 
         // Complete the stream.
-        clientStream.data(new DataFrame(BufferUtil.EMPTY_BUFFER, true), Promise.Invocable.noop());
+        clientStream.data(RetainableByteBuffer.empty(), true, Promise.Invocable.noop());
 
         // Both client and server should send a non-graceful GOAWAY.
         assertTrue(serverGoAwayLatch.await(5, TimeUnit.SECONDS));
@@ -1343,17 +1342,18 @@ public class GoAwayTest extends AbstractClientServerTest
             @Override
             public void onDataAvailable(Stream.Client stream)
             {
-                Content.Chunk chunk = stream.read();
-                if (chunk != null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    chunk.release();
-                    if (chunk.isLast())
+                    if (chunk != null)
                     {
-                        dataLatch.countDown();
-                        return;
+                        if (chunk.isLast())
+                        {
+                            dataLatch.countDown();
+                            return;
+                        }
                     }
+                    stream.demand();
                 }
-                stream.demand();
             }
         }, Promise.Invocable.noop());
 
@@ -1365,7 +1365,7 @@ public class GoAwayTest extends AbstractClientServerTest
         assertThrows(TimeoutException.class, () -> shutdown.get(1, TimeUnit.SECONDS));
 
         // Complete the response.
-        serverStreamRef.get().data(new DataFrame(BufferUtil.EMPTY_BUFFER, true), Promise.Invocable.noop());
+        serverStreamRef.get().data(RetainableByteBuffer.empty(), true, Promise.Invocable.noop());
 
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
         shutdown.get(5, TimeUnit.SECONDS);
@@ -1414,17 +1414,18 @@ public class GoAwayTest extends AbstractClientServerTest
             @Override
             public void onDataAvailable(Stream.Client stream)
             {
-                Content.Chunk chunk = stream.read();
-                if (chunk != null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    chunk.release();
-                    if (chunk.isLast())
+                    if (chunk != null)
                     {
-                        dataLatch.countDown();
-                        return;
+                        if (chunk.isLast())
+                        {
+                            dataLatch.countDown();
+                            return;
+                        }
                     }
+                    stream.demand();
                 }
-                stream.demand();
             }
         }, Promise.Invocable.noop());
 
@@ -1435,7 +1436,7 @@ public class GoAwayTest extends AbstractClientServerTest
         assertThrows(TimeoutException.class, () -> shutdown.get(1, TimeUnit.SECONDS));
 
         // Complete the response.
-        serverStreamRef.get().data(new DataFrame(BufferUtil.EMPTY_BUFFER, true), Promise.Invocable.noop());
+        serverStreamRef.get().data(RetainableByteBuffer.empty(), true, Promise.Invocable.noop());
 
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
         shutdown.get(5, TimeUnit.SECONDS);

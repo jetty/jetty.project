@@ -24,6 +24,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -88,30 +89,23 @@ public class HttpInput extends ServletInputStream
 
     private int get(Content.Chunk chunk, byte[] bytes, int offset, int length)
     {
-        length = Math.min(chunk.remaining(), length);
-        chunk.getByteBuffer().get(bytes, offset, length);
-        _contentConsumed.add(length);
-        return length;
+        int l = Math.toIntExact(Math.min(chunk.remaining(), length));
+        try (RetainableByteBuffer buffer = chunk.acquire())
+        {
+            buffer.get(bytes, offset, l);
+            _contentConsumed.add(l);
+            return l;
+        }
     }
 
     private int get(Content.Chunk chunk, ByteBuffer des)
     {
-        var capacity = des.remaining();
-        var src = chunk.getByteBuffer();
-        if (src.remaining() > capacity)
+        try (RetainableByteBuffer buffer = chunk.acquire())
         {
-            int limit = src.limit();
-            src.limit(src.position() + capacity);
-            des.put(src);
-            src.limit(limit);
+            int consumed = buffer.appendTo(des);
+            _contentConsumed.add(consumed);
+            return consumed;
         }
-        else
-        {
-            des.put(src);
-        }
-        var consumed = capacity - des.remaining();
-        _contentConsumed.add(consumed);
-        return consumed;
     }
 
     public long getContentConsumed()

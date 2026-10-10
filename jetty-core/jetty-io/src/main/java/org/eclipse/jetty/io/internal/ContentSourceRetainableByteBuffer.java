@@ -13,21 +13,25 @@
 
 package org.eclipse.jetty.io.internal;
 
-import org.eclipse.jetty.io.ByteBufferPool;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ContentSourceRetainableByteBuffer implements Runnable
 {
-    private final RetainableByteBuffer.Mutable _mutable;
+    private final List<RetainableByteBuffer> _accumulator = new ArrayList<>();
     private final Content.Source _source;
+    private final long _maxSize;
     private final Promise<RetainableByteBuffer> _promise;
+    private long _size;
 
-    public ContentSourceRetainableByteBuffer(Content.Source source, ByteBufferPool pool, boolean direct, int maxSize, Promise<RetainableByteBuffer> promise)
+    public ContentSourceRetainableByteBuffer(Content.Source source, long maxSize, Promise<RetainableByteBuffer> promise)
     {
         _source = source;
-        _mutable = new RetainableByteBuffer.Mutable.DynamicCapacity(pool, direct, maxSize);
+        _maxSize = maxSize;
         _promise = promise;
     }
 
@@ -36,40 +40,50 @@ public class ContentSourceRetainableByteBuffer implements Runnable
     {
         while (true)
         {
-            Content.Chunk chunk = _source.read();
-
-            if (chunk == null)
+            try (Content.Chunk chunk = _source.read())
             {
-                _source.demand(this);
-                return;
-            }
+                if (chunk == null)
+                {
+                    _source.demand(this);
+                    return;
+                }
 
-            if (Content.Chunk.isFailure(chunk))
-            {
-                _promise.failed(chunk.getFailure());
-                if (!chunk.isLast())
-                    _source.fail(chunk.getFailure());
-                return;
-            }
+                if (Content.Chunk.isFailure(chunk))
+                {
+                    dispose();
+                    _promise.failed(chunk.getFailure());
+                    if (!chunk.isLast())
+                        _source.fail(chunk.getFailure());
+                    return;
+                }
 
-            boolean appended = _mutable.append(chunk);
-            chunk.release();
+                if (_maxSize > 0 && _size + chunk.remaining() > _maxSize)
+                {
+                    dispose();
+                    IllegalStateException failure = new IllegalStateException("Max size (" + _maxSize + ") exceeded");
+                    _promise.failed(failure);
+                    _source.fail(failure);
+                    return;
+                }
 
-            if (!appended)
-            {
-                IllegalStateException ise = new IllegalStateException("Max size (" + _mutable.capacity() + ") exceeded");
-                _promise.failed(ise);
-                _mutable.release();
-                _source.fail(ise);
-                return;
-            }
+                _size += chunk.remaining();
+                _accumulator.add(chunk.acquire());
 
-            if (chunk.isLast())
-            {
-                _promise.succeeded(_mutable);
-                _mutable.release();
-                return;
+                if (chunk.isLast())
+                {
+                    try (RetainableByteBuffer result = RetainableByteBuffer.merge(_accumulator))
+                    {
+                        dispose();
+                        _promise.succeeded(result);
+                        return;
+                    }
+                }
             }
         }
+    }
+
+    private void dispose()
+    {
+        _accumulator.forEach(RetainableByteBuffer::release);
     }
 }

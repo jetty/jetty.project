@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -63,7 +64,7 @@ public class MemoryConnector extends AbstractConnector
 {
     private static final Logger LOG = LoggerFactory.getLogger(MemoryConnector.class);
 
-    private final SocketAddress socketAddress = new MemorySocketAddress();
+    private SocketAddress socketAddress = new MemorySocketAddress();
     private final TaskProducer producer = new TaskProducer();
     private ExecutionStrategy strategy;
 
@@ -113,7 +114,7 @@ public class MemoryConnector extends AbstractConnector
      */
     public EndPoint.Pipe connect()
     {
-        MemoryEndPointPipe pipe = new MemoryEndPointPipe(getScheduler(), getByteBufferPool(), producer::offer, socketAddress);
+        MemoryEndPointPipe pipe = new MemoryEndPointPipe(getScheduler(), getByteBufferPool(), producer::offer, getLocalSocketAddress());
         accept(pipe.getRemoteEndPoint());
 
         if (LOG.isDebugEnabled())
@@ -155,6 +156,11 @@ public class MemoryConnector extends AbstractConnector
         return socketAddress;
     }
 
+    public void setLocalSocketAddress(SocketAddress socketAddress)
+    {
+        this.socketAddress = Objects.requireNonNull(socketAddress);
+    }
+
     private class TaskProducer implements ExecutionStrategy.Producer
     {
         private final Queue<Invocable.Task> tasks = new ConcurrentLinkedQueue<>();
@@ -170,13 +176,13 @@ public class MemoryConnector extends AbstractConnector
             if (LOG.isDebugEnabled())
                 LOG.debug("offer {} to {}", task, MemoryConnector.this);
             tasks.offer(task);
-            strategy.produce();
+            strategy.dispatch();
         }
     }
 
     private class MemorySocketAddress extends SocketAddress
     {
-        private final String address = "[memory:@%x]".formatted(System.identityHashCode(MemoryConnector.this));
+        private final String address = "memory_0x%08X".formatted(System.identityHashCode(MemoryConnector.this));
 
         @Override
         public boolean equals(Object obj)

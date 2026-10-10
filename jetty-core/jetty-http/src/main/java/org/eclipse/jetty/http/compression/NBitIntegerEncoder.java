@@ -15,6 +15,8 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+
 /**
  * Used to encode integers as described in RFC7541.
  */
@@ -55,6 +57,11 @@ public class NBitIntegerEncoder
      */
     public static void encode(ByteBuffer buffer, int prefix, long value)
     {
+        encode(RetainableByteBuffer.Mutable.wrap(buffer), prefix, value);
+    }
+
+    public static void encode(RetainableByteBuffer.Mutable buffer, int prefix, long value)
+    {
         if (prefix <= 0 || prefix > 8)
             throw new IllegalArgumentException();
 
@@ -63,7 +70,7 @@ public class NBitIntegerEncoder
             buffer.put((byte)0x00);
 
         int bits = 0xFF >>> (8 - prefix);
-        int p = buffer.position() - 1;
+        long p = buffer.writePosition() - 1;
         if (value < bits)
         {
             buffer.put(p, (byte)((buffer.get(p) & ~bits) | value));

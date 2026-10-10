@@ -13,16 +13,13 @@
 
 package org.eclipse.jetty.http3.parser;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +27,7 @@ public class HeadersBodyParser extends BodyParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(HeadersBodyParser.class);
 
-    private final List<ByteBuffer> byteBuffers = new ArrayList<>();
+    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
     private final long streamId;
     private final QpackDecoder decoder;
     private State state = State.INIT;
@@ -50,7 +47,7 @@ public class HeadersBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer, boolean last)
+    public Result parse(RetainableByteBuffer buffer, boolean quicLast)
     {
         while (buffer.hasRemaining())
         {
@@ -64,45 +61,44 @@ public class HeadersBodyParser extends BodyParser
                 }
                 case HEADERS:
                 {
-                    int remaining = buffer.remaining();
+                    long remaining = buffer.remaining();
                     if (remaining < length)
                     {
-                        // Copy and accumulate the buffer.
                         length -= remaining;
-                        ByteBuffer copy = buffer.isDirect() ? ByteBuffer.allocateDirect(remaining) : ByteBuffer.allocate(remaining);
-                        copy.put(buffer);
-                        copy.flip();
-                        byteBuffers.add(copy);
+                        accumulator.add(buffer);
                         return Result.NO_FRAME;
                     }
                     else
                     {
-                        int position = buffer.position();
-                        int limit = buffer.limit();
-                        int newPosition = position + (int)length;
-                        buffer.limit(newPosition);
-                        ByteBuffer slice = buffer.slice();
-                        buffer.limit(limit);
-                        buffer.position(newPosition);
-
-                        ByteBuffer encoded;
-                        if (byteBuffers.isEmpty())
+                        RetainableByteBuffer encoded;
+                        boolean last;
+                        if (accumulator.hasRemaining())
                         {
-                            encoded = slice;
+                            accumulator.addRetained(buffer.sliceAndConsume(length));
+                            encoded = accumulator.drain();
+                            last = quicLast && !buffer.hasRemaining();
                         }
                         else
                         {
-                            byteBuffers.add(slice);
-                            int capacity = byteBuffers.stream().mapToInt(ByteBuffer::remaining).sum();
-                            encoded = byteBuffers.stream().reduce(ByteBuffer.allocate(capacity), ByteBuffer::put);
-                            encoded.flip();
-                            byteBuffers.clear();
+                            if (remaining == length)
+                            {
+                                buffer.retain();
+                                encoded = buffer;
+                                last = quicLast;
+                            }
+                            else
+                            {
+                                encoded = buffer.sliceAndConsume(length);
+                                // There is more data in the buffer, likely
+                                // another frame, so this is not the last.
+                                last = false;
+                            }
                         }
 
-                        // If the buffer contains another frame that
-                        // needs to be parsed, then it's not the last frame.
-                        boolean lastFrame = last && !buffer.hasRemaining();
-                        return decode(encoded, lastFrame) ? Result.WHOLE_FRAME : Result.BLOCKED_FRAME;
+                        try (encoded)
+                        {
+                            return decode(encoded, last) ? Result.WHOLE_FRAME : Result.BLOCKED_FRAME;
+                        }
                     }
                 }
                 default:
@@ -114,11 +110,13 @@ public class HeadersBodyParser extends BodyParser
         return Result.NO_FRAME;
     }
 
-    private boolean decode(ByteBuffer encoded, boolean last)
+    private boolean decode(RetainableByteBuffer encoded, boolean last)
     {
         try
         {
-            return decoder.decode(streamId, encoded, (streamId, metaData, wasBlocked) -> onHeaders(metaData, last, wasBlocked));
+            return decoder.decode(streamId, encoded, (_, metaData, wasBlocked) ->
+                onHeaders(metaData, last, wasBlocked)
+            );
         }
         catch (QpackException.StreamException x)
         {

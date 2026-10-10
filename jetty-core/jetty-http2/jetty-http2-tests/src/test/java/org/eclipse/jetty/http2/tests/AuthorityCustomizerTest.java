@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -31,12 +29,12 @@ import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.server.AuthorityCustomizer;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,7 +58,7 @@ public class AuthorityCustomizerTest extends AbstractServerTest
         });
         httpConfig.addCustomizer(new AuthorityCustomizer());
 
-        RetainableByteBuffer.DynamicCapacity accumulator = new RetainableByteBuffer.DynamicCapacity();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), null, path, HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
@@ -68,9 +66,10 @@ public class AuthorityCustomizerTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            OutputStream output = client.getOutputStream();
-            ByteBuffer buffer = accumulator.getByteBuffer();
-            output.write(BufferUtil.toArray(buffer));
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.read(input -> BufferUtil.writeTo(input, client.getOutputStream()));
+            }
 
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<HeadersFrame> frameRef = new AtomicReference<>();

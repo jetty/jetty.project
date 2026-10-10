@@ -43,11 +43,11 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,7 +115,7 @@ public interface Response extends Content.Sink
     /**
      * <p>Returns whether the last write has been initiated on the response.</p>
      *
-     * @return {@code true} if {@code last==true} has been passed to {@link #write(boolean, ByteBuffer, Callback)}.
+     * @return {@code true} if {@code last==true} has been passed to {@link #write(boolean, RetainableByteBuffer, Callback)}.
      */
     boolean hasLastWrite();
 
@@ -162,11 +162,11 @@ public interface Response extends Content.Sink
      * of a future call to this method.</p>
      *
      * @param last whether the ByteBuffer is the last to write
-     * @param byteBuffer the ByteBuffer to write
+     * @param buffer the ReadableBuffer to write
      * @param callback the callback to notify when the write operation is complete
      */
     @Override
-    void write(boolean last, ByteBuffer byteBuffer, Callback callback);
+    void write(boolean last, RetainableByteBuffer buffer, Callback callback);
 
     /**
      * <p>Returns a chunk processor suitable to be passed to the
@@ -317,7 +317,7 @@ public interface Response extends Content.Sink
      */
     static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable)
     {
-        sendRedirect(request, response, callback, code, location, consumeAvailable, null);
+        sendRedirect(request, response, callback, code, location, consumeAvailable, (RetainableByteBuffer)null);
     }
 
     /**
@@ -335,6 +335,11 @@ public interface Response extends Content.Sink
      * @throws IllegalStateException if the response is already {@link #isCommitted() committed}
      */
     static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable, ByteBuffer content)
+    {
+        sendRedirect(request, response, callback, code, location, consumeAvailable, RetainableByteBuffer.wrap(content));
+    }
+
+    static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAvailable, RetainableByteBuffer content)
     {
         if (response.isCommitted())
         {
@@ -366,15 +371,16 @@ public interface Response extends Content.Sink
             {
                 while (true)
                 {
-                    Content.Chunk chunk = response.getRequest().read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = response.getRequest().read())
                     {
-                        response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                        break;
+                        if (chunk == null)
+                        {
+                            response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+                            break;
+                        }
+                        if (chunk.isLast())
+                            break;
                     }
-                    chunk.release();
-                    if (chunk.isLast())
-                        break;
                 }
             }
 
@@ -382,13 +388,13 @@ public interface Response extends Content.Sink
             {
                 response.getHeaders().put(MimeTypes.Type.TEXT_HTML_8859_1.getContentTypeField());
                 String body = """
-            <!DOCTYPE html>
-            <html lang="en">
-            <head><meta charset="ISO-8859-1"/><meta http-equiv="refresh" content="0; URL=%s"/><title>Redirecting...</title></head>
-            <body><p>If you are not redirected, <a href="%s">click here</a>.</p></body>
-            </html>
-            """.formatted(location, location);
-                content = BufferUtil.toBuffer(body, StandardCharsets.ISO_8859_1);
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head><meta charset="ISO-8859-1"/><meta http-equiv="refresh" content="0; URL=%s"/><title>Redirecting...</title></head>
+                    <body><p>If you are not redirected, <a href="%s">click here</a>.</p></body>
+                    </html>
+                    """.formatted(location, location);
+                content = RetainableByteBuffer.wrap(body, StandardCharsets.ISO_8859_1);
             }
 
             response.getHeaders().put(HttpHeader.LOCATION, location);
@@ -836,9 +842,9 @@ public interface Response extends Content.Sink
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
-            getWrapped().write(last, byteBuffer, callback);
+            getWrapped().write(last, buffer, callback);
         }
     }
 }

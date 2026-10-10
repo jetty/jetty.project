@@ -35,7 +35,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PostServletTest
@@ -130,7 +129,7 @@ public class PostServletTest
         req.append("0\r\n");
         req.append("\r\n");
 
-        String resp = connector.getResponse(req.toString());
+        String resp = connector.getResponseAsString(req.toString());
 
         assertThat("resp", resp, containsString("HTTP/1.1 200 OK"));
         assertThat("resp", resp, containsString("chunked"));
@@ -158,7 +157,7 @@ public class PostServletTest
         req.append("\r\n");
         req.append("\r\n");
 
-        String resp = connector.getResponse(req.toString());
+        String resp = connector.getResponseAsString(req.toString());
         assertThat(resp, startsWith("HTTP/1.1 200 OK")); // exception eaten by handler
         assertTrue(complete.await(5, TimeUnit.SECONDS));
         assertThat(ex0.get(), not(nullValue()));
@@ -186,10 +185,9 @@ public class PostServletTest
         req.append("\r\n");
         req.append("\r\n");
 
-        endp.addInput(req.toString());
+        endp.writeRequestString(req.toString());
 
-        endp.waitUntilClosedOrIdleFor(1, TimeUnit.SECONDS);
-        String resp = endp.takeOutputString();
+        String resp = endp.getResponse();
 
         assertThat(resp, startsWith("HTTP/1.1 200 OK")); // exception eaten by handler
         assertTrue(complete.await(5, TimeUnit.SECONDS));
@@ -225,10 +223,9 @@ public class PostServletTest
             req.append("\r\n");
             req.append("0\r\n");
             req.append("\r\n");
-            endp.addInput(req.toString());
+            endp.writeRequestString(req.toString());
 
-            endp.waitUntilClosedOrIdleFor(1, TimeUnit.SECONDS);
-            String resp = endp.takeOutputString();
+            String resp = endp.getResponse();
             assertThat("resp", resp, containsString("HTTP/1.1 200 "));
             assertThat("resp", resp, not(containsString("\r\n0\r\n"))); // aborted
         }

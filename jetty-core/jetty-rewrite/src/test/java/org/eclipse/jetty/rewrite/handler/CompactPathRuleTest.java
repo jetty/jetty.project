@@ -18,7 +18,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Stream;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -110,7 +110,7 @@ public class CompactPathRuleTest extends AbstractRuleTest
                 try (ByteArrayOutputStream out = new ByteArrayOutputStream())
                 {
                     props.store(out, "HttpURI State");
-                    response.write(true, ByteBuffer.wrap(out.toByteArray()), callback);
+                    response.write(true, RetainableByteBuffer.wrap(out.toByteArray()), callback);
                 }
                 catch (IOException e)
                 {
@@ -139,7 +139,7 @@ public class CompactPathRuleTest extends AbstractRuleTest
             
             """.formatted(requestPath);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         Properties props = new Properties();
         try (ByteArrayInputStream in = new ByteArrayInputStream(response.getContentBytes()))
@@ -203,7 +203,7 @@ public class CompactPathRuleTest extends AbstractRuleTest
             
             """.formatted(inputPath);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
@@ -244,7 +244,7 @@ public class CompactPathRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.getContent(),
             allOf(containsString("UriCompliance.Violations.size=1"),

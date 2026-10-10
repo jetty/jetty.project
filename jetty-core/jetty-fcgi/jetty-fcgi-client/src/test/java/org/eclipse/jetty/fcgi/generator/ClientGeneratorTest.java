@@ -13,20 +13,20 @@
 
 package org.eclipse.jetty.fcgi.generator;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.parser.ServerParser;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ClientGeneratorTest
 {
@@ -59,9 +59,9 @@ public class ClientGeneratorTest
         String longLongValue = new String(chars);
         fields.put(new HttpField(longLongName, longLongValue));
 
-        ByteBufferPool bufferPool = new ArrayByteBufferPool();
+        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ClientGenerator generator = new ClientGenerator(bufferPool);
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         int id = 13;
         generator.generateRequestHeaders(accumulator, id, fields);
 
@@ -117,28 +117,27 @@ public class ClientGeneratorTest
             }
         });
 
-        for (ByteBuffer buffer : accumulator.getByteBuffers())
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
             parser.parse(buffer);
-            assertFalse(buffer.hasRemaining());
-        }
+            assertEquals(0, buffer.remaining());
 
-        assertEquals(value, params.get());
+            assertEquals(value, params.get());
 
-        // Parse again byte by byte
-        params.set(1);
-        for (ByteBuffer buffer : accumulator.getByteBuffers())
-        {
-            buffer.flip();
-            while (buffer.hasRemaining())
+            // Parse again byte by byte.
+            params.set(1);
+            buffer.readPosition(0);
+            while (buffer.remaining() > 0)
             {
-                parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+                try (RetainableByteBuffer slice = buffer.slice(buffer.readPosition(), 1))
+                {
+                    buffer.readPosition(buffer.readPosition() + 1);
+                    parser.parse(slice);
+                }
             }
+
+            assertEquals(value, params.get());
         }
-
-        assertEquals(value, params.get());
-
-        accumulator.release();
     }
 
     @Test
@@ -155,50 +154,50 @@ public class ClientGeneratorTest
 
     private void testGenerateRequestContent(int contentLength) throws Exception
     {
-        ByteBuffer content = ByteBuffer.allocate(contentLength);
-
-        ByteBufferPool bufferPool = new ArrayByteBufferPool();
-        ClientGenerator generator = new ClientGenerator(bufferPool);
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
-        int id = 13;
-        generator.generateRequestContent(accumulator, id, content, true);
-
-        AtomicInteger totalLength = new AtomicInteger();
-        ServerParser parser = new ServerParser(new ServerParser.Listener()
+        try (RetainableByteBuffer content = RetainableByteBuffer.allocate(contentLength, false))
         {
-            @Override
-            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
-            {
-                assertEquals(id, request);
-                totalLength.addAndGet(buffer.remaining());
-                return false;
-            }
+            WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+            ClientGenerator generator = new ClientGenerator(bufferPool);
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            int id = 13;
+            generator.generateRequestContent(accumulator, id, content, true);
 
-            @Override
-            public boolean onEnd(int request)
+            AtomicLong totalLength = new AtomicLong();
+            ServerParser parser = new ServerParser(new ServerParser.Listener()
             {
-                assertEquals(id, request);
-                assertEquals(contentLength, totalLength.get());
-                return false;
-            }
-        });
+                @Override
+                public boolean onContent(int request, FCGI.StreamType stream, RetainableByteBuffer buffer)
+                {
+                    assertEquals(id, request);
+                    totalLength.addAndGet(buffer.remaining());
+                    return false;
+                }
 
-        for (ByteBuffer buffer : accumulator.getByteBuffers())
-        {
-            parser.parse(buffer);
-            assertFalse(buffer.hasRemaining());
+                @Override
+                public boolean onEnd(int request)
+                {
+                    assertEquals(id, request);
+                    assertEquals(contentLength, totalLength.get());
+                    return false;
+                }
+            });
+
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                parser.parse(buffer);
+                assertEquals(0, buffer.remaining());
+
+                // Parse again one byte at a time.
+                buffer.readPosition(0);
+                while (buffer.remaining() > 0)
+                {
+                    try (RetainableByteBuffer slice = buffer.slice(buffer.readPosition(), 1))
+                    {
+                        buffer.readPosition(buffer.readPosition() + 1);
+                        parser.parse(slice);
+                    }
+                }
+            }
         }
-
-        // Parse again one byte at a time
-        for (ByteBuffer buffer : accumulator.getByteBuffers())
-        {
-            buffer.flip();
-            while (buffer.hasRemaining())
-            {
-                parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
-            }
-        }
-
-        accumulator.release();
     }
 }

@@ -48,7 +48,7 @@ public class ForwardedRequestCustomizerTest
     private ForwardedRequestCustomizer customizerAlt;
     private ForwardedRequestCustomizer customizerConfigured;
 
-    private static class Actual
+    public static class Actual
     {
         final AtomicReference<String> scheme = new AtomicReference<>();
         final AtomicBoolean wasSecure = new AtomicBoolean(false);
@@ -77,6 +77,7 @@ public class ForwardedRequestCustomizerTest
         customizer = new ForwardedRequestCustomizer();
         http.getHttpConfiguration().addCustomizer(customizer);
         connector = new LocalConnector(server, http);
+        connector.setLocalSocketAddress(new InetSocketAddress("0.0.0.0", 0));
         server.addConnector(connector);
 
         // Alternate behavior Connector
@@ -104,6 +105,7 @@ public class ForwardedRequestCustomizerTest
         customizerAlt = new ForwardedRequestCustomizer();
         httpAlt.getHttpConfiguration().addCustomizer(customizerAlt);
         connectorAlt = new LocalConnector(server, httpAlt);
+        connectorAlt.setLocalSocketAddress(new InetSocketAddress("0.0.0.0", 0));
         server.addConnector(connectorAlt);
 
         // Configured behavior Connector
@@ -121,6 +123,7 @@ public class ForwardedRequestCustomizerTest
 
         http.getHttpConfiguration().addCustomizer(customizerConfigured);
         connectorConfigured = new LocalConnector(server, http);
+        connectorConfigured.setLocalSocketAddress(new InetSocketAddress("0.0.0.0", 0));
         connectorConfigured.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(mismatchedAuthorityHttpCompliance);
         server.addConnector(connectorConfigured);
 
@@ -884,7 +887,6 @@ public class ForwardedRequestCustomizerTest
                     .scheme("https").serverName("myhost").serverPort(443)
                     .secure(true)
                     .requestURL("https://myhost/")
-                    .remoteAddr("0.0.0.0").remotePort(0)
             ),
             Arguments.of(new TestRequest("Proxy-Ssl-Id (setSslIsSecure==false)")
                     .configureCustomizer((customizer) -> customizer.setSslIsSecure(false))
@@ -897,7 +899,6 @@ public class ForwardedRequestCustomizerTest
                     .scheme("http").serverName("myhost").serverPort(80)
                     .secure(false)
                     .requestURL("http://myhost/")
-                    .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
             ),
             Arguments.of(new TestRequest("Proxy-Ssl-Id (setSslIsSecure==true)")
@@ -911,7 +912,6 @@ public class ForwardedRequestCustomizerTest
                     .scheme("https").serverName("myhost").serverPort(443)
                     .secure(true)
                     .requestURL("https://myhost/")
-                    .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("0123456789abcdef")
             ),
             Arguments.of(new TestRequest("Proxy-Auth-Cert (setSslIsSecure==false)")
@@ -925,7 +925,6 @@ public class ForwardedRequestCustomizerTest
                     .scheme("http").serverName("myhost").serverPort(80)
                     .secure(false)
                     .requestURL("http://myhost/")
-                    .remoteAddr("0.0.0.0").remotePort(0)
                     .sslCertificate("Wibble")
             ),
             Arguments.of(new TestRequest("Proxy-Auth-Cert (setSslIsSecure==true)")
@@ -939,7 +938,6 @@ public class ForwardedRequestCustomizerTest
                     .scheme("https").serverName("myhost").serverPort(443)
                     .secure(true)
                     .requestURL("https://myhost/")
-                    .remoteAddr("0.0.0.0").remotePort(0)
                     .sslCertificate("0123456789abcdef")
             ),
             // =================================================================
@@ -956,7 +954,6 @@ public class ForwardedRequestCustomizerTest
                     .scheme("http").serverName("myhost").serverPort(80)
                     .secure(true)
                     .requestURL("http://myhost/foo")
-                    .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
             ),
             Arguments.of(new TestRequest("https initial authority, X-Forwarded-Proto on http, Proxy-Ssl-Id exists (setSslIsSecure==false)")
@@ -971,7 +968,6 @@ public class ForwardedRequestCustomizerTest
                     .scheme("http").serverName("alt.example.net").serverPort(80)
                     .secure(false)
                     .requestURL("http://alt.example.net/foo")
-                    .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
             ),
             Arguments.of(new TestRequest("No initial authority, X-Proxied-Https off, Proxy-Ssl-Id exists (setSslIsSecure==true)")
@@ -986,7 +982,6 @@ public class ForwardedRequestCustomizerTest
                     .scheme("http").serverName("myhost").serverPort(80)
                     .secure(false)
                     .requestURL("http://myhost/foo")
-                    .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
             ),
             Arguments.of(new TestRequest("Https initial authority, X-Proxied-Https off, Proxy-Ssl-Id exists (setSslIsSecure==true)")
@@ -1001,7 +996,6 @@ public class ForwardedRequestCustomizerTest
                     .scheme("http").serverName("alt.example.net").serverPort(80)
                     .secure(false)
                     .requestURL("http://alt.example.net/foo")
-                    .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
             ),
             Arguments.of(new TestRequest("Https initial authority, X-Proxied-Https off, Proxy-Ssl-Id exists (setSslIsSecure==true) (alt order)")
@@ -1016,7 +1010,6 @@ public class ForwardedRequestCustomizerTest
                     .scheme("http").serverName("alt.example.net").serverPort(80)
                     .secure(false)
                     .requestURL("http://alt.example.net/foo")
-                    .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
             ),
             Arguments.of(new TestRequest("Http initial authority, X-Proxied-Https off, Proxy-Ssl-Id exists (setSslIsSecure==false)")
@@ -1032,7 +1025,6 @@ public class ForwardedRequestCustomizerTest
                     .scheme("http").serverName("alt.example.net").serverPort(80)
                     .secure(false)
                     .requestURL("http://alt.example.net/foo")
-                    .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
                     .sslCertificate("0123456789abcdef")
             ),
@@ -1049,7 +1041,6 @@ public class ForwardedRequestCustomizerTest
                     .scheme("http").serverName("alt.example.net").serverPort(80)
                     .secure(false)
                     .requestURL("http://alt.example.net/foo")
-                    .remoteAddr("0.0.0.0").remotePort(0)
                     .sslSession("Wibble")
                     .sslCertificate("0123456789abcdef")
             )
@@ -1064,7 +1055,7 @@ public class ForwardedRequestCustomizerTest
 
         String rawRequest = request.getRawRequest((header) -> header);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
         assertThat("status", response.getStatus(), is(200));
 
         expectations.accept(actual);
@@ -1083,7 +1074,7 @@ public class ForwardedRequestCustomizerTest
             .replaceFirst("Proxy-Ssl-Id:", "Jetty-Proxy-Ssl-Id:")
             .replaceFirst("Proxy-auth-cert:", "Jetty-Proxy-Auth-Cert:"));
 
-        HttpTester.Response response = HttpTester.parseResponse(connectorConfigured.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connectorConfigured.getResponseAsString(rawRequest));
         assertThat("status", response.getStatus(), is(200));
 
         expectations.accept(actual);
@@ -1196,7 +1187,7 @@ public class ForwardedRequestCustomizerTest
         String rawRequest = request.getRawRequest((header) -> header);
         // System.out.println(rawRequest);
 
-        HttpTester.Response response = HttpTester.parseResponse(connectorAlt.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connectorAlt.getResponseAsString(rawRequest));
         assertThat("status", response.getStatus(), is(200));
 
         expectations.accept(actual);
@@ -1228,7 +1219,7 @@ public class ForwardedRequestCustomizerTest
 
         String rawRequest = request.getRawRequest((header) -> header);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
         assertThat("status", response.getStatus(), is(400));
     }
 
@@ -1277,13 +1268,13 @@ public class ForwardedRequestCustomizerTest
         String rawRequest = request.getRawRequest((header) -> header);
         // System.out.println(rawRequest);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
         assertThat("status", response.getStatus(), is(200));
 
         expectations.accept(actual);
     }
 
-    private static class TestRequest
+    public static class TestRequest
     {
         String description;
         String[] requestHeaders;
@@ -1332,13 +1323,13 @@ public class ForwardedRequestCustomizerTest
         }
     }
 
-    private static class Expectations implements Consumer<Actual>
+    public static class Expectations implements Consumer<Actual>
     {
         String expectedScheme;
         String expectedServerName;
         int expectedServerPort;
         String expectedRequestURL;
-        String expectedRemoteAddr = "0.0.0.0";
+        String expectedRemoteAddr;
         int expectedRemotePort = 0;
         String expectedSslSession;
         String expectedSslCertificate;
@@ -1349,9 +1340,7 @@ public class ForwardedRequestCustomizerTest
         {
             assertThat("scheme", actual.scheme.get(), is(expectedScheme));
             if (secure != null && secure)
-            {
                 assertTrue(actual.wasSecure.get(), "wasSecure");
-            }
             assertThat("serverName", actual.serverName.get(), is(expectedServerName));
             assertThat("serverPort", actual.serverPort.get(), is(expectedServerPort));
             assertThat("requestURL", actual.requestURI.get(), is(expectedRequestURL));

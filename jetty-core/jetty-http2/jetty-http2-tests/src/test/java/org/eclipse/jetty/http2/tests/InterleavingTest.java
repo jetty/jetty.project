@@ -14,7 +14,6 @@
 package org.eclipse.jetty.http2.tests;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,9 +36,11 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,17 +81,23 @@ public class InterleavingTest extends AbstractTest
             }
         });
 
-        BlockingQueue<Stream.Data> dataQueue = new LinkedBlockingDeque<>();
+        BlockingQueue<DataFrame> dataQueue = new LinkedBlockingDeque<>();
         Stream.Listener streamListener = new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                // Do not release.
-                dataQueue.offer(data);
-                if (!data.frame().isEndStream())
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        // Do not close the DataFrame because it's stored for later use.
+                        DataFrame dataFrame = new DataFrame(stream.getId(), buffer, chunk.isLast());
+                        dataQueue.offer(dataFrame);
+                        if (!chunk.isLast())
+                            stream.demand();
+                    }
+                }
             }
         };
 
@@ -127,11 +134,11 @@ public class InterleavingTest extends AbstractTest
             {
                 // Write data for both streams from within the callback so that they get queued together.
 
-                ByteBuffer buffer1 = ByteBuffer.wrap(content1);
-                serverStream1.data(new DataFrame(serverStream1.getId(), buffer1, true), NOOP);
+                RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(content1);
+                serverStream1.data(buffer1, true, NOOP);
 
-                ByteBuffer buffer2 = ByteBuffer.wrap(content2);
-                serverStream2.data(new DataFrame(serverStream2.getId(), buffer2, true), NOOP);
+                RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(content2);
+                serverStream2.data(buffer2, true, NOOP);
             }
         });
 
@@ -147,20 +154,22 @@ public class InterleavingTest extends AbstractTest
         int finished = 0;
         while (finished < 2)
         {
-            Stream.Data data = dataQueue.poll(5, TimeUnit.SECONDS);
-            if (data == null)
-                fail();
+            try (DataFrame dataFrame = dataQueue.poll(5, TimeUnit.SECONDS))
+            {
+                if (dataFrame == null)
+                    fail();
 
-            DataFrame dataFrame = data.frame();
-            int streamId = dataFrame.getStreamId();
-            int length = dataFrame.remaining();
-            streamLengths.add(new StreamLength(streamId, length));
-            if (dataFrame.isEndStream())
-                ++finished;
+                int streamId = dataFrame.getStreamId();
+                int length = (int)dataFrame.remaining();
+                streamLengths.add(new StreamLength(streamId, length));
+                if (dataFrame.isEndStream())
+                    ++finished;
 
-            BufferUtil.writeTo(dataFrame.getByteBuffer(), contents.get(streamId));
-
-            data.release();
+                try (RetainableByteBuffer rb = dataFrame.acquire())
+                {
+                    BufferUtil.writeTo(rb, contents.get(streamId));
+                }
+            }
         }
 
         // Verify that the content has been sent properly.

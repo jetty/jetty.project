@@ -652,29 +652,28 @@ public abstract class HttpReceiver implements Invocable
         {
             while (true)
             {
-                Content.Chunk chunk = source.read();
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Decoded chunk {}", chunk);
-
-                if (chunk == null)
-                    return null;
-
-                if (chunk.isEmpty() && !chunk.isLast())
+                try (Content.Chunk chunk = source.read())
                 {
-                    chunk.release();
-                    continue;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Decoded chunk {}", chunk);
+
+                    if (chunk == null)
+                        return null;
+
+                    if (!chunk.hasRemaining() && !chunk.isLast())
+                        continue;
+
+                    decodedLength += chunk.remaining();
+
+                    if (chunk.isLast() && !last)
+                    {
+                        last = true;
+                        afterDecoding(response, decodedLength);
+                    }
+
+                    chunk.retain();
+                    return chunk;
                 }
-
-                decodedLength += chunk.remaining();
-
-                if (chunk.isLast() && !last)
-                {
-                    last = true;
-                    afterDecoding(response, decodedLength);
-                }
-
-                return chunk;
             }
         }
 
