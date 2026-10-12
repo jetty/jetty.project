@@ -28,7 +28,7 @@ public class ImageUserChange extends ImageFromDSL
                 // setup Jetty Home, owned by root
                 .copy("/opt/jetty/", "${JETTY_HOME}/")
                 // setup "jetty" user and Jetty Base directory
-                .run("chmod ugo+x ${JETTY_HOME}/bin/jetty.sh ; " +
+                .run("chmod a+x ${JETTY_HOME}/bin/jetty.sh ; " +
                     "mkdir -p ${JETTY_BASE} ; " +
                     "useradd --home-dir=${JETTY_BASE} --shell=/bin/bash jetty ; " +
                     "chown jetty:jetty ${JETTY_BASE} ; " +
