@@ -17,7 +17,6 @@ import java.net.URI;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -38,8 +37,6 @@ import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.ShellStrategy;
-import org.testcontainers.images.ImagePullPolicy;
-import org.testcontainers.images.PullPolicy;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -57,8 +54,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class JettyShStartTest extends AbstractJettyHomeTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(JettyShStartTest.class);
-    // Establish a 3 month expiration for older pulled image
-    private static final ImagePullPolicy DEFAULT_PULL_POLICY = PullPolicy.ageBased(Duration.of(30 * 3, ChronoUnit.DAYS));
 
     public static Stream<Arguments> jettyImages()
     {
@@ -117,7 +112,6 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
         try (GenericContainer<?> genericContainer = new GenericContainer<>(jettyImage))
         {
-            genericContainer.withImagePullPolicy(DEFAULT_PULL_POLICY);
             genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
 
             genericContainer.withExposedPorts(80, 8080) // jetty
@@ -204,7 +198,6 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
         try (GenericContainer<?> genericContainer = new GenericContainer<>(jettyImage))
         {
-            genericContainer.withImagePullPolicy(DEFAULT_PULL_POLICY);
             genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
 
             genericContainer.withExposedPorts(80, 8080) // jetty
@@ -328,9 +321,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             LOG.debug("Create Image: {}", image.getDockerImageName());
         try (GenericContainer<?> container = new GenericContainer<>(image))
         {
-            container
-                .withImagePullPolicy(DEFAULT_PULL_POLICY)
-                .start();
+            container.start();
         }
     }
 
