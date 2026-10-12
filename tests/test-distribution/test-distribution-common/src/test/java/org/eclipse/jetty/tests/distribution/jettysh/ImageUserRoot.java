@@ -26,7 +26,7 @@ public class ImageUserRoot extends ImageFromDSL
                 // setup Jetty Home
                 .copy("/opt/jetty/", "${JETTY_HOME}/")
                 .run("mkdir -p ${JETTY_BASE} ; " +
-                    "chmod ugo+x ${JETTY_HOME}/bin/jetty.sh ; " +
+                    "chmod a+x ${JETTY_HOME}/bin/jetty.sh ; " +
                     "chmod a+w ${JETTY_BASE}")
                 // Configure Jetty Base
                 .workDir("${JETTY_BASE}")
