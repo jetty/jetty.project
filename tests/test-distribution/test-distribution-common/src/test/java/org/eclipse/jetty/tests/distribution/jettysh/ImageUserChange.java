@@ -25,6 +25,8 @@ public class ImageUserChange extends ImageFromDSL
         super(osImage, "user-change", builder ->
             builder
                 .from(osImage.getDockerImageName())
+                // setup Jetty Home, owned by root
+                .copy("/opt/jetty/", "${JETTY_HOME}/")
                 // setup "jetty" user and Jetty Base directory
                 .run("chmod a+x ${JETTY_HOME}/bin/jetty.sh ; " +
                     "mkdir -p ${JETTY_BASE} ; " +
@@ -36,5 +38,6 @@ public class ImageUserChange extends ImageFromDSL
                 // Configure Jetty Base
                 .workDir("${JETTY_BASE}")
                 .build());
+        withFileFromFile("/opt/jetty/", osImage.getJettyHomeDir());
     }
 }
