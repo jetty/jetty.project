@@ -540,8 +540,29 @@ public class PathResource extends Resource
              *  child.getPath().toUri()       == "file:///C:/temp/aa/foo.txt"
              *  child.getRealURI()            == "file:///C:/temp/aa/foo.txt"
              */
-            alias = !isSameName(path, realPath) || !Objects.equals(uri, toUri(realPath));
+            alias = !isSameName(path, realPath) || !isSameUri(uri, path, realPath);
         }
+    }
+
+    /**
+     * <p>Tests whether the as-requested URI is the URI of the real path.</p>
+     * <p>On macOS, {@link Path#toRealPath(LinkOption...)} returns a path whose
+     * native form is Unicode NFD, so its URI percent-encodes a name such as
+     * {@code swedish-\u00e5.txt} as {@code swedish-a%CC%8A.txt}, while the
+     * as-requested URI encodes the same name in NFC as {@code swedish-%C3%A5.txt}.
+     * This method is only called when {@link #isSameName(Path, Path)} holds for
+     * the path and the real path, so the URI of the path is the same name in the
+     * as-requested Unicode form and is accepted as well; a different name, as in
+     * the Windows {@code aa.} case above, still differs from both URIs.</p>
+     *
+     * @param uri the as-requested URI
+     * @param path the path, which has the same name as the real path
+     * @param realPath the real path
+     * @return true if the URI is the URI of the real path
+     */
+    private boolean isSameUri(URI uri, Path path, Path realPath)
+    {
+        return Objects.equals(uri, toUri(realPath)) || Objects.equals(uri, toUri(path));
     }
 
     /**
