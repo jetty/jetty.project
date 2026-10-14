@@ -18,6 +18,7 @@ import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
@@ -413,6 +414,52 @@ public class WebSocketDocs
     // end::streamingAnnotatedEndpoint[]
 
     @SuppressWarnings("InnerClassMayBeStatic")
+    // tag::publisherAnnotatedEndpoint[]
+    @WebSocket
+    public class PublisherAnnotatedEndpoint
+    {
+        @OnWebSocketMessage
+        public void onBinaryMessage(Flow.Publisher<ByteBuffer> publisher)
+        {
+            // Consume the message asynchronously, one frame at a time.
+            publisher.subscribe(new Flow.Subscriber<>()
+            {
+                private Flow.Subscription subscription;
+
+                @Override
+                public void onSubscribe(Flow.Subscription subscription)
+                {
+                    this.subscription = subscription;
+                    // Demand the first frame.
+                    subscription.request(1);
+                }
+
+                @Override
+                public void onNext(ByteBuffer payload)
+                {
+                    // The payload is valid only within this method.
+                    appendToFile(payload);
+                    // Demand the next frame.
+                    subscription.request(1);
+                }
+
+                @Override
+                public void onError(Throwable failure)
+                {
+                    // The message failed.
+                }
+
+                @Override
+                public void onComplete()
+                {
+                    // The message is complete.
+                }
+            });
+        }
+    }
+    // end::publisherAnnotatedEndpoint[]
+
+    @SuppressWarnings("InnerClassMayBeStatic")
     // tag::sessionConfigure[]
     public class ConfigureEndpoint implements Session.Listener
     {
@@ -607,6 +654,10 @@ public class WebSocketDocs
     }
 
     private static void appendToFile(ByteBuffer payload, boolean fin)
+    {
+    }
+
+    private static void appendToFile(ByteBuffer payload)
     {
     }
 
