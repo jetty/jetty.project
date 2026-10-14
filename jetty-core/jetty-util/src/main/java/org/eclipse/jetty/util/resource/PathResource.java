@@ -21,6 +21,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -540,29 +541,66 @@ public class PathResource extends Resource
              *  child.getPath().toUri()       == "file:///C:/temp/aa/foo.txt"
              *  child.getRealURI()            == "file:///C:/temp/aa/foo.txt"
              */
-            alias = !isSameName(path, realPath) || !isSameUri(uri, path, realPath);
+            alias = !isSameNameIgnoringUnicodeForm(path, realPath) || !isSameUri(uri, toUri(realPath));
         }
     }
 
     /**
-     * <p>Tests whether the as-requested URI is the URI of the real path.</p>
-     * <p>On macOS, {@link Path#toRealPath(LinkOption...)} returns a path whose
-     * native form is Unicode NFD, so its URI percent-encodes a name such as
-     * {@code swedish-\u00e5.txt} as {@code swedish-a%CC%8A.txt}, while the
-     * as-requested URI encodes the same name in NFC as {@code swedish-%C3%A5.txt}.
-     * This method is only called when {@link #isSameName(Path, Path)} holds for
-     * the path and the real path, so the URI of the path is the same name in the
-     * as-requested Unicode form and is accepted as well; a different name, as in
-     * the Windows {@code aa.} case above, still differs from both URIs.</p>
+     * <p>Tests whether the path and the real path have the same name, allowing the names
+     * to differ in Unicode normalization form only.</p>
+     * <p>A file system that normalizes names (ZFS with {@code normalization=NFD}, APFS)
+     * reports the real path of a name requested in NFC in NFD. The two forms can only
+     * name different files through a symbolic link, so the equivalence is applied only
+     * when no segment of the path is a symbolic link; symbolic links, and names that
+     * differ in any other way such as case, remain aliases.</p>
+     *
+     * @param path the path as requested
+     * @param realPath the real path
+     * @return true if the two paths have the same name
+     */
+    private static boolean isSameNameIgnoringUnicodeForm(Path path, Path realPath)
+    {
+        if (isSameName(path, realPath))
+            return true;
+        int count = path.getNameCount();
+        if (count != realPath.getNameCount())
+            return false;
+        for (int i = count; i-- > 0; )
+        {
+            String a = path.getName(i).toString();
+            String b = realPath.getName(i).toString();
+            if (!a.equals(b) && !Normalizer.normalize(a, Normalizer.Form.NFC).equals(Normalizer.normalize(b, Normalizer.Form.NFC)))
+                return false;
+        }
+        return !containsSymbolicLink(path);
+    }
+
+    private static boolean containsSymbolicLink(Path path)
+    {
+        for (Path p = path; p != null; p = p.getParent())
+        {
+            if (Files.isSymbolicLink(p))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * <p>Tests whether the as-requested URI is the URI of the real path, allowing the two
+     * to differ in the Unicode normalization form of their non-ASCII characters only.</p>
      *
      * @param uri the as-requested URI
-     * @param path the path, which has the same name as the real path
-     * @param realPath the real path
-     * @return true if the URI is the URI of the real path
+     * @param realUri the URI of the real path
+     * @return true if the two URIs are the same
+     * @see URIUtil#normalizeNonAsciiEscapes(String)
      */
-    private boolean isSameUri(URI uri, Path path, Path realPath)
+    private static boolean isSameUri(URI uri, URI realUri)
     {
-        return Objects.equals(uri, toUri(realPath)) || Objects.equals(uri, toUri(path));
+        if (Objects.equals(uri, realUri))
+            return true;
+        if (uri == null || realUri == null)
+            return false;
+        return URIUtil.normalizeNonAsciiEscapes(uri.toASCIIString()).equals(URIUtil.normalizeNonAsciiEscapes(realUri.toASCIIString()));
     }
 
     /**
