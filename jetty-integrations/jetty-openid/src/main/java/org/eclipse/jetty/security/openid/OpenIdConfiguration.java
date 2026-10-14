@@ -59,6 +59,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
 
         private boolean authenticateNewUsers = false;
         private boolean logoutWhenIdTokenIsExpired = false;
+        private boolean pkce = true;
         private final List<String> scopes = new ArrayList<>();
 
         /**
@@ -183,6 +184,16 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         }
 
         /**
+         * @param pkce Whether to use Proof Key for Code Exchange (RFC 7636) with the {@code S256} method.
+         * On by default: a provider that does not support PKCE ignores the parameters (RFC 6749 section 3.1).
+         */
+        public Builder pkce(boolean pkce)
+        {
+            this.pkce = pkce;
+            return this;
+        }
+
+        /**
          * @return a new {@link OpenIdConfiguration} instance.
          */
         public OpenIdConfiguration build()
@@ -191,13 +202,18 @@ public class OpenIdConfiguration extends ContainerLifeCycle
                 throw new IllegalArgumentException("Issuer was not configured");
             if (clientId == null)
                 throw new IllegalArgumentException("clientId was not configured");
-            if (clientSecret == null)
+            if (clientSecret == null && !AUTHENTICATION_METHOD_NONE.equals(authenticationMethod))
                 throw new IllegalArgumentException("clientSecret was not configured");
 
             return new OpenIdConfiguration(issuer, clientId, clientSecret, authorizationEndpoint, tokenEndpoint,
-                endSessionEndpoint, authenticationMethod, httpClient, authenticateNewUsers, logoutWhenIdTokenIsExpired, scopes);
+                endSessionEndpoint, authenticationMethod, httpClient, authenticateNewUsers, logoutWhenIdTokenIsExpired, scopes, pkce);
         }
     }
+
+    /**
+     * The Token Endpoint authentication method of a public client, which has no secret (RFC 6749 section 2.1).
+     */
+    public static final String AUTHENTICATION_METHOD_NONE = "none";
 
     private static final Logger LOG = LoggerFactory.getLogger(OpenIdConfiguration.class);
     private static final String CONFIG_PATH = "/.well-known/openid-configuration";
@@ -217,6 +233,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     private String endSessionEndpoint;
     private boolean authenticateNewUsers;
     private boolean logoutWhenIdTokenIsExpired;
+    private final boolean pkce;
 
     /**
      * Create an OpenID configuration for a specific OIDC provider.
@@ -293,7 +310,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
                                @Name("authenticationMethod") String authenticationMethod,
                                @Name("httpClient") HttpClient httpClient)
     {
-        this(issuer, clientId, clientSecret, authorizationEndpoint, tokenEndpoint, endSessionEndpoint, authenticationMethod, httpClient, false, false, Collections.emptyList());
+        this(issuer, clientId, clientSecret, authorizationEndpoint, tokenEndpoint, endSessionEndpoint, authenticationMethod, httpClient, false, false, Collections.emptyList(), true);
     }
 
     /**
@@ -320,7 +337,8 @@ public class OpenIdConfiguration extends ContainerLifeCycle
                                 HttpClient httpClient,
                                 boolean authenticateNewUsers,
                                 boolean logoutWhenIdTokenIsExpired,
-                                List<String> scopes)
+                                List<String> scopes,
+                                boolean pkce)
     {
         this.issuer = issuer;
         this.clientId = clientId;
@@ -333,6 +351,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         this.authenticateNewUsers = authenticateNewUsers;
         this.logoutWhenIdTokenIsExpired = logoutWhenIdTokenIsExpired;
         this.scopes.addAll(scopes);
+        this.pkce = pkce;
 
         if (this.issuer == null)
             throw new IllegalArgumentException("Issuer was not configured");
@@ -472,6 +491,14 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     }
 
     /**
+     * @return whether Proof Key for Code Exchange (RFC 7636) is used with the {@code S256} method.
+     */
+    public boolean isPkce()
+    {
+        return pkce;
+    }
+
+    /**
      * @deprecated use {@link #getAuthorizationEndpoint()} instead.
      */
     @Deprecated(since = "12.1.0", forRemoval = true)
@@ -518,7 +545,7 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     @Override
     public String toString()
     {
-        return String.format("%s@%x{iss=%s, clientId=%s, authEndpoint=%s, authenticator=%s, tokenEndpoint=%s, scopes=%s, authNewUsers=%s}",
-            TypeUtil.toShortName(getClass()), hashCode(), issuer, clientId, authorizationEndpoint, authenticationMethod, tokenEndpoint, scopes, authenticateNewUsers);
+        return String.format("%s@%x{iss=%s, clientId=%s, authEndpoint=%s, authenticator=%s, tokenEndpoint=%s, scopes=%s, authNewUsers=%s, pkce=%s}",
+            TypeUtil.toShortName(getClass()), hashCode(), issuer, clientId, authorizationEndpoint, authenticationMethod, tokenEndpoint, scopes, authenticateNewUsers, pkce);
     }
 }
