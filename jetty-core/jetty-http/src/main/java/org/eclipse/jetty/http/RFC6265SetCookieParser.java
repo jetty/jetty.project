@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +58,7 @@ public class RFC6265SetCookieParser implements SetCookieParser
                     }
                     if (ch == '=')
                     {
-                        name = setCookieValue.substring(offset, i).trim();
+                        name = StringUtil.unquote(setCookieValue.substring(offset, i).trim());
                         if (name.isEmpty())
                         {
                             if (LOG.isDebugEnabled())
@@ -84,7 +85,7 @@ public class RFC6265SetCookieParser implements SetCookieParser
                     if (quoted && ch == '"')
                     {
                         quoted = false;
-                        String value = setCookieValue.substring(offset, i).trim();
+                        String value = StringUtil.unquote(setCookieValue.substring(offset, i).trim());
                         cookie = HttpCookie.build(name, value);
                         offset = i + 1;
                         state = State.ATTRIBUTE;
@@ -93,7 +94,7 @@ public class RFC6265SetCookieParser implements SetCookieParser
                     {
                         if (ch == ';')
                         {
-                            String value = setCookieValue.substring(offset, i).trim();
+                            String value = StringUtil.unquote(setCookieValue.substring(offset, i).trim());
                             cookie = HttpCookie.build(name, value);
                             offset = i + 1;
                             state = State.ATTRIBUTE_NAME;
@@ -153,7 +154,7 @@ public class RFC6265SetCookieParser implements SetCookieParser
                     if (quoted && ch == '"')
                     {
                         quoted = false;
-                        String value = setCookieValue.substring(offset, i).trim();
+                        String value = StringUtil.unquote(setCookieValue.substring(offset, i).trim());
                         if (!setAttribute(cookie, name, value))
                             return null;
                         offset = i + 1;
@@ -163,7 +164,7 @@ public class RFC6265SetCookieParser implements SetCookieParser
                     {
                         if (ch == ';')
                         {
-                            String value = setCookieValue.substring(offset, i).trim();
+                            String value = StringUtil.unquote(setCookieValue.substring(offset, i).trim());
                             if (!setAttribute(cookie, name, value))
                                 return null;
                             offset = i + 1;

@@ -305,4 +305,24 @@ public class StringUtilTest
     {
         assertThat(StringUtil.toHexString(new byte[0]), is(""));
     }
+
+    public static Stream<Arguments> unquoteProvider()
+    {
+        return Stream.of(
+            Arguments.of(null, null),
+            Arguments.of("foo", "foo"),
+            Arguments.of("\"\"", ""),
+            Arguments.of("\"bar\"", "bar"),
+            Arguments.of("\"with space\"", "with space"),
+            Arguments.of("\"with \"internal\" quotes\"", "with \"internal\" quotes"),
+            Arguments.of("\"with \\\"escaped internal\\\" quotes\"", "with \"escaped internal\" quotes")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("unquoteProvider")
+    public void testUnquote(String input, String expected)
+    {
+        assertEquals(expected, StringUtil.unquote(input));
+    }
 }
