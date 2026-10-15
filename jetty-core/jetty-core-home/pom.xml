@@ -19,6 +19,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.eclipse.jdt</groupId>
+      <artifactId>ecj</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-bouncycastle-server</artifactId>
     </dependency>
@@ -361,7 +365,8 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.ow2.asm,
+              <includeGroupIds>org.eclipse.jdt,
+                org.ow2.asm,
                 org.slf4j</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>
