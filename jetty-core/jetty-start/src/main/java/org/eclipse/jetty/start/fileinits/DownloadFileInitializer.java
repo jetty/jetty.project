@@ -31,7 +31,6 @@ import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartArgs;
 import org.eclipse.jetty.start.StartLog;
-import org.eclipse.jetty.util.IO;
 
 public abstract class DownloadFileInitializer extends FileInitializer
 {
@@ -56,7 +55,7 @@ public abstract class DownloadFileInitializer extends FileInitializer
             throw new IOException("Insecure HTTP download not allowed (use " + StartArgs.ARG_ALLOW_INSECURE_HTTP_DOWNLOADS + " to bypass): " + uri);
 
         download(uri, (inputStream) ->
-            IO.copy(inputStream, OutputStream.nullOutputStream()));
+            inputStream.transferTo(OutputStream.nullOutputStream()));
 
         return true;
     }
