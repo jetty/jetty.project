@@ -19,123 +19,6 @@
   </properties>
 
   <dependencies>
-    <!-- Demo Servlet 5 Apps -->
-    <!-- TODO: move to appropriate places
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet5-demo-async-rest-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet5-demo-jaas-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet5-demo-jetty-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.el</groupId>
-          <artifactId>el-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet5-demo-jndi-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet5-demo-jsp-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet5-demo-jspc-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet5-demo-mock-resources</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet5-demo-simple-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet5-demo-spec-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet6-demo-jspc-6-1-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency> -->
-    <!-- Demo Servlet 6 Apps -->
-    <!-- TODO: move to appropriate places
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet6-demo-jspc-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet6-demo-simple-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet6-demo-spec-6-1-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-     -->
-    <!-- EE10 -->
-
     <!-- ignore sort pom so we know which eeXX will be build first -->
     <?SORTPOM IGNORE?>
     <dependency>
@@ -168,90 +51,6 @@
       <version>${project.version}</version>
       <type>zip</type>
     </dependency>
-    <?SORTPOM RESUME?>
-    <!-- Servlet 4 Demo Apps -->
-    <!-- ignore sort pom so we know which eeXX will be build first -->
-    <?SORTPOM IGNORE?>
-    <!-- TODO: move to appropriate places
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-async-rest-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-jaas-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-jetty-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.el</groupId>
-          <artifactId>el-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-jndi-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-jsp-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-jspc-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-mock-resources</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-simple-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
-      <artifactId>jetty-servlet4-demo-spec-webapp</artifactId>
-      <version>${project.version}</version>
-      <classifier>config</classifier>
-      <type>jar</type>
-      <optional>true</optional>
-    </dependency>
-    -->
     <?SORTPOM RESUME?>
   </dependencies>
 
@@ -297,21 +96,6 @@
               </descriptors>
             </configuration>
           </execution>
-          <!--
-          TODO: do we need this to be able to deploy to maven central?
-          <execution>
-            <id>sources</id>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/jetty-source-assembly.xml</descriptor>
-              </descriptors>
-              <appendAssemblyId>true</appendAssemblyId>
-            </configuration>
-          </execution>-->
         </executions>
       </plugin>
       <plugin>
@@ -336,17 +120,6 @@
                   <outputDirectory>${assembly-directory}/</outputDirectory>
                   <destFileName>VERSION.txt</destFileName>
                 </artifactItem>
-                <!--<artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>jetty-start</artifactId>
-                  <version>${project.version}</version>
-                  <classifier>shaded</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                  <destFileName>start.jar</destFileName>
-                </artifactItem>-->
               </artifactItems>
             </configuration>
           </execution>
