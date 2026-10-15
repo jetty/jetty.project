@@ -139,7 +139,7 @@ public class ModulesValidation
                                             filesLocations.add(destLocation);
                                         }
                                     }
-                                    catch (IOException e)
+                                    catch (Throwable e)
                                     {
                                         failures.add("%s - [files] Invalid '%s' : %s".formatted(module.getName(), file, Utils.asString(e)));
                                     }
