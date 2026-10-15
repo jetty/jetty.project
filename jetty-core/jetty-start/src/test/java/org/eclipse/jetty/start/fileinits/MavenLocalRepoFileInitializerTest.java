@@ -21,8 +21,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.start.BaseHome;
+import org.eclipse.jetty.start.StartArgs;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
@@ -73,7 +75,7 @@ public class MavenLocalRepoFileInitializerTest
     @Test
     public void testGetCoordinateNotMaven()
     {
-        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
+        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome));
         String ref = "https://jetty.org/";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coords", coords, nullValue());
@@ -82,7 +84,7 @@ public class MavenLocalRepoFileInitializerTest
     @Test
     public void testGetCoordinateInvalidMaven()
     {
-        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
+        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome));
         String ref = "maven://eclipse.dev/jetty";
         RuntimeException x = assertThrows(RuntimeException.class, () -> repo.getCoordinates(URI.create(ref)));
         assertThat(x.getMessage(), containsString("Not a valid maven:// uri"));
@@ -91,7 +93,7 @@ public class MavenLocalRepoFileInitializerTest
     @Test
     public void testGetCoordinateNormal()
     {
-        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
+        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome));
         String ref = "maven://org.eclipse.jetty/jetty-start/12.0.x";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
@@ -109,7 +111,7 @@ public class MavenLocalRepoFileInitializerTest
     @Test
     public void testGetCoordinateZip()
     {
-        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
+        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome));
         String ref = "maven://org.eclipse.jetty/jetty-home/12.0.21/zip";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
@@ -127,7 +129,7 @@ public class MavenLocalRepoFileInitializerTest
     @Test
     public void testGetCoordinateTestJar()
     {
-        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
+        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome));
         String ref = "maven://org.eclipse.jetty/jetty-http/12.0.x/jar/tests";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
@@ -145,7 +147,7 @@ public class MavenLocalRepoFileInitializerTest
     @Test
     public void testGetCoordinateTestUnspecifiedType()
     {
-        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome);
+        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome));
         String ref = "maven://org.eclipse.jetty/jetty-http/12.0.x//tests";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
@@ -164,7 +166,7 @@ public class MavenLocalRepoFileInitializerTest
     public void testGetCoordinateTestMavenBaseUri()
     {
         MavenLocalRepoFileInitializer repo =
-            new MavenLocalRepoFileInitializer(baseHome, null, false,
+            new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome), null,
                 "https://repo1.maven.org/maven2/");
         String ref = "maven://org.eclipse.jetty/jetty-http/12.0.x/jar/tests";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
@@ -186,7 +188,7 @@ public class MavenLocalRepoFileInitializerTest
         throws Exception
     {
         MavenLocalRepoFileInitializer repo =
-            new MavenLocalRepoFileInitializer(baseHome, null, false);
+            new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome), null);
         String ref = "maven://org.eclipse.jetty/jetty-session/12.0.21/jar/tests";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
@@ -216,7 +218,7 @@ public class MavenLocalRepoFileInitializerTest
         FS.ensureEmpty(snapshotLocalRepoDir);
 
         MavenLocalRepoFileInitializer repo =
-            new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false, "https://central.sonatype.com/repository/maven-snapshots/");
+            new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome), snapshotLocalRepoDir, "https://central.sonatype.com/repository/maven-snapshots/");
         String ref = "maven://org.eclipse.jetty/jetty-rewrite/12.0.34-SNAPSHOT/jar";
         Coordinates coords = repo.getCoordinates(URI.create(ref));
         assertThat("Coordinates", coords, notNullValue());
@@ -245,7 +247,7 @@ public class MavenLocalRepoFileInitializerTest
         FS.ensureEmpty(snapshotLocalRepoDir);
 
         MavenLocalRepoFileInitializer repo =
-            new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false,
+            new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome), snapshotLocalRepoDir,
                 "https://central.sonatype.com/repository/maven-snapshots/");
         String ref = "maven://org.eclipse.jetty.ee10.demos/jetty-ee10-demo-simple-webapp/12.0.34-SNAPSHOT/jar/config";
         Path baseDir = baseHome.getBasePath();
@@ -263,7 +265,7 @@ public class MavenLocalRepoFileInitializerTest
         FS.ensureEmpty(snapshotLocalRepoDir);
 
         MavenLocalRepoFileInitializer repo =
-            new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false,
+            new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome), snapshotLocalRepoDir,
                 "https://central.sonatype.com/repository/maven-snapshots/");
         String ref = "maven://org.eclipse.jetty.ee10.demos/jetty-ee10-demo-simple-webapp/12.0.34-SNAPSHOT/jar/config";
         Path baseDir = baseHome.getBasePath();
@@ -298,12 +300,71 @@ public class MavenLocalRepoFileInitializerTest
         }
 
         MavenLocalRepoFileInitializer repo =
-            new MavenLocalRepoFileInitializer(baseHome, snapshotLocalRepoDir, false,
+            new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome), snapshotLocalRepoDir,
                 "https://central.sonatype.com/repository/maven-snapshots/").offline(true);
         String ref = "maven://org.eclipse.jetty.eeX.demos/jetty-eeX-demo-simple-webapp/12.99.9/jar/config";
         Path baseDir = baseHome.getBasePath();
         repo.create(URI.create(ref), "extract:/");
 
         assertThat(baseDir.resolve("modules/eeX-demo.mod"), isRegularFile());
+    }
+
+    @Test
+    public void testSkipDownloadWhenHomeProvidesFile()
+        throws Exception
+    {
+        // The distribution already ships this jar.
+        String location = "lib/ee10/jetty-ee10-webapp-12.99.9.jar";
+        Path homeFile = baseHome.getHomePath().resolve(location);
+        FS.ensureDirExists(homeFile.getParent());
+        Files.writeString(homeFile, "not really a jar", UTF_8);
+
+        // Offline with an empty repo, so any download attempt would fail.
+        Path emptyLocalRepoDir = testdir.resolve("empty-repo");
+        FS.ensureEmpty(emptyLocalRepoDir);
+
+        MavenLocalRepoFileInitializer repo =
+            new MavenLocalRepoFileInitializer(baseHome, new StartArgs(baseHome), emptyLocalRepoDir).offline(true);
+        String ref = "maven://org.eclipse.jetty.ee10/jetty-ee10-webapp/12.99.9/jar";
+
+        assertThat("nothing to do", repo.create(URI.create(ref), location), is(false));
+        assertThat("not copied into base", Files.exists(baseHome.getBasePath().resolve(location)), is(false));
+    }
+
+    @Test
+    public void testExistsReadonlyChecksRemotelyWithoutDownloading()
+        throws Exception
+    {
+        // A read-only local repo (e.g. the user's ~/.m2) that does not contain the artifact.
+        Path localRepoDir = testdir.resolve("readonly-repo");
+        FS.ensureEmpty(localRepoDir);
+
+        StartArgs startArgs = new StartArgs(baseHome);
+        startArgs.getJettyEnvironment().getProperties()
+            .setProperty("maven.local.repo.readonly", "true", "test");
+
+        // Capture the remote existence check instead of hitting the network.
+        AtomicReference<Coordinates> remotelyChecked = new AtomicReference<>();
+        MavenLocalRepoFileInitializer repo =
+            new MavenLocalRepoFileInitializer(baseHome, startArgs, localRepoDir, "https://repo1.maven.org/maven2/")
+            {
+                @Override
+                protected boolean existsOnCentralRepo(Coordinates coords)
+                {
+                    remotelyChecked.set(coords);
+                    return true;
+                }
+            };
+
+        String ref = "maven://org.eclipse.jetty/jetty-util/12.0.21/jar";
+        assertThat("exists (verified remotely)", repo.exists(URI.create(ref)), is(true));
+
+        // The existence check must have been performed remotely ...
+        assertThat("remote existence check performed", remotelyChecked.get(), notNullValue());
+        assertThat("checked coordinates", remotelyChecked.get().artifactId, is("jetty-util"));
+
+        // ... and must NOT have downloaded the artifact into the read-only local repo.
+        Path localFile = localRepoDir.resolve("org/eclipse/jetty/jetty-util/12.0.21/jetty-util-12.0.21.jar");
+        assertThat("not downloaded into read-only local repo", Files.exists(localFile), is(false));
     }
 }

@@ -15,11 +15,15 @@ package org.eclipse.jetty.start.fileinits;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.StartArgs;
+import org.eclipse.jetty.start.StartLog;
 
 public class UriFileInitializer extends DownloadFileInitializer
 {
@@ -38,6 +42,30 @@ public class UriFileInitializer extends DownloadFileInitializer
     }
 
     @Override
+    public boolean exists(URI uri) throws IOException
+    {
+        HttpClient httpClient = getHttpClient();
+
+        try
+        {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(uri)
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build();
+
+            HttpResponse<Void> response =
+                httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+
+            return response.statusCode() == 200;
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            throw new IOException("Failed to HEAD: " + uri, e);
+        }
+    }
+
+    @Override
     public boolean create(URI uri, String location) throws IOException
     {
         Path destination = getDestination(uri, location);
@@ -47,6 +75,12 @@ public class UriFileInitializer extends DownloadFileInitializer
 
         if (isFilePresent(destination))
             return false;
+
+        if (isProvidedByHome(location))
+        {
+            StartLog.debug("skipping download of %s : ${jetty.home} provides %s", uri, location);
+            return false;
+        }
 
         download(uri, destination);
 
