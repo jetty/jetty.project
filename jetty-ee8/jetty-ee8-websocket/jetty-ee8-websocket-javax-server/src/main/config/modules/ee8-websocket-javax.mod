@@ -15,7 +15,7 @@ websocket-core-server
 ee8-annotations
 
 [ini]
-ee8.javax.websocket.api.version=@ee8.javax.websocket.api.version@
+ee8.javax.websocket.api.version?=@ee8.javax.websocket.api.version@
 
 [files]
 maven://org.eclipse.jetty.ee8.websocket/jetty-ee8-websocket-javax-client/${jetty.version}/jar|lib/ee8/jetty-ee8-websocket-javax-client-${jetty.version}.jar
