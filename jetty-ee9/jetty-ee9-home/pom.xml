@@ -240,7 +240,7 @@
               <includeGroupIds>org.eclipse.jetty.toolchain,
                 org.eclipse.jetty.ee9,
                 org.eclipse.jetty.ee9.websocket</includeGroupIds>
-              <excludeGroupIds>org.eclipsejetty.ee9.demos</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.ee9.demos</excludeGroupIds>
               <excludeArtifactIds>jetty-schemas</excludeArtifactIds>
               <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>

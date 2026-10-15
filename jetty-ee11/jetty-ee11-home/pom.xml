@@ -264,10 +264,9 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain,
-                org.eclipse.jetty.ee11,
+              <includeGroupIds>org.eclipse.jetty.ee11,
                 org.eclipse.jetty.ee11.websocket</includeGroupIds>
-              <excludeGroupIds>org.eclipsejetty.ee11.demos</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.ee11.demos</excludeGroupIds>
               <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>

@@ -254,6 +254,7 @@
                 org.eclipse.jetty.ee8,
                 org.eclipse.jetty.ee8.websocket</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.ee8.demos</excludeGroupIds>
+              <excludeArtifactIds>jetty-schemas</excludeArtifactIds>
               <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/ee8</outputDirectory>

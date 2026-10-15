@@ -240,10 +240,9 @@
             </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.toolchain,
-                org.eclipse.jetty.ee10,
+              <includeGroupIds>org.eclipse.jetty.ee10,
                 org.eclipse.jetty.ee10.websocket</includeGroupIds>
-              <excludeGroupIds>org.eclipsejetty.ee10.demos</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty.ee10.demos</excludeGroupIds>
               <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>
