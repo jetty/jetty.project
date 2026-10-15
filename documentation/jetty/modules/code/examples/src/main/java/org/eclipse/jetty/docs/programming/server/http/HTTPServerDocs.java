@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.security.KeyStore;
 import java.security.Security;
 import java.time.Duration;
 import java.util.List;
@@ -2195,5 +2196,51 @@ public class HTTPServerDocs
         server.setHandler(reverseProxy);
         server.start();
         // end::proxyReverseLoadBalancer[]
+    }
+
+    public void virtualKeyStore() throws Exception
+    {
+        // tag::virtualKeyStore[]
+        Server server = new Server();
+
+        // The HTTP configuration object.
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        // Add the SecureRequestCustomizer because TLS is used.
+        httpConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // The ConnectionFactory for HTTP/1.1.
+        HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfig);
+
+        // Configure the SslContextFactory for a virtual keystore.
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+
+        // Specify the keystore type and provider for the virtual keystore.
+        // For Windows Certificate Store, use "Windows-MY" type and "SunMSCAPI" provider.
+        String keystoreType = "Windows-MY";
+        String keystoreProvider = "SunMSCAPI";
+        sslContextFactory.setKeyStoreType(keystoreType);
+        sslContextFactory.setKeyStoreProvider(keystoreProvider);
+
+        // Manually load the virtual keystore.
+        // Virtual keystores don't read from a file, so pass null to load().
+        KeyStore keyStore = KeyStore.getInstance(keystoreType, keystoreProvider);
+        keyStore.load(null, null);
+
+        // Pass the loaded keystore to SslContextFactory.
+        sslContextFactory.setKeyStore(keyStore);
+
+        // Optionally, configure the certificate alias if multiple certificates exist.
+        // sslContextFactory.setCertAlias("my-certificate-alias");
+
+        // The ConnectionFactory for TLS.
+        SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, http11.getProtocol());
+
+        // The ServerConnector instance.
+        ServerConnector connector = new ServerConnector(server, tls, http11);
+        connector.setPort(8443);
+
+        server.addConnector(connector);
+        server.start();
+        // end::virtualKeyStore[]
     }
 }
