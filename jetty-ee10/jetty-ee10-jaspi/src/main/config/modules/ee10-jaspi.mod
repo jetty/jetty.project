@@ -10,8 +10,9 @@ ee10
 security
 
 [depend]
+ee/common-jaspi
 ee10-security
-auth-config-factory
+ee10-auth-config-factory
 
 [lib]
 lib/jetty-ee10-jaspi-${jetty.version}.jar

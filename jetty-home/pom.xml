@@ -291,6 +291,10 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-jaspi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
       <artifactId>jetty-ee-jndi</artifactId>
     </dependency>
     <dependency>

@@ -63,6 +63,11 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
+        // A handler in the context other than the ServletHandler can error a request that never became a ServletContextRequest.
+        ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
+        if (servletContextRequest == null)
+            return super.handle(request, response, callback);
+
         if (!errorPageForMethod(request.getMethod()))
         {
             callback.succeeded();
@@ -71,9 +76,8 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
 
         generateCacheControl(response);
 
-        ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
         HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
-        HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
+        HttpServletResponse httpServletResponse = servletContextRequest.getServletApiResponse();
         ServletContextHandler contextHandler = servletContextRequest.getServletContext().getServletContextHandler();
         String cacheControl = getCacheControl();
         if (cacheControl != null)
@@ -126,6 +130,13 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
             }
         }
 
+        // The error response below is sent as it is written, so it must be secured first; a response that could not be secured has been aborted, leaving none to generate.
+        if (enteredServletChannel && !servletContextRequest.getServletChannel().secureResponseOrAbort())
+        {
+            callback.succeeded();
+            return true;
+        }
+
         String message = (String)request.getAttribute(ERROR_MESSAGE);
         if (message == null)
             message = HttpStatus.getMessage(response.getStatus());
@@ -141,7 +152,8 @@ public class ErrorHandler extends org.eclipse.jetty.server.handler.ErrorHandler
         {
             // Do an asynchronous completion
             ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-            servletContextRequest.getServletChannel().sendErrorResponseAndComplete();
+            if (servletContextRequest != null)
+                servletContextRequest.getServletChannel().sendErrorResponseAndComplete();
         }
         return result;
     }

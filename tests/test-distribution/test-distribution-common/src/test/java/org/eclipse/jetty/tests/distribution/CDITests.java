@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -128,6 +129,35 @@ public class CDITests extends AbstractJettyHomeTest
 
                 run2.stop();
                 assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            }
+        }
+    }
+
+    /**
+     * The cdi module of every environment must resolve from --add-modules, which means every
+     * module it depends on has to exist.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"ee8", "ee9", "ee10", "ee11"})
+    public void testCDIModuleIsEnabled(String env) throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        String modules = "http," + toEnvironment("deploy", env) + "," + toEnvironment("cdi", env);
+        try (JettyHomeTester.Run runConfig = distribution.start("--add-modules=" + modules))
+        {
+            assertTrue(runConfig.awaitForStart());
+            assertEquals(0, runConfig.getExitValue(), logs(runConfig));
+
+            int httpPort = Tester.freePort();
+            try (JettyHomeTester.Run runStart = distribution.start("jetty.http.port=" + httpPort))
+            {
+                assertTrue(runStart.awaitForJettyStart(), logs(runStart));
             }
         }
     }

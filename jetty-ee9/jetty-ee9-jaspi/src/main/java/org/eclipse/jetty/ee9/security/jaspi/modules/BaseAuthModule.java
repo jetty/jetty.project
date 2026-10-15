@@ -15,9 +15,9 @@ package org.eclipse.jetty.ee9.security.jaspi.modules;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.Base64;
 import java.util.Map;
-import java.util.Set;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -28,42 +28,34 @@ import jakarta.security.auth.message.AuthStatus;
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.auth.message.MessagePolicy;
 import jakarta.security.auth.message.callback.CallerPrincipalCallback;
-import jakarta.security.auth.message.callback.GroupPrincipalCallback;
 import jakarta.security.auth.message.config.ServerAuthContext;
 import jakarta.security.auth.message.module.ServerAuthModule;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.ee9.security.jaspi.JaspiMessageInfo;
+import org.eclipse.jetty.ee9.security.jaspi.ServletCallbackHandler;
 import org.eclipse.jetty.ee9.security.jaspi.callback.CredentialValidationCallback;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 
 /**
- * Simple abstract module implementing a Jakarta Authentication {@link ServerAuthModule} and {@link ServerAuthContext}.
+ * Simple abstract module implementing {@link ServerAuthModule} and {@link ServerAuthContext}.
  * To be used as a building block for building more sophisticated auth modules.
  */
 public abstract class BaseAuthModule implements ServerAuthModule, ServerAuthContext
 {
     private static final Class[] SUPPORTED_MESSAGE_TYPES = new Class[]{HttpServletRequest.class, HttpServletResponse.class};
 
-    protected static final String LOGIN_SERVICE_KEY = "org.eclipse.jetty.security.jaspi.modules.LoginService";
-
     protected CallbackHandler callbackHandler;
 
     @Override
     public Class[] getSupportedMessageTypes()
     {
-        return SUPPORTED_MESSAGE_TYPES;
+        return SUPPORTED_MESSAGE_TYPES.clone();
     }
 
     public BaseAuthModule()
     {
-    }
-
-    public BaseAuthModule(CallbackHandler callbackHandler)
-    {
-        this.callbackHandler = callbackHandler;
     }
 
     @Override
@@ -72,21 +64,14 @@ public abstract class BaseAuthModule implements ServerAuthModule, ServerAuthCont
         this.callbackHandler = handler;
     }
 
+    /**
+     * Removes the caller and group principals this module established through the callback handler.
+     */
     @Override
     public void cleanSubject(MessageInfo messageInfo, Subject subject) throws AuthException
     {
-        // TODO apparently we either get the LoginCallback or the LoginService
-        // but not both :-(
-        // Set<LoginCallback> loginCallbacks =
-        // subject.getPrivateCredentials(LoginCallback.class);
-        // if (!loginCallbacks.isEmpty()) {
-        // LoginCallback loginCallback = loginCallbacks.iterator().next();
-        // }
-        // try {
-        // loginService.logout(subject);
-        // } catch (ServerAuthException e) {
-        // throw new AuthException(e.getMessage());
-        // }
+        if (subject != null)
+            ServletCallbackHandler.cleanSubject(subject);
     }
 
     @Override
@@ -108,31 +93,58 @@ public abstract class BaseAuthModule implements ServerAuthModule, ServerAuthCont
         return Boolean.parseBoolean(mandatory);
     }
 
+    /**
+     * <p>Establish the container's representation of the unauthenticated caller in the
+     * {@code clientSubject}, which the Servlet Container Profile requires of a module that
+     * returns {@link AuthStatus#SUCCESS} without having satisfied the authentication policy.</p>
+     *
+     * @param clientSubject the subject of the request validation
+     * @throws IOException if the callback handler fails
+     * @throws UnsupportedCallbackException if the callback handler does not support the callback
+     */
+    protected void unauthenticated(Subject clientSubject) throws IOException, UnsupportedCallbackException
+    {
+        callbackHandler.handle(new Callback[]{new CallerPrincipalCallback(clientSubject, (Principal)null)});
+    }
+
+    /**
+     * Authenticates an HTTP Basic {@code Authorization} header value, where a header that is not Basic or is malformed is not authenticated.
+     */
     protected boolean login(Subject clientSubject, String credentials, String authMethod, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
     {
-        credentials = credentials.substring(credentials.indexOf(' ') + 1);
-        credentials = new String(Base64.getDecoder().decode(credentials), StandardCharsets.ISO_8859_1);
+        int space = credentials.indexOf(' ');
+        if (space <= 0 || !"Basic".equalsIgnoreCase(credentials.substring(0, space)))
+            return false;
+
+        byte[] decoded;
+        try
+        {
+            decoded = Base64.getDecoder().decode(credentials.substring(space + 1));
+        }
+        catch (IllegalArgumentException e)
+        {
+            return false;
+        }
+
+        credentials = new String(decoded, StandardCharsets.ISO_8859_1);
         int i = credentials.indexOf(':');
+        if (i <= 0)
+            return false;
+
         String userName = credentials.substring(0, i);
         String password = credentials.substring(i + 1);
         return login(clientSubject, userName, new Password(password), authMethod, messageInfo);
     }
 
+    @SuppressWarnings("unchecked")
     protected boolean login(Subject clientSubject, String username, Credential credential, String authMethod, MessageInfo messageInfo) throws IOException, UnsupportedCallbackException
     {
         CredentialValidationCallback credValidationCallback = new CredentialValidationCallback(clientSubject, username, credential);
         callbackHandler.handle(new Callback[]{credValidationCallback});
         if (credValidationCallback.getResult())
         {
-            Set<LoginCallbackImpl> loginCallbacks = clientSubject.getPrivateCredentials(LoginCallbackImpl.class);
-            if (!loginCallbacks.isEmpty())
-            {
-                LoginCallbackImpl loginCallback = loginCallbacks.iterator().next();
-                CallerPrincipalCallback callerPrincipalCallback = new CallerPrincipalCallback(clientSubject, loginCallback.getUserPrincipal());
-                GroupPrincipalCallback groupPrincipalCallback = new GroupPrincipalCallback(clientSubject, loginCallback.getRoles());
-                callbackHandler.handle(new Callback[]{callerPrincipalCallback, groupPrincipalCallback});
-            }
-            messageInfo.getMap().put(JaspiMessageInfo.AUTH_METHOD_KEY, authMethod);
+            callbackHandler.handle(new Callback[]{new CallerPrincipalCallback(clientSubject, username)});
+            messageInfo.getMap().put(JaspiMessageInfo.AUTHENTICATION_TYPE_KEY, authMethod);
         }
         return credValidationCallback.getResult();
     }

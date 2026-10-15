@@ -28,28 +28,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.http.HttpHeader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** 
  * A {@link ServerAuthModule} implementation of HTTP Basic Authentication.  
  */
 public class BasicAuthenticationAuthModule extends BaseAuthModule
 {
-    private static final Logger LOG = LoggerFactory.getLogger(BasicAuthenticationAuthModule.class);
-
     private String realmName;
 
     private static final String REALM_KEY = "org.eclipse.jetty.ee9.security.jaspi.modules.RealmName";
 
     public BasicAuthenticationAuthModule()
     {
-    }
-
-    public BasicAuthenticationAuthModule(CallbackHandler callbackHandler, String realmName)
-    {
-        super(callbackHandler);
-        this.realmName = realmName;
     }
 
     @Override
@@ -70,8 +60,6 @@ public class BasicAuthenticationAuthModule extends BaseAuthModule
         {
             if (credentials != null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Credentials: {}", credentials);
                 if (login(clientSubject, credentials, Authenticator.BASIC_AUTH, messageInfo))
                 {
                     return AuthStatus.SUCCESS;
@@ -80,6 +68,8 @@ public class BasicAuthenticationAuthModule extends BaseAuthModule
 
             if (!isMandatory(messageInfo))
             {
+                // The profile does not allow a challenge for an optional requestPolicy, so the caller is simply unauthenticated.
+                unauthenticated(clientSubject);
                 return AuthStatus.SUCCESS;
             }
             response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Basic realm=\"" + realmName + '"');

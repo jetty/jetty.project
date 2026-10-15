@@ -251,6 +251,63 @@ public class DefaultServletTest
     }
 
     @Test
+    public void testPostForwarded() throws Exception
+    {
+        Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
+
+        context.addServlet(DefaultServlet.class, "/");
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                req.getRequestDispatcher("/file.txt").forward(req, resp);
+            }
+        }), "/dispatch");
+
+        String rawResponse = connector.getResponse("""
+            POST /context/dispatch HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
+    }
+
+    @Test
+    public void testPostIncluded() throws Exception
+    {
+        Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
+
+        context.addServlet(DefaultServlet.class, "/");
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.getWriter().print("included: ");
+                req.getRequestDispatcher("/file.txt").include(req, resp);
+            }
+        }), "/dispatch");
+
+        String rawResponse = connector.getResponse("""
+            POST /context/dispatch HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("included: How now brown cow"));
+    }
+
+    @Test
     public void testTrace() throws Exception
     {
         context.addServlet(DefaultServlet.class, "/");

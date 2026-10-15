@@ -13,232 +13,130 @@
 
 package org.eclipse.jetty.ee9.security.jaspi;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Almost an implementation of jaspi MessageInfo.
+ * The {@link MessageInfo} of a request, carrying the message keys the Servlet Container Profile
+ * defines between the container and the module.
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class JaspiMessageInfo implements MessageInfo
 {
     public static final String MANDATORY_KEY = "jakarta.security.auth.message.MessagePolicy.isMandatory";
-    public static final String AUTH_METHOD_KEY = "jakarta.servlet.http.authType";
-    private ServletRequest request;
-    private ServletResponse response;
-    private final MIMap map;
+    public static final String AUTH_REQUEST_KEY = "jakarta.servlet.http.isAuthenticationRequest";
+    public static final String AUTHENTICATION_TYPE_KEY = "jakarta.servlet.http.authType";
+    public static final String REGISTER_SESSION_KEY = "jakarta.servlet.http.registerSession";
+
+    /**
+     * @deprecated use {@link #AUTHENTICATION_TYPE_KEY}, the name the profile gives this key.
+     */
+    @Deprecated(since = "13.0.0", forRemoval = true)
+    public static final String AUTH_METHOD_KEY = AUTHENTICATION_TYPE_KEY;
+
+    private final Map _map = new HashMap();
+    private HttpServletRequest _request;
+    private HttpServletResponse _response;
 
     public JaspiMessageInfo(ServletRequest request, ServletResponse response, boolean isAuthMandatory)
     {
-        this.request = request;
-        this.response = response;
-        //JASPI 3.8.1
-        map = new MIMap(isAuthMandatory);
+        setRequestMessage(request);
+        setResponseMessage(response);
+        setMandatory(isAuthMandatory);
     }
 
     @Override
     public Map getMap()
     {
-        return map;
+        return _map;
+    }
+
+    public String getAuthenticationType()
+    {
+        return (String)_map.get(AUTHENTICATION_TYPE_KEY);
+    }
+
+    /**
+     * @deprecated use {@link #getAuthenticationType()}.
+     */
+    @Deprecated(since = "13.0.0", forRemoval = true)
+    public String getAuthMethod()
+    {
+        return getAuthenticationType();
+    }
+
+    /**
+     * @return whether authentication is mandatory for this message.
+     * @deprecated read {@link #MANDATORY_KEY} from {@link #getMap()}.
+     */
+    @Deprecated(since = "13.0.0", forRemoval = true)
+    public boolean isAuthMandatory()
+    {
+        return _map.get(MANDATORY_KEY) instanceof String value && Boolean.parseBoolean(value);
+    }
+
+    /**
+     * @return whether the module asked for the authentication results of this message to be
+     * remembered in a container authentication session.
+     */
+    public boolean isRegisterSession()
+    {
+        return _map.get(REGISTER_SESSION_KEY) instanceof String value && Boolean.parseBoolean(value);
+    }
+
+    public void setMandatory(boolean isMandatory)
+    {
+        if (isMandatory)
+            _map.put(MANDATORY_KEY, "true");
+        else
+            _map.remove(MANDATORY_KEY);
+    }
+
+    /**
+     * @param isAuthenticationRequest whether this message is the validation of a call the
+     * application made to {@code HttpServletRequest.authenticate}.
+     */
+    public void setAuthenticationRequest(boolean isAuthenticationRequest)
+    {
+        if (isAuthenticationRequest)
+            _map.put(AUTH_REQUEST_KEY, "true");
+        else
+            _map.remove(AUTH_REQUEST_KEY);
     }
 
     @Override
     public Object getRequestMessage()
     {
-        return request;
+        return _request;
     }
 
     @Override
     public Object getResponseMessage()
     {
-        return response;
+        return _response;
     }
 
     @Override
     public void setRequestMessage(Object request)
     {
-        this.request = (ServletRequest)request;
+        if (request instanceof HttpServletRequest httpServletRequest)
+            _request = httpServletRequest;
+        else
+            throw new IllegalStateException("Not an HttpServletRequest");
     }
 
     @Override
     public void setResponseMessage(Object response)
     {
-        this.response = (ServletResponse)response;
-    }
-
-    public String getAuthMethod()
-    {
-        return map.getAuthMethod();
-    }
-
-    public boolean isAuthMandatory()
-    {
-        return map.isAuthMandatory();
-    }
-
-    //TODO this has bugs in the view implementations.  Changing them will not affect the hardcoded values.
-    private static class MIMap implements Map
-    {
-        private final boolean isMandatory;
-        private String authMethod;
-        private Map delegate;
-
-        private MIMap(boolean mandatory)
-        {
-            isMandatory = mandatory;
-        }
-
-        @Override
-        public int size()
-        {
-            return (isMandatory ? 1 : 0) +
-                (authMethod == null ? 0 : 1) +
-                (delegate == null ? 0 : delegate.size());
-        }
-
-        @Override
-        public boolean isEmpty()
-        {
-            return !isMandatory && authMethod == null && (delegate == null || delegate.isEmpty());
-        }
-
-        @Override
-        public boolean containsKey(Object key)
-        {
-            if (MANDATORY_KEY.equals(key))
-                return isMandatory;
-            if (AUTH_METHOD_KEY.equals(key))
-                return authMethod != null;
-            return delegate != null && delegate.containsKey(key);
-        }
-
-        @Override
-        public boolean containsValue(Object value)
-        {
-            if (isMandatory && "true".equals(value))
-                return true;
-            if (authMethod == value || (authMethod != null && authMethod.equals(value)))
-                return true;
-            return delegate != null && delegate.containsValue(value);
-        }
-
-        @Override
-        public Object get(Object key)
-        {
-            if (MANDATORY_KEY.equals(key))
-                return isMandatory ? "true" : null;
-            if (AUTH_METHOD_KEY.equals(key))
-                return authMethod;
-            if (delegate == null)
-                return null;
-            return delegate.get(key);
-        }
-
-        @Override
-        public Object put(Object key, Object value)
-        {
-            if (MANDATORY_KEY.equals(key))
-            {
-                throw new IllegalArgumentException("Mandatory not mutable");
-            }
-            if (AUTH_METHOD_KEY.equals(key))
-            {
-                String authMethod = this.authMethod;
-                this.authMethod = (String)value;
-                if (delegate != null)
-                    delegate.put(AUTH_METHOD_KEY, value);
-                return authMethod;
-            }
-
-            return getDelegate(true).put(key, value);
-        }
-
-        @Override
-        public Object remove(Object key)
-        {
-            if (MANDATORY_KEY.equals(key))
-            {
-                throw new IllegalArgumentException("Mandatory not mutable");
-            }
-            if (AUTH_METHOD_KEY.equals(key))
-            {
-                String authMethod = this.authMethod;
-                this.authMethod = null;
-                if (delegate != null)
-                    delegate.remove(AUTH_METHOD_KEY);
-                return authMethod;
-            }
-            if (delegate == null)
-                return null;
-            return delegate.remove(key);
-        }
-
-        @Override
-        public void putAll(Map map)
-        {
-            if (map != null)
-            {
-                for (Object o : map.entrySet())
-                {
-                    Map.Entry entry = (Entry)o;
-                    put(entry.getKey(), entry.getValue());
-                }
-            }
-        }
-
-        @Override
-        public void clear()
-        {
-            authMethod = null;
-            delegate = null;
-        }
-
-        @Override
-        public Set keySet()
-        {
-            return getDelegate(true).keySet();
-        }
-
-        @Override
-        public Collection values()
-        {
-            return getDelegate(true).values();
-        }
-
-        @Override
-        public Set entrySet()
-        {
-            return getDelegate(true).entrySet();
-        }
-
-        private Map getDelegate(boolean create)
-        {
-            if (!create || delegate != null)
-                return delegate;
-            if (create)
-            {
-                delegate = new HashMap();
-                if (isMandatory)
-                    delegate.put(MANDATORY_KEY, "true");
-                if (authMethod != null)
-                    delegate.put(AUTH_METHOD_KEY, authMethod);
-            }
-            return delegate;
-        }
-
-        boolean isAuthMandatory()
-        {
-            return isMandatory;
-        }
-
-        String getAuthMethod()
-        {
-            return authMethod;
-        }
+        if (response instanceof HttpServletResponse httpServletResponse)
+            _response = httpServletResponse;
+        else
+            throw new IllegalStateException("Not an HttpServletResponse");
     }
 }

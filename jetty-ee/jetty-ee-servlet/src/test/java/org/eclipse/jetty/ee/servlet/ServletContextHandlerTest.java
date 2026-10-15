@@ -86,8 +86,11 @@ import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.security.AuthenticationState;
+import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.ServletAuthenticator;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -699,6 +702,41 @@ public class ServletContextHandlerTest
         public void contextDestroyed(ServletContextEvent sce)
         {
 
+        }
+    }
+
+    /**
+     * Only the servlet layer calls a {@link ServletAuthenticator}, so a {@link SecurityHandler}
+     * with one defers the requests of the context it starts in.
+     */
+    private static class TestServletAuthenticator implements ServletAuthenticator
+    {
+        @Override
+        public void setConfiguration(Authenticator.Configuration configuration)
+        {
+        }
+
+        @Override
+        public String getAuthenticationType()
+        {
+            return "TEST";
+        }
+
+        @Override
+        public AuthenticationState validateRequest(Request request, Response response, Callback callback)
+        {
+            throw new IllegalStateException("not called by the SecurityHandler");
+        }
+
+        @Override
+        public AuthenticationState validateServletRequest(Request request, Response response, boolean mandatory)
+        {
+            return null;
+        }
+
+        @Override
+        public void secureResponse(Request request, Response response)
+        {
         }
     }
 
@@ -1957,6 +1995,34 @@ public class ServletContextHandlerTest
 
         h = (Handler.Singleton)h.getHandler();
         assertSame(h, myHandler);
+    }
+
+    @Test
+    public void testValidatesRequestsForAsksAboutTheSecurityHandlerWithoutLatching()
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        SecurityHandler securityHandler = new SecurityHandler.PathMapped();
+        context.setSecurityHandler(securityHandler);
+
+        assertTrue(context.validatesRequestsFor(securityHandler));
+        assertFalse(context.validatesRequestsFor(new SecurityHandler.PathMapped()));
+
+        // Asking is not what makes the context validate requests; starting with a ServletAuthenticator is.
+        assertFalse(context.validatesRequests());
+    }
+
+    @Test
+    public void testValidatesRequestsIsLatchedByStartingWithAServletAuthenticator() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        SecurityHandler securityHandler = new SecurityHandler.PathMapped();
+        securityHandler.setAuthenticator(new TestServletAuthenticator());
+        context.setSecurityHandler(securityHandler);
+        _server.setHandler(context);
+        _server.start();
+
+        assertTrue(context.validatesRequests());
     }
 
     @Test

@@ -28,11 +28,15 @@ import org.slf4j.LoggerFactory;
 
 /** 
  * A very basic {@link AuthConfigFactory} that allows for registering providers programmatically.
+ * <p>Registrations are held in memory only. The persistent declarative representation of
+ * registrations described by {@link AuthConfigFactory} is not implemented, so registrations do not
+ * survive a restart.</p>
  */
 public class DefaultAuthConfigFactory extends AuthConfigFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultAuthConfigFactory.class);
     private final Map<String, DefaultRegistrationContext> _registrations = new ConcurrentHashMap<>();
+    private final Map<ListenerKey, CopyOnWriteArrayList<RegistrationListener>> _listeners = new ConcurrentHashMap<>();
 
     public DefaultAuthConfigFactory()
     {
@@ -41,6 +45,18 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
     @Override
     public AuthConfigProvider getConfigProvider(String layer, String appContext, RegistrationListener listener)
     {
+        // Attached to the layer and appContext asked about, not to the registration selected, as a listener is attached even when no provider is.
+        if (listener != null)
+        {
+            // Attached while holding the key's mapping, so a listener cannot be added to a list notifyListeners has already removed.
+            _listeners.compute(new ListenerKey(layer, appContext), (key, listeners) ->
+            {
+                CopyOnWriteArrayList<RegistrationListener> attached = listeners == null ? new CopyOnWriteArrayList<>() : listeners;
+                attached.addIfAbsent(listener);
+                return attached;
+            });
+        }
+
         DefaultRegistrationContext registrationContext = _registrations.get(getKey(layer, appContext));
         if (registrationContext == null)
             registrationContext = _registrations.get(getKey(null, appContext));
@@ -51,10 +67,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
         if (registrationContext == null)
             return null;
 
-        // TODO: according to the javadoc you're supposed to register listener even if there is no context available.
-        if (listener != null)
-            registrationContext.addListener(listener);
-        return registrationContext.getProvider();
+        return registrationContext.provider();
     }
 
     @Override
@@ -64,10 +77,8 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
 
         String key = getKey(layer, appContext);
         AuthConfigProvider configProvider = createConfigProvider(className, properties);
-        DefaultRegistrationContext context = new DefaultRegistrationContext(configProvider, layer, appContext, description, true);
-        DefaultRegistrationContext oldContext = _registrations.put(key, context);
-        if (oldContext != null)
-            oldContext.notifyListeners();
+        _registrations.put(key, new DefaultRegistrationContext(configProvider, layer, appContext, description, true));
+        notifyListeners(layer, appContext);
         return key;
     }
 
@@ -77,10 +88,8 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
         checkPermission();
 
         String key = getKey(layer, appContext);
-        DefaultRegistrationContext context = new DefaultRegistrationContext(provider, layer, appContext, description, false);
-        DefaultRegistrationContext oldContext = _registrations.put(key, context);
-        if (oldContext != null)
-            oldContext.notifyListeners();
+        _registrations.put(key, new DefaultRegistrationContext(provider, layer, appContext, description, false));
+        notifyListeners(layer, appContext);
         return key;
     }
 
@@ -93,8 +102,40 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
         if (registrationContext == null)
             return false;
 
-        registrationContext.notifyListeners();
+        notifyListeners(registrationContext.layer(), registrationContext.appContext());
         return true;
+    }
+
+    /**
+     * Notify the listeners attached for a layer and appContext matched by a registration that has
+     * been made, replaced or removed, detaching each as it is notified.
+     *
+     * @param layer the message layer of the registration, or null for all layers.
+     * @param appContext the application context of the registration, or null for all contexts.
+     */
+    private void notifyListeners(String layer, String appContext)
+    {
+        for (ListenerKey key : _listeners.keySet())
+        {
+            if ((layer != null && !layer.equals(key.layer())) || (appContext != null && !appContext.equals(key.appContext())))
+                continue;
+
+            List<RegistrationListener> listeners = _listeners.remove(key);
+            if (listeners == null)
+                continue;
+
+            for (RegistrationListener listener : listeners)
+            {
+                try
+                {
+                    listener.notify(key.layer(), key.appContext());
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn("Error from RegistrationListener", t);
+                }
+            }
+        }
     }
 
     @Override
@@ -103,12 +144,13 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
         checkPermission();
 
         List<String> registrationIds = new ArrayList<>();
-        for (DefaultRegistrationContext registration : _registrations.values())
+        for (Map.Entry<ListenerKey, CopyOnWriteArrayList<RegistrationListener>> entry : _listeners.entrySet())
         {
-            if ((layer == null || layer.equals(registration.getMessageLayer())) && (appContext == null || appContext.equals(registration.getAppContext())))
+            ListenerKey key = entry.getKey();
+            if ((layer == null || layer.equals(key.layer())) && (appContext == null || appContext.equals(key.appContext())))
             {
-                if (registration.removeListener(listener))
-                    registrationIds.add(getKey(registration.getMessageLayer(), registration.getAppContext()));
+                if (entry.getValue().remove(listener))
+                    registrationIds.add(getKey(key.layer(), key.appContext()));
             }
         }
 
@@ -121,8 +163,9 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
         List<String> registrationIds = new ArrayList<>();
         for (DefaultRegistrationContext registration : _registrations.values())
         {
-            if (provider == registration.getProvider())
-                registrationIds.add(getKey(registration.getMessageLayer(), registration.getAppContext()));
+            // A null provider asks for every active registration, not only those registered with a null provider.
+            if (provider == null || provider == registration.provider())
+                registrationIds.add(getKey(registration.layer(), registration.appContext()));
         }
 
         return registrationIds.toArray(new String[0]);
@@ -134,12 +177,19 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
         return _registrations.get(registrationID);
     }
 
+    /**
+     * There is no persistent declarative representation of registrations to reprocess, and nothing
+     * but a registration call can change the provider class or properties of a registration, so
+     * this does nothing.
+     */
     @Override
     public void refresh()
     {
         checkPermission();
+    }
 
-        // TODO: maybe we should re-construct providers created from classname.
+    private record ListenerKey(String layer, String appContext)
+    {
     }
 
     private static void checkPermission()
@@ -159,7 +209,7 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
         {
             // Javadoc specifies all AuthConfigProvider implementations must have this constructor, and that
             // to construct this we must pass a null value for the factory argument of the constructor.
-            return (AuthConfigProvider)Class.forName(className)
+            return (AuthConfigProvider)loadClass(className)
                 .getConstructor(Map.class, AuthConfigFactory.class)
                 .newInstance(properties, null);
         }
@@ -169,76 +219,51 @@ public class DefaultAuthConfigFactory extends AuthConfigFactory
         }
     }
 
-    private static class DefaultRegistrationContext implements RegistrationContext
+    /**
+     * Prefer the thread context classloader, so a web application can register a provider of its
+     * own, falling back to the classloader of this class for one deployed with the server.
+     */
+    private static Class<?> loadClass(String className) throws ClassNotFoundException
     {
-        private final String _layer;
-        private final String _appContext;
-        private final boolean _persistent;
-        private final AuthConfigProvider _provider;
-        private final String _description;
-        private final List<RegistrationListener> _listeners = new CopyOnWriteArrayList<>();
-
-        public DefaultRegistrationContext(AuthConfigProvider provider, String layer, String appContext, String description, boolean persistent)
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        if (contextClassLoader != null)
         {
-            _provider = provider;
-            _layer = layer;
-            _appContext = appContext;
-            _description = description;
-            _persistent = persistent;
+            try
+            {
+                return contextClassLoader.loadClass(className);
+            }
+            catch (ClassNotFoundException ignored)
+            {
+            }
         }
+        return Class.forName(className);
+    }
 
-        public AuthConfigProvider getProvider()
-        {
-            return _provider;
-        }
-
+    private record DefaultRegistrationContext(AuthConfigProvider provider, String layer, String appContext, String description, boolean persistent)
+        implements RegistrationContext
+    {
         @Override
         public String getMessageLayer()
         {
-            return _layer;
+            return layer;
         }
 
         @Override
         public String getAppContext()
         {
-            return _appContext;
+            return appContext;
         }
 
         @Override
         public String getDescription()
         {
-            return _description;
+            return description;
         }
 
         @Override
         public boolean isPersistent()
         {
-            return false;
-        }
-
-        public void addListener(RegistrationListener listener)
-        {
-            _listeners.add(listener);
-        }
-
-        public void notifyListeners()
-        {
-            for (RegistrationListener listener : _listeners)
-            {
-                try
-                {
-                    listener.notify(_layer, _appContext);
-                }
-                catch (Throwable t)
-                {
-                    LOG.warn("Error from RegistrationListener", t);
-                }
-            }
-        }
-
-        public boolean removeListener(RegistrationListener listener)
-        {
-            return _listeners.remove(listener);
+            return persistent;
         }
     }
 }

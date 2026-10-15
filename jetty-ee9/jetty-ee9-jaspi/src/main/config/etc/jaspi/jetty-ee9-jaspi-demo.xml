@@ -30,13 +30,7 @@
       <!-- Application Context Identifier as per spec chapter 3.2
 
         AppContextID ::= hostname blank context-path
-        The algorithm applied here will use the
-        _serverName on the configured JaspiAuthenticatorFactory (if set) and try to match it
-        against the "server" part (in the "server /test" example below).
-        Next it will try to match the ServletContext#getVirtualServerName to the "server" part.
-        If neither are set, it will then try to match the first Subject's principal name, and finally fall back to
-        the default value "server" if none are available.
-
+        The hostname is the first virtual host of the context, or "server" if it has none.
         The context-path should match the context path where this applies.
       -->
       <Arg type="String">server /test</Arg>

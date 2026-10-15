@@ -99,6 +99,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private ContextHandler.CoreContextRequest _coreRequest;
     private org.eclipse.jetty.server.Response _coreResponse;
     private Callback _coreCallback;
+    private Runnable _secureResponseTask;
 
     public HttpChannel(ContextHandler contextHandler, ConnectionMetaData connectionMetaData)
     {
@@ -471,6 +472,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _coreRequest = null;
         _coreResponse = null;
         _coreCallback = null;
+        _secureResponseTask = null;
     }
 
     @Override
@@ -629,6 +631,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             break;
                         }
 
+                        if (!secureResponse())
+                            break;
+
                         // Set a close callback on the HttpOutput to make it an async callback;
                         // the response may already have been completed when the callback runs if completeOutput() decides to abort.
                         _response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
@@ -759,6 +764,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     protected void handleException(Throwable failure)
     {
+        // Where the resource throws to the container, a418 says the runtime should complete the request without calling secureResponse, and this follows that SHOULD.
+        _secureResponseTask = null;
+
         // Unwrap wrapping Jetty and Servlet exceptions.
         Throwable quiet = unwrap(failure, QuietException.class);
         Throwable noStack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
@@ -814,10 +822,57 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return null;
     }
 
+    /**
+     * <p>Set a task to run once when the response is complete, and before it is written out, so
+     * that an {@code Authenticator} can act on the response the client will be sent rather than
+     * on whatever it held when its dispatch returned.</p>
+     * <p>The channel holds one task, so a second call replaces the first.</p>
+     * <p>The task is dropped without running if the request fails with an exception, and if the
+     * task itself throws then the request is aborted with that throwable.</p>
+     *
+     * @param task the task to run, in the context scope an asynchronous request re-enters to run
+     *             it and a synchronous one has never left
+     */
+    public void setSecureResponseTask(Runnable task)
+    {
+        _secureResponseTask = task;
+    }
+
+    /**
+     * @return false if the task failed and the request was aborted
+     */
+    private boolean secureResponse()
+    {
+        Runnable task = _secureResponseTask;
+        if (task == null)
+            return true;
+        _secureResponseTask = null;
+
+        try
+        {
+            ContextHandler contextHandler = _state.getContextHandler();
+            if (contextHandler == null)
+                task.run();
+            else
+                contextHandler.handle(_request, task);
+            return true;
+        }
+        catch (Throwable x)
+        {
+            // A committed response can only be aborted, so this is the only report that what the client received was not secured.
+            if (_response.isCommitted())
+                LOG.warn("Could not secure the committed response of {}", _request.getRequestURI(), x);
+            abort(x);
+            return false;
+        }
+    }
+
     public void sendResponseAndComplete()
     {
         try
         {
+            if (!secureResponse())
+                return;
             _request.setHandled(true);
             _state.completing();
             sendResponse(null, _response.getHttpOutput().getByteBuffer(), true, Callback.from(() -> _state.completed(null), _state::completed));

@@ -398,6 +398,22 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
             throw new IllegalStateException("No Authenticator");
         }
 
+        // Only the servlet layer calls validateServletRequest, so a layer that does not validate this handler's requests would leave its deferred requests unvalidated.
+        if (_authenticator instanceof ServletAuthenticator)
+        {
+            ContextHandler contextHandler = ContextHandler.getCurrentContextHandler();
+            if (!(contextHandler instanceof ServletAuthenticator.Validator validator && validator.validatesRequestsFor(this)))
+            {
+                String why = contextHandler == null
+                    ? "it is not starting within a context"
+                    : contextHandler + " does not validate the requests of this handler";
+                throw new IllegalStateException(("%s has a ServletAuthenticator, whose validateServletRequest only the servlet layer calls, but %s, " +
+                    "so its deferred requests would go unvalidated. " +
+                    "A ServletAuthenticator must be the Authenticator of the SecurityHandler the servlet context itself holds, set before the context starts.")
+                    .formatted(this, why));
+            }
+        }
+
         if (_authenticator instanceof LoginAuthenticator loginAuthenticator)
         {
             _deferred = AuthenticationState.defer(loginAuthenticator);
@@ -509,6 +525,13 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         if (LOG.isDebugEnabled())
             LOG.debug("constraintAuthorization {}", constraintAuthorization);
         boolean mustValidate = constraintAuthorization != Authorization.ALLOWED;
+        if (_authenticator instanceof ServletAuthenticator servletAuthenticator && servletAuthenticator.deferValidation(request))
+        {
+            // This Authenticator cannot be called until the servlet layer is handling the request, so pass it the decision to validate and authorize.
+            request.setAttribute(ServletAuthenticator.MUST_VALIDATE_KEY, mustValidate);
+            request.setAttribute(ServletAuthenticator.CONSTRAINT_KEY, constraint);
+            mustValidate = false;
+        }
 
         try
         {
@@ -669,7 +692,18 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Configu
         }
     }
 
-    protected boolean isAuthorized(Constraint constraint, AuthenticationState authenticationState)
+    /**
+     * <p>Whether an authentication state satisfies the authorization of a constraint.</p>
+     * <p>Called by this handler for a request it validates itself, and by the servlet layer for a
+     * {@link ServletAuthenticator}, which validates the request too late for this handler to check
+     * it.</p>
+     *
+     * @param constraint the constraint of the request.
+     * @param authenticationState the state the request was authenticated with, or null.
+     * @return true if the request is authorized. An {@link Authorization#FORBIDDEN} constraint
+     * returns true, as this handler rejects such a request before it is authorized.
+     */
+    public boolean isAuthorized(Constraint constraint, AuthenticationState authenticationState)
     {
         UserIdentity userIdentity = authenticationState instanceof AuthenticationState.Succeeded user ? user.getUserIdentity() : null;
         return switch (constraint.getAuthorization())

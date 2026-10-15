@@ -22,7 +22,6 @@ import jakarta.servlet.AsyncListener;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.UnavailableException;
-import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
@@ -162,6 +161,7 @@ public class ServletChannelState
      */
     public enum Action
     {
+        SECURITY_CHECK,   // authenticate and authorize before a normal request dispatch
         DISPATCH,         // handle a normal request dispatch
         ASYNC_DISPATCH,   // handle an async request dispatch
         SEND_ERROR,       // Generate an error page or error dispatch
@@ -184,6 +184,7 @@ public class ServletChannelState
     private InputState _inputState = InputState.IDLE;
     private boolean _initial = true;
     private boolean _sendError;
+    private int _pendingErrorStatus;
     private boolean _asyncWritePossible;
     private long _timeoutMs = DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
@@ -425,17 +426,29 @@ public class ServletChannelState
                         throw new IllegalStateException(getStatusStringLocked());
                     _initial = true;
                     _state = State.HANDLING;
+
+                    // Taken before the error below is answered, so an error page cannot see the attributes a SecurityHandler deferred the request with.
+                    boolean securityCheck = _servletChannel.takeSecurityCheck();
+
                     if (_servletChannel.getResponse().getStatus() != 0)
                     {
                         if (_servletChannel.getRequest().getAttribute(ErrorHandler.ERROR_STATUS) instanceof Integer errorCode)
                         {
+                            // The ServletChannel answers the error after the deferred check, so the request is authorized and the error response can be secured.
+                            if (securityCheck)
+                            {
+                                _pendingErrorStatus = errorCode;
+                                return Action.SECURITY_CHECK;
+                            }
+
                             _servletChannel.getServletRequestState().sendError(errorCode, null);
                             _requestState = RequestState.BLOCKING;
                             _sendError = false;
                             return Action.SEND_ERROR;
                         }
                     }
-                    return Action.DISPATCH;
+
+                    return securityCheck ? Action.SECURITY_CHECK : Action.DISPATCH;
 
                 case WOKEN:
                     if (_event != null && _event.getThrowable() != null && !_sendError)
@@ -1048,7 +1061,6 @@ public class ServletChannelState
         //       - after both unhandle and complete for async
 
         ServletContextRequest servletContextRequest = _servletChannel.getServletContextRequest();
-        HttpServletRequest httpServletRequest = servletContextRequest.getServletApiRequest();
 
         final Request request = _servletChannel.getServletContextRequest();
         final Response response = _servletChannel.getServletContextResponse();
@@ -1092,6 +1104,26 @@ public class ServletChannelState
                     _event.addThrowable(cause);
             }
         }
+    }
+
+    /**
+     * Send an error that a handler before the servlet layer delayed until the request was being
+     * handled, which {@link #handling()} holds back until the deferred security check has run.
+     *
+     * @return true if an error was sent, so the request must not be dispatched
+     */
+    boolean sendPendingError()
+    {
+        int status;
+        try (AutoLock ignored = lock())
+        {
+            status = _pendingErrorStatus;
+            _pendingErrorStatus = 0;
+        }
+        if (status == 0)
+            return false;
+        sendError(status, null);
+        return true;
     }
 
     protected void completing()
@@ -1209,6 +1241,7 @@ public class ServletChannelState
                 _outputState = OutputState.IDLE;
             _initial = true;
             _inputState = InputState.IDLE;
+            _pendingErrorStatus = 0;
             _asyncWritePossible = false;
             _timeoutMs = DEFAULT_TIMEOUT;
             _event = null;

@@ -45,6 +45,11 @@
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-webapp</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -61,7 +66,7 @@
             <configuration>
               <instructions>
                 <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
-                <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.ee.servlet.security.Authenticator$Factory</Provide-Capability>
+                <Provide-Capability>osgi.serviceloader;osgi.serviceloader=org.eclipse.jetty.security.Authenticator$Factory</Provide-Capability>
               </instructions>
             </configuration>
           </execution>

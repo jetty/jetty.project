@@ -2016,21 +2016,24 @@ public class Request implements HttpServletRequest
             return true;
 
         //do the authentication
-        if (_authentication instanceof Authentication.Deferred)
+        if (_authentication instanceof Authentication.Deferred deferred)
         {
-            setAuthentication(((Authentication.Deferred)_authentication).authenticate(this, response));
+            Authentication authentication = deferred.authenticate(this, response);
+
+            // The authenticator could not be run, so the request is unauthorized.
+            if (authentication instanceof Authentication.Deferred)
+            {
+                response.sendError(HttpStatus.UNAUTHORIZED_401);
+                return false;
+            }
+
+            // Only a user or a sent response concludes the authentication, so an authenticator that established neither may be asked again.
+            if (authentication instanceof Authentication.User || authentication instanceof Authentication.ResponseSent)
+                setAuthentication(authentication);
         }
 
-        //if the authentication did not succeed
-        if (_authentication instanceof Authentication.Deferred)
-            response.sendError(HttpStatus.UNAUTHORIZED_401);
-
-        //if the authentication is incomplete, return false
-        if (!(_authentication instanceof Authentication.ResponseSent))
-            return false;
-
-        //something has gone wrong
-        throw new ServletException("Authentication failed");
+        // True only once getUserPrincipal, getRemoteUser and getAuthType have values, and false if the authenticator committed a challenge or established nobody.
+        return _authentication instanceof Authentication.User;
     }
 
     @Override

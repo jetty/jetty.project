@@ -14,36 +14,62 @@
 package org.eclipse.jetty.ee9.security.jaspi;
 
 import java.io.IOException;
+import java.security.Principal;
+import java.util.HashSet;
+import java.util.Set;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
 import jakarta.security.auth.message.callback.CallerPrincipalCallback;
-import jakarta.security.auth.message.callback.CertStoreCallback;
 import jakarta.security.auth.message.callback.GroupPrincipalCallback;
 import jakarta.security.auth.message.callback.PasswordValidationCallback;
-import jakarta.security.auth.message.callback.PrivateKeyCallback;
-import jakarta.security.auth.message.callback.SecretKeyCallback;
-import jakarta.security.auth.message.callback.TrustStoreCallback;
-import org.eclipse.jetty.ee9.security.authentication.LoginCallback;
-import org.eclipse.jetty.ee9.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.ee9.security.jaspi.callback.CredentialValidationCallback;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.NamePrincipal;
+import org.eclipse.jetty.security.RolePrincipal;
 import org.eclipse.jetty.security.UserIdentity;
 
+import static org.eclipse.jetty.ee9.security.jaspi.JaspiAuthenticator.UNAUTHENTICATED;
+
 /**
- * This {@link CallbackHandler} will bridge {@link Callback}s to handle to the given to the Jetty {@link LoginService}.
+ * <p>Bridges the {@link Callback}s a module issues to the Jetty {@link LoginService}.</p>
+ * <p>The caller and group principals a module establishes with {@link CallerPrincipalCallback} and
+ * {@link GroupPrincipalCallback} are added to {@link Subject#getPrincipals()} as the callbacks are
+ * issued, and are accumulated in a private credential of the subject until {@link #getUserIdentity(Subject)}
+ * builds the {@link JaspiUserIdentity} of the caller from them.</p>
  */
 public class ServletCallbackHandler implements CallbackHandler
 {
     private final LoginService _loginService;
-    private final ThreadLocal<CallerPrincipalCallback> _callerPrincipals = new ThreadLocal<>();
-    private final ThreadLocal<GroupPrincipalCallback> _groupPrincipals = new ThreadLocal<>();
 
     public ServletCallbackHandler(LoginService loginService)
     {
         _loginService = loginService;
+    }
+
+    /**
+     * @param subject the subject the callbacks were issued for.
+     * @return the identity of the caller the callbacks established, or null if none were issued.
+     */
+    public static JaspiUserIdentity getUserIdentity(Subject subject)
+    {
+        Caller caller = getCaller(subject);
+        return caller == null ? null : caller.newUserIdentity(subject);
+    }
+
+    /**
+     * Remove the caller and group principals the callbacks established in a subject, which is what
+     * the {@code ServerAuth.cleanSubject} contract has a module remove from it.
+     *
+     * @param subject the subject the callbacks were issued for.
+     */
+    public static void cleanSubject(Subject subject)
+    {
+        Caller caller = getCaller(subject);
+        if (caller != null)
+            caller.clean(subject);
     }
 
     @Override
@@ -51,88 +77,136 @@ public class ServletCallbackHandler implements CallbackHandler
     {
         for (Callback callback : callbacks)
         {
-            // jaspi to server communication
-            if (callback instanceof CallerPrincipalCallback)
+            switch (callback)
             {
-                _callerPrincipals.set((CallerPrincipalCallback)callback);
-            }
-            else if (callback instanceof GroupPrincipalCallback)
-            {
-                _groupPrincipals.set((GroupPrincipalCallback)callback);
-            }
-            else if (callback instanceof PasswordValidationCallback passwordValidationCallback)
-            {
-                @SuppressWarnings("unused")
-                Subject subject = passwordValidationCallback.getSubject();
-
-                UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null, null);
-
-                if (user != null)
+                case CallerPrincipalCallback callerPrincipalCallback ->
                 {
-                    passwordValidationCallback.setResult(true);
-                    passwordValidationCallback.getSubject().getPrincipals().addAll(user.getSubject().getPrincipals());
-                    passwordValidationCallback.getSubject().getPrivateCredentials().add(user);
+                    Principal principal;
+                    if (callerPrincipalCallback.getPrincipal() != null)
+                        principal = callerPrincipalCallback.getPrincipal();
+                    else if (callerPrincipalCallback.getName() != null)
+                        principal = new NamePrincipal(callerPrincipalCallback.getName());
+                    else
+                        principal = UNAUTHENTICATED;
+
+                    Subject subject = callerPrincipalCallback.getSubject();
+                    getOrCreateCaller(subject).setUserPrincipal(subject, principal);
                 }
-            }
-            else if (callback instanceof CredentialValidationCallback credentialValidationCallback)
-            {
-                Subject subject = credentialValidationCallback.getSubject();
-                LoginCallback loginCallback = new LoginCallbackImpl(subject,
-                    credentialValidationCallback.getUsername(),
-                    credentialValidationCallback.getCredential());
-
-                UserIdentity user = _loginService.login(credentialValidationCallback.getUsername(), credentialValidationCallback.getCredential(), null, null);
-
-                if (user != null)
+                case GroupPrincipalCallback groupPrincipalCallback ->
                 {
-                    loginCallback.setUserPrincipal(user.getUserPrincipal());
-                    credentialValidationCallback.getSubject().getPrivateCredentials().add(loginCallback);
-                    credentialValidationCallback.setResult(true);
-                    credentialValidationCallback.getSubject().getPrincipals().addAll(user.getSubject().getPrincipals());
-                    credentialValidationCallback.getSubject().getPrivateCredentials().add(user);
+                    Subject subject = groupPrincipalCallback.getSubject();
+                    getOrCreateCaller(subject).addRoles(subject, groupPrincipalCallback.getGroups());
                 }
-            }
-            // server to jaspi communication
-            else if (callback instanceof CertStoreCallback)
-            {
-                // TODO implement this
-            }
-            else if (callback instanceof PrivateKeyCallback)
-            {
-                // TODO implement this
-            }
-            else if (callback instanceof SecretKeyCallback)
-            {
-                // TODO implement this
-            }
-            else if (callback instanceof TrustStoreCallback)
-            {
-                // TODO implement this
-            }
-            else
-            {
-                throw new UnsupportedCallbackException(callback);
+                case PasswordValidationCallback passwordValidationCallback ->
+                {
+                    UserIdentity userIdentity = _loginService.login(passwordValidationCallback.getUsername(), passwordValidationCallback.getPassword(), null, null);
+                    passwordValidationCallback.setResult(userIdentity != null);
+                    setValidatedCaller(passwordValidationCallback.getSubject(), userIdentity);
+                }
+                case CredentialValidationCallback credentialValidationCallback ->
+                {
+                    UserIdentity userIdentity = _loginService.login(credentialValidationCallback.getUsername(), credentialValidationCallback.getCredential(), null, null);
+                    credentialValidationCallback.setResult(userIdentity != null);
+                    setValidatedCaller(credentialValidationCallback.getSubject(), userIdentity);
+                }
+                case null, default -> throw new UnsupportedCallbackException(callback);
             }
         }
     }
 
-    public CallerPrincipalCallback getThreadCallerPrincipalCallback()
+    /**
+     * Establish the caller the validated credentials identify, and its roles, as a
+     * {@link CallerPrincipalCallback} naming that caller and a {@link GroupPrincipalCallback}
+     * establishing its groups would, so that a module which validates credentials and establishes
+     * no caller of its own is still answered with the one it validated.
+     */
+    private static void setValidatedCaller(Subject subject, UserIdentity loginIdentity)
     {
-        CallerPrincipalCallback callerPrincipalCallback = _callerPrincipals.get();
-        _callerPrincipals.set(null);
-        return callerPrincipalCallback;
+        Caller caller = getOrCreateCaller(subject);
+        if (loginIdentity != null)
+        {
+            caller.setUserPrincipal(subject, loginIdentity.getUserPrincipal());
+            caller.addRoles(subject, loginIdentity.getRoles());
+        }
     }
 
-    public GroupPrincipalCallback getThreadGroupPrincipalCallback()
+    private static Caller getCaller(Subject subject)
     {
-        GroupPrincipalCallback groupPrincipalCallback = _groupPrincipals.get();
-        _groupPrincipals.set(null);
-        return groupPrincipalCallback;
+        Set<Caller> callers = subject.getPrivateCredentials(Caller.class);
+        if (callers.isEmpty())
+            return null;
+        if (callers.size() > 1)
+            throw new IllegalStateException("Multiple callers established in the subject");
+        return callers.iterator().next();
     }
 
-    public void clear()
+    private static Caller getOrCreateCaller(Subject subject)
     {
-        _callerPrincipals.remove();
-        _groupPrincipals.remove();
+        Caller caller = getCaller(subject);
+        if (caller == null)
+        {
+            caller = new Caller();
+            subject.getPrivateCredentials().add(caller);
+        }
+        return caller;
+    }
+
+    /**
+     * The caller a module is establishing for a subject, accumulated as the callbacks are issued so
+     * that the {@link JaspiUserIdentity} can be built from them once they are done.
+     */
+    private static class Caller
+    {
+        private final Set<String> _roles = new HashSet<>();
+        private Principal _userPrincipal;
+        private boolean _groupsEstablished;
+
+        /**
+         * Establish the caller principal in the subject, replacing any previously established for
+         * this caller. The unauthenticated caller has no principal to distinguish, so nothing is
+         * added for it.
+         */
+        private void setUserPrincipal(Subject subject, Principal userPrincipal)
+        {
+            if (_userPrincipal != null)
+                subject.getPrincipals().remove(_userPrincipal);
+            _userPrincipal = userPrincipal;
+            if (userPrincipal != null && userPrincipal != UNAUTHENTICATED)
+                subject.getPrincipals().add(userPrincipal);
+        }
+
+        /**
+         * Establish group principals in the subject, as the union of those already established for
+         * this caller and the given names. A null array establishes no group principals, so those
+         * already established are removed.
+         */
+        private void addRoles(Subject subject, String[] roles)
+        {
+            _groupsEstablished = true;
+            if (roles == null)
+            {
+                subject.getPrincipals().removeIf(principal -> principal instanceof RolePrincipal && _roles.contains(principal.getName()));
+                _roles.clear();
+                return;
+            }
+
+            for (String role : roles)
+            {
+                if (role != null && _roles.add(role))
+                    subject.getPrincipals().add(new RolePrincipal(role));
+            }
+        }
+
+        private JaspiUserIdentity newUserIdentity(Subject subject)
+        {
+            return new JaspiUserIdentity(subject, _userPrincipal, _roles, _groupsEstablished);
+        }
+
+        private void clean(Subject subject)
+        {
+            subject.getPrincipals().removeIf(principal ->
+                principal.equals(_userPrincipal) || (principal instanceof RolePrincipal && _roles.contains(principal.getName())));
+            subject.getPrivateCredentials().remove(this);
+        }
     }
 }
