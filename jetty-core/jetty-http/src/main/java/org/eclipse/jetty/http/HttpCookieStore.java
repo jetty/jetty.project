@@ -450,6 +450,9 @@ public interface HttpCookieStore
 
         private static boolean isSameOrSubDomain(String subDomain, String domain)
         {
+            // RFC 6265, section 5.1.3, an IP address only matches itself.
+            if (isIPAddress(subDomain))
+                return subDomain.equalsIgnoreCase(domain);
             int subDomainLength = subDomain.length();
             int domainLength = domain.length();
             // Case-insensitive version of subDomain.endsWith(domain).
@@ -463,6 +466,21 @@ public interface HttpCookieStore
             // Verify it is a proper subdomain such as bar.foo.com,
             // not just a suffix of a domain such as bazfoo.com.
             return subDomain.charAt(beforeMatch) == '.';
+        }
+
+        private static boolean isIPAddress(String host)
+        {
+            // IPv6 addresses are bracketed in URIs.
+            if (host.startsWith("["))
+                return true;
+            // IPv4 addresses only have digits and dots.
+            for (int i = 0; i < host.length(); i++)
+            {
+                char c = host.charAt(i);
+                if (c != '.' && (c < '0' || c > '9'))
+                    return false;
+            }
+            return true;
         }
 
         private static boolean pathMatches(String uriPath, String cookiePath)
