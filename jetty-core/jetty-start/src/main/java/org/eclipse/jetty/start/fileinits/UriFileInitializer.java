@@ -15,6 +15,9 @@ package org.eclipse.jetty.start.fileinits;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -41,7 +44,25 @@ public class UriFileInitializer extends DownloadFileInitializer
     @Override
     public boolean exists(URI uri) throws IOException
     {
-        return false;
+        HttpClient httpClient = getHttpClient();
+
+        try
+        {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(uri)
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build();
+
+            HttpResponse<Void> response =
+                httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+
+            return response.statusCode() == 200;
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            throw new IOException("Failed to HEAD: " + uri, e);
+        }
     }
 
     @Override
