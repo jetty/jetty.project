@@ -80,6 +80,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.ServletAuthenticator;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.FormFields;
 import org.eclipse.jetty.server.Handler;
@@ -131,7 +132,7 @@ import static jakarta.servlet.ServletContext.TEMPDIR;
  * cause confusion with {@link jakarta.servlet.ServletContext}.
  */
 @ManagedObject("Servlet Context Handler")
-public class ServletContextHandler extends ContextHandler
+public class ServletContextHandler extends ContextHandler implements ServletAuthenticator.Validator
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
 
@@ -233,6 +234,7 @@ public class ServletContextHandler extends ContextHandler
 //    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
+    private boolean _validatesRequests;
     protected ServletHandler _servletHandler;
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
@@ -1064,6 +1066,9 @@ public class ServletContextHandler extends ContextHandler
             contextInitialized();
         }, null);
 
+        // The security handler has started and resolved its authenticator, so whether this context's requests may be deferred to the servlet layer is known here.
+        _validatesRequests = _securityHandler != null && _securityHandler.getAuthenticator() instanceof ServletAuthenticator;
+
         LOG.info("Started {}", this);
     }
 
@@ -1362,6 +1367,29 @@ public class ServletContextHandler extends ContextHandler
             _securityHandler = newSecurityHandler();
 
         return _securityHandler;
+    }
+
+    /**
+     * <p>The {@link ServletChannel} of a request of this context validates it with the
+     * {@link ServletAuthenticator} of the security handler of this context, on behalf of that
+     * handler, which runs before the servlet layer can be reached.</p>
+     */
+    @Override
+    public boolean validatesRequestsFor(SecurityHandler securityHandler)
+    {
+        return _securityHandler == securityHandler;
+    }
+
+    /**
+     * <p>Whether the {@link SecurityHandler} this context started with may defer the requests it
+     * passes on to a {@link ServletAuthenticator} in this servlet layer.</p>
+     * <p>Latched as the context starts so that a request not deferred by such a handler, which
+     * includes every request of every context that does not use one, is not searched for the
+     * attributes it would have been deferred with.</p>
+     */
+    boolean validatesRequests()
+    {
+        return _validatesRequests;
     }
 
     /**

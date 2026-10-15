@@ -17,37 +17,42 @@ import java.util.HashMap;
 import java.util.Map;
 
 import jakarta.security.auth.message.MessageInfo;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee.servlet.ServletContextRequest;
-import org.eclipse.jetty.ee.servlet.ServletContextResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Callback;
 
 /**
- * Almost an implementation of jaspi MessageInfo.
+ * The {@link MessageInfo} of a request, carrying the message keys the Servlet Container Profile
+ * defines between the container and the module.
  */
 public class JaspiMessageInfo implements MessageInfo
 {
     public static final String AUTH_REQUEST_KEY = "jakarta.servlet.http.isAuthenticationRequest";
     public static final String AUTHENTICATION_TYPE_KEY = "jakarta.servlet.http.authType";
     public static final String MANDATORY_KEY = "jakarta.security.auth.message.MessagePolicy.isMandatory";
-    private final Callback _callback;
-    private Request _request;
-    private Response _response;
+    public static final String REGISTER_SESSION_KEY = "jakarta.servlet.http.registerSession";
     private final Map<String, Object> _map = new HashMap<>();
+    private final Request _request;
+    private final Response _response;
+    private HttpServletRequest _httpServletRequest;
+    private HttpServletResponse _httpServletResponse;
 
-    public JaspiMessageInfo(Request request, Response response, Callback callback)
+    public JaspiMessageInfo(Request request, Response response)
     {
         _request = request;
         _response = response;
-        _callback = callback;
-    }
-    
-    public Callback getCallback()
-    {
-        return _callback;
+
+        ServletContextRequest servletContextRequest = ServletContextRequest.getServletContextRequest(_request);
+        if (servletContextRequest == null)
+            throw new IllegalStateException("ServletContextRequest is null");
+        _httpServletRequest = servletContextRequest.getHttpServletRequest();
+        if (_httpServletRequest == null)
+            throw new IllegalStateException("HttpServletRequest is null");
+        _httpServletResponse = servletContextRequest.getHttpServletResponse();
+        if (_httpServletResponse == null)
+            throw new IllegalStateException("HttpServletResponse is null");
     }
 
     @Override
@@ -70,7 +75,16 @@ public class JaspiMessageInfo implements MessageInfo
     {
         return (String)_map.get(AUTHENTICATION_TYPE_KEY);
     }
-    
+
+    /**
+     * @return whether the module asked for the authentication results of this message to be
+     * remembered in a container authentication session.
+     */
+    public boolean isRegisterSession()
+    {
+        return _map.get(REGISTER_SESSION_KEY) instanceof String value && Boolean.parseBoolean(value);
+    }
+
     public void setMandatory(boolean isMandatory)
     {
         if (isMandatory)
@@ -90,30 +104,30 @@ public class JaspiMessageInfo implements MessageInfo
     @Override
     public Object getRequestMessage()
     {
-        ServletContextRequest inContext = Request.asInContext(_request, ServletContextRequest.class);
-        return inContext == null ? null : inContext.getServletApiRequest();
+        return _httpServletRequest;
     }
 
     @Override
     public Object getResponseMessage()
     {
-        ServletContextResponse inContext = Response.asInContext(_response, ServletContextResponse.class);
-        return inContext == null ? null : inContext.getServletApiResponse();
+        return _httpServletResponse;
     }
 
     @Override
     public void setRequestMessage(Object request)
     {
-        if (!(request instanceof ServletRequest))
-            throw new IllegalStateException("Not a ServletRequest");
-        _request = ServletContextRequest.getServletContextRequest((ServletRequest)request);
+        if (request instanceof HttpServletRequest httpServletRequest)
+            _httpServletRequest = httpServletRequest;
+        else
+            throw new IllegalStateException("Not an HttpServletRequest");
     }
 
     @Override
     public void setResponseMessage(Object response)
     {
-        if (!(response instanceof ServletResponse))
-            throw new IllegalStateException("Not a ServletResponse");
-        _response = ServletContextResponse.getServletContextResponse((ServletResponse)response);
+        if (response instanceof HttpServletResponse httpServletResponse)
+            _httpServletResponse = httpServletResponse;
+        else
+            throw new IllegalStateException("Not an HttpServletResponse");
     }
 }

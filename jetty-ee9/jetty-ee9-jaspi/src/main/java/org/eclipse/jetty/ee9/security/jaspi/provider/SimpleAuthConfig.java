@@ -22,35 +22,53 @@ import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.auth.message.config.ServerAuthConfig;
 import jakarta.security.auth.message.config.ServerAuthContext;
 import jakarta.security.auth.message.module.ServerAuthModule;
+import org.eclipse.jetty.ee9.security.jaspi.JaspiMessageInfo;
 
 /**
- * Simple implementation of the {@link ServerAuthConfig} interface.
- * 
- * This implementation wires up the given {@link ServerAuthModule} to the appropriate Jakarta Authentication {@link ServerAuthContext} responsible 
- * for providing it.
+ * A {@link ServerAuthConfig} with a {@link ServerAuthContext} for each value of the mandatory message
+ * policy, each wrapping a {@link ServerAuthModule}, or one context for both values when the two would
+ * wrap the same module instance.
  */
 @SuppressWarnings("rawtypes")
 class SimpleAuthConfig implements ServerAuthConfig
 {
     private final String _messageLayer;
     private final String _appContext;
-    private final CallbackHandler _callbackHandler;
-    private final Map _properties;
-    private final ServerAuthModule _serverAuthModule;
+    private final ServerAuthContext _sharedContext;
+    private final ServerAuthContext _mandatoryContext;
+    private final ServerAuthContext _optionalContext;
 
-    public SimpleAuthConfig(String messageLayer, String appContext, CallbackHandler callbackHandler, Map properties, ServerAuthModule serverAuthModule)
+    /**
+     * @param mandatoryModule the module of the context for a message whose authentication is mandatory.
+     * @param optionalModule the module of the context for a message whose authentication is optional,
+     * which is the same instance as {@code mandatoryModule} if the provider was given a module to use
+     * rather than a class to instantiate.
+     */
+    public SimpleAuthConfig(String messageLayer, String appContext, CallbackHandler callbackHandler, Map properties,
+                            ServerAuthModule mandatoryModule, ServerAuthModule optionalModule) throws AuthException
     {
         _messageLayer = messageLayer;
         _appContext = appContext;
-        _callbackHandler = callbackHandler;
-        _properties = properties;
-        _serverAuthModule = serverAuthModule;
+
+        boolean sharedModule = mandatoryModule == optionalModule;
+        _sharedContext = sharedModule ? new SimpleServerAuthContext(callbackHandler, mandatoryModule, properties) : null;
+        _mandatoryContext = sharedModule ? null : new SimpleServerAuthContext(callbackHandler, mandatoryModule, properties, true);
+        _optionalContext = sharedModule ? null : new SimpleServerAuthContext(callbackHandler, optionalModule, properties, false);
     }
 
+    /**
+     * <p>The contexts are built with this configuration, which {@link JaspiAuthConfigProvider} keeps
+     * for an application context, so the module of a context is initialized once with the request
+     * policy of that context and cannot have it replaced by a concurrent message of the other one.</p>
+     * <p>A module the two contexts share is initialized once as well, by the one context both
+     * identifiers are served with, whose request policy reports the message being processed.</p>
+     */
     @Override
-    public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject, Map properties) throws AuthException
+    public ServerAuthContext getAuthContext(String authContextID, Subject serviceSubject, Map properties)
     {
-        return new SimpleServerAuthContext(_callbackHandler, _serverAuthModule, _properties);
+        if (_sharedContext != null)
+            return _sharedContext;
+        return Boolean.parseBoolean(authContextID) ? _mandatoryContext : _optionalContext;
     }
 
     @Override
@@ -59,10 +77,29 @@ class SimpleAuthConfig implements ServerAuthConfig
         return _appContext;
     }
     
+    /**
+     * The identifier is whether authentication is mandatory for the message, which is all
+     * {@link #getAuthContext} needs to pick the context whose module carries the matching request
+     * policy.
+     *
+     * @param messageInfo the message being processed
+     * @return the identifier of the context to process the message
+     */
     @Override
     public String getAuthContextID(MessageInfo messageInfo)
     {
-        return null;
+        return String.valueOf(isMandatory(messageInfo));
+    }
+
+    /**
+     * @param messageInfo the message being processed
+     * @return whether authentication is mandatory for it, as the authenticator declared with
+     * {@link JaspiMessageInfo#MANDATORY_KEY}
+     */
+    static boolean isMandatory(MessageInfo messageInfo)
+    {
+        Object mandatory = messageInfo.getMap().get(JaspiMessageInfo.MANDATORY_KEY);
+        return mandatory instanceof String value && Boolean.parseBoolean(value);
     }
 
     @Override

@@ -43,6 +43,7 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.MatchedPath;
@@ -52,6 +53,7 @@ import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.ServletAuthenticator;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -467,6 +469,15 @@ public class ServletHandler extends Handler.Wrapper
             // But request, response and/or callback may have been wrapped after the ServletContextHandler, so update the channel.
             servletChannel.associate(request, response, callback);
             servletChannel.handle();
+            return true;
+        }
+
+        // A check the SecurityHandler deferred needs a ServletChannel, so a request that must be validated is refused rather than passed on.
+        boolean mustValidate = Boolean.TRUE.equals(request.removeAttribute(ServletAuthenticator.MUST_VALIDATE_KEY));
+        request.removeAttribute(ServletAuthenticator.CONSTRAINT_KEY);
+        if (mustValidate)
+        {
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return true;
         }
 

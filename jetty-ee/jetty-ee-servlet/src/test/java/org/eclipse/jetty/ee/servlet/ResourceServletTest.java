@@ -333,6 +333,89 @@ public class ResourceServletTest
     }
 
     @Test
+    public void testPostForwarded() throws Exception
+    {
+        Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
+
+        context.addServlet(ResourceServlet.class, "/static/*");
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                req.getRequestDispatcher("/static/file.txt").forward(req, resp);
+            }
+        }), "/dispatch");
+
+        String rawResponse = connector.getResponse("""
+            POST /context/dispatch HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
+    }
+
+    @Test
+    public void testPostIncluded() throws Exception
+    {
+        Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
+
+        context.addServlet(ResourceServlet.class, "/static/*");
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                resp.getWriter().print("included: ");
+                req.getRequestDispatcher("/static/file.txt").include(req, resp);
+            }
+        }), "/dispatch");
+
+        String rawResponse = connector.getResponse("""
+            POST /context/dispatch HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("included: How now brown cow"));
+    }
+
+    @Test
+    public void testPostIncludedNotFound() throws Exception
+    {
+        context.addServlet(ResourceServlet.class, "/static/*");
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                req.getRequestDispatcher("/static/file.txt").include(req, resp);
+            }
+        }), "/dispatch");
+
+        String rawResponse = connector.getResponse("""
+            POST /context/dispatch HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        // The 405 would be discarded by the include, masking the 500 that Servlet 9.3 requires for a missing included resource.
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+    }
+
+    @Test
     public void testTrace() throws Exception
     {
         context.addServlet(ResourceServlet.class, "/");

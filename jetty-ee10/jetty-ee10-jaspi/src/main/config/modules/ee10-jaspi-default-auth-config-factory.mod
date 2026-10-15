@@ -13,7 +13,7 @@ security
 ee10-security
 
 [provide]
-auth-config-factory
+ee10-auth-config-factory
 
 [xml]
 etc/jaspi/jetty-ee10-jaspi-default.xml

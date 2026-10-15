@@ -13,11 +13,14 @@
 
 package org.eclipse.jetty.ee9.security.jaspi.provider;
 
+import java.lang.reflect.Constructor;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import javax.security.auth.callback.CallbackHandler;
 
+import jakarta.security.auth.message.AuthException;
 import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.security.auth.message.config.AuthConfigProvider;
 import jakarta.security.auth.message.config.ClientAuthConfig;
@@ -33,13 +36,18 @@ import org.slf4j.LoggerFactory;
  * <p>If this is being constructed by an {@link AuthConfigFactory} after being passed in as a className, then
  * you will need to provide the property {@code ServerAuthModule} containing the fully qualified name of
  * the {@link ServerAuthModule} class you wish to use.</p>
+ * <p>A module given as an instance holds the one {@link CallbackHandler} it was initialized with, so a
+ * provider registered for more than one application context leaves them all with the handler of the
+ * last context to resolve it.</p>
  */
-@SuppressWarnings("rawtypes")
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class JaspiAuthConfigProvider implements AuthConfigProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(JaspiAuthConfigProvider.class);
     private final Map providerProperties;
+    private final Constructor<? extends ServerAuthModule> serverAuthModuleConstructor;
     private final ServerAuthModule serverAuthModule;
+    private final Map<ConfigKey, CachedConfig> authConfigs = new HashMap<>();
 
     /**
      * <p>Constructor with signature and implementation that's required by API.</p>
@@ -56,7 +64,8 @@ public class JaspiAuthConfigProvider implements AuthConfigProvider
             throw new IllegalArgumentException("Missing property 'ServerAuthModule', cannot create JaspiAuthConfigProvider");
 
         this.providerProperties = Map.copyOf(properties);
-        this.serverAuthModule = createServerAuthModule((String)properties.get("ServerAuthModule"));
+        this.serverAuthModuleConstructor = findServerAuthModuleConstructor((String)properties.get("ServerAuthModule"));
+        this.serverAuthModule = null;
 
         // API requires self registration if factory is provided.
         if (factory != null)
@@ -65,7 +74,9 @@ public class JaspiAuthConfigProvider implements AuthConfigProvider
 
     /**
      * @param className The fully qualified name of a {@link ServerAuthModule} class.
+     * @deprecated use {@link #JaspiAuthConfigProvider(String, Map)}.
      */
+    @Deprecated(since = "13.0.0", forRemoval = true)
     public JaspiAuthConfigProvider(String className)
     {
         this(className, null);
@@ -77,24 +88,28 @@ public class JaspiAuthConfigProvider implements AuthConfigProvider
      */
     public JaspiAuthConfigProvider(String className, Map properties)
     {
-        this(createServerAuthModule(className), properties);
+        this.serverAuthModuleConstructor = findServerAuthModuleConstructor(className);
+        this.serverAuthModule = null;
+        this.providerProperties = properties == null ? Collections.emptyMap() : Map.copyOf(properties);
     }
 
     /**
-     * @param serverAuthModule The instance of {@link ServerAuthModule} to use.
+     * @param serverAuthModule The instance of {@link ServerAuthModule} to use, which is shared by
+     * every authentication context this provider configures.
      */
     public JaspiAuthConfigProvider(ServerAuthModule serverAuthModule)
     {
-        this.serverAuthModule = Objects.requireNonNull(serverAuthModule);
-        this.providerProperties = Collections.emptyMap();
+        this(serverAuthModule, null);
     }
 
     /**
-     * @param serverAuthModule The instance of {@link ServerAuthModule} to use.
+     * @param serverAuthModule The instance of {@link ServerAuthModule} to use, which is shared by
+     * every authentication context this provider configures and is initialized with {@code properties}.
      * @param properties A Map of initialization properties.
      */
     public JaspiAuthConfigProvider(ServerAuthModule serverAuthModule, Map properties)
     {
+        this.serverAuthModuleConstructor = null;
         this.serverAuthModule = Objects.requireNonNull(serverAuthModule);
         this.providerProperties = properties == null ? Collections.emptyMap() : Map.copyOf(properties);
     }
@@ -106,11 +121,25 @@ public class JaspiAuthConfigProvider implements AuthConfigProvider
     }
 
     @Override
-    public ServerAuthConfig getServerAuthConfig(String layer, String appContext, CallbackHandler handler)
+    public synchronized ServerAuthConfig getServerAuthConfig(String layer, String appContext, CallbackHandler handler) throws AuthException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("getServerAuthConfig");
-        return new SimpleAuthConfig(layer, appContext, handler, providerProperties, serverAuthModule);
+
+        // Kept against the application context, rebuilt only for a new callback handler, so resolving again does not initialize the module under a message being processed.
+        ConfigKey key = new ConfigKey(layer, appContext);
+        CachedConfig cached = authConfigs.get(key);
+        if (cached != null && cached.handler() == handler)
+            return cached.authConfig();
+
+        // A module named by class gets an instance per context, so each context's request policy holds; a module given as an instance must be the one used, so it is shared.
+        ServerAuthConfig authConfig = serverAuthModule != null
+            ? new SimpleAuthConfig(layer, appContext, handler, providerProperties, serverAuthModule, serverAuthModule)
+            : new SimpleAuthConfig(layer, appContext, handler, providerProperties,
+                createServerAuthModule(serverAuthModuleConstructor), createServerAuthModule(serverAuthModuleConstructor));
+
+        authConfigs.put(key, new CachedConfig(handler, authConfig));
+        return authConfig;
     }
 
     @Override
@@ -118,15 +147,55 @@ public class JaspiAuthConfigProvider implements AuthConfigProvider
     {
     }
 
-    private static ServerAuthModule createServerAuthModule(String serverAuthModuleClassName)
+    private static Constructor<? extends ServerAuthModule> findServerAuthModuleConstructor(String serverAuthModuleClassName)
     {
         try
         {
-            return (ServerAuthModule)Class.forName(serverAuthModuleClassName).getDeclaredConstructor().newInstance();
+            return loadClass(serverAuthModuleClassName).asSubclass(ServerAuthModule.class).getDeclaredConstructor();
         }
         catch (ReflectiveOperationException e)
         {
             throw new IllegalStateException(e);
         }
+    }
+
+    /**
+     * Prefer the thread context classloader, so a web application can name a module of its own,
+     * falling back to the classloader of this class for one deployed with the server.
+     */
+    private static Class<?> loadClass(String className) throws ClassNotFoundException
+    {
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        if (contextClassLoader != null)
+        {
+            try
+            {
+                return contextClassLoader.loadClass(className);
+            }
+            catch (ClassNotFoundException ignored)
+            {
+            }
+        }
+        return Class.forName(className);
+    }
+
+    private static ServerAuthModule createServerAuthModule(Constructor<? extends ServerAuthModule> serverAuthModuleConstructor)
+    {
+        try
+        {
+            return serverAuthModuleConstructor.newInstance();
+        }
+        catch (ReflectiveOperationException e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private record ConfigKey(String layer, String appContext)
+    {
+    }
+
+    private record CachedConfig(CallbackHandler handler, ServerAuthConfig authConfig)
+    {
     }
 }

@@ -40,10 +40,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.security.auth.Subject;
 
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -69,6 +72,7 @@ import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
@@ -2134,6 +2138,161 @@ public class RequestTest
         catch (IOException e)
         {
             throw new RuntimeException("Unable to get file list count: " + path, e);
+        }
+    }
+
+    @Test
+    public void testAuthenticateEstablishingUserReturnsTrue() throws Exception
+    {
+        TestDeferredAuthentication deferred = new TestDeferredAuthentication(response -> new TestUserAuthentication());
+        AtomicReference<Boolean> authenticated = new AtomicReference<>();
+        AtomicReference<Throwable> thrown = new AtomicReference<>();
+
+        _handler._checker = (request, response) ->
+        {
+            ((Request)request).setAuthentication(deferred);
+            try
+            {
+                authenticated.set(request.authenticate(response));
+                assertThat(request.getUserPrincipal().getName(), is("alice"));
+                assertThat(request.getRemoteUser(), is("alice"));
+                assertThat(request.getAuthType(), is("TEST"));
+            }
+            catch (Throwable t)
+            {
+                thrown.set(t);
+            }
+            return true;
+        };
+
+        String response = _connector.getResponse("GET / HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        assertThat(thrown.get(), nullValue());
+        assertThat(authenticated.get(), is(true));
+    }
+
+    @Test
+    public void testAuthenticateChallengeSentReturnsFalse() throws Exception
+    {
+        TestDeferredAuthentication deferred = new TestDeferredAuthentication(response ->
+        {
+            response.setStatus(HttpStatus.UNAUTHORIZED_401);
+            return Authentication.SEND_CONTINUE;
+        });
+        AtomicReference<Boolean> authenticated = new AtomicReference<>();
+        AtomicReference<Throwable> thrown = new AtomicReference<>();
+
+        _handler._checker = (request, response) ->
+        {
+            ((Request)request).setAuthentication(deferred);
+            try
+            {
+                authenticated.set(request.authenticate(response));
+            }
+            catch (Throwable t)
+            {
+                thrown.set(t);
+            }
+            return false;
+        };
+
+        _connector.getResponse("GET / HTTP/1.0\r\n\r\n");
+        assertThat(thrown.get(), nullValue());
+        assertThat(authenticated.get(), is(false));
+    }
+
+    @Test
+    public void testAuthenticateTwiceAsksTheAuthenticatorAgain() throws Exception
+    {
+        TestDeferredAuthentication deferred = new TestDeferredAuthentication(response -> Authentication.UNAUTHENTICATED);
+        List<Boolean> authenticated = new ArrayList<>();
+        AtomicReference<Throwable> thrown = new AtomicReference<>();
+
+        _handler._checker = (request, response) ->
+        {
+            ((Request)request).setAuthentication(deferred);
+            try
+            {
+                authenticated.add(request.authenticate(response));
+                deferred._result = r -> new TestUserAuthentication();
+                authenticated.add(request.authenticate(response));
+            }
+            catch (Throwable t)
+            {
+                thrown.set(t);
+            }
+            return true;
+        };
+
+        String response = _connector.getResponse("GET / HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        assertThat(thrown.get(), nullValue());
+        assertThat(deferred._calls, is(2));
+        assertThat(authenticated, is(List.of(false, true)));
+    }
+
+    private static class TestDeferredAuthentication implements Authentication.Deferred
+    {
+        private Function<HttpServletResponse, Authentication> _result;
+        private int _calls;
+
+        private TestDeferredAuthentication(Function<HttpServletResponse, Authentication> result)
+        {
+            _result = result;
+        }
+
+        @Override
+        public Authentication authenticate(ServletRequest request)
+        {
+            return this;
+        }
+
+        @Override
+        public Authentication authenticate(ServletRequest request, ServletResponse response)
+        {
+            _calls++;
+            return _result.apply((HttpServletResponse)response);
+        }
+
+        @Override
+        public Authentication login(String username, Object password, ServletRequest request)
+        {
+            return null;
+        }
+
+        @Override
+        public Authentication logout(ServletRequest request)
+        {
+            return Authentication.UNAUTHENTICATED;
+        }
+    }
+
+    private static class TestUserAuthentication implements Authentication.User
+    {
+        private final UserIdentity _userIdentity = UserIdentity.from(new Subject(), () -> "alice");
+
+        @Override
+        public String getAuthMethod()
+        {
+            return "TEST";
+        }
+
+        @Override
+        public UserIdentity getUserIdentity()
+        {
+            return _userIdentity;
+        }
+
+        @Override
+        public boolean isUserInRole(UserIdentityScope scope, String role)
+        {
+            return false;
+        }
+
+        @Override
+        public Authentication logout(ServletRequest request)
+        {
+            return Authentication.UNAUTHENTICATED;
         }
     }
 

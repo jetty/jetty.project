@@ -25,9 +25,9 @@ import org.eclipse.jetty.util.security.Credential;
 public class CredentialValidationCallback implements Callback
 {
     private Credential _credential;
+    private final Subject _subject;
+    private final String _userName;
     private boolean _result;
-    private Subject _subject;
-    private String _userName;
 
     public CredentialValidationCallback(Subject subject, String userName, Credential credential)
     {
@@ -41,6 +41,10 @@ public class CredentialValidationCallback implements Callback
         return _credential;
     }
 
+    /**
+     * @deprecated the callback is discarded once it has been handled.
+     */
+    @Deprecated(since = "13.0.0", forRemoval = true)
     public void clearCredential()
     {
         _credential = null;

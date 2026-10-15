@@ -10,8 +10,9 @@ ee12
 security
 
 [depend]
+ee/common-jaspi
 ee12-security
-auth-config-factory
+ee12-auth-config-factory
 
 [lib]
 lib/jetty-ee12-jaspi-${jetty.version}.jar

@@ -81,6 +81,25 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     static final Fields NO_PARAMS = new Fields(Collections.emptyMap());
     static final Fields BAD_PARAMS = new Fields(Collections.emptyMap());
 
+    /**
+     * <p>Find the {@code ServletContextRequest} for a core {@link Request}.</p>
+     * <p>This is {@link Request#asInContext(Request, Class)} plus the case of a
+     * {@link ServletCoreRequest}, which adapts a {@link ServletRequest} back to a core
+     * {@link Request} rather than wrapping one, and so cannot be seen through by unwrapping.</p>
+     *
+     * @param request the core request.
+     * @return the {@code ServletContextRequest}, or null if there is none.
+     */
+    public static ServletContextRequest getServletContextRequest(Request request)
+    {
+        ServletContextRequest servletContextRequest = Request.asInContext(request, ServletContextRequest.class);
+        if (servletContextRequest != null)
+            return servletContextRequest;
+        if (request instanceof ServletCoreRequest servletCoreRequest)
+            return getServletContextRequest(servletCoreRequest.getServletRequest());
+        return null;
+    }
+
     public static ServletContextRequest getServletContextRequest(ServletRequest request)
     {
         if (request instanceof ServletApiRequest servletApiRequest &&

@@ -21,6 +21,7 @@
     <module>jetty-ee-test-felix-webapp</module>
     <module>jetty-ee-test-http2-webapp</module>
     <module>jetty-ee-test-integration</module>
+    <module>jetty-ee-test-jaspi-webapp</module>
     <!-- module>jetty-ee-test-jersey</module -->
     <!-- jakarta.ws.rs.api 4.0.0-M2 pom broken -->
     <module>jetty-ee-test-jmx</module>

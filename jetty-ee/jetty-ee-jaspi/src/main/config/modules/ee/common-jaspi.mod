@@ -11,14 +11,6 @@ security
 
 [depend]
 ee/common-security
-auth-config-factory
 
 [lib]
 lib/jetty-ee-jaspi-${jetty.version}.jar
-
-[xml]
-etc/jaspi/jetty-ee-jaspi-authmoduleconfig.xml
-
-[files]
-basehome:etc/jaspi/jetty-ee-jaspi-authmoduleconfig.xml|etc/jaspi/jetty-ee-jaspi-authmoduleconfig.xml
-

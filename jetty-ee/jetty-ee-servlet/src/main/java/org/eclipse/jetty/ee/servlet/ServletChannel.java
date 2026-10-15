@@ -24,6 +24,8 @@ import jakarta.servlet.AsyncContext;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import org.eclipse.jetty.ee.servlet.ServletChannelState.Action;
 import org.eclipse.jetty.ee.servlet.internal.JettyWebConnection;
@@ -37,6 +39,13 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.security.AuthenticationState;
+import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.security.IdentityService;
+import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.ServerAuthException;
+import org.eclipse.jetty.security.ServletAuthenticator;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -90,6 +99,9 @@ public class ServletChannel
     private Callback _callback;
     private boolean _completeAttempted;
     private HttpUpgradeHandler _upgradeHandler;
+    private ServletAuthenticator _secureResponseAuthenticator;
+    private Constraint _constraint;
+    private boolean _mustValidate;
 
     public ServletChannel(ServletContextHandler servletContextHandler, Request request)
     {
@@ -409,6 +421,9 @@ public class ServletChannel
         _response = null;
         _callback = null;
         _completeAttempted = false;
+        _secureResponseAuthenticator = null;
+        _constraint = null;
+        _mustValidate = false;
     }
 
     /**
@@ -442,6 +457,12 @@ public class ServletChannel
                     case WAIT:
                         // break loop without calling unhandle
                         break loop;
+
+                    case SECURITY_CHECK:
+                    {
+                        securityCheckAndDispatch();
+                        break;
+                    }
 
                     case DISPATCH:
                     {
@@ -494,6 +515,11 @@ public class ServletChannel
                             }
                             else
                             {
+                                // The servlet ErrorHandler secures the response it generates itself, and one written by an error page
+                                // is secured at COMPLETE. The channel cannot see into any other handler, so it secures before calling one.
+                                if (!(errorHandler instanceof ErrorHandler) && !secureResponseOrAbort())
+                                    break;
+
                                 // We do not notify ServletRequestListener on this dispatch because it might not
                                 // be dispatched to an error page, so we delegate this responsibility to the ErrorHandler.
                                 reopen();
@@ -600,6 +626,9 @@ public class ServletChannel
                             }
                         }
 
+                        if (!secureResponseOrAbort())
+                            break;
+
                         _completeAttempted = true;
 
                         // Set a close callback on the HttpOutput to make it an async callback
@@ -671,6 +700,164 @@ public class ServletChannel
         upgradeHandler.init(new JettyWebConnection(in, out));
     }
 
+    private void securityCheckAndDispatch() throws Exception
+    {
+        reopen();
+        ServletContextHandler servletContextHandler = getServletContextHandler();
+        ServletContextRequest servletContextRequest = getServletContextRequest();
+        HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
+        try
+        {
+            // The request listeners run before the check, so an Authenticator sees the same request scope a servlet does.
+            servletContextHandler.requestInitialized(servletContextRequest, httpServletRequest);
+            if (!securityCheck())
+                return;
+            // An error delayed from before the servlet layer is answered now the check has run, rather than dispatched.
+            if (_state.sendPendingError())
+                return;
+            try (IdentityService.Association ignored = associateIdentity())
+            {
+                dispatchServlet();
+            }
+        }
+        finally
+        {
+            servletContextHandler.requestDestroyed(servletContextRequest, httpServletRequest);
+        }
+    }
+
+    /**
+     * <p>Associate the identity this request authenticated as with the current thread, as the
+     * {@link SecurityHandler} does for a request it authenticates itself.</p>
+     *
+     * @return the association to close when the dispatch returns, or null if there is none.
+     */
+    private IdentityService.Association associateIdentity()
+    {
+        if (!(AuthenticationState.getAuthenticationState(_servletContextRequest) instanceof AuthenticationState.Succeeded succeeded))
+            return null;
+        SecurityHandler securityHandler = getServletContextHandler().getSecurityHandler();
+        IdentityService identityService = securityHandler == null ? null : securityHandler.getIdentityService();
+        return identityService == null ? null : identityService.associate(succeeded.getUserIdentity(), null);
+    }
+
+    /**
+     * <p>Take the decision a {@link SecurityHandler} left for the servlet layer, which it passes in
+     * request attributes, before the request is handled.</p>
+     * <p>The attributes are taken whether or not the check is then made, so that nothing the
+     * request goes on to reach, such as an error page, can see them.</p>
+     *
+     * @return true if the request must have its security checked before it is dispatched.
+     */
+    boolean takeSecurityCheck()
+    {
+        if (!getServletContextHandler().validatesRequests())
+            return false;
+
+        _constraint = (Constraint)_servletContextRequest.removeAttribute(ServletAuthenticator.CONSTRAINT_KEY);
+        _mustValidate = Boolean.TRUE.equals(_servletContextRequest.removeAttribute(ServletAuthenticator.MUST_VALIDATE_KEY));
+        return _constraint != null;
+    }
+
+    /**
+     * <p>Authenticate and authorize the request on behalf of the {@link SecurityHandler}, which runs
+     * before this channel is handling the request and so cannot call a {@link ServletAuthenticator}
+     * itself.</p>
+     *
+     * @return true if the request should be dispatched to the servlet.
+     */
+    private boolean securityCheck() throws ServerAuthException
+    {
+        SecurityHandler securityHandler = getServletContextHandler().getSecurityHandler();
+        Authenticator authenticator = securityHandler == null ? null : securityHandler.getAuthenticator();
+        // The check is only scheduled for a context whose own SecurityHandler asked for it as it started, so this is an Authenticator replaced after that.
+        if (!(authenticator instanceof ServletAuthenticator servletAuthenticator))
+            throw new IllegalStateException("No ServletAuthenticator on the SecurityHandler of " + getServletContextHandler());
+
+        _secureResponseAuthenticator = servletAuthenticator;
+
+        AuthenticationState state = servletAuthenticator
+            .validateServletRequest(_servletContextRequest, getServletContextResponse(), _mustValidate);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("securityCheck mustValidate={} state={} {}", _mustValidate, state, this);
+
+        if (state instanceof AuthenticationState.ResponseSent)
+            return false;
+
+        // A SecurityHandler serves a request as another URI by wrapping it, which cannot be done once the servlet layer has built the request it will dispatch.
+        if (state instanceof AuthenticationState.ServeAs)
+            throw new ServerAuthException("ServeAs is not supported by " + servletAuthenticator);
+
+        // Not collapsed into isAuthorized(_constraint, state): the SecurityHandler passes the raw constraint but derives mustValidate from the authorization
+        // it normalised, so a raw ALLOWED or INHERIT can arrive with mustValidate set, where isAuthorized would allow it; the difference only ever fails closed.
+        if (state != null)
+        {
+            // The authentication results must be established before authorization is decided, so a forbidden request still reports the caller it authenticated as.
+            AuthenticationState.setAuthenticationState(_servletContextRequest, state);
+
+            if (_mustValidate && !securityHandler.isAuthorized(_constraint, state))
+            {
+                sendSecurityError(HttpStatus.FORBIDDEN_403);
+                return false;
+            }
+
+            return true;
+        }
+
+        // Not authenticated, so an optional request proceeds with the deferred state already set.
+        if (_mustValidate)
+        {
+            sendSecurityError(HttpStatus.FORBIDDEN_403);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * <p>Let the {@link ServletAuthenticator} that validated this request act on the response, at
+     * most once, before it is sent, whether the request was handled synchronously or
+     * asynchronously.</p>
+     * <p>A response that cannot be secured is aborted, which replaces one not yet sent with an
+     * error and fails one already sent.</p>
+     *
+     * @return true if the response was secured, false if the request was aborted instead
+     */
+    boolean secureResponseOrAbort()
+    {
+        try
+        {
+            if (_secureResponseAuthenticator != null)
+            {
+                // Taken before the call, so that a module that throws or a second attempt cannot secure the response twice.
+                ServletAuthenticator authenticator = _secureResponseAuthenticator;
+                _secureResponseAuthenticator = null;
+                authenticator.secureResponse(_servletContextRequest, getServletContextResponse());
+            }
+            return true;
+        }
+        catch (Throwable x)
+        {
+            // A committed response can only be aborted, so this is the only report that what the client received was not secured.
+            if (getServletContextResponse().isCommitted())
+                LOG.warn("Could not secure the committed response of {}", _servletContextRequest.getServletApiRequest().getRequestURI(), x);
+            abort(x);
+            return false;
+        }
+    }
+
+    /**
+     * Send an error for a failed security check, unless the {@link Authenticator} has already dealt
+     * with the response itself.
+     */
+    private void sendSecurityError(int status)
+    {
+        if (_state.isSendError() || getServletContextResponse().isCommitted())
+            return;
+        _state.sendError(status, null);
+    }
+
     private void reopen()
     {
         _servletContextRequest.getServletContextResponse().getHttpOutput().reopen();
@@ -688,6 +875,9 @@ public class ServletChannel
      */
     protected void handleException(Throwable failure)
     {
+        // Where the resource throws to the container, a418 says the runtime should complete the request without calling secureResponse, and this follows that SHOULD.
+        _secureResponseAuthenticator = null;
+
         // Unwrap wrapping Jetty and Servlet exceptions.
         Throwable quiet = unwrap(failure, QuietException.class);
         Throwable noStack = unwrap(failure, HttpException.class, IOException.class, TimeoutException.class);
@@ -748,6 +938,11 @@ public class ServletChannel
     {
         try
         {
+            if (!secureResponseOrAbort())
+            {
+                _state.completed(null);
+                return;
+            }
             _state.completing();
             // _state::completed may invoke async listeners, but assume non-blocking.
             Callback callback = Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed);
@@ -862,18 +1057,26 @@ public class ServletChannel
     {
         ServletContextHandler servletContextHandler = getServletContextHandler();
         ServletContextRequest servletContextRequest = getServletContextRequest();
-        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
         try
         {
-            servletContextHandler.requestInitialized(servletContextRequest, servletApiRequest);
-            ServletHandler servletHandler = servletContextHandler.getServletHandler();
-            ServletHandler.MappedServlet mappedServlet = servletContextRequest.getMatchedResource().getResource();
-            mappedServlet.handle(servletHandler, Request.getPathInContext(servletContextRequest), servletApiRequest, servletContextRequest.getHttpServletResponse());
+            servletContextHandler.requestInitialized(servletContextRequest, httpServletRequest);
+            dispatchServlet();
         }
         finally
         {
-            servletContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
+            servletContextHandler.requestDestroyed(servletContextRequest, httpServletRequest);
         }
+    }
+
+    private void dispatchServlet() throws Exception
+    {
+        ServletContextRequest servletContextRequest = getServletContextRequest();
+        HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
+        HttpServletResponse httpServletResponse = servletContextRequest.getHttpServletResponse();
+        ServletHandler servletHandler = getServletContextHandler().getServletHandler();
+        ServletHandler.MappedServlet mappedServlet = servletContextRequest.getMatchedResource().getResource();
+        mappedServlet.handle(servletHandler, Request.getPathInContext(servletContextRequest), httpServletRequest, httpServletResponse);
     }
 
     /**
@@ -885,7 +1088,7 @@ public class ServletChannel
     {
         ServletContextHandler targetContextHandler = getServletContextHandler();
         ServletContextRequest servletContextRequest = getServletContextRequest();
-        ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
         try
         {
             AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
@@ -898,7 +1101,7 @@ public class ServletChannel
             else if (asyncContextEvent.getDispatchContext() == null)
             {
                 //the user dispatched to the current context
-                targetContextHandler.requestInitialized(servletContextRequest, servletApiRequest);
+                targetContextHandler.requestInitialized(servletContextRequest, httpServletRequest);
 
                 String pathInContext;
                 HttpURI uri;
@@ -946,7 +1149,7 @@ public class ServletChannel
         }
         finally
         {
-            targetContextHandler.requestDestroyed(servletContextRequest, servletApiRequest);
+            targetContextHandler.requestDestroyed(servletContextRequest, httpServletRequest);
         }
     }
 

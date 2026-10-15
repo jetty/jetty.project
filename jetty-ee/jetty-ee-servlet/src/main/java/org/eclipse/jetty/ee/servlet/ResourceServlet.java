@@ -705,6 +705,17 @@ public class ResourceServlet extends HttpServlet
     }
 
     @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    {
+        // A forwarded or included POST is served as a GET rather than rejected with a 405; the ERROR case is defensive, as error dispatches are already GET.
+        switch (req.getDispatcherType())
+        {
+            case ERROR, FORWARD, INCLUDE -> doGet(req, resp);
+            default -> super.doPost(req, resp);
+        }
+    }
+
+    @Override
     protected void doTrace(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
         // Always return 405: Method Not Allowed for DefaultServlet

@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.ee.security.jaspi;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
@@ -25,6 +27,7 @@ import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee.security.jaspi.modules.BasicAuthenticationAuthModule;
 import org.eclipse.jetty.ee.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee.servlet.security.ConstraintSecurityHandler;
@@ -43,11 +46,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 
+@Isolated("Sets the global AuthConfigFactory")
 public class JaspiTest
 {
     Server _server;
@@ -94,14 +102,14 @@ public class JaspiTest
 
         factory.registerConfigProvider("org.eclipse.jetty.ee.security.jaspi.provider.JaspiAuthConfigProvider",
             Map.of("ServerAuthModule", "org.eclipse.jetty.ee.security.jaspi.modules.BasicAuthenticationAuthModule",
-                "AppContextID", "server /ctx",
+                "AppContextID", "null /ctx",
                 "org.eclipse.jetty.ee.security.jaspi.modules.RealmName", "TestRealm"),
-            "HttpServlet", "server /ctx", "a test provider");
+            "HttpServlet", "null /ctx", "a test provider");
 
         factory.registerConfigProvider("org.eclipse.jetty.ee.security.jaspi.provider.JaspiAuthConfigProvider",
             Map.of("ServerAuthModule", "org.eclipse.jetty.ee.security.jaspi.HttpHeaderAuthModule",
-                "AppContextID", "server /other"),
-            "HttpServlet", "server /other", "another test provider");
+                "AppContextID", "null /other"),
+            "HttpServlet", "null /other", "another test provider");
 
         AuthConfigFactory.setFactory(factory);
     }
@@ -190,11 +198,48 @@ public class JaspiTest
     }
 
     @Test
+    public void testConstraintMalformedAuth() throws Exception
+    {
+        String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\nAuthorization: Bearer a.b.c\n\n");
+        assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, Matchers.containsString("WWW-Authenticate: Basic realm=\"TestRealm\""));
+    }
+
+    @Test
     public void testConstraintAuth() throws Exception
     {
         String response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\n" + "Authorization: Basic " +
                 Base64.getEncoder().encodeToString("user:password".getBytes(ISO_8859_1)) + "\n\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
+    }
+
+    @Test
+    public void testCredentialsAreNotLogged() throws Exception
+    {
+        String credentials = Base64.getEncoder().encodeToString("user:password".getBytes(ISO_8859_1));
+        Logger logger = LoggerFactory.getLogger(BasicAuthenticationAuthModule.class);
+        assertThat(logger.isDebugEnabled(), is(true));
+
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+        PrintStream err = System.err;
+        String response;
+        try
+        {
+            // The appender of the default logging implementation writes to System.err.
+            System.setErr(new PrintStream(captured, true));
+            logger.debug("module debug logging is captured");
+            response = _connector.getResponse("GET /ctx/jaspi/test HTTP/1.0\nAuthorization: Basic " + credentials + "\n\n");
+        }
+        finally
+        {
+            System.setErr(err);
+        }
+
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        String logs = captured.toString();
+        assertThat(logs, Matchers.containsString("module debug logging is captured"));
+        assertThat(logs, Matchers.not(Matchers.containsString(credentials)));
+        assertThat(logs, Matchers.not(Matchers.containsString("password")));
     }
 
     @Test

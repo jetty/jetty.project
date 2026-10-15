@@ -210,6 +210,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-test-jaspi-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-test-log4j2-webapp</artifactId>
       <version>${project.version}</version>
