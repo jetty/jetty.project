@@ -348,10 +348,9 @@
                 org.eclipse.jetty.http3,
                 org.eclipse.jetty.quic,
                 org.eclipse.jetty.websocket,
-                org.eclipse.jetty.fcgi,
-                org.eclipse.jetty.toolchain.setuid</includeGroupIds>
+                org.eclipse.jetty.fcgi</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.orbit</excludeGroupIds>
-              <excludeArtifactIds>jetty-start</excludeArtifactIds>
+              <excludeArtifactIds>jetty-start,jetty-setuid-jna</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>
               <excludeClassifiers>config</excludeClassifiers>
