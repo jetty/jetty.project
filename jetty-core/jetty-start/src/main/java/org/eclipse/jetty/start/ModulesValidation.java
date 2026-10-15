@@ -29,11 +29,28 @@ public class ModulesValidation
 
     public static void validateModules(PrintStream out, Modules modules, List<String> moduleSelection) throws IOException
     {
-        List<Module> selectedModules = (moduleSelection.contains("*") || moduleSelection.isEmpty())
-            ? modules.stream().sorted().toList()
-            : moduleSelection.stream().map(modules::get).toList();
-
         List<String> failures = new ArrayList<>();
+
+        List<Module> selectedModules = new ArrayList<>();
+        if ((moduleSelection.contains("*") || moduleSelection.isEmpty()))
+        {
+            selectedModules.addAll(modules.stream().sorted().toList());
+        }
+        else
+        {
+            for (String name: moduleSelection)
+            {
+                Module module = modules.get(name);
+                if (module == null)
+                {
+                    failures.add("%s - [command-line] Unknown module name".formatted(name));
+                }
+                else
+                {
+                    selectedModules.add(module);
+                }
+            }
+        }
 
         for (Module module : selectedModules)
         {
@@ -202,6 +219,7 @@ public class ModulesValidation
             {
                 out.printf("  %-3d: %s%n", i + 1, failures.get(i));
             }
+            out.println();
             throw new IllegalStateException("Failed to validate modules");
         }
         else
