@@ -249,7 +249,6 @@
               <includeScope>runtime</includeScope>
               <outputDirectory>${assembly-directory}/lib/ee10</outputDirectory>
               <useRepositoryLayout>false</useRepositoryLayout>
-              <copySignatures>true</copySignatures>
             </configuration>
           </execution>
           <execution>
@@ -278,7 +277,6 @@
               <outputDirectory>${assembly-directory}/lib/ee10/support</outputDirectory>
               <!-- this is true to make sure that non-jpms artifacts use a full identifiable name -->
               <prependGroupId>true</prependGroupId>
-              <copySignatures>true</copySignatures>
             </configuration>
           </execution>
           <execution>
