@@ -520,13 +520,7 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
             };
 
             // Using lower-case as defined by System Locale, as the files themselves from System FS.
-            String basename = FileID.getBasename(path).toLowerCase();
-
-            // Strip the ".d" extension on directory baseNames
-            if (Files.isDirectory(path) && FileID.isExtension(path, "d"))
-            {
-                basename = basename.substring(0, basename.length() - 2);
-            }
+            String basename = toBasename(path).toLowerCase();
 
             if (isWebappsPath(path))
             {
@@ -774,6 +768,40 @@ public class DeploymentScanner extends ContainerLifeCycle implements Scanner.Bul
     PathsApp findApp(String name)
     {
         return scannedApps.get(name);
+    }
+
+    /**
+     * <p>The basename of the app that the given path belongs to.</p>
+     * <p>For a file, it is the file name without its extension ({@code foo.war} and
+     * {@code foo.xml} belong to {@code foo}). A directory has no extension, so it is its
+     * whole name ({@code foo.com/} belongs to {@code foo.com}, like {@code foo.com.xml}),
+     * except for the {@code .d} suffix of nominated directories ({@code foo.d/} belongs to
+     * {@code foo}). A path that no longer exists, such as a removed directory, belongs to
+     * the app it was scanned for.</p>
+     *
+     * @param path the scanned path
+     * @return the basename of the app of the path
+     */
+    private String toBasename(Path path)
+    {
+        if (!Files.exists(path))
+        {
+            for (PathsApp app : scannedApps.values())
+            {
+                if (app.getPaths().containsKey(path))
+                    return app.getName();
+            }
+        }
+
+        if (Files.isDirectory(path))
+        {
+            String dirname = path.getFileName().toString();
+            if (FileID.isExtension(dirname, "d"))
+                return dirname.substring(0, dirname.length() - 2);
+            return dirname;
+        }
+
+        return FileID.getBasename(path);
     }
 
     private boolean isEnvironmentConfigPath(Path path)
