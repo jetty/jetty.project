@@ -312,7 +312,7 @@ public class BaseBuilder
                             String expandedFile = environment.getProperties().expand(file);
                             if (expandedFile.contains("${"))
                                 throw new IllegalStateException("Unable to expand [file] argument: " + file);
-                            files.add(new FileArg(module, file));
+                            files.add(new FileArg(module, expandedFile));
                         }
                     }
                 }
