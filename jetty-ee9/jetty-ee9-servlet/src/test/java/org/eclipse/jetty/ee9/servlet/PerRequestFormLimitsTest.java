@@ -17,21 +17,20 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.EnumSet;
 import java.util.stream.Stream;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.FormFields;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,27 +82,10 @@ public class PerRequestFormLimitsTest
     public void perRequestFormLimitsTest(int maxFormFields, int maxFormLength, int expectedStatusCode) throws Exception
     {
         ServletContextHandler servletContextHandler = newServletContext();
-        _server.setHandler(servletContextHandler.getCoreContextHandler());
-        servletContextHandler.addFilter(new FilterHolder(new HttpFilter()
-        {
-            @Override
-            public void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws IOException, ServletException
-            {
-                String maxFieldsAttribute = req.getHeader(FormFields.MAX_FIELDS_ATTRIBUTE);
-                if (maxFieldsAttribute != null)
-                    req.setAttribute(FormFields.MAX_FIELDS_ATTRIBUTE, maxFieldsAttribute);
-
-                String maxLengthAttribute = req.getHeader(FormFields.MAX_LENGTH_ATTRIBUTE);
-                if (maxLengthAttribute != null)
-                    req.setAttribute(FormFields.MAX_LENGTH_ATTRIBUTE, maxLengthAttribute);
-
-                chain.doFilter(req, res);
-            }
-        }), "/*", EnumSet.allOf(DispatcherType.class));
-
+        _server.setHandler(formLimitsHandler(servletContextHandler, maxFormFields, maxFormLength));
         _server.start();
 
-        HttpTester.Response response = sendForm(maxFormFields, maxFormLength);
+        HttpTester.Response response = sendForm();
         assertThat(response.getStatus(), is(expectedStatusCode));
     }
 
@@ -112,8 +94,7 @@ public class PerRequestFormLimitsTest
     {
         ServletContextHandler servletContextHandler = newServletContext();
         servletContextHandler.setMaxFormKeys(10);
-        _server.setHandler(servletContextHandler.getCoreContextHandler());
-        addFormLimitsFilter(servletContextHandler, FormFields.MAX_FIELDS_ATTRIBUTE, 1);
+        _server.setHandler(formLimitsHandler(servletContextHandler, FormFields.MAX_FIELDS_ATTRIBUTE, 1));
         _server.start();
 
         assertThat(sendForm().getStatus(), is(HttpStatus.BAD_REQUEST_400));
@@ -124,8 +105,7 @@ public class PerRequestFormLimitsTest
     {
         ServletContextHandler servletContextHandler = newServletContext();
         servletContextHandler.setMaxFormKeys(1);
-        _server.setHandler(servletContextHandler.getCoreContextHandler());
-        addFormLimitsFilter(servletContextHandler, FormFields.MAX_FIELDS_ATTRIBUTE, 10);
+        _server.setHandler(formLimitsHandler(servletContextHandler, FormFields.MAX_FIELDS_ATTRIBUTE, 10));
         _server.start();
 
         HttpTester.Response response = sendForm();
@@ -139,8 +119,7 @@ public class PerRequestFormLimitsTest
     {
         ServletContextHandler servletContextHandler = newServletContext();
         servletContextHandler.setMaxFormContentSize(100);
-        _server.setHandler(servletContextHandler.getCoreContextHandler());
-        addFormLimitsFilter(servletContextHandler, FormFields.MAX_LENGTH_ATTRIBUTE, 26);
+        _server.setHandler(formLimitsHandler(servletContextHandler, FormFields.MAX_LENGTH_ATTRIBUTE, 26));
         _server.start();
 
         assertThat(sendForm().getStatus(), is(HttpStatus.BAD_REQUEST_400));
@@ -151,8 +130,7 @@ public class PerRequestFormLimitsTest
     {
         ServletContextHandler servletContextHandler = newServletContext();
         servletContextHandler.setMaxFormContentSize(26);
-        _server.setHandler(servletContextHandler.getCoreContextHandler());
-        addFormLimitsFilter(servletContextHandler, FormFields.MAX_LENGTH_ATTRIBUTE, 27);
+        _server.setHandler(formLimitsHandler(servletContextHandler, FormFields.MAX_LENGTH_ATTRIBUTE, 27));
         _server.start();
 
         HttpTester.Response response = sendForm();
@@ -177,8 +155,7 @@ public class PerRequestFormLimitsTest
     {
         ServletContextHandler servletContextHandler = newServletContext();
         servletContextHandler.getCoreContextHandler().getContext().setAttribute(FormFields.MAX_FIELDS_ATTRIBUTE, 1);
-        _server.setHandler(servletContextHandler.getCoreContextHandler());
-        addFormLimitsFilter(servletContextHandler, FormFields.MAX_FIELDS_ATTRIBUTE, 10);
+        _server.setHandler(formLimitsHandler(servletContextHandler, FormFields.MAX_FIELDS_ATTRIBUTE, 10));
         _server.start();
 
         HttpTester.Response response = sendForm();
@@ -201,45 +178,54 @@ public class PerRequestFormLimitsTest
         return servletContextHandler;
     }
 
-    private void addFormLimitsFilter(ServletContextHandler servletContextHandler, String attribute, int value)
+    private Handler formLimitsHandler(ServletContextHandler servletContextHandler, String attribute, int value)
     {
-        servletContextHandler.addFilter(new FilterHolder(new HttpFilter()
+        return new Handler.Wrapper(servletContextHandler.getCoreContextHandler())
         {
             @Override
-            public void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain) throws IOException, ServletException
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
             {
-                req.setAttribute(attribute, value);
-                chain.doFilter(req, res);
+                request.setAttribute(attribute, value);
+                return super.handle(request, response, callback);
             }
-        }), "/*", EnumSet.allOf(DispatcherType.class));
+        };
+    }
+
+    /**
+     * Sets both limits, leaving a limit of -1 unset so that the context default applies.
+     * The values are set as Strings, as they would be if they came from configuration,
+     * so that the String form of the attribute values is covered as well as the int form.
+     */
+    private Handler formLimitsHandler(ServletContextHandler servletContextHandler, int maxFormFields, int maxFormLength)
+    {
+        return new Handler.Wrapper(servletContextHandler.getCoreContextHandler())
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                if (maxFormFields != -1)
+                    request.setAttribute(FormFields.MAX_FIELDS_ATTRIBUTE, Integer.toString(maxFormFields));
+                if (maxFormLength != -1)
+                    request.setAttribute(FormFields.MAX_LENGTH_ATTRIBUTE, Integer.toString(maxFormLength));
+                return super.handle(request, response, callback);
+            }
+        };
     }
 
     private HttpTester.Response sendForm() throws Exception
     {
-        return sendForm(-1, -1);
-    }
-
-    private HttpTester.Response sendForm(int maxFormFields, int maxFormLength) throws Exception
-    {
         try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
-            StringBuilder request = new StringBuilder();
-            request.append("""
+            String request = """
                 POST /foo HTTP/1.1\r
                 Host: localhost\r
-                """);
-            if (maxFormFields != -1)
-                request.append(FormFields.MAX_FIELDS_ATTRIBUTE).append(": ").append(maxFormFields).append("\r\n");
-            if (maxFormLength != -1)
-                request.append(FormFields.MAX_LENGTH_ATTRIBUTE).append(": ").append(maxFormLength).append("\r\n");
-            request.append("""
                 Content-Type: application/x-www-form-urlencoded\r
                 Content-Length: 27\r
                 \r
                 param1=value1&param2=value2\
-                """);
+                """;
             OutputStream output = socket.getOutputStream();
-            output.write(request.toString().getBytes(StandardCharsets.UTF_8));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
