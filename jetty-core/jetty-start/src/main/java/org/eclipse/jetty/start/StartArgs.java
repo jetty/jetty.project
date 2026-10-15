@@ -685,13 +685,33 @@ public class StartArgs
     public boolean useMavenOffline()
     {
         String offline = getJettyEnvironment().getProperties().getString("maven.offline");
+
         if (Utils.isBlank(offline))
             offline = System.getenv("JETTY_MAVEN_OFFLINE");
 
         if (Utils.isBlank(offline))
             offline = System.getenv("MAVEN_OFFLINE");
 
+        if (Utils.isBlank(offline))
+            return false; // default value (not defined by property or environment)
+
         return Boolean.parseBoolean(offline);
+    }
+
+    public boolean readonlyMavenLocalRepo()
+    {
+        String readonly = getJettyEnvironment().getProperties().getString("maven.local.repo.readonly");
+
+        if (Utils.isBlank(readonly))
+            readonly = System.getenv("JETTY_MAVEN_LOCAL_REPO_READONLY");
+
+        if (Utils.isBlank(readonly))
+            readonly = System.getenv("MAVEN_LOCAL_REPO_READONLY");
+
+        if (Utils.isBlank(readonly))
+            return false; // default value (not defined by property or environment)
+
+        return Boolean.parseBoolean(readonly);
     }
 
     public String getMavenLocalRepoDir()
@@ -895,7 +915,18 @@ public class StartArgs
 
     public String getMavenBaseUri()
     {
-        return mavenBaseUri;
+        String url = mavenBaseUri;
+
+        if (Utils.isBlank(url))
+            url = getJettyEnvironment().getProperties().getString("maven.repo.uri");
+
+        if (Utils.isBlank(url))
+            url = System.getenv("JETTY_MAVEN_CENTRAL_REPO");
+
+        if (Utils.isBlank(url))
+            url = System.getenv("MAVEN_CENTRAL_REPO");
+
+        return Utils.isNotBlank(url) ? url : "https://repo1.maven.org/maven2/";
     }
 
     public void parse(ConfigSources sources)

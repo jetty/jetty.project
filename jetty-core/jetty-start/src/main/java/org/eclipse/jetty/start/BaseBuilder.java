@@ -99,14 +99,12 @@ public class BaseBuilder
         if (localRepoDir != null)
         {
             // Use provided local repo directory
-            initializers.add(new MavenLocalRepoFileInitializer(baseHome, localRepoDir,
-                startArgs.getMavenLocalRepoDir() == null,
-                startArgs.getMavenBaseUri()).offline(startArgs.useMavenOffline()));
+            initializers.add(new MavenLocalRepoFileInitializer(baseHome, startArgs, localRepoDir));
         }
         else
         {
-            // No no local repo directory (direct downloads)
-            initializers.add(new MavenLocalRepoFileInitializer(baseHome));
+            // No local repo directory found (direct downloads)
+            initializers.add(new MavenLocalRepoFileInitializer(baseHome, startArgs));
         }
 
         // Copy from basehome

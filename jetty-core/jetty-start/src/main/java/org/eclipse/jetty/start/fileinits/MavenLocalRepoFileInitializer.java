@@ -15,6 +15,9 @@ package org.eclipse.jetty.start.fileinits;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,6 +25,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
+import org.eclipse.jetty.start.StartArgs;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.Utils;
 import org.xml.sax.SAXException;
@@ -43,14 +47,13 @@ import org.xml.sax.SAXException;
  */
 public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
 {
-    public static class Coordinates
+    public class Coordinates
     {
         public String groupId;
         public String artifactId;
         public String version;
         public String type;
         public String classifier;
-        private String mavenRepoUri = DEFAULT_REMOTE_REPO;
 
         public String toPath()
         {
@@ -115,28 +118,36 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
 
     private final Path localRepositoryDir;
 
-    private static final String DEFAULT_REMOTE_REPO = "https://repo1.maven.org/maven2/";
-
     private final boolean readonly;
     private final String mavenRepoUri;
     private boolean offline;
 
+    /**
+     * @deprecated use {@link MavenLocalRepoFileInitializer(BaseHome, StartArgs)} instead
+     */
+    @Deprecated(forRemoval = true, since = "12.1.15")
     public MavenLocalRepoFileInitializer(BaseHome baseHome)
     {
-        this(baseHome, null, true);
+        this(baseHome, null);
     }
 
-    public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly)
+    public MavenLocalRepoFileInitializer(BaseHome baseHome, StartArgs startArgs)
     {
-        this(baseHome, localRepoDir, readonly, null);
+        this(baseHome, startArgs, null);
     }
 
-    public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly, String mavenRepoUri)
+    public MavenLocalRepoFileInitializer(BaseHome baseHome, StartArgs startArgs, Path localRepoDir)
+    {
+        this(baseHome, startArgs, localRepoDir, null);
+    }
+
+    public MavenLocalRepoFileInitializer(BaseHome baseHome, StartArgs startArgs, Path localRepoDir, String mavenRepoUri)
     {
         super(baseHome, "maven");
         this.localRepositoryDir = localRepoDir != null ? localRepoDir : newTempRepo();
-        this.readonly = readonly;
-        this.mavenRepoUri = mavenRepoUri;
+        this.readonly = startArgs.readonlyMavenLocalRepo();
+        this.offline = startArgs.useMavenOffline();
+        this.mavenRepoUri = Utils.isNotBlank(mavenRepoUri) ? mavenRepoUri : startArgs.getMavenBaseUri();
     }
 
     @Override
@@ -169,26 +180,22 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
             return false;
         }
 
+        if (coords.version.endsWith("-SNAPSHOT"))
+            return true; // assume valid on SNAPSHOT versions
+
         // Check local repo first
         Path localFile = localRepositoryDir.resolve(coords.toPath());
-        if (!Files.isRegularFile(localFile))
+        if (Files.isRegularFile(localFile))
+            return true;
+
+        if (offline)
         {
-            if (offline)
-            {
-                StartLog.warn("Maven is offline, but Local Maven Repo does not contain: %s%n", coords);
-                return false;
-            }
-            else
-            {
-                // Download from global maven repo
-                if (FS.ensureDirectoryExists(localFile.getParent()))
-                    StartLog.info("mkdir %s", _basehome.toShortForm(localFile.getParent()));
-                download(coords, localFile);
-            }
+            StartLog.warn("Maven is offline, but Local Maven Repo does not contain: %s%n", coords);
+            return false;
         }
 
-        // Found in local repo
-        return Files.isRegularFile(localFile);
+        // Don't write into the local repo (e.g. the user's ~/.m2); verify remotely instead.
+        return existsOnCentralRepo(coords);
     }
 
     @Override
@@ -313,14 +320,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
 
     public String getRemoteUri()
     {
-        if (this.mavenRepoUri != null)
-        {
-            return this.mavenRepoUri;
-        }
-        else
-        {
-            return System.getProperty("maven.repo.uri", DEFAULT_REMOTE_REPO);
-        }
+        return this.mavenRepoUri;
     }
 
     public Coordinates getCoordinates(URI uri)
@@ -360,7 +360,6 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
         coords.version = parts[2];
         coords.type = "jar";
         coords.classifier = null;
-        coords.mavenRepoUri = getRemoteUri();
 
         if (parts.length >= 4)
         {
@@ -376,6 +375,38 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
         }
 
         return coords;
+    }
+
+    /**
+     * Remotely validate that the artifact exists on the central repository.
+     *
+     * @param coords the coordinates to check.
+     * @return true if the artifact exists remotely (or is a SNAPSHOT, which is not remotely validated)
+     * @throws IOException if unable to check for I/O reasons
+     */
+    protected boolean existsOnCentralRepo(Coordinates coords)
+        throws IOException
+    {
+        HttpClient httpClient = getHttpClient();
+        URI uri = coords.toCentralURI();
+
+        try
+        {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(uri)
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .build();
+
+            HttpResponse<Void> response =
+                httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+
+            return response.statusCode() == 200;
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            throw new IOException("Failed to HEAD: " + uri, e);
+        }
     }
 
     protected void download(Coordinates coords, Path destination)

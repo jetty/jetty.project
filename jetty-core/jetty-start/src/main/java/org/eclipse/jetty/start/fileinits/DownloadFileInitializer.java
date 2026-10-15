@@ -133,7 +133,7 @@ public abstract class DownloadFileInitializer extends FileInitializer
         }
     }
 
-    private HttpClient getHttpClient()
+    protected HttpClient getHttpClient()
     {
         if (httpClient == null)
         {
