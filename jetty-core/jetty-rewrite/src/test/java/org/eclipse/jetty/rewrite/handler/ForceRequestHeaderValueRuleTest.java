@@ -20,8 +20,8 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,7 +44,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
                 {
                     Content.Sink.write(response, false, "Request Header[%s]: [%s]%n".formatted(httpField.getName(), httpField.getValue()), Callback.NOOP);
                 }
-                response.write(true, BufferUtil.EMPTY_BUFFER, callback);
+                response.write(true, RetainableByteBuffer.empty(), callback);
                 return true;
             }
         });
@@ -65,7 +65,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(200, response.getStatus());
         assertThat(response.getContent(), not(containsString("[Accept]")));
         assertThat(response.getContent(), containsString("[Host]: [local]"));
@@ -88,7 +88,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
             
             """;
 
-        String rawResponse = _connector.getResponse(request);
+        String rawResponse = _connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
         assertThat(response.getContent(), containsString("[Accept]: [*/*]"));
@@ -114,7 +114,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
             
             """;
 
-        String rawResponse = _connector.getResponse(request);
+        String rawResponse = _connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
         assertThat(response.getContent(), containsString("[Accept]: [text/*]"));
@@ -142,7 +142,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
             
             """;
 
-        String rawResponse = _connector.getResponse(request);
+        String rawResponse = _connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
         assertThat(response.getContent(), containsString("[Accept]: [application/*]"));

@@ -13,21 +13,19 @@
 
 package org.eclipse.jetty.http3;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
 import org.eclipse.jetty.http3.qpack.Instruction;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.util.VarLenInt;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,17 +40,16 @@ public class InstructionFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Instruction> queue = new ArrayDeque<>();
-    private final ByteBufferPool bufferPool;
-    private final RetainableByteBuffer.DynamicCapacity accumulator;
+    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+    private final WritableBufferPool bufferPool;
     private final StreamEndPoint endPoint;
     private final long streamType;
     private boolean initialized;
     private Throwable terminated;
 
-    public InstructionFlusher(ByteBufferPool bufferPool, StreamEndPoint endPoint, StreamType streamType)
+    public InstructionFlusher(WritableBufferPool bufferPool, StreamEndPoint endPoint, StreamType streamType)
     {
         this.bufferPool = bufferPool;
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(bufferPool, true, -1, 0, 0);
         this.endPoint = endPoint;
         this.streamType = streamType.type();
     }
@@ -87,20 +84,21 @@ public class InstructionFlusher extends IteratingCallback
         if (!initialized)
         {
             initialized = true;
-            RetainableByteBuffer buffer = bufferPool.acquire(VarLenInt.length(streamType), true);
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            BufferUtil.clearToFill(byteBuffer);
-            VarLenInt.encode(byteBuffer, streamType);
-            byteBuffer.flip();
-            accumulator.add(buffer);
+            RetainableByteBuffer.Mutable buffer = bufferPool.acquire(VarLenInt.length(streamType), true);
+            accumulator.addRetained(buffer);
+            VarLenInt.encode(buffer, streamType);
         }
 
         instructions.forEach(i -> i.encode(bufferPool, accumulator));
 
         if (LOG.isDebugEnabled())
-            LOG.debug("writing buffers ({} bytes) on {}", accumulator.size(), this);
-        accumulator.writeTo(endPoint, false, this);
-        return Action.SCHEDULED;
+            LOG.debug("writing buffers ({} bytes) on {}", accumulator.remaining(), this);
+
+        try (RetainableByteBuffer buffer = accumulator.drain())
+        {
+            endPoint.write(false, buffer, this);
+            return Action.SCHEDULED;
+        }
     }
 
     @Override
@@ -123,7 +121,7 @@ public class InstructionFlusher extends IteratingCallback
     @Override
     protected void onCompleteFailure(Throwable cause)
     {
-        accumulator.release();
+        accumulator.clear();
     }
 
     @Override

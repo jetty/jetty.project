@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.URLResourceFactory;
@@ -256,11 +257,11 @@ public class IOResourcesTest
     @MethodSource("resourcesWithBytes")
     public void testToRetainableByteBuffer(Resource resource, byte[] resourceBytes)
     {
-        RetainableByteBuffer retainableByteBuffer = IOResources.toRetainableByteBuffer(resource, bufferPool);
-        assertThat(retainableByteBuffer.remaining(), is((int)resource.length()));
-        assertThat(retainableByteBuffer.size(), is(resource.length()));
-        assertArrayEquals(resourceBytes, BufferUtil.toArray(retainableByteBuffer.getByteBuffer()));
-        retainableByteBuffer.release();
+        try (RetainableByteBuffer buffer = IOResources.toRetainableByteBuffer(resource, bufferPool))
+        {
+            assertThat(buffer.remaining(), is(resource.length()));
+            assertArrayEquals(resourceBytes, buffer.getArray());
+        }
     }
 
     @ParameterizedTest
@@ -275,7 +276,8 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(resource.length()));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+        assertThat(chunks.getLast().isLast(), is(true));
+        chunks.forEach(Content.Chunk::close);
     }
 
     @ParameterizedTest
@@ -290,13 +292,15 @@ public class IOResourcesTest
             assertThrows(IndexOutOfBoundsException.class, () -> IOResources.asContentSource(resource, bufferPool, 100, -1));
             return;
         }
+
         Content.Source contentSource = IOResources.asContentSource(resource, bufferPool, 100, -1);
         Content.copy(contentSource, sink, callback);
         callback.get();
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(Math.max(0L, resource.length() - 100L)));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+        assertThat(chunks.getLast().isLast(), is(true));
+        chunks.forEach(Content.Chunk::close);
     }
 
     @ParameterizedTest
@@ -311,7 +315,8 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(Math.min(resource.length(), 500L)));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+        assertThat(chunks.getLast().isLast(), is(true));
+        chunks.forEach(Content.Chunk::close);
     }
 
     @ParameterizedTest
@@ -329,7 +334,8 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(length));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+        assertThat(chunks.getLast().isLast(), is(true));
+        chunks.forEach(Content.Chunk::close);
     }
 
     @ParameterizedTest
@@ -343,7 +349,8 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(resource.length()));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+        assertThat(chunks.getLast().isLast(), is(true));
+        chunks.forEach(Content.Chunk::close);
     }
 
     @ParameterizedTest
@@ -358,7 +365,8 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(Math.max(0L, resource.length() - 100L)));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+        assertThat(chunks.getLast().isLast(), is(true));
+        chunks.forEach(Content.Chunk::close);
     }
 
     @ParameterizedTest
@@ -373,7 +381,8 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(length));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+        assertThat(chunks.getLast().isLast(), is(true));
+        chunks.forEach(Content.Chunk::close);
     }
 
     @ParameterizedTest
@@ -389,7 +398,8 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(length));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+        assertThat(chunks.getLast().isLast(), is(true));
+        chunks.forEach(Content.Chunk::close);
     }
 
     @ParameterizedTest
@@ -413,7 +423,8 @@ public class IOResourcesTest
         List<Content.Chunk> chunks = sink.takeAccumulatedChunks();
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(0L));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+        assertThat(chunks.getLast().isLast(), is(true));
+        chunks.forEach(Content.Chunk::close);
     }
 
     @Test

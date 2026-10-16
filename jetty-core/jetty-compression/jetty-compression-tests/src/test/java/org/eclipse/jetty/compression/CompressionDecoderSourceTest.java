@@ -154,7 +154,7 @@ public class CompressionDecoderSourceTest extends AbstractCompressionTest
     public void testDecodeText(Class<Compression> compressionClass, String textResourceName) throws Exception
     {
         startCompression(compressionClass);
-        String compressedName = String.format("%s.%s", textResourceName, compression.getFileExtensionNames().get(0));
+        String compressedName = String.format("%s.%s", textResourceName, compression.getFileExtensionNames().getFirst());
         Path compressed = MavenPaths.findTestResourceFile(compressedName);
         Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
 
@@ -173,7 +173,7 @@ public class CompressionDecoderSourceTest extends AbstractCompressionTest
     public void testDecodeTextOneByteAtATime(Class<Compression> compressionClass, String textResourceName) throws Exception
     {
         startCompression(compressionClass);
-        String compressedName = String.format("%s.%s", textResourceName, compression.getFileExtensionNames().get(0));
+        String compressedName = String.format("%s.%s", textResourceName, compression.getFileExtensionNames().getFirst());
         Path compressed = MavenPaths.findTestResourceFile(compressedName);
         Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
 

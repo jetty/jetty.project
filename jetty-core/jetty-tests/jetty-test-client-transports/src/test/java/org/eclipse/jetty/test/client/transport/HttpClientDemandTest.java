@@ -14,9 +14,8 @@
 package org.eclipse.jetty.test.client.transport;
 
 import java.io.InterruptedIOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -26,6 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
@@ -33,6 +33,7 @@ import java.util.zip.GZIPOutputStream;
 import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -40,11 +41,11 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -136,7 +137,7 @@ public class HttpClientDemandTest extends AbstractTest
                     response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 2);
                     Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{'A'}));
                     contentLatch.await();
-                    response.write(true, ByteBuffer.wrap(new byte[]{'B'}), callback);
+                    response.write(true, RetainableByteBuffer.wrap(new byte[]{'B'}), callback);
                 }
                 catch (InterruptedException x)
                 {
@@ -148,7 +149,7 @@ public class HttpClientDemandTest extends AbstractTest
 
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 private final AtomicInteger chunks = new AtomicInteger();
 
@@ -191,7 +192,7 @@ public class HttpClientDemandTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length);
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, RetainableByteBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -205,7 +206,7 @@ public class HttpClientDemandTest extends AbstractTest
         Queue<Content.Chunk> contentQueue = new ConcurrentLinkedQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
-            .send(new BufferingResponseListener()
+            .send(new RetainingResponseListener()
             {
                 @Override
                 public void onContent(Response response, Content.Chunk chunk, Runnable demander)
@@ -246,7 +247,7 @@ public class HttpClientDemandTest extends AbstractTest
         assertNotNull(demander);
         long begin = NanoTime.now();
         // Spin on demand until content.length bytes have been read.
-        while (content.length > contentQueue.stream().map(Content.Chunk::getByteBuffer).mapToInt(Buffer::remaining).sum())
+        while (content.length > contentQueue.stream().mapToLong(Content.Chunk::remaining).sum())
         {
             if (NanoTime.millisSince(begin) > 5000L)
                 fail("Failed to demand all content");
@@ -257,10 +258,13 @@ public class HttpClientDemandTest extends AbstractTest
 
         byte[] received = new byte[content.length];
         AtomicInteger offset = new AtomicInteger();
-        contentQueue.forEach(buffer ->
+        contentQueue.forEach(chunk ->
         {
-            int length = buffer.remaining();
-            buffer.get(received, offset.getAndAdd(length), length);
+            int length = (int)chunk.remaining();
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                buffer.get(received, offset.getAndAdd(length), length);
+            }
         });
         assertArrayEquals(content, received);
 
@@ -282,7 +286,7 @@ public class HttpClientDemandTest extends AbstractTest
                     response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 2);
                     Content.Sink.write(response, false, ByteBuffer.wrap(new byte[]{'A'}));
                     serverContentLatch.await();
-                    response.write(true, ByteBuffer.wrap(new byte[]{'B'}), callback);
+                    response.write(true, RetainableByteBuffer.wrap(new byte[]{'B'}), callback);
                 }
                 catch (InterruptedException x)
                 {
@@ -330,29 +334,29 @@ public class HttpClientDemandTest extends AbstractTest
         // We did not demand, so we only expect one chunk of content.
         assertFalse(clientContentLatch.await(2 * delay, TimeUnit.MILLISECONDS));
         assertEquals(1, clientContentLatch.getCount());
-        Content.Chunk c1 = chunkRef.getAndSet(null);
-        assertThat(asStringAndRelease(c1), is("A"));
+        try (Content.Chunk c1 = chunkRef.getAndSet(null))
+        {
+            assertThat(asString(c1), is("A"));
+        }
 
         // Now demand, we should be notified of the second chunk.
         demanderRef.get().run();
         assertTrue(clientContentLatch.await(5, TimeUnit.SECONDS));
-        Content.Chunk c2 = chunkRef.getAndSet(null);
-        assertThat(asStringAndRelease(c2), is("B"));
+        try (Content.Chunk c2 = chunkRef.getAndSet(null))
+        {
+            assertThat(asString(c2), is("B"));
+        }
 
         // Demand once more to trigger response success.
         demanderRef.get().run();
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private static String asStringAndRelease(Content.Chunk chunk)
+    private static String asString(Content.Chunk chunk)
     {
-        try
+        try (RetainableByteBuffer buffer = chunk.acquire())
         {
-            return BufferUtil.toString(chunk.getByteBuffer());
-        }
-        finally
-        {
-            chunk.release();
+            return buffer.getString(StandardCharsets.ISO_8859_1);
         }
     }
 
@@ -369,7 +373,7 @@ public class HttpClientDemandTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, bytes.length);
-                response.write(true, ByteBuffer.wrap(bytes), callback);
+                response.write(true, RetainableByteBuffer.wrap(bytes), callback);
                 return true;
             }
         });
@@ -380,7 +384,7 @@ public class HttpClientDemandTest extends AbstractTest
         client.start();
 
         AtomicInteger listener1Chunks = new AtomicInteger();
-        AtomicInteger listener1ContentSize = new AtomicInteger();
+        AtomicLong listener1ContentSize = new AtomicLong();
         AtomicReference<Runnable> listener1DemanderRef = new AtomicReference<>();
         Response.AsyncContentListener listener1 = (response, chunk, demander) ->
         {
@@ -389,7 +393,7 @@ public class HttpClientDemandTest extends AbstractTest
             listener1DemanderRef.set(demander);
         };
         AtomicInteger listener2Chunks = new AtomicInteger();
-        AtomicInteger listener2ContentSize = new AtomicInteger();
+        AtomicLong listener2ContentSize = new AtomicLong();
         AtomicReference<Runnable> listener2DemanderRef = new AtomicReference<>();
         Response.AsyncContentListener listener2 = (response, chunk, demander) ->
         {
@@ -429,8 +433,8 @@ public class HttpClientDemandTest extends AbstractTest
         }
 
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
-        assertThat(listener1ContentSize.get(), is(bytes.length));
-        assertThat(listener2ContentSize.get(), is(bytes.length));
+        assertEquals(bytes.length, listener1ContentSize.get());
+        assertEquals(bytes.length, listener2ContentSize.get());
     }
 
     @ParameterizedTest
@@ -461,13 +465,17 @@ public class HttpClientDemandTest extends AbstractTest
         });
 
         byte[] bytes = new byte[content.length];
-        ByteBuffer received = ByteBuffer.wrap(bytes);
+        AtomicInteger offset = new AtomicInteger();
         CountDownLatch resultLatch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
             .onResponseContentAsync((response, chunk, demander) ->
             {
                 boolean demand = chunk.hasRemaining();
-                received.put(chunk.getByteBuffer());
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    int length = (int)chunk.remaining();
+                    buffer.get(bytes, offset.getAndAdd(length), length);
+                }
                 if (demand)
                     new Thread(demander).start();
             })
@@ -493,13 +501,13 @@ public class HttpClientDemandTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length);
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, RetainableByteBuffer.wrap(content), callback);
                 return true;
             }
         });
 
         byte[] bytes = new byte[content.length];
-        ByteBuffer received = ByteBuffer.wrap(bytes);
+        AtomicInteger offset = new AtomicInteger();
         AtomicReference<Runnable> beforeContentDemanderRef = new AtomicReference<>();
         CountDownLatch beforeContentLatch = new CountDownLatch(1);
         CountDownLatch contentLatch = new CountDownLatch(1);
@@ -518,21 +526,23 @@ public class HttpClientDemandTest extends AbstractTest
                         return;
                     }
 
-                    Content.Chunk chunk = contentSource.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = contentSource.read())
                     {
-                        demander.run();
-                        return;
-                    }
-                    if (chunk.isLast() && !chunk.hasRemaining())
-                    {
-                        chunk.release();
-                        return;
-                    }
+                        if (chunk == null)
+                        {
+                            demander.run();
+                            return;
+                        }
+                        if (chunk.isLast() && !chunk.hasRemaining())
+                            return;
 
-                    contentLatch.countDown();
-                    received.put(chunk.getByteBuffer());
-                    chunk.release();
+                        contentLatch.countDown();
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            int length = (int)chunk.remaining();
+                            buffer.get(bytes, offset.getAndAdd(length), length);
+                        }
+                    }
                     demander.run();
                 }
             })
@@ -579,21 +589,19 @@ public class HttpClientDemandTest extends AbstractTest
                         return;
                     }
 
-                    Content.Chunk chunk = contentSource.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = contentSource.read())
                     {
-                        demander.run();
-                        return;
-                    }
-                    if (chunk.isLast() && !chunk.hasRemaining())
-                    {
-                        chunk.release();
-                        return;
-                    }
+                        if (chunk == null)
+                        {
+                            demander.run();
+                            return;
+                        }
+                        if (chunk.isLast() && !chunk.hasRemaining())
+                            return;
 
-                    contentLatch.countDown();
-                    chunk.release();
-                    demander.run();
+                        contentLatch.countDown();
+                        demander.run();
+                    }
                 }
             })
             .send(result ->
@@ -637,15 +645,15 @@ public class HttpClientDemandTest extends AbstractTest
 
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
 
-        Content.Chunk lastChunk = chunks.get(chunks.size() - 1);
+        Content.Chunk lastChunk = chunks.getLast();
         assertThat(lastChunk.isLast(), is(true));
-        int accumulatedSize = chunks.stream().mapToInt(chunk ->
+        long accumulatedSize = chunks.stream().mapToLong(chunk ->
         {
-            int remaining = chunk.remaining();
+            long remaining = chunk.remaining();
             chunk.release();
             return remaining;
         }).sum();
-        assertThat(accumulatedSize, is(totalBytes));
+        assertEquals(totalBytes, accumulatedSize);
     }
 
     private static class Accumulator implements Invocable.Task
@@ -662,15 +670,18 @@ public class HttpClientDemandTest extends AbstractTest
         @Override
         public void run()
         {
-            Content.Chunk chunk = contentSource.read();
-            if (chunk == null)
+            try (Content.Chunk chunk = contentSource.read())
             {
-                contentSource.demand(this);
-                return;
+                if (chunk == null)
+                {
+                    contentSource.demand(this);
+                    return;
+                }
+                chunk.retain();
+                chunks.add(chunk);
+                if (!chunk.isLast())
+                    contentSource.demand(this);
             }
-            chunks.add(chunk);
-            if (!chunk.isLast())
-                contentSource.demand(this);
         }
 
         @Override
@@ -703,7 +714,7 @@ public class HttpClientDemandTest extends AbstractTest
                     boolean last = ++count == totalBytes;
                     if (count > totalBytes)
                         return Action.SUCCEEDED;
-                    response.write(last, ByteBuffer.wrap(new byte[1]), this);
+                    response.write(last, RetainableByteBuffer.wrap(new byte[1]), this);
                     return Action.SCHEDULED;
                 }
             };

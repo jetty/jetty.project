@@ -27,17 +27,15 @@ import java.util.Set;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
-import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -54,7 +52,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     private final Queue<HTTP2Session.Entry> pendingEntries = new ArrayDeque<>();
     private final Collection<HTTP2Session.Entry> processedEntries = new ArrayList<>();
     private final HTTP2Session session;
-    private final RetainableByteBuffer.Mutable accumulator;
+    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
     private Throwable terminated;
     private HTTP2Session.Entry stalledEntry;
@@ -62,9 +60,6 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public HTTP2Flusher(HTTP2Session session)
     {
         this.session = session;
-        EndPoint endPoint = session.getEndPoint();
-        boolean direct = endPoint != null && endPoint.getConnection() instanceof HTTP2Connection http2Connection && http2Connection.isUseOutputDirectByteBuffers();
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(session.getGenerator().getByteBufferPool(), direct, -1);
     }
 
     @Override
@@ -305,7 +300,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 break;
 
             int writeThreshold = session.getWriteThreshold();
-            if (accumulator.size() >= writeThreshold)
+            if (accumulator.remaining() >= writeThreshold)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Write threshold {} exceeded on {}", writeThreshold, this);
@@ -313,7 +308,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             }
         }
 
-        if (accumulator.isEmpty())
+        if (!accumulator.hasRemaining())
         {
             finish();
             return Action.IDLE;
@@ -323,15 +318,18 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         if (LOG.isDebugEnabled())
             LOG.debug("Writing {} bytes - entries processed/pending {}/{}: {}/{} on {}",
-                accumulator.size(),
+                accumulator.remaining(),
                 processedEntries.size(),
                 pendingEntries.size(),
                 processedEntries,
                 pendingEntries,
                 this);
 
-        accumulator.writeTo(session.getEndPoint(), false, this);
-        return Action.SCHEDULED;
+        try (RetainableByteBuffer buffer = accumulator.drain())
+        {
+            session.getEndPoint().write(buffer, this);
+            return Action.SCHEDULED;
+        }
     }
 
     @Override
@@ -408,13 +406,11 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     @Override
     protected void onCompleteFailure(Throwable x)
     {
-        accumulator.release();
+        accumulator.clear();
     }
 
     private void onSessionFailure(Throwable x)
     {
-        accumulator.clear();
-
         Throwable closed;
         Set<HTTP2Session.Entry> allEntries;
         try (AutoLock ignored = lock.lock())
@@ -439,6 +435,8 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         if (closed == null)
             session.close(ErrorCode.COMPRESSION_ERROR.code, null, NOOP);
+
+        accumulator.clear();
     }
 
     public void terminate(Throwable cause)

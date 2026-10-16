@@ -56,6 +56,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -534,37 +535,36 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 long read = 0;
                 while (read < contentLength)
                 {
-                    Content.Chunk chunk = request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = request.read())
                     {
-                        try (Blocker.Runnable blocker = Blocker.runnable())
+                        if (chunk == null)
                         {
-                            request.demand(blocker);
-                            blocker.block();
+                            try (Blocker.Runnable blocker = Blocker.runnable())
+                            {
+                                request.demand(blocker);
+                                blocker.block();
+                            }
+                            continue;
                         }
-                        continue;
-                    }
 
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        earlyEOFException.countDown();
-                        throw IO.rethrow(chunk.getFailure());
-                    }
+                        if (Content.Chunk.isFailure(chunk))
+                        {
+                            earlyEOFException.countDown();
+                            throw IO.rethrow(chunk.getFailure());
+                        }
 
-                    if (chunk.hasRemaining())
-                    {
-                        read += chunk.remaining();
-                        chunk.getByteBuffer().clear();
-                        if (!fourBytesRead.get() && read >= 4)
-                            fourBytesRead.set(true);
-                    }
+                        if (chunk.hasRemaining())
+                        {
+                            read += chunk.remaining();
+                            if (!fourBytesRead.get() && read >= 4)
+                                fourBytesRead.set(true);
+                        }
 
-                    chunk.release();
-
-                    if (chunk.isLast())
-                    {
-                        callback.succeeded();
-                        break;
+                        if (chunk.isLast())
+                        {
+                            callback.succeeded();
+                            break;
+                        }
                     }
                 }
                 return true;
@@ -1266,7 +1266,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 long start = System.currentTimeMillis();
                 try (Blocker.Callback blocker = Blocker.callback())
                 {
-                    response.write(false, BufferUtil.toBuffer(buf), blocker);
+                    response.write(false, RetainableByteBuffer.wrap(buf), blocker);
                     blocker.block();
                 }
                 long end = System.currentTimeMillis();
@@ -1279,7 +1279,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 out.append(t).append(",");
             }
 
-            response.write(true, BufferUtil.toBuffer(out.toString()), callback);
+            response.write(true, RetainableByteBuffer.wrap(out.toString(), StandardCharsets.ISO_8859_1), callback);
             return true;
         }
     }
@@ -1577,7 +1577,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
             try (Blocker.Callback blocker = Blocker.callback())
             {
-                response.write(false, BufferUtil.toBuffer("Now is the time for all good men to come to the aid of the party"), blocker);
+                response.write(false, RetainableByteBuffer.wrap("Now is the time for all good men to come to the aid of the party", StandardCharsets.ISO_8859_1), blocker);
                 blocker.block();
             }
 
@@ -1798,7 +1798,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public boolean handle(Request request, Response response, Callback callback)
         {
             response.setStatus(HttpStatus.NOT_MODIFIED_304);
-            response.write(false, BufferUtil.toBuffer("yuck"), callback);
+            response.write(false, RetainableByteBuffer.wrap("yuck", StandardCharsets.ISO_8859_1), callback);
             return true;
         }
     }
@@ -1893,11 +1893,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Read the two pipelined responses until EOF
             ByteBuffer responses = ByteBuffer.wrap(IO.readBytes(client.getInputStream()));
 
-            HttpTester.Response response = HttpTester.parseResponse(responses);
+            HttpTester.Response response = HttpTester.parseResponse(RetainableByteBuffer.wrap(responses));
             assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), containsString("Read " + content.length));
 
-            response = HttpTester.parseResponse(responses);
+            response = HttpTester.parseResponse(RetainableByteBuffer.wrap(responses));
             assertThat(response.getStatus(), is(200));
             assertThat(response.getContent(), containsString("Read " + content.length));
         }
@@ -1936,24 +1936,27 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                 while (true)
                 {
-                    Content.Chunk chunk = request.read();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("read: {}", chunk);
-                    if (chunk == null)
+                    try (Content.Chunk chunk = request.read())
                     {
-                        try (Blocker.Runnable blocker = Blocker.runnable())
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("read: {}", chunk);
+                        if (chunk == null)
                         {
-                            request.demand(blocker);
-                            blocker.block();
-                            continue;
+                            try (Blocker.Runnable blocker = Blocker.runnable())
+                            {
+                                request.demand(blocker);
+                                blocker.block();
+                                continue;
+                            }
                         }
+                        if (chunk.hasRemaining())
+                        {
+                            chunk.retain();
+                            contents.add(chunk);
+                        }
+                        if (chunk.isLast())
+                            break;
                     }
-                    if (chunk.hasRemaining())
-                        contents.add(chunk);
-                    else
-                        chunk.release();
-                    if (chunk.isLast())
-                        break;
                 }
                 response.setStatus(200);
 
@@ -2032,33 +2035,30 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         assertTrue(closed.await(10, TimeUnit.SECONDS));
         long total = contents.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(total, equalTo(chunk.length * 4L));
+
         ByteBufferPool rbbp = _connector.getByteBufferPool();
-        if (rbbp instanceof ArrayByteBufferPool pool)
+        assertThat(rbbp, instanceOf(ArrayByteBufferPool.class));
+        ArrayByteBufferPool pool = (ArrayByteBufferPool)rbbp;
+        long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
+        if (LOG.isDebugEnabled())
         {
-            long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
+            LOG.debug("pool {}", pool);
+            contents.stream().map(Content.Chunk::toString).forEach(LOG::debug);
+        }
+
+        contents.forEach(Content.Chunk::release);
+
+        Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() ->
+        {
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("pool {}", pool);
                 contents.stream().map(Content.Chunk::toString).forEach(LOG::debug);
             }
-            contents.forEach(Content.Chunk::release);
-
-            Awaitility.waitAtMost(5, TimeUnit.SECONDS).until(() ->
-            {
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("pool {}", pool);
-                    contents.stream().map(Content.Chunk::toString).forEach(LOG::debug);
-                }
-                long buffersAfterRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
-                return buffersAfterRelease > buffersBeforeRelease;
-            });
-            assertThat(pool.getAvailableDirectMemory() + pool.getAvailableHeapMemory(), greaterThanOrEqualTo(chunk.length * 4L));
-        }
-        else
-        {
-            assertThat(rbbp, instanceOf(ArrayByteBufferPool.class));
-        }
+            long buffersAfterRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
+            return buffersAfterRelease > buffersBeforeRelease;
+        });
+        assertThat(pool.getAvailableDirectMemory() + pool.getAvailableHeapMemory(), greaterThanOrEqualTo(chunk.length * 4L));
     }
 
     public static class TestHandler extends EchoHandler

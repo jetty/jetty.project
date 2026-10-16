@@ -30,9 +30,7 @@ import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -41,6 +39,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -95,7 +94,7 @@ public class BadURITest
             }
         });
 
-        ByteBufferPool bufferPool = connector.getByteBufferPool();
+        WritableBufferPool bufferPool = WritableBufferPool.wrap(connector.getByteBufferPool());
         Generator generator = new Generator(bufferPool);
 
         // Craft a request with a bad URI, it will not hit the Handler.
@@ -109,20 +108,22 @@ public class BadURITest
             HttpFields.EMPTY,
             -1
         );
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         generator.control(accumulator, new HeadersFrame(1, metaData1, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            accumulator.writeTo(Content.Sink.from(client.getOutputStream()), false);
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.putTo(client.getOutputStream());
+            }
 
             // Wait for the first request be processed on the server.
             Thread.sleep(1000);
 
             // Send a second request and verify that it hits the Handler.
-            accumulator.clear();
             MetaData.Request metaData2 = new MetaData.Request(
                 HttpMethod.GET.asString(),
                 HttpScheme.HTTP.asString(),
@@ -133,8 +134,11 @@ public class BadURITest
                 -1
             );
             generator.control(accumulator, new HeadersFrame(3, metaData2, null, true));
-            accumulator.writeTo(Content.Sink.from(client.getOutputStream()), false);
-            assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                buffer.putTo(client.getOutputStream());
+                assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
+            }
         }
     }
 }

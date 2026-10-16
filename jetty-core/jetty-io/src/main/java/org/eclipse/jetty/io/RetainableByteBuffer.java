@@ -80,16 +80,11 @@ public interface RetainableByteBuffer extends Retainable
     RetainableByteBuffer EMPTY = new EmptyRetainableByteBuffer();
 
     /**
-     * <p>Returns a non-retainable {@code RetainableByteBuffer} that wraps
+     * <p>Returns a {@code RetainableByteBuffer} that wraps
      * the given {@code ByteBuffer}.</p>
      * <p>Use this method to wrap user-provided {@code ByteBuffer}s, or
      * {@code ByteBuffer}s that hold constant bytes, to make them look
      * like {@code RetainableByteBuffer}s.</p>
-     * <p>The returned {@code RetainableByteBuffer} {@link #canRetain()}
-     * method always returns {@code false}.</p>
-     * <p>{@code RetainableByteBuffer}s returned by this method are not
-     * suitable to be wrapped in other {@link Retainable} implementations
-     * that may delegate calls to {@link #retain()}.</p>
      *
      * @param byteBuffer the {@code ByteBuffer} to wrap
      * @return a {@link FixedCapacity} buffer wrapping the passed {@link ByteBuffer}
@@ -398,11 +393,8 @@ public interface RetainableByteBuffer extends Retainable
         if (length > size)
             slice.limit(size);
 
-        if (!canRetain())
-            return new NonRetainableByteBuffer(slice);
-
         retain();
-        return RetainableByteBuffer.wrap(slice, this);
+        return org.eclipse.jetty.io.RetainableByteBuffer.wrap(slice, this);
     }
 
     /**
@@ -496,24 +488,24 @@ public interface RetainableByteBuffer extends Retainable
      * @param sink the destination sink.
      * @param last true if this is the last write.
      * @param callback the callback to call upon the write completion.
-     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)
+     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, org.eclipse.jetty.util.buffer.RetainableByteBuffer, Callback)
      */
     default void writeTo(Content.Sink sink, boolean last, Callback callback)
     {
-        sink.write(last, getByteBuffer(), callback);
+        sink.write(last, org.eclipse.jetty.util.buffer.RetainableByteBuffer.wrap(getByteBuffer()), callback);
     }
 
     /**
      * Writes and consumes the contents of this retainable byte buffer into the given sink.
      * @param sink the destination sink.
      * @param last true if this is the last write.
-     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)
+     * @see org.eclipse.jetty.io.Content.Sink#write(boolean, org.eclipse.jetty.util.buffer.RetainableByteBuffer, Callback)
      */
     default void writeTo(Content.Sink sink, boolean last) throws IOException
     {
         try (Blocker.Callback callback = Blocker.callback())
         {
-            sink.write(last, getByteBuffer(), callback);
+            sink.write(last, org.eclipse.jetty.util.buffer.RetainableByteBuffer.wrap(getByteBuffer()), callback);
             callback.block();
         }
     }
@@ -892,12 +884,17 @@ public interface RetainableByteBuffer extends Retainable
     {
         public Abstract()
         {
-            this(new ReferenceCounter());
+            this(new Retainable.ReferenceCounter());
         }
 
         public Abstract(Retainable retainable)
         {
             super(retainable);
+        }
+
+        protected int getRetainCount()
+        {
+            return getWrapped() instanceof org.eclipse.jetty.util.Retainable.ReferenceCounter rc ? rc.getCount() : -2;
         }
 
         /**
@@ -938,7 +935,7 @@ public interface RetainableByteBuffer extends Retainable
             builder.append(isDirect());
             addExtraStringInfo(builder);
             builder.append(",rc=");
-            builder.append(getRetained());
+            builder.append(getRetainCount());
             builder.append("]");
         }
 
@@ -987,7 +984,7 @@ public interface RetainableByteBuffer extends Retainable
 
         public FixedCapacity(ByteBuffer byteBuffer)
         {
-            this(byteBuffer, new ReferenceCounter());
+            this(byteBuffer, new Retainable.ReferenceCounter());
         }
 
         public FixedCapacity(ByteBuffer byteBuffer, Retainable retainable)
@@ -1343,9 +1340,6 @@ public interface RetainableByteBuffer extends Retainable
             if (length > size)
                 slice.limit(size);
 
-            if (!canRetain())
-                return new NonRetainableByteBuffer(slice);
-
             retain();
             return new Pooled(_pool, slice, this);
         }
@@ -1356,17 +1350,6 @@ public interface RetainableByteBuffer extends Retainable
             RetainableByteBuffer copy = _pool.acquire(remaining(), isDirect());
             copy.asMutable().append(getByteBuffer().slice());
             return copy;
-        }
-    }
-
-    /**
-     * A {@link FixedCapacity} buffer that is neither poolable nor {@link Retainable#canRetain() retainable}.
-     */
-    class NonRetainableByteBuffer extends FixedCapacity
-    {
-        public NonRetainableByteBuffer(ByteBuffer byteBuffer)
-        {
-            super(byteBuffer, NON_RETAINABLE);
         }
     }
 
@@ -1545,7 +1528,7 @@ public interface RetainableByteBuffer extends Retainable
 
         private void checkNotReleased()
         {
-            if (getRetained() <= 0)
+            if (getRetainCount() <= 0)
                 throw new IllegalStateException("Already released");
         }
 
@@ -1620,7 +1603,7 @@ public interface RetainableByteBuffer extends Retainable
             checkNotReleased();
 
             if (_buffers.isEmpty() || length == 0)
-                return RetainableByteBuffer.EMPTY;
+                return org.eclipse.jetty.io.RetainableByteBuffer.EMPTY;
 
             _aggregate = null;
 
@@ -1686,7 +1669,7 @@ public interface RetainableByteBuffer extends Retainable
             checkNotReleased();
 
             if (_buffers.isEmpty() || skip > size())
-                return RetainableByteBuffer.EMPTY;
+                return org.eclipse.jetty.io.RetainableByteBuffer.EMPTY;
 
             _aggregate = null;
 
@@ -2118,7 +2101,7 @@ public interface RetainableByteBuffer extends Retainable
                 byteBuffer.limit(limit + Math.toIntExact(space));
                 byteBuffer = byteBuffer.slice();
                 byteBuffer.limit(limit);
-                _aggregate = RetainableByteBuffer.wrap(byteBuffer, _aggregate);
+                _aggregate = org.eclipse.jetty.io.RetainableByteBuffer.wrap(byteBuffer, _aggregate);
             }
         }
 
@@ -2212,7 +2195,7 @@ public interface RetainableByteBuffer extends Retainable
             if (LOG.isDebugEnabled())
                 LOG.debug("add BB {} <- {}", this, BufferUtil.toDetailString(bytes));
             checkNotReleased();
-            add(RetainableByteBuffer.wrap(bytes));
+            add(org.eclipse.jetty.io.RetainableByteBuffer.wrap(bytes));
             return this;
         }
 
@@ -2456,7 +2439,7 @@ public interface RetainableByteBuffer extends Retainable
                 else if (buffer instanceof DynamicCapacity dynamic)
                     list.addAll(flattenToChunks(dynamic));
                 else
-                    list.add(Content.Chunk.asChunk(buffer.getByteBuffer(), false, buffer));
+                    list.add(Content.Chunk.from(buffer.getByteBuffer(), false/*, buffer*/));
             }
             ChunksContentSource contentSource = new ChunksContentSource(list);
             clear();
@@ -2473,7 +2456,7 @@ public interface RetainableByteBuffer extends Retainable
                 else if (buffer instanceof DynamicCapacity d)
                     list.addAll(flattenToChunks(d));
                 else
-                    list.add(Content.Chunk.asChunk(buffer.getByteBuffer(), false, buffer));
+                    list.add(Content.Chunk.from(buffer.getByteBuffer(), false/*, buffer*/));
             }
             return list;
         }
@@ -2500,7 +2483,7 @@ public interface RetainableByteBuffer extends Retainable
                 if (buffer instanceof Abstract abstractBuffer)
                 {
                     builder.append("/r=");
-                    builder.append(abstractBuffer.getRetained());
+                    builder.append(abstractBuffer.getRetainCount());
                     abstractBuffer.addValueString(builder);
                 }
                 else

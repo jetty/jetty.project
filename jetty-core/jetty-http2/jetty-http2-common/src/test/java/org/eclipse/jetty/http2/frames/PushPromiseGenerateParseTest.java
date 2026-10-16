@@ -27,8 +27,8 @@ import org.eclipse.jetty.http2.generator.PushPromiseGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PushPromiseGenerateParseTest
 {
-    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
+    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
 
     @Test
     public void testGenerateParse() throws Exception
@@ -64,18 +64,19 @@ public class PushPromiseGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generatePushPromise(accumulator, streamId, promisedStreamId, metaData);
-
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
 
             assertEquals(1, frames.size());
-            PushPromiseFrame frame = frames.get(0);
+            PushPromiseFrame frame = frames.getFirst();
             assertEquals(streamId, frame.getStreamId());
             assertEquals(promisedStreamId, frame.getPromisedStreamId());
-            MetaData.Request request = (MetaData.Request)frame.getMetaData();
+            MetaData.Request request = frame.getMetaData();
             assertEquals(metaData.getMethod(), request.getMethod());
             assertEquals(metaData.getHttpURI(), request.getHttpURI());
             for (int j = 0; j < fields.size(); ++j)
@@ -112,15 +113,16 @@ public class PushPromiseGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generatePushPromise(accumulator, streamId, promisedStreamId, metaData);
-
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
 
             assertEquals(1, frames.size());
-            PushPromiseFrame frame = frames.get(0);
+            PushPromiseFrame frame = frames.getFirst();
             assertEquals(streamId, frame.getStreamId());
             assertEquals(promisedStreamId, frame.getPromisedStreamId());
             MetaData.Request request = frame.getMetaData();

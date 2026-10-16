@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -551,7 +552,7 @@ public class MultiPart
         {
             long length = 0;
             for (Content.Chunk c : content)
-                length += c.size();
+                length += c.remaining();
             return length;
         }
 
@@ -573,7 +574,13 @@ public class MultiPart
                     {
                         if (Content.Chunk.isFailure(chunk))
                             return chunk;
-                        return Content.Chunk.from(chunk.getByteBuffer().slice(), chunk.isLast());
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            try (RetainableByteBuffer slice = buffer.slice())
+                            {
+                                return Content.Chunk.from(slice, chunk.isLast());
+                            }
+                        }
                     })
                     .toList();
                 ChunksContentSource newContentSource = new ChunksContentSource(chunks);
@@ -743,10 +750,10 @@ public class MultiPart
         private final SerializedInvoker invoker = new SerializedInvoker(AbstractContentSource.class);
         private final Queue<Part> parts = new ArrayDeque<>();
         private final String boundary;
-        private final ByteBuffer firstBoundary;
-        private final ByteBuffer middleBoundary;
-        private final ByteBuffer onlyBoundary;
-        private final ByteBuffer lastBoundary;
+        private final RetainableByteBuffer firstBoundary;
+        private final RetainableByteBuffer middleBoundary;
+        private final RetainableByteBuffer onlyBoundary;
+        private final RetainableByteBuffer lastBoundary;
         private int partHeadersMaxLength = -1;
         private State state = State.FIRST;
         private boolean closed;
@@ -762,13 +769,13 @@ public class MultiPart
             boundary = boundary.stripTrailing();
             this.boundary = boundary;
             String firstBoundaryLine = "--" + boundary + "\r\n";
-            this.firstBoundary = ByteBuffer.wrap(firstBoundaryLine.getBytes(US_ASCII));
+            this.firstBoundary = RetainableByteBuffer.wrap(firstBoundaryLine, US_ASCII);
             String middleBoundaryLine = "\r\n" + firstBoundaryLine;
-            this.middleBoundary = ByteBuffer.wrap(middleBoundaryLine.getBytes(US_ASCII));
+            this.middleBoundary = RetainableByteBuffer.wrap(middleBoundaryLine, US_ASCII);
             String onlyBoundaryLine = "--" + boundary + "--\r\n";
-            this.onlyBoundary = ByteBuffer.wrap(onlyBoundaryLine.getBytes(US_ASCII));
+            this.onlyBoundary = RetainableByteBuffer.wrap(onlyBoundaryLine, US_ASCII);
             String lastBoundaryLine = "\r\n" + onlyBoundaryLine;
-            this.lastBoundary = ByteBuffer.wrap(lastBoundaryLine.getBytes(US_ASCII));
+            this.lastBoundary = RetainableByteBuffer.wrap(lastBoundaryLine, US_ASCII);
         }
 
         /**
@@ -876,7 +883,10 @@ public class MultiPart
                             if (closed)
                             {
                                 state = State.COMPLETE;
-                                yield Content.Chunk.from(onlyBoundary.slice(), true);
+                                try (RetainableByteBuffer slice = onlyBoundary.slice())
+                                {
+                                    yield Content.Chunk.from(slice, true);
+                                }
                             }
                             else
                             {
@@ -887,7 +897,10 @@ public class MultiPart
                         {
                             part = parts.poll();
                             state = State.HEADERS;
-                            yield Content.Chunk.from(firstBoundary.slice(), false);
+                            try (RetainableByteBuffer slice = firstBoundary.slice())
+                            {
+                                yield Content.Chunk.from(slice, false);
+                            }
                         }
                     }
                 }
@@ -901,7 +914,10 @@ public class MultiPart
                             if (closed)
                             {
                                 state = State.COMPLETE;
-                                yield Content.Chunk.from(lastBoundary.slice(), true);
+                                try (RetainableByteBuffer slice = lastBoundary.slice())
+                                {
+                                    yield Content.Chunk.from(slice, true);
+                                }
                             }
                             else
                             {
@@ -912,7 +928,10 @@ public class MultiPart
                         {
                             part = parts.poll();
                             state = State.HEADERS;
-                            yield Content.Chunk.from(middleBoundary.slice(), false);
+                            try (RetainableByteBuffer slice = middleBoundary.slice())
+                            {
+                                yield Content.Chunk.from(slice, false);
+                            }
                         }
                     }
                 }
@@ -943,31 +962,44 @@ public class MultiPart
                     });
                     builder.append("\r\n");
 
-                    // TODO: use a ByteBuffer pool and direct ByteBuffers?
-                    ByteBuffer byteBuffer = ByteBuffer.wrap(builder.toCompleteString().getBytes(UTF_8));
-                    state = State.CONTENT;
-                    yield Content.Chunk.from(byteBuffer, false);
+                    try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(builder.toCompleteString(), UTF_8))
+                    {
+                        state = State.CONTENT;
+                        yield Content.Chunk.from(buffer, false);
+                    }
                 }
                 case CONTENT ->
                 {
-                    Content.Chunk chunk = part.getContentSource().read();
-                    if (chunk == null)
-                        yield null;
-                    if (Content.Chunk.isFailure(chunk, true))
+                    try (Content.Chunk chunk = part.getContentSource().read())
                     {
-                        try (AutoLock ignored = lock.lock())
+                        if (chunk == null)
+                            yield null;
+
+                        if (Content.Chunk.isFailure(chunk, true))
                         {
-                            errorChunk = chunk;
+                            try (AutoLock ignored = lock.lock())
+                            {
+                                errorChunk = chunk;
+                            }
+                            yield chunk;
                         }
-                        yield chunk;
+
+                        if (!chunk.isLast())
+                        {
+                            chunk.retain();
+                            yield chunk;
+                        }
+
+                        state = State.MIDDLE;
+                        if (chunk.hasRemaining())
+                        {
+                            try (RetainableByteBuffer buffer = chunk.acquire())
+                            {
+                                yield Content.Chunk.from(buffer, false);
+                            }
+                        }
+                        yield Content.Chunk.EMPTY;
                     }
-                    if (!chunk.isLast())
-                        yield chunk;
-                    state = State.MIDDLE;
-                    if (chunk.hasRemaining())
-                        yield Content.Chunk.asChunk(chunk.getByteBuffer(), false, chunk);
-                    chunk.release();
-                    yield Content.Chunk.EMPTY;
                 }
                 case COMPLETE -> Content.Chunk.EOF;
             };
@@ -1226,109 +1258,110 @@ public class MultiPart
          */
         public void parse(Content.Chunk chunk)
         {
-            ByteBuffer buffer = chunk.getByteBuffer();
-            boolean last = chunk.isLast();
-            try
+            try (RetainableByteBuffer buffer = chunk.acquire())
             {
-                while (buffer.hasRemaining())
+                try
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("parse {} {}", state, BufferUtil.toDetailString(buffer));
-
-                    switch (state)
+                    while (buffer.hasRemaining())
                     {
-                        case PREAMBLE ->
-                        {
-                            if (parsePreamble(buffer))
-                                state = State.BOUNDARY;
-                        }
-                        case BOUNDARY ->
-                        {
-                            HttpTokens.Token token = next(buffer);
-                            HttpTokens.Type type = token.getType();
-                            if (type == HttpTokens.Type.CR)
-                            {
-                                // Ignore CR and loop around.
-                            }
-                            else if (type == HttpTokens.Type.LF)
-                            {
-                                numParts++;
-                                if (maxParts >= 0 && numParts > maxParts)
-                                    throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", numParts, maxParts));
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("parse {} {}", state, buffer);
 
-                                notifyPartBegin();
-                                state = State.HEADER_START;
-                                trailingWhiteSpaces = 0;
-                                text.reset();
-                                partHeadersLength = 0;
-                            }
-                            else if (token.getByte() == '-')
+                        switch (state)
+                        {
+                            case PREAMBLE ->
                             {
-                                state = State.BOUNDARY_CLOSE;
+                                if (parsePreamble(buffer))
+                                    state = State.BOUNDARY;
                             }
-                            // SPEC: ignore linear whitespace after boundary.
-                            else if (type != HttpTokens.Type.SPACE && type != HttpTokens.Type.HTAB)
+                            case BOUNDARY ->
                             {
-                                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "bad last boundary");
+                                HttpTokens.Token token = next(buffer);
+                                HttpTokens.Type type = token.getType();
+                                if (type == HttpTokens.Type.CR)
+                                {
+                                    // Ignore CR and loop around.
+                                }
+                                else if (type == HttpTokens.Type.LF)
+                                {
+                                    numParts++;
+                                    if (maxParts >= 0 && numParts > maxParts)
+                                        throw new IllegalStateException(String.format("Form with too many keys [%d > %d]", numParts, maxParts));
+
+                                    notifyPartBegin();
+                                    state = State.HEADER_START;
+                                    trailingWhiteSpaces = 0;
+                                    text.reset();
+                                    partHeadersLength = 0;
+                                }
+                                else if (token.getByte() == '-')
+                                {
+                                    state = State.BOUNDARY_CLOSE;
+                                }
+                                // SPEC: ignore linear whitespace after boundary.
+                                else if (type != HttpTokens.Type.SPACE && type != HttpTokens.Type.HTAB)
+                                {
+                                    throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "bad last boundary");
+                                }
                             }
-                        }
-                        case BOUNDARY_CLOSE ->
-                        {
-                            HttpTokens.Token token = next(buffer);
-                            if (token.getByte() != '-')
-                                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "bad last boundary");
-                            notifyEndOfLineViolations();
-                            state = State.EPILOGUE;
-                        }
-                        case HEADER_START ->
-                        {
-                            state = parseHeaderStart(buffer);
-                        }
-                        case HEADER_NAME ->
-                        {
-                            if (parseHeaderName(buffer))
-                                state = State.HEADER_VALUE;
-                        }
-                        case HEADER_VALUE ->
-                        {
-                            if (parseHeaderValue(buffer))
-                                state = State.HEADER_START;
-                        }
-                        case CONTENT_START ->
-                        {
-                            if (parseContent(chunk))
-                                state = State.BOUNDARY;
-                            else
-                                state = State.CONTENT;
-                        }
-                        case CONTENT ->
-                        {
-                            if (parseContent(chunk))
-                                state = State.BOUNDARY;
-                        }
-                        case EPILOGUE ->
-                        {
-                            // Just discard the epilogue.
-                            buffer.position(buffer.limit());
+                            case BOUNDARY_CLOSE ->
+                            {
+                                HttpTokens.Token token = next(buffer);
+                                if (token.getByte() != '-')
+                                    throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "bad last boundary");
+                                notifyEndOfLineViolations();
+                                state = State.EPILOGUE;
+                            }
+                            case HEADER_START ->
+                            {
+                                state = parseHeaderStart(buffer);
+                            }
+                            case HEADER_NAME ->
+                            {
+                                if (parseHeaderName(buffer))
+                                    state = State.HEADER_VALUE;
+                            }
+                            case HEADER_VALUE ->
+                            {
+                                if (parseHeaderValue(buffer))
+                                    state = State.HEADER_START;
+                            }
+                            case CONTENT_START ->
+                            {
+                                if (parseContent(chunk))
+                                    state = State.BOUNDARY;
+                                else
+                                    state = State.CONTENT;
+                            }
+                            case CONTENT ->
+                            {
+                                if (parseContent(chunk))
+                                    state = State.BOUNDARY;
+                            }
+                            case EPILOGUE ->
+                            {
+                                // Just discard the epilogue.
+                                buffer.consume(buffer.remaining());
+                            }
                         }
                     }
-                }
 
-                if (last)
-                {
-                    if (state == State.EPILOGUE)
-                        notifyComplete();
-                    else
-                        throw new EOFException("unexpected EOF in " + state);
+                    if (chunk.isLast())
+                    {
+                        if (state == State.EPILOGUE)
+                            notifyComplete();
+                        else
+                            throw new EOFException("unexpected EOF in " + state);
+                    }
                 }
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("parse failure {} {}", state, BufferUtil.toDetailString(buffer), x);
-                buffer.position(buffer.limit());
-                notifyEndOfLineViolations();
-                notifyFailure(x);
+                catch (Throwable x)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("parse failure {} {}", state, buffer, x);
+                    buffer.consume(buffer.remaining());
+                    notifyEndOfLineViolations();
+                    notifyFailure(x);
+                }
             }
         }
 
@@ -1337,10 +1370,10 @@ public class MultiPart
          * <p>Token {@link HttpTokens.Type#CR} should be ignored when looking for EOL, as
          * {@link HttpTokens.Type#LF} marks the actual EOL.</p>
          *
-         * @param buffer the {@code ByteBuffer} containing bytes to parse
+         * @param buffer the {@code RetainableByteBuffer} containing bytes to parse
          * @return a token corresponding to the next byte in the buffer
          */
-        private HttpTokens.Token next(ByteBuffer buffer)
+        private HttpTokens.Token next(RetainableByteBuffer buffer)
         {
             byte b = buffer.get();
             HttpTokens.Token t = HttpTokens.TOKENS[b & 0xFF];
@@ -1386,7 +1419,7 @@ public class MultiPart
             return t;
         }
 
-        private boolean parsePreamble(ByteBuffer buffer)
+        private boolean parsePreamble(RetainableByteBuffer buffer)
         {
             if (partialBoundaryMatch > 0)
             {
@@ -1396,14 +1429,14 @@ public class MultiPart
                     if (boundaryMatch == boundaryFinder.getLength())
                     {
                         // The boundary was fully matched.
-                        buffer.position(buffer.position() + boundaryMatch - partialBoundaryMatch);
+                        buffer.consume(boundaryMatch - partialBoundaryMatch);
                         partialBoundaryMatch = 0;
                         return true;
                     }
                     else
                     {
                         // The boundary was partially matched.
-                        buffer.position(buffer.limit());
+                        buffer.consume(buffer.remaining());
                         partialBoundaryMatch = boundaryMatch;
                         return false;
                     }
@@ -1420,17 +1453,17 @@ public class MultiPart
             if (boundaryOffset >= 0)
             {
                 // Found a full boundary.
-                buffer.position(buffer.position() + boundaryOffset + boundaryFinder.getLength());
+                buffer.consume(boundaryOffset + boundaryFinder.getLength());
                 return true;
             }
 
             // Search for a partial boundary at the end of the buffer.
             partialBoundaryMatch = boundaryFinder.endsWith(buffer);
-            buffer.position(buffer.limit());
+            buffer.consume(buffer.remaining());
             return false;
         }
 
-        private State parseHeaderStart(ByteBuffer buffer)
+        private State parseHeaderStart(RetainableByteBuffer buffer)
         {
             while (buffer.hasRemaining())
             {
@@ -1473,7 +1506,7 @@ public class MultiPart
             return State.HEADER_START;
         }
 
-        private boolean parseHeaderName(ByteBuffer buffer)
+        private boolean parseHeaderName(RetainableByteBuffer buffer)
         {
             while (buffer.hasRemaining())
             {
@@ -1514,7 +1547,7 @@ public class MultiPart
             return false;
         }
 
-        private boolean parseHeaderValue(ByteBuffer buffer)
+        private boolean parseHeaderValue(RetainableByteBuffer buffer)
         {
             while (buffer.hasRemaining())
             {
@@ -1566,17 +1599,68 @@ public class MultiPart
 
         private boolean parseContent(Content.Chunk chunk)
         {
-            ByteBuffer buffer = chunk.getByteBuffer();
-
-            if (partialBoundaryMatch > 0)
+            try (RetainableByteBuffer buffer = chunk.acquire())
             {
-                int boundaryMatch = boundaryFinder.startsWith(buffer, partialBoundaryMatch);
-                if (boundaryMatch > 0)
+                if (partialBoundaryMatch > 0)
                 {
-                    if (boundaryMatch == boundaryFinder.getLength())
+                    int boundaryMatch = boundaryFinder.startsWith(buffer, partialBoundaryMatch);
+                    if (boundaryMatch > 0)
                     {
-                        // The boundary was fully matched, so the part is complete.
-                        buffer.position(buffer.position() + boundaryMatch - partialBoundaryMatch);
+                        if (boundaryMatch == boundaryFinder.getLength())
+                        {
+                            // The boundary was fully matched, so the part is complete.
+                            buffer.consume(boundaryMatch - partialBoundaryMatch);
+                            if (!crContent)
+                            {
+                                MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
+                                addEndOfLineViolation(violation);
+                                if (!compliance.allows(violation))
+                                    throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid LF-only EOL");
+                            }
+                            partialBoundaryMatch = 0;
+                            crContent = false;
+                            notifyPartContent(Content.Chunk.EOF);
+                            notifyPartEnd();
+                            return true;
+                        }
+                        else
+                        {
+                            // The boundary was partially matched, but it
+                            // is not clear yet if it is content or boundary.
+                            buffer.consume(buffer.remaining());
+                            partialBoundaryMatch = boundaryMatch;
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // There was a partial boundary match in the previous chunk, but now a
+                        // mismatch was found. Handle the special case of parts with no content.
+                        if (state == State.CONTENT_START)
+                        {
+                            // There is some content, reset the boundary match.
+                            partialBoundaryMatch = 0;
+                            return false;
+                        }
+
+                        // Output as content the previous partial match.
+                        notifyCRContent();
+                        RetainableByteBuffer content = RetainableByteBuffer.wrap(boundaryFinder.getPattern(), 0, partialBoundaryMatch);
+                        partialBoundaryMatch = 0;
+                        try (Content.Chunk partContentChunk = Content.Chunk.from(content, false))
+                        {
+                            notifyPartContent(partContentChunk);
+                        }
+                        return false;
+                    }
+                }
+
+                // Search for a full boundary.
+                int boundaryOffset = boundaryFinder.match(buffer);
+                if (boundaryOffset >= 0)
+                {
+                    if (boundaryOffset == 0)
+                    {
                         if (!crContent)
                         {
                             MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
@@ -1584,117 +1668,72 @@ public class MultiPart
                             if (!compliance.allows(violation))
                                 throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid LF-only EOL");
                         }
-                        partialBoundaryMatch = 0;
                         crContent = false;
-                        notifyPartContent(Content.Chunk.EOF);
-                        notifyPartEnd();
-                        return true;
+                    }
+
+                    // Emit as content the last CR byte of the previous chunk, if any.
+                    notifyCRContent();
+
+                    // Emit as content the bytes of this chunk that are before the boundary.
+                    long position = buffer.readPosition();
+                    int length = boundaryOffset;
+                    // BoundaryFinder is configured to search for '\n--Boundary';
+                    // if '\r\n--Boundary' is found, then the '\r' is not content.
+                    if (length > 0 && buffer.get(position + length - 1) == '\r')
+                    {
+                        --length;
                     }
                     else
-                    {
-                        // The boundary was partially matched, but it
-                        // is not clear yet if it is content or boundary.
-                        buffer.position(buffer.limit());
-                        partialBoundaryMatch = boundaryMatch;
-                        return false;
-                    }
-                }
-                else
-                {
-                    // There was a partial boundary match in the previous chunk, but now a
-                    // mismatch was found. Handle the special case of parts with no content.
-                    if (state == State.CONTENT_START)
-                    {
-                        // There is some content, reset the boundary match.
-                        partialBoundaryMatch = 0;
-                        return false;
-                    }
-
-                    // Output as content the previous partial match.
-                    notifyCRContent();
-                    ByteBuffer content = ByteBuffer.wrap(boundaryFinder.getPattern(), 0, partialBoundaryMatch);
-                    partialBoundaryMatch = 0;
-                    Content.Chunk partContentChunk = Content.Chunk.from(content, false);
-                    notifyPartContent(partContentChunk);
-                    partContentChunk.release();
-                    return false;
-                }
-            }
-
-            // Search for a full boundary.
-            int boundaryOffset = boundaryFinder.match(buffer);
-            if (boundaryOffset >= 0)
-            {
-                if (boundaryOffset == 0)
-                {
-                    if (!crContent)
                     {
                         MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
                         addEndOfLineViolation(violation);
                         if (!compliance.allows(violation))
                             throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid LF-only EOL");
                     }
-                    crContent = false;
+                    try (Content.Chunk content = asSlice(chunk, buffer, position, length, true))
+                    {
+                        buffer.consume(boundaryOffset + boundaryFinder.getLength());
+                        notifyPartContent(content);
+                        notifyPartEnd();
+                        return true;
+                    }
                 }
+
+                // Search for a partial boundary at the end of the buffer.
+                partialBoundaryMatch = boundaryFinder.endsWith(buffer);
+                if (partialBoundaryMatch > 0 && partialBoundaryMatch == buffer.remaining())
+                {
+                    // The boundary was partially matched, but it
+                    // is not clear yet if it is content or boundary.
+                    buffer.consume(buffer.remaining());
+                    return false;
+                }
+
+                // Here, either the boundary was not found, or it was partially found at the end.
 
                 // Emit as content the last CR byte of the previous chunk, if any.
                 notifyCRContent();
 
-                // Emit as content the bytes of this chunk that are before the boundary.
-                int position = buffer.position();
-                int length = boundaryOffset;
+                // Emit as content the bytes of this chunk, until the partial boundary match (if any).
+                long position = buffer.readPosition();
+                long limit = position + buffer.remaining();
+                long sliceLimit = limit - partialBoundaryMatch;
                 // BoundaryFinder is configured to search for '\n--Boundary';
-                // if '\r\n--Boundary' is found, then the '\r' is not content.
-                if (length > 0 && buffer.get(position + length - 1) == '\r')
+                // if '\r\n--Bo' is found, then the '\r' may not be content,
+                // but remember it in case there is a boundary mismatch.
+                if (buffer.get(sliceLimit - 1) == '\r')
                 {
-                    --length;
+                    crContent = true;
+                    --sliceLimit;
                 }
-                else
+                try (Content.Chunk content = asSlice(chunk, buffer, position, sliceLimit - position, false))
                 {
-                    MultiPartCompliance.Violation violation = MultiPartCompliance.Violation.LF_LINE_TERMINATION;
-                    addEndOfLineViolation(violation);
-                    if (!compliance.allows(violation))
-                        throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "invalid LF-only EOL");
+                    buffer.consume(buffer.remaining());
+                    if (content.hasRemaining())
+                        notifyPartContent(content);
+                    return false;
                 }
-                Content.Chunk content = asSlice(chunk, position, length, true);
-                buffer.position(position + boundaryOffset + boundaryFinder.getLength());
-                notifyPartContent(content);
-                notifyPartEnd();
-                return true;
             }
-
-            // Search for a partial boundary at the end of the buffer.
-            partialBoundaryMatch = boundaryFinder.endsWith(buffer);
-            if (partialBoundaryMatch > 0 && partialBoundaryMatch == buffer.remaining())
-            {
-                // The boundary was partially matched, but it
-                // is not clear yet if it is content or boundary.
-                buffer.position(buffer.limit());
-                return false;
-            }
-
-            // Here, either the boundary was not found, or it was partially found at the end.
-
-            // Emit as content the last CR byte of the previous chunk, if any.
-            notifyCRContent();
-
-            // Emit as content the bytes of this chunk, until the partial boundary match (if any).
-            int limit = buffer.limit();
-            int sliceLimit = limit - partialBoundaryMatch;
-            // BoundaryFinder is configured to search for '\n--Boundary';
-            // if '\r\n--Bo' is found, then the '\r' may not be content,
-            // but remember it in case there is a boundary mismatch.
-            if (buffer.get(sliceLimit - 1) == '\r')
-            {
-                crContent = true;
-                --sliceLimit;
-            }
-            int position = buffer.position();
-            Content.Chunk content = asSlice(chunk, position, sliceLimit - position, false);
-            buffer.position(limit);
-            if (content.hasRemaining())
-                notifyPartContent(content);
-            return false;
         }
 
         private void notifyCRContent()
@@ -1707,13 +1746,19 @@ public class MultiPart
             partContentChunk.release();
         }
 
-        private Content.Chunk asSlice(Content.Chunk chunk, int position, int length, boolean last)
+        private Content.Chunk asSlice(Content.Chunk chunk, RetainableByteBuffer buffer, long position, long length, boolean last)
         {
             if (chunk.isLast() && !chunk.hasRemaining())
+            {
+                chunk.retain();
                 return chunk;
+            }
             if (length == 0)
                 return last ? Content.Chunk.EOF : Content.Chunk.EMPTY;
-            return Content.Chunk.asChunk(chunk.getByteBuffer().slice(position, length), last, chunk);
+            try (RetainableByteBuffer slice = buffer.slice(position, length))
+            {
+                return Content.Chunk.from(slice, last);
+            }
         }
 
         private void notifyPartBegin()

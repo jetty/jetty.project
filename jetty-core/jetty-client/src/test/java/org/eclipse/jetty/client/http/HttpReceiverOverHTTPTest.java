@@ -124,7 +124,7 @@ public class HttpReceiverOverHTTPTest
         endPoint.addInput("""
             HTTP/1.1 200 OK
             Content-length: 0
-                                
+            
             """);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
@@ -196,7 +196,7 @@ public class HttpReceiverOverHTTPTest
         endPoint.addInput("""
             HTTP/1.1 200 OK
             Content-length: 1
-                            
+            
             """);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
@@ -219,7 +219,7 @@ public class HttpReceiverOverHTTPTest
         endPoint.addInput("""
             HTTP/1.1 200 OK
             Content-length: A
-                            
+            
             """);
         CompletableFuture<ContentResponse> completable = startExchange();
         connection.getHttpChannel().receive();
@@ -274,7 +274,7 @@ public class HttpReceiverOverHTTPTest
         endPoint.addInput("""
             HTTP/1.1 200 OK
             Content-Length: 1
-                                
+            
             """);
 
         CompletableFuture<ContentResponse> completable = startExchange();

@@ -778,12 +778,12 @@ public class ServletHandlerTest
 
         server.start();
 
-        assertThat(connector.getResponse("GET /default HTTP/1.0\r\n\r\n"), containsString("mapping='/'"));
-        assertThat(connector.getResponse("GET /foo HTTP/1.0\r\n\r\n"), containsString("mapping='/foo'"));
-        assertThat(connector.getResponse("GET /bar HTTP/1.0\r\n\r\n"), containsString("mapping='/bar/*'"));
-        assertThat(connector.getResponse("GET /bar/bob HTTP/1.0\r\n\r\n"), containsString("mapping='/bar/*'"));
-        assertThat(connector.getResponse("GET /bar/foo.bob HTTP/1.0\r\n\r\n"), containsString("mapping='/bar/*'"));
-        assertThat(connector.getResponse("GET /other/foo.bob HTTP/1.0\r\n\r\n"), containsString("mapping='*.bob'"));
+        assertThat(connector.getResponseAsString("GET /default HTTP/1.0\r\n\r\n"), containsString("mapping='/'"));
+        assertThat(connector.getResponseAsString("GET /foo HTTP/1.0\r\n\r\n"), containsString("mapping='/foo'"));
+        assertThat(connector.getResponseAsString("GET /bar HTTP/1.0\r\n\r\n"), containsString("mapping='/bar/*'"));
+        assertThat(connector.getResponseAsString("GET /bar/bob HTTP/1.0\r\n\r\n"), containsString("mapping='/bar/*'"));
+        assertThat(connector.getResponseAsString("GET /bar/foo.bob HTTP/1.0\r\n\r\n"), containsString("mapping='/bar/*'"));
+        assertThat(connector.getResponseAsString("GET /other/foo.bob HTTP/1.0\r\n\r\n"), containsString("mapping='*.bob'"));
     }
 
     @Test
@@ -840,11 +840,11 @@ public class ServletHandlerTest
 
         server.start();
 
-        assertThat(connector.getResponse("GET /default HTTP/1.0\r\n\r\n"), containsString("path-/*-default"));
-        assertThat(connector.getResponse("GET /foo HTTP/1.0\r\n\r\n"), containsString("path-/*-path-/foo-name-foo-FOO"));
-        assertThat(connector.getResponse("GET /foo/bar HTTP/1.0\r\n\r\n"), containsString("path-/*-name-foo-FOO"));
-        assertThat(connector.getResponse("GET /foo/bar.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-name-foo-FOO"));
-        assertThat(connector.getResponse("GET /other.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-default"));
+        assertThat(connector.getResponseAsString("GET /default HTTP/1.0\r\n\r\n"), containsString("path-/*-default"));
+        assertThat(connector.getResponseAsString("GET /foo HTTP/1.0\r\n\r\n"), containsString("path-/*-path-/foo-name-foo-FOO"));
+        assertThat(connector.getResponseAsString("GET /foo/bar HTTP/1.0\r\n\r\n"), containsString("path-/*-name-foo-FOO"));
+        assertThat(connector.getResponseAsString("GET /foo/bar.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-name-foo-FOO"));
+        assertThat(connector.getResponseAsString("GET /other.bob HTTP/1.0\r\n\r\n"), containsString("path-/*-path-*.bob-default"));
     }
 
     @Test

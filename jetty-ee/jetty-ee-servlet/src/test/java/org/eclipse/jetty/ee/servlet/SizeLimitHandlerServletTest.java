@@ -17,6 +17,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
@@ -43,9 +44,9 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.SizeLimitHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -183,13 +184,13 @@ public class SizeLimitHandlerServletTest
 
         try (Blocker.Callback callback = Blocker.callback())
         {
-            asyncRequestContent.write(false, BufferUtil.toBuffer(content), callback);
+            asyncRequestContent.write(false, RetainableByteBuffer.wrap(content, StandardCharsets.ISO_8859_1), callback);
             asyncRequestContent.flush();
             callback.block();
         }
         try (Blocker.Callback callback = Blocker.callback())
         {
-            asyncRequestContent.write(true, BufferUtil.toBuffer(content), callback);
+            asyncRequestContent.write(true, RetainableByteBuffer.wrap(content, StandardCharsets.ISO_8859_1), callback);
             asyncRequestContent.flush();
             callback.block();
         }
@@ -224,8 +225,11 @@ public class SizeLimitHandlerServletTest
             .body(gzipContent(content))
             .onResponseContentAsync((response, chunk, demander) ->
             {
-                contentReceived.append(BufferUtil.toString(chunk.getByteBuffer()));
-                demander.run();
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    contentReceived.append(buffer.getString(StandardCharsets.ISO_8859_1));
+                    demander.run();
+                }
             })
             .send(resultFuture::complete);
 
@@ -271,8 +275,11 @@ public class SizeLimitHandlerServletTest
             .body(gzipContent(content))
             .onResponseContentAsync((response, chunk, demander) ->
             {
-                contentReceived.append(BufferUtil.toString(chunk.getByteBuffer()));
-                demander.run();
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    contentReceived.append(buffer.getString(StandardCharsets.ISO_8859_1));
+                    demander.run();
+                }
             })
             .send(resultFuture::complete);
 

@@ -99,51 +99,49 @@ public abstract class ContentSourceCompletableFuture<X> extends CompletableFutur
     {
         while (true)
         {
-            Content.Chunk chunk = _content.read();
-            if (chunk == null)
+            try (Content.Chunk chunk = _content.read())
             {
-                _content.demand(this);
-                return;
-            }
-            if (Content.Chunk.isFailure(chunk))
-            {
-                if (chunk.isLast())
+                if (chunk == null)
                 {
-                    completeExceptionally(chunk.getFailure());
-                }
-                else
-                {
-                    if (onTransientFailure(chunk.getFailure()))
-                        continue;
-                    _content.fail(chunk.getFailure());
-                    completeExceptionally(chunk.getFailure());
-                }
-                return;
-            }
-
-            try
-            {
-                X x = parse(chunk);
-                if (x != null)
-                {
-                    complete(x);
+                    _content.demand(this);
                     return;
                 }
-            }
-            catch (Throwable failure)
-            {
-                completeExceptionally(failure);
-                return;
-            }
-            finally
-            {
-                chunk.release();
-            }
+                if (Content.Chunk.isFailure(chunk))
+                {
+                    if (chunk.isLast())
+                    {
+                        completeExceptionally(chunk.getFailure());
+                    }
+                    else
+                    {
+                        if (onTransientFailure(chunk.getFailure()))
+                            continue;
+                        _content.fail(chunk.getFailure());
+                        completeExceptionally(chunk.getFailure());
+                    }
+                    return;
+                }
 
-            if (chunk.isLast())
-            {
-                completeExceptionally(new EOFException());
-                return;
+                try
+                {
+                    X x = parse(chunk);
+                    if (x != null)
+                    {
+                        complete(x);
+                        return;
+                    }
+                }
+                catch (Throwable failure)
+                {
+                    completeExceptionally(failure);
+                    return;
+                }
+
+                if (chunk.isLast())
+                {
+                    completeExceptionally(new EOFException());
+                    return;
+                }
             }
         }
     }

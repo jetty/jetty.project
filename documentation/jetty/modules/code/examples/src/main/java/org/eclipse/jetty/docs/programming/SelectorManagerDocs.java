@@ -24,18 +24,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.Retainable;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 @SuppressWarnings("unused")
 public class SelectorManagerDocs
@@ -228,13 +228,13 @@ public class SelectorManagerDocs
         // tag::echo-correct[]
         class EchoConnection extends AbstractConnection
         {
-            private final ByteBufferPool.Sized pool;
+            private final WritableBufferPool.Sized bufferPool;
             private final IteratingCallback callback = new EchoIteratingCallback();
 
-            public EchoConnection(EndPoint endp, ByteBufferPool.Sized pool, Executor executor)
+            public EchoConnection(EndPoint endPoint, WritableBufferPool.Sized bufferPool, Executor executor)
             {
-                super(endp, executor);
-                this.pool = pool;
+                super(endPoint, executor);
+                this.bufferPool = bufferPool;
             }
 
             @Override
@@ -255,20 +255,20 @@ public class SelectorManagerDocs
 
             class EchoIteratingCallback extends IteratingCallback
             {
-                private RetainableByteBuffer buffer;
+                private RetainableByteBuffer.Mutable buffer;
 
                 @Override
                 protected Action process() throws Throwable
                 {
                     // Obtain a buffer if we don't already have one.
                     if (buffer == null)
-                        buffer = pool.acquire();
+                        buffer = bufferPool.acquire();
 
-                    int filled = getEndPoint().fill(buffer.getByteBuffer());
+                    int filled = getEndPoint().fill(buffer);
                     if (filled > 0)
                     {
                         // We have filled some bytes, echo them back.
-                        getEndPoint().write(this, buffer.getByteBuffer());
+                        getEndPoint().write(buffer, this);
 
                         // Signal that the iteration should resume
                         // when the write() operation is completed.
@@ -278,7 +278,7 @@ public class SelectorManagerDocs
                     {
                         // We don't need the buffer anymore, so
                         // don't keep it around while we are idle.
-                        buffer = Retainable.release(buffer);
+                        buffer = Retainable.dispose(buffer);
 
                         // No more bytes to read, declare
                         // again interest for fill events.
@@ -301,7 +301,7 @@ public class SelectorManagerDocs
                 {
                     // The iteration completed.
                     getEndPoint().close(cause);
-                    buffer = Retainable.release(buffer);
+                    buffer = Retainable.dispose(buffer);
                 }
 
                 @Override

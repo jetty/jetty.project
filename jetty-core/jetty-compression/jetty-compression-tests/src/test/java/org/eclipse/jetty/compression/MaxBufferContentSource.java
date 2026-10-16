@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.compression;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class MaxBufferContentSource implements Content.Source
 {
@@ -35,7 +34,7 @@ public class MaxBufferContentSource implements Content.Source
     @Override
     public void demand(Runnable demandCallback)
     {
-        if (activeChunk != null && activeChunk.hasRemaining())
+        if (activeChunk != null)
             demandCallback.run();
         else
             delegate.demand(demandCallback);
@@ -44,7 +43,7 @@ public class MaxBufferContentSource implements Content.Source
     @Override
     public void fail(Throwable failure)
     {
-        freeActiveChunk();
+        activeChunk = Retainable.dispose(activeChunk);
         failed = ExceptionUtil.combine(failed, failure);
         delegate.fail(failure);
     }
@@ -55,71 +54,46 @@ public class MaxBufferContentSource implements Content.Source
         if (failed != null)
             return Content.Chunk.from(failed, true);
 
-        Content.Chunk readChunk = readChunk();
-        if (readChunk == null)
-            return null;
-
-        if (Content.Chunk.isFailure(readChunk))
+        try (Content.Chunk readChunk = readChunk())
         {
-            // TODO: avoid loop of exceptions?
-            failed = ExceptionUtil.combine(failed, readChunk.getFailure());
-            return readChunk;
-        }
+            if (readChunk == null)
+                return null;
 
-        try
-        {
-            if (readChunk.remaining() < maxSize)
+            if (Content.Chunk.isFailure(readChunk))
+                return readChunk;
+
+            // The chunk fits, return it.
+            if (readChunk.remaining() <= maxSize)
             {
-                // it fits, just return it.
+                readChunk.retain();
                 return readChunk;
             }
-            else
+
+            // Store the chunk for later use.
+            readChunk.retain();
+            activeChunk = readChunk;
+
+            try (RetainableByteBuffer buffer = readChunk.acquire())
             {
-                boolean last = readChunk.isLast();
-                ByteBuffer buf = BufferUtil.allocate(maxSize, readChunk.isDirect());
-                buf.clear();
-                int pos = readChunk.getByteBuffer().position();
-                int len = BufferUtil.put(readChunk.getByteBuffer(), buf);
-                readChunk.getByteBuffer().position(pos + len);
-                buf.flip();
-
-                if (last && readChunk.hasRemaining())
-                    last = false; // still more to do.
-
-                if (last)
-                    freeActiveChunk(); // we are done with it now
-
-                return Content.Chunk.from(buf, last);
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(maxSize))
+                {
+                    return Content.Chunk.from(slice, false);
+                }
             }
         }
-        catch (Exception e)
+        catch (Throwable x)
         {
-            fail(e);
+            fail(x);
             return Content.Chunk.from(failed, true);
         }
     }
 
-    private void freeActiveChunk()
-    {
-        if (activeChunk != null)
-            activeChunk.release();
-        activeChunk = null;
-    }
-
     private Content.Chunk readChunk()
     {
-        if (activeChunk != null)
-        {
-            if (activeChunk.hasRemaining())
-                return activeChunk;
-            else
-            {
-                activeChunk.release();
-                activeChunk = null;
-            }
-        }
-
-        activeChunk = delegate.read();
-        return activeChunk;
+        Content.Chunk chunk = activeChunk;
+        activeChunk = null;
+        if (chunk != null)
+            return chunk;
+        return delegate.read();
     }
 }

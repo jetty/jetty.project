@@ -13,27 +13,26 @@
 
 package org.eclipse.jetty.fcgi.generator;
 
-import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import org.eclipse.jetty.fcgi.FCGI;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class Generator
 {
     public static final int MAX_CONTENT_LENGTH = 0xFF_FF;
 
-    private final ByteBufferPool bufferPool;
+    private final WritableBufferPool bufferPool;
     private final boolean useDirectByteBuffers;
 
-    public Generator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
+    public Generator(WritableBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         this.bufferPool = bufferPool;
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
-    public ByteBufferPool getByteBufferPool()
+    public WritableBufferPool getBufferPool()
     {
         return bufferPool;
     }
@@ -43,39 +42,31 @@ public class Generator
         return useDirectByteBuffers;
     }
 
-    protected void generateContent(ByteBufferPool.Accumulator accumulator, int id, ByteBuffer content, boolean lastContent, FCGI.FrameType frameType)
+    protected void generateContent(RetainableByteBuffer.Accumulator accumulator, int id, RetainableByteBuffer content, boolean lastContent, FCGI.FrameType frameType)
     {
         id &= 0xFF_FF;
 
-        int contentLength = content == null ? 0 : content.remaining();
+        content = Objects.requireNonNullElse(content, RetainableByteBuffer.empty());
+        long contentLength = content.remaining();
 
         while (contentLength > 0 || lastContent)
         {
-            RetainableByteBuffer buffer = getByteBufferPool().acquire(8, isUseDirectByteBuffers());
-            accumulator.append(buffer);
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            BufferUtil.clearToFill(byteBuffer);
-
+            long length = Math.min(MAX_CONTENT_LENGTH, contentLength);
+            RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(8, isUseDirectByteBuffers());
+            accumulator.addRetained(buffer);
             // Generate the frame header.
-            byteBuffer.put((byte)0x01);
-            byteBuffer.put((byte)frameType.code);
-            byteBuffer.putShort((short)id);
-            int length = Math.min(MAX_CONTENT_LENGTH, contentLength);
-            byteBuffer.putShort((short)length);
-            byteBuffer.putShort((short)0);
-            BufferUtil.flipToFlush(byteBuffer, 0);
+            buffer.put((byte)0x01);
+            buffer.put((byte)frameType.code);
+            buffer.putShort((short)id);
+            buffer.putShort((short)length);
+            buffer.putShort((short)0);
 
             if (contentLength == 0)
                 break;
 
             // Slice the content to avoid copying.
-            int limit = content.limit();
-            content.limit(content.position() + length);
-            ByteBuffer slice = content.slice();
-            // Don't recycle the slice.
-            accumulator.append(RetainableByteBuffer.wrap(slice));
-            content.position(content.limit());
-            content.limit(limit);
+            RetainableByteBuffer slice = content.sliceAndConsume(length);
+            accumulator.addRetained(slice);
             contentLength -= length;
         }
     }

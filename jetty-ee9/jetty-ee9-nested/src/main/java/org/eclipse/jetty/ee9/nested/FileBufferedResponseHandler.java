@@ -136,7 +136,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
         public void write(ByteBuffer content, boolean last, Callback callback)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("{} write last={} {}", this, last, BufferUtil.toDetailString(content));
+                LOG.debug("{} write last={} {}", this, last, content);
 
             // If we are not committed, must decide if we should aggregate or not.
             if (_aggregating == null)
@@ -154,7 +154,7 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
 
             try
             {
-                if (BufferUtil.hasContent(content))
+                if (content != null && content.hasRemaining())
                     aggregate(content);
             }
             catch (Throwable t)

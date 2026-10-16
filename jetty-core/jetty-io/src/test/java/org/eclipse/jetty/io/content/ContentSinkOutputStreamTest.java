@@ -20,10 +20,11 @@ import java.util.Queue;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
@@ -61,7 +62,7 @@ public class ContentSinkOutputStreamTest
         Queue<String> events = new ArrayDeque<>();
         Content.Sink sink = (last, byteBuffer, callback) ->
         {
-            events.add("last=%s, buffer=%s".formatted(last, BufferUtil.toString(byteBuffer)));
+            events.add("last=%s, buffer=%s".formatted(last, StringUtil.toString(byteBuffer, ISO_8859_1)));
             callback.succeeded();
         };
 

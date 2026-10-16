@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.client.internal;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.RequestListeners;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>An extension of {@link RequestListeners} that can notify request events.</p>
@@ -43,9 +42,9 @@ public class NotifyingRequestListeners extends RequestListeners
         notifyCommit(getCommitListener(), request);
     }
 
-    public void notifyContent(Request request, ByteBuffer byteBuffer)
+    public void notifyContent(Request request, RetainableByteBuffer buffer)
     {
-        notifyContent(getContentListener(), request, byteBuffer);
+        notifyContent(getContentListener(), request, buffer);
     }
 
     public void notifySuccess(Request request)

@@ -13,15 +13,12 @@
 
 package org.eclipse.jetty.http3.qpack.internal.instruction;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.compression.NBitStringEncoder;
 import org.eclipse.jetty.http3.qpack.Instruction;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class LiteralNameEntryInstruction implements Instruction
 {
@@ -54,20 +51,15 @@ public class LiteralNameEntryInstruction implements Instruction
     }
 
     @Override
-    public void encode(ByteBufferPool byteBufferPool, RetainableByteBuffer.Mutable accumulator)
+    public void encode(WritableBufferPool bufferPool, RetainableByteBuffer.Accumulator accumulator)
     {
         int size = NBitStringEncoder.octetsNeeded(6, _name, _huffmanName) +
             NBitStringEncoder.octetsNeeded(8, _value, _huffmanValue);
-        RetainableByteBuffer retainableByteBuffer = byteBufferPool.acquire(size, false);
-        ByteBuffer buffer = retainableByteBuffer.getByteBuffer();
-        BufferUtil.clearToFill(buffer);
-
+        RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, false);
+        accumulator.addRetained(buffer);
         buffer.put((byte)0x40); // Instruction Pattern.
         NBitStringEncoder.encode(buffer, 6, _name, _huffmanName);
         NBitStringEncoder.encode(buffer, 8, _value, _huffmanValue);
-
-        BufferUtil.flipToFlush(buffer, 0);
-        accumulator.add(retainableByteBuffer);
     }
 
     @Override

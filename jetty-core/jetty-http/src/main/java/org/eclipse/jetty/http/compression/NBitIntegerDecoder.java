@@ -15,6 +15,8 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+
 /**
  * Used to decode integers as described in RFC7541.
  */
@@ -47,6 +49,11 @@ public class NBitIntegerDecoder
      */
     public int decodeInt(ByteBuffer buffer)
     {
+        return decodeInt(RetainableByteBuffer.wrap(buffer));
+    }
+
+    public int decodeInt(RetainableByteBuffer buffer)
+    {
         return Math.toIntExact(decodeLong(buffer));
     }
 
@@ -59,6 +66,11 @@ public class NBitIntegerDecoder
      * @throws ArithmeticException if the value overflows a long.
      */
     public long decodeLong(ByteBuffer buffer)
+    {
+        return decodeLong(RetainableByteBuffer.wrap(buffer));
+    }
+
+    public long decodeLong(RetainableByteBuffer buffer)
     {
         if (!_started)
         {

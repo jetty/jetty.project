@@ -13,19 +13,20 @@
 
 package org.eclipse.jetty.fcgi.parser;
 
-import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -48,9 +49,9 @@ public class ClientParserTest
         String contentTypeValue = "text/html;charset=utf-8";
         fields.put(contentTypeName, contentTypeValue);
 
-        ByteBufferPool bufferPool = new ArrayByteBufferPool();
+        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.generateResponseHeaders(accumulator, id, statusCode, statusMessage, fields);
 
         // Use the fundamental theorem of arithmetic to test the results.
@@ -94,15 +95,12 @@ public class ClientParserTest
             }
         });
 
-        for (ByteBuffer buffer : accumulator.getByteBuffers())
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
+            assertEquals(value, params.get());
         }
-
-        assertEquals(value, params.get());
-
-        accumulator.release();
     }
 
     @Test
@@ -112,9 +110,9 @@ public class ClientParserTest
         HttpFields fields = HttpFields.build()
             .put("Content-Length", "0");
 
-        ByteBufferPool bufferPool = new ArrayByteBufferPool();
+        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.generateResponseHeaders(accumulator, id, 200, "OK", fields);
         generator.generateResponseContent(accumulator, id, null, true, false);
 
@@ -122,7 +120,7 @@ public class ClientParserTest
         ClientParser parser = new ClientParser(new ClientParser.Listener()
         {
             @Override
-            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, RetainableByteBuffer buffer)
             {
                 assertEquals(id, request);
                 verifier.addAndGet(2);
@@ -138,15 +136,12 @@ public class ClientParserTest
             }
         });
 
-        for (ByteBuffer buffer : accumulator.getByteBuffers())
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
+            assertEquals(3, verifier.get());
         }
-
-        assertEquals(3, verifier.get());
-
-        accumulator.release();
     }
 
     @Test
@@ -155,17 +150,17 @@ public class ClientParserTest
         int id = 13;
         HttpFields.Mutable fields = HttpFields.build();
 
-        ByteBuffer content = ByteBuffer.wrap(new byte[1024]);
-        int contentLength = content.remaining();
+        RetainableByteBuffer content = RetainableByteBuffer.allocate(1024, false);
+        long contentLength = content.remaining();
 
         int code = 200;
         String contentTypeName = "Content-Length";
         String contentTypeValue = String.valueOf(contentLength);
         fields.put(contentTypeName, contentTypeValue);
 
-        ByteBufferPool bufferPool = new ArrayByteBufferPool();
+        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
         generator.generateResponseContent(accumulator, id, content, true, false);
 
@@ -173,7 +168,7 @@ public class ClientParserTest
         ClientParser parser = new ClientParser(new ClientParser.Listener()
         {
             @Override
-            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, RetainableByteBuffer buffer)
             {
                 assertEquals(id, request);
                 assertEquals(contentLength, buffer.remaining());
@@ -190,15 +185,12 @@ public class ClientParserTest
             }
         });
 
-        for (ByteBuffer buffer : accumulator.getByteBuffers())
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
+            assertEquals(5, verifier.get());
         }
-
-        assertEquals(5, verifier.get());
-
-        accumulator.release();
     }
 
     @Test
@@ -207,26 +199,26 @@ public class ClientParserTest
         int id = 13;
         HttpFields.Mutable fields = HttpFields.build();
 
-        ByteBuffer content = ByteBuffer.wrap(new byte[128 * 1024]);
-        int contentLength = content.remaining();
+        RetainableByteBuffer content = RetainableByteBuffer.allocate(128 * 1024, false);
+        long contentLength = content.remaining();
 
         int code = 200;
         String contentTypeName = "Content-Length";
         String contentTypeValue = String.valueOf(contentLength);
         fields.put(contentTypeName, contentTypeValue);
 
-        ByteBufferPool bufferPool = new ArrayByteBufferPool();
+        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
         generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
         generator.generateResponseContent(accumulator, id, content, true, false);
 
-        AtomicInteger totalLength = new AtomicInteger();
+        AtomicLong totalLength = new AtomicLong();
         AtomicBoolean verifier = new AtomicBoolean();
         ClientParser parser = new ClientParser(new ClientParser.Listener()
         {
             @Override
-            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            public boolean onContent(int request, FCGI.StreamType stream, RetainableByteBuffer buffer)
             {
                 assertEquals(id, request);
                 totalLength.addAndGet(buffer.remaining());
@@ -243,15 +235,12 @@ public class ClientParserTest
             }
         });
 
-        for (ByteBuffer buffer : accumulator.getByteBuffers())
+        try (RetainableByteBuffer buffer = accumulator.drain())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
+            assertTrue(verifier.get());
         }
-
-        assertTrue(verifier.get());
-
-        accumulator.release();
     }
 
     @ParameterizedTest
@@ -271,16 +260,16 @@ public class ClientParserTest
         });
 
         // See Parser for the FCGI record structure.
-        ByteBuffer byteBuffer = ByteBuffer.allocate(8)
-            .put((byte)1)
-            .put((byte)frameType)
-            .putShort((short)13)
-            .putShort((short)0)
-            .put((byte)0)
-            .put((byte)0)
-            .flip();
-        parser.parse(byteBuffer);
-        assertFalse(byteBuffer.hasRemaining());
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(8, false);
+        buffer.put((byte)1);
+        buffer.put((byte)frameType);
+        buffer.putShort((short)13);
+        buffer.putShort((short)0);
+        buffer.put((byte)0);
+        buffer.put((byte)0);
+        parser.parse(buffer);
+        assertEquals(0, buffer.remaining());
+        buffer.release();
 
         assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
     }
@@ -302,17 +291,17 @@ public class ClientParserTest
         });
 
         // See Parser for the FCGI record structure.
-        ByteBuffer byteBuffer = ByteBuffer.allocate(8)
-            .put((byte)1)
-            .put((byte)frameType)
-            .putShort((short)13)
-            .putShort((short)0)
-            .put((byte)0)
-            .put((byte)0)
-            .flip();
-        parser.parse(byteBuffer);
-        assertFalse(byteBuffer.hasRemaining());
-
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(8, false);
+        buffer.put((byte)1);
+        buffer.put((byte)frameType);
+        buffer.putShort((short)13);
+        buffer.putShort((short)0);
+        buffer.put((byte)0);
+        buffer.put((byte)0);
+        parser.parse(buffer);
+        assertEquals(0, buffer.remaining());
+        buffer.release();
+        
         assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
     }
 }

@@ -21,8 +21,8 @@ import org.eclipse.jetty.http2.generator.GoAwayGenerator;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class GoAwayGenerateParseTest
 {
-    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
+    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
 
     @Test
     public void testGenerateParse() throws Exception
@@ -55,16 +55,17 @@ public class GoAwayGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generateGoAway(accumulator, lastStreamId, error, null);
-
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
         }
 
         assertEquals(1, frames.size());
-        GoAwayFrame frame = frames.get(0);
+        GoAwayFrame frame = frames.getFirst();
         assertEquals(lastStreamId, frame.getLastStreamId());
         assertEquals(error, frame.getError());
         assertNull(frame.getPayload());
@@ -94,15 +95,16 @@ public class GoAwayGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
             generator.generateGoAway(accumulator, lastStreamId, error, payload);
-
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            try (RetainableByteBuffer buffer = accumulator.drain())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
 
             assertEquals(1, frames.size());
-            GoAwayFrame frame = frames.get(0);
+            GoAwayFrame frame = frames.getFirst();
             assertEquals(lastStreamId, frame.getLastStreamId());
             assertEquals(error, frame.getError());
             assertArrayEquals(payload, frame.getPayload());

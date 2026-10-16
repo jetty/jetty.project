@@ -15,7 +15,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -139,8 +139,8 @@ public class InetAccessHandlerTest
             request.setHeader("Host", "127.0.0.1");
             request.setVersion(HttpVersion.HTTP_1_0);
 
-            ByteBuffer output = request.generate();
-            socket.getOutputStream().write(output.array(), output.arrayOffset() + output.position(), output.remaining());
+            RetainableByteBuffer output = request.generate();
+            socket.getOutputStream().write(output.getArray());
             HttpTester.Input input = HttpTester.from(socket.getInputStream());
             HttpTester.Response response = HttpTester.parseResponse(input);
             Object[] params = new Object[]

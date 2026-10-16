@@ -521,38 +521,44 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
             {
                 while (true)
                 {
-                    Content.Chunk chunk = super.getRequest().read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = super.getRequest().read())
                     {
-                        getRequest().demand(this);
-                        break;
-                    }
+                        if (chunk == null)
+                        {
+                            getRequest().demand(this);
+                            break;
+                        }
 
-                    // retain the chunk in the queue
-                    if (!_chunks.add(chunk))
-                    {
-                        getCallback().failed(new IllegalStateException());
-                        break;
-                    }
-
-                    // Estimated size is 8 byte framing overhead per chunk plus the chunk size
-                    _estimatedSize += _framingOverhead + chunk.remaining();
-
-                    boolean oversize = _estimatedSize >= _maxRetainedBytes;
-
-                    if (_rejectWhenExceeded && oversize && !chunk.isLast())
-                    {
-                        Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.PAYLOAD_TOO_LARGE_413);
-                        break;
-                    }
-
-                    if (chunk.isLast() || oversize)
-                    {
-                        if (execute)
-                            getRequest().getContext().execute(this::doHandle);
+                        // Retain the chunk in the queue.
+                        if (_chunks.add(chunk))
+                        {
+                            chunk.retain();
+                        }
                         else
-                            doHandle();
-                        break;
+                        {
+                            getCallback().failed(new IllegalStateException());
+                            break;
+                        }
+
+                        // Estimated size is 8 byte framing overhead per chunk plus the chunk size
+                        _estimatedSize += _framingOverhead + chunk.remaining();
+
+                        boolean oversize = _estimatedSize >= _maxRetainedBytes;
+
+                        if (_rejectWhenExceeded && oversize && !chunk.isLast())
+                        {
+                            Response.writeError(getRequest(), getResponse(), getCallback(), HttpStatus.PAYLOAD_TOO_LARGE_413);
+                            break;
+                        }
+
+                        if (chunk.isLast() || oversize)
+                        {
+                            if (execute)
+                                getRequest().getContext().execute(this::doHandle);
+                            else
+                                doHandle();
+                            break;
+                        }
                     }
                 }
             }
@@ -590,23 +596,11 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
                 }
 
                 @Override
-                public InvocationType getInvocationType()
-                {
-                    return _callback.getInvocationType();
-                }
-
-                @Override
                 public Content.Chunk read()
                 {
                     if (_chunks.isEmpty())
                         return super.read();
                     return _chunks.removeFirst();
-                }
-
-                private void release()
-                {
-                    _chunks.forEach(Content.Chunk::release);
-                    _chunks.clear();
                 }
 
                 @Override
@@ -617,10 +611,22 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
                 }
 
                 @Override
-                public void fail(Throwable failure)
+                public void failed(Throwable failure)
                 {
                     release();
                     _callback.failed(failure);
+                }
+
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return _callback.getInvocationType();
+                }
+
+                private void release()
+                {
+                    _chunks.forEach(Content.Chunk::release);
+                    _chunks.clear();
                 }
             }
         }

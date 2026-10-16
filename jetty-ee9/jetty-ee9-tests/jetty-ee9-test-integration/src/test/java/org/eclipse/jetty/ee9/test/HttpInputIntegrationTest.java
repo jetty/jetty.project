@@ -51,7 +51,6 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -512,8 +511,7 @@ public class HttpInputIntegrationTest
             }
 
             flush(local, buffer);
-            local.waitUntilClosed();
-            return local.takeOutputString();
+            return local.getResponse();
         }
 
         private void flush(LocalEndPoint local, StringBuilder buffer, int delayMs, Boolean delayInFrame, boolean inFrame) throws Exception
@@ -531,7 +529,7 @@ public class HttpInputIntegrationTest
             String flush = buffer.toString();
             buffer.setLength(0);
             flushed.append(flush);
-            local.addInputAndExecute(BufferUtil.toBuffer(flush));
+            local.writeRequestString(flush);
         }
     }
 

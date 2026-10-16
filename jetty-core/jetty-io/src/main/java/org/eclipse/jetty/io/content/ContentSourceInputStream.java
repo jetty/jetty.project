@@ -15,12 +15,12 @@ package org.eclipse.jetty.io.content;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>An {@link InputStream} that is backed by a {@link Content.Source}.
@@ -51,7 +51,7 @@ public class ContentSourceInputStream extends InputStream
     }
 
     @Override
-    public int read(byte[] b, int off, int len) throws IOException
+    public int read(byte[] bytes, int offset, int len) throws IOException
     {
         while (true)
         {
@@ -64,18 +64,20 @@ public class ContentSourceInputStream extends InputStream
                     throw IO.rethrow(failure.getFailure());
                 }
 
-                ByteBuffer byteBuffer = chunk.getByteBuffer();
-                if (chunk.isLast() && !byteBuffer.hasRemaining())
+                if (chunk.isLast() && !chunk.hasRemaining())
                     return -1;
 
-                int l = Math.min(byteBuffer.remaining(), len);
-                byteBuffer.get(b, off, l);
-                if (!byteBuffer.hasRemaining())
+                try (RetainableByteBuffer buffer = chunk.acquire())
                 {
-                    chunk.release();
-                    chunk = chunk.isLast() ? Content.Chunk.EOF : null;
+                    int length = (int)Math.min(buffer.remaining(), len);
+                    buffer.get(bytes, offset, length);
+                    if (!buffer.hasRemaining())
+                    {
+                        chunk.release();
+                        chunk = Content.Chunk.next(chunk);
+                    }
+                    return length;
                 }
-                return l;
             }
 
             // Skip empty chunks.
@@ -100,10 +102,7 @@ public class ContentSourceInputStream extends InputStream
     @Override
     public int available() throws IOException
     {
-        ByteBuffer available = chunk == null ? null : chunk.getByteBuffer();
-        if (available != null)
-            return available.remaining();
-        return 0;
+        return chunk != null ? (int)chunk.remaining() : 0;
     }
 
     @Override

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -23,8 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.content.AsyncContent;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -50,13 +49,14 @@ public class AsyncContentTest
             async.demand(latch::countDown);
             assertFalse(latch.await(250, TimeUnit.MILLISECONDS));
 
-            async.write(false, UTF_8.encode("one"), Callback.NOOP);
+            async.write(false, RetainableByteBuffer.wrap(UTF_8.encode("one")), Callback.NOOP);
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-            Content.Chunk chunk = async.read();
-            assertNotNull(chunk);
-            chunk.release();
+            try (Content.Chunk chunk = async.read())
+            {
+                assertNotNull(chunk);
+            }
         }
     }
 
@@ -73,10 +73,11 @@ public class AsyncContentTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
-        Content.Chunk chunk = async.read();
-        assertNotNull(chunk);
-        chunk.release();
-        assertTrue(chunk.isLast());
+        try (Content.Chunk chunk = async.read())
+        {
+            assertNotNull(chunk);
+            assertTrue(chunk.isLast());
+        }
     }
 
     @Test
@@ -84,11 +85,12 @@ public class AsyncContentTest
     {
         try (AsyncContent async = new AsyncContent())
         {
-            async.write(false, UTF_8.encode("one"), Callback.NOOP);
+            async.write(false, RetainableByteBuffer.wrap(UTF_8.encode("one")), Callback.NOOP);
 
-            Content.Chunk chunk = async.read();
-            assertNotNull(chunk);
-            chunk.release();
+            try (Content.Chunk chunk = async.read())
+            {
+                assertNotNull(chunk);
+            }
 
             CountDownLatch latch = new CountDownLatch(1);
             async.demand(latch::countDown);
@@ -99,12 +101,14 @@ public class AsyncContentTest
             assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             // We must read the error.
-            chunk = async.read();
-            assertTrue(Content.Chunk.isFailure(chunk, true));
+            try (Content.Chunk chunk = async.read())
+            {
+                assertTrue(Content.Chunk.isFailure(chunk, true));
+            }
 
             // Offering more should fail.
             CountDownLatch failLatch = new CountDownLatch(1);
-            async.write(false, BufferUtil.EMPTY_BUFFER, Callback.from(Callback.NOOP::succeeded, x -> failLatch.countDown()));
+            async.write(false, RetainableByteBuffer.empty(), Callback.from(Callback.NOOP::succeeded, x -> failLatch.countDown()));
             assertTrue(failLatch.await(5, TimeUnit.SECONDS));
         }
     }
@@ -117,7 +121,7 @@ public class AsyncContentTest
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-            async.write(false, ByteBuffer.wrap(new byte[1]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+            async.write(false, RetainableByteBuffer.wrap(new byte[1]), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
             assertThat(successCounter.get(), is(0));
@@ -138,10 +142,10 @@ public class AsyncContentTest
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-            async.write(false, ByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+            async.write(false, RetainableByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
-            assertThat(successCounter.get(), is(1));
+            assertThat(successCounter.get(), is(0));
             assertThat(chunk.isLast(), is(false));
             assertThat(chunk.hasRemaining(), is(false));
             assertThat(chunk.release(), is(true));
@@ -158,10 +162,10 @@ public class AsyncContentTest
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-            async.write(true, ByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+            async.write(true, RetainableByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
-            assertThat(successCounter.get(), is(1));
+            assertThat(successCounter.get(), is(0));
             assertThat(chunk.isLast(), is(true));
             assertThat(chunk.hasRemaining(), is(false));
             assertThat(chunk.release(), is(true));
@@ -177,16 +181,19 @@ public class AsyncContentTest
         {
             async.close();
 
-            Content.Chunk chunk1 = async.read();
-            assertThat(chunk1.isLast(), is(true));
-            assertThat(chunk1.hasRemaining(), is(false));
-            chunk1.release();
+            Content.Chunk chunk;
+            try (Content.Chunk chunk1 = chunk = async.read())
+            {
+                assertThat(chunk1.isLast(), is(true));
+                assertThat(chunk1.hasRemaining(), is(false));
+            }
 
-            Content.Chunk chunk2 = async.read();
-            assertThat(chunk2.isLast(), is(true));
-            assertThat(chunk2.hasRemaining(), is(false));
-            assertSame(chunk1, chunk2);
-            chunk2.release();
+            try (Content.Chunk chunk2 = async.read())
+            {
+                assertThat(chunk2.isLast(), is(true));
+                assertThat(chunk2.hasRemaining(), is(false));
+                assertSame(chunk, chunk2);
+            }
         }
     }
 
@@ -196,15 +203,15 @@ public class AsyncContentTest
         try (AsyncContent async = new AsyncContent())
         {
             AssertingCallback callback1 = new AssertingCallback();
-            async.write(false, ByteBuffer.wrap(new byte[1]), callback1);
+            async.write(false, RetainableByteBuffer.wrap(new byte[1]), callback1);
             AssertingCallback callback2 = new AssertingCallback();
-            async.write(false, ByteBuffer.wrap(new byte[2]), callback2);
+            async.write(false, RetainableByteBuffer.wrap(new byte[2]), callback2);
             AssertingCallback callback3 = new AssertingCallback();
-            async.write(false, ByteBuffer.wrap(new byte[3]), callback3);
+            async.write(false, RetainableByteBuffer.wrap(new byte[3]), callback3);
 
             Content.Chunk chunk = async.read();
             callback1.assertNoFailureNoSuccess();
-            assertThat(chunk.getByteBuffer().remaining(), is(1));
+            assertThat(chunk.remaining(), is(1L));
             assertThat(chunk.release(), is(true));
             callback1.assertNoFailureWithSuccesses(1);
 
@@ -213,6 +220,7 @@ public class AsyncContentTest
 
             chunk = async.read();
             assertSame(failure1, chunk.getFailure());
+            assertThat(chunk.release(), is(true));
 
             callback2.assertSingleFailureSameInstanceNoSuccess(failure1);
             callback3.assertSingleFailureSameInstanceNoSuccess(failure1);
@@ -228,7 +236,7 @@ public class AsyncContentTest
             async.fail(error);
 
             AssertingCallback callback = new AssertingCallback();
-            async.write(false, ByteBuffer.wrap(new byte[1]), callback);
+            async.write(false, RetainableByteBuffer.wrap(new byte[1]), callback);
             callback.assertSingleFailureSameInstanceNoSuccess(error);
         }
     }
