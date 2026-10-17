@@ -166,8 +166,6 @@ def mavenBuild(jdk, cmdline, mvnName) {
           // Pull the gcloud emulator image through the local Nexus proxy instead of gcr.io. A
           // registry mirror cannot do this: dockerd only consults a mirror for Docker Hub.
           def gcloudImage = " -Dgcloud.docker.image.name=nexus-service.nexus.svc.cluster.local:8082/google.com/cloudsdktool/cloud-sdk "
-          sh "mkdir ~/.mimir"
-          sh "cp jenkins-mimir-daemon.properties ~/.mimir/daemon.properties"
           sh "mvn $extraArgs $dashProfile $gcloudImage -s $GLOBAL_MVN_SETTINGS -Dsettings.path=$GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
