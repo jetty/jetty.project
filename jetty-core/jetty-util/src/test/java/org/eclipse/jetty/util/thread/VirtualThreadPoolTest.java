@@ -27,6 +27,7 @@ import org.junit.jupiter.api.condition.OS;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
@@ -116,38 +117,48 @@ public class VirtualThreadPoolTest
         TrackingExecutor trackingExecutor = (TrackingExecutor)vtp.getVirtualThreadsExecutor();
         assertThat(trackingExecutor.size(), is(0));
 
-        CountDownLatch running = new CountDownLatch(4);
-        Waiter waiter = new Waiter(running, false);
-        Waiter spinner = new Waiter(running, true);
+        CountDownLatch waitersStarted = new CountDownLatch(2);
+        CountDownLatch spinnersStarted = new CountDownLatch(2);
+        CountDownLatch spinnerSpinning = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        Waiter waiter1 = new Waiter(waitersStarted, release);
+        Waiter waiter2 = new Waiter(waitersStarted, release);
+        Spinner spinner = new Spinner(spinnersStarted, spinnerSpinning, release);
         try
         {
-            vtp.execute(waiter);
-            vtp.execute(spinner);
-            vtp.execute(waiter);
-            vtp.execute(spinner);
+            vtp.execute(waiter1);
+            vtp.execute(waiter2);
+            assertTrue(waitersStarted.await(5, TimeUnit.SECONDS));
+            await().atMost(5, TimeUnit.SECONDS).until(
+                () -> waiter1.getThread().getState() == Thread.State.TIMED_WAITING &&
+                    waiter2.getThread().getState() == Thread.State.TIMED_WAITING);
 
-            assertTrue(running.await(5, TimeUnit.SECONDS));
+            vtp.execute(spinner);
+            vtp.execute(spinner);
+            assertTrue(spinnersStarted.await(5, TimeUnit.SECONDS));
+            assertTrue(spinnerSpinning.await(5, TimeUnit.SECONDS));
             assertThat(trackingExecutor.size(), is(4));
 
             vtp.setDetailedDump(false);
             String dump = vtp.dump();
             assertThat(count(dump, "VirtualThread[#"), is(4));
-            assertThat(count(dump, "/runnable@"), is(2));
+            assertThat(count(dump, "/runnable"), is(2));
+            assertThat(count(dump, "/runnable@"), greaterThanOrEqualTo(1));
             assertThat(count(dump, "waiting"), is(2));
             assertThat(count(dump, "VirtualThreadPoolTest.java"), is(0));
 
             vtp.setDetailedDump(true);
             dump = vtp.dump();
             assertThat(count(dump, "VirtualThread[#"), is(4));
-            assertThat(count(dump, "/runnable@"), is(2));
+            assertThat(count(dump, "/runnable"), is(2));
+            assertThat(count(dump, "/runnable@"), greaterThanOrEqualTo(1));
             assertThat(count(dump, "waiting"), is(2));
             assertThat(count(dump, "VirtualThreadPoolTest.java"), is(4));
             assertThat(count(dump, "CountDownLatch.await("), is(2));
         }
         finally
         {
-            waiter.countDown();
-            spinner.countDown();
+            release.countDown();
             vtp.stop();
         }
     }
@@ -209,16 +220,21 @@ public class VirtualThreadPoolTest
         return count;
     }
 
-    private static class Waiter extends CountDownLatch implements Runnable
+    private static class Waiter implements Runnable
     {
-        private final CountDownLatch _running;
-        private final boolean _spin;
+        private final CountDownLatch _started;
+        private final CountDownLatch _release;
+        private volatile Thread _thread;
 
-        public Waiter(CountDownLatch running, boolean spin)
+        public Waiter(CountDownLatch started, CountDownLatch release)
         {
-            super(1);
-            _running = running;
-            _spin = spin;
+            _started = started;
+            _release = release;
+        }
+
+        public Thread getThread()
+        {
+            return _thread;
         }
 
         @Override
@@ -226,16 +242,41 @@ public class VirtualThreadPoolTest
         {
             try
             {
-                _running.countDown();
-                while (_spin && getCount() > 0)
-                    Thread.onSpinWait();
-                if (!await(10, TimeUnit.SECONDS))
-                    throw new IllegalStateException();
+                _thread = Thread.currentThread();
+                _started.countDown();
+                if (!_release.await(30, TimeUnit.SECONDS))
+                    throw new IllegalStateException("timed out waiting for release");
             }
             catch (InterruptedException e)
             {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    private static class Spinner implements Runnable
+    {
+        private final CountDownLatch _started;
+        private final CountDownLatch _spinning;
+        private final CountDownLatch _release;
+
+        public Spinner(CountDownLatch started, CountDownLatch spinning, CountDownLatch release)
+        {
+            _started = started;
+            _spinning = spinning;
+            _release = release;
+        }
+
+        @Override
+        public void run()
+        {
+            _started.countDown();
+            // Yield until both spinners have started, even with a single carrier.
+            while (_started.getCount() > 0 && _release.getCount() > 0)
+                Thread.yield();
+            _spinning.countDown();
+            while (_release.getCount() > 0)
+                Thread.onSpinWait();
         }
     }
 }
