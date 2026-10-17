@@ -21,6 +21,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -540,8 +541,66 @@ public class PathResource extends Resource
              *  child.getPath().toUri()       == "file:///C:/temp/aa/foo.txt"
              *  child.getRealURI()            == "file:///C:/temp/aa/foo.txt"
              */
-            alias = !isSameName(path, realPath) || !Objects.equals(uri, toUri(realPath));
+            alias = !isSameNameIgnoringUnicodeForm(path, realPath) || !isSameUri(uri, toUri(realPath));
         }
+    }
+
+    /**
+     * <p>Tests whether the path and the real path have the same name, allowing the names
+     * to differ in Unicode normalization form only.</p>
+     * <p>A file system that normalizes names (ZFS with {@code normalization=NFD}, APFS)
+     * reports the real path of a name requested in NFC in NFD. The two forms can only
+     * name different files through a symbolic link, so the equivalence is applied only
+     * when no segment of the path is a symbolic link; symbolic links, and names that
+     * differ in any other way such as case, remain aliases.</p>
+     *
+     * @param path the path as requested
+     * @param realPath the real path
+     * @return true if the two paths have the same name
+     */
+    private static boolean isSameNameIgnoringUnicodeForm(Path path, Path realPath)
+    {
+        if (isSameName(path, realPath))
+            return true;
+        int count = path.getNameCount();
+        if (count != realPath.getNameCount())
+            return false;
+        for (int i = count; i-- > 0; )
+        {
+            String a = path.getName(i).toString();
+            String b = realPath.getName(i).toString();
+            if (!a.equals(b) && !Normalizer.normalize(a, Normalizer.Form.NFC).equals(Normalizer.normalize(b, Normalizer.Form.NFC)))
+                return false;
+        }
+        return !containsSymbolicLink(path);
+    }
+
+    private static boolean containsSymbolicLink(Path path)
+    {
+        for (Path p = path; p != null; p = p.getParent())
+        {
+            if (Files.isSymbolicLink(p))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * <p>Tests whether the as-requested URI is the URI of the real path, allowing the two
+     * to differ in the Unicode normalization form of their non-ASCII characters only.</p>
+     *
+     * @param uri the as-requested URI
+     * @param realUri the URI of the real path
+     * @return true if the two URIs are the same
+     * @see URIUtil#normalizeNonAsciiEscapes(String)
+     */
+    private static boolean isSameUri(URI uri, URI realUri)
+    {
+        if (Objects.equals(uri, realUri))
+            return true;
+        if (uri == null || realUri == null)
+            return false;
+        return URIUtil.normalizeNonAsciiEscapes(uri.toASCIIString()).equals(URIUtil.normalizeNonAsciiEscapes(realUri.toASCIIString()));
     }
 
     /**
