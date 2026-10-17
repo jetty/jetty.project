@@ -1503,6 +1503,28 @@ public class MultiPartFormDataTest
     }
 
     @Test
+    public void testContentSourceFileNameNeedingQuoting() throws Exception
+    {
+        String fileName = "x\"; name=\"other";
+
+        MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
+        source.addPart(new MultiPart.ByteBufferPart("upload", fileName, HttpFields.EMPTY,
+            BufferUtil.toBuffer("DATA", US_ASCII)));
+        source.close();
+
+        Content.Source generated = new ByteBufferContentSource(Content.Source.asByteBuffer(source));
+        MultiPartFormData.Parser formData = new MultiPartFormData.Parser("boundary");
+        formData.setFilesDirectory(_tmpDir);
+        try (MultiPartFormData.Parts parts = formData.parse(generated).get(5, TimeUnit.SECONDS))
+        {
+            assertThat(parts.size(), is(1));
+            MultiPart.Part part = parts.get(0);
+            assertThat(part.getName(), is("upload"));
+            assertThat(part.getFileName(), is(fileName));
+        }
+    }
+
+    @Test
     public void testContentSourceCanBeFailed()
     {
         MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
