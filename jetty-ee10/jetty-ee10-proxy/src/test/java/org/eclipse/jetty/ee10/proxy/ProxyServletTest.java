@@ -1881,6 +1881,62 @@ public class ProxyServletTest
         assertEquals(List.of("resp1", "resp2"), responseValues);
     }
 
+    @ParameterizedTest
+    @MethodSource("impls")
+    public void testStructuredFieldResponseHeaderIsRelayedVerbatim(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    {
+        // A response header whose value is not a plain comma separated list, such as the
+        // Permissions-Policy structured field, must be relayed as is (see #15853).
+        String permissionsPolicy = "payment=(self \"https://checkout.example.com\" \"https://*.js.example.com\"), camera=()";
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            {
+                resp.setHeader("X-Before", "before");
+                resp.setHeader("Permissions-Policy", permissionsPolicy);
+                resp.setHeader("X-After", "after");
+            }
+        });
+        startProxy(proxyServletClass);
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals("before", response.getHeaders().get("X-Before"));
+        assertEquals(permissionsPolicy, response.getHeaders().get("Permissions-Policy"));
+        assertEquals("after", response.getHeaders().get("X-After"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("impls")
+    public void testQuotedResponseHeaderValueIsRelayedVerbatim(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    {
+        // A quoted string in a response header must keep its quotes and whitespace, for
+        // example a Content-Disposition file name that contains a comma (see #15965).
+        String contentDisposition = "attachment; filename=\"sample,document.doc\"";
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            {
+                resp.setHeader("Content-Disposition", contentDisposition);
+            }
+        });
+        startProxy(proxyServletClass);
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals(contentDisposition, response.getHeaders().get("Content-Disposition"));
+    }
+
     @Test
     public void testFilterServerResponseHeaderReplacesAndDrops() throws Exception
     {
