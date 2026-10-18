@@ -314,11 +314,12 @@ public class RequestListenersTest
             assertNotNull(callback);
             Content.Sink.write(responseRef.get(), true, "OK", callback);
 
-            RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 3 * idleTimeout, TimeUnit.MILLISECONDS);
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
-
-            assertThat(response.getStatus(), is(HttpStatus.OK_200));
-            assertThat(response.getContent(), is("OK"));
+            try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 3 * idleTimeout, TimeUnit.MILLISECONDS))
+            {
+                HttpTester.Response response = HttpTester.parseResponse(buffer);
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                assertThat(response.getContent(), is("OK"));
+            }
         }
     }
 
@@ -425,10 +426,11 @@ public class RequestListenersTest
 
             callback.succeeded();
 
-            RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, idleTimeout, TimeUnit.MILLISECONDS);
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
-
-            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, idleTimeout, TimeUnit.MILLISECONDS))
+            {
+                HttpTester.Response response = HttpTester.parseResponse(buffer);
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            }
         }
     }
 

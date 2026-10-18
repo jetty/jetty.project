@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -60,6 +62,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.BufferedResponseHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -73,6 +76,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Pool;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -261,6 +265,129 @@ public class GzipHandlerTest
         String content = response.getContent();
         assertThat(content, containsString("ArithmeticException: expected"));
         assertThat(content, not(containsString("Suppressed: ")));
+    }
+
+    @Test
+    public void testDownstreamSinkReleasesAfterAsyncCompletion() throws Exception
+    {
+        byte[] content = randomBytes(128 * 1024);
+        Handler rootHandler = new Handler.Wrapper(new GzipHandler(new TwoWritesHandler(content)))
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                Executor executor = request.getComponents().getExecutor();
+                return super.handle(request, new Response.Wrapper(request, response)
+                {
+                    @Override
+                    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
+                    {
+                        // The Content.Sink contract allows to release the
+                        // buffer after the callback has been completed.
+                        if (buffer != null)
+                            buffer.retain();
+                        super.write(last, buffer, Callback.from(() -> executor.execute(() ->
+                        {
+                            callback.succeeded();
+                            Retainable.dispose(buffer);
+                        }), x ->
+                        {
+                            callback.failed(x);
+                            Retainable.dispose(buffer);
+                        }));
+                    }
+                }, callback);
+            }
+        };
+        _server.setHandler(rootHandler);
+        _server.start();
+
+        assertGzippedResponse(content);
+    }
+
+    @Test
+    public void testBufferedResponseHandlerWrappingGzipHandlerWithSlowWrite() throws Exception
+    {
+        byte[] content = randomBytes(128 * 1024);
+        BufferedResponseHandler bufferedHandler = new BufferedResponseHandler(new GzipHandler(new TwoWritesHandler(content)));
+        Handler rootHandler = new Handler.Wrapper(bufferedHandler)
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                Executor executor = request.getComponents().getExecutor();
+                AtomicInteger writes = new AtomicInteger();
+                return super.handle(request, new Response.Wrapper(request, response)
+                {
+                    @Override
+                    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
+                    {
+                        // Simulate a slow client: the first write
+                        // completes asynchronously, the others synchronously.
+                        if (writes.getAndIncrement() == 0)
+                            super.write(last, buffer, Callback.from(() -> executor.execute(callback::succeeded), callback::failed));
+                        else
+                            super.write(last, buffer, callback);
+                    }
+                }, callback);
+            }
+        };
+        _server.setHandler(rootHandler);
+        _server.start();
+
+        assertGzippedResponse(content);
+    }
+
+    private static byte[] randomBytes(int length)
+    {
+        // Incompressible content, so that the deflater produces large outputs.
+        byte[] bytes = new byte[length];
+        new Random(13).nextBytes(bytes);
+        return bytes;
+    }
+
+    private void assertGzippedResponse(byte[] content) throws Exception
+    {
+        String rawRequest = """
+            GET / HTTP/1.1
+            Host: tester
+            Connection: close
+            Accept-Encoding: gzip
+
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(RetainableByteBuffer.wrap(rawRequest, StandardCharsets.ISO_8859_1), 5, TimeUnit.SECONDS));
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.get("Content-Encoding"), Matchers.equalToIgnoringCase("gzip"));
+        try (InputStream input = new GZIPInputStream(new ByteArrayInputStream(response.getContentBytes())))
+        {
+            assertArrayEquals(content, IO.readBytes(input));
+        }
+    }
+
+    private static class TwoWritesHandler extends Handler.Abstract
+    {
+        private final byte[] content;
+
+        private TwoWritesHandler(byte[] content)
+        {
+            this.content = content;
+        }
+
+        @Override
+        public boolean handle(Request request, Response response, Callback callback)
+        {
+            // BufferedResponseHandler does not buffer if the status is not set.
+            response.setStatus(HttpStatus.OK_200);
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+            // A small first write makes GzipHandler write just the GZIP header,
+            // which is aggregated by BufferedResponseHandler, if present.
+            int small = 16;
+            response.write(false, RetainableByteBuffer.wrap(content, 0, small), Callback.from(() ->
+                response.write(true, RetainableByteBuffer.wrap(content, small, content.length - small), callback), callback::failed));
+            return true;
+        }
     }
 
     @Test

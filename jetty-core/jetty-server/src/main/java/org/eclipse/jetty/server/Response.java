@@ -38,7 +38,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
@@ -47,6 +46,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -190,7 +190,7 @@ public interface Response extends Content.Sink
     {
         Supplier<HttpFields> supplier = response.getTrailersSupplier();
         if (supplier == null)
-            return (chunk, callback) -> false;
+            return (_, _) -> false;
 
         return (chunk, callback) ->
         {
@@ -751,12 +751,12 @@ public interface Response extends Content.Sink
     static Content.Sink asBufferedSink(Request request, Response response)
     {
         ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
-        ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
         HttpConfiguration httpConfiguration = connectionMetaData.getHttpConfiguration();
-        int bufferSize = httpConfiguration.getOutputBufferSize();
-        boolean useOutputDirectByteBuffers = httpConfiguration.isUseOutputDirectByteBuffers();
+        ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
+        boolean direct = httpConfiguration.isUseOutputDirectByteBuffers();
         int outputAggregationSize = httpConfiguration.getOutputAggregationSize();
-        return Content.Sink.asBuffered(response, bufferPool, useOutputDirectByteBuffers, outputAggregationSize, bufferSize);
+        int bufferSize = httpConfiguration.getOutputBufferSize();
+        return Content.Sink.asBuffered(response, bufferPool, direct, outputAggregationSize, bufferSize);
     }
 
     class Wrapper implements Response

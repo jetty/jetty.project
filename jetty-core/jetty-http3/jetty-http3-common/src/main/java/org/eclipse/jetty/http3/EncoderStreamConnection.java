@@ -19,14 +19,14 @@ import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class EncoderStreamConnection extends InstructionStreamConnection
 {
     private final QpackDecoder decoder;
 
-    public EncoderStreamConnection(EndPoint endPoint, Executor executor, WritableBufferPool bufferPool, QpackDecoder decoder, ParserListener listener)
+    public EncoderStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, QpackDecoder decoder, ParserListener listener)
     {
         super(endPoint, executor, bufferPool, listener);
         this.decoder = decoder;

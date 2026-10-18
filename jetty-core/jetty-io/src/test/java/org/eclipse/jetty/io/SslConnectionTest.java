@@ -34,6 +34,7 @@ import javax.net.ssl.SSLSocket;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -559,5 +560,41 @@ public class SslConnectionTest
                 assertTrue(count.await(20, TimeUnit.SECONDS));
             }
         }
+    }
+
+    @Test
+    public void testFillFailureDoesNotReleaseCallerBuffer() throws Exception
+    {
+        startSSL();
+
+        // The first network read returns a partial TLS record header,
+        // so that unwrap() underflows; the second network read fails.
+        AtomicInteger fills = new AtomicInteger();
+        ByteArrayEndPoint networkEndPoint = new ByteArrayEndPoint()
+        {
+            @Override
+            public int fill(RetainableByteBuffer.Mutable buffer) throws IOException
+            {
+                if (fills.incrementAndGet() == 1)
+                    return (int)buffer.append(new byte[]{0x16, 0x03, 0x03});
+                throw new IOException("connection reset");
+            }
+        };
+        SSLEngine engine = _sslCtxFactory.newSSLEngine();
+        engine.setUseClientMode(false);
+        SslConnection sslConnection = new SslConnection(_bufferPool, _threadPool, _sslCtxFactory, networkEndPoint, engine);
+        SslConnection.SslEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+
+        // A caller buffer with existing data and enough space to be used
+        // directly as the unwrap destination, as it happens with nested TLS.
+        RetainableByteBuffer.Mutable buffer = _bufferPool.acquire(2 * engine.getSession().getApplicationBufferSize(), false);
+        buffer.putString("hello", UTF_8);
+
+        assertThrows(IOException.class, () -> sslEndPoint.fill(buffer));
+        assertEquals(2, fills.get());
+
+        // The caller still owns the buffer.
+        assertEquals("hello", buffer.getString(UTF_8));
+        assertTrue(buffer.release());
     }
 }

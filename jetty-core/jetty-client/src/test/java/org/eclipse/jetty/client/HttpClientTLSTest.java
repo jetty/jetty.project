@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -42,8 +41,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
@@ -64,6 +61,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
@@ -76,7 +75,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -609,7 +607,7 @@ public class HttpClientTLSTest
         assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
 
         ArrayByteBufferPool bufferPool = (ArrayByteBufferPool)server.getByteBufferPool();
-        Pool<org.eclipse.jetty.io.RetainableByteBuffer.Pooled> bucket = bufferPool.poolFor(16 * 1024 + 1, connector.getConnectionFactory(HttpConnectionFactory.class).isUseInputDirectByteBuffers());
+        Pool<RetainableByteBuffer.Mutable> bucket = bufferPool.poolFor(16 * 1024 + 1, connector.getConnectionFactory(HttpConnectionFactory.class).isUseInputDirectByteBuffers());
         assertEquals(1, bucket.size());
         assertEquals(1, bucket.getIdleCount());
 
@@ -623,27 +621,7 @@ public class HttpClientTLSTest
         SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        List<org.eclipse.jetty.io.RetainableByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
-        ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
-        {
-            @Override
-            public org.eclipse.jetty.io.RetainableByteBuffer.Mutable acquire(int size, boolean direct)
-            {
-                org.eclipse.jetty.io.RetainableByteBuffer.Wrapper buffer = new org.eclipse.jetty.io.RetainableByteBuffer.Wrapper(super.acquire(size, direct))
-                {
-                    @Override
-                    public boolean release()
-                    {
-                        boolean released = super.release();
-                        if (released)
-                            leakedBuffers.remove(this);
-                        return released;
-                    }
-                };
-                leakedBuffers.add(buffer);
-                return buffer;
-            }
-        };
+        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
         server = new Server(serverThreads, null, bufferPool);
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new SecureRequestCustomizer());
@@ -683,7 +661,7 @@ public class HttpClientTLSTest
         assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
 
         bufferPool.clear();
-        await().atMost(5, TimeUnit.SECONDS).until(() -> leakedBuffers, is(empty()));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(0, bufferPool.getLeaks().size(), bufferPool.dumpLeaks()));
     }
 
     @ParameterizedTest
@@ -693,27 +671,7 @@ public class HttpClientTLSTest
         SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        List<org.eclipse.jetty.io.RetainableByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
-        ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
-        {
-            @Override
-            public org.eclipse.jetty.io.RetainableByteBuffer.Mutable acquire(int size, boolean direct)
-            {
-                org.eclipse.jetty.io.RetainableByteBuffer.Wrapper buffer = new org.eclipse.jetty.io.RetainableByteBuffer.Wrapper(super.acquire(size, direct))
-                {
-                    @Override
-                    public boolean release()
-                    {
-                        boolean released = super.release();
-                        if (released)
-                            leakedBuffers.remove(this);
-                        return released;
-                    }
-                };
-                leakedBuffers.add(buffer);
-                return buffer;
-            }
-        };
+        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
         server = new Server(serverThreads, null, bufferPool);
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new SecureRequestCustomizer());
@@ -768,7 +726,7 @@ public class HttpClientTLSTest
         assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
 
         bufferPool.clear();
-        await().atMost(5, TimeUnit.SECONDS).until(() -> leakedBuffers, is(empty()));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(0, bufferPool.getLeaks().size(), bufferPool.dumpLeaks()));
     }
 
     @ParameterizedTest
@@ -778,27 +736,7 @@ public class HttpClientTLSTest
         SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
-        List<org.eclipse.jetty.io.RetainableByteBuffer> leakedBuffers = new CopyOnWriteArrayList<>();
-        ByteBufferPool bufferPool = new ByteBufferPool.Wrapper(new ArrayByteBufferPool())
-        {
-            @Override
-            public org.eclipse.jetty.io.RetainableByteBuffer.Mutable acquire(int size, boolean direct)
-            {
-                org.eclipse.jetty.io.RetainableByteBuffer.Wrapper buffer = new org.eclipse.jetty.io.RetainableByteBuffer.Wrapper(super.acquire(size, direct))
-                {
-                    @Override
-                    public boolean release()
-                    {
-                        boolean released = super.release();
-                        if (released)
-                            leakedBuffers.remove(this);
-                        return released;
-                    }
-                };
-                leakedBuffers.add(buffer);
-                return buffer;
-            }
-        };
+        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
         server = new Server(serverThreads, null, bufferPool);
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new SecureRequestCustomizer());
@@ -853,7 +791,7 @@ public class HttpClientTLSTest
         assertThrows(Exception.class, () -> client.newRequest("localhost", connector.getLocalPort()).scheme(HttpScheme.HTTPS.asString()).send());
 
         bufferPool.clear();
-        await().atMost(5, TimeUnit.SECONDS).until(() -> leakedBuffers, is(empty()));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(0, bufferPool.getLeaks().size(), bufferPool.dumpLeaks()));
     }
 
     @Test

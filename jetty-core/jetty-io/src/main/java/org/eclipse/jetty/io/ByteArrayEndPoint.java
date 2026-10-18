@@ -31,7 +31,7 @@ import java.util.concurrent.locks.Condition;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Retainable;
-import org.eclipse.jetty.util.buffer.Aggregator;
+import org.eclipse.jetty.util.buffer.BufferAggregator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -65,7 +65,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     private final AutoLock _lock = new AutoLock();
     private final Condition _hasOutput = _lock.newCondition();
     private final Queue<RetainableByteBuffer> _inputQueue = new ArrayDeque<>();
-    private final Aggregator _outputAggregator;
+    private final BufferAggregator _outputAggregator;
 
     public ByteArrayEndPoint()
     {
@@ -130,7 +130,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         super(timer);
         if (BufferUtil.hasContent(input))
             addInput(input);
-        _outputAggregator = new Aggregator(growable, outputSize > 0 ? outputSize : 1024);
+        // When not growable, the output size is a limit to simulate TCP congestion:
+        // once it is reached, flushes do not make progress until the output is taken.
+        int capacity = outputSize < 0 ? 1024 : growable ? Math.min(1024, outputSize) : outputSize;
+        _outputAggregator = new BufferAggregator(null, false, true, capacity, growable ? -1 : outputSize);
         setIdleTimeout(idleTimeoutMs);
         onOpen();
     }

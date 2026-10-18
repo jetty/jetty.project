@@ -68,7 +68,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            bb.put("*".getBytes());
+            bb.put((byte)'*');
         }
 
         bb.flip();
@@ -87,7 +87,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
         assertArrayEquals(expected.getArray(), actual.getArray());
@@ -108,7 +108,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            bb.put("*".getBytes());
+            bb.put((byte)'*');
         }
 
         bb.flip();
@@ -130,7 +130,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
 
@@ -152,7 +152,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            bb.put("*".getBytes());
+            bb.put((byte)'*');
         }
 
         bb.flip();
@@ -174,7 +174,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
 
@@ -196,7 +196,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            bb.put("*".getBytes());
+            bb.put((byte)'*');
         }
 
         bb.flip();
@@ -218,7 +218,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
 
@@ -240,7 +240,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            bb.put("*".getBytes());
+            bb.put((byte)'*');
         }
 
         bb.flip();
@@ -261,7 +261,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
 
@@ -283,7 +283,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            bb.put("*".getBytes());
+            bb.put((byte)'*');
         }
 
         bb.flip();
@@ -304,7 +304,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
 
@@ -855,7 +855,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
 
@@ -894,7 +894,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
 
@@ -933,7 +933,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
 
@@ -974,7 +974,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
 
@@ -1013,7 +1013,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
 
@@ -1052,7 +1052,7 @@ public class GeneratorTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
 

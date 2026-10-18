@@ -85,7 +85,7 @@ public class CacheControlHeaderTest
     {
         server = new Server();
 
-        connector = new LocalConnector(server, null, null, null);
+        connector = new LocalConnector(server);
 
         ServletContextHandler context = new ServletContextHandler();
 

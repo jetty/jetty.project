@@ -17,7 +17,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.security.cert.X509Certificate;
@@ -136,9 +135,9 @@ public interface EndPoint extends Closeable, Content.Sink
     /**
      * <p>Tests if the input is shutdown.</p>
      * <p>The input is shutdown if an EOF has been read while doing
-     * a {@link #fill(ByteBuffer)}.
+     * a {@link #fill(RetainableByteBuffer.Mutable)}.
      * Once the input is shutdown, all calls to
-     * {@link #fill(ByteBuffer)} will  return -1, until such time as the
+     * {@link #fill(RetainableByteBuffer.Mutable)} will  return -1, until such time as the
      * end point is close, when they will return {@link EofException}.</p>
      *
      * @return true if the input is shutdown or the endpoint is closed.
@@ -163,42 +162,27 @@ public interface EndPoint extends Closeable, Content.Sink
     void close(Throwable cause);
 
     /**
-     * <p>Fills the passed buffer with data from this endpoint.</p>
-     * <p>The bytes are appended to any data already in the buffer
-     * by writing from the buffers limit up to its capacity.
-     * The limit is updated to include the filled bytes.</p>
+     * <p>Fills the passed buffer with bytes from this `EndPoint`.</p>
+     * <p>The bytes are appended to any data already in the buffer.</p>
      *
-     * @param buffer The buffer to fill. The position and limit are modified during the fill. After the
-     * operation, the position is unchanged and the limit is increased to reflect the new data filled.
+     * @param buffer The buffer to fill with bytes from this `EndPoint`
      * @return an {@code int} value indicating the number of bytes
      * filled or -1 if EOF is read or the input is shutdown.
-     * @throws IOException if the endpoint is closed.
+     * @throws IOException if the fill operation fails
      */
-    @Deprecated
-    default int fill(ByteBuffer buffer) throws IOException
-    {
-        return fill(RetainableByteBuffer.Mutable.wrap(buffer));
-    }
-
     default int fill(RetainableByteBuffer.Mutable buffer) throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * <p>Receives data into the given buffer from the returned address.</p>
-     * <p>This method should be used to receive UDP data.</p>
+     * <p>Receives bytes from this `EndPoint` into the given buffer from the returned address.</p>
+     * <p>This method should be used to receive UDP datagrams.</p>
      *
-     * @param buffer the buffer to fill with data
+     * @param buffer the buffer to fill with bytes from this `EndPoint`
      * @return the peer address that sent the data, or {@link #EOF}
-     * @throws IOException if the receive fails
+     * @throws IOException if the receive operation fails
      */
-    @Deprecated
-    default SocketAddress receive(ByteBuffer buffer) throws IOException
-    {
-        return receive(RetainableByteBuffer.Mutable.wrap(buffer));
-    }
-
     default SocketAddress receive(RetainableByteBuffer.Mutable buffer) throws IOException
     {
         int filled = fill(buffer);
@@ -210,44 +194,28 @@ public interface EndPoint extends Closeable, Content.Sink
     }
 
     /**
-     * <p>Flushes data from the passed header/buffer to this endpoint.</p>
-     * <p>As many bytes as can be consumed are taken from the header/buffer
-     * position up until the buffer limit.
-     * The header/buffers position is updated to indicate how many bytes
-     * have been consumed.</p>
+     * <p>Flushes bytes from the given buffer to this `EndPoint`.</p>
+     * <p>The buffer is consumed by the flush operation by the number
+     * of bytes that have been flushed, possibly `0`.</p>
      *
-     * @param buffers the buffers to flush
-     * @return True IFF all the buffers have been consumed and the endpoint has flushed the data to its
-     * destination (ie is not buffering any data).
-     * @throws IOException If the endpoint is closed or output is shutdown.
+     * @param buffer the buffer to flush
+     * @return true IFF all the bytes have been consumed
+     * @throws IOException if the flush operation fails
      */
-    @Deprecated
-    default boolean flush(ByteBuffer... buffers) throws IOException
-    {
-        return flush(buffers == null ? null : RetainableByteBuffer.merge(buffers));
-    }
-
     default boolean flush(RetainableByteBuffer buffer) throws IOException
     {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * <p>Sends to the given address the data in the given buffers.</p>
-     * <p>This methods should be used to send UDP data.</p>
+     * <p>Sends to the given address the bytes in the given buffers.</p>
+     * <p>This methods should be used to send UDP datagrams.</p>
      *
      * @param address the peer address to send data to
-     * @param buffers the buffers containing the data to send
-     * @return true if all the buffers have been consumed
-     * @throws IOException if the send fails
-     * @see #write(Callback, SocketAddress, ByteBuffer...)
+     * @param buffer the buffer containing the data to send
+     * @return true if the buffer has been consumed
+     * @throws IOException if the send operation fails
      */
-    @Deprecated
-    default boolean send(SocketAddress address, ByteBuffer... buffers) throws IOException
-    {
-        return flush(buffers);
-    }
-
     default boolean send(SocketAddress address, RetainableByteBuffer buffer) throws IOException
     {
         return flush(buffer);
@@ -276,7 +244,7 @@ public interface EndPoint extends Closeable, Content.Sink
     void setIdleTimeout(long idleTimeout);
 
     /**
-     * <p>Requests callback methods to be invoked when a call to {@link #fill(ByteBuffer)} would return data or EOF.</p>
+     * <p>Requests callback methods to be invoked when a call to {@link #fill(RetainableByteBuffer.Mutable)} would return data or EOF.</p>
      *
      * @param callback the callback to call when an error occurs or we are readable.  The callback may implement the {@link Invocable} interface to
      * self declare its blocking status. Non-blocking callbacks may be called more efficiently without dispatch delays.
@@ -285,7 +253,7 @@ public interface EndPoint extends Closeable, Content.Sink
     void fillInterested(Callback callback) throws ReadPendingException;
 
     /**
-     * <p>Requests callback methods to be invoked when a call to {@link #fill(ByteBuffer)} would return data or EOF.</p>
+     * <p>Requests callback methods to be invoked when a call to {@link #fill(RetainableByteBuffer.Mutable)} would return data or EOF.</p>
      *
      * @param callback the callback to call when an error occurs or we are readable.  The callback may implement the {@link Invocable} interface to
      * self declare its blocking status. Non-blocking callbacks may be called more efficiently without dispatch delays.
@@ -294,47 +262,37 @@ public interface EndPoint extends Closeable, Content.Sink
     boolean tryFillInterested(Callback callback);
 
     /**
-     * @return whether {@link #fillInterested(Callback)} has been called, but {@link #fill(ByteBuffer)} has not yet
+     * @return whether {@link #fillInterested(Callback)} has been called, but {@link #fill(RetainableByteBuffer.Mutable)} has not yet
      * been called
      */
     boolean isFillInterested();
 
     /**
-     * <p>Writes the given buffers via {@link #flush(ByteBuffer...)} and invokes callback methods when either
+     * <p>Writes the given buffer via {@link #flush(RetainableByteBuffer)} and invokes callback methods when either
      * all the data has been flushed or an error occurs.</p>
      *
-     * @param callback the callback to call when an error occurs or the write completed.   The callback may implement the {@link Invocable} interface to
-     * self declare its blocking status. Non-blocking callbacks may be called more efficiently without dispatch delays.
-     * @param buffers one or more {@link ByteBuffer}s that will be flushed.
+     * @param callback the callback to call when an error occurs or the write operation completed.
+     * The callback may implement the {@link Invocable} interface to self declare its blocking status.
+     * Non-blocking callbacks may be invoked more efficiently without thread dispatch delays.
+     *
+     * @param buffer the buffer that will be written
      * @throws WritePendingException if another write operation is concurrent.
      */
-    @Deprecated
-    default void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
-    {
-        write(RetainableByteBuffer.merge(buffers), callback);
-    }
-
     default void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
     {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * <p>Writes to the given address the data contained in the given buffers, and invokes
-     * the given callback when either all the data has been sent, or a failure occurs.</p>
+     * <p>Writes to the given address the bytes contained in the given buffer, and invokes
+     * the given callback when either all the bytes has been sent, or a failure occurs.</p>
      *
-     * @param callback the callback to notify of the success or failure of the write operation
+     * @param buffer the buffer containing the bytes to send
      * @param address the peer address to send data to
-     * @param buffers the buffers containing the data to send
+     * @param callback the callback to notify of the success or failure of the write operation
      * @throws WritePendingException if a previous write was initiated but was not yet completed
-     * @see #send(SocketAddress, ByteBuffer...)
+     * @see #send(SocketAddress, RetainableByteBuffer)
      */
-    @Deprecated
-    default void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
-    {
-        write(RetainableByteBuffer.merge(buffers), address, callback);
-    }
-
     default void write(RetainableByteBuffer buffer, SocketAddress address, Callback callback) throws WritePendingException
     {
         write(buffer, callback);
@@ -369,12 +327,12 @@ public interface EndPoint extends Closeable, Content.Sink
     }
 
     /**
-     * Cancel any current {@link #write(Callback, ByteBuffer...)} operation
-     * in progress. Calling this method will cause future calls to {@link #write(Callback, ByteBuffer...)}
+     * Cancel any current {@link #write(RetainableByteBuffer, Callback)} operation
+     * in progress. Calling this method will cause future calls to {@link #write(RetainableByteBuffer, Callback)}
      * and its variants, to fail their passed {@link Callback}.
      *
      * @param cause the cause
-     * @return The callback passed to a pending/in progress {@link #write(Callback, ByteBuffer...) write}
+     * @return The callback passed to a pending/in progress {@link #write(RetainableByteBuffer, Callback) write}
      *         or {@code null} if there was none.
      */
     Callback cancelWrite(Throwable cause);
@@ -625,24 +583,10 @@ public interface EndPoint extends Closeable, Content.Sink
             wrapped.close(cause);
         }
 
-        @Deprecated
-        @Override
-        public int fill(ByteBuffer buffer) throws IOException
-        {
-            return wrapped.fill(buffer);
-        }
-
         @Override
         public int fill(RetainableByteBuffer.Mutable buffer) throws IOException
         {
             return wrapped.fill(buffer);
-        }
-
-        @Deprecated
-        @Override
-        public SocketAddress receive(ByteBuffer buffer) throws IOException
-        {
-            return wrapped.receive(buffer);
         }
 
         @Override
@@ -651,24 +595,10 @@ public interface EndPoint extends Closeable, Content.Sink
             return wrapped.receive(buffer);
         }
 
-        @Deprecated
-        @Override
-        public boolean flush(ByteBuffer... buffers) throws IOException
-        {
-            return wrapped.flush(buffers);
-        }
-
         @Override
         public boolean flush(RetainableByteBuffer buffer) throws IOException
         {
             return wrapped.flush(buffer);
-        }
-
-        @Deprecated
-        @Override
-        public boolean send(SocketAddress address, ByteBuffer... buffers) throws IOException
-        {
-            return wrapped.send(address, buffers);
         }
 
         @Override
@@ -713,24 +643,10 @@ public interface EndPoint extends Closeable, Content.Sink
             return wrapped.isFillInterested();
         }
 
-        @Deprecated
-        @Override
-        public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
-        {
-            wrapped.write(callback, buffers);
-        }
-
         @Override
         public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
         {
             wrapped.write(buffer, callback);
-        }
-
-        @Deprecated
-        @Override
-        public void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
-        {
-            wrapped.write(callback, address, buffers);
         }
 
         @Override

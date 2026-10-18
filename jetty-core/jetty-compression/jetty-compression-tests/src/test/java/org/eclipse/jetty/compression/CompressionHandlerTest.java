@@ -43,9 +43,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -55,6 +53,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -775,11 +774,11 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     {
         pool = new ArrayByteBufferPool.Tracking();
         GzipCompression gzipCompression = new GzipCompression();
-        gzipCompression.setBufferPool(WritableBufferPool.wrap(pool));
+        gzipCompression.setBufferPool(pool);
         BrotliCompression brotliCompression = new BrotliCompression();
-        brotliCompression.setBufferPool(WritableBufferPool.wrap(pool));
+        brotliCompression.setBufferPool(pool);
         ZstandardCompression zstdCompression = new ZstandardCompression();
-        zstdCompression.setBufferPool(WritableBufferPool.wrap(pool));
+        zstdCompression.setBufferPool(pool);
 
         String resourceName = "texts/quotes.txt";
         String resourceContentType = "text/plain;charset=utf-8";
@@ -897,7 +896,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     {
         pool = new ArrayByteBufferPool.Tracking();
         GzipCompression gzipCompression = new GzipCompression();
-        gzipCompression.setBufferPool(WritableBufferPool.wrap(pool));
+        gzipCompression.setBufferPool(pool);
 
         String resourceName = "texts/quotes.txt";
         String resourceContentType = "text/plain;charset=utf-8";
@@ -948,7 +947,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     {
         pool = new ArrayByteBufferPool.Tracking();
         GzipCompression gzipCompression = new GzipCompression();
-        gzipCompression.setBufferPool(WritableBufferPool.wrap(pool));
+        gzipCompression.setBufferPool(pool);
 
         String resourceName = "texts/quotes.txt";
         String resourceContentType = "text/plain;charset=utf-8";
@@ -1029,7 +1028,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     {
         pool = new ArrayByteBufferPool.Tracking();
         GzipCompression gzipCompression = new GzipCompression();
-        gzipCompression.setBufferPool(WritableBufferPool.wrap(pool));
+        gzipCompression.setBufferPool(pool);
 
         String resourceName = "texts/quotes.txt";
         String resourceContentType = "text/plain;charset=utf-8";
@@ -1108,7 +1107,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         GzipEncoderConfig gzipEncoderConfig = new GzipEncoderConfig();
         gzipEncoderConfig.setSyncFlush(true);
         gzipCompression.setDefaultEncoderConfig(gzipEncoderConfig);
-        gzipCompression.setBufferPool(WritableBufferPool.wrap(pool));
+        gzipCompression.setBufferPool(pool);
 
         CompressionHandler compressionHandler = new CompressionHandler();
         compressionHandler.putCompression(gzipCompression);
@@ -1244,7 +1243,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     {
         pool = new ArrayByteBufferPool.Tracking();
         GzipCompression gzipCompression = new GzipCompression();
-        gzipCompression.setBufferPool(WritableBufferPool.wrap(pool));
+        gzipCompression.setBufferPool(pool);
 
         CompressionHandler compressionHandler = new CompressionHandler();
         compressionHandler.putCompression(gzipCompression);

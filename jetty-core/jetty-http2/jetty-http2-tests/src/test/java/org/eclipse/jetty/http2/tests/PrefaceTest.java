@@ -47,17 +47,18 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
-import org.eclipse.jetty.util.internal.SingleMutableBuffer;
+import org.eclipse.jetty.util.buffer.internal.SingleMutableBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -148,11 +149,11 @@ public class PrefaceTest extends AbstractTest
         });
         connector.setIdleTimeout(1000);
 
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(http2Client.getByteBufferPool());
+        ByteBufferPool bufferPool = http2Client.getByteBufferPool();
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             Generator generator = new Generator(bufferPool);
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 0);
@@ -160,7 +161,7 @@ public class PrefaceTest extends AbstractTest
             // The PING frame just to make sure the client stops reading.
             generator.control(accumulator, new PingFrame(true));
 
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(socket.getOutputStream());
             }
@@ -245,7 +246,7 @@ public class PrefaceTest extends AbstractTest
         });
         server.start();
 
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             String upgradeRequest = """
@@ -291,12 +292,12 @@ public class PrefaceTest extends AbstractTest
 
             // After the 101, the client must send the connection preface.
             Generator generator = new Generator(bufferPool);
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 1);
             generator.control(accumulator, new SettingsFrame(clientSettings, false));
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(socket.getOutputStream());
             }
@@ -341,7 +342,7 @@ public class PrefaceTest extends AbstractTest
 
                 long read = buffer.write(output ->
                 {
-                    int r = socket.getInputStream().read(output.array(), output.arrayOffset(), output.capacity());
+                    int r = socket.getInputStream().read(output.array(), output.arrayOffset() + output.position(), output.capacity());
                     if (r > 0)
                         output.position(output.position() + r);
                     return r;

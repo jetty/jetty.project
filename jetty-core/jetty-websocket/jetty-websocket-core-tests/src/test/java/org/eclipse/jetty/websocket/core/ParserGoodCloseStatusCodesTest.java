@@ -88,7 +88,7 @@ public class ParserGoodCloseStatusCodesTest
         RawFrameBuilder.putOpFin(raw, OpCode.CLOSE, true);
         RawFrameBuilder.putLength(raw, 2 + 5, false); // len of closeCode + reason phrase
         raw.putShort((short)closeCode); // 2 bytes for closeCode
-        raw.put("hello".getBytes(UTF_8));
+        raw.putString("hello", UTF_8);
 
         // parse buffer
         capture.parse(raw);

@@ -19,13 +19,9 @@ import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ContentCopier extends IteratingNestedCallback
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ContentCopier.class);
-
     private final Content.Source source;
     private final Content.Sink sink;
     private final Content.Chunk.Processor chunkProcessor;
@@ -53,7 +49,7 @@ public class ContentCopier extends IteratingNestedCallback
                 return Action.SCHEDULED;
             }
 
-            if (chunkProcessor != null && chunkProcessor.process(chunk, this))
+            if (chunkProcessor != null && process(chunkProcessor, chunk, this))
                 return Action.SCHEDULED;
 
             terminated = chunk.isLast();
@@ -64,12 +60,26 @@ public class ContentCopier extends IteratingNestedCallback
                 return Action.SCHEDULED;
             }
 
+            chunk.retain();
             try (RetainableByteBuffer buffer = chunk.acquire())
             {
-                sink.write(chunk.isLast(), buffer, this);
+                sink.write(chunk.isLast(), buffer, Callback.from(chunk::release, this));
             }
         }
         return Action.SCHEDULED;
+    }
+
+    private static boolean process(Content.Chunk.Processor processor, Content.Chunk chunk, Callback callback)
+    {
+        try
+        {
+            return processor.process(chunk, callback);
+        }
+        catch (Throwable x)
+        {
+            callback.failed(x);
+            return true;
+        }
     }
 
     @Override

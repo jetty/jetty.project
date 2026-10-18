@@ -15,11 +15,11 @@ package org.eclipse.jetty.websocket.core.server;
 
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.compression.DeflaterPool;

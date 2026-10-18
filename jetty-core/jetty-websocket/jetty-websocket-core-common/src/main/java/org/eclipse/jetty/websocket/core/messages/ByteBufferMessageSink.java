@@ -14,11 +14,12 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.eclipse.jetty.io.ByteBufferCallbackAccumulator;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
@@ -31,7 +32,7 @@ import org.eclipse.jetty.websocket.core.util.MethodHolder;
  */
 public class ByteBufferMessageSink extends AbstractMessageSink
 {
-    private ByteBufferCallbackAccumulator accumulator;
+    private Accumulator accumulator;
 
     /**
      * Creates a new {@link ByteBufferMessageSink}.
@@ -75,17 +76,16 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             }
 
             if (accumulator == null)
-                accumulator = new ByteBufferCallbackAccumulator();
+                accumulator = new Accumulator();
             accumulator.addEntry(frame.getPayload(), callback);
 
             if (frame.isFin())
             {
                 ByteBufferPool bufferPool = getCoreSession().getByteBufferPool();
-                RetainableByteBuffer buffer = bufferPool.acquire(accumulator.getLength(), false);
-                ByteBuffer byteBuffer = buffer.getByteBuffer();
-                accumulator.writeTo(byteBuffer);
+                RetainableByteBuffer.Mutable buffer = bufferPool.acquire(accumulator.getLength(), false);
+                accumulator.writeTo(buffer);
                 callback = Callback.from(buffer::release);
-                invoke(getMethodHolder(), byteBuffer, callback);
+                invoke(getMethodHolder(), buffer, callback);
                 autoDemand();
             }
             else
@@ -108,9 +108,77 @@ public class ByteBufferMessageSink extends AbstractMessageSink
             accumulator.fail(failure);
     }
 
+    private void invoke(MethodHolder methodHolder, RetainableByteBuffer buffer, Callback callback) throws Throwable
+    {
+        try
+        {
+            buffer.quietRead(byteBuffer ->
+            {
+                try
+                {
+                    invoke(methodHolder, byteBuffer, callback);
+                    return 0;
+                }
+                catch (Throwable x)
+                {
+                    throw new RuntimeException(x);
+                }
+            });
+        }
+        catch (RuntimeException x)
+        {
+            throw x.getCause();
+        }
+    }
+
     protected void invoke(MethodHolder methodHolder, ByteBuffer byteBuffer, Callback callback) throws Throwable
     {
         methodHolder.invoke(byteBuffer);
         callback.succeeded();
+    }
+
+    private static class Accumulator
+    {
+        private final List<Entry> _entries = new ArrayList<>();
+        private int _length;
+
+        private void addEntry(ByteBuffer buffer, Callback callback)
+        {
+            _entries.add(new Entry(buffer, callback));
+            _length = Math.addExact(_length, buffer.remaining());
+        }
+
+        private int getLength()
+        {
+            return _length;
+        }
+
+        private void writeTo(RetainableByteBuffer.Mutable buffer)
+        {
+            if (buffer.space() < _length)
+                throw new IllegalArgumentException("not enough buffer space remaining");
+
+            for (Entry entry : _entries)
+            {
+                buffer.put(entry.buffer());
+                entry.callback().succeeded();
+            }
+            _entries.clear();
+            _length = 0;
+        }
+
+        private void fail(Throwable t)
+        {
+            // In some usages the callback recursively fails the accumulator.
+            // So we copy and clear to avoid double completing the callback.
+            List<Entry> entries = new ArrayList<>(_entries);
+            _entries.clear();
+            _length = 0;
+            entries.forEach(e -> e.callback().failed(t));
+        }
+
+        private record Entry(ByteBuffer buffer, Callback callback)
+        {
+        }
     }
 }

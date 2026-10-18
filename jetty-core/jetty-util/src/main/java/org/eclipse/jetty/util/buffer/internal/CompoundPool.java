@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.io.internal;
+package org.eclipse.jetty.util.buffer.internal;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,11 +21,9 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.component.Dumpable;
 
-/**
- * <p>A {@link Pool} implementation that uses a primary pool which overflows to a secondary pool.</p>
- *
- * @param <P> the type of the pooled objects
- */
+/// A [Pool] implementation that uses a primary pool which overflows to a secondary pool.
+///
+/// @param <P> the type of the pooled objects
 public class CompoundPool<P> implements Pool<P>, Dumpable
 {
     private final Pool<P> primaryPool;

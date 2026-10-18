@@ -474,7 +474,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * public HttpInput.Content readFrom(HttpInput.Content content)
      * {
      *     if (content.hasContent())
-     *         this.processedContent = processContent(content.getByteBuffer());
+     *         this.processedContent = processContent(content);
      *     if (content.isEof())
      *         disposeResources();
      *     return content.isSpecial() ? content : this.processedContent;
@@ -578,27 +578,21 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             if (Chunk.isFailure(chunk))
                 return new ErrorContent(chunk.getFailure());
-            if (chunk.isLast() && !chunk.hasRemaining())
+
+            boolean last = chunk.isLast();
+            if (last && !chunk.hasRemaining())
                 return new EofContent();
+
             try (RetainableByteBuffer buffer = chunk.acquire())
             {
-                Content content = new Content(buffer)
+                return new Content(buffer)
                 {
                     @Override
-                    public void succeeded()
+                    public boolean isEof()
                     {
-                        buffer.release();
-                        super.succeeded();
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        buffer.release();
-                        super.failed(x);
+                        return last;
                     }
                 };
-                return chunk.isLast() ? new WrappingContent(content, true) : content;
             }
         }
 
@@ -606,19 +600,14 @@ public class HttpInput extends ServletInputStream implements Runnable
 
         public Content(RetainableByteBuffer content)
         {
-            content.retain();
             _content = content;
+            content.retain();
         }
 
         public RetainableByteBuffer acquire()
         {
             _content.retain();
             return _content;
-        }
-
-        public ByteBuffer getByteBuffer()
-        {
-            return null;
         }
 
         @Override
@@ -701,50 +690,22 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
 
         @Override
-        public String toString()
-        {
-            return String.format("%s@%x{%s,spc=%s,eof=%s,err=%s}", TypeUtil.toShortName(getClass()), hashCode(),
-                _content, isSpecial(), isEof(), getError());
-        }
-    }
-
-    /**
-     * Simple non-special content wrapper allow overriding the EOF flag.
-     */
-    public static class WrappingContent extends Content
-    {
-        private final Content _delegate;
-        private final boolean _eof;
-
-        public WrappingContent(Content delegate, boolean eof)
-        {
-            super(delegate._content);
-            _delegate = delegate;
-            _eof = eof;
-        }
-
-        @Override
-        public boolean isEof()
-        {
-            return _eof;
-        }
-
-        @Override
         public void succeeded()
         {
-            _delegate.succeeded();
+            _content.release();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            _delegate.failed(x);
+            _content.release();
         }
 
         @Override
-        public InvocationType getInvocationType()
+        public String toString()
         {
-            return _delegate.getInvocationType();
+            return String.format("%s@%x{%s,spc=%s,eof=%s,err=%s}", TypeUtil.toShortName(getClass()), hashCode(),
+                _content, isSpecial(), isEof(), getError());
         }
     }
 

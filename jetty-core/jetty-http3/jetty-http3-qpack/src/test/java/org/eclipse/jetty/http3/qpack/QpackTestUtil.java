@@ -21,8 +21,9 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matcher;
 
@@ -40,10 +41,10 @@ public class QpackTestUtil
 
     public static RetainableByteBuffer toBuffer(List<Instruction> instructions)
     {
-        WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
+        BufferAccumulator accumulator = new BufferAccumulator();
         instructions.forEach(i -> i.encode(bufferPool, accumulator));
-        return accumulator.drain();
+        return accumulator.take();
     }
 
     public static Matcher<String> equalsHex(String expectedString)

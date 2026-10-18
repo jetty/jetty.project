@@ -342,7 +342,7 @@ public class SessionHandlerTest
         try
         {
             // Session created, invalidated and re-created in the same request.
-            HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+            HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
                 GET /create/invalidate/recreate HTTP/1.1
                 Host: localhost
                 
@@ -351,14 +351,14 @@ public class SessionHandlerTest
             assertThat(response.getContent(), containsString("valid=true new=true"));
 
             // Existing session invalidated and re-created in the same request.
-            response = HttpTester.parseResponse(connector.getResponse("""
+            response = HttpTester.parseResponse(connector.getResponseAsString("""
                 GET /create HTTP/1.1
                 Host: localhost
                 
                 """));
             String id = parseCookieId(response.get(HttpHeader.SET_COOKIE));
 
-            response = HttpTester.parseResponse(connector.getResponse("""
+            response = HttpTester.parseResponse(connector.getResponseAsString("""
                 GET /invalidate/recreate HTTP/1.1
                 Host: localhost
                 Cookie: SESSION_ID=%s

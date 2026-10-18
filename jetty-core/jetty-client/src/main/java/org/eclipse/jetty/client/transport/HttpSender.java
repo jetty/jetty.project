@@ -642,8 +642,7 @@ public abstract class HttpSender
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            Retainable.dispose(chunk);
-            chunk = Content.Chunk.next(chunk);
+            chunk = Content.Chunk.releaseAndNext(chunk);
             notifyBuffer = Retainable.dispose(notifyBuffer);
         }
 

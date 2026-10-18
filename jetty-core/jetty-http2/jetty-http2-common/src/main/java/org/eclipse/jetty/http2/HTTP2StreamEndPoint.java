@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,14 +39,15 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2StreamEndPoint.class);
 
+    private final AutoLock lock = new AutoLock();
     private final AtomicReference<WriteState> writeState = new AtomicReference<>(WriteState.IDLE);
     private final AtomicReference<Callback> readCallback = new AtomicReference<>();
     private final long created = System.currentTimeMillis();
     private final HTTP2Stream stream;
-    private final AtomicBoolean eof = new AtomicBoolean();
-    private final AtomicBoolean closed = new AtomicBoolean();
-    private final AtomicReference<Throwable> failure = new AtomicReference<>();
-    private final AtomicReference<Content.Chunk> data = new AtomicReference<>();
+    private boolean eof;
+    private boolean closed;
+    private Throwable failure;
+    private Content.Chunk data;
     private Connection connection;
 
     public HTTP2StreamEndPoint(HTTP2Stream stream)
@@ -69,7 +70,10 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     @Override
     public boolean isOpen()
     {
-        return !closed.get();
+        try (AutoLock _ = lock.lock())
+        {
+            return !closed;
+        }
     }
 
     @Override
@@ -142,53 +146,69 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     @Override
     public boolean isInputShutdown()
     {
-        return eof.get();
+        try (AutoLock _ = lock.lock())
+        {
+            return eof;
+        }
     }
 
     @Override
     public void close(Throwable cause)
     {
-        if (closed.compareAndSet(false, true))
+        Content.Chunk chunk;
+        try (AutoLock _ = lock.lock())
         {
+            if (closed)
+                return;
+            closed = true;
             if (LOG.isDebugEnabled())
                 LOG.debug("closing {}", this, cause);
-            Content.Chunk data = this.data.getAndSet(null);
-            if (data != null)
-                data.release();
-            shutdownOutput();
-            stream.close();
-            connection.onClose(cause);
-            onClose(cause);
+            chunk = data;
+            data = null;
         }
+        Retainable.dispose(chunk);
+        shutdownOutput();
+        stream.close();
+        connection.onClose(cause);
+        onClose(cause);
     }
 
     @Override
     public int fill(RetainableByteBuffer.Mutable sink) throws IOException
     {
-        Content.Chunk data = this.data.get();
-        if (data != null)
-            return fillFromData(data, sink);
+        Content.Chunk chunk;
+        try (AutoLock _ = lock.lock())
+        {
+            chunk = data;
+            data = null;
+            if (chunk == null)
+            {
+                if (failure != null)
+                    throw IO.rethrow(failure);
+                if (eof || closed)
+                    return -1;
+            }
+        }
 
-        Throwable failure = this.failure.get();
-        if (failure != null)
-            throw IO.rethrow(failure);
+        try (chunk)
+        {
+            if (chunk != null)
+                return fillFromChunk(chunk, sink);
+        }
 
-        if (eof.get())
-            return -1;
+        try (Content.Chunk read = stream.read())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("filled {} on {}", read, this);
 
-        data = stream.read();
-        this.data.set(data);
+            if (read == null)
+                return 0;
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("filled {} on {}", data, this);
-
-        if (data == null)
-            return 0;
-
-        return fillFromData(data, sink);
+            return fillFromChunk(read, sink);
+        }
     }
 
-    private int fillFromData(Content.Chunk chunk, RetainableByteBuffer.Mutable sink)
+    private int fillFromChunk(Content.Chunk chunk, RetainableByteBuffer.Mutable sink)
     {
         try (RetainableByteBuffer buffer = chunk.acquire())
         {
@@ -197,13 +217,28 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
             if (hasContent)
                 length = Math.toIntExact(sink.append(buffer));
 
-            if (!buffer.hasRemaining())
+            if (buffer.hasRemaining())
+            {
+                try (AutoLock _ = lock.lock())
+                {
+                    if (!closed)
+                    {
+                        chunk.retain();
+                        data = chunk;
+                    }
+                }
+            }
+            else
             {
                 boolean endStream = chunk.isLast();
-                eof.set(endStream);
-                this.data.set(null);
+                try (AutoLock _ = lock.lock())
+                {
+                    eof = endStream;
+                }
+
                 if (!endStream)
                     stream.demand();
+
                 if (!hasContent)
                     length = endStream ? -1 : 0;
             }
@@ -268,7 +303,12 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
         boolean result = readCallback.compareAndSet(null, callback);
         if (result)
         {
-            if (data.get() != null)
+            boolean process;
+            try (AutoLock _ = lock.lock())
+            {
+                process = data != null || failure != null || eof || closed;
+            }
+            if (process)
                 process();
             else
                 stream.demand();
@@ -469,9 +509,16 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
         process();
     }
 
-    protected void processFailure(Throwable failure)
+    protected void processFailure(Throwable cause)
     {
-        if (this.failure.compareAndSet(null, failure))
+        boolean process;
+        try (AutoLock _ = lock.lock())
+        {
+            process = failure == null;
+            if (process)
+                failure = cause;
+        }
+        if (process)
             process();
     }
 

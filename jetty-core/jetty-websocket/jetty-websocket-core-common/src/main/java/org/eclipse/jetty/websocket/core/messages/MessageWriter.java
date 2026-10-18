@@ -19,8 +19,8 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.OpCode;
 

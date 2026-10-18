@@ -27,14 +27,13 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -206,7 +205,7 @@ public class BufferedResponseHandler extends HandlerWrapper
     class ArrayBufferedInterceptor implements BufferedInterceptor
     {
         private final List<RetainableByteBuffer> _accumulator = new ArrayList<>();
-        private final WritableBufferPool.Sized _pool;
+        private final ByteBufferPool.Sized _pool;
         private final Interceptor _next;
         private final HttpChannel _channel;
         private Boolean _aggregating;
@@ -214,7 +213,7 @@ public class BufferedResponseHandler extends HandlerWrapper
 
         public ArrayBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
         {
-            _pool = WritableBufferPool.wrap(new ByteBufferPool.Sized(httpChannel.getByteBufferPool(), false, httpChannel.getHttpConfiguration().getOutputBufferSize()));
+            _pool = new ByteBufferPool.Sized(httpChannel.getByteBufferPool(), false, httpChannel.getHttpConfiguration().getOutputBufferSize());
             _next = interceptor;
             _channel = httpChannel;
         }

@@ -33,7 +33,6 @@ import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
@@ -192,7 +191,7 @@ public class CompressionHandler extends Handler.Wrapper
         supportedEncodings.values().forEach(compression ->
         {
             if (compression.getBufferPool() == null)
-                compression.setBufferPool(WritableBufferPool.wrap(getServer().getByteBufferPool()));
+                compression.setBufferPool(getServer().getByteBufferPool());
         });
 
         if (pathConfigs.isEmpty())
@@ -394,22 +393,20 @@ public class CompressionHandler extends Handler.Wrapper
         StripEtagRequest(Request request, String ifMatch, String ifNoneMatch)
         {
             super(request);
+            HttpFields.Mutable fields = HttpFields.build(request.getHeaders());
+            if (ifMatch != null)
             {
-                HttpFields.Mutable fields = HttpFields.build(request.getHeaders());
-                if (ifMatch != null)
-                {
-                    for (Compression known : supportedEncodings.values())
-                        ifMatch = known.stripSuffixes(ifMatch);
-                    fields.put(HttpHeader.IF_MATCH, ifMatch);
-                }
-                if (ifNoneMatch != null)
-                {
-                    for (Compression known : supportedEncodings.values())
-                        ifNoneMatch = known.stripSuffixes(ifNoneMatch);
-                    fields.put(HttpHeader.IF_NONE_MATCH, ifNoneMatch);
-                }
-                _strippedHttpFields = fields.asImmutable();
+                for (Compression known : supportedEncodings.values())
+                    ifMatch = known.stripSuffixes(ifMatch);
+                fields.put(HttpHeader.IF_MATCH, ifMatch);
             }
+            if (ifNoneMatch != null)
+            {
+                for (Compression known : supportedEncodings.values())
+                    ifNoneMatch = known.stripSuffixes(ifNoneMatch);
+                fields.put(HttpHeader.IF_NONE_MATCH, ifNoneMatch);
+            }
+            _strippedHttpFields = fields.asImmutable();
         }
 
         @Override

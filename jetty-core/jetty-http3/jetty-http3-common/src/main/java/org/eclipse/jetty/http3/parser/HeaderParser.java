@@ -51,7 +51,7 @@ public class HeaderParser
         {
             switch (state)
             {
-                case TYPE:
+                case TYPE ->
                 {
                     if (varLenInt.tryDecode(buffer, v -> type = v))
                     {
@@ -60,7 +60,7 @@ public class HeaderParser
                     }
                     return false;
                 }
-                case LENGTH:
+                case LENGTH ->
                 {
                     if (varLenInt.tryDecode(buffer, v -> length = v))
                     {
@@ -68,10 +68,6 @@ public class HeaderParser
                         return true;
                     }
                     return false;
-                }
-                default:
-                {
-                    throw new IllegalStateException();
                 }
             }
         }

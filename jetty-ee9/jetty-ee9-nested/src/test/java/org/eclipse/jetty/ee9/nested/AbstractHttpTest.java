@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -52,7 +52,8 @@ public abstract class AbstractHttpTest
     public void setUp() throws Exception
     {
         server = new Server();
-        connector = new ServerConnector(server, null, null, new ArrayByteBufferPool(64, 2048, 64 * 1024), 1, 1, new HttpConnectionFactory());
+        ArrayByteBufferPool bufferPool = new ArrayByteBufferPool(new int[]{64, 2048, 4096, 8192, 16384, 32768});
+        connector = new ServerConnector(server, null, null, bufferPool, 1, 1, new HttpConnectionFactory());
         connector.setIdleTimeout(100000);
 
         server.addConnector(connector);

@@ -498,12 +498,16 @@ public class RequestTest
 
                 """;
 
-        LocalConnector.LocalEndPoint localEndPoint = connector.executeRequest(rawRequest);
-        RetainableByteBuffer rawResponse = localEndPoint.awaitResponseBuffer(true, 2, TimeUnit.SECONDS);
-        assertNotNull(rawResponse);
-        HttpTester.Response response = HttpTester.parseHeadResponse(rawResponse);
-        assertNotNull(response);
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        try (LocalConnector.LocalEndPoint localEndPoint = connector.executeRequest(rawRequest))
+        {
+            try (RetainableByteBuffer rawResponse = localEndPoint.awaitResponseBuffer(true, 2, TimeUnit.SECONDS))
+            {
+                assertNotNull(rawResponse);
+                HttpTester.Response response = HttpTester.parseHeadResponse(rawResponse);
+                assertNotNull(response);
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            }
+        }
     }
 
     /**

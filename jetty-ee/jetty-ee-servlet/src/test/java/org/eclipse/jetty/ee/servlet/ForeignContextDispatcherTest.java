@@ -261,7 +261,7 @@ public class ForeignContextDispatcherTest
         if (nested != null)
             query.append("&nested=").append(nested);
 
-        String rawResponse = _connector.getResponse("""
+        String rawResponse = _connector.getResponseAsString("""
             GET %s%s HTTP/1.1\r
             Host: local\r
             Connection: close\r

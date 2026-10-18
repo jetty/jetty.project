@@ -20,7 +20,7 @@ import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,12 +28,12 @@ import org.slf4j.LoggerFactory;
 public abstract class InstructionStreamConnection extends AbstractConnection.NonBlocking implements Connection.UpgradeTo
 {
     private static final Logger LOG = LoggerFactory.getLogger(InstructionStreamConnection.class);
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final ParserListener listener;
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer.Mutable buffer;
 
-    public InstructionStreamConnection(EndPoint endPoint, Executor executor, WritableBufferPool bufferPool, ParserListener listener)
+    public InstructionStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ParserListener listener)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
@@ -53,8 +53,8 @@ public abstract class InstructionStreamConnection extends AbstractConnection.Non
     @Override
     public void onUpgradeTo(RetainableByteBuffer.Mutable upgrade)
     {
-        upgrade.retain();
-        buffer = upgrade;
+        buffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+        buffer.put(upgrade);
     }
 
     @Override
@@ -80,7 +80,8 @@ public abstract class InstructionStreamConnection extends AbstractConnection.Non
                 parseInstruction(buffer);
 
                 // Then read from the EndPoint.
-                int filled = getEndPoint().fill(buffer.clear());
+                buffer.clear();
+                int filled = getEndPoint().fill(buffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled {} on {}", filled, this);
 

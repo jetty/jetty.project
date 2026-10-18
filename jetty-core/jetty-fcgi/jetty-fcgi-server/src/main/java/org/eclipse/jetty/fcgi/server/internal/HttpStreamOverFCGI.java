@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -239,9 +240,9 @@ public class HttpStreamOverFCGI implements HttpStream
             {
                 if (last)
                 {
-                    RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+                    BufferAccumulator accumulator = new BufferAccumulator();
                     generateResponseContent(accumulator, true, RetainableByteBuffer.empty());
-                    try (RetainableByteBuffer accumulated = accumulator.drain())
+                    try (RetainableByteBuffer accumulated = accumulator.take())
                     {
                         flusher.flush(accumulated, callback);
                     }
@@ -254,9 +255,9 @@ public class HttpStreamOverFCGI implements HttpStream
             }
             else
             {
-                RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+                BufferAccumulator accumulator = new BufferAccumulator();
                 generateResponseContent(accumulator, last, content);
-                try (RetainableByteBuffer accumulated = accumulator.drain())
+                try (RetainableByteBuffer accumulated = accumulator.take())
                 {
                     flusher.flush(accumulated, callback);
                 }
@@ -287,19 +288,19 @@ public class HttpStreamOverFCGI implements HttpStream
         {
             if (last)
             {
-                RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+                BufferAccumulator accumulator = new BufferAccumulator();
                 generateResponseHeaders(accumulator, info);
                 generateResponseContent(accumulator, true, RetainableByteBuffer.empty());
-                try (RetainableByteBuffer buffer = accumulator.drain())
+                try (RetainableByteBuffer buffer = accumulator.take())
                 {
                     flusher.flush(buffer, callback);
                 }
             }
             else
             {
-                RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+                BufferAccumulator accumulator = new BufferAccumulator();
                 generateResponseHeaders(accumulator, info);
-                try (RetainableByteBuffer buffer = accumulator.drain())
+                try (RetainableByteBuffer buffer = accumulator.take())
                 {
                     flusher.flush(buffer, callback);
                 }
@@ -307,10 +308,10 @@ public class HttpStreamOverFCGI implements HttpStream
         }
         else
         {
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generateResponseHeaders(accumulator, info);
             generateResponseContent(accumulator, last, content);
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 flusher.flush(buffer, callback);
             }
@@ -320,12 +321,12 @@ public class HttpStreamOverFCGI implements HttpStream
             flusher.shutdown();
     }
 
-    private void generateResponseHeaders(RetainableByteBuffer.Accumulator accumulator, MetaData.Response info)
+    private void generateResponseHeaders(BufferAccumulator accumulator, MetaData.Response info)
     {
         _generator.generateResponseHeaders(accumulator, _id, info.getStatus(), info.getReason(), info.getHttpFields());
     }
 
-    private void generateResponseContent(RetainableByteBuffer.Accumulator accumulator, boolean last, RetainableByteBuffer buffer)
+    private void generateResponseContent(BufferAccumulator accumulator, boolean last, RetainableByteBuffer buffer)
     {
         _generator.generateResponseContent(accumulator, _id, buffer, last, _aborted);
     }

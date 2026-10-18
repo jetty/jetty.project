@@ -33,7 +33,6 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -42,6 +41,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -802,6 +802,27 @@ public class HttpOutputTest
         String response = _connector.getResponseAsString("GET /test HTTP/1.0\nHost: localhost:80\n\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(committed.get(10, TimeUnit.SECONDS), is(false));
+    }
+
+    @Test
+    public void testPrintlnWithContentLength() throws Exception
+    {
+        HttpServlet servlet = new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.setStatus(200);
+                response.setContentLength(7);
+                response.getOutputStream().println("hello");
+            }
+        };
+        _servletContextHandler.addServlet(servlet, "/test");
+
+        _server.start();
+        String response = _connector.getResponseAsString("GET /test HTTP/1.0\nHost: localhost:80\n\n");
+        assertThat(response, containsString("HTTP/1.1 200 OK"));
+        assertThat(response, endsWith("\r\n\r\nhello\r\n"));
     }
 
     @Test

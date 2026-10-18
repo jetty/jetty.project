@@ -38,7 +38,6 @@ import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.client.ClientProtocolSession;
@@ -46,6 +45,7 @@ import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +77,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         if (LOG.isDebugEnabled())
             LOG.debug("initializing HTTP/3 streams");
 
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(getByteBufferPool());
+        ByteBufferPool bufferPool = getByteBufferPool();
 
         long encoderStreamId = quicSession.newStreamId(false);
         StreamEndPoint encoderEndPoint = openInstructionEndPoint(encoderStreamId);

@@ -16,7 +16,6 @@ package org.eclipse.jetty.docs.programming.client;
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,9 +31,9 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -202,7 +201,7 @@ public class ClientConnectorDocs
             {
                 try
                 {
-                    ByteBuffer buffer = BufferUtil.allocate(1024);
+                    RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, true);
                     while (true)
                     {
                         int filled = getEndPoint().fill(buffer);
@@ -254,7 +253,7 @@ public class ClientConnectorDocs
             public void writeLine(String line, Callback callback)
             {
                 line = line + "\r\n";
-                getEndPoint().write(callback, ByteBuffer.wrap(line.getBytes(StandardCharsets.UTF_8)));
+                getEndPoint().write(RetainableByteBuffer.wrap(line, StandardCharsets.UTF_8), callback);
             }
         }
 
@@ -321,7 +320,7 @@ public class ClientConnectorDocs
             {
                 try
                 {
-                    ByteBuffer buffer = BufferUtil.allocate(1024);
+                    RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, true);
                     while (true)
                     {
                         int filled = getEndPoint().fill(buffer);
@@ -373,7 +372,7 @@ public class ClientConnectorDocs
             public void writeLine(String line, Callback callback)
             {
                 line = line + "\r\n";
-                getEndPoint().write(callback, ByteBuffer.wrap(line.getBytes(StandardCharsets.UTF_8)));
+                getEndPoint().write(RetainableByteBuffer.wrap(line, StandardCharsets.UTF_8), callback);
             }
         }
 

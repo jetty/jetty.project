@@ -20,9 +20,9 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.common.internal.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.CloseStatus;

@@ -567,7 +567,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         if (forwarded.hasFor())
         {
             int forPort = forwarded._for._port;
-            if (forPort < 0)
+            if (forPort <= 0)
             {
                 // TODO utility methods for this would be nice.
                 SocketAddress addr = request.getConnectionMetaData().getRemoteSocketAddress();
