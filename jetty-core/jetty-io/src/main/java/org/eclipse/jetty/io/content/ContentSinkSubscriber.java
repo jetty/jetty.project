@@ -52,9 +52,10 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
     @Override
     public void onNext(Content.Chunk chunk)
     {
+        chunk.retain();
         try (RetainableByteBuffer buffer = chunk.acquire())
         {
-            sink.write(chunk.isLast(), buffer, new Callback()
+            sink.write(chunk.isLast(), buffer, Callback.from(chunk::release, new Callback()
             {
                 public void succeeded()
                 {
@@ -75,7 +76,7 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
                 {
                     return Invocable.getInvocationType(callback);
                 }
-            });
+            }));
         }
     }
 

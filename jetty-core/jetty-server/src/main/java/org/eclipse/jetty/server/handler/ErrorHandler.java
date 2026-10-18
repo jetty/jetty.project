@@ -42,7 +42,6 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBufferOutputStream;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -54,6 +53,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -236,7 +236,7 @@ public class ErrorHandler implements Request.Handler
         }
 
         int bufferSize = getBufferSize() <= 0 ? computeBufferSize(request) : getBufferSize();
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(request.getComponents().getByteBufferPool());
+        ByteBufferPool bufferPool = request.getComponents().getByteBufferPool();
 
         try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(bufferSize, false))
         {

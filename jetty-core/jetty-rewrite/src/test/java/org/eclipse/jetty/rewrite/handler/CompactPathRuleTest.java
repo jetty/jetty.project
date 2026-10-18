@@ -139,7 +139,7 @@ public class CompactPathRuleTest extends AbstractRuleTest
             
             """.formatted(requestPath);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         Properties props = new Properties();
         try (ByteArrayInputStream in = new ByteArrayInputStream(response.getContentBytes()))
@@ -203,7 +203,7 @@ public class CompactPathRuleTest extends AbstractRuleTest
             
             """.formatted(inputPath);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
 
@@ -244,7 +244,7 @@ public class CompactPathRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.getContent(),
             allOf(containsString("UriCompliance.Violations.size=1"),

@@ -15,8 +15,8 @@ package org.eclipse.jetty.client;
 
 import java.io.InputStream;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 
 /**
  * <p>A {@link Request.Content} that produces content from an {@link InputStream}.</p>

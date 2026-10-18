@@ -284,10 +284,12 @@ public class ErrorHandler extends AbstractHandler
                 return;
         }
 
+        HttpOutput httpOutput = baseRequest.getResponse().getHttpOutput();
+        int bufferSize = httpOutput.getBufferSize();
         // Write into the response aggregate buffer and flush it asynchronously.
-        try (RetainableByteBuffer.Mutable buffer = baseRequest.getResponse().getHttpOutput().acquire())
+        while (true)
         {
-            while (true)
+            try (RetainableByteBuffer.Mutable buffer = httpOutput.acquire())
             {
                 try (RetainableByteBufferOutputStream out = new RetainableByteBufferOutputStream(buffer))
                 {
@@ -317,23 +319,23 @@ public class ErrorHandler extends AbstractHandler
                     writer.flush();
                     break;
                 }
-                catch (BufferOverflowException e)
+            }
+            catch (BufferOverflowException e)
+            {
+                baseRequest.getResponse().resetContent();
+                if (!_disableStacks)
                 {
-                    baseRequest.getResponse().resetContent();
-                    if (!_disableStacks)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Disabling showsStacks for {}", this);
-                        _disableStacks = true;
-                        continue;
-                    }
-
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Error page too large: >{} {} {} {}", buffer.capacity(), code, message, request, e);
-                    else
-                        LOG.warn("Error page too large: >{} {} {} {}", buffer.capacity(), code, message, request);
-                    break;
+                        LOG.debug("Disabling showsStacks for {}", this);
+                    _disableStacks = true;
+                    continue;
                 }
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Error page too large: >{} {} {} {}", bufferSize, code, message, request, e);
+                else
+                    LOG.warn("Error page too large: >{} {} {} {}", bufferSize, code, message, request);
+                break;
             }
         }
 

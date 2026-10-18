@@ -18,11 +18,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
@@ -63,7 +62,7 @@ public class ExtensionTool
             assertThat(extensionStack.getExtensions().size(), equalTo(1));
 
             this.capture = new IncomingFramesCapture();
-            this.parser = new Parser(WritableBufferPool.wrap(new ArrayByteBufferPool()));
+            this.parser = new Parser(new ArrayByteBufferPool());
         }
 
         public String getRequestedExtParams()

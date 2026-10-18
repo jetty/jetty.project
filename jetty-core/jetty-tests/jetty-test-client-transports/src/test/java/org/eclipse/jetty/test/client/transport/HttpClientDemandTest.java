@@ -37,7 +37,6 @@ import org.eclipse.jetty.client.RetainingResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -45,6 +44,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -198,7 +198,7 @@ public class HttpClientDemandTest extends AbstractTest
         });
         startClient(transportType);
         client.stop();
-        client.setByteBufferPool(new ArrayByteBufferPool(0, bufferSize, -1));
+        client.setByteBufferPool(new ArrayByteBufferPool(new int[]{bufferSize, 2 * bufferSize, 4 * bufferSize}));
         client.setResponseBufferSize(bufferSize);
         client.start();
 
@@ -379,7 +379,7 @@ public class HttpClientDemandTest extends AbstractTest
         });
         startClient(transportType);
         client.stop();
-        client.setByteBufferPool(new ArrayByteBufferPool(0, bufferSize, -1));
+        client.setByteBufferPool(new ArrayByteBufferPool(new int[]{bufferSize, 2 * bufferSize, 4 * bufferSize}));
         client.setResponseBufferSize(bufferSize);
         client.start();
 

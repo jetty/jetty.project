@@ -37,9 +37,8 @@ import org.eclipse.jetty.compression.zstandard.internal.ZstandardEncoderSink;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
@@ -185,10 +184,10 @@ public class ZstandardCompression extends Compression
     private static class BufferPoolAdapter implements BufferPool
     {
         private final IdentityHashMap<ByteBuffer, RetainableByteBuffer.Mutable> buffers = new IdentityHashMap<>();
-        private final WritableBufferPool bufferPool;
+        private final ByteBufferPool bufferPool;
         private final boolean direct;
 
-        public BufferPoolAdapter(WritableBufferPool bufferPool, boolean direct)
+        public BufferPoolAdapter(ByteBufferPool bufferPool, boolean direct)
         {
             this.bufferPool = bufferPool;
             this.direct = direct;
@@ -198,7 +197,7 @@ public class ZstandardCompression extends Compression
         public ByteBuffer get(int capacity)
         {
             RetainableByteBuffer.Mutable buffer = bufferPool.acquire(capacity, direct);
-            // Hack to extract the ByteBuffer from the WritableBuffer. TODO: how to clean this up?
+            // Hack to extract the ByteBuffer from the buffer. TODO: how to clean this up?
             ByteBuffer[] ba = new ByteBuffer[1];
             buffer.quietWrite(output ->
             {

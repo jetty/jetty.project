@@ -113,11 +113,13 @@ public class MinimumDataRateHandlerTest
                 endPoint.writeRequestBuffer(RetainableByteBuffer.allocate(10, false));
             }
 
-            RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 5, TimeUnit.SECONDS);
-            assertNotNull(buffer);
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
-            assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-            assertThat(response.getContent(), containsString("read rate is too low"));
+            try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 5, TimeUnit.SECONDS))
+            {
+                assertNotNull(buffer);
+                HttpTester.Response response = HttpTester.parseResponse(buffer);
+                assertThat(response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+                assertThat(response.getContent(), containsString("read rate is too low"));
+            }
         }
     }
 
@@ -184,10 +186,12 @@ public class MinimumDataRateHandlerTest
             // Send the whole content.
             endPoint.writeRequestBuffer(RetainableByteBuffer.allocate(1000, false));
 
-            RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 5, TimeUnit.SECONDS);
-            assertNotNull(buffer);
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
-            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 5, TimeUnit.SECONDS))
+            {
+                assertNotNull(buffer);
+                HttpTester.Response response = HttpTester.parseResponse(buffer);
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            }
         }
     }
 
@@ -265,16 +269,19 @@ public class MinimumDataRateHandlerTest
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(request))
         {
             assertTrue(writeCompleteLatch.await(5, TimeUnit.SECONDS));
-            RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 5, TimeUnit.SECONDS);
-            assertNotNull(buffer);
-            // The response is a 200 OK with chunked content, that has been interrupted.
-            RetainableByteBuffer slice = buffer.slice();
-            String response = slice.getString(StandardCharsets.UTF_8);
-            slice.release();
-            assertThat(response, containsString("HTTP/1.1 200 OK"));
-            // Cannot parse a full response, since it has been interrupted.
-            assertNull(HttpTester.parseResponse(buffer));
-            assertThat(writeFailureRef.get().getMessage(), containsString("write rate is too low"));
+            try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 5, TimeUnit.SECONDS))
+            {
+                assertNotNull(buffer);
+                // The response is a 200 OK with chunked content, that has been interrupted.
+                try (RetainableByteBuffer slice = buffer.slice())
+                {
+                    String response = slice.getString(StandardCharsets.UTF_8);
+                    assertThat(response, containsString("HTTP/1.1 200 OK"));
+                    // Cannot parse a full response, since it has been interrupted.
+                    assertNull(HttpTester.parseResponse(buffer));
+                    assertThat(writeFailureRef.get().getMessage(), containsString("write rate is too low"));
+                }
+            }
         }
     }
 
@@ -313,10 +320,12 @@ public class MinimumDataRateHandlerTest
 
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(request))
         {
-            RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 5, TimeUnit.SECONDS);
-            assertNotNull(buffer);
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
-            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 5, TimeUnit.SECONDS))
+            {
+                assertNotNull(buffer);
+                HttpTester.Response response = HttpTester.parseResponse(buffer);
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            }
         }
     }
 
@@ -380,16 +389,19 @@ public class MinimumDataRateHandlerTest
         try (LocalConnector.LocalEndPoint endPoint = connector.executeRequest(request))
         {
             assertTrue(writeCompleteLatch.await(5, TimeUnit.SECONDS));
-            RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 5, TimeUnit.SECONDS);
-            assertNotNull(buffer);
-            // The response is a 200 OK with chunked content, that has been interrupted.
-            RetainableByteBuffer slice = buffer.slice();
-            String response = slice.getString(StandardCharsets.UTF_8);
-            slice.release();
-            assertThat(response, containsString("HTTP/1.1 200 OK"));
-            // Cannot parse a full response, since it has been interrupted.
-            assertNull(HttpTester.parseResponse(buffer));
-            assertThat(writeFailureRef.get().getMessage(), containsString("write rate is too low"));
+            try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 5, TimeUnit.SECONDS))
+            {
+                assertNotNull(buffer);
+                // The response is a 200 OK with chunked content, that has been interrupted.
+                try (RetainableByteBuffer slice = buffer.slice())
+                {
+                    String response = slice.getString(StandardCharsets.UTF_8);
+                    assertThat(response, containsString("HTTP/1.1 200 OK"));
+                    // Cannot parse a full response, since it has been interrupted.
+                    assertNull(HttpTester.parseResponse(buffer));
+                    assertThat(writeFailureRef.get().getMessage(), containsString("write rate is too low"));
+                }
+            }
         }
     }
 }

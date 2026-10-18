@@ -24,8 +24,9 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,9 +50,9 @@ public class ClientParserTest
         String contentTypeValue = "text/html;charset=utf-8";
         fields.put(contentTypeName, contentTypeValue);
 
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.generateResponseHeaders(accumulator, id, statusCode, statusMessage, fields);
 
         // Use the fundamental theorem of arithmetic to test the results.
@@ -95,7 +96,7 @@ public class ClientParserTest
             }
         });
 
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
@@ -110,9 +111,9 @@ public class ClientParserTest
         HttpFields fields = HttpFields.build()
             .put("Content-Length", "0");
 
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.generateResponseHeaders(accumulator, id, 200, "OK", fields);
         generator.generateResponseContent(accumulator, id, null, true, false);
 
@@ -136,7 +137,7 @@ public class ClientParserTest
             }
         });
 
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
@@ -158,9 +159,9 @@ public class ClientParserTest
         String contentTypeValue = String.valueOf(contentLength);
         fields.put(contentTypeName, contentTypeValue);
 
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
         generator.generateResponseContent(accumulator, id, content, true, false);
 
@@ -185,7 +186,7 @@ public class ClientParserTest
             }
         });
 
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());
@@ -207,9 +208,9 @@ public class ClientParserTest
         String contentTypeValue = String.valueOf(contentLength);
         fields.put(contentTypeName, contentTypeValue);
 
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         ServerGenerator generator = new ServerGenerator(bufferPool);
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.generateResponseHeaders(accumulator, id, code, "OK", fields);
         generator.generateResponseContent(accumulator, id, content, true, false);
 
@@ -235,7 +236,7 @@ public class ClientParserTest
             }
         });
 
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());

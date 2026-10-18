@@ -147,7 +147,7 @@ public class ContextHandlerCollectionTest
                 \r
                 """).formatted(uri, host);
 
-            String rawResponse = connector.getResponseAsString(rawRequest);
+            String rawResponse = connector.getResponse(rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
             assertThat(testInfo.getDisplayName(), response.getStatus(), is(expectedStatus));
@@ -219,7 +219,7 @@ public class ContextHandlerCollectionTest
                 \r
                 """.formatted(requestHost);
 
-            String rawResponse = connector.getResponseAsString(rawRequest);
+            String rawResponse = connector.getResponse(rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response status for [GET " + requestHost + "]", response.getStatus(), is(HttpStatus.OK_200));
             assertThat("Response body for [GET " + requestHost + "]", response.getContent(), is("H"));
@@ -293,13 +293,13 @@ public class ContextHandlerCollectionTest
                 \r
                 """.formatted(requestHost);
 
-            String rawResponse = connector.getResponseAsString(rawRequest);
+            String rawResponse = connector.getResponse(rawRequest);
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat("Response status for [GET " + requestHost + "]", response.getStatus(), is(HttpStatus.NOT_FOUND_404));
             assertThat("Response body for [GET " + requestHost + "]", response.getContent(), containsString("Not Found"));
             assertThat("Response Header for [GET " + requestHost + "]", response.get("X-IsHandled-Name"), nullValue());
 
-            connector.getResponseAsString(rawRequest);
+            connector.getResponse(rawRequest);
             assertFalse(handler.isHandled(), "'" + requestHost + "' should not have been handled.");
         }
         finally
@@ -375,32 +375,32 @@ public class ContextHandlerCollectionTest
         server.start();
 
         String response;
-        response = connector.getResponseAsString("GET / HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET / HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
         assertThat(response, not(containsString("Wrapped:")));
 
-        response = connector.getResponseAsString("GET /foobar/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /foobar/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("root"));
         assertThat(response, not(containsString("Wrapped:")));
 
-        response = connector.getResponseAsString("GET /left/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /left/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left"));
         assertThat(response, not(containsString("Wrapped:")));
 
-        response = connector.getResponseAsString("GET /leftcentre/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /leftcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("left of centre"));
         assertThat(response, not(containsString("Wrapped:")));
 
-        response = connector.getResponseAsString("GET /rightcentre/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /rightcentre/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right of centre"));
         assertThat(response, containsString("Wrapped: centreRight"));
 
-        response = connector.getResponseAsString("GET /right/info HTTP/1.0\r\n\r\n");
+        response = connector.getResponse("GET /right/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, endsWith("right"));
         assertThat(response, containsString("Wrapped: right"));

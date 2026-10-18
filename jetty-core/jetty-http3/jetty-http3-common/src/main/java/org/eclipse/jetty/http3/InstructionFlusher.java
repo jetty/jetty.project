@@ -19,12 +19,13 @@ import java.util.List;
 import java.util.Queue;
 
 import org.eclipse.jetty.http3.qpack.Instruction;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -40,14 +41,14 @@ public class InstructionFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Instruction> queue = new ArrayDeque<>();
-    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
-    private final WritableBufferPool bufferPool;
+    private final BufferAccumulator accumulator = new BufferAccumulator();
+    private final ByteBufferPool bufferPool;
     private final StreamEndPoint endPoint;
     private final long streamType;
     private boolean initialized;
     private Throwable terminated;
 
-    public InstructionFlusher(WritableBufferPool bufferPool, StreamEndPoint endPoint, StreamType streamType)
+    public InstructionFlusher(ByteBufferPool bufferPool, StreamEndPoint endPoint, StreamType streamType)
     {
         this.bufferPool = bufferPool;
         this.endPoint = endPoint;
@@ -94,7 +95,7 @@ public class InstructionFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("writing buffers ({} bytes) on {}", accumulator.remaining(), this);
 
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             endPoint.write(false, buffer, this);
             return Action.SCHEDULED;

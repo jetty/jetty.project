@@ -19,6 +19,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class SettingsGenerator extends FrameGenerator
@@ -29,13 +30,13 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame)
+    public int generate(BufferAccumulator accumulator, Frame frame)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(accumulator, settingsFrame.getSettings(), settingsFrame.isReply());
     }
 
-    public int generateSettings(RetainableByteBuffer.Accumulator accumulator, Map<Integer, Integer> settings, boolean reply)
+    public int generateSettings(BufferAccumulator accumulator, Map<Integer, Integer> settings, boolean reply)
     {
         // Two bytes for the identifier, four bytes for the value.
         int entryLength = 2 + 4;

@@ -13,8 +13,13 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -22,7 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.OutputStreamContentSource;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -145,7 +152,7 @@ public class AsyncContentTest
             async.write(false, RetainableByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
-            assertThat(successCounter.get(), is(0));
+            assertThat(successCounter.get(), is(1));
             assertThat(chunk.isLast(), is(false));
             assertThat(chunk.hasRemaining(), is(false));
             assertThat(chunk.release(), is(true));
@@ -165,7 +172,7 @@ public class AsyncContentTest
             async.write(true, RetainableByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
-            assertThat(successCounter.get(), is(0));
+            assertThat(successCounter.get(), is(1));
             assertThat(chunk.isLast(), is(true));
             assertThat(chunk.hasRemaining(), is(false));
             assertThat(chunk.release(), is(true));
@@ -225,6 +232,61 @@ public class AsyncContentTest
             callback2.assertSingleFailureSameInstanceNoSuccess(failure1);
             callback3.assertSingleFailureSameInstanceNoSuccess(failure1);
         }
+    }
+
+    @Test
+    public void testFailReleasesQueuedChunks()
+    {
+        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
+        try (AsyncContent async = new AsyncContent())
+        {
+            AssertingCallback callback1 = new AssertingCallback();
+            try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(16, false))
+            {
+                buffer.put(new byte[1]);
+                async.write(false, buffer, callback1);
+            }
+            AssertingCallback callback2 = new AssertingCallback();
+            try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(16, false))
+            {
+                buffer.put(new byte[2]);
+                async.write(false, buffer, callback2);
+            }
+            assertThat(async.count(), is(2));
+
+            // Fail without reading the queued chunks.
+            Exception failure = new Exception("test");
+            async.fail(failure);
+            assertThat(async.count(), is(0));
+
+            callback1.assertSingleFailureSameInstanceNoSuccess(failure);
+            callback2.assertSingleFailureSameInstanceNoSuccess(failure);
+        }
+        assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
+    }
+
+    @Test
+    public void testEmptyWriteReadThroughInputStreamDoesNotBlock() throws Exception
+    {
+        OutputStreamContentSource source = new OutputStreamContentSource();
+        CompletableFuture<Void> writer = CompletableFuture.runAsync(() ->
+        {
+            try (OutputStream output = source.getOutputStream())
+            {
+                output.write(new byte[0]);
+                output.write("123".getBytes(UTF_8));
+            }
+            catch (IOException x)
+            {
+                throw new UncheckedIOException(x);
+            }
+        });
+
+        try (InputStream input = Content.Source.asInputStream(source))
+        {
+            assertThat(new String(input.readAllBytes(), UTF_8), is("123"));
+        }
+        writer.get(5, TimeUnit.SECONDS);
     }
 
     @Test

@@ -96,7 +96,7 @@ public class ContextHandlerDeepTest
             Connection: close\r
                         
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertThat(response.getContent(), containsString("contextPath=/a/b/c\n"));
         assertThat(response.getContent(), containsString("pathInContext=/d\n"));

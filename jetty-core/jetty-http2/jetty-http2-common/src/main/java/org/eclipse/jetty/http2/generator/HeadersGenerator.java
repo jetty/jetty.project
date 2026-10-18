@@ -21,6 +21,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HeadersGenerator extends FrameGenerator
@@ -43,13 +44,13 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame) throws HpackException
+    public int generate(BufferAccumulator accumulator, Frame frame) throws HpackException
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
         return generateHeaders(accumulator, headersFrame.getStreamId(), headersFrame.getMetaData(), headersFrame.getPriority(), headersFrame.isEndStream());
     }
 
-    public int generateHeaders(RetainableByteBuffer.Accumulator accumulator, int streamId, MetaData metaData, PriorityFrame priority, boolean endStream) throws HpackException
+    public int generateHeaders(BufferAccumulator accumulator, int streamId, MetaData metaData, PriorityFrame priority, boolean endStream) throws HpackException
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);

@@ -25,6 +25,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -118,6 +120,66 @@ public class ByteArrayEndPointTest
 
             assertTrue(endPoint.flush(RetainableByteBuffer.merge(RetainableByteBuffer.Mutable.empty(), RetainableByteBuffer.wrap(" and", UTF_8), RetainableByteBuffer.wrap(" more", UTF_8))));
             assertEquals("some output some more and more", endPoint.getOutputString(UTF_8));
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {16, 1024, 2048})
+    public void testNotGrowableOutputSizeIsMaxSizeToSimulateCongestion(int outputSize) throws Exception
+    {
+        try (ByteArrayEndPoint endPoint = new ByteArrayEndPoint(null, 0, null, outputSize, false))
+        {
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(new byte[outputSize + 8]);
+            assertFalse(endPoint.flush(buffer));
+            assertEquals(8, buffer.remaining());
+            assertEquals(outputSize, endPoint.getOutputString(UTF_8).length());
+
+            // Still congested, no progress.
+            assertFalse(endPoint.flush(buffer));
+            assertEquals(8, buffer.remaining());
+
+            // Taking the output relieves the congestion.
+            assertEquals(outputSize, endPoint.takeOutputString(UTF_8).length());
+            assertTrue(endPoint.flush(buffer));
+            assertFalse(buffer.hasRemaining());
+            assertEquals(8, endPoint.getOutputString(UTF_8).length());
+        }
+    }
+
+    @Test
+    public void testNotGrowableZeroOutputSizeIsAlwaysCongested() throws Exception
+    {
+        try (ByteArrayEndPoint endPoint = new ByteArrayEndPoint(null, 0, null, 0, false))
+        {
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(new byte[16]);
+            assertFalse(endPoint.flush(buffer));
+            assertEquals(16, buffer.remaining());
+            assertEquals(0, endPoint.getOutputString(UTF_8).length());
+        }
+    }
+
+    @Test
+    public void testNotGrowableDefaultOutputSizeHasNoLimit() throws Exception
+    {
+        try (ByteArrayEndPoint endPoint = new ByteArrayEndPoint(null, 0, null, -1, false))
+        {
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(new byte[4096]);
+            assertTrue(endPoint.flush(buffer));
+            assertFalse(buffer.hasRemaining());
+            assertEquals(4096, endPoint.getOutputString(UTF_8).length());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 0, 16, 2048})
+    public void testGrowableOutputSizeIsNotLimit(int outputSize) throws Exception
+    {
+        try (ByteArrayEndPoint endPoint = new ByteArrayEndPoint(null, 0, null, outputSize, true))
+        {
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(new byte[4096]);
+            assertTrue(endPoint.flush(buffer));
+            assertFalse(buffer.hasRemaining());
+            assertEquals(4096, endPoint.getOutputString(UTF_8).length());
         }
     }
 

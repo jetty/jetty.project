@@ -20,13 +20,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.ResourceFactory;

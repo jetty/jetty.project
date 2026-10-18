@@ -42,6 +42,8 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -69,10 +71,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@SuppressWarnings("Duplicates")
 public class SocketChannelEndPointTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(SocketChannelEndPoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SocketChannelEndPointTest.class);
 
     public interface Scenario
     {

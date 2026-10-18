@@ -28,10 +28,10 @@ import org.eclipse.jetty.fcgi.generator.ClientGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HttpSenderOverFCGI extends HttpSender
@@ -42,7 +42,7 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         super(channel);
         HttpClient httpClient = channel.getHttpDestination().getHttpClient();
-        this.generator = new ClientGenerator(WritableBufferPool.wrap(httpClient.getByteBufferPool()), httpClient.isUseOutputDirectByteBuffers());
+        this.generator = new ClientGenerator(httpClient.getByteBufferPool(), httpClient.isUseOutputDirectByteBuffers());
     }
 
     @Override
@@ -99,7 +99,7 @@ public class HttpSenderOverFCGI extends HttpSender
         HttpClientTransportOverFCGI transport = (HttpClientTransportOverFCGI)httpClient.getHttpClientTransport();
         transport.customize(request, fcgiHeaders);
 
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         int id = getHttpChannel().getRequest();
         if (contentBuffer.hasRemaining() || lastContent)
         {
@@ -110,7 +110,7 @@ public class HttpSenderOverFCGI extends HttpSender
         {
             generator.generateRequestHeaders(accumulator, id, fcgiHeaders);
         }
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             getHttpChannel().flush(buffer, callback);
         }
@@ -121,10 +121,10 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         if (contentBuffer.hasRemaining() || lastContent)
         {
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             int request = getHttpChannel().getRequest();
             generator.generateRequestContent(accumulator, request, contentBuffer, lastContent);
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 getHttpChannel().flush(buffer, callback);
             }

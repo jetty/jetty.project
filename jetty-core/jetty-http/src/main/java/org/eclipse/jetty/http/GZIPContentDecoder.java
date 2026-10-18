@@ -19,8 +19,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 import java.util.zip.ZipException;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.compression.InflaterPool;
@@ -36,7 +35,7 @@ public class GZIPContentDecoder implements Destroyable
     private static final long UINT_MAX = 0xFFFFFFFFL;
 
     private final List<RetainableByteBuffer> _inflateds = new ArrayList<>();
-    private final WritableBufferPool _pool;
+    private final ByteBufferPool _pool;
     private final int _bufferSize;
     private InflaterPool.Entry _inflaterEntry;
     private Inflater _inflater;
@@ -48,30 +47,25 @@ public class GZIPContentDecoder implements Destroyable
 
     public GZIPContentDecoder()
     {
-        this((WritableBufferPool)null, 2048);
+        this(null, 2048);
     }
 
     public GZIPContentDecoder(int bufferSize)
     {
-        this((WritableBufferPool)null, bufferSize);
+        this(null, bufferSize);
     }
 
-    public GZIPContentDecoder(ByteBufferPool byteBufferPool, int bufferSize)
-    {
-        this(WritableBufferPool.wrap(byteBufferPool), bufferSize);
-    }
-
-    public GZIPContentDecoder(WritableBufferPool bufferPool, int bufferSize)
+    public GZIPContentDecoder(ByteBufferPool bufferPool, int bufferSize)
     {
         this(new InflaterPool(0, true), bufferPool, bufferSize);
     }
 
-    public GZIPContentDecoder(InflaterPool inflaterPool, WritableBufferPool bufferPool, int bufferSize)
+    public GZIPContentDecoder(InflaterPool inflaterPool, ByteBufferPool bufferPool, int bufferSize)
     {
         _inflaterEntry = inflaterPool.acquire();
         _inflater = _inflaterEntry.get();
         _bufferSize = bufferSize;
-        _pool = bufferPool != null ? bufferPool : WritableBufferPool.NON_POOLING;
+        _pool = bufferPool != null ? bufferPool : ByteBufferPool.NON_POOLING;
         reset();
     }
 

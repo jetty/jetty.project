@@ -135,7 +135,7 @@ public class HttpChannelEventTest
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request.toString(), 5, TimeUnit.SECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -169,7 +169,7 @@ public class HttpChannelEventTest
 
         // No Host header, request will fail.
         String request = HttpTester.newRequest().toString();
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request, 5, TimeUnit.SECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -264,7 +264,7 @@ public class HttpChannelEventTest
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
-        HttpTester.parseResponse(connector.getResponseAsString(request.toString(), 5, TimeUnit.SECONDS));
+        HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -300,7 +300,7 @@ public class HttpChannelEventTest
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request.toString(), 5, TimeUnit.SECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -336,7 +336,7 @@ public class HttpChannelEventTest
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setHeader("Host", "localhost");
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request.toString(), 5, TimeUnit.SECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));

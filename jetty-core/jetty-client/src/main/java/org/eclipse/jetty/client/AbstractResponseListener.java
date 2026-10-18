@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
@@ -40,7 +41,7 @@ import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
  */
 public abstract class AbstractResponseListener implements Response.Listener
 {
-    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+    private final BufferAccumulator accumulator = new BufferAccumulator();
     private final long maxLength;
     private String encoding;
     private String mediaType;
@@ -228,7 +229,7 @@ public abstract class AbstractResponseListener implements Response.Listener
         Content.Source result;
         if (content == null)
         {
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 result = Content.Source.from(List.of(buffer));
             }
@@ -243,7 +244,7 @@ public abstract class AbstractResponseListener implements Response.Listener
 
     private byte[] toArray()
     {
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             return buffer.getArray();
         }

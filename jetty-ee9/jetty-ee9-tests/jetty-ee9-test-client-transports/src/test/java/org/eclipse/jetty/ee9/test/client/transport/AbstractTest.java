@@ -14,14 +14,9 @@
 package org.eclipse.jetty.ee9.test.client.transport;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -63,6 +58,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.SocketAddressResolver;
@@ -165,25 +161,14 @@ public class AbstractTest
         return new Server(serverThreads);
     }
 
-    protected SslContextFactory.Server newSslContextFactoryServer() throws Exception
+    protected SslContextFactory.Server newSslContextFactoryServer()
     {
         SslContextFactory.Server ssl = new SslContextFactory.Server();
-        configureSslContextFactory(ssl);
+        ssl.setKeyStorePath(MavenPaths.findTestResourceFile("keystore.p12").toString());
+        ssl.setKeyStorePassword("storepwd");
+        ssl.setUseCipherSuitesOrder(true);
+        ssl.setCipherComparator(HTTP2Cipher.COMPARATOR);
         return ssl;
-    }
-
-    private static void configureSslContextFactory(SslContextFactory sslContextFactory) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException
-    {
-        KeyStore keystore = KeyStore.getInstance("PKCS12");
-        try (InputStream is = Files.newInputStream(Path.of("src/test/resources/keystore.p12")))
-        {
-            keystore.load(is, "storepwd".toCharArray());
-        }
-        sslContextFactory.setTrustStore(keystore);
-        sslContextFactory.setKeyStore(keystore);
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setUseCipherSuitesOrder(true);
-        sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
     }
 
     protected void startClient(TransportType transportType) throws Exception
@@ -246,39 +231,28 @@ public class AbstractTest
         return list.toArray(ConnectionFactory[]::new);
     }
 
-    protected SslContextFactory.Client newSslContextFactoryClient() throws Exception
+    protected SslContextFactory.Client newSslContextFactoryClient()
     {
-        SslContextFactory.Client ssl = new SslContextFactory.Client();
-        configureSslContextFactory(ssl);
-        ssl.setEndpointIdentificationAlgorithm(null);
-        return ssl;
+        return new SslContextFactory.Client(true);
     }
 
     protected HttpClientTransport newHttpClientTransport(TransportType transportType) throws Exception
     {
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSslContextFactory(newSslContextFactoryClient());
         return switch (transportType)
         {
             case HTTP, HTTPS ->
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
-                clientConnector.setSslContextFactory(newSslContextFactoryClient());
                 yield new HttpClientTransportOverHTTP(clientConnector);
             }
             case H2C, H2 ->
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
-                clientConnector.setSslContextFactory(newSslContextFactoryClient());
                 HTTP2Client http2Client = new HTTP2Client(clientConnector);
                 yield new HttpClientTransportOverHTTP2(http2Client);
             }
             case H3_QUICHE ->
             {
-                ClientConnector clientConnector = new ClientConnector();
-                clientConnector.setSelectors(1);
-                SslContextFactory.Client sslContextFactory = newSslContextFactoryClient();
-                clientConnector.setSslContextFactory(sslContextFactory);
                 Path clientPemDirectory = Files.createDirectories(pemDir.resolve("client"));
                 QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration(clientPemDirectory));
                 HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
@@ -324,6 +298,15 @@ public class AbstractTest
             {
                 case HTTP, H2C, FCGI -> false;
                 case HTTPS, H2, H3_QUICHE -> true;
+            };
+        }
+
+        public boolean isMultiplexed()
+        {
+            return switch (this)
+            {
+                case HTTP, HTTPS, FCGI -> false;
+                case H2C, H2, H3_QUICHE -> true;
             };
         }
     }

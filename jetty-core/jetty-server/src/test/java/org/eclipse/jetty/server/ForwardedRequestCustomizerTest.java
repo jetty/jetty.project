@@ -1055,7 +1055,7 @@ public class ForwardedRequestCustomizerTest
 
         String rawRequest = request.getRawRequest((header) -> header);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(200));
 
         expectations.accept(actual);
@@ -1074,7 +1074,7 @@ public class ForwardedRequestCustomizerTest
             .replaceFirst("Proxy-Ssl-Id:", "Jetty-Proxy-Ssl-Id:")
             .replaceFirst("Proxy-auth-cert:", "Jetty-Proxy-Auth-Cert:"));
 
-        HttpTester.Response response = HttpTester.parseResponse(connectorConfigured.getResponseAsString(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connectorConfigured.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(200));
 
         expectations.accept(actual);
@@ -1187,7 +1187,7 @@ public class ForwardedRequestCustomizerTest
         String rawRequest = request.getRawRequest((header) -> header);
         // System.out.println(rawRequest);
 
-        HttpTester.Response response = HttpTester.parseResponse(connectorAlt.getResponseAsString(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connectorAlt.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(200));
 
         expectations.accept(actual);
@@ -1219,7 +1219,7 @@ public class ForwardedRequestCustomizerTest
 
         String rawRequest = request.getRawRequest((header) -> header);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(400));
     }
 
@@ -1268,7 +1268,7 @@ public class ForwardedRequestCustomizerTest
         String rawRequest = request.getRawRequest((header) -> header);
         // System.out.println(rawRequest);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
         assertThat("status", response.getStatus(), is(200));
 
         expectations.accept(actual);

@@ -78,18 +78,19 @@ import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.Transport;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -650,8 +651,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         resultLatch.countDown();
                 });
 
-            WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            ByteBufferPool bufferPool = new ArrayByteBufferPool();
+            BufferAccumulator accumulator = new BufferAccumulator();
             Generator generator = new Generator(bufferPool);
 
             try (Socket socket = server.accept())
@@ -702,7 +703,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         try
                         {
                             // Write the frames.
-                            try (RetainableByteBuffer buffer = accumulator.drain())
+                            try (RetainableByteBuffer buffer = accumulator.take())
                             {
                                 buffer.putTo(output);
                             }

@@ -25,7 +25,6 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.WriteListener;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -36,9 +35,10 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
-import org.eclipse.jetty.util.buffer.WritableBufferPool;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,7 +127,7 @@ public class HttpOutput extends ServletOutputStream
     private boolean _softClose = false;
     private long _written;
     private boolean _bypassed;
-    private WritableBufferPool.Sized _pool;
+    private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer.Mutable _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -351,7 +351,8 @@ public class HttpOutput extends ServletOutputStream
         if (_aggregate == null)
             return getBufferSize();
         // Compact to maximize space.
-        return _aggregate.compact().space();
+        _aggregate.compact();
+        return _aggregate.space();
     }
 
     public void softClose()
@@ -368,8 +369,17 @@ public class HttpOutput extends ServletOutputStream
         {
             if (_state != State.OPEN)
                 throw new IllegalStateException(lockedStateString());
-            RetainableByteBuffer content = _aggregate != null && _aggregate.hasRemaining() ? _aggregate : RetainableByteBuffer.empty();
-            _aggregate = null;
+            RetainableByteBuffer content;
+            if (_aggregate != null && _aggregate.hasRemaining())
+            {
+                content = _aggregate;
+                _aggregate = null;
+            }
+            else
+            {
+                content = RetainableByteBuffer.empty();
+                _aggregate = Retainable.dispose(_aggregate);
+            }
             _state = State.CLOSED;
             return content;
         }
@@ -676,12 +686,12 @@ public class HttpOutput extends ServletOutputStream
         }
     }
 
-    private WritableBufferPool.Sized getSizedByteBufferPool()
+    private ByteBufferPool.Sized getSizedByteBufferPool()
     {
         int bufferSize = getBufferSize();
         boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
         if (_pool == null || _pool.getSize() != bufferSize || _pool.isDirect() != useOutputDirectByteBuffers)
-            _pool = org.eclipse.jetty.io.WritableBufferPool.wrap(new ByteBufferPool.Sized(_servletChannel.getRequest().getComponents().getByteBufferPool(), useOutputDirectByteBuffers, bufferSize));
+            _pool = new ByteBufferPool.Sized(_servletChannel.getRequest().getComponents().getByteBufferPool(), useOutputDirectByteBuffers, bufferSize);
         return _pool;
     }
 
@@ -862,7 +872,7 @@ public class HttpOutput extends ServletOutputStream
             if (aggregate)
             {
                 RetainableByteBuffer.Mutable buffer = lockedAcquireBuffer();
-                int filled = (int)buffer.append(ByteBuffer.wrap(b, off, len));
+                int filled = (int)buffer.append(b, off, len);
 
                 // return if we are not complete, not full and filled all the content
                 if (!flush)
@@ -903,7 +913,7 @@ public class HttpOutput extends ServletOutputStream
                 // should we fill aggregate again from the buffer?
                 if (len > 0 && !last && len <= _commitSize && len <= maximizeAggregateSpace())
                 {
-                    _aggregate.append(ByteBuffer.wrap(b, off, len));
+                    _aggregate.append(b, off, len);
                     onWriteComplete(false, null);
                     return;
                 }
@@ -1118,54 +1128,8 @@ public class HttpOutput extends ServletOutputStream
 
         s = String.valueOf(s);
         String charset = _servletChannel.getServletContextResponse().getCharacterEncoding(false);
-        // String.getBytes() is much faster than a CharsetEncoder.encode() loop that would also need to estimate
-        // the destination buffer size, so this compensates for the rare extra copy that needs to be done when
-        // the aggregation buffer is full.
-        byte[] bytes = s.getBytes(charset);
-        if (!eoln)
-        {
-            write(bytes);
-        }
-        else
-        {
-            int len = bytes.length + IO.CRLF_BYTES.length;
-
-            // If there is enough room left in the aggregation buffer, just fill it;
-            // otherwise either do 2 writes if blocking or copy into a bigger byte array if async.
-            boolean aggregated = false;
-            boolean blocking = false;
-            try (AutoLock ignored = _channelState.lock())
-            {
-                if (len <= _bufferSize)
-                {
-                    lockedAcquireBuffer();
-                    if (len <= maximizeAggregateSpace())
-                    {
-                        _aggregate.put(bytes);
-                        aggregated = true;
-                    }
-                }
-                if (!aggregated && _apiState == ApiState.BLOCKING)
-                    blocking = true;
-            }
-
-            if (aggregated)
-            {
-                write(IO.CRLF_BYTES);
-            }
-            else if (blocking)
-            {
-                write(bytes);
-                write(IO.CRLF_BYTES);
-            }
-            else
-            {
-                byte[] bytesWithCrLf = new byte[len];
-                System.arraycopy(bytes, 0, bytesWithCrLf, 0, bytes.length);
-                System.arraycopy(IO.CRLF_BYTES, 0, bytesWithCrLf, bytes.length, IO.CRLF_BYTES.length);
-                write(bytesWithCrLf);
-            }
-        }
+        byte[] bytes = (eoln ? s + "\r\n" : s).getBytes(charset);
+        write(bytes);
     }
 
     /**

@@ -202,13 +202,18 @@ public class GzipEncoderSink extends EncoderSink
         {
             deflater.setInput(input);
 
-            int p = input.position();
+            int position = input.position();
             outputBuffer.quietWrite(output -> deflater.deflate(output, flushMode));
-            int consumed = input.position() - p;
+            int consumed = input.position() - position;
 
             // Update CRC with the consumed bytes.
             if (consumed > 0)
-                crc.update(input.slice(p, consumed));
+            {
+                int limit = input.limit();
+                input.position(position).limit(position + consumed);
+                crc.update(input);
+                input.limit(limit);
+            }
 
             return consumed;
         });

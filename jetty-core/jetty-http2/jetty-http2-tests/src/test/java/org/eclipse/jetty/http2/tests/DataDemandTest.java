@@ -30,12 +30,13 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -358,9 +359,9 @@ public class DataDemandTest extends AbstractTest
         // Generate a lot of small DATA frames and write them in a single
         // write so that the server will continuously be notified and demand,
         // which will test that it won't throw StackOverflowError.
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         Generator generator = new Generator(bufferPool);
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         for (int i = 512; i >= 0; --i)
         {
             generator.data(accumulator, new DataFrame(clientStream.getId(), RetainableByteBuffer.allocate(1, false), i == 0), 1);
@@ -370,7 +371,7 @@ public class DataDemandTest extends AbstractTest
         // client finishes writing the SETTINGS reply to the server
         // during connection initialization, or we risk a WritePendingException.
         Thread.sleep(1000);
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             ((HTTP2Session)clientStream.getSession()).getEndPoint().write(buffer, Callback.NOOP);
         }

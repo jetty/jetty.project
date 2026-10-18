@@ -42,7 +42,6 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.GZIPContentDecoder;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -222,7 +222,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         byte[] buffer;
         if (content.hasArray())
         {
-            offset = content.arrayOffset();
+            offset = content.arrayOffset() + content.position();
             buffer = content.array();
         }
         else

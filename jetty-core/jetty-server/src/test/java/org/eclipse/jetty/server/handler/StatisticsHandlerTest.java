@@ -170,7 +170,7 @@ public class StatisticsHandlerTest
                 0123456789\r
                 """;
 
-        String response = _connector.getResponseAsString(request);
+        String response = _connector.getResponse(request);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Connection: close"));
         await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses2xx, is(1));
@@ -199,7 +199,7 @@ public class StatisticsHandlerTest
 
         try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
-            String response = _connector.getResponseAsString(request);
+            String response = _connector.getResponse(request);
             assertThat(response, containsString("HTTP/1.1 500 "));
             assertThat(response, containsString("content-length 1 != 0 written"));
             await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses5xx, is(1));
@@ -226,7 +226,7 @@ public class StatisticsHandlerTest
             Host: localhost\r
             \r
             """;
-        String response = _connector.getResponseAsString(request);
+        String response = _connector.getResponse(request);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getResponses2xx, is(1));
     }
@@ -421,7 +421,7 @@ public class StatisticsHandlerTest
                 Host: localhost\r
                 \r
                 """;
-            String response = _connector.getResponseAsString(request);
+            String response = _connector.getResponse(request);
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
 
@@ -461,7 +461,7 @@ public class StatisticsHandlerTest
                 Host: localhost\r
                 \r
                 """;
-            String response = _connector.getResponseAsString(request);
+            String response = _connector.getResponse(request);
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
 
@@ -512,7 +512,7 @@ public class StatisticsHandlerTest
                 Host: localhost\r
                 \r
                 """;
-            String response = _connector.getResponseAsString(request);
+            String response = _connector.getResponse(request);
             assertThat(response, containsString("HTTP/1.1 500 Server Error"));
         }
 
@@ -552,7 +552,7 @@ public class StatisticsHandlerTest
                 Host: localhost\r
                 \r
                 """;
-            String response = _connector.getResponseAsString(request);
+            String response = _connector.getResponse(request);
             assertThat(response, containsString("HTTP/1.1 200 OK"));
         }
 

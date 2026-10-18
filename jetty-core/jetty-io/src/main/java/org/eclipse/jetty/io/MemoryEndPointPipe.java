@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class MemoryEndPointPipe implements EndPoint.Pipe
 {
     private final AutoLock lock = new AutoLock();
-    private final WritableBufferPool byteBufferPool;
+    private final ByteBufferPool bufferPool;
     private final LocalEndPoint localEndPoint;
     private final RemoteEndPoint remoteEndPoint;
     private final Consumer<Invocable.Task> taskConsumer;
@@ -52,7 +53,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
 
     public MemoryEndPointPipe(Scheduler scheduler, ByteBufferPool bufferPool, Consumer<Invocable.Task> consumer, SocketAddress socketAddress)
     {
-        byteBufferPool = WritableBufferPool.wrap(Objects.requireNonNullElse(bufferPool, ByteBufferPool.NON_POOLING));
+        this.bufferPool = Objects.requireNonNullElse(bufferPool, ByteBufferPool.NON_POOLING);
         localEndPoint = new LocalEndPoint(scheduler, new MemorySocketAddress());
         remoteEndPoint = new RemoteEndPoint(scheduler, socketAddress);
         localEndPoint.setPeerEndPoint(remoteEndPoint);
@@ -191,27 +192,69 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                     if (data == EOF)
                         return filled > 0 ? filled : -1;
 
-                    int space = (int)buffer.space();
-                    if (space == 0)
+                    if (buffer.space() == 0)
                         return filled;
 
-                    long available = data.remaining();
-                    long toCopy = Math.min(space, available);
-
-                    if (toCopy == available)
+                    int copied = (int)buffer.append(data);
+                    if (!data.hasRemaining())
                     {
-                        buffer.put(data);
                         data.release();
                         buffers.poll();
                     }
-                    else
-                    {
-                        buffer.append(data);
-                    }
 
-                    capacity -= toCopy;
-                    filled += toCopy;
+                    capacity -= copied;
+                    filled += copied;
                 }
+            }
+        }
+
+        @Override
+        public SocketAddress receive(RetainableByteBuffer.Mutable buffer) throws IOException
+        {
+            if (!isOpen())
+                throw new IOException("closed");
+            if (isInputShutdown())
+                return EndPoint.EOF;
+
+            long space = buffer.space();
+            SocketAddress address = peerEndPoint.receiveInto(buffer);
+            long filled = space - buffer.space();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("received {} from {}", filled, this);
+
+            if (address == EndPoint.EOF)
+            {
+                shutdownInput();
+            }
+            else if (address != null)
+            {
+                notIdle();
+                onFilled();
+            }
+            return address;
+        }
+
+        private SocketAddress receiveInto(RetainableByteBuffer.Mutable buffer)
+        {
+            try (AutoLock ignored = lock.lock())
+            {
+                RetainableByteBuffer data = buffers.peek();
+                if (data == null)
+                    return null;
+                if (data == EOF)
+                    return EndPoint.EOF;
+
+                long length = data.remaining();
+                // Truncate the datagram if there is not
+                // enough space in the receiving buffer.
+                buffer.append(data);
+                data.release();
+                buffers.poll();
+
+                capacity -= length;
+
+                return getLocalSocketAddress();
             }
         }
 
@@ -322,7 +365,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
                 length = (int)Math.min(length, space);
             }
 
-            RetainableByteBuffer.Mutable copy = byteBufferPool.acquire(length, false);
+            RetainableByteBuffer.Mutable copy = bufferPool.acquire(length, false);
             if (length < remaining)
             {
                 // Partial copy of the buffer.

@@ -30,7 +30,6 @@ import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -39,6 +38,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -94,7 +95,7 @@ public class BadURITest
             }
         });
 
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(connector.getByteBufferPool());
+        ByteBufferPool bufferPool = connector.getByteBufferPool();
         Generator generator = new Generator(bufferPool);
 
         // Craft a request with a bad URI, it will not hit the Handler.
@@ -108,14 +109,14 @@ public class BadURITest
             HttpFields.EMPTY,
             -1
         );
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         generator.control(accumulator, new HeadersFrame(1, metaData1, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(client.getOutputStream());
             }
@@ -134,7 +135,7 @@ public class BadURITest
                 -1
             );
             generator.control(accumulator, new HeadersFrame(3, metaData2, null, true));
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(client.getOutputStream());
                 assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));

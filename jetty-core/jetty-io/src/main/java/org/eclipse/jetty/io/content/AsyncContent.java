@@ -50,7 +50,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
 
     private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final SerializedInvoker invoker = new SerializedInvoker(AsyncContent.class);
-    private final Queue<Content.Chunk> chunks = new ArrayDeque<>();
+    private final Queue<AsyncChunk> chunks = new ArrayDeque<>();
     private Content.Chunk persistentFailure;
     private boolean readClosed;
     private boolean writeClosed;
@@ -81,7 +81,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
      * or succeeded if and only if the chunk is terminal, as non-terminal
      * chunks have to bind the succeeding of the callback to their release.
      */
-    private void offer(Content.Chunk chunk)
+    private void offer(AsyncChunk chunk)
     {
         Throwable failure = null;
         boolean wasEmpty = false;
@@ -114,8 +114,8 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
                 }
             }
         }
-        if (failure != null && chunk instanceof AsyncChunk asyncChunk)
-            asyncChunk.failed(failure);
+        if (failure != null)
+            chunk.fail(failure);
         if (wasEmpty)
             invoker.run(this::invokeDemandCallback);
     }
@@ -174,11 +174,12 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     @Override
     public Content.Chunk read()
     {
+        Content.Chunk current;
         try (AutoLock.WithCondition condition = lock.lock())
         {
             if (length == UNDETERMINED_LENGTH)
                 length = -1;
-            Content.Chunk current = chunks.poll();
+            current = chunks.poll();
             if (current == null)
             {
                 if (readClosed)
@@ -192,8 +193,13 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
                 condition.signal();
             if (current == ASYNC_EOF)
                 return Content.Chunk.EOF;
-            return current;
+            if (current.hasRemaining() || Content.Chunk.isFailure(current))
+                return current;
         }
+        // Readers may skip empty chunks without releasing them,
+        // so release them here to succeed the write callback.
+        current.release();
+        return current.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
     }
 
     @Override
@@ -238,7 +244,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     @Override
     public void fail(Throwable failure)
     {
-        List<Content.Chunk> drained;
+        List<AsyncChunk> drained;
         try (AutoLock.WithCondition condition = lock.lock())
         {
             if (readClosed)
@@ -252,8 +258,11 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         }
         drained.forEach(c ->
         {
-            if (c instanceof AsyncChunk ac)
-                ac.failed(failure);
+            if (c != ASYNC_EOF)
+            {
+                c.fail(failure);
+                c.release();
+            }
         });
         invoker.run(this::invokeDemandCallback);
     }
@@ -262,9 +271,20 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     public void fail(Throwable failure, boolean last)
     {
         if (last)
+        {
             fail(failure);
+        }
         else
-            offer(Content.Chunk.from(failure, false));
+        {
+            offer(new AsyncChunk(false, RetainableByteBuffer.empty(), Callback.NOOP, Retainable.NON_RETAINABLE)
+            {
+                @Override
+                public Throwable getFailure()
+                {
+                    return failure;
+                }
+            });
+        }
     }
 
     public int count()
@@ -275,7 +295,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         }
     }
 
-    private static class AsyncChunk extends BufferChunk implements Callback
+    private static class AsyncChunk extends BufferChunk
     {
         private final AutoLock lock = new AutoLock();
         // The RC of this chunk is tied to the Callback,
@@ -320,7 +340,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
             if (!released)
                 return false;
 
-            // Releases the buffer.
+            // Releases the buffer retained by the super() constructor.
             super.release();
 
             Throwable cause;
@@ -335,34 +355,23 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
             return true;
         }
 
+        private void fail(Throwable x)
+        {
+            try (AutoLock _ = lock.lock())
+            {
+                if (failure != null)
+                    return;
+                failure = x;
+            }
+            callback.failed(x);
+        }
+
         @Override
         public void close()
         {
             // Call release() instead of forwarding close(), so
             // that the release() code can succeed the callback.
             release();
-        }
-
-        @Override
-        public void succeeded()
-        {
-            // The callback is notified from release().
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            boolean notify = false;
-            try (AutoLock _ = lock.lock())
-            {
-                if (failure == null)
-                {
-                    notify = true;
-                    failure = x;
-                }
-            }
-            if (notify)
-                callback.failed(x);
         }
     }
 }

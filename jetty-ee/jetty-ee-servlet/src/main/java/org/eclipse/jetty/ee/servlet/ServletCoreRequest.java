@@ -39,7 +39,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static org.eclipse.jetty.util.URIUtil.addEncodedPaths;
@@ -254,7 +254,7 @@ public class ServletCoreRequest implements Request
         {
             // Deplete the wrapping request's ServletInputStream using only non-blocking API, then
             // eventually delegate to consumeAvailable() to make the response non-persistent if needed.
-            WritableBufferPool bufferPool = WritableBufferPool.wrap(_servletContextRequest.getComponents().getByteBufferPool());
+            ByteBufferPool bufferPool = _servletContextRequest.getComponents().getByteBufferPool();
             try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(IO.DEFAULT_BUFFER_SIZE, false))
             {
                 ServletInputStream sis = getServletRequest().getInputStream();

@@ -15,6 +15,8 @@ package org.eclipse.jetty.io;
 
 import java.util.List;
 
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -25,19 +27,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MutableBufferPoolTest
 {
-    static List<WritableBufferPool> sources()
+    static List<ByteBufferPool> sources()
     {
         return List.of(
-            WritableBufferPool.NON_POOLING,
-            WritableBufferPool.wrap(new ArrayByteBufferPool())
+            ByteBufferPool.NON_POOLING,
+            new ArrayByteBufferPool()
         );
     }
 
     @ParameterizedTest
     @MethodSource("sources")
-    public void testSimple(WritableBufferPool writableBufferPool)
+    public void testSimple(ByteBufferPool bufferPool)
     {
-        RetainableByteBuffer.Mutable b = writableBufferPool.acquire(10, false);
+        RetainableByteBuffer.Mutable b = bufferPool.acquire(10, false);
         assertEquals(0, b.writePosition());
         assertThat(b.space(), greaterThanOrEqualTo(10L));
 

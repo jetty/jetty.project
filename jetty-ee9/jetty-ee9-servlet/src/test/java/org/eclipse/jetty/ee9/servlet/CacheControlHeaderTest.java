@@ -129,7 +129,7 @@ public class CacheControlHeaderTest
             req1.append("Connection: close\r\n");
             req1.append("\r\n");
 
-            String response = connector.getResponseAsString(req1.toString());
+            String response = connector.getResponse(req1.toString());
             assertThat("Response status",
                        response,
                        containsString("HTTP/1.1 200 OK"));
@@ -157,7 +157,7 @@ public class CacheControlHeaderTest
             req1.append("Connection: close\r\n");
             req1.append("\r\n");
 
-            String response = connector.getResponseAsString(req1.toString());
+            String response = connector.getResponse(req1.toString());
             assertThat("Response status",
                        response,
                        containsString("HTTP/1.1 200 OK"));
@@ -184,7 +184,7 @@ public class CacheControlHeaderTest
             req1.append("Connection: close\r\n");
             req1.append("\r\n");
 
-            String response = connector.getResponseAsString(req1.toString());
+            String response = connector.getResponse(req1.toString());
             assertThat("Response status",
                        response,
                        containsString("HTTP/1.1 200 OK"));

@@ -248,8 +248,8 @@ public class SessionHandlerTest
 
         _server.start();
 
-        LocalConnector.LocalEndPoint endPoint = forwardedConnector.connect();
-        endPoint.addInput("""
+        LocalConnector.LocalEndPoint endPoint = forwardedConnector.connectToServer();
+        endPoint.writeRequestString("""
             GET /create HTTP/1.1
             Host: localhost
             X-Forwarded-Proto: https

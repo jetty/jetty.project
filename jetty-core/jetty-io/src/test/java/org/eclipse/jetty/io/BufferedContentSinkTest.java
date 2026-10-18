@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.content.BufferedContentSink;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -143,7 +144,7 @@ public class BufferedContentSinkTest
             buffered.write(true, RetainableByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
-            assertThat(successCounter.get(), is(0));
+            assertThat(successCounter.get(), is(1));
             assertThat(chunk.isLast(), is(true));
             assertThat(chunk.hasRemaining(), is(false));
             assertThat(chunk.release(), is(true));
@@ -478,7 +479,8 @@ public class BufferedContentSinkTest
                 buffered.write(false, RetainableByteBuffer.wrap(input2), Callback.from(() ->
                     buffered.write(true, RetainableByteBuffer.wrap(input3), Callback.NOOP)))));
 
-            // We expect 3 buffer flushes: 4096 + 3904 + 2000 == 10_000.
+            // We expect 3 buffer flushes: 4096 + 4096 + 1808 == 10_000, because
+            // the last write fills the aggregator, and the rest is written directly.
             Content.Chunk chunk = async.read();
             assertThat(chunk, notNullValue());
             assertThat(chunk.remaining(), is(4096L));
@@ -491,7 +493,7 @@ public class BufferedContentSinkTest
 
             chunk = async.read();
             assertThat(chunk, notNullValue());
-            assertThat(chunk.remaining(), is(input2.length - (4096L - input1.length)));
+            assertThat(chunk.remaining(), is(4096L));
             try (RetainableByteBuffer buffer = chunk.acquire())
             {
                 buffer.putTo(accumulatingBuffer);
@@ -501,7 +503,7 @@ public class BufferedContentSinkTest
 
             chunk = async.read();
             assertThat(chunk, notNullValue());
-            assertEquals(input3.length, chunk.remaining());
+            assertEquals(input1.length + input2.length + input3.length - 2 * 4096L, chunk.remaining());
             try (RetainableByteBuffer buffer = chunk.acquire())
             {
                 buffer.putTo(accumulatingBuffer);

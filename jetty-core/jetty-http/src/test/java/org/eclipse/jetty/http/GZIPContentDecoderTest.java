@@ -17,12 +17,11 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -40,37 +40,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GZIPContentDecoderTest
 {
-    private final AtomicInteger counter = new AtomicInteger();
-    private WritableBufferPool pool;
+    private ArrayByteBufferPool.Tracking bufferPool;
 
     @BeforeEach
     public void before()
     {
-        pool = WritableBufferPool.wrap(new ArrayByteBufferPool()
-        {
-            @Override
-            public org.eclipse.jetty.io.RetainableByteBuffer.Mutable acquire(int size, boolean direct)
-            {
-                counter.incrementAndGet();
-                return new org.eclipse.jetty.io.RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct))
-                {
-                    @Override
-                    public boolean release()
-                    {
-                        boolean released = super.release();
-                        if (released)
-                            counter.decrementAndGet();
-                        return released;
-                    }
-                };
-            }
-        });
+        bufferPool = new ArrayByteBufferPool.Tracking();
     }
 
     @AfterEach
     public void after()
     {
-        assertThat(counter.get(), is(0));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(0, bufferPool.getLeaks().size(), bufferPool.dumpLeaks()));
     }
 
     @Test
@@ -127,7 +108,7 @@ public class GZIPContentDecoderTest
         output.close();
         byte[] bytes = baos.toByteArray();
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(bufferPool, 2048);
         RetainableByteBuffer decoded = decoder.decode(RetainableByteBuffer.wrap(bytes));
         assertEquals(0, decoded.remaining());
         decoded.release();
@@ -144,7 +125,7 @@ public class GZIPContentDecoderTest
         output.close();
         byte[] bytes = baos.toByteArray();
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(bufferPool, 2048);
         try (RetainableByteBuffer decoded = decoder.decode(RetainableByteBuffer.wrap(bytes)))
         {
             assertEquals(data, decoded.getString(UTF_8));
@@ -168,7 +149,7 @@ public class GZIPContentDecoderTest
         byte[] bytes2 = new byte[bytes.length - bytes1.length];
         System.arraycopy(bytes, bytes1.length, bytes2, 0, bytes2.length);
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(bufferPool, 2048);
         try (RetainableByteBuffer decoded = decoder.decode(RetainableByteBuffer.wrap(bytes1)))
         {
             assertEquals(0, decoded.remaining());
@@ -196,7 +177,7 @@ public class GZIPContentDecoderTest
         byte[] bytes2 = new byte[bytes.length - bytes1.length];
         System.arraycopy(bytes, bytes1.length, bytes2, 0, bytes2.length);
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(bufferPool, 2048);
         try (RetainableByteBuffer decoded = decoder.decode(RetainableByteBuffer.wrap(bytes1)))
         {
             assertEquals(data, decoded.getString(UTF_8));
@@ -226,7 +207,7 @@ public class GZIPContentDecoderTest
         byte[] bytes2 = new byte[bytes.length - bytes1.length];
         System.arraycopy(bytes, bytes1.length, bytes2, 0, bytes2.length);
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(bufferPool, 2048);
         try (RetainableByteBuffer decoded = decoder.decode(RetainableByteBuffer.wrap(bytes1)))
         {
             assertEquals(0, decoded.remaining());
@@ -258,7 +239,7 @@ public class GZIPContentDecoderTest
         System.arraycopy(bytes1, 0, bytes, 0, bytes1.length);
         System.arraycopy(bytes2, 0, bytes, bytes1.length, bytes2.length);
 
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(bufferPool, 2048);
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap(bytes);
         try (RetainableByteBuffer decoded = decoder.decode(buffer))
         {
@@ -289,7 +270,7 @@ public class GZIPContentDecoderTest
         byte[] bytes = baos.toByteArray();
 
         String result = "";
-        GZIPContentDecoder decoder = new GZIPContentDecoder(pool, 2048);
+        GZIPContentDecoder decoder = new GZIPContentDecoder(bufferPool, 2048);
         RetainableByteBuffer buffer = RetainableByteBuffer.wrap(bytes);
         while (buffer.hasRemaining())
         {

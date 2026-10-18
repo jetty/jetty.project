@@ -20,10 +20,9 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -98,7 +97,7 @@ public abstract class AbstractGzipTest
     protected void startGzip() throws Exception
     {
         gzip = new GzipCompression();
-        gzip.setBufferPool(WritableBufferPool.wrap(trackingPool));
+        gzip.setBufferPool(trackingPool);
         gzip.start();
     }
 }

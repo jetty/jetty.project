@@ -24,8 +24,8 @@ import java.util.function.Consumer;
 
 import jakarta.websocket.Extension;
 import jakarta.websocket.WebSocketContainer;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.core.Configuration;

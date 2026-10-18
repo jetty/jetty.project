@@ -20,13 +20,11 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousByteChannel;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.CompletionHandler;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
 import org.eclipse.jetty.io.content.BufferedContentSink;
@@ -37,6 +35,7 @@ import org.eclipse.jetty.io.content.ContentSourceInputStream;
 import org.eclipse.jetty.io.content.ContentSourcePublisher;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.io.content.RetainableByteBufferContentSource;
+import org.eclipse.jetty.io.internal.AsynchronousByteChannelWriter;
 import org.eclipse.jetty.io.internal.BufferChunk;
 import org.eclipse.jetty.io.internal.ByteChannelContentSource;
 import org.eclipse.jetty.io.internal.ContentCopier;
@@ -50,143 +49,158 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/**
- * <p>Namespace class that contains the definitions of a {@link Source content source},
- * a {@link Sink content sink} and a {@link Chunk content chunk}.</p>
- */
+/// Namespace class that contains the definitions of a [`content source`][Source],
+/// a [`content sink`][Sink] and a [`content chunk`][Chunk].
 public class Content
 {
-    private static final Logger LOG = LoggerFactory.getLogger(Content.class);
-
     private Content()
     {
     }
 
-    /**
-     * <p>Copies the given content source to the given content sink, notifying
-     * the given callback when the copy is complete (either succeeded or failed).</p>
-     * <p>In case of {@link Chunk#getFailure() failure chunks},
-     * the content source is {@link Source#fail(Throwable) failed}.</p>
-     *
-     * @param source the source to copy from
-     * @param sink the sink to copy to
-     * @param callback the callback to notify when the copy is complete
-     * @see #copy(Source, Sink, Chunk.Processor, Callback) to allow processing of individual {@code Content.Chunk}s, including
-     *      the ability to ignore transient failures.
-     */
+    /// Copies the given content source to the given content sink, notifying
+    /// the given callback when the copy is complete (either succeeded or failed).
+    ///
+    /// In case of [`failure chunks`][Chunk#getFailure()],
+    /// the content source is [`failed`][Source#fail(Throwable)].
+    ///
+    /// @param source the source to copy from
+    /// @param sink the sink to copy to
+    /// @param callback the callback to notify when the copy is complete
+    /// @see #copy(Source, Sink, Chunk.Processor, Callback) to allow processing of individual `Content.Chunk`s, including
+    ///      the ability to ignore transient failures.
     public static void copy(Source source, Sink sink, Callback callback)
     {
         copy(source, sink, null, callback);
     }
 
-    /**
-     * <p>Copies the given content source to the given content sink, notifying
-     * the given callback when the copy is complete.</p>
-     * <p>The optional {@code chunkHandler} parameter is a predicate whose code
-     * may inspect the chunk and handle it differently from how the implementation
-     * would handle it.</p>
-     * <p>If the predicate returns {@code true}, it means that the chunk is handled
-     * externally and its callback completed, or eventually completed.</p>
-     * <p>If the predicate returns {@code false}, it means that the chunk is not
-     * handled, its callback will not be completed, and the implementation will
-     * handle the chunk and its callback.</p>
-     * <p>In case of {@link Chunk#getFailure() failure chunks} not handled by any {@code chunkHandler},
-     * the content source is {@link Source#fail(Throwable) failed} if the failure
-     * chunk is {@link Chunk#isLast() last}, else the failure is transient and is ignored.</p>
-     *
-     * @param source the source to copy from
-     * @param sink the sink to copy to
-     * @param chunkProcessor a (possibly {@code null}) processor to handle the current {@link Chunk} and its callback
-     * @param callback the callback to notify when the copy is complete
-     */
+    /// Copies the given content source to the given content sink, notifying
+    /// the given callback when the copy is complete.
+    ///
+    /// The optional `chunkHandler` parameter is a predicate whose code
+    /// may inspect the chunk and handle it differently from how the implementation
+    /// would handle it.
+    ///
+    /// If the predicate returns `true`, it means that the chunk is handled
+    /// externally and its callback completed, or eventually completed.
+    ///
+    /// If the predicate returns `false`, it means that the chunk is not
+    /// handled, its callback will not be completed, and the implementation will
+    /// handle the chunk and its callback.
+    ///
+    /// In case of [`failure chunks`][Chunk#getFailure()] not handled by any `chunkHandler`,
+    /// the content source is [`failed`][Source#fail(Throwable)] if the failure
+    /// chunk is [`last`][Chunk#isLast()], else the failure is transient and is ignored.
+    ///
+    /// @param source the source to copy from
+    /// @param sink the sink to copy to
+    /// @param chunkProcessor a (possibly `null`) processor to handle the current [Chunk] and its callback
+    /// @param callback the callback to notify when the copy is complete
     public static void copy(Source source, Sink sink, Chunk.Processor chunkProcessor, Callback callback)
     {
         new ContentCopier(source, sink, chunkProcessor, callback).iterate();
     }
 
-    /**
-     * <p>A source of content that can be read with a read/demand model.</p>
-     * <p>To avoid leaking its resources, a source <b>must</b> either:</p>
-     * <ul>
-     * <li>be read until it returns a {@link Chunk#isLast() last chunk}, either EOF or a terminal failure</li>
-     * <li>be {@link #fail(Throwable) failed}</li>
-     * </ul>
-     * <h2><a id="idiom">Idiomatic usage</a></h2>
-     * <p>The read/demand model typical usage is the following:</p>
-     * <pre>{@code
-     * public void onContentAvailable() {
-     *     while (true) {
-     *         // Read a chunk
-     *         Chunk chunk = source.read();
-     *
-     *         // There is no chunk, demand to be called back and exit.
-     *         if (chunk == null) {
-     *             source.demand(this::onContentAvailable);
-     *             return;
-     *         }
-     *
-     *         // The chunk is a failure.
-     *         if (Content.Chunk.isFailure(chunk))
-     *         {
-     *             boolean fatal = chunk.isLast();
-     *             if (fatal)
-     *             {
-     *                 handleFatalFailure(chunk.getFailure());
-     *                 return;
-     *             }
-     *             else
-     *             {
-     *                 handleTransientFailure(chunk.getFailure());
-     *                 continue;
-     *             }
-     *         }
-     *
-     *         // It's a valid chunk, consume the chunk's bytes.
-     *         ByteBuffer buffer = chunk.getByteBuffer();
-     *         // ...
-     *
-     *         // Release the chunk when it has been consumed.
-     *         chunk.release();
-     *
-     *         // Exit if the Content.Source is fully consumed.
-     *         if (chunk.isLast())
-     *             break;
-     *     }
-     * }
-     * }</pre>
-     */
+    /// A source of content that can be read with a read/demand model.
+    ///
+    /// To avoid leaking its resources, a source **must** either:
+    ///
+    /// * be read until it returns a [`last chunk`][Chunk#isLast()], either EOF or a terminal failure
+    /// * be [`failed`][#fail(Throwable)]
+    ///
+    /// ### <a id="idiom">Idiomatic usage</a>
+    ///
+    /// The read/demand model typical usage is the following:
+    ///
+    /// ```
+    /// public void onContentAvailable() {
+    ///     while (true) {
+    ///         // Read a chunk.
+    ///         try (Chunk chunk = source.read()) {
+    ///             // There is no chunk, demand to be called back and return.
+    ///             if (chunk == null) {
+    ///                 source.demand(this::onContentAvailable);
+    ///                 return;
+    ///             }
+    ///
+    ///             // The chunk is a failure.
+    ///             if (Content.Chunk.isFailure(chunk)) {
+    ///                 boolean fatal = chunk.isLast();
+    ///                 if (fatal) {
+    ///                     handleFatalFailure(chunk.getFailure());
+    ///                     return;
+    ///                 } else {
+    ///                     handleTransientFailure(chunk.getFailure());
+    ///                     continue;
+    ///                 }
+    ///             }
+    ///
+    ///             // It's a valid chunk, consume the chunk's bytes synchronously.
+    ///             try (RetainableByteBuffer buffer = chunk.acquire()) {
+    ///                 consume(buffer);
+    ///             }
+    ///
+    ///             // Exit if the Content.Source is fully consumed.
+    ///             if (chunk.isLast()) {
+    ///                 break;
+    ///             }
+    ///         } // Release the chunk.
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// If the chunk, or its bytes, must remain valid after the try-with-resources block
+    /// (for example because they are passed to an asynchronous operation, stored, or returned),
+    /// the chunk must be retained before leaving the block and released when its bytes
+    /// are no longer needed.
+    /// For asynchronous operations completed via a [Callback], release the chunk by
+    /// wrapping the callback as shown below.
+    ///
+    /// ```
+    /// public void copySourceToSink(Source source, Sink sink, Callback callback) {
+    ///     try (Content.Chunk chunk = source.read()) {
+    ///         ...
+    ///         // The chunk will be used in an asynchronous operation, retain it.
+    ///         chunk.retain();
+    ///         try (RetainableByteBuffer buffer = chunk.acquire()) {
+    ///             // Wrap the callback to release the chunk
+    ///             // when the asynchronous operation completes.
+    ///             sink.write(chunk.isLast(), buffer, Callback.from(chunk::release, callback));
+    ///         }
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// Note that it is the chunk that must be retained, not the buffer.
+    /// Retaining only the buffer obtained from [Chunk#acquire()] is not sufficient,
+    /// because the chunk and the buffer may have different reference counts.
+    /// The last release of the chunk may trigger actions that signal to the
+    /// [Source] that the buffer bytes may be reused; however, the write operation
+    /// may not be complete yet, and the bytes reuse will cause data corruption.
     public interface Source
     {
-        /**
-         * Factory of {@link Content.Source}.
-         */
+        /// Factory of [Content.Source].
         interface Factory
         {
-            /**
-             * Creates a new {@link Content.Source}.
-             *
-             * @param bufferPool the {@link ByteBufferPool.Sized} to get buffers from. {@code null} means allocate new buffers as needed.
-             * @param offset the offset byte of the content to start from.
-             *               Must be greater than or equal to 0 and less than the content length (if known).
-             * @param length the length of the content to make available, -1 for the full length.
-             *               If the size of the content is known, the length may be truncated to the content size minus the offset.
-             * @return a {@link Content.Source}.
-             * @throws IndexOutOfBoundsException if the offset or length are out of range.
-             * @see TypeUtil#checkOffsetLengthSize(long, long, long)
-             */
+            /// Creates a new [Content.Source].
+            ///
+            /// @param bufferPool the [ByteBufferPool.Sized] to get buffers from. `null` means allocate new buffers as needed.
+            /// @param offset the offset byte of the content to start from.
+            ///               Must be greater than or equal to 0 and less than the content length (if known).
+            /// @param length the length of the content to make available, -1 for the full length.
+            ///               If the size of the content is known, the length may be truncated to the content size minus the offset.
+            /// @return a [Content.Source].
+            /// @throws IndexOutOfBoundsException if the offset or length are out of range.
+            /// @see TypeUtil#checkOffsetLengthSize(long, long, long)
             Content.Source newContentSource(ByteBufferPool.Sized bufferPool, long offset, long length);
         }
 
-        /**
-         * Create a {@code Content.Source} from zero or more {@link ByteBuffer}s
-         * @param byteBuffers The {@link ByteBuffer}s to use as the source.
-         * @return A {@code Content.Source}
-         */
+        /// Create a `Content.Source` from zero or more [ByteBuffer]s
+        /// @param byteBuffers The [ByteBuffer]s to use as the source.
+        /// @return A `Content.Source`
         static Content.Source from(ByteBuffer... byteBuffers)
         {
             return new ByteBufferContentSource(byteBuffers);
@@ -197,45 +211,39 @@ public class Content
             return new RetainableByteBufferContentSource(buffers);
         }
 
-        /**
-         * Create a {@code Content.Source} from a {@link Path}.
-         * @param path The {@link Path}s to use as the source.
-         * @return A {@code Content.Source}
-         */
+        /// Create a `Content.Source` from a [Path].
+        /// @param path The [Path]s to use as the source.
+        /// @return A `Content.Source`
         static Content.Source from(Path path)
         {
             return from(null, path, 0, -1);
         }
 
-        /**
-         * Create a {@code Content.Source} from a {@link Path}.
-         *
-         * @param path The {@link Path}s to use as the source.
-         * @param offset the offset byte of the content to start from.
-         *               Must be greater than or equal to 0 and less than the content length (if known).
-         * @param length the length of the content to make available, -1 for the full length.
-         *               If the size of the content is known, the length may be truncated to the content size minus the offset.
-         * @return a {@link Content.Source}.
-         * @throws IndexOutOfBoundsException if the offset or length are out of range.
-         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
-         */
+        /// Create a `Content.Source` from a [Path].
+        ///
+        /// @param path The [Path]s to use as the source.
+        /// @param offset the offset byte of the content to start from.
+        ///               Must be greater than or equal to 0 and less than the content length (if known).
+        /// @param length the length of the content to make available, -1 for the full length.
+        ///               If the size of the content is known, the length may be truncated to the content size minus the offset.
+        /// @return a [Content.Source].
+        /// @throws IndexOutOfBoundsException if the offset or length are out of range.
+        /// @see TypeUtil#checkOffsetLengthSize(long, long, long)
         static Content.Source from(Path path, long offset, long length)
         {
             return from(null, path, offset, length);
         }
 
-        /**
-         * Wrap a {@link Content.Source} to make it appear as a sub-range of the original.
-         *
-         * @param source The {@link Content.Source} to wrap.
-         * @param offset the offset byte of the content to start from.
-         *               Must be greater than or equal to 0 and less than the content length (if known).
-         * @param length the length of the content to make available, -1 for the full length.
-         *               If the size of the content is known, the length may be truncated to the content size minus the offset.
-         * @return a {@link Content.Source}.
-         * @throws IndexOutOfBoundsException if the offset or length are out of range.
-         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
-         */
+        /// Wrap a [Content.Source] to make it appear as a sub-range of the original.
+        ///
+        /// @param source The [Content.Source] to wrap.
+        /// @param offset the offset byte of the content to start from.
+        ///               Must be greater than or equal to 0 and less than the content length (if known).
+        /// @param length the length of the content to make available, -1 for the full length.
+        ///               If the size of the content is known, the length may be truncated to the content size minus the offset.
+        /// @return a [Content.Source].
+        /// @throws IndexOutOfBoundsException if the offset or length are out of range.
+        /// @see TypeUtil#checkOffsetLengthSize(long, long, long)
         static Content.Source from(Content.Source source, long offset, long length)
         {
             // If the offset and length include the full content, then do not wrap.
@@ -245,57 +253,49 @@ public class Content
             return new ContentSourceRange(source, offset, length);
         }
 
-        /**
-         * Create a {@code Content.Source} from a {@link Path}.
-         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
-         * @param path The {@link Path}s to use as the source.
-         * @return A {@code Content.Source}
-         */
+        /// Create a `Content.Source` from a [Path].
+        /// @param byteBufferPool The [ByteBufferPool.Sized] to use for any internal buffers.
+        /// @param path The [Path]s to use as the source.
+        /// @return A `Content.Source`
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path)
         {
             return from(byteBufferPool, path, 0, -1);
         }
 
-        /**
-         * Create a {@code Content.Source} from a {@link Path}.
-         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
-         * @param path The {@link Path}s to use as the source.
-         * @param offset the offset byte of the content to start from.
-         *               Must be greater than or equal to 0 and less than the content length (if known).
-         * @param length the length of the content to make available, -1 for the full length.
-         *               If the size of the content is known, the length may be truncated to the content size minus the offset.
-         * @return a {@link Content.Source}.
-         * @throws IndexOutOfBoundsException if the offset or length are out of range.
-         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
-         */
+        /// Create a `Content.Source` from a [Path].
+        /// @param byteBufferPool The [ByteBufferPool.Sized] to use for any internal buffers.
+        /// @param path The [Path]s to use as the source.
+        /// @param offset the offset byte of the content to start from.
+        ///               Must be greater than or equal to 0 and less than the content length (if known).
+        /// @param length the length of the content to make available, -1 for the full length.
+        ///               If the size of the content is known, the length may be truncated to the content size minus the offset.
+        /// @return a [Content.Source].
+        /// @throws IndexOutOfBoundsException if the offset or length are out of range.
+        /// @see TypeUtil#checkOffsetLengthSize(long, long, long)
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, Path path, long offset, long length)
         {
             return new ByteChannelContentSource.PathContentSource(byteBufferPool, path, offset, length);
         }
 
-        /**
-         * Create a {@code Content.Source} from a {@link ByteChannel}.
-         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
-         * @param byteChannel The {@link ByteChannel}s to use as the source.
-         * @return A {@code Content.Source}
-         */
+        /// Create a `Content.Source` from a [ByteChannel].
+        /// @param byteBufferPool The [ByteBufferPool.Sized] to use for any internal buffers.
+        /// @param byteChannel The [ByteChannel]s to use as the source.
+        /// @return A `Content.Source`
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel)
         {
             return new ByteChannelContentSource(byteBufferPool, byteChannel);
         }
 
-        /**
-         * Create a {@code Content.Source} from a {@link ByteChannel}.
-         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
-         * @param seekableByteChannel The {@link ByteChannel}s to use as the source.
-         * @param offset the offset byte of the content to start from.
-         *               Must be greater than or equal to 0 and less than the content length (if known).
-         * @param length the length of the content to make available, -1 for the full length.
-         *               If the size of the content is known, the length may be truncated to the content size minus the offset.
-         * @return a {@link Content.Source}.
-         * @throws IndexOutOfBoundsException if the offset or length are out of range.
-         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
-         */
+        /// Create a `Content.Source` from a [ByteChannel].
+        /// @param byteBufferPool The [ByteBufferPool.Sized] to use for any internal buffers.
+        /// @param seekableByteChannel The [ByteChannel]s to use as the source.
+        /// @param offset the offset byte of the content to start from.
+        ///               Must be greater than or equal to 0 and less than the content length (if known).
+        /// @param length the length of the content to make available, -1 for the full length.
+        ///               If the size of the content is known, the length may be truncated to the content size minus the offset.
+        /// @return a [Content.Source].
+        /// @throws IndexOutOfBoundsException if the offset or length are out of range.
+        /// @see TypeUtil#checkOffsetLengthSize(long, long, long)
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, SeekableByteChannel seekableByteChannel, long offset, long length)
         {
             return new ByteChannelContentSource(byteBufferPool, seekableByteChannel, offset, length);
@@ -306,57 +306,49 @@ public class Content
             return from(null, inputStream);
         }
 
-        /**
-         * Create a {@code Content.Source} from an {@link InputStream}.
-         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
-         * @param inputStream The {@link InputStream}s to use as the source.
-         * @return A {@code Content.Source}
-         */
+        /// Create a `Content.Source` from an [InputStream].
+        /// @param byteBufferPool The [ByteBufferPool.Sized] to use for any internal buffers.
+        /// @param inputStream The [InputStream]s to use as the source.
+        /// @return A `Content.Source`
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream)
         {
             return new InputStreamContentSource(inputStream, byteBufferPool);
         }
 
-        /**
-         * Create a {@code Content.Source} from an {@link InputStream}.
-         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
-         * @param inputStream The {@link InputStream}s to use as the source.
-         * @param offset the offset byte of the resource to start from.
-         *               Must be greater than or equal to 0 and less than the resource size (if known).
-         * @param length the length of the content to make available, or -1 for the full length available.
-         *               The length may be truncated if the stream ends sooner.
-         * @return a {@link Content.Source}.
-         * @throws IndexOutOfBoundsException if the offset or length are out of range.
-         * @see TypeUtil#checkOffsetLengthSize(long, long, long)
-         */
+        /// Create a `Content.Source` from an [InputStream].
+        /// @param byteBufferPool The [ByteBufferPool.Sized] to use for any internal buffers.
+        /// @param inputStream The [InputStream]s to use as the source.
+        /// @param offset the offset byte of the resource to start from.
+        ///               Must be greater than or equal to 0 and less than the resource size (if known).
+        /// @param length the length of the content to make available, or -1 for the full length available.
+        ///               The length may be truncated if the stream ends sooner.
+        /// @return a [Content.Source].
+        /// @throws IndexOutOfBoundsException if the offset or length are out of range.
+        /// @see TypeUtil#checkOffsetLengthSize(long, long, long)
         static Content.Source from(ByteBufferPool.Sized byteBufferPool, InputStream inputStream, long offset, long length)
         {
             return new InputStreamContentSource(inputStream, byteBufferPool, offset, length);
         }
 
-        /**
-         * <p>Reads, non-blocking, the whole content source into a {@link ByteBuffer}.</p>
-         *
-         * @param source the source to read
-         * @param promise the promise to notify when the whole content has been read into a ByteBuffer.
-         */
+        /// Reads, non-blocking, the whole content source into a [ByteBuffer].
+        ///
+        /// @param source the source to read
+        /// @param promise the promise to notify when the whole content has been read into a ByteBuffer.
         static void asByteBuffer(Source source, Promise<ByteBuffer> promise)
         {
             Promise.Invocable<RetainableByteBuffer> p = Promise.Invocable.from(
                 Invocable.getInvocationType(promise),
-                b -> promise.succeeded(b.getByteBuffer(true)),
+                b -> promise.succeeded(b.getByteBuffer(false)),
                 promise::failed
             );
             asRetainableByteBuffer(source, -1, p);
         }
 
-        /**
-         * <p>Reads, blocking if necessary, the whole content source into a {@link ByteBuffer}.</p>
-         *
-         * @param source the source to read
-         * @return the ByteBuffer containing the content
-         * @throws IOException if reading the content fails
-         */
+        /// Reads, blocking if necessary, the whole content source into a [ByteBuffer].
+        ///
+        /// @param source the source to read
+        /// @return the ByteBuffer containing the content
+        /// @throws IOException if reading the content fails
         static ByteBuffer asByteBuffer(Source source) throws IOException
         {
             try
@@ -373,25 +365,21 @@ public class Content
             }
         }
 
-        /**
-         * <p>Reads, non-blocking, the whole content source into a {@code byte} array.</p>
-         *
-         * @param source the source to read
-         * @param maxSize The maximum size to read, or -1 for no limit
-         * @param promise the {@link Promise.Invocable} to notify when the whole content has been read into a byte array.
-         */
+        /// Reads, non-blocking, the whole content source into a `byte` array.
+        ///
+        /// @param source the source to read
+        /// @param maxSize The maximum size to read, or -1 for no limit
+        /// @param promise the [Promise.Invocable] to notify when the whole content has been read into a byte array.
         static void asByteArrayAsync(Source source, int maxSize, Promise.Invocable<byte[]> promise)
         {
             asRetainableByteBuffer(source, maxSize, Promise.Invocable.toPromise(promise, RetainableByteBuffer::getArray));
         }
 
-        /**
-         * <p>Reads, non-blocking, the whole content source into a {@link org.eclipse.jetty.io.RetainableByteBuffer}.</p>
-         *
-         * @param source the source to read
-         * @param maxSize The maximum size to read, or -1 for no limit
-         * @param promise the promise to notify when the whole content has been read into a RetainableByteBuffer.
-         */
+        /// Reads, non-blocking, the whole content source into a [RetainableByteBuffer].
+        ///
+        /// @param source the source to read
+        /// @param maxSize The maximum size to read, or -1 for no limit
+        /// @param promise the promise to notify when the whole content has been read into a RetainableByteBuffer.
         static void asRetainableByteBuffer(Source source, long maxSize, Promise<RetainableByteBuffer> promise)
         {
             new ContentSourceRetainableByteBuffer(source, maxSize, promise).run();
@@ -418,41 +406,35 @@ public class Content
             }
         }
 
-        /**
-         * <p>Reads, non-blocking, the whole content source into a {@link String}, converting the bytes
-         * using the given {@link Charset}.</p>
-         *
-         * @param source the source to read
-         * @param charset the charset to use to convert the bytes into characters
-         * @param promise the promise to notify when the whole content has been converted into a String
-         */
+        /// Reads, non-blocking, the whole content source into a [String], converting the bytes
+        /// using the given [Charset].
+        ///
+        /// @param source the source to read
+        /// @param charset the charset to use to convert the bytes into characters
+        /// @param promise the promise to notify when the whole content has been converted into a String
         static void asString(Source source, Charset charset, Promise<String> promise)
         {
             new ContentSourceString(source, charset, promise).convert();
         }
 
-        /**
-         * <p>Reads, blocking if necessary, the whole content source into a {@link String}, converting
-         * the bytes using UTF-8.</p>
-         *
-         * @param source the source to read
-         * @return the String obtained from the content
-         * @throws IOException if reading the content fails
-         */
+        /// Reads, blocking if necessary, the whole content source into a [String], converting
+        /// the bytes using UTF-8.
+        ///
+        /// @param source the source to read
+        /// @return the String obtained from the content
+        /// @throws IOException if reading the content fails
         static String asString(Source source) throws IOException
         {
             return asString(source, StandardCharsets.UTF_8);
         }
 
-        /**
-         * <p>Reads, blocking if necessary, the whole content source into a {@link String}, converting
-         * the bytes using the given {@link Charset}.</p>
-         *
-         * @param source the source to read
-         * @param charset the charset to use to decode bytes
-         * @return the String obtained from the content
-         * @throws IOException if reading the content fails
-         */
+        /// Reads, blocking if necessary, the whole content source into a [String], converting
+        /// the bytes using the given [Charset].
+        ///
+        /// @param source the source to read
+        /// @param charset the charset to use to decode bytes
+        /// @return the String obtained from the content
+        /// @throws IOException if reading the content fails
         static String asString(Source source, Charset charset) throws IOException
         {
             try
@@ -469,65 +451,40 @@ public class Content
             }
         }
 
-        /**
-         * <p>Read, non-blocking, the whole content source into a {@link String}, converting
-         * the bytes using the given {@link Charset}.</p>
-         *
-         * @param source the source to read
-         * @param charset the charset to use to decode bytes
-         * @return the {@link CompletableFuture} to notify when the whole content has been read
-         * @deprecated use {@link #asString(Source, Charset, Promise)} instead
-         */
-        @Deprecated(forRemoval = true, since = "12.0.15")
-        static CompletableFuture<String> asStringAsync(Source source, Charset charset)
-        {
-            Promise.Completable<String> completable = new Promise.Completable<>();
-            asString(source, charset, completable);
-            return completable;
-        }
-
-        /**
-         * <p>Wraps the given content source with an {@link InputStream}.</p>
-         *
-         * @param source the source to read from
-         * @return an InputStream that reads from the content source
-         */
+        /// Wraps the given content source with an [InputStream].
+        ///
+        /// @param source the source to read from
+        /// @return an InputStream that reads from the content source
         static InputStream asInputStream(Source source)
         {
             return new ContentSourceInputStream(source);
         }
 
-        /**
-         * <p>Wraps the given content source with a {@link Flow.Publisher}.</p>
-         *
-         * @param source the source to read from
-         * @return a Publisher that publishes chunks read from the content source
-         */
+        /// Wraps the given content source with a [Flow.Publisher].
+        ///
+        /// @param source the source to read from
+        /// @return a Publisher that publishes chunks read from the content source
         static Flow.Publisher<Chunk> asPublisher(Source source)
         {
             return new ContentSourcePublisher(source);
         }
 
-        /**
-         * <p>Reads, non-blocking, the given content source, until a {@link Chunk#isFailure(Chunk) failure} or EOF
-         * and discards the content.</p>
-         *
-         * @param source the source to read from
-         * @param callback the callback to notify when the whole content has been read
-         * or a failure occurred while reading the content
-         */
+        /// Reads, non-blocking, the given content source, until a [`failure`][Chunk#isFailure(Chunk)] or EOF
+        /// and discards the content.
+        ///
+        /// @param source the source to read from
+        /// @param callback the callback to notify when the whole content has been read
+        /// or a failure occurred while reading the content
         static void consumeAll(Source source, Callback callback)
         {
             new ContentSourceConsumer(source, callback).run();
         }
 
-        /**
-         * <p>Reads, blocking if necessary, the given content source, until a {@link Chunk#isFailure(Chunk) failure}
-         * or EOF, and discards the content.</p>
-         *
-         * @param source the source to read from
-         * @throws IOException if reading the content fails
-         */
+        /// Reads, blocking if necessary, the given content source, until a [`failure`][Chunk#isFailure(Chunk)]
+        /// or EOF, and discards the content.
+        ///
+        /// @param source the source to read from
+        /// @throws IOException if reading the content fails
         static void consumeAll(Source source) throws IOException
         {
             try
@@ -544,135 +501,137 @@ public class Content
             }
         }
 
-        /**
-         * @return the content length, if known, or -1 if the content length is unknown
-         */
+        /// @return the content length, if known, or -1 if the content length is unknown
         default long getLength()
         {
             return -1;
         }
 
-        /**
-         * <p>Reads a chunk of content.</p>
-         * <p>See how to use this method <a href="#idiom">idiomatically</a>.</p>
-         * <p>The returned chunk could be:</p>
-         * <ul>
-         * <li>{@code null}, to signal that there isn't a chunk of content available</li>
-         * <li>an {@link Chunk} instance with non null {@link Chunk#getFailure()}, to signal that there was a failure
-         * trying to produce a chunk of content, or that the content production has been
-         * {@link #fail(Throwable) failed} externally</li>
-         * <li>a {@link Chunk} instance, containing the chunk of content.</li>
-         * </ul>
-         * <p>Once a read returns an {@link Chunk} instance with non-null {@link Chunk#getFailure()}
-         * then if the failure is {@link Chunk#isLast() last} further reads
-         * will continue to return the same failure chunk instance, otherwise further
-         * {@code read()} operations may return different non-failure chunks.</p>
-         * <p>Once a read returns a {@link Chunk#isLast() last chunk}, further reads will
-         * continue to return a last chunk (although the instance may be different).</p>
-         * <p>The content reader code must ultimately arrange for a call to
-         * {@link Chunk#release()} on the returned {@link Chunk}.</p>
-         * <p>Additionally, prior to the ultimate call to {@link Chunk#release()}, the reader
-         * code may make additional calls to {@link Chunk#retain()}, that must ultimately
-         * be matched by a correspondent number of calls to {@link Chunk#release()}.</p>
-         * <p>Concurrent reads from different threads are not recommended, as they are
-         * inherently in a race condition.</p>
-         * <p>Reads performed outside the invocation context of a
-         * {@link #demand(Runnable) demand callback} are allowed.
-         * However, reads performed with a pending demand are inherently in a
-         * race condition (the thread that reads with the thread that invokes the
-         * demand callback).</p>
-         *
-         * @return a chunk of content, possibly a failure instance, or {@code null}
-         * @see #demand(Runnable)
-         * @see Retainable
-         */
+        /// Reads a chunk of content.
+        ///
+        /// See how to use this method [idiomatically](#idiom).
+        ///
+        /// The returned chunk could be:
+        ///
+        ///   - `null`, to signal that there isn't a chunk of content available
+        ///   - an [Chunk] instance with non-null [Chunk#getFailure()], to signal that there was a failure
+        ///     trying to produce a chunk of content, or that the content production has been
+        ///     [`failed`][#fail(Throwable)] externally
+        ///   - a [Chunk] instance, containing the chunk of content.
+        ///
+        /// Once a read returns an [Chunk] instance with non-null [Chunk#getFailure()]
+        /// then if the failure is [`last`][Chunk#isLast()] further reads
+        /// will continue to return the same failure chunk instance, otherwise further
+        /// `read()` operations may return different non-failure chunks.
+        ///
+        /// Once a read returns a [`last chunk`][Chunk#isLast()], further reads will
+        /// continue to return a last chunk (although the instance may be different).
+        ///
+        /// The content reader code must ultimately arrange for a call to
+        /// [Chunk#release()] on the returned [Chunk].
+        ///
+        /// Additionally, prior to the ultimate call to [Chunk#release()], the reader
+        /// code may make additional calls to [Chunk#retain()], that must ultimately
+        /// be matched by a correspondent number of calls to [Chunk#release()].
+        ///
+        /// Concurrent reads from different threads are not recommended, as they are
+        /// inherently in a race condition.
+        ///
+        /// Reads performed outside the invocation context of a
+        /// [`demand callback`][#demand(Runnable)] are allowed.
+        /// However, reads performed with a pending demand are inherently in a
+        /// race condition (the thread that reads with the thread that invokes the
+        /// demand callback).
+        ///
+        /// @return a chunk of content, possibly a failure instance, or `null`
+        /// @see #demand(Runnable)
+        /// @see Retainable
         Chunk read();
 
-        /**
-         * <p>Demands to invoke the given demand callback parameter when a chunk of content is available.</p>
-         * <p>See how to use this method <a href="#idiom">idiomatically</a>.</p>
-         * <p>Implementations guarantee that calls to this method are safely reentrant so that
-         * stack overflows are avoided in the case of mutual recursion between the execution of
-         * the {@code Runnable} callback and a call to this method.  Invocations of the passed
-         * {@code Runnable} are serialized and a callback for {@code demand} call is
-         * not invoked until any previous {@code demand} callback has returned.
-         * Thus the {@code Runnable} should not block waiting for a callback of a future demand call.</p>
-         * <p>The demand callback may be invoked <em>spuriously</em>: a subsequent call to {@link #read()}
-         * may return {@code null}.</p>
-         * <p>Calling this method establishes a <em>pending demand</em>, which is fulfilled when the demand
-         * callback is invoked.</p>
-         * <p>Calling this method when there is already a pending demand results in an
-         * {@link IllegalStateException} to be thrown.</p>
-         * <p>If the invocation of the demand callback throws an exception, then {@link #fail(Throwable)}
-         * is called.</p>
-         *
-         * @param demandCallback the demand callback to invoke where there is a content chunk available
-         * @throws IllegalStateException when this method is called with an existing demand
-         * @see #read()
-         */
+        /// Demands to invoke the given demand callback parameter when a chunk of content is available.
+        ///
+        /// See how to use this method [idiomatically](#idiom).
+        ///
+        /// Implementations guarantee that calls to this method are safely reentrant so that
+        /// stack overflows are avoided in the case of mutual recursion between the execution of
+        /// the `Runnable` callback and a call to this method.  Invocations of the passed
+        /// `Runnable` are serialized and a callback for `demand` call is
+        /// not invoked until any previous `demand` callback has returned.
+        /// Thus, the `Runnable` should not block waiting for a callback of a future demand call.
+        ///
+        /// The demand callback may be invoked _spuriously_: a subsequent call to [#read()]
+        /// may return `null`.
+        ///
+        /// Calling this method establishes a _pending demand_, which is fulfilled when the demand
+        /// callback is invoked.
+        ///
+        /// Calling this method when there is already a pending demand results in an
+        /// [IllegalStateException] to be thrown.
+        ///
+        /// If the invocation of the demand callback throws an exception, then [#fail(Throwable)]
+        /// is called.
+        ///
+        /// @param demandCallback the demand callback to invoke where there is a content chunk available
+        /// @throws IllegalStateException when this method is called with an existing demand
+        /// @see #read()
         void demand(Runnable demandCallback);
 
-        /**
-         * <p>Fails this content source with a {@link Chunk#isLast() last} {@link Chunk#getFailure() failure chunk},
-         * failing and discarding accumulated content chunks that were not yet read.</p>
-         * <p>The failure may be notified to the content reader at a later time, when
-         * the content reader reads a content chunk, via a {@link Chunk} instance
-         * with a non null {@link Chunk#getFailure()}.</p>
-         * <p>If {@link #read()} has returned a last chunk, this is a no operation.</p>
-         * <p>Typical failure: the content being aborted by user code, or idle timeouts.</p>
-         * <p>If this method has already been called, then it is a no operation.</p>
-         *
-         * @param failure the cause of the failure
-         * @see Chunk#getFailure()
-         */
+        /// Fails this content source with a [`last`][Chunk#isLast()] [`failure chunk`][Chunk#getFailure()],
+        /// failing and discarding accumulated content chunks that were not yet read.
+        ///
+        /// The failure may be notified to the content reader at a later time, when
+        /// the content reader reads a content chunk, via a [Chunk] instance
+        /// with a non null [Chunk#getFailure()].
+        ///
+        /// If [#read()] has returned a last chunk, this is a no operation.
+        ///
+        /// Typical failure: the content being aborted by user code, or idle timeouts.
+        ///
+        /// If this method has already been called, then it is a no operation.
+        ///
+        /// @param failure the cause of the failure
+        /// @see Chunk#getFailure()
         void fail(Throwable failure);
 
-        /**
-         * <p>Fails this content source with a {@link Chunk#getFailure() failure chunk}
-         * that may or not may be {@link Chunk#isLast() last}.
-         * If {@code last} is {@code true}, then the failure is persistent and a call to this method acts
-         * as {@link #fail(Throwable)}. Otherwise the failure is transient and a
-         * {@link Chunk#getFailure() failure chunk} will be {@link #read() read} in order with content chunks,
-         * and subsequent calls to {@link #read() read} may produce other content.</p>
-         * <p>A {@code Content.Source} or its {@link #read() reader} may treat a transient failure as persistent.</p>
-         *
-         * @param failure A failure.
-         * @param last true if the failure is persistent, false if the failure is transient.
-         * @see Chunk#getFailure()
-         */
+        /// Fails this content source with a [`failure chunk`][Chunk#getFailure()]
+        /// that may or not may be [`last`][Chunk#isLast()].
+        /// If `last` is `true`, then the failure is persistent and a call to this method acts
+        /// as [#fail(Throwable)]. Otherwise, the failure is transient and a
+        /// [`failure chunk`][Chunk#getFailure()] will be [`read`][#read()] in order with content chunks,
+        /// and subsequent calls to [`read`][#read()] may produce other content.
+        ///
+        /// A `Content.Source` or its [`reader`][#read()] may treat a transient failure as persistent.
+        ///
+        /// @param failure A failure.
+        /// @param last true if the failure is persistent, false if the failure is transient.
+        /// @see Chunk#getFailure()
         default void fail(Throwable failure, boolean last)
         {
             fail(failure);
         }
 
-        /**
-         * <p>Rewinds this content, if possible, so that subsequent reads return
-         * chunks starting from the beginning of this content.</p>
-         *
-         * @return true if this content has been rewound, false if this content
-         * cannot be rewound
-         */
+        /// Rewinds this content, if possible, so that subsequent reads return
+        /// chunks starting from the beginning of this content.
+        ///
+        /// @return true if this content has been rewound, false if this content
+        /// cannot be rewound
         default boolean rewind()
         {
             return false;
         }
     }
 
-    /**
-     * <p>A content sink that writes the content to its implementation (a socket, a file, etc.).</p>
-     */
+    /// A content sink that writes the content to its implementation (a socket, a file, etc.).
     public interface Sink
     {
-        /**
-         * <p>Wraps the given {@link OutputStream} as a {@link Sink}.
-         * @param out The stream to wrap
-         * @return A sink wrapping the stream
-         */
+        /// Wraps the given [OutputStream] as a [Sink].
+        /// @param out The stream to wrap
+        /// @return A sink wrapping the stream
         static Sink from(OutputStream out)
         {
             return new Sink()
             {
-                boolean closed;
+                private boolean closed;
 
                 @Override
                 public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
@@ -688,37 +647,29 @@ public class Content
                         if (last)
                         {
                             closed = true;
-                            out.close();
+                            IO.close(out);
                         }
                         callback.succeeded();
                     }
                     catch (Throwable t)
                     {
+                        closed = true;
+                        IO.close(out);
                         callback.failed(t);
                     }
                 }
             };
         }
 
-        /**
-         * <p>Wraps the given {@link ByteChannel} as a {@link Sink}.
-         * @param channel The {@link ByteChannel} to wrap
-         * @return A sink wrapping the stream
-         */
+        /// Wraps the given [ByteChannel] as a [Sink].
+        /// @param channel The [ByteChannel] to wrap
+        /// @return A sink wrapping the stream
         static Sink from(ByteChannel channel)
         {
-            return new Sink()
+            return (last, buffer, callback) ->
             {
-                boolean closed;
-
-                @Override
-                public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
+                if (channel.isOpen())
                 {
-                    if (closed)
-                    {
-                        callback.failed(new EOFException());
-                        return;
-                    }
                     try
                     {
                         long remaining = buffer.remaining();
@@ -733,153 +684,75 @@ public class Content
                         }
 
                         if (last)
-                        {
-                            closed = true;
-                            channel.close();
-                        }
+                            IO.close(channel);
                         callback.succeeded();
                     }
                     catch (Throwable t)
                     {
+                        IO.close(channel);
                         callback.failed(t);
                     }
+                }
+                else
+                {
+                    callback.failed(new EOFException());
                 }
             };
         }
 
-        /**
-         * <p>Wraps the given {@link AsynchronousByteChannel} as a {@link Sink}.
-         * @param channel The {@link AsynchronousByteChannel} to wrap
-         * @return A sink wrapping the stream
-         */
+        /// Wraps the given [AsynchronousByteChannel] as a [Sink].
+        /// @param channel The [AsynchronousByteChannel] to wrap
+        /// @return A sink wrapping the stream
         static Sink from(AsynchronousByteChannel channel)
         {
-            return new Sink()
+            return (last, buffer, callback) ->
             {
-                boolean closed;
-
-                @Override
-                public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
-                {
-                    if (closed)
-                    {
-                        callback.failed(new EOFException());
-                        return;
-                    }
-                    try
-                    {
-                        buffer.retain();
-                        buffer.read(new RetainableByteBuffer.Reader()
-                        {
-                            @Override
-                            public long readFrom(ByteBuffer input)
-                            {
-                                return write(channel, input, this);
-                            }
-
-                            private long write(AsynchronousByteChannel channel, ByteBuffer input, RetainableByteBuffer.Reader reader)
-                            {
-                                channel.write(input, input, new CompletionHandler<>()
-                                {
-                                    @Override
-                                    public void completed(Integer written, ByteBuffer byteBuffer)
-                                    {
-                                        if (byteBuffer.hasRemaining())
-                                        {
-                                            channel.write(byteBuffer, byteBuffer, this);
-                                        }
-                                        else
-                                        {
-                                            if (buffer.hasRemaining())
-                                            {
-                                                try
-                                                {
-                                                    buffer.read(reader);
-                                                }
-                                                catch (IOException e)
-                                                {
-                                                    callback.failed(e);
-                                                }
-                                            }
-                                            else
-                                            {
-                                                buffer.release();
-                                                if (last)
-                                                {
-                                                    closed = true;
-                                                    IO.close(channel);
-                                                }
-                                                callback.succeeded();
-                                            }
-                                        }
-                                    }
-
-                                    @Override
-                                    public void failed(Throwable x, ByteBuffer buffer1)
-                                    {
-                                        buffer.release();
-                                        callback.failed(x);
-                                    }
-                                });
-                                return 0;
-                            }
-                        });
-                    }
-                    catch (Throwable t)
-                    {
-                        callback.failed(t);
-                    }
-                }
+                if (channel.isOpen())
+                    new AsynchronousByteChannelWriter(channel, last, buffer, callback).iterate();
+                else
+                    callback.failed(new EOFException());
             };
         }
 
-        /**
-         * <p>Wraps the given content sink with a buffering sink.</p>
-         *
-         * @param sink the sink to write to
-         * @param bufferPool the {@link ByteBufferPool} to use
-         * @param direct true to use direct buffers, false to use heap buffers
-         * @param maxAggregationSize the maximum size that can be buffered in a single write;
-         * any size above this threshold triggers a buffer flush
-         * @param maxBufferSize the maximum size of the buffer
-         * @return a Sink that writes to the given content sink
-         */
+        /// Wraps the given content sink with a buffering sink.
+        ///
+        /// @param sink the sink to write to
+        /// @param bufferPool the [ByteBufferPool] to use
+        /// @param direct true to use direct buffers, false to use heap buffers
+        /// @param maxAggregationSize the maximum size that can be buffered in a single write;
+        /// any size above this threshold triggers a buffer flush
+        /// @param maxBufferSize the maximum size of the buffer
+        /// @return a Sink that writes to the given content sink
         static Sink asBuffered(Sink sink, ByteBufferPool bufferPool, boolean direct, int maxAggregationSize, int maxBufferSize)
         {
             return new BufferedContentSink(sink, bufferPool, direct, maxAggregationSize, maxBufferSize);
         }
 
-        /**
-         * <p>Wraps the given content sink with an {@link OutputStream}.</p>
-         *
-         * @param sink the sink to write to
-         * @return an OutputStream that writes to the content sink
-         */
+        /// Wraps the given content sink with an [OutputStream].
+        ///
+        /// @param sink the sink to write to
+        /// @return an OutputStream that writes to the content sink
         static OutputStream asOutputStream(Sink sink)
         {
             return new ContentSinkOutputStream(sink);
         }
 
-        /**
-         * <p>Wraps the given content sink with a {@link Flow.Subscriber}.</p>
-         *
-         * @param sink the sink to write to
-         * @param callback the callback to notify when the Subscriber is complete
-         * @return a Subscriber that writes to the content sink
-         */
+        /// Wraps the given content sink with a [Flow.Subscriber].
+        ///
+        /// @param sink the sink to write to
+        /// @param callback the callback to notify when the Subscriber is complete
+        /// @return a Subscriber that writes to the content sink
         static Flow.Subscriber<Chunk> asSubscriber(Sink sink, Callback callback)
         {
             return new ContentSinkSubscriber(sink, callback);
         }
 
-        /**
-         * <p>Blocking version of {@link #write(boolean, RetainableByteBuffer, Callback)}.</p>
-         *
-         * @param sink the sink to write to
-         * @param last whether the ByteBuffers are the last to write
-         * @param byteBuffer the ByteBuffers to write
-         * @throws IOException if the write operation fails
-         */
+        /// Blocking version of [#write(boolean, RetainableByteBuffer, Callback)].
+        ///
+        /// @param sink the sink to write to
+        /// @param last whether the ByteBuffers are the last to write
+        /// @param byteBuffer the ByteBuffers to write
+        /// @throws IOException if the write operation fails
         static void write(Sink sink, boolean last, ByteBuffer byteBuffer) throws IOException
         {
             try (Blocker.Callback callback = Blocker.callback())
@@ -889,27 +762,27 @@ public class Content
             }
         }
 
-        /**
-         * <p>Writes the given {@link String}, converting it to UTF-8 bytes,
-         * notifying the {@link Callback} when the write is complete.</p>
-         *
-         * @param last whether the String is the last to write
-         * @param utf8Content the String to write
-         * @param callback the callback to notify when the write operation is complete.
-         *                 Implementations have the same guarantees for invocation of this
-         *                 callback as for {@link #write(boolean, RetainableByteBuffer, Callback)}.
-         */
+        /// Writes the given [String], converting it to UTF-8 bytes,
+        /// notifying the [Callback] when the write operation is complete.
+        ///
+        /// @param last whether the String is the last to write
+        /// @param utf8Content the String to write
+        /// @param callback the callback to notify when the write operation is complete.
+        ///                 Implementations have the same guarantees for invocation of this
+        ///                 callback as for [#write(boolean, RetainableByteBuffer, Callback)].
         static void write(Sink sink, boolean last, String utf8Content, Callback callback)
         {
             sink.write(last, RetainableByteBuffer.wrap(utf8Content, StandardCharsets.UTF_8), callback);
         }
 
-        /// Writes the given [RetainableByteBuffer], notifying the [Callback]
-        /// when the write operation is complete.
+        /// Writes the given [RetainableByteBuffer], possibly asynchronously,
+        /// notifying the [Callback] when the write operation is complete.
         ///
         /// Implementations guarantee that calls to this method are safely reentrant so that
         /// stack overflows are avoided in the case of mutual recursion between the execution
         /// of the [Callback] and a call to this method.
+        ///
+        /// Implementations report failures by failing the callback, not by throwing.
         ///
         /// @param last whether the buffer is the last to write
         /// @param buffer the [RetainableByteBuffer] to write
@@ -917,17 +790,14 @@ public class Content
         void write(boolean last, RetainableByteBuffer buffer, Callback callback);
     }
 
-    /**
-     * <p>A chunk of content indicating whether it is the last chunk.</p>
-     * <p>Optionally, a release function may be specified (for example
-     * to release the {@code ByteBuffer} back into a pool), or the
-     * {@link #release()} method overridden.</p>
-     */
+    /// A chunk of content indicating whether it is the last chunk.
+    ///
+    /// Optionally, a release function may be specified (for example
+    /// to release the `ByteBuffer` back into a pool), or the
+    /// [#release()] method overridden.
     public interface Chunk extends Retainable
     {
-        /**
-         * <p>An empty chunk implementation.</p>
-         */
+        /// An empty chunk implementation.
         abstract class Empty implements Chunk
         {
             protected Empty()
@@ -947,9 +817,7 @@ public class Content
             }
         }
 
-        /**
-         * <p>An empty, non-last, chunk instance.</p>
-         */
+        /// An empty, non-last, chunk instance.
         Chunk EMPTY = new Empty()
         {
             @Override
@@ -965,9 +833,7 @@ public class Content
             }
         };
 
-        /**
-         * <p>An empty, last, chunk.</p>
-         */
+        /// An empty, last, chunk.
         Content.Chunk EOF = new Empty()
         {
             @Override
@@ -1016,26 +882,22 @@ public class Content
             return last ? EOF : EMPTY;
         }
 
-        /**
-         * <p>Creates an {@link Chunk#isFailure(Chunk) failure chunk} with the given failure
-         * and {@link Chunk#isLast()} returning true.</p>
-         *
-         * @param failure the cause of the failure
-         * @return a new {@link Chunk#isFailure(Chunk) failure chunk}
-         */
+        /// Creates an [`failure chunk`][Chunk#isFailure(Chunk)] with the given failure
+        /// and [Chunk#isLast()] returning true.
+        ///
+        /// @param failure the cause of the failure
+        /// @return a new [`failure chunk`][Chunk#isFailure(Chunk)]
         static Chunk from(Throwable failure)
         {
             return from(failure, true);
         }
 
-        /**
-         * <p>Creates an {@link Chunk#isFailure(Chunk) failure chunk} with the given failure
-         * and given {@link Chunk#isLast() last} state.</p>
-         *
-         * @param failure the cause of the failure
-         * @param last true if the failure is terminal, else false for transient failure
-         * @return a new {@link Chunk#isFailure(Chunk) failure chunk}
-         */
+        /// Creates an [`failure chunk`][Chunk#isFailure(Chunk)] with the given failure
+        /// and given [`last`][Chunk#isLast()] state.
+        ///
+        /// @param failure the cause of the failure
+        /// @param last true if the failure is terminal, else false for transient failure
+        /// @return a new [`failure chunk`][Chunk#isFailure(Chunk)]
         static Chunk from(Throwable failure, boolean last)
         {
             return new Empty()
@@ -1059,40 +921,39 @@ public class Content
             };
         }
 
-        /**
-         * <p>Returns the chunk that follows the given chunk.</p>
-         * <table>
-         * <caption>Next Chunk</caption>
-         * <thead>
-         *   <tr>
-         *     <th>Input Chunk</th>
-         *     <th>Output Chunk</th>
-         *   </tr>
-         * </thead>
-         * <tbody>
-         *   <tr>
-         *     <td>{@code null}</td>
-         *     <td>{@code null}</td>
-         *   </tr>
-         *   <tr>
-         *     <td>{@link Chunk#isFailure(Chunk) Failure} and {@link Chunk#isLast() last}</td>
-         *     <td>{@link Error Error}</td>
-         *   </tr>
-         *   <tr>
-         *     <td>{@link Chunk#isFailure(Chunk) Failure} and {@link Chunk#isLast() not last}</td>
-         *     <td>{@code null}</td>
-         *   </tr>
-         *   <tr>
-         *     <td>{@link #isLast()}</td>
-         *     <td>{@link #EOF}</td>
-         *   </tr>
-         *   <tr>
-         *     <td>any other Chunk</td>
-         *     <td>{@code null}</td>
-         *   </tr>
-         * </tbody>
-         * </table>
-         */
+        /// Returns the chunk that follows the given chunk.
+        ///
+        /// <table>
+        /// <caption>Next Chunk</caption>
+        /// <thead>
+        ///   <tr>
+        ///     <th>Input Chunk</th>
+        ///     <th>Output Chunk</th>
+        ///   </tr>
+        /// </thead>
+        /// <tbody>
+        ///   <tr>
+        ///     <td><code>null</code></td>
+        ///     <td><code>null</code></td>
+        ///   </tr>
+        ///   <tr>
+        ///     <td>[<code>Failure</code>][Chunk#isFailure(Chunk)] and [<code>last</code>][Chunk#isLast()]</td>
+        ///     <td>[<code>Error</code>][Error]</td>
+        ///   </tr>
+        ///   <tr>
+        ///     <td>[<code>Failure</code>][Chunk#isFailure(Chunk)] and [<code>not last</code>][Chunk#isLast()]</td>
+        ///     <td><code>null</code></td>
+        ///   </tr>
+        ///   <tr>
+        ///     <td>[#isLast()]</td>
+        ///     <td>[#EOF]</td>
+        ///   </tr>
+        ///   <tr>
+        ///     <td>any other Chunk</td>
+        ///     <td><code>null</code></td>
+        ///   </tr>
+        /// </tbody>
+        /// </table>
         static Chunk next(Chunk chunk)
         {
             if (chunk == null)
@@ -1135,19 +996,17 @@ public class Content
             return null;
         }
 
-        /**
-         * Convenience method to release a chunk and return {@link #next(Chunk)}.
-         * Equivalent to:
-         * <pre>{@code
-         * if (chunk != null)
-         * {
-         *     chunk.release();
-         *     chunk = Chunk.next(chunk);
-         * }
-         * }</pre>
-         * @param chunk The chunk to release or {@code null}
-         * @return The {@link #next(Chunk)} chunk;
-         */
+        /// Convenience method to release a chunk and return [#next(Chunk)].
+        /// Equivalent to:
+        /// ```
+        /// if (chunk != null)
+        /// {
+        ///     chunk.release();
+        ///     chunk = Chunk.next(chunk);
+        /// }
+        /// ```
+        /// @param chunk The chunk to release or `null`
+        /// @return The [#next(Chunk)] chunk;
         static Chunk releaseAndNext(Chunk chunk)
         {
             if (chunk == null)
@@ -1156,21 +1015,17 @@ public class Content
             return next(chunk);
         }
 
-        /**
-         * @param chunk The chunk to test for an {@link Chunk#getFailure() failure}.
-         * @return True if the chunk is non-null and {@link Chunk#getFailure() chunk.getError()} returns non-null.
-         */
+        /// @param chunk The chunk to test for an [`failure`][Chunk#getFailure()].
+        /// @return True if the chunk is non-null and [`chunk.getError()`][Chunk#getFailure()] returns non-null.
         static boolean isFailure(Chunk chunk)
         {
             return chunk != null && chunk.getFailure() != null;
         }
 
-        /**
-         * @param chunk The chunk to test for an {@link Chunk#getFailure() failure}
-         * @param last The {@link Chunk#isLast() last} status to test for.
-         * @return True if the chunk is non-null and {@link Chunk#getFailure()} returns non-null
-         *         and {@link Chunk#isLast()} matches the passed status.
-         */
+        /// @param chunk The chunk to test for an [`failure`][Chunk#getFailure()]
+        /// @param last The [`last`][Chunk#isLast()] status to test for.
+        /// @return True if the chunk is non-null and [Chunk#getFailure()] returns non-null
+        ///         and [Chunk#isLast()] matches the passed status.
         static boolean isFailure(Chunk chunk, boolean last)
         {
             return chunk != null && chunk.getFailure() != null && chunk.isLast() == last;
@@ -1208,22 +1063,32 @@ public class Content
             return remaining() > 0;
         }
 
-        /**
-         * <p>Implementations of this interface may process {@link Chunk}s being copied by the
-         * {@link Content#copy(Source, Sink, Processor, Callback)} method, so that
-         * {@link Chunk}s of unknown types can be copied.
-         * @see Content#copy(Source, Sink, Processor, Callback)
-         */
+        /// Implementations of this interface may process [Chunk]s being copied by the
+        /// [Content#copy(Source, Sink, Processor, Callback)] method, so that
+        /// [Chunk]s of unknown types can be copied.
+        ///
+        /// @see Content#copy(Source, Sink, Processor, Callback)
         interface Processor
         {
-            /**
-             * @param chunk The chunk to be considered for processing, including persistent and transient failures.
-             * @param callback The callback that will be called once the accepted chunk is processed.
-             *                 {@link Callback#succeeded() Succeeding} this callback will allow the processing of subsequent chunks.
-             *                 {@link Callback#failed(Throwable) Failing} this callback will fail the processing of all chunks.
-             * @return {@code true} if the chunk will be processed asynchronously and the callback will be called (or may have already been called),
-             *         {@code false} otherwise, in which case subsequent chunks may be processed and the passed callback ignored.
-             */
+            /// Processes the given [Chunk], possibly asynchronously.
+            ///
+            /// Implementations that return `true` process the [Chunk]
+            /// and eventually complete the [Callback].
+            ///
+            /// If the processing is asynchronous, implementations must [retain][Chunk#retain()]
+            /// the chunk, and arrange to [release][Chunk#release()] the chunk when the processing
+            /// is complete, typically by wrapping the [Callback].
+            ///
+            /// Succeeding the [Callback] resumes the processing of subsequent chunks.
+            /// Failing the [Callback] fails the [Source] from which the [Chunk] was read.
+            /// Exceptions thrown by this method are treated as failing the callback.
+            ///
+            /// Implementations that return `false` do not process the [Chunk]
+            /// and do not complete the [Callback].
+            ///
+            /// @param chunk the [Chunk] to be considered for processing, including persistent and transient failures.
+            /// @param callback the callback to complete when the chunk has been processed
+            /// @return whether the chunk is accepted for processing
             boolean process(Chunk chunk, Callback callback);
         }
     }

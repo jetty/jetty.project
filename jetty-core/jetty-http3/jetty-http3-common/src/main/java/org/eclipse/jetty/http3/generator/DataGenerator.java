@@ -18,28 +18,29 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class DataGenerator extends FrameGenerator
 {
     private final boolean useDirectByteBuffers;
 
-    public DataGenerator(WritableBufferPool bufferPool, boolean useDirectByteBuffers)
+    public DataGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         super(bufferPool);
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
     @Override
-    public long generate(RetainableByteBuffer.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(BufferAccumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         DataFrame dataFrame = (DataFrame)frame;
         return generateDataFrame(accumulator, dataFrame);
     }
 
-    private long generateDataFrame(RetainableByteBuffer.Accumulator accumulator, DataFrame frame)
+    private long generateDataFrame(BufferAccumulator accumulator, DataFrame frame)
     {
         RetainableByteBuffer data = frame.acquire();
         long dataLength = data.remaining();

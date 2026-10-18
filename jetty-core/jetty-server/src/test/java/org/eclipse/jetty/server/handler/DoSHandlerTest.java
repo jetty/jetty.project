@@ -250,7 +250,7 @@ public class DoSHandlerTest
                 {
                     while (NanoTime.isBefore(NanoTime.now(), end))
                     {
-                        String response = connector.getResponseAsString("""
+                        String response = connector.getResponse("""
                                 GET / HTTP/1.1\r
                                 Host: local\r
                                 
@@ -302,7 +302,7 @@ public class DoSHandlerTest
                         try
                         {
                             outstanding.incrementAndGet();
-                            String response = connector.getResponseAsString("""
+                            String response = connector.getResponse("""
                                 GET /%s HTTP/1.1\r
                                 Host: local\r
                                 

@@ -66,11 +66,14 @@ import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -294,8 +297,8 @@ public class AsyncIOServletTest extends AbstractTest
                 clientLatch.countDown();
             });
 
-        // HTTP/2 does not close a Connection when the request idle times out.
-        if (transportType != TransportType.H2C && transportType != TransportType.H2)
+        // Multiplexed transports do not close the Connection when the request idle times out.
+        if (!transportType.isMultiplexed())
             assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "close latch expired");
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS), "response latch expired");
         content.close();
@@ -1195,9 +1198,10 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    @Disabled // TODO
     public void testAsyncIntercepted(TransportType transportType) throws Exception
     {
+        ArrayByteBufferPool.Tracking serverBufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(new QueuedThreadPool(), null, serverBufferPool);
         start(transportType, new HttpServlet()
         {
             @Override
@@ -1219,7 +1223,6 @@ public class AsyncIOServletTest extends AbstractTest
                             case 0:
                                 // null transform
                                 content.skip(content.remaining());
-                                content.succeeded();
                                 state++;
                                 return null;
 
@@ -1235,7 +1238,6 @@ public class AsyncIOServletTest extends AbstractTest
                                 {
                                     RetainableByteBuffer.Mutable copy = RetainableByteBuffer.Mutable.allocate((int)buffer.remaining(), false);
                                     copy.put(buffer);
-                                    content.succeeded();
                                     return new HttpInput.Content(copy);
                                 }
                             }
@@ -1251,8 +1253,6 @@ public class AsyncIOServletTest extends AbstractTest
                                 {
                                     try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
                                     {
-                                        if (!content.hasContent())
-                                            content.succeeded();
                                         return new HttpInput.Content(slice);
                                     }
                                 }
@@ -1273,7 +1273,6 @@ public class AsyncIOServletTest extends AbstractTest
                                 try (RetainableByteBuffer buffer = content.acquire())
                                 {
                                     byte[] data = buffer.getArray();
-                                    content.succeeded();
                                     saved = new HttpInput.Content(RetainableByteBuffer.wrap(data));
                                     return new HttpInput.Content(RetainableByteBuffer.wrap(data));
                                 }
@@ -1367,6 +1366,9 @@ public class AsyncIOServletTest extends AbstractTest
         content.close();
 
         assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
+
+        server.stop();
+        assertEquals(0, serverBufferPool.getLeaks().size(), serverBufferPool::dumpLeaks);
     }
 
     @ParameterizedTest
@@ -1553,9 +1555,10 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    @Disabled // TODO
     public void testAsyncInterceptedTwiceWithNulls(TransportType transportType) throws Exception
     {
+        ArrayByteBufferPool.Tracking serverBufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(new QueuedThreadPool(), null, serverBufferPool);
         start(transportType, new HttpServlet()
         {
             @Override
@@ -1571,12 +1574,10 @@ public class AsyncIOServletTest extends AbstractTest
                     // Skip contents with odd numbers.
                     try (RetainableByteBuffer buffer = chunk.acquire())
                     {
-                        RetainableByteBuffer slice = buffer.slice();
-                        buffer.get();
-                        int num = Character.getNumericValue(buffer.get());
-                        chunk.succeeded();
+                        int num = Character.getNumericValue(buffer.get(1));
+                        ByteBuffer copy = buffer.getByteBuffer(false);
                         if (num % 2 == 0)
-                            return new HttpInput.Content(slice);
+                            return new HttpInput.Content(RetainableByteBuffer.wrap(copy));
                         return null;
                     }
                 });
@@ -1674,6 +1675,9 @@ public class AsyncIOServletTest extends AbstractTest
         contentProvider.close();
 
         assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
+
+        server.stop();
+        assertEquals(0, serverBufferPool.getLeaks().size(), serverBufferPool::dumpLeaks);
     }
 
     @ParameterizedTest

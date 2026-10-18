@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -107,7 +107,21 @@ public abstract class EventsHandler extends Handler.Wrapper
     {
         try
         {
-            onRequestRead(wrapped, chunk);
+            if (chunk == null || Content.Chunk.isFailure(chunk) || chunk instanceof Trailers || !chunk.hasRemaining())
+            {
+                onRequestRead(wrapped, chunk);
+                return;
+            }
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                try (RetainableByteBuffer slice = buffer.slice())
+                {
+                    try (Content.Chunk view = Content.Chunk.from(slice, chunk.isLast()))
+                    {
+                        onRequestRead(wrapped, view);
+                    }
+                }
+            }
         }
         catch (Throwable x)
         {
@@ -145,9 +159,9 @@ public abstract class EventsHandler extends Handler.Wrapper
 
     private void notifyOnResponseWrite(Request request, boolean last, RetainableByteBuffer content)
     {
-        try
+        try (RetainableByteBuffer view = content != null ? content.slice() : null)
         {
-            onResponseWrite(request, last, content);
+            onResponseWrite(request, last, view);
         }
         catch (Throwable x)
         {
@@ -157,9 +171,9 @@ public abstract class EventsHandler extends Handler.Wrapper
 
     private void notifyOnResponseWriteComplete(Request request, boolean last, RetainableByteBuffer content, Throwable failure)
     {
-        try
+        try (RetainableByteBuffer view = content != null ? content.slice() : null)
         {
-            onResponseWriteComplete(request, last, content, failure);
+            onResponseWriteComplete(request, last, view, failure);
         }
         catch (Throwable x)
         {
@@ -216,9 +230,9 @@ public abstract class EventsHandler extends Handler.Wrapper
      * {@link Request#read()}).
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
-     * @param chunk a potentially null request content chunk, including {@link org.eclipse.jetty.io.Content.Chunk#isFailure(Content.Chunk) error}
-     *              and {@link org.eclipse.jetty.http.Trailers} chunks.
-     *              If a reference to the chunk (or its {@link ByteBuffer}) is kept,
+     * @param chunk a potentially null view of the request content chunk, including {@link Content.Chunk#isFailure(Content.Chunk) error}
+     *              and {@link Trailers} chunks.
+     *              If a reference to the chunk (or its {@link RetainableByteBuffer}) is kept,
      *              then {@link Content.Chunk#retain()} must be called.
      * @see Request#read()
      */
@@ -264,7 +278,7 @@ public abstract class EventsHandler extends Handler.Wrapper
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
      * @param last indicating last write
-     * @param content The {@link RetainableByteBuffer} of the response content chunk.
+     * @param content A view of the {@link RetainableByteBuffer} of the response content chunk
      * @see Response#write(boolean, RetainableByteBuffer, Callback)
      */
     protected void onResponseWrite(Request request, boolean last, RetainableByteBuffer content)
@@ -281,25 +295,14 @@ public abstract class EventsHandler extends Handler.Wrapper
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
      * @param last indicating last write
-     * @param content The {@link RetainableByteBuffer} of the response content chunk (read-only).
+     * @param content A view of the {@link RetainableByteBuffer} of the response content chunk
      * @param failure if there was a failure to write the given content
      * @see Response#write(boolean, RetainableByteBuffer, Callback)
      */
     protected void onResponseWriteComplete(Request request, boolean last, RetainableByteBuffer content, Throwable failure)
     {
-        onResponseWriteComplete(request, failure);
-    }
-
-    /**
-     * @param request the request object
-     * @param failure the write failure, or {@code null} if the write operation succeeded
-     * @deprecated use {@link #onResponseWriteComplete(Request, boolean, RetainableByteBuffer, Throwable)} instead
-     */
-    @Deprecated(since = "12.1.11", forRemoval = true)
-    protected void onResponseWriteComplete(Request request, Throwable failure)
-    {
         if (LOG.isDebugEnabled())
-            LOG.debug("onResponseWriteComplete of {}", request, failure);
+            LOG.debug("onResponseWriteComplete of {} content={}", request, content, failure);
     }
 
     /**
@@ -322,22 +325,6 @@ public abstract class EventsHandler extends Handler.Wrapper
      * has been completed).
      *
      * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
-     * @param failure if there was a failure to complete.
-     * @deprecated Override {@link #onComplete(Request, int, HttpFields, Throwable)} instead.
-     */
-    @Deprecated
-    protected void onComplete(Request request, Throwable failure)
-    {
-    }
-
-    /**
-     * Invoked when the request <em>and</em> response processing are complete,
-     * just before the request and response will be recycled (i.e. after the
-     * {@link Runnable} return from {@link org.eclipse.jetty.server.HttpChannel#onRequest(MetaData.Request)}
-     * has returned and the {@link Callback} passed to {@link Handler#handle(Request, Response, Callback)}
-     * has been completed).
-     *
-     * @param request the request object. The {@code read()}, {@code demand(Runnable)} and {@code fail(Throwable)} methods must not be called by the listener.
      * @param status the response status.
      * @param headers the immutable fields of the response object.
      * @param failure if there was a failure to complete.
@@ -346,7 +333,6 @@ public abstract class EventsHandler extends Handler.Wrapper
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onComplete of {} status={} headers={}", request, status, headers);
-        onComplete(request, failure);
     }
 
     private class EventsResponse extends Response.Wrapper
@@ -363,8 +349,8 @@ public abstract class EventsHandler extends Handler.Wrapper
         public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
             notifyOnResponseBegin(getRequest(), this);
-            notifyOnResponseWrite(getRequest(), last, buffer);
             RetainableByteBuffer copy = buffer == null ? null : buffer.slice();
+            notifyOnResponseWrite(getRequest(), last, copy);
             super.write(last, buffer, Callback.from(callback.getInvocationType(), () ->
             {
                 notifyOnResponseWriteComplete(getRequest(), last, copy, null);

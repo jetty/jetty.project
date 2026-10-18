@@ -87,7 +87,7 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponseAsString("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(200));
         assertThat(response.getContent(), containsString("Hello World"));
     }
@@ -108,7 +108,7 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponseAsString("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(500));
         assertThat(response.getContent(), containsString("8193&gt;8192"));
     }
@@ -127,7 +127,7 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponseAsString("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(500));
         assertThat(response.getContent(), containsString("8193&gt;8192"));
     }
@@ -169,7 +169,7 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponseAsString("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+            _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), equalTo(200));
         assertTrue(error.get());
 
@@ -197,7 +197,7 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponseAsString("""
+            _local.getResponse("""
                 POST /ctx/hello HTTP/1.0\r
                 Content-Length: 8\r
                 \r
@@ -223,7 +223,7 @@ public class SizeLimitHandlerTest
         });
         _server.start();
         HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponseAsString("""
+            _local.getResponse("""
                 POST /ctx/hello HTTP/1.0\r
                 Content-Length: 32768\r
                 \r
@@ -290,7 +290,7 @@ public class SizeLimitHandlerTest
         for (int i = 0; i < 1000; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
-                _local.getResponseAsString("GET /ctx/hello HTTP/1.0\r\n\r\n"));
+                _local.getResponse("GET /ctx/hello HTTP/1.0\r\n\r\n"));
             assertThat(response.getStatus(), equalTo(200));
             assertThat(response.getContent(), equalTo(message));
         }

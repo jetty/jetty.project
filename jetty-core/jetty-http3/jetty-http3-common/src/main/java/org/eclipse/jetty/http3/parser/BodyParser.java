@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.parser;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
@@ -38,8 +39,8 @@ public abstract class BodyParser
 
     protected BodyParser(HeaderParser headerParser, ParserListener listener)
     {
-        this.headerParser = headerParser;
-        this.listener = listener;
+        this.headerParser = Objects.requireNonNull(headerParser);
+        this.listener = Objects.requireNonNull(listener);
     }
 
     protected ParserListener getParserListener()

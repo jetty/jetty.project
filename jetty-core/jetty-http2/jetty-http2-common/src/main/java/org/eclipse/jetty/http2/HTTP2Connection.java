@@ -33,9 +33,9 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -52,7 +52,7 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     private final Queue<Runnable> tasks = new ArrayDeque<>();
     private final HTTP2Producer producer = new HTTP2Producer();
     private final AtomicLong bytesIn = new AtomicLong();
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final HTTP2Session session;
     private final int bufferSize;
     private final int minBufferSpace;
@@ -60,12 +60,12 @@ public class HTTP2Connection extends AbstractConnection implements Parser.Listen
     private boolean useInputDirectByteBuffers;
     private boolean useOutputDirectByteBuffers;
 
-    protected HTTP2Connection(WritableBufferPool bufferPool, Executor executor, EndPoint endPoint, HTTP2Session session, int bufferSize)
+    protected HTTP2Connection(ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, HTTP2Session session, int bufferSize)
     {
         this(bufferPool, executor, endPoint, session, bufferSize, -1);
     }
 
-    protected HTTP2Connection(WritableBufferPool bufferPool, Executor executor, EndPoint endPoint, HTTP2Session session, int bufferSize, int minBufferSpace)
+    protected HTTP2Connection(ByteBufferPool bufferPool, Executor executor, EndPoint endPoint, HTTP2Session session, int bufferSize, int minBufferSpace)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
