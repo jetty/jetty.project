@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.io.jmh;
+package org.eclipse.jetty.util.buffer.jmh;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -52,14 +52,6 @@ public class ArrayByteBufferPoolBenchmark
         new Runner(opt).run();
     }
 
-    @Param("0")
-    int minCapacity;
-    @Param("65536")
-    int maxCapacity;
-    @Param("4096")
-    int factor;
-    @Param("-1")
-    int maxBucketSize;
     @Param({"0", "1048576"})
     long maxMemory;
     @Param({"true"})
@@ -70,7 +62,7 @@ public class ArrayByteBufferPoolBenchmark
     @Setup
     public void prepare()
     {
-        pool = new ArrayByteBufferPool(minCapacity, factor, maxCapacity, maxBucketSize, maxMemory, maxMemory);
+        pool = new ArrayByteBufferPool(new int[]{4 * 1024, 8 * 1024, 12 * 1024, 16 * 1024, 20 * 1024, 24 * 1024, 28 * 1024, 32 * 1024}, maxMemory, maxMemory);
         pool.setStatisticsEnabled(statisticsEnabled);
     }
 
@@ -88,7 +80,7 @@ public class ArrayByteBufferPoolBenchmark
         RetainableByteBuffer input = pool.acquire(61440, true);
 
         // Simulate a write of random size from the application.
-        int capacity = ThreadLocalRandom.current().nextInt(minCapacity, maxCapacity);
+        int capacity = ThreadLocalRandom.current().nextInt(pool.getMaxCapacity());
         RetainableByteBuffer output = pool.acquire(capacity, true);
 
         output.release();
@@ -116,9 +108,9 @@ public class ArrayByteBufferPoolBenchmark
         // Simulate a change in buffer sizes after half of the iterations.
         int capacity;
         if (iterations <= 15)
-            capacity = ThreadLocalRandom.current().nextInt(minCapacity, maxCapacity / 2);
+            capacity = ThreadLocalRandom.current().nextInt(pool.getMaxCapacity() / 2);
         else
-            capacity = ThreadLocalRandom.current().nextInt(maxCapacity / 2, maxCapacity);
+            capacity = ThreadLocalRandom.current().nextInt(pool.getMaxCapacity() / 2, pool.getMaxCapacity());
         RetainableByteBuffer output = pool.acquire(capacity, true);
 
         output.release();

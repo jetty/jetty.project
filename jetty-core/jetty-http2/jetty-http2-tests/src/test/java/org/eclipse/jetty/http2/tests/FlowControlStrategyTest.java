@@ -59,6 +59,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -809,12 +810,12 @@ public class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         RetainableByteBuffer extraData = RetainableByteBuffer.allocate(1024, false);
         http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), (int)extraData.remaining());
         try (Blocker.Callback callback = Blocker.callback())
         {
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 http2Session.getEndPoint().write(buffer, callback);
             }
@@ -914,12 +915,12 @@ public class FlowControlStrategyTest
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         RetainableByteBuffer extraData = RetainableByteBuffer.allocate(1024, false);
         http2Session.getGenerator().data(accumulator, new DataFrame(stream.getId(), extraData, true), (int)extraData.remaining());
         try (Blocker.Callback callback = Blocker.callback())
         {
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 http2Session.getEndPoint().write(buffer, callback);
             }

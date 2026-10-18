@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Deque;
@@ -72,7 +71,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -286,7 +284,7 @@ public class AsyncIOServletTest extends AbstractTest
 
         String data = "0123456789";
         AsyncRequestContent content = new AsyncRequestContent();
-        content.write(ByteBuffer.wrap(data.getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+        content.offer(false, data, UTF_8, Callback.NOOP);
         CountDownLatch responseLatch = new CountDownLatch(1);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
@@ -617,7 +615,7 @@ public class AsyncIOServletTest extends AbstractTest
     public void testIsReadyAtEOF(TransportType transportType) throws Exception
     {
         String text = "TEST\n";
-        byte[] data = text.getBytes(StandardCharsets.UTF_8);
+        byte[] data = text.getBytes(UTF_8);
 
         start(transportType, new HttpServlet()
         {
@@ -658,7 +656,7 @@ public class AsyncIOServletTest extends AbstractTest
                     public void onAllDataRead() throws IOException
                     {
                         assertScope();
-                        output.write(String.format("i=%d eof=%b finished=%b", _i, _minusOne, _finished).getBytes(StandardCharsets.UTF_8));
+                        output.write(String.format("i=%d eof=%b finished=%b", _i, _minusOne, _finished).getBytes(UTF_8));
                         async.complete();
                     }
 
@@ -730,7 +728,7 @@ public class AsyncIOServletTest extends AbstractTest
                     public void onAllDataRead() throws IOException
                     {
                         assertScope();
-                        out.write(success.getBytes(StandardCharsets.UTF_8));
+                        out.write(success.getBytes(UTF_8));
                         async.complete();
                     }
 
@@ -745,7 +743,7 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        byte[] data = "X".getBytes(StandardCharsets.UTF_8);
+        byte[] data = "X".getBytes(UTF_8);
         CountDownLatch clientLatch = new CountDownLatch(1);
         AsyncRequestContent content = new AsyncRequestContent()
         {
@@ -775,8 +773,7 @@ public class AsyncIOServletTest extends AbstractTest
             });
 
         sleep(100);
-        content.write(ByteBuffer.wrap(data), Callback.NOOP);
-        content.close();
+        content.offer(true, RetainableByteBuffer.wrap(data), Callback.NOOP);
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
@@ -841,7 +838,7 @@ public class AsyncIOServletTest extends AbstractTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
-                        output.write(success.getBytes(StandardCharsets.UTF_8));
+                        output.write(success.getBytes(UTF_8));
                         async.complete();
                     }
 
@@ -856,7 +853,6 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        byte[] data = "X".getBytes(StandardCharsets.UTF_8);
         CountDownLatch clientLatch = new CountDownLatch(1);
         AsyncRequestContent content = new AsyncRequestContent();
         client.newRequest(newURI(transportType))
@@ -879,8 +875,7 @@ public class AsyncIOServletTest extends AbstractTest
             });
 
         sleep(100);
-        content.write(ByteBuffer.wrap(data), Callback.NOOP);
-        content.close();
+        content.offer(true, "X", UTF_8, Callback.NOOP);
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
@@ -914,7 +909,7 @@ public class AsyncIOServletTest extends AbstractTest
                             int b = input.read();
                             if (b < 0)
                             {
-                                output.write(success.getBytes(StandardCharsets.UTF_8));
+                                output.write(success.getBytes(UTF_8));
                                 async.complete();
                                 return;
                             }
@@ -925,7 +920,7 @@ public class AsyncIOServletTest extends AbstractTest
                     public void onAllDataRead() throws IOException
                     {
                         assertScope();
-                        output.write("FAILURE".getBytes(StandardCharsets.UTF_8));
+                        output.write("FAILURE".getBytes(UTF_8));
                         throw new IllegalStateException();
                     }
 
@@ -1071,7 +1066,7 @@ public class AsyncIOServletTest extends AbstractTest
 
         String content = "0123456789ABCDEF";
         AsyncRequestContent requestContent = new AsyncRequestContent();
-        requestContent.write(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+        requestContent.offer(false, content, UTF_8, Callback.NOOP);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
@@ -1151,7 +1146,7 @@ public class AsyncIOServletTest extends AbstractTest
 
         CountDownLatch responseLatch = new CountDownLatch(1);
         AsyncRequestContent requestContent = new AsyncRequestContent();
-        requestContent.write(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+        requestContent.offer(false, content, UTF_8, Callback.NOOP);
         var request = client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(requestContent)
@@ -1260,13 +1255,13 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        AsyncRequestContent contentProvider = new AsyncRequestContent();
+        AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch clientLatch = new CountDownLatch(1);
 
         AtomicReference<Result> resultRef = new AtomicReference<>();
         client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
-            .body(contentProvider)
+            .body(content)
             .send(new RetainingResponseListener()
             {
                 @Override
@@ -1279,9 +1274,9 @@ public class AsyncIOServletTest extends AbstractTest
 
         for (int i = 0; i < 1_000; i++)
         {
-            contentProvider.write(BufferUtil.toBuffer("S" + i), Callback.NOOP);
+            content.offer(false, "S" + i, UTF_8, Callback.NOOP);
         }
-        contentProvider.close();
+        content.close();
 
         assertTrue(clientLatch.await(30, TimeUnit.SECONDS));
         assertThat(resultRef.get().isSucceeded(), Matchers.is(true));
@@ -1386,7 +1381,7 @@ public class AsyncIOServletTest extends AbstractTest
         setStreamIdleTimeout(idleTimeout);
 
         CountDownLatch latch = new CountDownLatch(1);
-        byte[] bytes = "[{\"key\":\"value\"}]".getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = "[{\"key\":\"value\"}]".getBytes(UTF_8);
         OutputStreamRequestContent content = new OutputStreamRequestContent("application/json;charset=UTF-8")
         {
             @Override
@@ -1545,7 +1540,7 @@ public class AsyncIOServletTest extends AbstractTest
         assertTrue(bodyLatch.await(5, TimeUnit.SECONDS));
 
         // Send a first chunk of body.
-        body.write(ByteBuffer.allocate(512), Callback.NOOP);
+        body.offer(false, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
 
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
 

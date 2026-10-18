@@ -17,6 +17,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class DataGenerator
@@ -28,7 +29,7 @@ public class DataGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public int generate(RetainableByteBuffer.Accumulator accumulator, DataFrame frame, int maxLength)
+    public int generate(BufferAccumulator accumulator, DataFrame frame, int maxLength)
     {
         try (RetainableByteBuffer buffer = frame.acquire())
         {
@@ -36,7 +37,7 @@ public class DataGenerator
         }
     }
 
-    public int generateData(RetainableByteBuffer.Accumulator accumulator, int streamId, RetainableByteBuffer data, boolean last, int maxLength)
+    public int generateData(BufferAccumulator accumulator, int streamId, RetainableByteBuffer data, boolean last, int maxLength)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -59,7 +60,7 @@ public class DataGenerator
         return Frame.HEADER_LENGTH + length;
     }
 
-    private void generateFrame(RetainableByteBuffer.Accumulator accumulator, int streamId, RetainableByteBuffer data, boolean last)
+    private void generateFrame(BufferAccumulator accumulator, int streamId, RetainableByteBuffer data, boolean last)
     {
         long length = data.remaining();
 

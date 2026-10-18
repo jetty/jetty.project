@@ -299,7 +299,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             Deflater deflater = getDeflater();
             while (true)
             {
-                long compressed = buffer.quietWrite(b ->
+                long compressed = buffer.write(b ->
                 {
                     int offset = b.arrayOffset() + b.position();
                     int length = bufferSize - b.position();
@@ -340,7 +340,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             {
                 // Special case: 7.2.3.6.  Generating an Empty Fragment Manually
                 // https://tools.ietf.org/html/rfc7692#section-7.2.3.6
-                buffer = buffer.put((byte)0);
+                buffer.put((byte)0);
             }
 
             if (LOG.isDebugEnabled())
@@ -348,7 +348,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
 
             Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
             chunk.setRsv1(first && frame.getOpCode() != OpCode.CONTINUATION);
-            buffer.quietRead(b ->
+            buffer.read(b ->
             {
                 chunk.setPayload(b);
                 return b.remaining();
@@ -430,7 +430,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             boolean complete = false;
             while (true)
             {
-                long decompressed = payload.quietWrite(b ->
+                long decompressed = payload.write(b ->
                 {
                     try
                     {
@@ -473,7 +473,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
 
             Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
             chunk.setRsv1(false);
-            payload.quietRead(b ->
+            payload.read(b ->
             {
                 chunk.setPayload(b);
                 return b.remaining();

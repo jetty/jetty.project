@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -393,14 +392,11 @@ public class HTTPClientDocs
             void publish(byte[] bytes, boolean lastContent)
             {
                 // Wrap the bytes into a new ByteBuffer.
-                ByteBuffer buffer = ByteBuffer.wrap(bytes);
-
-                // Write the content.
-                content.write(buffer, Callback.NOOP);
-
-                // Close AsyncRequestContent when all the content is arrived.
-                if (lastContent)
-                    content.close();
+                try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(bytes))
+                {
+                    // Offer the content to be sent to the server.
+                    content.offer(lastContent, buffer, Callback.NOOP);
+                }
             }
         }
         // end::asyncRequestContent[]
@@ -633,7 +629,7 @@ public class HTTPClientDocs
                     // Closing the buffer will release this acquire.
                     try (RetainableByteBuffer buffer = chunk.acquire())
                     {
-                        content2.write(chunk.isLast(), buffer, Callback.from(() ->
+                        content2.offer(chunk.isLast(), buffer, Callback.from(() ->
                         {
                             // When the request chunk is successfully sent to
                             // server2, demand more response content from server1.

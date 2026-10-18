@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -136,7 +137,7 @@ public class BlockedIOTest extends AbstractTest
                 }
             })
             .send(null);
-        requestContent.write(BufferUtil.toBuffer("1"), Callback.NOOP);
+        requestContent.offer(false, "1", UTF_8, Callback.NOOP);
 
         assertTrue(ok.await(10, TimeUnit.SECONDS));
         assertThat(readException.get(), instanceOf(IOException.class));

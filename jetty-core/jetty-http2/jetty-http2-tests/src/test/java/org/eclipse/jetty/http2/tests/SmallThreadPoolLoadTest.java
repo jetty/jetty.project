@@ -206,7 +206,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                 {
                     int contentLength = (int)request.getHeaders().getLongField("X-Download");
                     if (contentLength > 0)
-                        response.write(true, RetainableByteBuffer.wrap(new byte[contentLength]), callback);
+                        response.write(true, RetainableByteBuffer.allocate(contentLength, false), callback);
                     else
                         callback.succeeded();
                 }

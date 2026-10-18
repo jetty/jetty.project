@@ -16,9 +16,10 @@ package org.eclipse.jetty.io.content;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
@@ -28,11 +29,11 @@ import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
  * are converted to a {@link Content.Chunk} and returned from {@link #read()}.</p>
  * <p>The {@code OutputStream} must be closed to signal that all the content has been written.</p>
  *
- * @see AsyncContent
+ * @see AsyncContentSource
  */
 public class OutputStreamContentSource implements Content.Source, Closeable
 {
-    private final AsyncContent async = new AsyncContent();
+    private final AsyncContentSource async = new AsyncContentSource();
     private final AsyncOutputStream output = new AsyncOutputStream();
 
     public OutputStream getOutputStream()
@@ -83,11 +84,17 @@ public class OutputStreamContentSource implements Content.Source, Closeable
         @Override
         public void write(byte[] b, int off, int len) throws IOException
         {
-            try
+            try (Blocker.Callback callback = Blocker.callback())
             {
-                FutureCallback callback = new FutureCallback();
-                async.write(false, RetainableByteBuffer.wrap(b, off, len), callback);
-                callback.get();
+                // The copy is necessary, since the byte[] may still be in
+                // use when the callback is completed, and returning from
+                // this method typically means that the byte[] can be reused.
+                byte[] bytes = Arrays.copyOfRange(b, off, off + len);
+                try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(bytes))
+                {
+                    async.offer(false, buffer, callback);
+                }
+                callback.block();
             }
             catch (Throwable x)
             {

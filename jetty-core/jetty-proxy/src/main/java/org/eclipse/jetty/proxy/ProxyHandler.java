@@ -293,7 +293,7 @@ public abstract class ProxyHandler extends Handler.Abstract
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} P2S continuing request", requestId(clientToProxyRequest));
                     var proxyToServerRequestContent = newProxyToServerRequestContent(clientToProxyRequest, proxyToClientResponse, proxyToServerRequest);
-                    Content.copy(proxyToServerRequestContent, delayedProxyToServerRequestContent,
+                    Content.copy(proxyToServerRequestContent, delayedProxyToServerRequestContent::offer,
                         Callback.from(delayedProxyToServerRequestContent::close, delayedProxyToServerRequestContent::fail));
                 };
                 proxyToServerRequest.attribute(PROXY_TO_SERVER_CONTINUE_ATTRIBUTE, action);

@@ -52,7 +52,7 @@ public class RewriteHandlerMissingChildTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
 
         assertEquals(500, response.getStatus(), "Expected HTTP 500 error from RewriteHandler");
         assertEquals("Server Error", response.getReason());

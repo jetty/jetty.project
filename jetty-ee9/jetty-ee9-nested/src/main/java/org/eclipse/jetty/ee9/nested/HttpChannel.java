@@ -44,7 +44,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -61,6 +60,7 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -825,7 +825,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             _state.completing();
             RetainableByteBuffer buffer = _response.getHttpOutput().takeContentAndClose();
             Callback callback = Callback.from(buffer::release, Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
-            buffer.quietRead(b ->
+            buffer.read(b ->
             {
                 int r = b.remaining();
                 sendResponse(null, b, true, callback);
@@ -898,7 +898,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             LOG.debug("onContent {} {}", this, content);
         try (RetainableByteBuffer buffer = content.acquire())
         {
-            buffer.quietRead(b ->
+            buffer.read(b ->
             {
                 int r = b.remaining();
                 _combinedListener.onRequestContent(_request, b);

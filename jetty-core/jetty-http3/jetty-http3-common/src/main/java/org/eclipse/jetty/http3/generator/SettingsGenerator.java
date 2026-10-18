@@ -18,27 +18,28 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class SettingsGenerator extends FrameGenerator
 {
     private final boolean useDirectByteBuffers;
 
-    public SettingsGenerator(WritableBufferPool bufferPool, boolean useDirectByteBuffers)
+    public SettingsGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         super(bufferPool);
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
-    public long generate(RetainableByteBuffer.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(BufferAccumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(accumulator, settingsFrame);
     }
 
-    private long generateSettings(RetainableByteBuffer.Accumulator accumulator, SettingsFrame frame)
+    private long generateSettings(BufferAccumulator accumulator, SettingsFrame frame)
     {
         int length = 0;
         Map<Long, Long> settings = frame.getSettings();

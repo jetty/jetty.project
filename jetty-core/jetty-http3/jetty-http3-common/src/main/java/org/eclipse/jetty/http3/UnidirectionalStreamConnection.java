@@ -21,13 +21,12 @@ import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +35,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection.NonBlocki
 {
     private static final Logger LOG = LoggerFactory.getLogger(UnidirectionalStreamConnection.class);
 
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final QpackEncoder encoder;
     private final QpackDecoder decoder;
     private final ParserListener listener;
@@ -47,7 +46,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection.NonBlocki
     public UnidirectionalStreamConnection(StreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
     {
         super(endPoint, executor);
-        this.bufferPool = WritableBufferPool.wrap(bufferPool);
+        this.bufferPool = bufferPool;
         this.encoder = encoder;
         this.decoder = decoder;
         this.listener = listener;

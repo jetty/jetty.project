@@ -52,7 +52,7 @@ public class ZstandardDecoderSource extends DecoderSource
             {
                 boolean last = inputChunk.isLast();
                 boolean[] fullyFlushed = new boolean[1];
-                inputBuffer.quietRead(input ->
+                inputBuffer.read(input ->
                 {
                     int position = input.position();
 
@@ -69,7 +69,7 @@ public class ZstandardDecoderSource extends DecoderSource
                         directBuffer = compression.acquireBuffer(input.remaining());
                         directBuffer.put(input);
                         ByteBuffer[] result = new ByteBuffer[1];
-                        directBuffer.quietRead(b ->
+                        directBuffer.read(b ->
                         {
                             result[0] = b;
                             return 0;

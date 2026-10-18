@@ -126,10 +126,7 @@ public abstract class ContentSourceTransformer implements Content.Source
                 rawChunk = null;
 
             if (rawChunk != null && !rawChunk.hasRemaining())
-            {
-                rawChunk.release();
-                rawChunk = Content.Chunk.next(rawChunk);
-            }
+                rawChunk = Content.Chunk.releaseAndNext(rawChunk);
 
             if (transformedChunk != null)
             {

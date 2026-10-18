@@ -141,7 +141,7 @@ public class GzipDecoderSource extends DecoderSource
                                     buffer.retain();
                                     input = buffer;
 
-                                    buffer.quietRead(compressed ->
+                                    buffer.read(compressed ->
                                     {
                                         inflater.setInput(compressed);
                                         return 0;

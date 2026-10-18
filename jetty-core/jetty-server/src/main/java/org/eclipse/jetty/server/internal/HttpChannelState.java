@@ -43,7 +43,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MultiPartFormData;
 import org.eclipse.jetty.http.Trailers;
 import org.eclipse.jetty.http.UriCompliance;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.QuietException;
@@ -66,6 +65,7 @@ import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.VirtualThreads;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -1368,7 +1368,15 @@ public class HttpChannelState implements HttpChannel, Components
                         if (_writeCallback instanceof InterimCallback interimCallback)
                         {
                             // Do this write after the interim callback.
-                            interimCallback.whenComplete((v, t) -> write(last, content, writeCallback));
+                            if (content != null)
+                                content.retain();
+                            interimCallback.whenComplete((v, t) ->
+                            {
+                                try (content)
+                                {
+                                    write(last, content, writeCallback);
+                                }
+                            });
                             return;
                         }
                         writeFailure = new WritePendingException();

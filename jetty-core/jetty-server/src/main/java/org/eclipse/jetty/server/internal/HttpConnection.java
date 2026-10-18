@@ -50,7 +50,6 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -69,6 +68,7 @@ import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -95,7 +95,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     private final RequestHandler _requestHandler;
     private final HttpParser _parser;
     private final HttpGenerator _generator;
-    private final WritableBufferPool _bufferPool;
+    private final ByteBufferPool _bufferPool;
     private final AtomicReference<HttpStreamOverHTTP1> _stream = new AtomicReference<>();
     private final Lazy _attributes = new Lazy();
     private final DemandContentCallback _demandContentCallback = new DemandContentCallback();
@@ -135,7 +135,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
     {
         super(connector, configuration, endPoint);
         _id = __connectionIdGenerator.getAndIncrement();
-        _bufferPool = WritableBufferPool.wrap(connector.getByteBufferPool());
+        _bufferPool = connector.getByteBufferPool();
         _generator = newHttpGenerator();
         _httpChannel = newHttpChannel(connector.getServer(), configuration);
         _requestHandler = newRequestHandler();
@@ -367,6 +367,10 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 int filled;
                 if (isRequestBufferEmpty())
                 {
+                    // TODO: SIMON: review this, seems the wrong spot?
+                    //  Don't we have the same logic elsewhere too in
+                    //  this class, along with minBufferSpace?
+
                     // The application may still retain chunks of the previous
                     // request, even after the request/response completed, for
                     // example releasing them from another thread.

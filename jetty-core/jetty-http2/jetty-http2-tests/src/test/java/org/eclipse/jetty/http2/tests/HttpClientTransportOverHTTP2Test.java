@@ -78,24 +78,26 @@ import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.io.Transport;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -650,8 +652,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         resultLatch.countDown();
                 });
 
-            WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            ByteBufferPool bufferPool = new ArrayByteBufferPool();
+            BufferAccumulator accumulator = new BufferAccumulator();
             Generator generator = new Generator(bufferPool);
 
             try (Socket socket = server.accept())
@@ -702,7 +704,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         try
                         {
                             // Write the frames.
-                            try (RetainableByteBuffer buffer = accumulator.drain())
+                            try (RetainableByteBuffer buffer = accumulator.take())
                             {
                                 buffer.putTo(output);
                             }
@@ -751,7 +753,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     @Test
     public void test204WithContent() throws Exception
     {
-        byte[] bytes = "No Content".getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = "No Content".getBytes(UTF_8);
         start(new ServerSessionListener()
         {
             @Override
@@ -822,7 +824,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
                 stream.headers(responseFrame)
-                    .thenAccept(s -> s.data(RetainableByteBuffer.wrap(new byte[bytes]), true));
+                    .thenAccept(s -> s.data(RetainableByteBuffer.allocate(bytes, false), true));
                 return null;
             }
         });
@@ -925,7 +927,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
         for (int i = 0; i < 16; ++i)
         {
-            content.write(false, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
+            content.offer(false, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
             Thread.sleep(10);
         }
         content.close();

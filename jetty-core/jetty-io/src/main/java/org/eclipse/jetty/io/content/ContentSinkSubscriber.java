@@ -25,8 +25,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 /**
  * <p>A {@link Flow.Subscriber} that wraps a {@link Content.Sink}.</p>
  * <p>Content delivered to the {@link #onNext(Content.Chunk)} method is
- * written to {@link Content.Sink#write(boolean, RetainableByteBuffer, Callback)}
- * and the chunk is released once the write callback is succeeded or failed.</p>
+ * written to {@link Content.Sink#write(boolean, RetainableByteBuffer, Callback)}.</p>
  */
 public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
 {
@@ -52,13 +51,14 @@ public class ContentSinkSubscriber implements Flow.Subscriber<Content.Chunk>
     @Override
     public void onNext(Content.Chunk chunk)
     {
+        boolean last = chunk.isLast();
         try (RetainableByteBuffer buffer = chunk.acquire())
         {
-            sink.write(chunk.isLast(), buffer, new Callback()
+            sink.write(last, buffer, new Callback()
             {
                 public void succeeded()
                 {
-                    if (chunk.isLast())
+                    if (last)
                         complete();
                     else
                         subscription.request(1);

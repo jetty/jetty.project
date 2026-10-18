@@ -105,7 +105,7 @@ public class RequestListenersTest
             }
         });
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
             Host: localhost
             Connection: close
@@ -148,7 +148,7 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET /path HTTP/1.0
             Host: localhost
                         
@@ -185,7 +185,7 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             POST / HTTP/1.1
             Host: localhost
             Content-Length: 1
@@ -232,7 +232,7 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             POST / HTTP/1.1
             Host: localhost
             Content-Length: 1
@@ -267,7 +267,7 @@ public class RequestListenersTest
         long idleTimeout = 500;
         connector.setIdleTimeout(idleTimeout);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
             Host: localhost
             Connection: close
@@ -314,11 +314,12 @@ public class RequestListenersTest
             assertNotNull(callback);
             Content.Sink.write(responseRef.get(), true, "OK", callback);
 
-            RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 3 * idleTimeout, TimeUnit.MILLISECONDS);
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
-
-            assertThat(response.getStatus(), is(HttpStatus.OK_200));
-            assertThat(response.getContent(), is("OK"));
+            try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 3 * idleTimeout, TimeUnit.MILLISECONDS))
+            {
+                HttpTester.Response response = HttpTester.parseResponse(buffer);
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                assertThat(response.getContent(), is("OK"));
+            }
         }
     }
 
@@ -339,7 +340,7 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             POST / HTTP/1.1
             Host: localhost
             Content-Length: 1
@@ -372,7 +373,7 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
             Host: localhost
             Connection: close
@@ -425,10 +426,11 @@ public class RequestListenersTest
 
             callback.succeeded();
 
-            RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, idleTimeout, TimeUnit.MILLISECONDS);
-            HttpTester.Response response = HttpTester.parseResponse(buffer);
-
-            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, idleTimeout, TimeUnit.MILLISECONDS))
+            {
+                HttpTester.Response response = HttpTester.parseResponse(buffer);
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            }
         }
     }
 

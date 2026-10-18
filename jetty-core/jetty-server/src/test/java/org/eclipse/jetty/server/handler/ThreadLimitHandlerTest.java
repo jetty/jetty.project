@@ -105,16 +105,16 @@ public class ThreadLimitHandlerTest
         _server.start();
 
         last.set(null);
-        _local.getResponseAsString("GET / HTTP/1.0\r\n\r\n");
+        _local.getResponse("GET / HTTP/1.0\r\n\r\n");
         assertNotNull(last.get());
 
         last.set(null);
-        _local.getResponseAsString("GET / HTTP/1.0\r\nX-Forwarded-For: 1.2.3.4\r\n\r\n");
+        _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.2.3.4\r\n\r\n");
         assertNotNull(last.get());
         assertThat(last.get(), not(is("1.2.3.4")));
 
         last.set(null);
-        _local.getResponseAsString("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
+        _local.getResponse("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
         assertNotNull(last.get());
         assertThat(last.get(), not(is("1.2.3.4")));
 
@@ -148,20 +148,20 @@ public class ThreadLimitHandlerTest
         _server.start();
 
         last.set(null);
-        _local.getResponseAsString("GET / HTTP/1.0\r\n\r\n");
+        _local.getResponse("GET / HTTP/1.0\r\n\r\n");
         assertNotNull(last.get());
 
         last.set(null);
-        _local.getResponseAsString("GET / HTTP/1.0\r\nX-Forwarded-For: 1.2.3.4\r\n\r\n");
+        _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.2.3.4\r\n\r\n");
         assertThat(last.get(), is("1.2.3.4"));
 
         last.set(null);
-        _local.getResponseAsString("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
+        _local.getResponse("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
         assertNotNull(last.get());
         assertThat(last.get(), not(is("1.2.3.4")));
 
         last.set(null);
-        _local.getResponseAsString("GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nX-Forwarded-For: 6.6.6.6,1.2.3.4\r\nForwarded: for=1.2.3.4\r\n\r\n");
+        _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nX-Forwarded-For: 6.6.6.6,1.2.3.4\r\nForwarded: for=1.2.3.4\r\n\r\n");
         assertThat(last.get(), is("1.2.3.4"));
 
         await().atMost(5, TimeUnit.SECONDS).until(handler::getRemoteCount, is(0));
@@ -194,20 +194,20 @@ public class ThreadLimitHandlerTest
         _server.start();
 
         last.set(null);
-        _local.getResponseAsString("GET / HTTP/1.0\r\n\r\n");
+        _local.getResponse("GET / HTTP/1.0\r\n\r\n");
         assertNotNull(last.get());
 
         last.set(null);
-        _local.getResponseAsString("GET / HTTP/1.0\r\nX-Forwarded-For: 1.2.3.4\r\n\r\n");
+        _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.2.3.4\r\n\r\n");
         assertNotNull(last.get());
         assertThat(last.get(), not(is("1.2.3.4")));
 
         last.set(null);
-        _local.getResponseAsString("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
+        _local.getResponse("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
         assertThat(last.get(), is("1.2.3.4"));
 
         last.set(null);
-        _local.getResponseAsString("GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nForwarded: for=6.6.6.6; for=1.2.3.4\r\nX-Forwarded-For: 6.6.6.6\r\nForwarded: proto=https\r\n\r\n");
+        _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nForwarded: for=6.6.6.6; for=1.2.3.4\r\nX-Forwarded-For: 6.6.6.6\r\nForwarded: proto=https\r\n\r\n");
         assertThat(last.get(), is("1.2.3.4"));
 
         await().atMost(5, TimeUnit.SECONDS).until(handler::getRemoteCount, is(0));
@@ -261,7 +261,7 @@ public class ThreadLimitHandlerTest
         await().atMost(10, TimeUnit.SECONDS).until(count::get, is(4));
 
         // check that other requests are not blocked
-        String response = _local.getResponseAsString("GET /other HTTP/1.0\r\nForwarded: for=6.6.6.6\r\n\r\n");
+        String response = _local.getResponse("GET /other HTTP/1.0\r\nForwarded: for=6.6.6.6\r\n\r\n");
         assertThat(response, Matchers.containsString(" 200 OK"));
 
         // let the other requests go
@@ -368,7 +368,7 @@ public class ThreadLimitHandlerTest
         await().atMost(10, TimeUnit.SECONDS).until(count::get, is(4));
 
         // check that other requests are not blocked
-        String response = _local.getResponseAsString("GET /other HTTP/1.0\r\nForwarded: for=6.6.6.6\r\n\r\n");
+        String response = _local.getResponse("GET /other HTTP/1.0\r\nForwarded: for=6.6.6.6\r\n\r\n");
         assertThat(response, Matchers.containsString(" 200 OK"));
 
         // let the requests go

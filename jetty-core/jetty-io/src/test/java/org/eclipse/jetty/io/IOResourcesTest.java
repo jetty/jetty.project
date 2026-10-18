@@ -17,6 +17,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -24,10 +25,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -35,6 +40,7 @@ import org.eclipse.jetty.util.resource.URLResourceFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
+@ExtendWith(WorkDirExtension.class)
 public class IOResourcesTest
 {
     private ArrayByteBufferPool.Tracking trackingPool;
@@ -277,7 +284,7 @@ public class IOResourcesTest
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(resource.length()));
         assertThat(chunks.getLast().isLast(), is(true));
-        chunks.forEach(Content.Chunk::close);
+        chunks.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -300,7 +307,7 @@ public class IOResourcesTest
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(Math.max(0L, resource.length() - 100L)));
         assertThat(chunks.getLast().isLast(), is(true));
-        chunks.forEach(Content.Chunk::close);
+        chunks.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -316,7 +323,7 @@ public class IOResourcesTest
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(Math.min(resource.length(), 500L)));
         assertThat(chunks.getLast().isLast(), is(true));
-        chunks.forEach(Content.Chunk::close);
+        chunks.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -335,7 +342,7 @@ public class IOResourcesTest
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(length));
         assertThat(chunks.getLast().isLast(), is(true));
-        chunks.forEach(Content.Chunk::close);
+        chunks.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -350,7 +357,7 @@ public class IOResourcesTest
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(resource.length()));
         assertThat(chunks.getLast().isLast(), is(true));
-        chunks.forEach(Content.Chunk::close);
+        chunks.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -366,7 +373,7 @@ public class IOResourcesTest
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(Math.max(0L, resource.length() - 100L)));
         assertThat(chunks.getLast().isLast(), is(true));
-        chunks.forEach(Content.Chunk::close);
+        chunks.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -382,7 +389,7 @@ public class IOResourcesTest
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(length));
         assertThat(chunks.getLast().isLast(), is(true));
-        chunks.forEach(Content.Chunk::close);
+        chunks.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -399,7 +406,7 @@ public class IOResourcesTest
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(length));
         assertThat(chunks.getLast().isLast(), is(true));
-        chunks.forEach(Content.Chunk::close);
+        chunks.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -424,7 +431,27 @@ public class IOResourcesTest
         long sum = chunks.stream().mapToLong(Content.Chunk::remaining).sum();
         assertThat(sum, is(0L));
         assertThat(chunks.getLast().isLast(), is(true));
-        chunks.forEach(Content.Chunk::close);
+        chunks.forEach(Content.Chunk::release);
+    }
+
+    @Test
+    public void testToRetainableByteBufferReadsPathContents(WorkDir workDir) throws Exception
+    {
+        Path file = workDir.getEmptyPathDir().resolve("file.txt");
+        byte[] original = "0123456789".getBytes(StandardCharsets.US_ASCII);
+        Files.write(file, original);
+        Resource resource = ResourceFactory.root().newResource(file);
+
+        try (RetainableByteBuffer buffer = IOResources.toRetainableByteBuffer(resource, bufferPool))
+        {
+            // Overwrite the file in place with the same size.
+            Files.write(file, "ABCDEFGHIJ".getBytes(StandardCharsets.US_ASCII));
+            assertArrayEquals(original, buffer.getArray(0));
+
+            // Shrink the file in place.
+            Files.write(file, "AB".getBytes(StandardCharsets.US_ASCII));
+            assertArrayEquals(original, buffer.getArray(0));
+        }
     }
 
     @Test

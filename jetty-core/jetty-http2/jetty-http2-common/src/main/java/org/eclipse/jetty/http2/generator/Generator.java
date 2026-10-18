@@ -18,8 +18,8 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.WritableBufferPool;
-import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 
 public class Generator
 {
@@ -29,17 +29,17 @@ public class Generator
     private final PrefaceGenerator prefaceGenerator;
     private final DataGenerator dataGenerator;
 
-    public Generator(WritableBufferPool bufferPool)
+    public Generator(ByteBufferPool bufferPool)
     {
         this(bufferPool, 0);
     }
 
-    public Generator(WritableBufferPool bufferPool, int maxHeaderBlockFragment)
+    public Generator(ByteBufferPool bufferPool, int maxHeaderBlockFragment)
     {
         this(bufferPool, true, maxHeaderBlockFragment);
     }
 
-    public Generator(WritableBufferPool bufferPool, boolean useDirectByteBuffers, int maxHeaderBlockFragment)
+    public Generator(ByteBufferPool bufferPool, boolean useDirectByteBuffers, int maxHeaderBlockFragment)
     {
         headerGenerator = new HeaderGenerator(bufferPool, useDirectByteBuffers);
         hpackEncoder = new HpackEncoder();
@@ -73,7 +73,7 @@ public class Generator
         headerGenerator.setMaxFrameSize(maxFrameSize);
     }
 
-    public int control(RetainableByteBuffer.Accumulator accumulator, Frame frame) throws HpackException
+    public int control(BufferAccumulator accumulator, Frame frame) throws HpackException
     {
         int type = frame.getType().getType();
         if (type == FrameType.PREFACE.getType())
@@ -81,7 +81,7 @@ public class Generator
         return generators[type].generate(accumulator, frame);
     }
 
-    public int data(RetainableByteBuffer.Accumulator accumulator, DataFrame frame, int maxLength)
+    public int data(BufferAccumulator accumulator, DataFrame frame, int maxLength)
     {
         return dataGenerator.generate(accumulator, frame, maxLength);
     }

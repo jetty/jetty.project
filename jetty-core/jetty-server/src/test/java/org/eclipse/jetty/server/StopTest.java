@@ -338,7 +338,7 @@ public class StopTest
             await().atMost(10, TimeUnit.SECONDS).until(connector::isShutdown);
 
             // Check new connections rejected!
-            assertThrows(IllegalStateException.class, () -> connector.getResponseAsString("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
+            assertThrows(IllegalStateException.class, () -> connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n"));
 
             // Check completed 200 has close
             exchanger1.exchange(null);
@@ -422,7 +422,7 @@ public class StopTest
             await().atMost(10, TimeUnit.SECONDS).until(context::isStopped);
 
             // Check new connections accepted, but don't find context!
-            String unavailable = connector.getResponseAsString("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n");
+            String unavailable = connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n");
             assertThat(unavailable, containsString(" 404 Not Found"));
 
             // Check completed 200 does not have close

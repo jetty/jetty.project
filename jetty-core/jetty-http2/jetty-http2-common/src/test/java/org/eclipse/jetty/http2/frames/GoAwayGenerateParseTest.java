@@ -20,8 +20,9 @@ import java.util.Random;
 import org.eclipse.jetty.http2.generator.GoAwayGenerator;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class GoAwayGenerateParseTest
 {
-    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     @Test
     public void testGenerateParse() throws Exception
@@ -55,10 +56,10 @@ public class GoAwayGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.generateGoAway(accumulator, lastStreamId, error, null);
             frames.clear();
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 UnknownParseTest.parse(parser, buffer);
             }
@@ -95,10 +96,10 @@ public class GoAwayGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.generateGoAway(accumulator, lastStreamId, error, payload);
             frames.clear();
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 UnknownParseTest.parse(parser, buffer);
             }

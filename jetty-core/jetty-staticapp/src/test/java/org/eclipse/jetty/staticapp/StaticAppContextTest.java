@@ -126,7 +126,7 @@ public class StaticAppContextTest
 
         startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
-        String rawResponse = localConnector.getResponseAsString("""
+        String rawResponse = localConnector.getResponse("""
             GET /static/ HTTP/1.1
             Host: local
             Connection: close
@@ -153,7 +153,7 @@ public class StaticAppContextTest
 
         startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
-        String rawResponse = localConnector.getResponseAsString("""
+        String rawResponse = localConnector.getResponse("""
             GET /static/hello.txt HTTP/1.1
             Host: local
             Connection: close
@@ -185,7 +185,7 @@ public class StaticAppContextTest
 
         startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
-        String rawResponse = localConnector.getResponseAsString("""
+        String rawResponse = localConnector.getResponse("""
             GET /test/hello.txt HTTP/1.1
             Host: local
             Connection: close
@@ -230,7 +230,7 @@ public class StaticAppContextTest
 
         startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
-        String rawResponse = localConnector.getResponseAsString("""
+        String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
             Host: local
             Connection: close
@@ -241,7 +241,7 @@ public class StaticAppContextTest
         assertThat(response.getContent(), is("TEST TEXT"));
 
         // Directory listing (by default it is enabled)
-        rawResponse = localConnector.getResponseAsString("""
+        rawResponse = localConnector.getResponse("""
             GET /static/ HTTP/1.1
             Host: local
             Connection: close
@@ -280,7 +280,7 @@ public class StaticAppContextTest
 
         startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
-        String rawResponse = localConnector.getResponseAsString("""
+        String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
             Host: local
             Connection: close
@@ -291,7 +291,7 @@ public class StaticAppContextTest
         assertThat(response.getContent(), is("TEST TEXT"));
 
         // Directory listing (turned off in this configuration)
-        rawResponse = localConnector.getResponseAsString("""
+        rawResponse = localConnector.getResponse("""
             GET /static/ HTTP/1.1
             Host: local
             Connection: close
@@ -320,7 +320,7 @@ public class StaticAppContextTest
 
         startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
-        String rawResponse = localConnector.getResponseAsString("""
+        String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
             Host: local
             Connection: close
@@ -331,7 +331,7 @@ public class StaticAppContextTest
         assertThat(response.getContent(), is("TEST TEXT"));
 
         // Directory listing (turned off in this configuration)
-        rawResponse = localConnector.getResponseAsString("""
+        rawResponse = localConnector.getResponse("""
             GET /static/ HTTP/1.1
             Host: local
             Connection: close
@@ -368,7 +368,7 @@ public class StaticAppContextTest
 
         startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
-        String rawResponse = localConnector.getResponseAsString("""
+        String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
             Host: local
             Connection: close
@@ -379,7 +379,7 @@ public class StaticAppContextTest
         assertThat(response.getContent(), is("TEST TEXT"));
 
         // Directory listing (turned off in this configuration)
-        rawResponse = localConnector.getResponseAsString("""
+        rawResponse = localConnector.getResponse("""
             GET /static/ HTTP/1.1
             Host: local
             Connection: close
@@ -419,7 +419,7 @@ public class StaticAppContextTest
 
         startServerWithDeploy(ds -> ds.addWebappsDirectory(webapps));
 
-        String rawResponse = localConnector.getResponseAsString("""
+        String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
             Host: local
             Connection: close
@@ -428,7 +428,7 @@ public class StaticAppContextTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(404));
 
-        rawResponse = localConnector.getResponseAsString("""
+        rawResponse = localConnector.getResponse("""
             GET /static/hello.txt HTTP/1.1
             Host: local
             Connection: close
@@ -447,7 +447,7 @@ public class StaticAppContextTest
 
         startServer(staticContext);
 
-        String rawResponse = localConnector.getResponseAsString("""
+        String rawResponse = localConnector.getResponse("""
             GET /static/ HTTP/1.1
             Host: local
             Connection: close
@@ -470,7 +470,7 @@ public class StaticAppContextTest
 
         startServer(staticContext);
 
-        String rawResponse = localConnector.getResponseAsString("""
+        String rawResponse = localConnector.getResponse("""
             GET /static/test.txt HTTP/1.1
             Host: local
             Connection: close
@@ -481,7 +481,7 @@ public class StaticAppContextTest
         assertThat(response.getContent(), is("TEST TEXT"));
 
         // Directory listing (by default it is enabled)
-        rawResponse = localConnector.getResponseAsString("""
+        rawResponse = localConnector.getResponse("""
             GET /static/ HTTP/1.1
             Host: local
             Connection: close
@@ -512,7 +512,7 @@ public class StaticAppContextTest
             StaticAppContext staticContext = new StaticAppContext("/static", resourceHandler);
             startServer(staticContext);
 
-            String rawResponse = localConnector.getResponseAsString("""
+            String rawResponse = localConnector.getResponse("""
                 GET /static/test.txt HTTP/1.1
                 Host: local
                 Connection: close
@@ -523,7 +523,7 @@ public class StaticAppContextTest
             assertThat(response.getContent(), is("TEST TEXT"));
 
             // Directory listing (turned off in this configuration)
-            rawResponse = localConnector.getResponseAsString("""
+            rawResponse = localConnector.getResponse("""
                 GET /static/ HTTP/1.1
                 Host: local
                 Connection: close

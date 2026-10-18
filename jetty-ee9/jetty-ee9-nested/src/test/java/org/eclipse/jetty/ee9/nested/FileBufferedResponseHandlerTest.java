@@ -149,7 +149,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         server.start();
-        String rawResponse = localConnector.getResponseAsString("GET /path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = localConnector.getResponse("GET /path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -178,7 +178,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         server.start();
-        String rawResponse = localConnector.getResponseAsString("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -214,7 +214,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         server.start();
-        String rawResponse = localConnector.getResponseAsString("GET /include/path.exclude HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = localConnector.getResponse("GET /include/path.exclude HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -245,7 +245,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         server.start();
-        String rawResponse = localConnector.getResponseAsString("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -276,7 +276,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         server.start();
-        String rawResponse = localConnector.getResponseAsString("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -314,7 +314,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         server.start();
-        String rawResponse = localConnector.getResponseAsString("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -352,7 +352,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         server.start();
-        String rawResponse = localConnector.getResponseAsString("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -382,7 +382,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         server.start();
-        String rawResponse = localConnector.getResponseAsString("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -425,7 +425,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         server.start();
-        String rawResponse = localConnector.getResponseAsString("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         String responseContent = response.getContent();
 
@@ -594,7 +594,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         server.start();
-        String rawResponse = localConnector.getResponseAsString("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         // Response was aborted.
@@ -648,7 +648,7 @@ public class FileBufferedResponseHandlerTest
         });
 
         server.start();
-        String rawResponse = localConnector.getResponseAsString("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        String rawResponse = localConnector.getResponse("GET /include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         // Response was aborted.

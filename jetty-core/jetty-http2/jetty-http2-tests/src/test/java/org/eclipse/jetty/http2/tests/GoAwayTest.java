@@ -1330,7 +1330,7 @@ public class GoAwayTest extends AbstractTest
             .putInt(0)
             .putInt(ErrorCode.PROTOCOL_ERROR.code)
             .flip();
-        ((HTTP2Session)clientSession).getEndPoint().write(Callback.NOOP, byteBuffer);
+        ((HTTP2Session)clientSession).getEndPoint().write(RetainableByteBuffer.wrap(byteBuffer), Callback.NOOP);
 
         assertFalse(serverGoAwayLatch.await(1, TimeUnit.SECONDS));
         assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));

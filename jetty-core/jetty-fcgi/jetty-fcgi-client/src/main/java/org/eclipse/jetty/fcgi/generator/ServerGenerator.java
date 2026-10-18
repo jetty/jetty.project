@@ -22,7 +22,8 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ServerGenerator extends Generator
@@ -33,18 +34,18 @@ public class ServerGenerator extends Generator
 
     private final boolean sendStatus200;
 
-    public ServerGenerator(WritableBufferPool bufferPool)
+    public ServerGenerator(ByteBufferPool bufferPool)
     {
         this(bufferPool, true, true);
     }
 
-    public ServerGenerator(WritableBufferPool bufferPool, boolean useDirectByteBuffers, boolean sendStatus200)
+    public ServerGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers, boolean sendStatus200)
     {
         super(bufferPool, useDirectByteBuffers);
         this.sendStatus200 = sendStatus200;
     }
 
-    public void generateResponseHeaders(RetainableByteBuffer.Accumulator accumulator, int request, int code, String reason, HttpFields fields)
+    public void generateResponseHeaders(BufferAccumulator accumulator, int request, int code, String reason, HttpFields fields)
     {
         request &= 0xFF_FF;
 
@@ -96,7 +97,7 @@ public class ServerGenerator extends Generator
         }
     }
 
-    public void generateResponseContent(RetainableByteBuffer.Accumulator accumulator, int request, RetainableByteBuffer content, boolean lastContent, boolean aborted)
+    public void generateResponseContent(BufferAccumulator accumulator, int request, RetainableByteBuffer content, boolean lastContent, boolean aborted)
     {
         if (aborted)
         {

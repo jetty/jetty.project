@@ -16,11 +16,11 @@ package org.eclipse.jetty.client;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.AsyncContentSource;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class AsyncRequestContent extends AsyncContent implements Request.Content
+public class AsyncRequestContent extends AsyncContentSource implements Request.Content
 {
     private final String contentType;
 
@@ -32,17 +32,18 @@ public class AsyncRequestContent extends AsyncContent implements Request.Content
     public AsyncRequestContent(String contentType, ByteBuffer... buffers)
     {
         this.contentType = contentType;
-        Stream.of(buffers).forEach(buffer -> write(buffer, Callback.NOOP));
+        Stream.of(buffers).forEach(b ->
+        {
+            try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(b))
+            {
+                offer(false, buffer, Callback.NOOP);
+            }
+        });
     }
 
     @Override
     public String getContentType()
     {
         return contentType;
-    }
-
-    public void write(ByteBuffer buffer, Callback callback)
-    {
-        write(false, RetainableByteBuffer.wrap(buffer), callback);
     }
 }

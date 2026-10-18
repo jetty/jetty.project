@@ -277,8 +277,7 @@ public class GzipWithSendErrorTest
         assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo(requestBytesSent));
 
         // Now provide rest
-        content.write(true, RetainableByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent), Callback.NOOP);
-        content.close();
+        content.offer(true, RetainableByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent), Callback.NOOP);
 
         assertTrue(clientResultComplete.await(5, TimeUnit.SECONDS));
     }
@@ -374,8 +373,7 @@ public class GzipWithSendErrorTest
         assertThat("Request Connection BytesIn read should not have read all of the data", inputBytesIn.get(), lessThanOrEqualTo(requestBytesSent));
 
         // Now provide rest
-        content.write(true, RetainableByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent), Callback.NOOP);
-        content.close();
+        content.offer(true, RetainableByteBuffer.wrap(compressedRequest, sizeActuallySent, compressedRequest.length - sizeActuallySent), Callback.NOOP);
 
         assertTrue(clientResultComplete.await(5, TimeUnit.SECONDS));
     }

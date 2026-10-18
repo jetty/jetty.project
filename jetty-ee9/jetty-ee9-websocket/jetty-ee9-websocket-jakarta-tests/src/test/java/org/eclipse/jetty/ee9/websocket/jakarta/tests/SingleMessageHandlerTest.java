@@ -70,7 +70,8 @@ public class SingleMessageHandlerTest
         @OnMessage
         public void onMessage(ByteBuffer message)
         {
-            BINARY_MESSAGES.add(message);
+            // The ByteBuffer is only valid during this call, copy it.
+            BINARY_MESSAGES.offer(BufferUtil.copy(message));
         }
     }
 

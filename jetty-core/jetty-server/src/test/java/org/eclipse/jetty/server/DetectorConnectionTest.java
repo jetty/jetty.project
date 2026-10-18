@@ -25,12 +25,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLSocketFactory;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -38,6 +36,7 @@ import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
@@ -52,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DetectorConnectionTest
 {
-    private final AtomicInteger _bufferLeaks = new AtomicInteger();
     private Server _server;
     private StacklessLogging _stacklessLogging;
 
@@ -116,25 +114,7 @@ public class DetectorConnectionTest
 
     private void start(ConnectionFactory... connectionFactories) throws Exception
     {
-        _server = new Server(null, null, new ArrayByteBufferPool()
-        {
-            @Override
-            public org.eclipse.jetty.io.RetainableByteBuffer.Mutable acquire(int size, boolean direct)
-            {
-                _bufferLeaks.incrementAndGet();
-                return new org.eclipse.jetty.io.RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct).asMutable())
-                {
-                    @Override
-                    public boolean release()
-                    {
-                        boolean released = super.release();
-                        if (released)
-                            _bufferLeaks.decrementAndGet();
-                        return released;
-                    }
-                };
-            }
-        });
+        _server = new Server(null, null, new ArrayByteBufferPool.Tracking());
         _server.addConnector(new ServerConnector(_server, 1, 1, connectionFactories));
         _server.setHandler(new DumpHandler());
         _server.start();
@@ -144,13 +124,13 @@ public class DetectorConnectionTest
     @AfterEach
     public void destroy() throws Exception
     {
-        // Wait a bit for the server to release the buffers.
-        await()
-            .pollDelay(5, TimeUnit.MILLISECONDS)
-            .atMost(5, TimeUnit.SECONDS)
-            .until(() -> _bufferLeaks.get() == 0);
         if (_server != null)
+        {
+            // Wait a bit for the server to release the buffers.
+            ArrayByteBufferPool.Tracking bufferPool = (ArrayByteBufferPool.Tracking)_server.getByteBufferPool();
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(0, bufferPool.getLeaks().size(), bufferPool.dumpLeaks()));
             _server.stop();
+        }
         if (_stacklessLogging != null)
             _stacklessLogging.close();
     }

@@ -145,7 +145,8 @@ public class ServerQuicheConnection extends QuicheConnection
         {
             while (true)
             {
-                SocketAddress remoteAddress = getEndPoint().receive(buffer.clear());
+                buffer.clear();
+                SocketAddress remoteAddress = getEndPoint().receive(buffer);
                 long fill = remoteAddress == EndPoint.EOF ? -1 : buffer.remaining();
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled cipher buffer with {} byte(s)", fill);

@@ -15,7 +15,6 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
 import java.util.EnumMap;
@@ -24,7 +23,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -32,17 +30,16 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * A Utility class to help implement {@link EndPoint#write(Callback, ByteBuffer...)} by calling
- * {@link EndPoint#flush(ByteBuffer...)} until all content is written.
- * The abstract method {@link #onIncompleteFlush()} is called when not all content has been written after a call to
- * flush and should organize for the {@link #completeWrite()} method to be called when a subsequent call to flush
- * should  be able to make more progress.
- */
+/// A Utility class to help implement [EndPoint#write(RetainableByteBuffer, Callback)]
+/// by calling [EndPoint#flush(RetainableByteBuffer)] until all content is written.
+///
+/// The abstract method [#onIncompleteFlush()] is called when not all content has been
+/// written after a call to flush and should organize for the [#completeWrite()] method
+/// to be called when a subsequent call to [EndPoint#flush(RetainableByteBuffer)]
+/// would be able to make more progress.
 public abstract class WriteFlusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(WriteFlusher.class);
-    private static final ByteBuffer[] EMPTY_BUFFERS = new ByteBuffer[]{BufferUtil.EMPTY_BUFFER};
     private static final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class);
     private static final State __IDLE = new IdleState();
     private static final State __FLUSHING = new FlushingState();
@@ -316,8 +313,7 @@ public abstract class WriteFlusher
                 if (updateState(__FLUSHING, pending))
                     onIncompleteFlush();
                 else
-                    fail(callback);
-
+                    fail(pending._callback);
                 return;
             }
 
@@ -387,7 +383,7 @@ public abstract class WriteFlusher
 
     /**
      * Complete a write that has not completed and that called {@link #onIncompleteFlush()} to request a call to this
-     * method when a call to {@link EndPoint#flush(ByteBuffer...)} is likely to be able to progress.
+     * method when a call to {@link EndPoint#flush(RetainableByteBuffer)} is likely to be able to progress.
      * <p>
      * It tries to switch from PENDING to COMPLETING. If state transition fails, then it does nothing as the callback
      * should have been already failed. That's because the only way to switch from PENDING outside this method is
@@ -412,10 +408,8 @@ public abstract class WriteFlusher
         try
         {
             SocketAddress address = pending._address;
-
-            flush(address, buffer);
-
-            if (buffer.hasRemaining())
+            boolean fullyFlushed = flush(address, buffer);
+            if (!fullyFlushed)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("flushed incomplete {} {}", buffer, this);
@@ -452,14 +446,7 @@ public abstract class WriteFlusher
      */
     protected boolean flush(SocketAddress address, RetainableByteBuffer buffer) throws IOException
     {
-        if (!buffer.hasRemaining())
-        {
-            LOG.debug("Flushed=0 written=0 remaining=0 {}", this);
-            return true;
-        }
-
-        boolean progress = true;
-        while (progress && buffer.hasRemaining())
+        while (true)
         {
             long before = buffer.remaining();
             boolean flushed = address == null ? _endPoint.flush(buffer) : _endPoint.send(address, buffer);
@@ -472,7 +459,8 @@ public abstract class WriteFlusher
             if (flushed)
                 return true;
 
-            progress = written > 0;
+            if (written == 0 || !buffer.hasRemaining())
+                break;
         }
 
         if (LOG.isDebugEnabled())

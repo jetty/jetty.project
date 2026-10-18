@@ -19,21 +19,22 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public abstract class FrameGenerator
 {
     private final HeaderGenerator headerGenerator;
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
 
     protected FrameGenerator(HeaderGenerator headerGenerator)
     {
         this.headerGenerator = headerGenerator;
-        this.bufferPool = headerGenerator == null ? WritableBufferPool.NON_POOLING : headerGenerator.getBufferPool();
+        this.bufferPool = headerGenerator == null ? ByteBufferPool.NON_POOLING : headerGenerator.getBufferPool();
     }
 
-    public abstract int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame) throws HpackException;
+    public abstract int generate(BufferAccumulator accumulator, Frame frame) throws HpackException;
 
     protected RetainableByteBuffer.Mutable generateHeader(FrameType frameType, int length, int flags, int streamId)
     {
@@ -45,7 +46,7 @@ public abstract class FrameGenerator
         return headerGenerator.getMaxFrameSize();
     }
 
-    public WritableBufferPool getBufferPool()
+    public ByteBufferPool getBufferPool()
     {
         return headerGenerator.getBufferPool();
     }

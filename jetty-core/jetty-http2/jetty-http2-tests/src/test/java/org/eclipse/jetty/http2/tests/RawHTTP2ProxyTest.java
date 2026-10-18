@@ -42,7 +42,6 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
@@ -50,6 +49,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -241,7 +242,7 @@ public class RawHTTP2ProxyTest
         CountDownLatch latch1 = new CountDownLatch(1);
         Stream stream1 = clientSession.newStream(new HeadersFrame(request1, null, false), new Stream.Listener()
         {
-            private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            private final BufferAccumulator accumulator = new BufferAccumulator();
 
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -264,7 +265,7 @@ public class RawHTTP2ProxyTest
                         stream.demand();
                         return;
                     }
-                    try (RetainableByteBuffer buffer = accumulator.drain())
+                    try (RetainableByteBuffer buffer = accumulator.take())
                     {
                         assertArrayEquals(buffer1.getArray(), buffer.getArray());
                         latch1.countDown();

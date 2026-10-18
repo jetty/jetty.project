@@ -119,7 +119,7 @@ public class WebAppDefaultServletTest
             Connection: close
             
             """.formatted(uri);
-        String response = connector.getResponseAsString(request);
+        String response = connector.getResponse(request);
         for (String s : contains)
         {
             assertThat(response, containsString(s));

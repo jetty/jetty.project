@@ -14,8 +14,10 @@
 package org.eclipse.jetty.client;
 
 import java.io.EOFException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -24,24 +26,36 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.internal.HttpChannelOverHTTP;
+import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.transport.internal.HttpSenderOverHTTP;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,16 +69,174 @@ public class TransferEncodingChunkTest
 
     private void startClient(int chunkMaxLength) throws Exception
     {
+        startClient(chunkMaxLength, null);
+    }
+
+    private void startClient(int chunkMaxLength, ArrayByteBufferPool bufferPool) throws Exception
+    {
         HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP();
         transport.setTransferEncodingChunkMaxLength(chunkMaxLength);
         client = new HttpClient(transport);
+        if (bufferPool != null)
+            client.setByteBufferPool(bufferPool);
         client.start();
+    }
+
+    private void assertNoLeaks(ArrayByteBufferPool.Tracking bufferPool)
+    {
+        LifeCycle.stop(client);
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
+            assertThat("client leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0))
+        );
     }
 
     @AfterEach
     public void dispose()
     {
         LifeCycle.stop(client);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"true,true", "true,false", "false,true", "false,false"})
+    public void testChunkMaxLengthRequestFailedWhileSendingSlicedContentDoesNotLeak(boolean contentWithHeaders, boolean abort) throws Exception
+    {
+        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
+        startClient(1024, bufferPool);
+
+        try (ServerSocket server = new ServerSocket())
+        {
+            // A small receive buffer, and a server that
+            // does not read, cause the client writes to stall.
+            server.setReceiveBufferSize(4096);
+            server.bind(new InetSocketAddress("localhost", 0));
+
+            int contentLength = 16 * 1024 * 1024;
+            RetainableByteBuffer.Mutable buffer = bufferPool.acquire(contentLength, false);
+            buffer.put(new byte[contentLength]);
+            AsyncRequestContent asyncContent = new AsyncRequestContent();
+            FutureCallback written = new FutureCallback();
+
+            // If the content is available before the request is
+            // sent, it goes out with the headers, otherwise on its own.
+            if (contentWithHeaders)
+                asyncContent.offer(false, buffer, written);
+
+            CountDownLatch failureLatch = new CountDownLatch(1);
+            Request request = client.newRequest("localhost", server.getLocalPort())
+                .body(asyncContent)
+                .timeout(15, TimeUnit.SECONDS);
+            request.send(r ->
+            {
+                if (r.isFailed())
+                    failureLatch.countDown();
+            });
+
+            try (Socket socket = server.accept())
+            {
+                // Read the beginning of the request, which guarantees
+                // that the content sender has already been started.
+                assertTrue(socket.getInputStream().read(new byte[512]) > 0);
+
+                if (!contentWithHeaders)
+                    asyncContent.offer(false, buffer, written);
+                buffer.release();
+
+                // Wait for the content to be stalled in the sliced state.
+                Thread.sleep(500);
+
+                if (abort)
+                {
+                    request.abort(new IOException("explicitly_aborted_by_test"));
+                }
+                else
+                {
+                    // Make the pending client write fail.
+                    socket.setSoLinger(true, 0);
+                    socket.close();
+                }
+
+                assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+                // The chunk is released on failure, which completes the write.
+                await().atMost(5, TimeUnit.SECONDS).until(written::isDone);
+            }
+        }
+
+        assertNoLeaks(bufferPool);
+    }
+
+    @Test
+    public void testGeneratorAbortedBeforeContentIsGeneratedDoesNotLeak() throws Exception
+    {
+        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
+        // Simulates an abort that wins the race against the generation of the
+        // content, which happens when the abort is concurrent with a write completion.
+        CountDownLatch sendContentLatch = new CountDownLatch(1);
+        client = new HttpClient(new HttpClientTransportOverHTTP()
+        {
+            @Override
+            public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+            {
+                return customize(new HttpConnectionOverHTTP(endPoint, context)
+                {
+                    @Override
+                    protected HttpChannelOverHTTP newHttpChannel()
+                    {
+                        return new HttpChannelOverHTTP(this)
+                        {
+                            @Override
+                            protected HttpSenderOverHTTP newHttpSender()
+                            {
+                                return new HttpSenderOverHTTP(this)
+                                {
+                                    @Override
+                                    protected void sendContent(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback)
+                                    {
+                                        getHttpGenerator().abort();
+                                        super.sendContent(exchange, contentBuffer, lastContent, callback);
+                                        sendContentLatch.countDown();
+                                    }
+                                };
+                            }
+                        };
+                    }
+                }, context);
+            }
+        });
+        client.setByteBufferPool(bufferPool);
+        client.start();
+
+        try (ServerSocket server = new ServerSocket(0))
+        {
+            AsyncRequestContent asyncContent = new AsyncRequestContent();
+            CountDownLatch failureLatch = new CountDownLatch(1);
+            Request request = client.newRequest("localhost", server.getLocalPort())
+                .body(asyncContent)
+                .timeout(15, TimeUnit.SECONDS);
+            request.send(r ->
+            {
+                if (r.isFailed())
+                    failureLatch.countDown();
+            });
+
+            try (Socket socket = server.accept())
+            {
+                // Read the request headers, so that the
+                // content below is not sent with the headers.
+                assertTrue(socket.getInputStream().read(new byte[1024]) > 0);
+
+                RetainableByteBuffer.Mutable buffer = bufferPool.acquire(1024, false);
+                buffer.put(new byte[1024]);
+                asyncContent.offer(false, buffer, Callback.NOOP);
+                buffer.release();
+
+                assertTrue(sendContentLatch.await(5, TimeUnit.SECONDS));
+
+                request.abort(new IOException("explicitly_aborted_by_test"));
+                assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+            }
+        }
+
+        assertNoLeaks(bufferPool);
     }
 
     @Test
@@ -96,7 +268,7 @@ public class TransferEncodingChunkTest
 
             // Avoid that the headers and the chunk are sent in the same write.
             Thread.sleep(500);
-            asyncContent.write(true, RetainableByteBuffer.wrap(encodedContent), Callback.NOOP);
+            asyncContent.offer(true, RetainableByteBuffer.wrap(encodedContent), Callback.NOOP);
 
             Socket socket = server.accept();
             socket.setSoTimeout(500);

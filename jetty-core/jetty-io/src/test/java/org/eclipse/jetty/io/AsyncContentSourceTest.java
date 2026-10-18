@@ -13,16 +13,23 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.AsyncContentSource;
+import org.eclipse.jetty.io.content.OutputStreamContentSource;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -36,20 +43,20 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class AsyncContentTest
+public class AsyncContentSourceTest
 {
     // TODO make an OutputStreamContentSource version of this test
 
     @Test
     public void testWriteInvokesDemandCallback() throws Exception
     {
-        try (AsyncContent async = new AsyncContent())
+        try (AsyncContentSource async = new AsyncContentSource())
         {
             CountDownLatch latch = new CountDownLatch(1);
             async.demand(latch::countDown);
             assertFalse(latch.await(250, TimeUnit.MILLISECONDS));
 
-            async.write(false, RetainableByteBuffer.wrap(UTF_8.encode("one")), Callback.NOOP);
+            async.offer(false, "one", UTF_8, Callback.NOOP);
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -63,7 +70,7 @@ public class AsyncContentTest
     @Test
     public void testCloseInvokesDemandCallback() throws Exception
     {
-        AsyncContent async = new AsyncContent();
+        AsyncContentSource async = new AsyncContentSource();
 
         CountDownLatch latch = new CountDownLatch(1);
         async.demand(latch::countDown);
@@ -83,9 +90,9 @@ public class AsyncContentTest
     @Test
     public void testFailInvokesDemandCallback() throws Exception
     {
-        try (AsyncContent async = new AsyncContent())
+        try (AsyncContentSource async = new AsyncContentSource())
         {
-            async.write(false, RetainableByteBuffer.wrap(UTF_8.encode("one")), Callback.NOOP);
+            async.offer(false, "one", UTF_8, Callback.NOOP);
 
             try (Content.Chunk chunk = async.read())
             {
@@ -108,7 +115,7 @@ public class AsyncContentTest
 
             // Offering more should fail.
             CountDownLatch failLatch = new CountDownLatch(1);
-            async.write(false, RetainableByteBuffer.empty(), Callback.from(Callback.NOOP::succeeded, x -> failLatch.countDown()));
+            async.offer(false, RetainableByteBuffer.empty(), Callback.from(Callback.NOOP::succeeded, x -> failLatch.countDown()));
             assertTrue(failLatch.await(5, TimeUnit.SECONDS));
         }
     }
@@ -116,18 +123,21 @@ public class AsyncContentTest
     @Test
     public void testChunkReleaseSucceedsWriteCallback()
     {
-        try (AsyncContent async = new AsyncContent())
+        try (AsyncContentSource async = new AsyncContentSource())
         {
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-            async.write(false, RetainableByteBuffer.wrap(new byte[1]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+            try (RetainableByteBuffer buffer = RetainableByteBuffer.allocate(1, false))
+            {
+                async.offer(false, buffer, Callback.from(successCounter::incrementAndGet, failureRef::set));
+            }
 
             Content.Chunk chunk = async.read();
-            assertThat(successCounter.get(), is(0));
+            assertThat(successCounter.get(), is(1));
             chunk.retain();
             assertThat(chunk.release(), is(false));
-            assertThat(successCounter.get(), is(0));
+            assertThat(successCounter.get(), is(1));
             assertThat(chunk.release(), is(true));
             assertThat(successCounter.get(), is(1));
             assertThat(failureRef.get(), is(nullValue()));
@@ -137,15 +147,15 @@ public class AsyncContentTest
     @Test
     public void testEmptyChunkReadSucceedsWriteCallback()
     {
-        try (AsyncContent async = new AsyncContent())
+        try (AsyncContentSource async = new AsyncContentSource())
         {
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-            async.write(false, RetainableByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+            async.offer(false, RetainableByteBuffer.allocate(0, false), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
-            assertThat(successCounter.get(), is(0));
+            assertThat(successCounter.get(), is(1));
             assertThat(chunk.isLast(), is(false));
             assertThat(chunk.hasRemaining(), is(false));
             assertThat(chunk.release(), is(true));
@@ -157,15 +167,15 @@ public class AsyncContentTest
     @Test
     public void testLastEmptyChunkReadSucceedsWriteCallback()
     {
-        try (AsyncContent async = new AsyncContent())
+        try (AsyncContentSource async = new AsyncContentSource())
         {
             AtomicInteger successCounter = new AtomicInteger();
             AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
-            async.write(true, RetainableByteBuffer.wrap(new byte[0]), Callback.from(successCounter::incrementAndGet, failureRef::set));
+            async.offer(true, RetainableByteBuffer.allocate(0, false), Callback.from(successCounter::incrementAndGet, failureRef::set));
 
             Content.Chunk chunk = async.read();
-            assertThat(successCounter.get(), is(0));
+            assertThat(successCounter.get(), is(1));
             assertThat(chunk.isLast(), is(true));
             assertThat(chunk.hasRemaining(), is(false));
             assertThat(chunk.release(), is(true));
@@ -177,7 +187,7 @@ public class AsyncContentTest
     @Test
     public void testReadAfterClose()
     {
-        try (AsyncContent async = new AsyncContent())
+        try (AsyncContentSource async = new AsyncContentSource())
         {
             async.close();
 
@@ -200,20 +210,29 @@ public class AsyncContentTest
     @Test
     public void testFailFailsCallbacks()
     {
-        try (AsyncContent async = new AsyncContent())
+        try (AsyncContentSource async = new AsyncContentSource())
         {
             AssertingCallback callback1 = new AssertingCallback();
-            async.write(false, RetainableByteBuffer.wrap(new byte[1]), callback1);
+            try (RetainableByteBuffer buffer1 = RetainableByteBuffer.allocate(1, false))
+            {
+                async.offer(false, buffer1, callback1);
+            }
             AssertingCallback callback2 = new AssertingCallback();
-            async.write(false, RetainableByteBuffer.wrap(new byte[2]), callback2);
+            try (RetainableByteBuffer buffer2 = RetainableByteBuffer.allocate(2, false))
+            {
+                async.offer(false, buffer2, callback2);
+            }
             AssertingCallback callback3 = new AssertingCallback();
-            async.write(false, RetainableByteBuffer.wrap(new byte[3]), callback3);
+            try (RetainableByteBuffer buffer3 = RetainableByteBuffer.allocate(3, false))
+            {
+                async.offer(false, buffer3, callback3);
+            }
 
             Content.Chunk chunk = async.read();
-            callback1.assertNoFailureNoSuccess();
+            callback1.assertNoFailureWithSuccesses(1);
             assertThat(chunk.remaining(), is(1L));
             assertThat(chunk.release(), is(true));
-            callback1.assertNoFailureWithSuccesses(1);
+            callback1.assertNoFailureWithSuccesses(0);
 
             Exception failure1 = new Exception("test1");
             async.fail(failure1);
@@ -228,15 +247,70 @@ public class AsyncContentTest
     }
 
     @Test
+    public void testFailReleasesQueuedChunks()
+    {
+        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
+        try (AsyncContentSource async = new AsyncContentSource())
+        {
+            AssertingCallback callback1 = new AssertingCallback();
+            try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(16, false))
+            {
+                buffer.put(new byte[1]);
+                async.offer(false, buffer, callback1);
+            }
+            AssertingCallback callback2 = new AssertingCallback();
+            try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(16, false))
+            {
+                buffer.put(new byte[2]);
+                async.offer(false, buffer, callback2);
+            }
+            assertThat(async.count(), is(2));
+
+            // Fail without reading the queued chunks.
+            Exception failure = new Exception("test");
+            async.fail(failure);
+            assertThat(async.count(), is(0));
+
+            callback1.assertSingleFailureSameInstanceNoSuccess(failure);
+            callback2.assertSingleFailureSameInstanceNoSuccess(failure);
+        }
+        assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
+    }
+
+    @Test
+    public void testEmptyWriteReadThroughInputStreamDoesNotBlock() throws Exception
+    {
+        OutputStreamContentSource source = new OutputStreamContentSource();
+        CompletableFuture<Void> writer = CompletableFuture.runAsync(() ->
+        {
+            try (OutputStream output = source.getOutputStream())
+            {
+                output.write(new byte[0]);
+                output.write("123".getBytes(UTF_8));
+            }
+            catch (IOException x)
+            {
+                throw new UncheckedIOException(x);
+            }
+        });
+
+        try (InputStream input = Content.Source.asInputStream(source))
+        {
+            assertThat(new String(input.readAllBytes(), UTF_8), is("123"));
+        }
+        writer.get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
     public void testWriteAfterFailImmediatelyFailsCallback()
     {
-        try (AsyncContent async = new AsyncContent())
+        try (AsyncContentSource async = new AsyncContentSource())
         {
             Exception error = new Exception("test1");
             async.fail(error);
 
             AssertingCallback callback = new AssertingCallback();
-            async.write(false, RetainableByteBuffer.wrap(new byte[1]), callback);
+            async.offer(false, RetainableByteBuffer.allocate(1, false), callback);
             callback.assertSingleFailureSameInstanceNoSuccess(error);
         }
     }

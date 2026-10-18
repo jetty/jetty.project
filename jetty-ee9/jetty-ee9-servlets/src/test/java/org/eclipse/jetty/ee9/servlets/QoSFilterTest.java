@@ -175,7 +175,7 @@ public class QoSFilterTest
                 request.setURI("/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY));
                 request.setHeader("num", _num + "");
 
-                String responseString = _connectors[_num].getResponseAsString(request.generate().getString(StandardCharsets.UTF_8));
+                String responseString = _connectors[_num].getResponse(request.generate().getString(StandardCharsets.UTF_8));
 
                 assertThat("Response contains", responseString, containsString("HTTP"));
             }

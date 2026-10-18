@@ -21,10 +21,11 @@ import java.util.Queue;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.generator.MessageGenerator;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -36,12 +37,12 @@ public class MessageFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> entries = new ArrayDeque<>();
-    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+    private final BufferAccumulator accumulator = new BufferAccumulator();
     private final MessageGenerator generator;
     private Throwable terminated;
     private Entry entry;
 
-    public MessageFlusher(WritableBufferPool bufferPool, QpackEncoder encoder, boolean useDirectByteBuffers)
+    public MessageFlusher(ByteBufferPool bufferPool, QpackEncoder encoder, boolean useDirectByteBuffers)
     {
         this.generator = new MessageGenerator(bufferPool, encoder, useDirectByteBuffers);
     }
@@ -85,7 +86,7 @@ public class MessageFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} bytes for stream #{} on {}", accumulator.remaining(), endPoint.getStream().getId(), this);
 
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             endPoint.write(Frame.isLast(frame), buffer, Callback.from(entry.callback.getInvocationType(), this::onWriteSuccess, this::onWriteFailure));
             return Action.SCHEDULED;

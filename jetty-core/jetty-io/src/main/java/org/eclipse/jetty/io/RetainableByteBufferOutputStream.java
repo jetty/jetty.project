@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.OutputStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
@@ -23,6 +24,7 @@ import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 /// [java.nio.BufferOverflowException] if the buffer capacity is exceeded.
 public class RetainableByteBufferOutputStream extends OutputStream
 {
+    private final AtomicBoolean _closed = new AtomicBoolean();
     private final RetainableByteBuffer.Mutable _buffer;
 
     public RetainableByteBufferOutputStream(RetainableByteBuffer.Mutable buffer)
@@ -47,6 +49,7 @@ public class RetainableByteBufferOutputStream extends OutputStream
 
     public void close()
     {
-        _buffer.close();
+        if (_closed.compareAndSet(false, true))
+            _buffer.close();
     }
 }

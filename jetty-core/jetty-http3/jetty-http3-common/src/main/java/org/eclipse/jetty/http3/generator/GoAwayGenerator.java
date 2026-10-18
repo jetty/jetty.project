@@ -18,28 +18,29 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class GoAwayGenerator extends FrameGenerator
 {
     private final boolean useDirectByteBuffers;
 
-    public GoAwayGenerator(WritableBufferPool bufferPool, boolean useDirectByteBuffers)
+    public GoAwayGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         super(bufferPool);
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
     @Override
-    public long generate(RetainableByteBuffer.Accumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(BufferAccumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
         return generateGoAwayFrame(accumulator, goAwayFrame);
     }
 
-    private long generateGoAwayFrame(RetainableByteBuffer.Accumulator accumulator, GoAwayFrame frame)
+    private long generateGoAwayFrame(BufferAccumulator accumulator, GoAwayFrame frame)
     {
         long lastId = frame.getLastId();
         int lastIdLength = VarLenInt.length(lastId);

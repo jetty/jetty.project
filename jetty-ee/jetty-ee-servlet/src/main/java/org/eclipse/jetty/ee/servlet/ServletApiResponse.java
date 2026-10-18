@@ -190,8 +190,10 @@ public class ServletApiResponse implements HttpServletResponse
         }
         else
         {
-            RetainableByteBuffer buffer = getServletChannel().getHttpOutput().takeContentAndClose();
-            sendRedirect(code, location, buffer);
+            try (RetainableByteBuffer buffer = getServletChannel().getHttpOutput().takeContentAndClose())
+            {
+                sendRedirect(code, location, buffer);
+            }
         }
     }
 

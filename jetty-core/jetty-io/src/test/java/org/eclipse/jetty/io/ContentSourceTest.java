@@ -36,7 +36,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.AsyncContentSource;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
@@ -51,6 +51,8 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -104,11 +106,11 @@ public class ContentSourceTest
 
     private static List<Content.Source> sources(String mode) throws Exception
     {
-        AsyncContent asyncSource = new AsyncContent();
+        AsyncContentSource asyncSource = new AsyncContentSource();
         try (asyncSource)
         {
-            asyncSource.write(false, RetainableByteBuffer.wrap(UTF_8.encode("one")), Callback.NOOP);
-            asyncSource.write(false, RetainableByteBuffer.wrap(UTF_8.encode("two")), Callback.NOOP);
+            asyncSource.offer(false, "one", UTF_8, Callback.NOOP);
+            asyncSource.offer(false, "two", UTF_8, Callback.NOOP);
         }
 
         ByteBufferContentSource byteBufferSource = new ByteBufferContentSource(UTF_8.encode("one"), UTF_8.encode("two"));
@@ -897,11 +899,11 @@ public class ContentSourceTest
     @Test
     public void testAsyncContentWithWarnings()
     {
-        AsyncContent content = new AsyncContent();
+        AsyncContentSource content = new AsyncContentSource();
 
-        Content.Sink.write(content, false, "One", Callback.NOOP);
+        content.offer(false, "One", UTF_8, Callback.NOOP);
         content.fail(new TimeoutException("test"), false);
-        Content.Sink.write(content, true, "Two", Callback.NOOP);
+        content.offer(true, "Two", UTF_8, Callback.NOOP);
 
         try (Content.Chunk chunk = content.read())
         {
@@ -934,11 +936,11 @@ public class ContentSourceTest
     @Test
     public void testAsyncContentWithWarningsAsInputStream() throws Exception
     {
-        AsyncContent content = new AsyncContent();
+        AsyncContentSource content = new AsyncContentSource();
 
-        Content.Sink.write(content, false, "One", Callback.NOOP);
+        content.offer(false, "One", UTF_8, Callback.NOOP);
         content.fail(new TimeoutException("test"), false);
-        Content.Sink.write(content, true, "Two", Callback.NOOP);
+        content.offer(true, "Two", UTF_8, Callback.NOOP);
 
         InputStream in = Content.Source.asInputStream(content);
 

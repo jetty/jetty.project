@@ -91,7 +91,7 @@ public class ProxyServlet extends AbstractProxyServlet
                     try
                     {
                         Request.Content content = proxyRequestContent(request, response, proxyRequest);
-                        Content.copy(content, delegate, Callback.from(
+                        Content.copy(content, delegate::offer, Callback.from(
                             delegate::close,
                             x -> ExceptionUtil.callAndThen(
                                 x, delegate::fail, t -> onClientRequestFailure(request, proxyRequest, response, t)
@@ -207,9 +207,9 @@ public class ProxyServlet extends AbstractProxyServlet
         {
             try (RetainableByteBuffer buffer = chunk.acquire())
             {
-                // Retain because onResponseContent() may write the content asynchronously.
-                chunk.retain();
-                Callback callback = Callback.from(chunk::release, Callback.from(demander, proxyResponse::abort));
+                Callback callback = Callback.from(demander, proxyResponse::abort);
+                // The bytes are a copy, so the chunk need not be retained
+                // even if onResponseContent() writes them asynchronously.
                 byte[] bytes = buffer.getArray();
                 onResponseContent(request, response, proxyResponse, bytes, 0, bytes.length, callback);
             }

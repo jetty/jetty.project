@@ -70,7 +70,7 @@ public class RedirectTest
             
             """;
 
-        String rawResponse = localConnector.getResponseAsString(rawRequest);
+        String rawResponse = localConnector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(redirectCode, response.getStatus());
         assertEquals(redirectLocation, response.get("Location"));

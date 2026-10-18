@@ -86,6 +86,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -432,7 +433,7 @@ public class AsyncMiddleManServletTest
             .body(content);
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
         byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
-        content.write(ByteBuffer.wrap(gzip(bytes)), Callback.NOOP);
+        content.offer(false, RetainableByteBuffer.wrap(gzip(bytes)), Callback.NOOP);
         sleep(1000);
         content.close();
 
@@ -593,10 +594,9 @@ public class AsyncMiddleManServletTest
                         latch.countDown();
                 });
 
-            content.write(ByteBuffer.allocate(512), Callback.NOOP);
+            content.offer(false, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
             sleep(1000);
-            content.write(ByteBuffer.allocate(512), Callback.NOOP);
-            content.close();
+            content.offer(true, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
@@ -837,10 +837,9 @@ public class AsyncMiddleManServletTest
                 if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
                     latch.countDown();
             });
-        content.write(ByteBuffer.allocate(512), Callback.NOOP);
+        content.offer(false, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
         sleep(1000);
-        content.write(ByteBuffer.allocate(512), Callback.NOOP);
-        content.close();
+        content.offer(true, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -873,10 +872,9 @@ public class AsyncMiddleManServletTest
                 if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
                     latch.countDown();
             });
-        content.write(ByteBuffer.allocate(512), Callback.NOOP);
+        content.offer(false, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
         sleep(1000);
-        content.write(ByteBuffer.allocate(512), Callback.NOOP);
-        content.close();
+        content.offer(true, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -1430,13 +1428,11 @@ public class AsyncMiddleManServletTest
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         // Send one chunk of content, the proxy request must not be sent.
-        ByteBuffer chunk1 = ByteBuffer.allocate(1024);
-        content.write(chunk1, Callback.NOOP);
+        content.offer(false, RetainableByteBuffer.allocate(1024, false), Callback.NOOP);
         assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Send another chunk of content, the proxy request must not be sent.
-        ByteBuffer chunk2 = ByteBuffer.allocate(512);
-        content.write(chunk2, Callback.NOOP);
+        content.offer(false, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
         assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Finish the content, request must be sent.
@@ -1477,13 +1473,13 @@ public class AsyncMiddleManServletTest
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         // Send one chunk of content, the proxy request must not be sent.
-        ByteBuffer chunk1 = ByteBuffer.allocate(1024);
-        content.write(chunk1, Callback.NOOP);
+        RetainableByteBuffer chunk1 = RetainableByteBuffer.allocate(1024, false);
+        content.offer(false, chunk1, Callback.NOOP);
         assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Send another chunk of content, the proxy request must not be sent.
-        ByteBuffer chunk2 = ByteBuffer.allocate(512);
-        content.write(chunk2, Callback.NOOP);
+        RetainableByteBuffer chunk2 = RetainableByteBuffer.allocate(512, false);
+        content.offer(false, chunk2, Callback.NOOP);
         assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Finish the content, request must be sent.
@@ -1547,13 +1543,13 @@ public class AsyncMiddleManServletTest
         CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
 
         // Send one chunk of content, the proxy request must not be sent.
-        ByteBuffer chunk1 = ByteBuffer.allocate(1024);
-        content.write(chunk1, Callback.NOOP);
+        RetainableByteBuffer chunk1 = RetainableByteBuffer.allocate(1024, false);
+        content.offer(false, chunk1, Callback.NOOP);
         assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
 
         // Send another chunk of content, the proxy request must be sent.
-        ByteBuffer chunk2 = ByteBuffer.allocate(512);
-        content.write(chunk2, Callback.NOOP);
+        RetainableByteBuffer chunk2 = RetainableByteBuffer.allocate(512, false);
+        content.offer(false, chunk2, Callback.NOOP);
         assertTrue(proxyRequestLatch.await(5, TimeUnit.SECONDS));
 
         // Finish the content.

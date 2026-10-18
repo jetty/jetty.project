@@ -21,8 +21,9 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.parser.ServerParser;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -59,9 +60,9 @@ public class ClientGeneratorTest
         String longLongValue = new String(chars);
         fields.put(new HttpField(longLongName, longLongValue));
 
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+        ByteBufferPool bufferPool = new ArrayByteBufferPool();
         ClientGenerator generator = new ClientGenerator(bufferPool);
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         int id = 13;
         generator.generateRequestHeaders(accumulator, id, fields);
 
@@ -117,7 +118,7 @@ public class ClientGeneratorTest
             }
         });
 
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             parser.parse(buffer);
             assertEquals(0, buffer.remaining());
@@ -156,9 +157,9 @@ public class ClientGeneratorTest
     {
         try (RetainableByteBuffer content = RetainableByteBuffer.allocate(contentLength, false))
         {
-            WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+            ByteBufferPool bufferPool = new ArrayByteBufferPool();
             ClientGenerator generator = new ClientGenerator(bufferPool);
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             int id = 13;
             generator.generateRequestContent(accumulator, id, content, true);
 
@@ -182,7 +183,7 @@ public class ClientGeneratorTest
                 }
             });
 
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 parser.parse(buffer);
                 assertEquals(0, buffer.remaining());

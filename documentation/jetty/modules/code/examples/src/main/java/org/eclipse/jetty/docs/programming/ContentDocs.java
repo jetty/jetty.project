@@ -18,7 +18,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.Content;
@@ -31,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.lang.System.Logger.Level.INFO;
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 @SuppressWarnings("unused")
 public class ContentDocs
@@ -126,31 +126,37 @@ public class ContentDocs
 
                 // Consume the chunk asynchronously, and do not
                 // read more chunks until this has been consumed.
-                CompletableFuture<Void> consumed = consumeAsync(chunk);
-
-                // Only when the chunk has been consumed try to read more.
-                consumed.whenComplete((result, failure) ->
+                consumeAsync(chunk, new Callback()
                 {
-                    if (failure == null)
+                    @Override
+                    public void succeeded()
                     {
                         // Continue reading if EOF was not reached.
                         if (!chunk.isLast())
                             source.demand(() -> read(source));
                     }
-                    else
+
+                    @Override
+                    public void failed(Throwable x)
                     {
                         // If there is a failure reading, handle it,
                         // and stop reading by not demanding.
-                        handleFatalFailure(failure);
+                        handleFatalFailure(x);
+                    }
+
+                    @Override
+                    public InvocationType getInvocationType()
+                    {
+                        return NON_BLOCKING;
                     }
                 });
             } // Release the chunk by closing it. <2>
         }
         // end::async[]
 
-        private CompletableFuture<Void> consumeAsync(Content.Chunk chunk)
+        private void consumeAsync(Content.Chunk chunk, Callback callback)
         {
-            return CompletableFuture.completedFuture(null);
+            callback.succeeded();
         }
     }
 
@@ -370,7 +376,7 @@ public class ContentDocs
         @Override
         public InvocationType getInvocationType()
         {
-            return InvocationType.NON_BLOCKING;
+            return NON_BLOCKING;
         }
     }
     // end::sinkChunks[]

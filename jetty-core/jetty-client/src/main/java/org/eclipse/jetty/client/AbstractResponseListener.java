@@ -40,16 +40,16 @@ import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
  */
 public abstract class AbstractResponseListener implements Response.Listener
 {
-    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
     private final long maxLength;
     private String encoding;
     private String mediaType;
     private long length;
     private byte[] content;
-    private boolean append;
 
     protected AbstractResponseListener(long maxLength)
     {
+        if (maxLength <= 0)
+            throw new IllegalArgumentException("Invalid max length " + maxLength);
         this.maxLength = maxLength;
     }
 
@@ -113,43 +113,13 @@ public abstract class AbstractResponseListener implements Response.Listener
     }
 
     @Override
-    public void onContent(Response response, Content.Chunk chunk, Runnable demander) throws Exception
+    public void onContent(Response response, RetainableByteBuffer content)
     {
-        try (RetainableByteBuffer buffer = chunk.acquire())
-        {
-            onContent(response, buffer);
-            if (append)
-            {
-                append = false;
-
-                long max = getMaxLength();
-                long remaining = buffer.remaining();
-                if (max > 0 && length + remaining > max)
-                    throw new IllegalArgumentException("Buffering capacity " + max + " exceeded");
-
-                length += remaining;
-                accumulator.add(buffer);
-                demander.run();
-            }
-            else
-            {
-                demander.run();
-            }
-        }
-    }
-
-    @Override
-    public void onContent(Response response, ByteBuffer content)
-    {
-        // For backward compatibility, mark whether applications called
-        // this method, which means they wanted to perform accumulation.
-        append = true;
-    }
-
-    @Override
-    public void onFailure(Response response, Throwable failure)
-    {
-        accumulator.clear();
+        long max = getMaxLength();
+        long remaining = content.remaining();
+        if (length + remaining > max)
+            throw new IllegalArgumentException("Buffering capacity " + max + " exceeded");
+        length += remaining;
     }
 
     /**
@@ -228,7 +198,7 @@ public abstract class AbstractResponseListener implements Response.Listener
         Content.Source result;
         if (content == null)
         {
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = take())
             {
                 result = Content.Source.from(List.of(buffer));
             }
@@ -241,9 +211,11 @@ public abstract class AbstractResponseListener implements Response.Listener
         return result;
     }
 
+    protected abstract RetainableByteBuffer take();
+
     private byte[] toArray()
     {
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = take())
         {
             return buffer.getArray();
         }

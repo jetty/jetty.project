@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +43,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
@@ -276,11 +276,13 @@ public class ProxyServletFailureTest
                     AsyncRequestContent requestContent = new AsyncRequestContent()
                     {
                         @Override
-                        public void write(ByteBuffer buffer, Callback callback)
+                        public void offer(boolean last, RetainableByteBuffer buffer, Callback callback)
                         {
                             // Send less content to trigger the test condition.
-                            buffer.limit(buffer.limit() - 1);
-                            super.write(buffer.slice(), callback);
+                            try (RetainableByteBuffer slice = buffer.slice(buffer.remaining() - 1))
+                            {
+                                super.offer(last, slice, callback);
+                            }
                         }
                     };
                     request.getInputStream().setReadListener(newReadListener(request, response, proxyRequest, requestContent));
