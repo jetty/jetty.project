@@ -24,7 +24,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -318,7 +317,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
 
             if (_buffer == null)
             {
-                _buffer = WritableBufferPool.wrap(getRequest().getComponents().getByteBufferPool()).acquire(_bufferSize, false);
+                _buffer = getRequest().getComponents().getByteBufferPool().acquire(_bufferSize, false);
                 // Per RFC-1952, GZIP is LITTLE_ENDIAN.
                 _buffer.quietWrite(b ->
                 {

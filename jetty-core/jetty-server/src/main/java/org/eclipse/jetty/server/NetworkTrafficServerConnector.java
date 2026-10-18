@@ -17,11 +17,11 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.io.NetworkTrafficSocketChannelEndPoint;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 

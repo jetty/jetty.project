@@ -31,13 +31,11 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
@@ -51,6 +49,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -682,14 +681,14 @@ public class ConnectHandler extends Handler.Wrapper
     private abstract static class TunnelConnection extends AbstractConnection.NonBlocking
     {
         private final IteratingCallback pipe = new ProxyIteratingCallback();
-        private final WritableBufferPool bufferPool;
+        private final ByteBufferPool bufferPool;
         private final ConcurrentMap<String, Object> context;
         private TunnelConnection connection;
 
         protected TunnelConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
         {
             super(endPoint, executor);
-            this.bufferPool = WritableBufferPool.wrap(bufferPool);
+            this.bufferPool = bufferPool;
             this.context = context;
         }
 

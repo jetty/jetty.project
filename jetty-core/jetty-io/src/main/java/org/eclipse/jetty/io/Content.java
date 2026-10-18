@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -247,7 +248,7 @@ public class Content
 
         /**
          * Create a {@code Content.Source} from a {@link Path}.
-         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param byteBufferPool The {@link ByteBufferPool.Sized} to use for any internal buffers.
          * @param path The {@link Path}s to use as the source.
          * @return A {@code Content.Source}
          */
@@ -258,7 +259,7 @@ public class Content
 
         /**
          * Create a {@code Content.Source} from a {@link Path}.
-         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param byteBufferPool The {@link ByteBufferPool.Sized} to use for any internal buffers.
          * @param path The {@link Path}s to use as the source.
          * @param offset the offset byte of the content to start from.
          *               Must be greater than or equal to 0 and less than the content length (if known).
@@ -275,7 +276,7 @@ public class Content
 
         /**
          * Create a {@code Content.Source} from a {@link ByteChannel}.
-         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param byteBufferPool The {@link ByteBufferPool.Sized} to use for any internal buffers.
          * @param byteChannel The {@link ByteChannel}s to use as the source.
          * @return A {@code Content.Source}
          */
@@ -286,7 +287,7 @@ public class Content
 
         /**
          * Create a {@code Content.Source} from a {@link ByteChannel}.
-         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param byteBufferPool The {@link ByteBufferPool.Sized} to use for any internal buffers.
          * @param seekableByteChannel The {@link ByteChannel}s to use as the source.
          * @param offset the offset byte of the content to start from.
          *               Must be greater than or equal to 0 and less than the content length (if known).
@@ -308,7 +309,7 @@ public class Content
 
         /**
          * Create a {@code Content.Source} from an {@link InputStream}.
-         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param byteBufferPool The {@link ByteBufferPool.Sized} to use for any internal buffers.
          * @param inputStream The {@link InputStream}s to use as the source.
          * @return A {@code Content.Source}
          */
@@ -319,7 +320,7 @@ public class Content
 
         /**
          * Create a {@code Content.Source} from an {@link InputStream}.
-         * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+         * @param byteBufferPool The {@link ByteBufferPool.Sized} to use for any internal buffers.
          * @param inputStream The {@link InputStream}s to use as the source.
          * @param offset the offset byte of the resource to start from.
          *               Must be greater than or equal to 0 and less than the resource size (if known).
@@ -386,7 +387,7 @@ public class Content
         }
 
         /**
-         * <p>Reads, non-blocking, the whole content source into a {@link org.eclipse.jetty.io.RetainableByteBuffer}.</p>
+         * <p>Reads, non-blocking, the whole content source into a {@link RetainableByteBuffer}.</p>
          *
          * @param source the source to read
          * @param maxSize The maximum size to read, or -1 for no limit

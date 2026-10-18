@@ -31,7 +31,7 @@ import java.util.concurrent.locks.Condition;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Retainable;
-import org.eclipse.jetty.util.buffer.Aggregator;
+import org.eclipse.jetty.util.buffer.BufferAggregator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -65,7 +65,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     private final AutoLock _lock = new AutoLock();
     private final Condition _hasOutput = _lock.newCondition();
     private final Queue<RetainableByteBuffer> _inputQueue = new ArrayDeque<>();
-    private final Aggregator _outputAggregator;
+    private final BufferAggregator _outputAggregator;
 
     public ByteArrayEndPoint()
     {
@@ -130,7 +130,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         super(timer);
         if (BufferUtil.hasContent(input))
             addInput(input);
-        _outputAggregator = new Aggregator(growable, outputSize > 0 ? outputSize : 1024);
+        _outputAggregator = new BufferAggregator(growable, outputSize > 0 ? outputSize : 1024);
         setIdleTimeout(idleTimeoutMs);
         onOpen();
     }
@@ -393,7 +393,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                 throw new IOException("OSHUT");
 
             long remaining = buffer.remaining();
-            long appended = _outputAggregator.append(buffer);
+            long appended = _outputAggregator.put(buffer);
             boolean flushed = remaining - appended == 0;
             boolean notIdle = appended > 0;
 

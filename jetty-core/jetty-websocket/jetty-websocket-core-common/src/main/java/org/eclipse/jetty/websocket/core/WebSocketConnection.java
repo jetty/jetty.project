@@ -25,12 +25,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -86,7 +85,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     }
 
     private final AutoLock lock = new AutoLock();
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final Generator generator;
     private final Parser parser;
     private final WebSocketCoreSession coreSession;
@@ -145,7 +144,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         Objects.requireNonNull(executor, "Executor");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
 
-        this.bufferPool = WritableBufferPool.wrap(bufferPool);
+        this.bufferPool = bufferPool;
         this.coreSession = coreSession;
         this.generator = new Generator();
         this.parser = new Parser(this.bufferPool, coreSession);

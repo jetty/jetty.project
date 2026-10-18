@@ -25,7 +25,6 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.WriteListener;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -37,8 +36,8 @@ import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
-import org.eclipse.jetty.util.buffer.WritableBufferPool;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,7 +126,7 @@ public class HttpOutput extends ServletOutputStream
     private boolean _softClose = false;
     private long _written;
     private boolean _bypassed;
-    private WritableBufferPool.Sized _pool;
+    private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer.Mutable _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -351,7 +350,8 @@ public class HttpOutput extends ServletOutputStream
         if (_aggregate == null)
             return getBufferSize();
         // Compact to maximize space.
-        return _aggregate.compact().space();
+        _aggregate.compact();
+        return _aggregate.space();
     }
 
     public void softClose()
@@ -676,12 +676,12 @@ public class HttpOutput extends ServletOutputStream
         }
     }
 
-    private WritableBufferPool.Sized getSizedByteBufferPool()
+    private ByteBufferPool.Sized getSizedByteBufferPool()
     {
         int bufferSize = getBufferSize();
         boolean useOutputDirectByteBuffers = _servletChannel.getConnectionMetaData().getHttpConfiguration().isUseOutputDirectByteBuffers();
         if (_pool == null || _pool.getSize() != bufferSize || _pool.isDirect() != useOutputDirectByteBuffers)
-            _pool = org.eclipse.jetty.io.WritableBufferPool.wrap(new ByteBufferPool.Sized(_servletChannel.getRequest().getComponents().getByteBufferPool(), useOutputDirectByteBuffers, bufferSize));
+            _pool = new ByteBufferPool.Sized(_servletChannel.getRequest().getComponents().getByteBufferPool(), useOutputDirectByteBuffers, bufferSize);
         return _pool;
     }
 

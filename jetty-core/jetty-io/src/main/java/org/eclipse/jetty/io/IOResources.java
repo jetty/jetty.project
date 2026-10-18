@@ -17,8 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +26,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -72,36 +71,12 @@ public class IOResources
         if (resource instanceof MemoryResource memoryResource)
             return RetainableByteBuffer.wrap(ByteBuffer.wrap(memoryResource.getBytes()));
 
-        long longLength = resource.length();
-
-        WritableBufferPool.Sized bufferPool = pool == null ? WritableBufferPool.SIZED_NON_POOLING : WritableBufferPool.wrap(pool);
+        ByteBufferPool.Sized bufferPool = pool == null ? ByteBufferPool.SIZED_NON_POOLING : pool;
 
         // Optimize for PathResource.
         Path path = resource.getPath();
-        if (path != null && longLength < Integer.MAX_VALUE)
-        {
-            // TODO: SIMON Just RBB.wrap(path...)?
-            try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire((int)longLength))
-            {
-                try (SeekableByteChannel seekableByteChannel = Files.newByteChannel(path))
-                {
-                    long totalRead = 0L;
-                    while (totalRead < longLength)
-                    {
-                        long read = buffer.write(seekableByteChannel::read);
-                        if (read == -1)
-                            break;
-                        totalRead += read;
-                    }
-                    buffer.retain();
-                    return buffer;
-                }
-                catch (IOException e)
-                {
-                    throw new UncheckedIOException(e);
-                }
-            }
-        }
+        if (path != null)
+            return RetainableByteBuffer.wrap(path, bufferPool);
 
         // Fallback to InputStream.
         try (InputStream inputStream = resource.newInputStream())
@@ -255,7 +230,7 @@ public class IOResources
             Path path = resource.getPath();
             if (path != null)
             {
-                RetainableByteBuffer pathBuffer = RetainableByteBuffer.wrap(path, offset, length, WritableBufferPool.wrap(bufferPool == null ? ByteBufferPool.SIZED_NON_POOLING : bufferPool));
+                RetainableByteBuffer pathBuffer = RetainableByteBuffer.wrap(path, offset, length, bufferPool == null ? ByteBufferPool.SIZED_NON_POOLING : bufferPool);
                 sink.write(true, pathBuffer, callback);
                 pathBuffer.release();
                 return;

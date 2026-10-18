@@ -21,13 +21,13 @@ import java.nio.channels.SelectionKey;
 import java.util.EventListener;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class DatagramServerConnector extends AbstractNetworkConnector

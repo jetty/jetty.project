@@ -26,7 +26,6 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.WriteListener;
 import org.eclipse.jetty.http.content.HttpContent;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.IOResources;
@@ -40,8 +39,8 @@ import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
-import org.eclipse.jetty.util.buffer.WritableBufferPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -157,12 +156,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         default void write(boolean last, RetainableByteBuffer content, Callback callback)
         {
-            content.quietRead(b ->
-            {
-                int r = b.remaining();
-                write(b, last, callback);
-                return r - b.remaining();
-            });
+            if (content.hasRemaining())
+                new RetainableByteBufferCB(this, last, content, callback).iterate();
+            else
+                write(BufferUtil.EMPTY_BUFFER, last, callback);
         }
 
         /**
@@ -197,7 +194,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private Interceptor _interceptor;
     private long _written;
     private boolean _bypassed;
-    private WritableBufferPool.Sized _pool;
+    private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer.Mutable _aggregate;
     private int _bufferSize;
     private int _commitSize;
@@ -290,48 +287,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private void channelWrite(RetainableByteBuffer content, boolean last, Callback callback)
     {
         if (content.hasRemaining())
-        {
-            content.retain();
-            new IteratingNestedCallback(callback)
-            {
-                private final long total = content.remaining();
-                private long current;
-                private long written;
-
-                @Override
-                protected Action process() throws Throwable
-                {
-                    if (written == total)
-                        return Action.SUCCEEDED;
-                    content.read(b ->
-                    {
-                        current = b.remaining();
-                        boolean isLast = last && (written + current == total);
-                        _interceptor.write(b.slice(), isLast, this);
-                        return 0;
-                    });
-                    return Action.SCHEDULED;
-                }
-
-                @Override
-                protected void onSuccess()
-                {
-                    content.consume(current);
-                    written += current;
-                }
-
-                @Override
-                protected void onCompleted(Throwable causeOrNull)
-                {
-                    content.release();
-                    super.onCompleted(causeOrNull);
-                }
-            }.iterate();
-        }
+            new RetainableByteBufferCB(_interceptor, last, content, callback).iterate();
         else
-        {
             _interceptor.write(BufferUtil.EMPTY_BUFFER, last, callback);
-        }
     }
 
     private void onWriteComplete(boolean last, Throwable failure)
@@ -433,7 +391,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (_aggregate == null)
             return getBufferSize();
         // Compact to maximize space.
-        return _aggregate.compact().space();
+        _aggregate.compact();
+        return _aggregate.space();
     }
 
     public void softClose()
@@ -741,12 +700,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    private WritableBufferPool.Sized getSizedByteBufferPool()
+    private ByteBufferPool.Sized getSizedByteBufferPool()
     {
         int bufferSize = getBufferSize();
         boolean useOutputDirectByteBuffers = _channel.isUseOutputDirectByteBuffers();
         if (_pool == null || _pool.getSize() != bufferSize || _pool.isDirect() != useOutputDirectByteBuffers)
-            _pool = org.eclipse.jetty.io.WritableBufferPool.wrap(new ByteBufferPool.Sized(_channel.getByteBufferPool(), useOutputDirectByteBuffers, bufferSize));
+            _pool = new ByteBufferPool.Sized(_channel.getByteBufferPool(), useOutputDirectByteBuffers, bufferSize);
         return _pool;
     }
 
@@ -1668,6 +1627,55 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         try (AutoLock l = _channelState.lock())
         {
             return String.format("%s@%x{%s}", TypeUtil.toShortName(this.getClass()), hashCode(), stateString());
+        }
+    }
+
+    private static class RetainableByteBufferCB extends IteratingNestedCallback
+    {
+        private final Interceptor interceptor;
+        private final boolean last;
+        private final RetainableByteBuffer content;
+        private final long total;
+        private long current;
+        private long written;
+
+        private RetainableByteBufferCB(Interceptor interceptor, boolean last, RetainableByteBuffer content, Callback callback)
+        {
+            super(callback);
+            this.interceptor = interceptor;
+            this.last = last;
+            this.content = content;
+            this.total = content.remaining();
+            content.retain();
+        }
+
+        @Override
+        protected Action process() throws Throwable
+        {
+            if (written == total)
+                return Action.SUCCEEDED;
+            content.read(b ->
+            {
+                current = b.remaining();
+                boolean isLast = last && (written + current == total);
+                interceptor.write(b.slice(), isLast, this);
+                return 0;
+            });
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        protected void onSuccess()
+        {
+            content.consume(current);
+            written += current;
+        }
+
+        @Override
+        protected void onCompleted(Throwable causeOrNull)
+        {
+            content.release();
+            super.onCompleted(causeOrNull);
         }
     }
 

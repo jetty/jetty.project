@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -30,7 +31,7 @@ import org.eclipse.jetty.websocket.core.util.MethodHolder;
  */
 public class ByteArrayMessageSink extends AbstractMessageSink
 {
-    private RetainableByteBuffer.Accumulator accumulator;
+    private BufferAccumulator accumulator;
 
     /**
      * Creates a new {@link ByteArrayMessageSink}.
@@ -77,7 +78,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             }
 
             if (accumulator == null)
-                accumulator = new RetainableByteBuffer.Accumulator();
+                accumulator = new BufferAccumulator();
             accumulator.addRetained(RetainableByteBuffer.wrap(payload, callback::succeeded));
 
             if (frame.isFin())
@@ -85,7 +86,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 // Do not complete twice the callback if the invocation fails.
                 callback = Callback.NOOP;
 
-                try (RetainableByteBuffer buffer = accumulator.drain())
+                try (RetainableByteBuffer buffer = accumulator.take())
                 {
                     byte[] bytes = buffer.getArray();
                     getMethodHolder().invoke(bytes, 0, bytes.length);

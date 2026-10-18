@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.internal;
+package org.eclipse.jetty.util.buffer.internal;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -25,24 +25,24 @@ import java.util.Objects;
 
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
-import org.eclipse.jetty.util.buffer.WritableBufferPool;
 
 public class PathBuffer implements RetainableByteBuffer
 {
     private final Path path;
-    private final WritableBufferPool.Sized bufferPool;
+    private final ByteBufferPool.Sized bufferPool;
     private final Retainable retainable;
     private final long offset;
     private final long size;
     private long position;
     private RetainableByteBuffer readBuffer;
 
-    public PathBuffer(Path path, long offset, long size, WritableBufferPool.Sized bufferPool, Retainable retainable) throws IOException
+    public PathBuffer(Path path, long offset, long size, ByteBufferPool.Sized bufferPool, Retainable retainable)
     {
         if (offset < 0L)
             throw new IllegalArgumentException("offset " + offset + " < 0 for file " + path);
-        long fileSize = Files.size(path);
+        long fileSize = fileSize(path);
         if (offset > fileSize)
             throw new IllegalArgumentException("offset " + offset + " > file size " + fileSize + " for file " + path);
         long realSize = size < 0L ? fileSize - offset : size;
@@ -55,6 +55,18 @@ public class PathBuffer implements RetainableByteBuffer
         this.size = realSize;
         this.offset = offset;
         retain();
+    }
+
+    private static long fileSize(Path path)
+    {
+        try
+        {
+            return Files.size(path);
+        }
+        catch (IOException x)
+        {
+            throw new UncheckedIOException(x);
+        }
     }
 
     private RetainableByteBuffer getBytesAt(long position, boolean absolute, int length)
@@ -87,14 +99,13 @@ public class PathBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public RetainableByteBuffer readPosition(long newPosition)
+    public void readPosition(long newPosition)
     {
         if (newPosition < 0L)
             throw new IllegalArgumentException("newPosition < 0");
         if (newPosition > size)
             throw new BufferUnderflowException();
         this.position = newPosition;
-        return this;
     }
 
     @Override
@@ -221,10 +232,6 @@ public class PathBuffer implements RetainableByteBuffer
         {
             return new PathBuffer(path, offset + position, length, bufferPool, refCount);
         }
-        catch (IOException e)
-        {
-            throw new UncheckedIOException(e);
-        }
     }
 
     @Override
@@ -270,9 +277,6 @@ public class PathBuffer implements RetainableByteBuffer
                     // Should not happen unless the file is modified concurrently.
                     if (written < 0)
                         throw new EOFException();
-
-                    if (written == 0)
-                        break;
 
                     read = fileBuffer.read(reader);
 

@@ -28,8 +28,9 @@ import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.HeadersGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +46,7 @@ public class ContinuationParseTest
     public void testParseOneByteAtATime() throws Exception
     {
         ArrayByteBufferPool.Tracking trackingPool = new ArrayByteBufferPool.Tracking();
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(trackingPool);
+        ByteBufferPool bufferPool = trackingPool;
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         List<HeadersFrame> frames = new ArrayList<>();
@@ -74,10 +75,10 @@ public class ContinuationParseTest
                 .put("User-Agent", "Jetty");
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.generateHeaders(accumulator, streamId, metaData, null, true);
 
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 try (RetainableByteBuffer header = buffer.sliceAndConsume(Frame.HEADER_LENGTH))
                 {
@@ -141,7 +142,7 @@ public class ContinuationParseTest
                         accumulator.addRetained(continuationBody2);
 
                         frames.clear();
-                        try (RetainableByteBuffer generated = accumulator.drain())
+                        try (RetainableByteBuffer generated = accumulator.take())
                         {
                             while (generated.hasRemaining())
                             {
@@ -175,7 +176,7 @@ public class ContinuationParseTest
     public void testBeginNanoTime() throws Exception
     {
         ArrayByteBufferPool.Tracking trackingPool = new ArrayByteBufferPool.Tracking();
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(trackingPool);
+        ByteBufferPool bufferPool = trackingPool;
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(bufferPool), new HpackEncoder());
 
         final List<HeadersFrame> frames = new ArrayList<>();
@@ -201,10 +202,10 @@ public class ContinuationParseTest
             .put("User-Agent", "Jetty");
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.generateHeaders(accumulator, streamId, metaData, null, true);
 
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             try (RetainableByteBuffer header = buffer.sliceAndConsume(Frame.HEADER_LENGTH))
             {
@@ -232,7 +233,7 @@ public class ContinuationParseTest
                     RetainableByteBuffer headersBody1 = body.sliceAndConsume(firstHalf);
                     accumulator.addRetained(headersBody1);
 
-                    try (RetainableByteBuffer generated = accumulator.drain())
+                    try (RetainableByteBuffer generated = accumulator.take())
                     {
                         parser.parse(generated);
                     }
@@ -252,7 +253,7 @@ public class ContinuationParseTest
                     continuationHeader.put((byte)streamId);
 
                     // Early parsing.
-                    try (RetainableByteBuffer generated = accumulator.drain())
+                    try (RetainableByteBuffer generated = accumulator.take())
                     {
                         parser.parse(generated);
                     }
@@ -262,7 +263,7 @@ public class ContinuationParseTest
                     accumulator.addRetained(continuationBody);
 
                     // Finish parsing.
-                    try (RetainableByteBuffer generated = accumulator.drain())
+                    try (RetainableByteBuffer generated = accumulator.take())
                     {
                         parser.parse(generated);
                     }
@@ -292,8 +293,8 @@ public class ContinuationParseTest
     @Test
     public void testLargeHeadersBlock() throws Exception
     {
-        // Use a ByteBufferPool with a small factor, so that the accumulation buffer is not too large.
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool(0, 128, -1));
+        // Use a ByteBufferPool with small capacities, so that the accumulation buffer is not too large.
+        ByteBufferPool bufferPool = new ArrayByteBufferPool(new int[]{0, 128, 256, 512, 1024, 2048});
         // A small max headers size, used for both accumulation and decoding.
         int maxHeadersSize = 512;
         Parser parser = new Parser(bufferPool, maxHeadersSize);
@@ -308,7 +309,7 @@ public class ContinuationParseTest
             .put("User-Agent", "Jetty".repeat(256));
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.generateHeaders(accumulator, streamId, metaData, null, true);
         assertThat(accumulator.remaining(), greaterThan((long)maxHeadersSize));
 
@@ -325,7 +326,7 @@ public class ContinuationParseTest
         // the failure is due to accumulation, not decoding.
         parser.getHpackDecoder().setMaxHeaderListSize(10 * maxHeadersSize);
 
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             parser.parse(buffer);
             assertTrue(failed.get());

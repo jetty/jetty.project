@@ -23,7 +23,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.api.Session;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;

@@ -32,10 +32,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.CyclicTimeouts;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
@@ -49,6 +47,7 @@ import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -74,7 +73,7 @@ public abstract class QuicheSession extends AbstractSession
 
     private final Map<Long, QuicheStream> streams = new ConcurrentHashMap<>();
     private final Scheduler scheduler;
-    private final WritableBufferPool byteBufferPool;
+    private final ByteBufferPool bufferPool;
     private final Quiche quiche;
     private final QuicheConnection connection;
     private final SocketAddress localAddress;
@@ -91,7 +90,7 @@ public abstract class QuicheSession extends AbstractSession
     {
         super(executor, configuration, listener);
         this.scheduler = scheduler;
-        this.byteBufferPool = WritableBufferPool.wrap(bufferPool);
+        this.bufferPool = bufferPool;
         this.quiche = quiche;
         this.connection = connection;
         this.localAddress = localAddress;
@@ -108,9 +107,9 @@ public abstract class QuicheSession extends AbstractSession
         return scheduler;
     }
 
-    public WritableBufferPool getByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
-        return byteBufferPool;
+        return bufferPool;
     }
 
     protected QuicheConnection getConnection()

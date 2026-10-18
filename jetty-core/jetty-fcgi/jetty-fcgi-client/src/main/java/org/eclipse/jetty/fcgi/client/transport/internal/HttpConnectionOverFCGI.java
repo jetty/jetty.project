@@ -44,12 +44,12 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -62,7 +62,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverFCGI.class);
 
     private final Callback fillableCallback = new FillableCallback();
-    private final WritableBufferPool networkBufferPool;
+    private final ByteBufferPool networkBufferPool;
     private final AtomicInteger requests = new AtomicInteger();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final HttpDestination destination;
@@ -89,7 +89,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         this.parser = new ClientParser(new ResponseListener());
         this.channel = newHttpChannel();
         HttpClient client = destination.getHttpClient();
-        this.networkBufferPool = WritableBufferPool.wrap(client.getByteBufferPool());
+        this.networkBufferPool = client.getByteBufferPool();
         this.invocationType = client.getHttpClientTransport().getInvocationType();
     }
 

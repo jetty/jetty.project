@@ -173,9 +173,9 @@ public class Socks5Proxy extends Proxy
                 // | version (1) | num of methods (1) | methods (1..255) |
                 // +-------------+--------------------+------------------+
                 int size = authentications.size();
-                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1 + 1 + size, true)
-                    .put(Socks5.VERSION)
-                    .put((byte)size);
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1 + 1 + size, true);
+                buffer.put(Socks5.VERSION);
+                buffer.put((byte)size);
                 authentications.keySet().forEach(buffer::put);
                 getEndPoint().write(buffer, Callback.from(this::handshakeSent, this::fail));
             }
@@ -276,11 +276,11 @@ public class Socks5Proxy extends Proxy
                 Matcher matcher = IPv4_PATTERN.matcher(host);
                 if (matcher.matches())
                 {
-                    buffer = RetainableByteBuffer.Mutable.allocate(10, true)
-                        .put(Socks5.VERSION)
-                        .put(Socks5.COMMAND_CONNECT)
-                        .put(Socks5.RESERVED)
-                        .put(Socks5.ADDRESS_TYPE_IPV4);
+                    buffer = RetainableByteBuffer.Mutable.allocate(10, true);
+                    buffer.put(Socks5.VERSION);
+                    buffer.put(Socks5.COMMAND_CONNECT);
+                    buffer.put(Socks5.RESERVED);
+                    buffer.put(Socks5.ADDRESS_TYPE_IPV4);
                     for (int i = 1; i <= 4; ++i)
                     {
                         buffer.put((byte)Integer.parseInt(matcher.group(i)));
@@ -292,26 +292,26 @@ public class Socks5Proxy extends Proxy
                     byte[] bytes = host.getBytes(StandardCharsets.US_ASCII);
                     if (bytes.length > 255)
                         throw new IOException("Invalid host name: " + host);
-                    buffer = RetainableByteBuffer.Mutable.allocate(7 + bytes.length, true)
-                        .put(Socks5.VERSION)
-                        .put(Socks5.COMMAND_CONNECT)
-                        .put(Socks5.RESERVED)
-                        .put(Socks5.ADDRESS_TYPE_DOMAIN)
-                        .put((byte)bytes.length)
-                        .put(bytes)
-                        .putShort(port);
+                    buffer = RetainableByteBuffer.Mutable.allocate(7 + bytes.length, true);
+                    buffer.put(Socks5.VERSION);
+                    buffer.put(Socks5.COMMAND_CONNECT);
+                    buffer.put(Socks5.RESERVED);
+                    buffer.put(Socks5.ADDRESS_TYPE_DOMAIN);
+                    buffer.put((byte)bytes.length);
+                    buffer.put(bytes);
+                    buffer.putShort(port);
                 }
                 else
                 {
                     // Assume IPv6.
                     byte[] bytes = InetAddress.getByName(host).getAddress();
-                    buffer = RetainableByteBuffer.Mutable.allocate(22, true)
-                        .put(Socks5.VERSION)
-                        .put(Socks5.COMMAND_CONNECT)
-                        .put(Socks5.RESERVED)
-                        .put(Socks5.ADDRESS_TYPE_IPV6)
-                        .put(bytes)
-                        .putShort(port);
+                    buffer = RetainableByteBuffer.Mutable.allocate(22, true);
+                    buffer.put(Socks5.VERSION);
+                    buffer.put(Socks5.COMMAND_CONNECT);
+                    buffer.put(Socks5.RESERVED);
+                    buffer.put(Socks5.ADDRESS_TYPE_IPV6);
+                    buffer.put(bytes);
+                    buffer.putShort(port);
                 }
 
                 getEndPoint().write(buffer, Callback.from(this::connectSent, this::fail));

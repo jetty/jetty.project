@@ -22,10 +22,9 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MemoryEndPointPipe;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.Aggregator;
+import org.eclipse.jetty.util.buffer.BufferAggregator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -272,7 +271,7 @@ public class LocalConnector extends MemoryConnector
             HttpParser parser = new HttpParser(handler);
             parser.setHeadResponse(head);
 
-            try (Aggregator responseAggregator = new Aggregator(true, 1024))
+            try (BufferAggregator responseAggregator = new BufferAggregator(true, 1024))
             {
                 boolean fill = true;
                 RetainableByteBuffer.Mutable responseBuffer;
@@ -284,14 +283,23 @@ public class LocalConnector extends MemoryConnector
                 }
                 else
                 {
-                    responseBuffer = WritableBufferPool.wrap(getByteBufferPool()).acquire(1024, false);
+                    responseBuffer = getByteBufferPool().acquire(1024, false);
                 }
 
                 try
                 {
                     while (true)
                     {
-                        long filled = fill ? fill(responseBuffer.compact()) : responseBuffer.remaining();
+                        long filled;
+                        if (fill)
+                        {
+                            responseBuffer.compact();
+                            filled = fill(responseBuffer);
+                        }
+                        else
+                        {
+                            filled = responseBuffer.remaining();
+                        }
                         fill = true;
                         if (LOG.isDebugEnabled())
                             LOG.debug("filled {} bytes on {}", filled, this);
@@ -308,7 +316,12 @@ public class LocalConnector extends MemoryConnector
                                     LOG.debug("parsed {} bytes, complete={}, on {}", consumed, complete, this);
 
                                 if (consumed > 0)
-                                    responseBuffer.mapSlice(start, consumed, responseAggregator::append);
+                                {
+                                    try (RetainableByteBuffer slice = responseBuffer.slice(start, consumed))
+                                    {
+                                        responseAggregator.put(slice);
+                                    }
+                                }
 
                                 if (complete)
                                 {
@@ -318,7 +331,7 @@ public class LocalConnector extends MemoryConnector
                                     else
                                         responseBuffer.release();
 
-                                    RetainableByteBuffer result = responseAggregator.remaining() > 0 ? responseAggregator.take() : null;
+                                    RetainableByteBuffer result = responseAggregator.hasRemaining() ? responseAggregator.take() : null;
                                     return result;
                                 }
                             }
@@ -339,7 +352,7 @@ public class LocalConnector extends MemoryConnector
                         else
                         {
                             responseBuffer.release();
-                            RetainableByteBuffer result = responseAggregator.remaining() > 0 ? responseAggregator.take() : null;
+                            RetainableByteBuffer result = responseAggregator.hasRemaining() ? responseAggregator.take() : null;
                             return result;
                         }
                     }

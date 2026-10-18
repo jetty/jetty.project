@@ -15,10 +15,10 @@ package org.eclipse.jetty.http.content;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;

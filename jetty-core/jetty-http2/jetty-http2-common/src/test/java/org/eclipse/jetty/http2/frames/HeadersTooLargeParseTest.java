@@ -25,8 +25,9 @@ import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.HeadersGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class HeadersTooLargeParseTest
 {
-    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     @Test
     public void testProtocolErrorURITooLong() throws Exception
@@ -77,11 +78,11 @@ public class HeadersTooLargeParseTest
         });
 
         int streamId = 48;
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);
         int len = generator.generateHeaders(accumulator, streamId, metaData, priorityFrame, true);
 
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             parser.parse(buffer);
             if (failure.get() == 0)

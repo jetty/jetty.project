@@ -22,8 +22,8 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -34,7 +34,7 @@ public abstract class Compression extends ContainerLifeCycle
     private final String etagSuffix;
     private final String etagSuffixQuote;
     private final Pattern etagSuffixPattern;
-    private WritableBufferPool bufferPool;
+    private ByteBufferPool bufferPool;
     private Container container;
     private int minCompressSize;
 
@@ -99,12 +99,12 @@ public abstract class Compression extends ContainerLifeCycle
     {
     }
 
-    public WritableBufferPool getBufferPool()
+    public ByteBufferPool getBufferPool()
     {
         return this.bufferPool;
     }
 
-    public void setBufferPool(WritableBufferPool bufferPool)
+    public void setBufferPool(ByteBufferPool bufferPool)
     {
         this.bufferPool = bufferPool;
     }
@@ -311,7 +311,7 @@ public abstract class Compression extends ContainerLifeCycle
 
         if (bufferPool == null)
         {
-            bufferPool = WritableBufferPool.NON_POOLING;
+            bufferPool = ByteBufferPool.NON_POOLING;
         }
     }
 }

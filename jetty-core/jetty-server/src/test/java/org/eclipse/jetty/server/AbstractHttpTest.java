@@ -25,11 +25,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,7 +52,7 @@ public abstract class AbstractHttpTest
     public void setUp() throws Exception
     {
         server = new Server();
-        bufferPool = new ArrayByteBufferPool.Tracking(64, 2048, 64 * 1024);
+        bufferPool = new ArrayByteBufferPool.Tracking(new int[]{64, 2048, 4096, 8192, 16384, 32768});
         connector = new ServerConnector(server, null, null, bufferPool, 1, 1, new HttpConnectionFactory());
         connector.setIdleTimeout(100000);
 

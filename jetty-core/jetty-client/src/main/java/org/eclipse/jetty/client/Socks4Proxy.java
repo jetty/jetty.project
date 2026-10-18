@@ -127,7 +127,9 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
             {
                 // SOCKS 4
                 RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(9, true);
-                buffer.put((byte)4).put((byte)1).putShort(port);
+                buffer.put((byte)4);
+                buffer.put((byte)1);
+                buffer.putShort(port);
                 for (int i = 1; i <= 4; ++i)
                 {
                     buffer.put((byte)Integer.parseInt(matcher.group(i)));
@@ -140,9 +142,16 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
                 // SOCKS 4A
                 byte[] hostBytes = host.getBytes(StandardCharsets.UTF_8);
                 RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(9 + hostBytes.length + 1, true);
-                buffer.put((byte)4).put((byte)1).putShort(port);
-                buffer.put((byte)0).put((byte)0).put((byte)0).put((byte)1).put((byte)0);
-                buffer.put(hostBytes).put((byte)0);
+                buffer.put((byte)4);
+                buffer.put((byte)1);
+                buffer.putShort(port);
+                buffer.put((byte)0);
+                buffer.put((byte)0);
+                buffer.put((byte)0);
+                buffer.put((byte)1);
+                buffer.put((byte)0);
+                buffer.put(hostBytes);
+                buffer.put((byte)0);
                 getEndPoint().write(buffer, this);
             }
         }

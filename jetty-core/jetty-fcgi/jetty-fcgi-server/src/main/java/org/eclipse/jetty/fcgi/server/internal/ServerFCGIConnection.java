@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
@@ -49,7 +49,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Lazy();
     private final Connector connector;
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final boolean sendStatus200;
     private final Flusher flusher;
     private final ServerParser parser;
@@ -64,7 +64,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     {
         super(connector, configuration, endPoint);
         this.connector = connector;
-        this.bufferPool = WritableBufferPool.wrap(connector.getByteBufferPool());
+        this.bufferPool = connector.getByteBufferPool();
         this.flusher = new Flusher(endPoint);
         this.sendStatus200 = sendStatus200;
         this.parser = new ServerParser(new ServerListener());
@@ -279,7 +279,8 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     {
         try
         {
-            return getEndPoint().fill(buffer.clear());
+            buffer.clear();
+            return getEndPoint().fill(buffer);
         }
         catch (Throwable x)
         {
@@ -331,7 +332,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
             if (stream != null)
                 throw new UnsupportedOperationException("FastCGI Multiplexing");
             HttpChannel channel = httpChannelFactory.newHttpChannel(ServerFCGIConnection.this);
-            ServerGenerator generator = new ServerGenerator(WritableBufferPool.wrap(connector.getByteBufferPool()), isUseOutputDirectByteBuffers(), sendStatus200);
+            ServerGenerator generator = new ServerGenerator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200);
             stream = new HttpStreamOverFCGI(ServerFCGIConnection.this, generator, channel, request);
             channel.setHttpStream(stream);
             if (LOG.isDebugEnabled())

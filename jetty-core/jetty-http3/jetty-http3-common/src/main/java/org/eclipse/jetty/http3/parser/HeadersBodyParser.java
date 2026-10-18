@@ -19,6 +19,7 @@ import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,7 @@ public class HeadersBodyParser extends BodyParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(HeadersBodyParser.class);
 
-    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+    private final BufferAccumulator accumulator = new BufferAccumulator();
     private final long streamId;
     private final QpackDecoder decoder;
     private State state = State.INIT;
@@ -75,7 +76,7 @@ public class HeadersBodyParser extends BodyParser
                         if (accumulator.hasRemaining())
                         {
                             accumulator.addRetained(buffer.sliceAndConsume(length));
-                            encoded = accumulator.drain();
+                            encoded = accumulator.take();
                             last = quicLast && !buffer.hasRemaining();
                         }
                         else

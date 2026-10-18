@@ -34,10 +34,8 @@ import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.AbstractEndPoint;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
@@ -45,6 +43,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -114,7 +113,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private final List<SslHandshakeListener> handshakeListeners = new ArrayList<>();
     private final AtomicLong _bytesIn = new AtomicLong();
     private final AtomicLong _bytesOut = new AtomicLong();
-    private final WritableBufferPool _bufferPool;
+    private final ByteBufferPool _bufferPool;
     private final SSLEngine _sslEngine;
     private final SslContextFactory _sslContextFactory;
     private final SslEndPoint _sslEndPoint;
@@ -199,7 +198,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         // This connection does not execute calls to onFillable(), so they will be called by the selector thread.
         // onFillable() does not block and will only wakeup another thread to do the actual reading and handling.
         super(endPoint, executor);
-        _bufferPool = WritableBufferPool.wrap(byteBufferPool);
+        _bufferPool = byteBufferPool;
         _sslEngine = sslEngine;
         _sslEndPoint = newSslEndPoint();
         _sslContextFactory = sslContextFactory;
@@ -353,7 +352,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         assert _lock.isHeldByCurrentThread();
         if (_encryptedOutput == null)
             return _bufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
-        RetainableByteBuffer.Mutable buffer = _encryptedOutput.compact();
+        _encryptedOutput.compact();
+        RetainableByteBuffer.Mutable buffer = _encryptedOutput;
         _encryptedOutput = null;
         return buffer;
     }
@@ -361,8 +361,11 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     @Override
     public void onUpgradeTo(RetainableByteBuffer.Mutable buffer)
     {
-        buffer.retain();
-        _encryptedInput = buffer;
+        try (AutoLock ignored = _lock.lock())
+        {
+            _encryptedInput = _bufferPool.acquire(getPacketBufferSize(), _encryptedDirectBuffers);
+            _encryptedInput.put(buffer);
+        }
     }
 
     @Override
@@ -772,7 +775,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             }
                             else
                             {
-                                b = encryptedInput.compact();
+                                encryptedInput.compact();
+                                b = encryptedInput;
                                 encryptedInput = null;
                             }
                             try
@@ -817,7 +821,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             if (decryptedInput != null)
                             {
                                 // Re-use the buffer acquired in a previous loop iteration.
-                                writableAppIn = decryptedInput.compact();
+                                decryptedInput.compact();
+                                writableAppIn = decryptedInput;
                                 decryptedInput = null;
                             }
                             else if (_decryptedInput == null)
@@ -838,7 +843,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             else
                             {
                                 // Re-use the non-empty buffer stored by a previous fill() call.
-                                writableAppIn = _decryptedInput.compact();
+                                _decryptedInput.compact();
+                                writableAppIn = _decryptedInput;
                                 _decryptedInput = null;
                             }
 
@@ -1259,7 +1265,8 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                             }
                             else
                             {
-                                b = encryptedOutput.compact();
+                                encryptedOutput.compact();
+                                b = encryptedOutput;
                                 encryptedOutput = null;
                             }
                             try

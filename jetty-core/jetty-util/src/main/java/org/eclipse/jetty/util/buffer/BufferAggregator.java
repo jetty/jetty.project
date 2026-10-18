@@ -28,15 +28,21 @@ import org.eclipse.jetty.util.Retainable;
 /// The _take_ operations return a [RetainableByteBuffer] that callers must release.
 /// The returned [RetainableByteBuffer] contains all the bytes of this aggregator,
 /// and the internal backing store of this aggregator becomes empty.
-public class Aggregator implements AutoCloseable
+public class BufferAggregator implements AutoCloseable
 {
     private RetainableByteBuffer.Mutable buffer;
     private final boolean growable;
 
-    public Aggregator(boolean growable, int initialCapacity)
+    public BufferAggregator(boolean growable, int initialCapacity)
     {
         this.growable = growable;
         this.buffer = RetainableByteBuffer.Mutable.allocate(initialCapacity, true);
+    }
+
+    /// @return whether this aggregator has bytes
+    public boolean hasRemaining()
+    {
+        return buffer.hasRemaining();
     }
 
     /// @return how many bytes are present in this aggregator
@@ -49,7 +55,7 @@ public class Aggregator implements AutoCloseable
     /// growing the backing store if configured so and if necessary.
     ///
     /// @return the number of bytes appended
-    public long append(RetainableByteBuffer data)
+    public long put(RetainableByteBuffer data)
     {
         long remaining = data.remaining();
         if (buffer.space() < remaining)
@@ -71,7 +77,7 @@ public class Aggregator implements AutoCloseable
     ///
     /// This aggregator is modified, and the internal backing store is empty.
     ///
-    ///
+    /// @return the contents of this aggregator as a [RetainableByteBuffer]
     public RetainableByteBuffer take()
     {
         RetainableByteBuffer.Mutable result = buffer;

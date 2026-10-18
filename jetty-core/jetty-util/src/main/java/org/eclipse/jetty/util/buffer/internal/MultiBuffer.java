@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.internal;
+package org.eclipse.jetty.util.buffer.internal;
 
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
@@ -82,7 +82,7 @@ public class MultiBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public RetainableByteBuffer readPosition(long newPosition)
+    public void readPosition(long newPosition)
     {
         if (newPosition < 0 || newPosition > capacity())
             throw new IllegalArgumentException();
@@ -102,7 +102,6 @@ public class MultiBuffer implements RetainableByteBuffer
             buffer.consume(buffer.remaining());
             newPosition -= buffer.capacity();
         }
-        return this;
     }
 
     @Override
@@ -438,10 +437,10 @@ public class MultiBuffer implements RetainableByteBuffer
                             if (gathers == null)
                             {
                                 gathers = new ByteBuffer[buffers.size()];
-                                gathers[idx++] = single.getByteBuffer();
+                                gathers[idx++] = single.byteBuffer(true);
                                 length = single.remaining();
                             }
-                            gathers[idx++] = nextSingle.getByteBuffer();
+                            gathers[idx++] = nextSingle.byteBuffer(true);
                             length += nextSingle.remaining();
                         }
                         else

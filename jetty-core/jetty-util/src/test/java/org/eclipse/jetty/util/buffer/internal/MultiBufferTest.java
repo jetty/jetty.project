@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.internal;
+package org.eclipse.jetty.util.buffer.internal;
 
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
-import org.eclipse.jetty.util.buffer.WritableBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -767,7 +767,7 @@ public class MultiBufferTest
             .putInt(14)
             .flip());
         Path testResourcePathFile = MavenTestingUtils.getTestResourcePathFile("resource.txt");
-        RetainableByteBuffer buffer3 = RetainableByteBuffer.wrap(testResourcePathFile, WritableBufferPool.SIZED_NON_POOLING);
+        RetainableByteBuffer buffer3 = RetainableByteBuffer.wrap(testResourcePathFile, ByteBufferPool.SIZED_NON_POOLING);
         RetainableByteBuffer buffer4 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
             .putInt(15)
             .putInt(16)

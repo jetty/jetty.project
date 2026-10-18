@@ -57,11 +57,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -79,6 +77,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
@@ -2363,7 +2363,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     private int getRequestBufferCapacity()
     {
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(client.getByteBufferPool());
+        ByteBufferPool bufferPool = client.getByteBufferPool();
         try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(client.getRequestBufferSize(), false))
         {
             return (int)buffer.capacity();
@@ -2373,7 +2373,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     private int getResponseBufferCapacity()
     {
         HttpConfiguration httpConfig = connector.getBean(HttpConnectionFactory.class).getHttpConfiguration();
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(server.getByteBufferPool());
+        ByteBufferPool bufferPool = server.getByteBufferPool();
         try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(httpConfig.getResponseHeaderSize(), false))
         {
             return (int)buffer.capacity();
