@@ -190,8 +190,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
             if (result.isFailed())
                 resultLatch.countDown();
         });
-        content.write(ByteBuffer.allocate(8), Callback.NOOP);
-        content.close();
+        content.offer(true, RetainableByteBuffer.allocate(8, false), Callback.NOOP);
 
         assertTrue(resultLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         HttpDestination destination = (HttpDestination)client.resolveDestination(request);

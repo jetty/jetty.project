@@ -14,8 +14,6 @@
 package org.eclipse.jetty.ee.test.client.transport;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +42,7 @@ import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -193,8 +192,7 @@ public class VirtualThreadsTest extends AbstractTest
             });
 
         assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
-        requestContent.write(ByteBuffer.wrap("hello".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
-        requestContent.close();
+        requestContent.offer(true, "hello", UTF_8, Callback.NOOP);
 
         assertTrue(latch.await(15, TimeUnit.SECONDS));
         assertEquals(data.length, length.get());

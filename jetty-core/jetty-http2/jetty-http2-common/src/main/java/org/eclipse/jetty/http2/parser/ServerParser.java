@@ -17,7 +17,7 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.RateControl;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +30,7 @@ public class ServerParser extends Parser
     private State state = State.PREFACE;
     private boolean notifyPreface = true;
 
-    public ServerParser(WritableBufferPool bufferPool, int maxHeaderSize, RateControl rateControl)
+    public ServerParser(ByteBufferPool bufferPool, int maxHeaderSize, RateControl rateControl)
     {
         super(bufferPool, maxHeaderSize, rateControl);
     }

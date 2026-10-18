@@ -15,8 +15,9 @@ package org.eclipse.jetty.http3.qpack.internal.instruction;
 
 import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
 import org.eclipse.jetty.http3.qpack.Instruction;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class SectionAcknowledgmentInstruction implements Instruction
@@ -34,7 +35,7 @@ public class SectionAcknowledgmentInstruction implements Instruction
     }
 
     @Override
-    public void encode(WritableBufferPool bufferPool, RetainableByteBuffer.Accumulator accumulator)
+    public void encode(ByteBufferPool bufferPool, BufferAccumulator accumulator)
     {
         int size = NBitIntegerEncoder.octetsNeeded(7, _streamId);
         RetainableByteBuffer.Mutable buffer = bufferPool.acquire(size, true);

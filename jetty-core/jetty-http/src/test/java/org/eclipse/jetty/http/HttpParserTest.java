@@ -37,6 +37,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_INSENSITIVE_METHOD;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.HTTP_0_9;
@@ -111,10 +112,10 @@ public class HttpParserTest
         assertEquals(m, HttpMethod.lookAheadGet(RetainableByteBuffer.wrap(m.asString() + " /foo/bar", ISO_8859_1)));
 
         RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(128, false);
-        buffer.put(BufferUtil.toBuffer("GET"));
+        buffer.putString("GET", ISO_8859_1);
         assertNull(HttpMethod.lookAheadGet(buffer));
 
-        buffer.put(BufferUtil.toBuffer(" "));
+        buffer.put((byte)' ');
         assertEquals(HttpMethod.GET, HttpMethod.lookAheadGet(buffer));
     }
 
@@ -1071,14 +1072,12 @@ public class HttpParserTest
     public void testEncodedHeader(Scenario scenario)
     {
         RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(4096, false);
-        buffer.put(BufferUtil.toBuffer("GET "));
-        buffer.put("/foo/\u0690/".getBytes(UTF_8));
-        buffer.put(BufferUtil.toBuffer(" HTTP/1.0" + scenario.eol));
-        buffer.put(BufferUtil.toBuffer("Header1: "));
-        buffer.put("\u00e6 \u00e6".getBytes(ISO_8859_1));
-        buffer.put(BufferUtil.toBuffer("  " + scenario.eol + "Header2: "));
-        buffer.put((byte)-1);
-        buffer.put(BufferUtil.toBuffer(scenario.eol + scenario.eol));
+        // Arabic letter, UTF-8 encoded.
+        buffer.putString("GET /foo/\u0690/ HTTP/1.0" + scenario.eol, UTF_8);
+        // E6 is the ligated ae, as single ISO_8859_1 byte.
+        buffer.putString("Header1: \u00E6 \u00E6 " + scenario.eol, ISO_8859_1);
+        buffer.putString("Header2: \u00FF" + scenario.eol, ISO_8859_1);
+        buffer.putString(scenario.eol, US_ASCII);
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, scenario.compliance);
@@ -1093,9 +1092,9 @@ public class HttpParserTest
         assertEquals("/foo/\u0690/", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
         assertEquals("Header1", _hdr[0]);
-        assertEquals("\u00e6 \u00e6", _val[0]);
+        assertEquals("\u00E6 \u00E6", _val[0]);
         assertEquals("Header2", _hdr[1]);
-        assertEquals("" + (char)255, _val[1]);
+        assertEquals("\u00FF", _val[1]);
         assertEquals(1, _headers);
         assertNull(_bad);
     }

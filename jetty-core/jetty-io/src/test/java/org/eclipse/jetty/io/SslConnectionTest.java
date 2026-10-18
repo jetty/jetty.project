@@ -14,10 +14,12 @@
 package org.eclipse.jetty.io;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -28,12 +30,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -558,6 +562,192 @@ public class SslConnectionTest
 
                 assertTrue(count.await(20, TimeUnit.SECONDS));
             }
+        }
+    }
+
+    @Test
+    public void testFillFailureDoesNotReleaseCallerBuffer() throws Exception
+    {
+        startSSL();
+
+        // The first network read returns a partial TLS record header,
+        // so that unwrap() underflows; the second network read fails.
+        AtomicInteger fills = new AtomicInteger();
+        ByteArrayEndPoint networkEndPoint = new ByteArrayEndPoint()
+        {
+            @Override
+            public int fill(RetainableByteBuffer.Mutable buffer) throws IOException
+            {
+                if (fills.incrementAndGet() == 1)
+                    return (int)buffer.append(new byte[]{0x16, 0x03, 0x03});
+                throw new IOException("connection reset");
+            }
+        };
+        SSLEngine engine = _sslCtxFactory.newSSLEngine();
+        engine.setUseClientMode(false);
+        SslConnection sslConnection = new SslConnection(_bufferPool, _threadPool, _sslCtxFactory, networkEndPoint, engine);
+        SslConnection.SslEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+
+        // A caller buffer with existing data and enough space to be used
+        // directly as the unwrap destination, as it happens with nested TLS.
+        RetainableByteBuffer.Mutable buffer = _bufferPool.acquire(2 * engine.getSession().getApplicationBufferSize(), false);
+        buffer.putString("hello", UTF_8);
+
+        assertThrows(IOException.class, () -> sslEndPoint.fill(buffer));
+        assertEquals(2, fills.get());
+
+        // The caller still owns the buffer.
+        assertEquals("hello", buffer.getString(UTF_8));
+        assertTrue(buffer.release());
+    }
+
+    @Test
+    public void testDecryptedInputStoredByReentrantFillDuringFlushIsNotLost() throws Exception
+    {
+        startSSL();
+
+        SslContextFactory.Client clientTLS = new SslContextFactory.Client(true);
+        clientTLS.start();
+        try
+        {
+            SSLEngine clientEngine = clientTLS.newSSLEngine();
+            clientEngine.setUseClientMode(true);
+            clientEngine.setEnabledProtocols(new String[]{"TLSv1.3"});
+            clientEngine.beginHandshake();
+            TLSPeer client = new TLSPeer(clientEngine, "hello");
+
+            // The network delivers the client's Finished and its application data right
+            // after the server flushes its handshake flight, so that the fill() re-entered
+            // by the flush() in the NEED_WRAP branch of the outer fill() decrypts them.
+            ByteArrayEndPoint networkEndPoint = new ByteArrayEndPoint()
+            {
+                @Override
+                public boolean flush(RetainableByteBuffer buffer) throws IOException
+                {
+                    boolean flushed = super.flush(buffer);
+                    client.exchange(this);
+                    return flushed;
+                }
+            };
+            client.exchange(networkEndPoint);
+
+            SSLEngine serverEngine = _sslCtxFactory.newSSLEngine();
+            serverEngine.setUseClientMode(false);
+            serverEngine.setEnabledProtocols(new String[]{"TLSv1.3"});
+            SslConnection sslConnection = new SslConnection(_bufferPool, _threadPool, _sslCtxFactory, networkEndPoint, serverEngine)
+            {
+                @Override
+                protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                {
+                    return laggingStatus(super.wrap(sslEngine, input, output));
+                }
+
+                @Override
+                protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] inputs, int offset, int length, ByteBuffer output) throws SSLException
+                {
+                    return laggingStatus(super.wrap(sslEngine, inputs, offset, length, output));
+                }
+
+                private SSLEngineResult laggingStatus(SSLEngineResult result)
+                {
+                    // Simulate an SSLEngine whose wrap() result reports NEED_WRAP, while getHandshakeStatus()
+                    // already reports NEED_UNWRAP, as otherwise flush() returns without re-entering fill().
+                    if (result.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_UNWRAP && result.bytesProduced() > 0)
+                        return new SSLEngineResult(result.getStatus(), SSLEngineResult.HandshakeStatus.NEED_WRAP, result.bytesConsumed(), result.bytesProduced());
+                    return result;
+                }
+            };
+            SslConnection.SslEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+
+            // A buffer large enough to be used directly as the unwrap destination.
+            // The ClientHello unwraps into it producing no bytes, then the outer
+            // fill() goes through NEED_TASK to NEED_WRAP, and calls flush().
+            RetainableByteBuffer.Mutable buffer = _bufferPool.acquire(2 * serverEngine.getSession().getApplicationBufferSize(), false);
+            try
+            {
+                for (int i = 0; i < 16 && !buffer.hasRemaining(); ++i)
+                {
+                    sslEndPoint.fill(buffer);
+                }
+                assertEquals("hello", buffer.getString(UTF_8));
+            }
+            finally
+            {
+                buffer.release();
+            }
+        }
+        finally
+        {
+            clientTLS.stop();
+        }
+    }
+
+    /**
+     * <p>A TLS peer driven synchronously, whose output is delivered as a single network read.</p>
+     */
+    private static class TLSPeer
+    {
+        private final SSLEngine _engine;
+        private final String _data;
+        private final ByteBuffer _networkIn;
+        private boolean _dataSent;
+
+        private TLSPeer(SSLEngine engine, String data)
+        {
+            _engine = engine;
+            _data = data;
+            _networkIn = ByteBuffer.allocate(16 * engine.getSession().getPacketBufferSize());
+        }
+
+        private void exchange(ByteArrayEndPoint endPoint) throws IOException
+        {
+            RetainableByteBuffer output = endPoint.takeOutput();
+            _networkIn.put(output.getArray());
+            output.release();
+            _networkIn.flip();
+
+            ByteArrayOutputStream networkOut = new ByteArrayOutputStream();
+            ByteBuffer appIn = ByteBuffer.allocate(_engine.getSession().getApplicationBufferSize());
+            ByteBuffer packet = ByteBuffer.allocate(_engine.getSession().getPacketBufferSize());
+            loop:
+            while (true)
+            {
+                SSLEngineResult.HandshakeStatus status = _engine.getHandshakeStatus();
+                switch (status)
+                {
+                    case NEED_TASK ->
+                    {
+                        _engine.getDelegatedTask().run();
+                    }
+                    case NEED_WRAP ->
+                    {
+                        packet.clear();
+                        _engine.wrap(ByteBuffer.allocate(0), packet);
+                        networkOut.write(packet.array(), 0, packet.position());
+                    }
+                    case NEED_UNWRAP ->
+                    {
+                        if (!_networkIn.hasRemaining() || _engine.unwrap(_networkIn, appIn).getStatus() == SSLEngineResult.Status.BUFFER_UNDERFLOW)
+                            break loop;
+                    }
+                    case NOT_HANDSHAKING ->
+                    {
+                        if (!_dataSent)
+                        {
+                            _dataSent = true;
+                            packet.clear();
+                            _engine.wrap(ByteBuffer.wrap(_data.getBytes(UTF_8)), packet);
+                            networkOut.write(packet.array(), 0, packet.position());
+                        }
+                        break loop;
+                    }
+                    default -> throw new IllegalStateException("Unexpected HandshakeStatus " + status);
+                }
+            }
+            _networkIn.compact();
+
+            if (networkOut.size() > 0)
+                endPoint.addInput(ByteBuffer.wrap(networkOut.toByteArray()));
         }
     }
 }

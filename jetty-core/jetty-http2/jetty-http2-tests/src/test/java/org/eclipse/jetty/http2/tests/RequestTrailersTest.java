@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -33,6 +31,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -152,8 +151,7 @@ public class RequestTrailersTest extends AbstractTest
 
         // Send async content after a while.
         Thread.sleep(1000);
-        content.write(ByteBuffer.wrap("async_content".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
-        content.close();
+        content.offer(true, "async_content", UTF_8, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

@@ -20,6 +20,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
@@ -42,7 +43,6 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.GZIPContentDecoder;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.BufferUtil;
@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -222,7 +223,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         byte[] buffer;
         if (content.hasArray())
         {
-            offset = content.arrayOffset();
+            offset = content.arrayOffset() + content.position();
             buffer = content.array();
         }
         else
@@ -339,9 +340,13 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 if (contentLength > 0 && read > 0)
                     length += read;
 
-                RetainableByteBuffer content = read > 0 ? RetainableByteBuffer.wrap(buffer, 0, read) : RetainableByteBuffer.empty();
-                boolean finished = length == contentLength;
-                process(content, this, finished);
+                // The byte[] copy is necessary, since the byte[] may still be in use when the callback is completed.
+                byte[] bytes = Arrays.copyOfRange(buffer, 0, read);
+                try (RetainableByteBuffer content = read > 0 ? RetainableByteBuffer.wrap(bytes) : RetainableByteBuffer.empty())
+                {
+                    boolean finished = length == contentLength;
+                    process(content, this, finished);
+                }
 
                 if (read > 0)
                     return Action.SCHEDULED;
@@ -389,7 +394,10 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 for (ByteBuffer buffer : buffers)
                 {
                     newContentBytes += buffer.remaining();
-                    this.content.write(buffer, counter);
+                    try (RetainableByteBuffer b = RetainableByteBuffer.wrap(buffer))
+                    {
+                        this.content.offer(false, b, counter);
+                    }
                 }
                 buffers.clear();
             }
@@ -917,11 +925,11 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
 
         @Override
-        public void write(ByteBuffer buffer, Callback callback)
+        public void offer(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
             if (_log.isDebugEnabled())
                 _log.debug("{} proxying content to upstream: {} bytes", getRequestId(clientRequest), buffer.remaining());
-            super.write(buffer, callback);
+            super.offer(last, buffer, callback);
         }
     }
 

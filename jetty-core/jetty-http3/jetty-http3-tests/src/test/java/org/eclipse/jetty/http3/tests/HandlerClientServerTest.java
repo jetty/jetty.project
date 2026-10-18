@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -94,7 +95,7 @@ public class HandlerClientServerTest extends AbstractClientServerTest
 
         Session.Client session = newSession(new Session.Client.Listener() {});
 
-        RetainableByteBuffer.Accumulator clientReceivedBuffers = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator clientReceivedBuffers = new BufferAccumulator();
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest(HttpMethod.POST, "/"), false);
@@ -146,7 +147,7 @@ public class HandlerClientServerTest extends AbstractClientServerTest
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
 
-        try (RetainableByteBuffer buffer = clientReceivedBuffers.drain())
+        try (RetainableByteBuffer buffer = clientReceivedBuffers.take())
         {
             assertArrayEquals(bytes, buffer.getArray());
         }

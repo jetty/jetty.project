@@ -54,14 +54,16 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
         boolean flushed = true;
         if (buffer.hasRemaining())
         {
-            long position = buffer.readPosition();
-            RetainableByteBuffer dupe = buffer.slice();
-            flushed = super.flush(buffer);
-            long l = buffer.readPosition() - position;
-            RetainableByteBuffer view = dupe.slice(l);
-            notifyOutgoing(view);
-            view.release();
-            dupe.release();
+            long remaining = buffer.remaining();
+            try (RetainableByteBuffer dupe = buffer.slice())
+            {
+                flushed = super.flush(buffer);
+                long l = remaining - buffer.remaining();
+                try (RetainableByteBuffer view = dupe.slice(l))
+                {
+                    notifyOutgoing(view);
+                }
+            }
         }
         return flushed;
     }

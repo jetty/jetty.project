@@ -175,7 +175,7 @@ public class StreamCloseTest extends AbstractTest
         assertFalse(((HTTP2Stream)stream).isLocallyClosed());
 
         CountDownLatch clientDataLatch = new CountDownLatch(1);
-        stream.data(RetainableByteBuffer.wrap(new byte[512]), true, new Callback()
+        stream.data(RetainableByteBuffer.allocate(512, false), true, new Callback()
         {
             @Override
             public void succeeded()

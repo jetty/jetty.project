@@ -149,7 +149,7 @@ public class ServerHttpCookieTest
     {
         _httpConfiguration.setRequestCookieCompliance(compliance);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
             GET / HTTP/1.0\r
             %s\r
             \r
@@ -189,7 +189,7 @@ public class ServerHttpCookieTest
     {
         _httpConfiguration.setResponseCookieCompliance(compliance);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
             GET /?SetCookie=%s HTTP/1.0\r
             \r
             """.formatted(UrlEncoded.encodeString(cookie))));

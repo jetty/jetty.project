@@ -24,13 +24,13 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.AbstractEndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -70,7 +70,7 @@ public class CancelWriteTest extends AbstractTest
                     }
                 });
 
-                WritableBufferPool bufferPool = WritableBufferPool.wrap(server.getByteBufferPool());
+                ByteBufferPool bufferPool = server.getByteBufferPool();
                 try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(128 * 1024 * 1024, true))
                 {
                     buffer.pad(buffer.space());

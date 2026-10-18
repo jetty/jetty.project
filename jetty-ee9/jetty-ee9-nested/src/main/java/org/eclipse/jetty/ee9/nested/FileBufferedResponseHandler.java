@@ -23,11 +23,11 @@ import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
 import org.eclipse.jetty.ee9.nested.HttpOutput.Interceptor;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

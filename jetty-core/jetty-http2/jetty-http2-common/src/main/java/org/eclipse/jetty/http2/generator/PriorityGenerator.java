@@ -17,6 +17,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class PriorityGenerator extends FrameGenerator
@@ -27,13 +28,13 @@ public class PriorityGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame)
+    public int generate(BufferAccumulator accumulator, Frame frame)
     {
         PriorityFrame priorityFrame = (PriorityFrame)frame;
         return generatePriority(accumulator, priorityFrame.getStreamId(), priorityFrame.getParentStreamId(), priorityFrame.getWeight(), priorityFrame.isExclusive());
     }
 
-    public int generatePriority(RetainableByteBuffer.Accumulator accumulator, int streamId, int parentStreamId, int weight, boolean exclusive)
+    public int generatePriority(BufferAccumulator accumulator, int streamId, int parentStreamId, int weight, boolean exclusive)
     {
         RetainableByteBuffer.Mutable buffer = generateHeader(FrameType.PRIORITY, PriorityFrame.PRIORITY_LENGTH, Flags.NONE, streamId);
         accumulator.addRetained(buffer);

@@ -18,14 +18,13 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -42,13 +41,13 @@ public abstract class QuicheConnection extends AbstractConnection
 {
     private final Callback fillableCallback = new FillableCallback();
     private final Scheduler scheduler;
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
 
     protected QuicheConnection(Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, EndPoint endPoint)
     {
         super(endPoint, executor);
         this.scheduler = scheduler;
-        this.bufferPool = WritableBufferPool.wrap(bufferPool);
+        this.bufferPool = bufferPool;
     }
 
     public Scheduler getScheduler()
@@ -56,7 +55,7 @@ public abstract class QuicheConnection extends AbstractConnection
         return scheduler;
     }
 
-    public WritableBufferPool getByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return bufferPool;
     }

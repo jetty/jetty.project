@@ -146,7 +146,7 @@ public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, A
         // flusher deals with Frames instances that in general do not wrap
         // Retainable instances, the release is done here wrapping the Promise.
         DataFrame frame = new DataFrame(data, last);
-        write(frame, Promise.Invocable.from(promise, frame::close));
+        write(frame, Promise.Invocable.from(frame::close, promise));
     }
 
     protected void write(Frame frame, Promise.Invocable<Stream> promise)

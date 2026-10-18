@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.buffer.Aggregator;
+import org.eclipse.jetty.util.buffer.BufferAggregator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
@@ -130,9 +130,10 @@ public class HttpTester
             @Override
             public int fillBuffer() throws IOException
             {
-                int len = (int)_buffer.compact().write(output ->
+                _buffer.compact();
+                int len = (int)_buffer.write(output ->
                 {
-                    int read = stream.read(output.array(), output.arrayOffset(), output.remaining());
+                    int read = stream.read(output.array(), output.arrayOffset() + output.position(), output.remaining());
                     if (read > 0)
                         output.position(output.position() + read);
                     return read;
@@ -159,7 +160,8 @@ public class HttpTester
             @Override
             public int fillBuffer() throws IOException
             {
-                int len = (int)_buffer.compact().write(channel::read);
+                _buffer.compact();
+                int len = (int)_buffer.write(channel::read);
                 if (len < 0)
                     _eof = true;
                 return len;
@@ -481,7 +483,7 @@ public class HttpTester
             RetainableByteBuffer.Mutable chunk = null;
             RetainableByteBuffer content = _content == null ? null : RetainableByteBuffer.wrap(_content.toByteArray());
 
-            try (Aggregator aggregator = new Aggregator(true, 1024))
+            try (BufferAggregator aggregator = new BufferAggregator(true, 1024))
             {
                 boolean complete = false;
                 while (!generator.isEnd() && !complete)

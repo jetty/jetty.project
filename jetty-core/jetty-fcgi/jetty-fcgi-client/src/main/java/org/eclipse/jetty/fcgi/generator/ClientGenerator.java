@@ -21,7 +21,8 @@ import java.util.List;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ClientGenerator extends Generator
@@ -31,17 +32,17 @@ public class ClientGenerator extends Generator
     // 0x7F_FF - 4 (the 4 is to make room for the name (or value) length).
     public static final int MAX_PARAM_LENGTH = 0x7F_FF - 4;
 
-    public ClientGenerator(WritableBufferPool bufferPool)
+    public ClientGenerator(ByteBufferPool bufferPool)
     {
         this(bufferPool, true);
     }
 
-    public ClientGenerator(WritableBufferPool bufferPool, boolean useDirectByteBuffers)
+    public ClientGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         super(bufferPool, useDirectByteBuffers);
     }
 
-    public void generateRequestHeaders(RetainableByteBuffer.Accumulator accumulator, int request, HttpFields fields)
+    public void generateRequestHeaders(BufferAccumulator accumulator, int request, HttpFields fields)
     {
         request &= 0xFF_FF;
 
@@ -145,7 +146,7 @@ public class ClientGenerator extends Generator
         return length > 127 ? 4 : 1;
     }
 
-    public void generateRequestContent(RetainableByteBuffer.Accumulator accumulator, int request, RetainableByteBuffer content, boolean lastContent)
+    public void generateRequestContent(BufferAccumulator accumulator, int request, RetainableByteBuffer content, boolean lastContent)
     {
         generateContent(accumulator, request, content, lastContent, FCGI.FrameType.STDIN);
     }

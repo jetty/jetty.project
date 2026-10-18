@@ -46,7 +46,6 @@ import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.SettingsBodyParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
@@ -80,7 +79,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     public HTTP2ServerConnection(Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, HTTP2ServerSession session, ServerSessionListener listener)
     {
-        super(WritableBufferPool.wrap(connector.getByteBufferPool()), connector.getExecutor(), endPoint, session, httpConfig.getInputBufferSize(), httpConfig.getMinInputBufferSpace());
+        super(connector.getByteBufferPool(), connector.getExecutor(), endPoint, session, httpConfig.getInputBufferSize(), httpConfig.getMinInputBufferSpace());
         this.connector = connector;
         this.listener = listener;
         this.httpConfig = httpConfig;

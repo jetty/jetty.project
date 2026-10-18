@@ -81,7 +81,7 @@ public class PathMappingsHandlerTest
 
     public HttpTester.Response executeRequest(String rawRequest) throws Exception
     {
-        String rawResponse = connector.getResponseAsString(rawRequest);
+        String rawResponse = connector.getResponse(rawRequest);
         return HttpTester.parseResponse(rawResponse);
     }
 

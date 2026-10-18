@@ -75,7 +75,7 @@ public class LocalConnectorTest
             }
         });
 
-        _connector.getResponseAsString(
+        _connector.getResponse(
             """
                 GET / HTTP/1.1\r
                 Host: localhost\r
@@ -90,7 +90,7 @@ public class LocalConnectorTest
     @Test
     public void testOneGET() throws Exception
     {
-        String response = _connector.getResponseAsString("GET /R1 HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("pathInContext=/R1"));
     }
@@ -98,7 +98,7 @@ public class LocalConnectorTest
     @Test
     public void testOneResponse10() throws Exception
     {
-        String response = _connector.getResponseAsString("GET /R1 HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("pathInContext=/R1"));
     }
@@ -106,7 +106,7 @@ public class LocalConnectorTest
     @Test
     public void testOneResponse10KeepAlive() throws Exception
     {
-        String response = _connector.getResponseAsString(
+        String response = _connector.getResponse(
             """
                 GET /R1 HTTP/1.0\r
                 Connection: keep-alive\r
@@ -119,7 +119,7 @@ public class LocalConnectorTest
     @Test
     public void testOneResponse10KeepAliveEmpty() throws Exception
     {
-        String response = _connector.getResponseAsString(
+        String response = _connector.getResponse(
             """
                 GET /R1?empty=true HTTP/1.0\r
                 Connection: keep-alive\r
@@ -132,7 +132,7 @@ public class LocalConnectorTest
     @Test
     public void testOneResponse11() throws Exception
     {
-        String response = _connector.getResponseAsString(
+        String response = _connector.getResponse(
             """
                 GET /R1 HTTP/1.1\r
                 Host: localhost\r
@@ -145,7 +145,7 @@ public class LocalConnectorTest
     @Test
     public void testOneResponse11close() throws Exception
     {
-        String response = _connector.getResponseAsString(
+        String response = _connector.getResponse(
             """
                 GET /R1 HTTP/1.1\r
                 Host: localhost\r
@@ -159,7 +159,7 @@ public class LocalConnectorTest
     @Test
     public void testOneResponse11empty() throws Exception
     {
-        String response = _connector.getResponseAsString(
+        String response = _connector.getResponse(
             """
                 GET /R1?empty=true HTTP/1.1\r
                 Host: localhost\r
@@ -173,7 +173,7 @@ public class LocalConnectorTest
     @Test
     public void testOneResponse11chunked() throws Exception
     {
-        String response = _connector.getResponseAsString(
+        String response = _connector.getResponse(
             """
                 GET /R1?flush=true HTTP/1.1\r
                 Host: localhost\r
@@ -314,14 +314,14 @@ public class LocalConnectorTest
     @Test
     public void testStopStart() throws Exception
     {
-        String response = _connector.getResponseAsString("GET /R1 HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("pathInContext=/R1"));
 
         _server.stop();
         _server.start();
 
-        response = _connector.getResponseAsString("GET /R2 HTTP/1.0\r\n\r\n");
+        response = _connector.getResponse("GET /R2 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("pathInContext=/R2"));
     }
@@ -362,17 +362,21 @@ public class LocalConnectorTest
                 \r
                 """);
 
-        RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 10, TimeUnit.SECONDS);
-        assertNotNull(buffer);
-        String response = buffer.getString(StandardCharsets.ISO_8859_1);
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("pathInContext=/R1"));
+        try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 10, TimeUnit.SECONDS))
+        {
+            assertNotNull(buffer);
+            String response = buffer.getString(StandardCharsets.ISO_8859_1);
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("pathInContext=/R1"));
+        }
 
-        buffer = endPoint.awaitResponseBuffer(false, 10, TimeUnit.SECONDS);
-        assertNotNull(buffer);
-        response = buffer.getString(StandardCharsets.ISO_8859_1);
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("pathInContext=/R2"));
+        try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 10, TimeUnit.SECONDS))
+        {
+            assertNotNull(buffer);
+            String response = buffer.getString(StandardCharsets.ISO_8859_1);
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("pathInContext=/R2"));
+        }
     }
 
     @Test
@@ -419,11 +423,11 @@ public class LocalConnectorTest
     @Test
     public void testGETandGET() throws Exception
     {
-        String response = _connector.getResponseAsString("GET /R1 HTTP/1.0\r\n\r\n");
+        String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("pathInContext=/R1"));
 
-        response = _connector.getResponseAsString("GET /R2 HTTP/1.0\r\n\r\n");
+        response = _connector.getResponse("GET /R2 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("pathInContext=/R2"));
     }

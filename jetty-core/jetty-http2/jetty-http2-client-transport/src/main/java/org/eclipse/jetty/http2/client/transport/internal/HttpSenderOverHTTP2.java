@@ -119,9 +119,12 @@ public class HttpSenderOverHTTP2 extends HttpSender
             }
         }
 
-        HttpChannelOverHTTP2 channel = getHttpChannel();
-        HTTP2Stream.FrameList frameList = new HTTP2Stream.FrameList(headersFrame, dataFrame, trailersFrame);
-        ((HTTP2Session)channel.getSession()).newStream(frameList, new HeadersPromise(request, callback), channel.getStreamListener());
+        try (DataFrame df = dataFrame)
+        {
+            HttpChannelOverHTTP2 channel = getHttpChannel();
+            HTTP2Stream.FrameList frameList = new HTTP2Stream.FrameList(headersFrame, df, trailersFrame);
+            ((HTTP2Session)channel.getSession()).newStream(frameList, new HeadersPromise(request, callback), channel.getStreamListener());
+        }
     }
 
     private HttpFields retrieveTrailers(HttpRequest request)

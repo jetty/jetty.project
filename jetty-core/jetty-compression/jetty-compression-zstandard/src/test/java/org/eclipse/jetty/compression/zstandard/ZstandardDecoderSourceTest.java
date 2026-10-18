@@ -17,9 +17,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.compression.DecoderSource;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 

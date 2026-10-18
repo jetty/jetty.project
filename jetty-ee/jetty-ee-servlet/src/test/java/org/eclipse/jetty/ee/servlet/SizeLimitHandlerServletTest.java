@@ -17,7 +17,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
@@ -50,6 +49,7 @@ import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -184,17 +184,16 @@ public class SizeLimitHandlerServletTest
 
         try (Blocker.Callback callback = Blocker.callback())
         {
-            asyncRequestContent.write(false, RetainableByteBuffer.wrap(content, StandardCharsets.ISO_8859_1), callback);
+            asyncRequestContent.offer(false, content, ISO_8859_1, callback);
             asyncRequestContent.flush();
             callback.block();
         }
         try (Blocker.Callback callback = Blocker.callback())
         {
-            asyncRequestContent.write(true, RetainableByteBuffer.wrap(content, StandardCharsets.ISO_8859_1), callback);
+            asyncRequestContent.offer(true, content, ISO_8859_1, callback);
             asyncRequestContent.flush();
             callback.block();
         }
-        asyncRequestContent.close();
 
         Response response = exchanger.exchange(null);
         assertThat(response.getStatus(), equalTo(HttpStatus.PAYLOAD_TOO_LARGE_413));
@@ -227,7 +226,7 @@ public class SizeLimitHandlerServletTest
             {
                 try (RetainableByteBuffer buffer = chunk.acquire())
                 {
-                    contentReceived.append(buffer.getString(StandardCharsets.ISO_8859_1));
+                    contentReceived.append(buffer.getString(ISO_8859_1));
                     demander.run();
                 }
             })
@@ -277,7 +276,7 @@ public class SizeLimitHandlerServletTest
             {
                 try (RetainableByteBuffer buffer = chunk.acquire())
                 {
-                    contentReceived.append(buffer.getString(StandardCharsets.ISO_8859_1));
+                    contentReceived.append(buffer.getString(ISO_8859_1));
                     demander.run();
                 }
             })

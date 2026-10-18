@@ -21,7 +21,6 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -95,6 +94,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -1543,7 +1543,7 @@ public class ProxyServletTest
         new Random().nextBytes(content);
         int chunk1 = content.length / 2;
         AsyncRequestContent requestContent = new AsyncRequestContent();
-        requestContent.write(ByteBuffer.wrap(content, 0, chunk1), Callback.NOOP);
+        requestContent.offer(false, RetainableByteBuffer.wrap(content, 0, chunk1), Callback.NOOP);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
@@ -1566,8 +1566,7 @@ public class ProxyServletTest
 
         // Wait a while and then offer more content.
         Thread.sleep(1000);
-        requestContent.write(ByteBuffer.wrap(content, chunk1, content.length - chunk1), Callback.NOOP);
-        requestContent.close();
+        requestContent.offer(true, RetainableByteBuffer.wrap(content, chunk1, content.length - chunk1), Callback.NOOP);
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
@@ -1603,7 +1602,7 @@ public class ProxyServletTest
         new Random().nextBytes(content);
         int chunk1 = content.length / 2;
         AsyncRequestContent requestContent = new AsyncRequestContent();
-        requestContent.write(ByteBuffer.wrap(content, 0, chunk1), Callback.NOOP);
+        requestContent.offer(false, RetainableByteBuffer.wrap(content, 0, chunk1), Callback.NOOP);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))

@@ -14,12 +14,12 @@
 package org.eclipse.jetty.http2.parser;
 
 import org.eclipse.jetty.http2.frames.PriorityFrame;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HeaderBlockFragments
 {
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final boolean directness;
     private final int maxCapacity;
     private PriorityFrame priorityFrame;
@@ -27,7 +27,7 @@ public class HeaderBlockFragments
     private boolean endStream;
     private RetainableByteBuffer.Mutable storage;
 
-    public HeaderBlockFragments(WritableBufferPool bufferPool, boolean directness, int maxCapacity)
+    public HeaderBlockFragments(ByteBufferPool bufferPool, boolean directness, int maxCapacity)
     {
         this.bufferPool = bufferPool;
         this.directness = directness;

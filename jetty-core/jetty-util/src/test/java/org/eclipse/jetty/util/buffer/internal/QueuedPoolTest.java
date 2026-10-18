@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.io.internal;
+package org.eclipse.jetty.util.buffer.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.docs.programming.server;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -39,10 +38,10 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.ajax.AsyncJSON;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
@@ -190,13 +189,13 @@ public class ServerDocs
 
         private class JSONHTTPIteratingCallback extends IteratingCallback
         {
-            private ByteBuffer buffer;
+            private RetainableByteBuffer.Mutable buffer;
 
             @Override
             protected Action process() throws Throwable
             {
                 if (buffer == null)
-                    buffer = BufferUtil.allocate(getInputBufferSize(), true);
+                    buffer = RetainableByteBuffer.Mutable.allocate(getInputBufferSize(), true);
 
                 while (true)
                 {

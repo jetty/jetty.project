@@ -17,7 +17,6 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -41,7 +40,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -49,7 +47,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -199,9 +197,11 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         assertTrue(commitLatch.await(5, TimeUnit.SECONDS));
 
         // Provide the part content.
-        FutureCallback fc = new FutureCallback();
-        partContent.write(ByteBuffer.wrap(data), fc);
-        fc.get();
+        try (Blocker.Callback callback = Blocker.callback())
+        {
+            partContent.offer(false, RetainableByteBuffer.wrap(data), callback);
+            callback.block();
+        }
         partContent.close();
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
@@ -410,12 +410,13 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
         assertTrue(commitLatch.await(5, TimeUnit.SECONDS));
 
         // Provide the part content, in reversed part order.
-        fileContent.write(ByteBuffer.wrap(fileData), Callback.NOOP);
-        fileContent.close();
+        fileContent.offer(true, RetainableByteBuffer.wrap(fileData), Callback.NOOP);
 
-        FutureCallback fc = new FutureCallback();
-        fieldContent.write(encoding.encode(value), fc);
-        fc.get();
+        try (Blocker.Callback fc = Blocker.callback())
+        {
+            fieldContent.offer(false, value, encoding, fc);
+            fc.block();
+        }
         fieldContent.close();
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));

@@ -17,11 +17,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -50,7 +49,7 @@ public class MessageOutputStream extends OutputStream
     {
         this.coreSession = coreSession;
         int bufferSize = coreSession.getOutputBufferSize();
-        this.buffer = WritableBufferPool.wrap(bufferPool).acquire(bufferSize, true);
+        this.buffer = bufferPool.acquire(bufferSize, true);
     }
 
     void setMessageType(byte opcode)

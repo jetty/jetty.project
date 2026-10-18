@@ -198,17 +198,22 @@ public class GzipEncoderSink extends EncoderSink
     private boolean encode(RetainableByteBuffer content, RetainableByteBuffer.Mutable outputBuffer)
     {
         long space = outputBuffer.space();
-        content.quietRead(input ->
+        content.read(input ->
         {
             deflater.setInput(input);
 
-            int p = input.position();
-            outputBuffer.quietWrite(output -> deflater.deflate(output, flushMode));
-            int consumed = input.position() - p;
+            int position = input.position();
+            outputBuffer.write(output -> deflater.deflate(output, flushMode));
+            int consumed = input.position() - position;
 
             // Update CRC with the consumed bytes.
             if (consumed > 0)
-                crc.update(input.slice(p, consumed));
+            {
+                int limit = input.limit();
+                input.position(position).limit(position + consumed);
+                crc.update(input);
+                input.limit(limit);
+            }
 
             return consumed;
         });
@@ -226,7 +231,7 @@ public class GzipEncoderSink extends EncoderSink
     {
         while (!deflater.finished())
         {
-            if (outputBuffer.quietWrite(output -> deflater.deflate(output, flushMode)) > 0L)
+            if (outputBuffer.write(output -> deflater.deflate(output, flushMode)) > 0L)
                 return true;
         }
         return false;

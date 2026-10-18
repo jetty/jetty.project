@@ -35,6 +35,7 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -202,10 +203,10 @@ public class StreamCountTest extends AbstractTest
         HeadersFrame frame3 = new HeadersFrame(streamId3, metaData, null, false);
         DataFrame data3 = new DataFrame(streamId3, RetainableByteBuffer.empty(), true);
         Generator generator = ((HTTP2Session)session).getGenerator();
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, frame3);
         generator.data(accumulator, data3, (int)data3.remaining());
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             ((HTTP2Session)session).getEndPoint().write(buffer, Callback.NOOP);
         }

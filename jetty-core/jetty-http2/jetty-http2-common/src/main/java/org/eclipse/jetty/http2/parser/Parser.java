@@ -28,8 +28,8 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.RateControl;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +43,7 @@ public class Parser
 {
     private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final HeaderParser headerParser;
     private final HpackDecoder hpackDecoder;
     private final BodyParser[] bodyParsers;
@@ -56,12 +56,12 @@ public class Parser
     private long beginNanoTime;
     private boolean nanoTimeStored;
 
-    public Parser(WritableBufferPool bufferPool, int maxHeaderSize)
+    public Parser(ByteBufferPool bufferPool, int maxHeaderSize)
     {
         this(bufferPool, maxHeaderSize, RateControl.NO_RATE_CONTROL);
     }
 
-    public Parser(WritableBufferPool bufferPool, int maxHeaderSize, RateControl rateControl)
+    public Parser(ByteBufferPool bufferPool, int maxHeaderSize, RateControl rateControl)
     {
         this.bufferPool = bufferPool;
         this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);

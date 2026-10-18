@@ -19,11 +19,14 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -40,7 +43,11 @@ import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -52,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientServerTest extends AbstractClientServerTest
@@ -727,5 +735,262 @@ public class ClientServerTest extends AbstractClientServerTest
             }
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testEmptyLastWriteDoesNotSendDataAfterEndOfStream(TransportType transportType) throws Exception
+    {
+        AtomicReference<Throwable> serverWriteFailure = new AtomicReference<>();
+        CountDownLatch serverWriteLatch = new CountDownLatch(1);
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // A last write of an empty, non-null buffer, as done for example by servlet close().
+                response.write(true, RetainableByteBuffer.empty(), Callback.from(() ->
+                {
+                    serverWriteLatch.countDown();
+                    callback.succeeded();
+                }, x ->
+                {
+                    serverWriteFailure.set(x);
+                    serverWriteLatch.countDown();
+                    callback.failed(x);
+                }));
+                return true;
+            }
+        });
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+
+        AtomicReference<Throwable> clientFailure = new AtomicReference<>();
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                // There is no content, so the HEADERS frame must end the stream.
+                assertTrue(frame.isLast());
+                responseLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
+            {
+                clientFailure.set(failure);
+            }
+        }, p));
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverWriteLatch.await(5, TimeUnit.SECONDS));
+        // Writing a DATA frame after the end of the stream fails the server write.
+        assertNull(serverWriteFailure.get());
+        assertNull(clientFailure.get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testHEADWithLastWriteDoesNotSendContent(TransportType transportType) throws Exception
+    {
+        byte[] bytes = new byte[512];
+        new Random().nextBytes(bytes);
+        AtomicReference<Throwable> serverWriteFailure = new AtomicReference<>();
+        CountDownLatch serverWriteLatch = new CountDownLatch(1);
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.write(true, RetainableByteBuffer.wrap(bytes), Callback.from(() ->
+                {
+                    serverWriteLatch.countDown();
+                    callback.succeeded();
+                }, x ->
+                {
+                    serverWriteFailure.set(x);
+                    serverWriteLatch.countDown();
+                    callback.failed(x);
+                }));
+                return true;
+            }
+        });
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+
+        AtomicLong contentBytes = new AtomicLong();
+        AtomicReference<Throwable> clientFailure = new AtomicReference<>();
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(new HeadersFrame(newRequest(HttpMethod.HEAD, "/"), true), new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(bytes.length, response.getContentLength());
+                assertTrue(frame.isLast());
+                responseLatch.countDown();
+            }
+
+            @Override
+            public void onDataAvailable(Stream.Client stream)
+            {
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk != null)
+                        contentBytes.addAndGet(chunk.remaining());
+                    if (chunk == null || !chunk.isLast())
+                        stream.demand();
+                }
+            }
+
+            @Override
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
+            {
+                clientFailure.set(failure);
+            }
+        }, p));
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverWriteLatch.await(5, TimeUnit.SECONDS));
+        assertNull(serverWriteFailure.get());
+        assertNull(clientFailure.get());
+        assertEquals(0L, contentBytes.get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testHEADWithMultipleWritesDoesNotSendContent(TransportType transportType) throws Exception
+    {
+        byte[] bytes = new byte[512];
+        new Random().nextBytes(bytes);
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // The first write sends the headers, the second write sends the content.
+                response.write(false, RetainableByteBuffer.wrap(bytes), Callback.from(() ->
+                    response.write(true, RetainableByteBuffer.wrap(bytes), callback), callback::failed));
+                return true;
+            }
+        });
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+
+        AtomicLong contentBytes = new AtomicLong();
+        AtomicReference<Throwable> clientFailure = new AtomicReference<>();
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        CountDownLatch lastLatch = new CountDownLatch(1);
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(new HeadersFrame(newRequest(HttpMethod.HEAD, "/"), true), new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                responseLatch.countDown();
+                if (frame.isLast())
+                    lastLatch.countDown();
+                else
+                    stream.demand();
+            }
+
+            @Override
+            public void onDataAvailable(Stream.Client stream)
+            {
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk != null)
+                        contentBytes.addAndGet(chunk.remaining());
+                    if (chunk != null && chunk.isLast())
+                        lastLatch.countDown();
+                    else
+                        stream.demand();
+                }
+            }
+
+            @Override
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
+            {
+                clientFailure.set(failure);
+            }
+        }, p));
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(lastLatch.await(5, TimeUnit.SECONDS));
+        assertNull(clientFailure.get());
+        assertEquals(0L, contentBytes.get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testTunnelEmptyLastWriteDoesNotEndStream(TransportType transportType) throws Exception
+    {
+        AtomicReference<Throwable> serverWriteFailure = new AtomicReference<>();
+        CountDownLatch serverWriteLatch = new CountDownLatch(1);
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // For a tunnel, the last write must send the 2xx
+                // response headers without ending the stream.
+                response.write(true, RetainableByteBuffer.empty(), Callback.from(() ->
+                {
+                    serverWriteLatch.countDown();
+                    callback.succeeded();
+                }, x ->
+                {
+                    serverWriteFailure.set(x);
+                    serverWriteLatch.countDown();
+                    callback.failed(x);
+                }));
+                return true;
+            }
+        });
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+
+        HostPortHttpField authority = new HostPortHttpField("localhost:" + connector.getLocalPort());
+        MetaData.Request request = new MetaData.ConnectRequest(HttpScheme.HTTPS, authority, null, HttpFields.EMPTY, null);
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        CountDownLatch endLatch = new CountDownLatch(1);
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(new HeadersFrame(request, false), new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                if (frame.isLast())
+                    endLatch.countDown();
+                responseLatch.countDown();
+                stream.demand();
+            }
+
+            @Override
+            public void onDataAvailable(Stream.Client stream)
+            {
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk != null && chunk.isLast())
+                        endLatch.countDown();
+                    else
+                        stream.demand();
+                }
+            }
+        }, p));
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverWriteLatch.await(5, TimeUnit.SECONDS));
+        assertNull(serverWriteFailure.get());
+        // The tunnel must stay open after the response headers.
+        assertFalse(endLatch.await(1, TimeUnit.SECONDS));
     }
 }

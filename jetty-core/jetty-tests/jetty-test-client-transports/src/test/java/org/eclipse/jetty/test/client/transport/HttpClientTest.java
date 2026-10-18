@@ -1510,7 +1510,7 @@ public class HttpClientTest extends AbstractTest
                     boolean last = ++count == totalBytes;
                     if (count > totalBytes)
                         return Action.SUCCEEDED;
-                    response.write(last, RetainableByteBuffer.wrap(new byte[1]), this);
+                    response.write(last, RetainableByteBuffer.allocate(1, false), this);
                     return Action.SCHEDULED;
                 }
             };

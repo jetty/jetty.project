@@ -114,7 +114,7 @@ public class ZstandardEncoderSink extends EncoderSink
                 // The content must be a direct bytebuffer, and we have to assume that
                 // the size of the content buffer can be huge (multi megabyte or bigger),
                 // so let's process the content one limited direct buffer at a time.
-                content.quietRead(input ->
+                content.read(input ->
                 {
                     int remaining = input.remaining();
 
@@ -132,7 +132,7 @@ public class ZstandardEncoderSink extends EncoderSink
                         int length = Math.min(input.remaining(), bufferSize);
                         direct.append(input.slice(input.position(), length));
                         ByteBuffer[] result = new ByteBuffer[1];
-                        direct.quietRead(i ->
+                        direct.read(i ->
                         {
                             result[0] = i;
                             return 0;
@@ -183,7 +183,7 @@ public class ZstandardEncoderSink extends EncoderSink
         {
             // use zstd-jni END directive once.
             // only run END compress once
-            outputBuffer.quietWrite(output ->
+            outputBuffer.write(output ->
             {
                 int p = output.position();
                 compressCtx.compressDirectByteBufferStream(output, EMPTY_DIRECT_BUFFER, EndDirective.END);
@@ -205,7 +205,7 @@ public class ZstandardEncoderSink extends EncoderSink
             // use zstd-jni FLUSH directive to flush remaining compressed bytes out
             // of the internal zstd buffers.
             boolean[] result = new boolean[1];
-            outputBuffer.quietWrite(output ->
+            outputBuffer.write(output ->
             {
                 int p = output.position();
                 result[0] = compressCtx.compressDirectByteBufferStream(output, EMPTY_DIRECT_BUFFER, EndDirective.FLUSH);

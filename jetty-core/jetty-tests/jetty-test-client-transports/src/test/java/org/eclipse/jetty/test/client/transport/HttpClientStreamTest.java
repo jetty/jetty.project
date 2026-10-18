@@ -762,7 +762,7 @@ public class HttpClientStreamTest extends AbstractTest
                 int read;
                 while ((read = input.read(buffer)) >= 0)
                 {
-                    content.write(ByteBuffer.wrap(buffer, 0, read), Callback.NOOP);
+                    content.offer(false, RetainableByteBuffer.wrap(buffer, 0, read), Callback.NOOP);
                 }
             }
         }
@@ -788,7 +788,7 @@ public class HttpClientStreamTest extends AbstractTest
         try (AsyncRequestContent content = new AsyncRequestContent())
         {
             // Make the content immediately available.
-            content.write(ByteBuffer.allocate(1024), new Callback()
+            content.offer(false, RetainableByteBuffer.allocate(1024, false), new Callback()
             {
                 @Override
                 public void succeeded()
@@ -832,8 +832,7 @@ public class HttpClientStreamTest extends AbstractTest
             {
                 super.demand(demandCallback);
                 // Simulate a concurrent call
-                write(ByteBuffer.wrap(data), Callback.NOOP);
-                close();
+                offer(true, RetainableByteBuffer.wrap(data), Callback.NOOP);
             }
         };
 
@@ -992,8 +991,8 @@ public class HttpClientStreamTest extends AbstractTest
             .body(content)
             .onRequestBegin(request ->
             {
-                content.write(ByteBuffer.wrap(new byte[256]), callback);
-                content.write(ByteBuffer.wrap(new byte[256]), callback);
+                content.offer(false, RetainableByteBuffer.allocate(256, false), callback);
+                content.offer(false, RetainableByteBuffer.allocate(256, false), callback);
                 request.abort(new Exception("explicitly_thrown_by_test"));
             })
             .send(result ->
@@ -1006,7 +1005,7 @@ public class HttpClientStreamTest extends AbstractTest
 
         // Make sure that adding more content results in the callback to be failed.
         CountDownLatch latch = new CountDownLatch(1);
-        content.write(ByteBuffer.wrap(new byte[128]), new Callback()
+        content.offer(false, RetainableByteBuffer.allocate(128, false), new Callback()
         {
             @Override
             public void failed(Throwable x)

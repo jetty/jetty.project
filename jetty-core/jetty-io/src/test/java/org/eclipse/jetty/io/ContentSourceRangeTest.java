@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.io;
 
-import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.AsyncContentSource;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.internal.ContentSourceRange;
 import org.eclipse.jetty.util.BufferUtil;
@@ -36,7 +36,7 @@ public class ContentSourceRangeTest
     @Test
     public void testNullReturn()
     {
-        Content.Source source = new ContentSourceRange(new AsyncContent(), 0, -1);
+        Content.Source source = new ContentSourceRange(new AsyncContentSource(), 0, -1);
         assertNull(source.read());
     }
 
@@ -44,7 +44,7 @@ public class ContentSourceRangeTest
     public void testInvalidArguments()
     {
         // Throws if the offset is negative.
-        assertThrows(IndexOutOfBoundsException.class, () -> new ContentSourceRange(new AsyncContent(), -1, -1));
+        assertThrows(IndexOutOfBoundsException.class, () -> new ContentSourceRange(new AsyncContentSource(), -1, -1));
 
         // Throws if the offset is beyond the length of the source.
         ByteBufferContentSource source = new ByteBufferContentSource(BufferUtil.toBuffer("hello".getBytes()));
@@ -54,12 +54,12 @@ public class ContentSourceRangeTest
     @Test
     public void testFullLength()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 0, -1);
 
-        asyncContent.write(false, RetainableByteBuffer.wrap("A", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(false, RetainableByteBuffer.wrap("B", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(true, RetainableByteBuffer.empty(), Callback.NOOP);
+        asyncContent.offer(false, "A", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "B", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(true, RetainableByteBuffer.empty(), Callback.NOOP);
 
         try (Content.Chunk c1 = source.read())
         {
@@ -89,13 +89,13 @@ public class ContentSourceRangeTest
     @Test
     public void testOffset()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 5, -1);
 
-        asyncContent.write(false, RetainableByteBuffer.wrap("12", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(false, RetainableByteBuffer.wrap("345", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(false, RetainableByteBuffer.wrap("XYZ", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(true, RetainableByteBuffer.empty(), Callback.NOOP);
+        asyncContent.offer(false, "12", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "345", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "XYZ", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(true, RetainableByteBuffer.empty(), Callback.NOOP);
 
         try (Content.Chunk c1 = source.read())
         {
@@ -116,10 +116,10 @@ public class ContentSourceRangeTest
     @Test
     public void testOffsetMidChunk()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 3, 2);
 
-        asyncContent.write(true, RetainableByteBuffer.wrap("abcdef", ISO_8859_1), Callback.NOOP);
+        asyncContent.offer(true, "abcdef", ISO_8859_1, Callback.NOOP);
 
         try (Content.Chunk c1 = source.read())
         {
@@ -134,12 +134,12 @@ public class ContentSourceRangeTest
     @Test
     public void testSpanMultipleChunks()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 2, 8);
 
-        asyncContent.write(false, RetainableByteBuffer.wrap("AAAA", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(false, RetainableByteBuffer.wrap("BBBB", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(true, RetainableByteBuffer.wrap("CCCC", ISO_8859_1), Callback.NOOP);
+        asyncContent.offer(false, "AAAA", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "BBBB", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(true, "CCCC", ISO_8859_1, Callback.NOOP);
 
         try (Content.Chunk c1 = source.read())
         {
@@ -172,12 +172,12 @@ public class ContentSourceRangeTest
     @Test
     public void testZeroLengthRange()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 0, 0);
 
-        asyncContent.write(false, RetainableByteBuffer.wrap("foo", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(false, RetainableByteBuffer.wrap("bar", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(true, RetainableByteBuffer.empty(), Callback.NOOP);
+        asyncContent.offer(false, "foo", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "bar", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(true, RetainableByteBuffer.empty(), Callback.NOOP);
 
         try (Content.Chunk c1 = source.read())
         {
@@ -189,12 +189,12 @@ public class ContentSourceRangeTest
     @Test
     public void testOffsetBeyondLength()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 200, -1);
 
-        asyncContent.write(false, RetainableByteBuffer.wrap("hello", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(false, RetainableByteBuffer.wrap("world", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(true, RetainableByteBuffer.empty(), Callback.NOOP);
+        asyncContent.offer(false, "hello", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "world", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(true, RetainableByteBuffer.empty(), Callback.NOOP);
 
         try (Content.Chunk c1 = source.read())
         {
@@ -206,11 +206,11 @@ public class ContentSourceRangeTest
     @Test
     public void testFailureChunkBeforeEOF()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 5, 5);
 
-        asyncContent.write(false, RetainableByteBuffer.wrap("hello", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(false, RetainableByteBuffer.wrap("world", ISO_8859_1), Callback.NOOP);
+        asyncContent.offer(false, "hello", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "world", ISO_8859_1, Callback.NOOP);
 
         try (Content.Chunk c1 = source.read())
         {
@@ -234,11 +234,11 @@ public class ContentSourceRangeTest
     @Test
     public void testFailureBeforeStartingOffset()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 20, 5);
 
-        asyncContent.write(false, RetainableByteBuffer.wrap("hello", ISO_8859_1), Callback.NOOP);
-        asyncContent.write(false, RetainableByteBuffer.wrap("world", ISO_8859_1), Callback.NOOP);
+        asyncContent.offer(false, "hello", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "world", ISO_8859_1, Callback.NOOP);
         asyncContent.fail(new RuntimeException("test exception"));
 
         try (Content.Chunk c1 = source.read())

@@ -32,9 +32,9 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 
 public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 {
@@ -43,7 +43,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         HTTP2Client client = (HTTP2Client)context.get(HTTP2Client.CONTEXT_KEY);
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(client.getByteBufferPool());
+        ByteBufferPool bufferPool = client.getByteBufferPool();
         Session.Listener listener = (Session.Listener)context.get(HTTP2Client.SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
         Promise<Session> sessionPromise = (Promise<Session>)context.get(HTTP2Client.SESSION_PROMISE_CONTEXT_KEY);
@@ -81,7 +81,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
         private HTTP2ClientConnection(HTTP2Client client, EndPoint endpoint, HTTP2ClientSession session, Promise<Session> sessionPromise, Session.Listener listener)
         {
-            super(WritableBufferPool.wrap(client.getByteBufferPool()), client.getExecutor(), endpoint, session, client.getInputBufferSize(), -1);
+            super(client.getByteBufferPool(), client.getExecutor(), endpoint, session, client.getInputBufferSize(), -1);
             this.client = client;
             this.promise = sessionPromise;
             this.listener = listener;

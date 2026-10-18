@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 
@@ -78,7 +79,6 @@ public class Flusher
     {
         try (AutoLock ignored = lock.lock())
         {
-            entry.buffer().retain();
             queue.offer(entry);
         }
     }
@@ -158,8 +158,23 @@ public class Flusher
 
             active = entry;
 
-            endPoint.write(entry.buffer(), this);
-            return Action.SCHEDULED;
+            try (RetainableByteBuffer buffer = entry.acquire())
+            {
+                endPoint.write(buffer, this);
+                return Action.SCHEDULED;
+            }
+        }
+
+        @Override
+        protected void onSuccess()
+        {
+            Entry entry = active;
+            active = null;
+            if (entry != null)
+            {
+                entry.close();
+                entry.callback().succeeded();
+            }
         }
 
         @Override
@@ -171,9 +186,9 @@ public class Flusher
 
         private Callback resetCallback()
         {
-            Flusher.Entry entry = active;
+            Entry entry = active;
             active = null;
-            return Callback.from(entry.callback, () -> entry.buffer().release());
+            return Callback.from(entry::close, entry.callback);
         }
 
         @Override
@@ -192,44 +207,26 @@ public class Flusher
         }
 
         @Override
-        protected void onSuccess()
-        {
-            if (active != null)
-            {
-                active.callback().succeeded();
-                active.buffer().release();
-                active = null;
-            }
-        }
-
-        @Override
-        public void onFailure(Throwable cause)
-        {
-            if (active != null)
-                active.callback().failed(cause);
-            List<Entry> entries;
-            try (AutoLock ignored = lock.lock())
-            {
-                entries = new ArrayList<>(queue);
-            }
-            entries.forEach(entry -> entry.callback().failed(cause));
-        }
-
-        @Override
         protected void onCompleteFailure(Throwable cause)
         {
-            if (active != null)
+            Entry entry = active;
+            active = null;
+            if (entry != null)
             {
-                active.buffer().release();
-                active = null;
+                entry.close();
+                entry.callback().failed(cause);
             }
             List<Entry> entries;
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock _ = lock.lock())
             {
                 entries = new ArrayList<>(queue);
                 queue.clear();
             }
-            entries.forEach(e -> e.buffer().release());
+            entries.forEach(e ->
+            {
+                e.close();
+                e.callback().failed(cause);
+            });
         }
 
         @Override
@@ -241,7 +238,33 @@ public class Flusher
         }
     }
 
-    private record Entry(RetainableByteBuffer buffer, Callback callback)
+    private static final class Entry implements AutoCloseable
     {
+        private final RetainableByteBuffer buffer;
+        private final Callback callback;
+
+        private Entry(RetainableByteBuffer buffer, Callback callback)
+        {
+            this.buffer = Objects.requireNonNull(buffer);
+            this.callback = Objects.requireNonNull(callback);
+            buffer.retain();
+        }
+
+        public RetainableByteBuffer acquire()
+        {
+            buffer.retain();
+            return buffer;
+        }
+
+        public Callback callback()
+        {
+            return callback;
+        }
+
+        @Override
+        public void close()
+        {
+            buffer.release();
+        }
     }
 }

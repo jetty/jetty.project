@@ -40,8 +40,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -56,6 +54,8 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
@@ -1299,51 +1299,49 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         });
 
         int pipeline = 64;
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
-            try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+            served.set(0);
+            client.setSoTimeout(5000);
+            OutputStream os = client.getOutputStream();
+
+            StringBuilder request = new StringBuilder();
+
+            for (int i = 1; i < pipeline; i++)
             {
-                served.set(0);
-                client.setSoTimeout(5000);
-                OutputStream os = client.getOutputStream();
-
-                StringBuilder request = new StringBuilder();
-
-                for (int i = 1; i < pipeline; i++)
-                {
-                    request.append("GET /data?writes=1&block=16&id=")
-                        .append(i).append(" HTTP/1.1\r\n")
-                        .append("host: localhost:").append(_serverURI.getPort()).append("\r\n")
-                        .append("user-agent: testharness/1.0 (blah foo/bar)\r\n")
-                        .append("accept-encoding: nothing\r\n")
-                        .append("cookie: aaa=1234567890\r\n")
-                        .append("\r\n");
-                }
-
-                request
-                    .append("GET /data?writes=1&block=16 HTTP/1.1\r\n")
+                request.append("GET /data?writes=1&block=16&id=")
+                    .append(i).append(" HTTP/1.1\r\n")
                     .append("host: localhost:").append(_serverURI.getPort()).append("\r\n")
                     .append("user-agent: testharness/1.0 (blah foo/bar)\r\n")
                     .append("accept-encoding: nothing\r\n")
-                    .append("cookie: aaa=bbbbbb\r\n")
-                    .append("Connection: close\r\n")
+                    .append("cookie: aaa=1234567890\r\n")
                     .append("\r\n");
-
-                os.write(request.toString().getBytes());
-                os.flush();
-
-                LineNumberReader in = new LineNumberReader(new InputStreamReader(client.getInputStream()));
-
-                String line = in.readLine();
-                int count = 0;
-                while (line != null)
-                {
-                    if ("HTTP/1.1 200 OK".equals(line))
-                        count++;
-                    line = in.readLine();
-                }
-                assertEquals(pipeline, served.get());
-                assertEquals(pipeline, count);
             }
+
+            request
+                .append("GET /data?writes=1&block=16 HTTP/1.1\r\n")
+                .append("host: localhost:").append(_serverURI.getPort()).append("\r\n")
+                .append("user-agent: testharness/1.0 (blah foo/bar)\r\n")
+                .append("accept-encoding: nothing\r\n")
+                .append("cookie: aaa=bbbbbb\r\n")
+                .append("Connection: close\r\n")
+                .append("\r\n");
+
+            os.write(request.toString().getBytes());
+            os.flush();
+
+            LineNumberReader in = new LineNumberReader(new InputStreamReader(client.getInputStream()));
+
+            String line = in.readLine();
+            int count = 0;
+            while (line != null)
+            {
+                if ("HTTP/1.1 200 OK".equals(line))
+                    count++;
+                line = in.readLine();
+            }
+            assertEquals(pipeline, served.get());
+            assertEquals(pipeline, count);
         }
     }
 

@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 
 /**

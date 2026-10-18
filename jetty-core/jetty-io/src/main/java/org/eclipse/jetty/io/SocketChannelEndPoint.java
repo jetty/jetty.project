@@ -121,7 +121,7 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         return !buffer.hasRemaining();
     }
 
-    private class Reader implements RetainableByteBuffer.GatheringReader, RetainableByteBuffer.TransferringReader
+    private class Reader implements RetainableByteBuffer.GatheringReader<IOException>, RetainableByteBuffer.TransferringReader<IOException>
     {
         @Override
         public long readFrom(FileChannel input, long position, long count) throws IOException

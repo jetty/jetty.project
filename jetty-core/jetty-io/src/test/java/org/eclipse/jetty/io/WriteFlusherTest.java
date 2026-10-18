@@ -163,7 +163,7 @@ public class WriteFlusherTest
         assertThat(e.getCause(), instanceOf(IOException.class));
         assertThat(e.getCause().getMessage(), containsString("CLOSED"));
 
-        assertThrows(Exception.class, endPoint::takeOutputString);
+        assertEquals("", endPoint.takeOutputString());
         assertTrue(flusher.isFailed());
     }
 
@@ -278,7 +278,7 @@ public class WriteFlusherTest
         assertThat(e.getCause(), instanceOf(IOException.class));
         assertThat(e.getCause().getMessage(), containsString("CLOSED"));
 
-        assertThrows(Exception.class, endPoint::takeOutputString);
+        assertEquals("", endPoint.takeOutputString());
         assertTrue(flusher.isFailed());
     }
 

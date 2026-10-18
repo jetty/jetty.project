@@ -23,7 +23,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.AsyncContentSource;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -49,7 +49,7 @@ public class ContentSourceTransformerTest
     @Test
     public void testNoChunks()
     {
-        AsyncContent source = new AsyncContent();
+        AsyncContentSource source = new AsyncContentSource();
         WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(source);
 
         try (Content.Chunk chunk = transformer.read())
@@ -76,8 +76,8 @@ public class ContentSourceTransformerTest
     @ValueSource(booleans = {false, true})
     public void testTwoChunksAndEOF(boolean last)
     {
-        AsyncContent source = new AsyncContent();
-        source.write(last, RetainableByteBuffer.wrap(UTF_8.encode("ONE two")), Callback.NOOP);
+        AsyncContentSource source = new AsyncContentSource();
+        source.offer(last, "ONE two", UTF_8, Callback.NOOP);
         if (!last)
             source.close();
         WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(source);
@@ -112,8 +112,8 @@ public class ContentSourceTransformerTest
     @Test
     public void testDemandFirstWithLoop()
     {
-        AsyncContent source = new AsyncContent();
-        source.write(true, RetainableByteBuffer.wrap(UTF_8.encode("ONE two")), Callback.NOOP);
+        AsyncContentSource source = new AsyncContentSource();
+        source.offer(true, "ONE two", UTF_8, Callback.NOOP);
         WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(source);
 
         AtomicBoolean processed = new AtomicBoolean();
@@ -137,8 +137,8 @@ public class ContentSourceTransformerTest
     @Test
     public void testDemandFirstWithoutLoop()
     {
-        AsyncContent source = new AsyncContent();
-        source.write(true, RetainableByteBuffer.wrap(UTF_8.encode("ONE NOOP two")), Callback.NOOP);
+        AsyncContentSource source = new AsyncContentSource();
+        source.offer(true, "ONE NOOP two", UTF_8, Callback.NOOP);
         WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(source);
 
         AtomicBoolean reEnter = new AtomicBoolean();
@@ -174,8 +174,8 @@ public class ContentSourceTransformerTest
     @Test
     public void testDemandFirstWithoutLoopStallAfterTwoExpectedChunks()
     {
-        AsyncContent source = new AsyncContent();
-        source.write(false, RetainableByteBuffer.wrap(UTF_8.encode("ONE NOOP two")), Callback.NOOP);
+        AsyncContentSource source = new AsyncContentSource();
+        source.offer(false, "ONE NOOP two", UTF_8, Callback.NOOP);
         WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(source);
 
         AtomicBoolean reEnter = new AtomicBoolean();
@@ -210,7 +210,7 @@ public class ContentSourceTransformerTest
         assertThat(expected, empty());
 
         expected.offer("three");
-        source.write(true, RetainableByteBuffer.wrap(UTF_8.encode("three")), Callback.NOOP);
+        source.offer(true, "three", UTF_8, Callback.NOOP);
         assertThat(expected, empty());
 
         expected.offer("EOF");
@@ -230,8 +230,8 @@ public class ContentSourceTransformerTest
     @Test
     public void testDemandFirstThenConsumeAllChunks()
     {
-        AsyncContent source = new AsyncContent();
-        source.write(true, RetainableByteBuffer.wrap(UTF_8.encode("ONE NOOP two")), Callback.NOOP);
+        AsyncContentSource source = new AsyncContentSource();
+        source.offer(true, "ONE NOOP two", UTF_8, Callback.NOOP);
         WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(source);
 
         AtomicInteger count = new AtomicInteger();
@@ -282,10 +282,10 @@ public class ContentSourceTransformerTest
     @Test
     public void testTransformThrows()
     {
-        AsyncContent source = new AsyncContent();
-        source.write(false, RetainableByteBuffer.wrap(UTF_8.encode("ONE")), Callback.NOOP);
-        source.write(false, RetainableByteBuffer.wrap(UTF_8.encode("THROW")), Callback.NOOP);
-        source.write(true, RetainableByteBuffer.wrap(UTF_8.encode("two")), Callback.NOOP);
+        AsyncContentSource source = new AsyncContentSource();
+        source.offer(false, "ONE", UTF_8, Callback.NOOP);
+        source.offer(false, "THROW", UTF_8, Callback.NOOP);
+        source.offer(true, "two", UTF_8, Callback.NOOP);
         WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(source);
 
         try (Content.Chunk chunk = transformer.read())
@@ -315,10 +315,10 @@ public class ContentSourceTransformerTest
     @Test
     public void testTransformReturnsError()
     {
-        AsyncContent source = new AsyncContent();
-        source.write(false, RetainableByteBuffer.wrap(UTF_8.encode("ONE")), Callback.NOOP);
-        source.write(false, RetainableByteBuffer.wrap(UTF_8.encode("ERROR")), Callback.NOOP);
-        source.write(true, RetainableByteBuffer.wrap(UTF_8.encode("two")), Callback.NOOP);
+        AsyncContentSource source = new AsyncContentSource();
+        source.offer(false, "ONE", UTF_8, Callback.NOOP);
+        source.offer(false, "ERROR", UTF_8, Callback.NOOP);
+        source.offer(true, "two", UTF_8, Callback.NOOP);
         WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(source);
 
         try (Content.Chunk chunk = transformer.read())
@@ -345,8 +345,8 @@ public class ContentSourceTransformerTest
     @Test
     public void testSourceReturnsError()
     {
-        AsyncContent source = new AsyncContent();
-        source.write(false, RetainableByteBuffer.wrap(UTF_8.encode("ONE")), Callback.NOOP);
+        AsyncContentSource source = new AsyncContentSource();
+        source.offer(false, "ONE", UTF_8, Callback.NOOP);
         WordSplitLowCaseTransformer transformer = new WordSplitLowCaseTransformer(source);
 
         try (Content.Chunk chunk = transformer.read())

@@ -78,7 +78,7 @@ public class ServletTest
 
         _server.start();
 
-        String response = _connector.getResponseAsString("""
+        String response = _connector.getResponse("""
             GET /ctx/get HTTP/1.0
             
             """);
@@ -110,7 +110,7 @@ public class ServletTest
         _connector.setIdleTimeout(idleTimeout);
         _server.start();
 
-        String response = _connector.getResponseAsString("""
+        String response = _connector.getResponse("""
             GET /ctx/get HTTP/1.0
             
             """, 5 * idleTimeout, TimeUnit.MILLISECONDS);

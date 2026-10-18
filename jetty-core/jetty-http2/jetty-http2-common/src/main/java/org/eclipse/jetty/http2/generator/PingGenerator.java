@@ -17,6 +17,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PingFrame;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class PingGenerator extends FrameGenerator
@@ -27,13 +28,13 @@ public class PingGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Accumulator accumulator, Frame frame)
+    public int generate(BufferAccumulator accumulator, Frame frame)
     {
         PingFrame pingFrame = (PingFrame)frame;
         return generatePing(accumulator, pingFrame.getPayload(), pingFrame.isReply());
     }
 
-    public int generatePing(RetainableByteBuffer.Accumulator accumulator, byte[] payload, boolean reply)
+    public int generatePing(BufferAccumulator accumulator, byte[] payload, boolean reply)
     {
         if (payload.length != PingFrame.PING_LENGTH)
             throw new IllegalArgumentException("Invalid payload length: " + payload.length);

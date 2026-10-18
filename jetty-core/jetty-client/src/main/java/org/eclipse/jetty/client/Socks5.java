@@ -173,12 +173,13 @@ public class Socks5
 
                 byte[] userNameBytes = factory.userName.getBytes(factory.charset);
                 byte[] passwordBytes = factory.password.getBytes(factory.charset);
-                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(3 + userNameBytes.length + passwordBytes.length, true)
-                    .put(VERSION)
-                    .put((byte)userNameBytes.length)
-                    .put(userNameBytes)
-                    .put((byte)passwordBytes.length)
-                    .put(passwordBytes);
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(3 + userNameBytes.length + passwordBytes.length, true);
+                buffer.put(VERSION);
+                buffer.put((byte)userNameBytes.length);
+                buffer.put(userNameBytes);
+                buffer.put((byte)passwordBytes.length);
+                buffer.put(passwordBytes);
+
                 endPoint.write(buffer, Callback.from(this::authenticationSent, this::failed));
             }
 

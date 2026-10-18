@@ -72,20 +72,18 @@ public class ContentSourceInputStream extends InputStream
                     int length = (int)Math.min(buffer.remaining(), len);
                     buffer.get(bytes, offset, length);
                     if (!buffer.hasRemaining())
-                    {
-                        chunk.release();
-                        chunk = Content.Chunk.next(chunk);
-                    }
+                        chunk = Content.Chunk.releaseAndNext(chunk);
                     return length;
                 }
             }
 
-            // Skip empty chunks.
             while (true)
             {
                 chunk = content.read();
                 if (chunk == null || chunk.hasRemaining() || chunk.isLast() || Content.Chunk.isFailure(chunk))
                     break;
+                // Skip but release empty chunks.
+                chunk.release();
             }
 
             if (chunk == null)
@@ -118,8 +116,7 @@ public class ContentSourceInputStream extends InputStream
         if (chunk != null)
         {
             contentSkipped = chunk.hasRemaining();
-            chunk.release();
-            chunk = Content.Chunk.next(chunk);
+            chunk = Content.Chunk.releaseAndNext(chunk);
         }
 
         // If we don't have a chunk and have not skipped content, try one read looking for EOF
@@ -141,8 +138,7 @@ public class ContentSourceInputStream extends InputStream
                 }
 
                 contentSkipped = chunk.hasRemaining();
-                chunk.release();
-                chunk = Content.Chunk.next(chunk);
+                chunk = Content.Chunk.releaseAndNext(chunk);
             }
         }
 

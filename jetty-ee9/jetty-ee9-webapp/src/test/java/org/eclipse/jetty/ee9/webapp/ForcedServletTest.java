@@ -128,7 +128,7 @@ public class ForcedServletTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = connector.getResponseAsString(rawRequest.toString());
+        String rawResponse = connector.getResponse(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         // Since this was a request to a resource ending in `*.jsp`, the RejectUncompiledJspServlet responded
         assertEquals(555, response.getStatus());
@@ -146,7 +146,7 @@ public class ForcedServletTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = connector.getResponseAsString(rawRequest.toString());
+        String rawResponse = connector.getResponse(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         // Since this was a request to a resource ending in `*.jsp`, the RejectUncompiledJspServlet responded
         assertEquals(555, response.getStatus());
@@ -164,7 +164,7 @@ public class ForcedServletTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = connector.getResponseAsString(rawRequest.toString());
+        String rawResponse = connector.getResponse(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         // status code 555 is from RejectUncompiledJspServlet
         assertEquals(555, response.getStatus());
@@ -182,7 +182,7 @@ public class ForcedServletTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = connector.getResponseAsString(rawRequest.toString());
+        String rawResponse = connector.getResponse(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
 

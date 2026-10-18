@@ -20,10 +20,10 @@ import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPOutputStream;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.io.content.ChunksContentSource;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ public class GzipTransformerTest
     public void testTransientFailuresFromOriginalSourceAreReturned() throws Exception
     {
         ArrayByteBufferPool.Tracking trackingBufferPool = new ArrayByteBufferPool.Tracking();
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(trackingBufferPool);
+        ByteBufferPool bufferPool = trackingBufferPool;
         TimeoutException originalFailure1 = new TimeoutException("timeout 1");
         TimeoutException originalFailure2 = new TimeoutException("timeout 2");
         try (TestSource originalSource = new TestSource(
@@ -104,7 +104,7 @@ public class GzipTransformerTest
         assertThat("Leaks: " + trackingBufferPool.dumpLeaks(), trackingBufferPool.getLeaks().size(), is(0));
     }
 
-    private static Content.Chunk gzipChunk(WritableBufferPool bufferPool, byte[] bytes, boolean last) throws IOException
+    private static Content.Chunk gzipChunk(ByteBufferPool bufferPool, byte[] bytes, boolean last) throws IOException
     {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream gzos = new GZIPOutputStream(baos);

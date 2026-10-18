@@ -160,7 +160,7 @@ public class RequestTest
             }
         });
 
-        String rawResponse = _connector.getResponseAsString(
+        String rawResponse = _connector.getResponse(
             """
                 GET / HTTP/1.1
                 Host: local
@@ -191,7 +191,7 @@ public class RequestTest
             }
         });
 
-        String rawResponse = _connector.getResponseAsString(
+        String rawResponse = _connector.getResponse(
             """
                 GET / HTTP/1.1
                 Host: local
@@ -220,7 +220,7 @@ public class RequestTest
             }
         });
 
-        String rawResponse = _connector.getResponseAsString(
+        String rawResponse = _connector.getResponse(
             """
                 CONNECT myhost:9999 HTTP/1.1\r
                 Host: myhost:9999\r
@@ -244,7 +244,7 @@ public class RequestTest
             }
         });
 
-        String rawResponse = _connector.getResponseAsString(
+        String rawResponse = _connector.getResponse(
             """
                 CONNECT myhost:9999 HTTP/1.1\r
                 Host: otherhost:8888\r
@@ -296,13 +296,13 @@ public class RequestTest
             Connection: close\r
             \r
             """;
-        String rawResponse = _connector.getResponseAsString(rawRequest);
+        String rawResponse = _connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
         assertThat(count.get(), equalTo(0));
 
         _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
-        rawResponse = _connector.getResponseAsString(rawRequest);
+        rawResponse = _connector.getResponse(rawRequest);
 
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -312,7 +312,7 @@ public class RequestTest
         assertThat(count.get(), equalTo(1));
 
         _server.getContainedBeans(ServletHandler.class).iterator().next().setDecodeAmbiguousURIs(true);
-        rawResponse = _connector.getResponseAsString(rawRequest);
+        rawResponse = _connector.getResponse(rawRequest);
 
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -338,7 +338,7 @@ public class RequestTest
             }
         });
 
-        String rawResponse = _connector.getResponseAsString(
+        String rawResponse = _connector.getResponse(
             """
                 GET /test/path%20info/foo%2cbar HTTP/1.1\r
                 Host: localhost\r
@@ -488,7 +488,7 @@ public class RequestTest
             }
         });
 
-        String rawResponse = _connector.getResponseAsString(
+        String rawResponse = _connector.getResponse(
             """
                 GET /test HTTP/1.1\r
                 Host: host\r
@@ -516,7 +516,7 @@ public class RequestTest
             }
         });
 
-        String rawResponse = _connector.getResponseAsString(
+        String rawResponse = _connector.getResponse(
             """
                 GET /test HTTP/1.1\r
                 Host: host\r
@@ -540,7 +540,7 @@ public class RequestTest
             }
         });
 
-        String rawResponse = _connector.getResponseAsString(
+        String rawResponse = _connector.getResponse(
             """
                 POST /test HTTP/1.1\r
                 Host: host\r
@@ -663,7 +663,7 @@ public class RequestTest
             
             """.replaceAll("@QUERY@", query);
 
-        String rawResponse = _connector.getResponseAsString(request);
+        String rawResponse = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
     }
@@ -690,7 +690,7 @@ public class RequestTest
             }
         });
 
-        String rawResponse = _connector.getResponseAsString(
+        String rawResponse = _connector.getResponse(
             """
                 POST /test/parameters?a=1&a=2&b=one&c= HTTP/1.1\r
                 Host: localhost\r
@@ -770,7 +770,7 @@ public class RequestTest
         String request = "GET /test/fo" + suspect + "bar HTTP/1.0\r\n" +
             "Host: whatever\r\n" +
             "\r\n";
-        String response = _connector.getResponseAsString(request);
+        String response = _connector.getResponse(request);
 
         if (expected.length() == 3 && Character.isDigit(expected.charAt(0)))
         {
@@ -835,7 +835,7 @@ public class RequestTest
             }
         });
 
-        String rawResponse = _connector.getResponseAsString(
+        String rawResponse = _connector.getResponse(
             """
                 POST /test/parameters?x=%80 HTTP/1.1\r
                 Host: localhost\r

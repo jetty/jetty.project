@@ -13,32 +13,53 @@
 
 package org.eclipse.jetty.client;
 
-/**
- * <p>Implementation of {@link AbstractResponseListener} that buffers the response content
- * by copying it up to a maximum length specified to the constructors.</p>
- * <p>Use {@link RetainingResponseListener} for a more efficient
- * implementation that does not copy the content bytes.</p>
- *
- * @deprecated use {@link RetainingResponseListener} instead
- */
-@Deprecated(since = "13.0.0", forRemoval = true)
+import org.eclipse.jetty.util.buffer.BufferAggregator;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+
+/// Implementation of [AbstractResponseListener] that aggregates by
+/// copying the response content buffers up to a configurable maximum length.
+///
+/// The memory retained by this class is bound by the
+/// maximum length, at the cost of copying the content buffers.
+///
+/// Use [RetainingResponseListener] for an alternative
+/// implementation that does not copy the content buffers.
 public abstract class BufferingResponseListener extends AbstractResponseListener
 {
-    /**
-     * Creates an instance with a default maximum length of 2 MiB.
-     */
+    private final BufferAggregator aggregator;
+
+    /// Creates an instance with a default maximum length of 2 MiB.
     public BufferingResponseListener()
     {
         this(2 * 1024 * 1024);
     }
 
-    /**
-     * Creates an instance with the given maximum length
-     *
-     * @param maxLength the maximum length of the content
-     */
+    /// Creates an instance with the given maximum length
+    ///
+    /// @param maxLength the maximum length of the content
     public BufferingResponseListener(int maxLength)
     {
         super(maxLength);
+        aggregator = new BufferAggregator(null, false, true, Math.min(1024, maxLength), maxLength);
+    }
+
+    @Override
+    public void onContent(Response response, RetainableByteBuffer content)
+    {
+        super.onContent(response, content);
+        aggregator.append(content);
+    }
+
+    @Override
+    public void onFailure(Response response, Throwable failure)
+    {
+        super.onFailure(response, failure);
+        aggregator.close();
+    }
+
+    @Override
+    protected RetainableByteBuffer take()
+    {
+        return aggregator.take();
     }
 }

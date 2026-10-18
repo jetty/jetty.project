@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -129,11 +129,11 @@ public class HttpClientFailureTest
             assertTrue(commitLatch.await(5, TimeUnit.SECONDS));
 
             // The first chunk will be read but its write will fail.
-            content.write(ByteBuffer.allocate(1024), Callback.NOOP);
+            content.offer(false, RetainableByteBuffer.allocate(1024, false), Callback.NOOP);
 
             // The second chunk is failed because the content is failed.
             CountDownLatch contentLatch = new CountDownLatch(1);
-            content.write(ByteBuffer.allocate(1024), new Callback()
+            content.offer(false, RetainableByteBuffer.allocate(1024, false), new Callback()
             {
                 @Override
                 public void failed(Throwable x)

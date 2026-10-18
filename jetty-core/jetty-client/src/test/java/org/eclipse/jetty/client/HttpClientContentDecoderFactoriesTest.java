@@ -15,15 +15,15 @@ package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.io.content.ContentSourceTransformer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -39,7 +39,7 @@ public class HttpClientContentDecoderFactoriesTest extends AbstractHttpClientSer
     public void testContentDecoderReturningEmptyRetainableDecodedBuffer(Scenario scenario) throws Exception
     {
         ArrayByteBufferPool.Tracking trackingBufferPool = new ArrayByteBufferPool.Tracking();
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(trackingBufferPool);
+        ByteBufferPool bufferPool = trackingBufferPool;
         start(scenario, new Handler.Abstract()
         {
             @Override

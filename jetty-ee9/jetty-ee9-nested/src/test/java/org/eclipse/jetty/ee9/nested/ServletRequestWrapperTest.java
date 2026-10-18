@@ -56,7 +56,7 @@ public class ServletRequestWrapperTest
             "Host: whatever\r\n" +
             "\n";
 
-        String response = _connector.getResponseAsString(request);
+        String response = _connector.getResponse(request);
         assertThat("Response", response, containsString("200"));
     }
 

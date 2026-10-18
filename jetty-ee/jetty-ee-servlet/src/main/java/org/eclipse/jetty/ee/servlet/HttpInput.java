@@ -102,7 +102,11 @@ public class HttpInput extends ServletInputStream
     {
         try (RetainableByteBuffer buffer = chunk.acquire())
         {
+            // Servlet API mandates to return the ByteBuffer in read mode.
+            int p = des.position();
             int consumed = buffer.appendTo(des);
+            des.position(p);
+            des.limit(p + consumed);
             _contentConsumed.add(consumed);
             return consumed;
         }

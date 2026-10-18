@@ -23,12 +23,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
@@ -48,14 +48,14 @@ public class CancelWriteTest
 {
     private Server server;
     private ArrayByteBufferPool.Tracking trackingBufferPool;
-    private WritableBufferPool bufferPool;
+    private ByteBufferPool bufferPool;
 
     @BeforeEach
     public void setUp()
     {
         trackingBufferPool = new ArrayByteBufferPool.Tracking();
         server = new Server(null, null, trackingBufferPool);
-        bufferPool = WritableBufferPool.wrap(trackingBufferPool);
+        bufferPool = trackingBufferPool;
     }
 
     @AfterEach

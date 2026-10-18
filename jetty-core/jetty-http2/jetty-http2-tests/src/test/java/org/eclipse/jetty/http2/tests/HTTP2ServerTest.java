@@ -56,6 +56,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -84,12 +85,12 @@ public class HTTP2ServerTest extends AbstractServerTest
 
         // No preface bytes.
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(client.getOutputStream());
             }
@@ -126,7 +127,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             }
         });
 
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -134,7 +135,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(client.getOutputStream());
             }
@@ -184,7 +185,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             }
         });
 
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -192,7 +193,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(client.getOutputStream());
             }
@@ -251,12 +252,12 @@ public class HTTP2ServerTest extends AbstractServerTest
             }
         });
 
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
-        RetainableByteBuffer.Accumulator ping = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator ping = new BufferAccumulator();
         generator.control(ping, new PingFrame(new byte[8], false));
-        try (RetainableByteBuffer buffer = ping.drain())
+        try (RetainableByteBuffer buffer = ping.take())
         {
             RetainableByteBuffer.Mutable copy = RetainableByteBuffer.Mutable.allocate((int)buffer.remaining(), true);
             accumulator.addRetained(copy);
@@ -268,7 +269,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         CountDownLatch latch = new CountDownLatch(1);
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(client.getOutputStream());
             }
@@ -303,12 +304,12 @@ public class HTTP2ServerTest extends AbstractServerTest
             }
         });
 
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
-        RetainableByteBuffer.Accumulator ping = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator ping = new BufferAccumulator();
         generator.control(ping, new PingFrame(new byte[8], false));
-        try (RetainableByteBuffer buffer = ping.drain())
+        try (RetainableByteBuffer buffer = ping.take())
         {
             RetainableByteBuffer.Mutable copy = RetainableByteBuffer.Mutable.allocate((int)buffer.remaining(), true);
             accumulator.addRetained(copy);
@@ -320,7 +321,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         CountDownLatch latch = new CountDownLatch(1);
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(client.getOutputStream());
             }
@@ -382,14 +383,14 @@ public class HTTP2ServerTest extends AbstractServerTest
         server.addConnector(connector2);
         server.start();
 
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         generator.control(accumulator, new HeadersFrame(1, metaData, null, true));
         try (Socket client = new Socket("localhost", connector2.getLocalPort()))
         {
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(client.getOutputStream());
             }
@@ -421,7 +422,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 }
             });
 
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -429,7 +430,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
             try (Socket client = new Socket("localhost", connector.getLocalPort()))
             {
-                try (RetainableByteBuffer buffer = accumulator.drain())
+                try (RetainableByteBuffer buffer = accumulator.take())
                 {
                     buffer.putTo(client.getOutputStream());
                 }
@@ -457,7 +458,7 @@ public class HTTP2ServerTest extends AbstractServerTest
     {
         testRequestWithContinuationFrames(null, () ->
         {
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -472,7 +473,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         PriorityFrame priority = new PriorityFrame(1, 13, 200, true);
         testRequestWithContinuationFrames(priority, () ->
         {
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -486,7 +487,7 @@ public class HTTP2ServerTest extends AbstractServerTest
     {
         testRequestWithContinuationFrames(null, () ->
         {
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -496,9 +497,9 @@ public class HTTP2ServerTest extends AbstractServerTest
                 int length = frameLength(headers, 0);
 
                 // Set the HEADERS frame length to zero.
-                headers.put(0, (byte)0x00)
-                    .put(1, (byte)0x00)
-                    .put(2, (byte)0x00);
+                headers.put(0, (byte)0x00);
+                headers.put(1, (byte)0x00);
+                headers.put(2, (byte)0x00);
 
                 // The HEADERS frame header.
                 accumulator.addRetained(headers.slice(0, Frame.HEADER_LENGTH));
@@ -520,7 +521,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         PriorityFrame priority = new PriorityFrame(1, 13, 200, true);
         testRequestWithContinuationFrames(null, () ->
         {
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -530,9 +531,9 @@ public class HTTP2ServerTest extends AbstractServerTest
                 int length = frameLength(headers, 0);
 
                 // Set the HEADERS frame length to just the priority.
-                headers.put(0, (byte)0x00)
-                    .put(1, (byte)0x00)
-                    .put(2, (byte)PriorityFrame.PRIORITY_LENGTH);
+                headers.put(0, (byte)0x00);
+                headers.put(1, (byte)0x00);
+                headers.put(2, (byte)PriorityFrame.PRIORITY_LENGTH);
 
                 // The HEADERS frame header and the priority.
                 accumulator.addRetained(headers.slice(0, Frame.HEADER_LENGTH + PriorityFrame.PRIORITY_LENGTH));
@@ -554,7 +555,7 @@ public class HTTP2ServerTest extends AbstractServerTest
     {
         testRequestWithContinuationFrames(null, () ->
         {
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -569,9 +570,9 @@ public class HTTP2ServerTest extends AbstractServerTest
                 // Insert an empty CONTINUATION frame, copying the first CONTINUATION frame header with a zero length.
                 RetainableByteBuffer.Mutable emptyContinuation = RetainableByteBuffer.Mutable.allocate(Frame.HEADER_LENGTH, false);
                 accumulator.addRetained(emptyContinuation);
-                emptyContinuation.put((byte)0x00)
-                    .put((byte)0x00)
-                    .put((byte)0x00);
+                emptyContinuation.put((byte)0x00);
+                emptyContinuation.put((byte)0x00);
+                emptyContinuation.put((byte)0x00);
                 for (int i = 3; i < Frame.HEADER_LENGTH; ++i)
                 {
                     emptyContinuation.put(headers.get(offset + i));
@@ -589,7 +590,7 @@ public class HTTP2ServerTest extends AbstractServerTest
     {
         testRequestWithContinuationFrames(null, () ->
         {
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
@@ -622,9 +623,9 @@ public class HTTP2ServerTest extends AbstractServerTest
 
     private RetainableByteBuffer.Mutable generate(Frame frame) throws Exception
     {
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, frame);
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             // Copy the frames into a single buffer, so that they can be modified at absolute positions.
             RetainableByteBuffer.Mutable result = RetainableByteBuffer.Mutable.allocate(Math.toIntExact(buffer.remaining()), false);
@@ -638,7 +639,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         return (buffer.getByteAsInt(offset) << 16) + (buffer.getByteAsInt(offset + 1) << 8) + buffer.getByteAsInt(offset + 2);
     }
 
-    private void testRequestWithContinuationFrames(PriorityFrame priorityFrame, Callable<RetainableByteBuffer.Accumulator> frames) throws Exception
+    private void testRequestWithContinuationFrames(PriorityFrame priorityFrame, Callable<BufferAccumulator> frames) throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
         startServer(new ServerSessionListener()
@@ -666,11 +667,11 @@ public class HTTP2ServerTest extends AbstractServerTest
         });
         generator = new Generator(bufferPool, 4);
 
-        RetainableByteBuffer.Accumulator accumulator = frames.call();
+        BufferAccumulator accumulator = frames.call();
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(client.getOutputStream());
             }

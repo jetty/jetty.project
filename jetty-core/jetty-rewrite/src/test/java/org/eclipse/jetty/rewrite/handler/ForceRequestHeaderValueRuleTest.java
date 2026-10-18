@@ -65,7 +65,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(200, response.getStatus());
         assertThat(response.getContent(), not(containsString("[Accept]")));
         assertThat(response.getContent(), containsString("[Host]: [local]"));
@@ -88,7 +88,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
             
             """;
 
-        String rawResponse = _connector.getResponseAsString(request);
+        String rawResponse = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
         assertThat(response.getContent(), containsString("[Accept]: [*/*]"));
@@ -114,7 +114,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
             
             """;
 
-        String rawResponse = _connector.getResponseAsString(request);
+        String rawResponse = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
         assertThat(response.getContent(), containsString("[Accept]: [text/*]"));
@@ -142,7 +142,7 @@ public class ForceRequestHeaderValueRuleTest extends AbstractRuleTest
             
             """;
 
-        String rawResponse = _connector.getResponseAsString(request);
+        String rawResponse = _connector.getResponse(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertEquals(200, response.getStatus());
         assertThat(response.getContent(), containsString("[Accept]: [application/*]"));

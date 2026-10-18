@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -31,7 +30,6 @@ import org.eclipse.jetty.http2.SessionContainer;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -285,7 +283,7 @@ public class GracefulShutdownTest extends AbstractTest
 
                 byte[] bytes = new byte[1024];
                 Arrays.fill(bytes, (byte)'X');
-                response.write(true, ByteBuffer.wrap(bytes), Callback.NOOP);
+                response.write(true, RetainableByteBuffer.wrap(bytes), Callback.NOOP);
                 return true;
             }
         });

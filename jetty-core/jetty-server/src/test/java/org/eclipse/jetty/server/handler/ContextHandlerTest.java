@@ -243,7 +243,7 @@ public class ContextHandlerTest
             
             """;
 
-        String rawResponse = connector.getResponseAsString(rawRequest);
+        String rawResponse = connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
     }
@@ -309,7 +309,7 @@ public class ContextHandlerTest
             
             """;
 
-        String rawResponse = connector.getResponseAsString(rawRequest);
+        String rawResponse = connector.getResponse(rawRequest);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
     }
@@ -337,7 +337,7 @@ public class ContextHandlerTest
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         // The original fields have been recycled.
         assertThat(stream.getResponse().getHttpFields().size(), equalTo(0));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+        assertThat(stream.getResponseContentAsString(), equalTo(helloHandler.getMessage()));
     }
 
     @ParameterizedTest
@@ -384,7 +384,7 @@ public class ContextHandlerTest
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         // The original fields have been recycled.
         assertThat(stream.getResponse().getHttpFields().size(), equalTo(0));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+        assertThat(stream.getResponseContentAsString(), equalTo(helloHandler.getMessage()));
     }
 
     @Test
@@ -404,7 +404,7 @@ public class ContextHandlerTest
 
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+        assertThat(stream.getResponseContentAsString(), equalTo(helloHandler.getMessage()));
 
         _contextHandler.setAvailable(false);
 
@@ -414,7 +414,7 @@ public class ContextHandlerTest
 
         assertThat(stream.getResponse().getStatus(), equalTo(503));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_HTML_8859_1.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), containsString("Service Unavailable"));
+        assertThat(stream.getResponseContentAsString(), containsString("Service Unavailable"));
 
         _contextHandler.setAvailable(true);
 
@@ -424,7 +424,7 @@ public class ContextHandlerTest
 
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+        assertThat(stream.getResponseContentAsString(), equalTo(helloHandler.getMessage()));
     }
 
     private void assertInContext(Request request)
@@ -763,8 +763,8 @@ public class ContextHandlerTest
         assertThat(stream.getResponse().getStatus(), equalTo(500));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_HTML_8859_1.asString()));
         assertThat(stream.getResponse().getHttpFields().size(), equalTo(0));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), containsString("<h1>Context: /ctx</h1>"));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), containsString("java.lang.RuntimeException: Testing"));
+        assertThat(stream.getResponseContentAsString(), containsString("<h1>Context: /ctx</h1>"));
+        assertThat(stream.getResponseContentAsString(), containsString("java.lang.RuntimeException: Testing"));
     }
 
     @Test
@@ -1336,7 +1336,7 @@ public class ContextHandlerTest
         _server.addConnector(connector);
         _server.start();
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("GET /ctx/ HTTP/1.0\r\n\r\n"));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("GET /ctx/ HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
 
         List<LocalConnector.LocalEndPoint> endPoints = new ArrayList<>();
@@ -1356,7 +1356,7 @@ public class ContextHandlerTest
         assertFalse(shutdown.isDone());
         assertThat(gracefulHandler.getCurrentRequestCount(), is(6L));
 
-        response = HttpTester.parseResponse(connector.getResponseAsString("GET /ctx/ HTTP/1.0\r\n\r\n"));
+        response = HttpTester.parseResponse(connector.getResponse("GET /ctx/ HTTP/1.0\r\n\r\n"));
         assertThat(response.getStatus(), is(HttpStatus.SERVICE_UNAVAILABLE_503));
 
         latch0.countDown();

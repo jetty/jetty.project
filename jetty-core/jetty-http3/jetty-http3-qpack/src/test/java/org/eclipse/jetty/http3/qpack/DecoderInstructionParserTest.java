@@ -19,7 +19,8 @@ import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstru
 import org.eclipse.jetty.http3.qpack.internal.instruction.LiteralNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SetCapacityInstruction;
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DecoderInstructionParserTest
 {
-    private final WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
+    private final ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
     private DecoderInstructionParser _instructionParser;
     private DecoderParserDebugHandler _handler;
 
@@ -150,8 +151,8 @@ public class DecoderInstructionParserTest
 
     private RetainableByteBuffer getEncodedValue(Instruction instruction)
     {
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         instruction.encode(bufferPool, accumulator);
-        return accumulator.drain();
+        return accumulator.take();
     }
 }

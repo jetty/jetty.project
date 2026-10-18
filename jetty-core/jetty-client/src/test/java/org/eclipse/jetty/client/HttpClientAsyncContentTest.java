@@ -205,7 +205,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, RetainableByteBuffer.wrap(new byte[1024]), callback);
+                response.write(true, RetainableByteBuffer.allocate(1024, false), callback);
                 return true;
             }
         });

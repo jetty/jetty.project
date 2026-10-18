@@ -271,15 +271,18 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         else
                         {
                             // Retain because multiple frames can be parsed from the same QUIC chunk.
-                            Content.Chunk quicChunk = tryRetainData();
-                            if (quicChunk == null)
-                                throw new EofException("stream closed while reading");
-                            try (RetainableByteBuffer data = dataFrame.acquire())
+                            try (Content.Chunk quicChunk = tryRetainData())
                             {
-                                Content.Chunk h3Chunk = Content.Chunk.from(data, dataFrame.isLast());
-                                if (h3Chunk.isLast())
-                                    tryReleaseData(true);
-                                yield h3Chunk;
+                                if (quicChunk == null)
+                                    throw new EofException("stream closed while reading");
+                                // The H3 chunk holds its own reference to the data, release the QUIC chunk.
+                                try (RetainableByteBuffer data = dataFrame.acquire())
+                                {
+                                    Content.Chunk h3Chunk = Content.Chunk.from(data, dataFrame.isLast());
+                                    if (h3Chunk.isLast())
+                                        tryReleaseData(true);
+                                    yield h3Chunk;
+                                }
                             }
                         }
                     }
@@ -331,6 +334,10 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                                 return ParseResult.BLOCKED_FRAME;
 
                             tryReleaseData(true);
+
+                            // Do not report EOF if the session failed, the failure is notified to the stream.
+                            if (parser.isFailed())
+                                return ParseResult.NO_FRAME;
                         }
                     }
                 }
@@ -351,7 +358,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 if (Content.Chunk.isFailure(filled))
                     throw new UncheckedIOException(IO.rethrow(filled.getFailure()));
 
-                ParseResult result = filled.isLast() ? ParseResult.EOF : ParseResult.NO_FRAME;
+                // The parser must know about the end of the stream to detect truncated frames.
+                if (filled.isLast())
+                    parser.parse(RetainableByteBuffer.empty(), true);
+
+                ParseResult result = filled.isLast() && !parser.isFailed() ? ParseResult.EOF : ParseResult.NO_FRAME;
                 filled.release();
                 return result;
             }

@@ -26,8 +26,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
-import org.eclipse.jetty.util.buffer.WritableBufferPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +84,7 @@ public class HttpSenderOverHTTP extends HttpSender
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to send headers on exchange {}", exchange, x);
+            content = Retainable.dispose(content);
             callback.failed(x);
         }
     }
@@ -106,6 +107,7 @@ public class HttpSenderOverHTTP extends HttpSender
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Unable to send content on {}", exchange, x);
+            content = Retainable.dispose(content);
             callback.failed(x);
         }
     }
@@ -159,7 +161,7 @@ public class HttpSenderOverHTTP extends HttpSender
         {
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
             HttpExchange exchange = getHttpExchange();
-            WritableBufferPool bufferPool = org.eclipse.jetty.io.WritableBufferPool.wrap(httpClient.getByteBufferPool());
+            ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             int requestHeadersSize = httpClient.getRequestBufferSize();
             int maxRequestHeadersSize = httpClient.getMaxRequestHeadersSize();
             boolean useDirectBuffers = httpClient.isUseOutputDirectByteBuffers();
@@ -168,7 +170,6 @@ public class HttpSenderOverHTTP extends HttpSender
             RetainableByteBuffer.Mutable headerBuffer = null;
             RetainableByteBuffer.Mutable chunkBuffer = null;
             RetainableByteBuffer contentBuffer = content;
-            boolean contentSliced = false;
             try
             {
                 while (true)
@@ -218,10 +219,17 @@ public class HttpSenderOverHTTP extends HttpSender
                         }
                         case FLUSH:
                         {
-                            if (generator.isChunking() && contentBuffer != null && contentBuffer.remaining() > chunkMaxLength)
+                            if (contentBuffer != null)
                             {
-                                contentBuffer = contentBuffer.sliceAndConsume(chunkMaxLength);
-                                contentSliced = true;
+                                if (generator.isChunking() && contentBuffer.remaining() > chunkMaxLength)
+                                {
+                                    contentBuffer = contentBuffer.sliceAndConsume(chunkMaxLength);
+                                }
+                                else
+                                {
+                                    contentBuffer.retain();
+                                    content = Retainable.dispose(content);
+                                }
                             }
 
                             long bytes = (headerBuffer != null ? headerBuffer.remaining() : 0) +
@@ -267,11 +275,15 @@ public class HttpSenderOverHTTP extends HttpSender
             {
                 Retainable.dispose(headerBuffer);
                 Retainable.dispose(chunkBuffer);
-                // Pairs either the slice above or the retain done in sendHeaders().
                 Retainable.dispose(contentBuffer);
-                if (!contentSliced)
-                    content = null;
             }
+        }
+
+        @Override
+        protected void onCompleted(Throwable causeOrNull)
+        {
+            content = Retainable.dispose(content);
+            super.onCompleted(causeOrNull);
         }
 
         @Override
@@ -300,11 +312,10 @@ public class HttpSenderOverHTTP extends HttpSender
         protected Action process() throws Exception
         {
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
-            WritableBufferPool bufferPool = org.eclipse.jetty.io.WritableBufferPool.wrap(httpClient.getByteBufferPool());
+            ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             boolean useDirectBuffers = httpClient.isUseOutputDirectByteBuffers();
             int chunkMaxLength = generator.getChunkMaxLength();
             RetainableByteBuffer contentBuffer = content;
-            boolean contentSliced = false;
             while (true)
             {
                 HttpGenerator.Result result = generator.generateRequest(null, null, chunkBuffer, contentBuffer, lastContent);
@@ -326,28 +337,33 @@ public class HttpSenderOverHTTP extends HttpSender
                     }
                     case FLUSH:
                     {
-                        if (generator.isChunking() && contentBuffer != null && contentBuffer.remaining() > chunkMaxLength)
+                        if (contentBuffer != null)
                         {
-                            contentBuffer = contentBuffer.sliceAndConsume(chunkMaxLength);
-                            contentSliced = true;
+                            if (generator.isChunking() && contentBuffer.remaining() > chunkMaxLength)
+                            {
+                                contentBuffer = contentBuffer.sliceAndConsume(chunkMaxLength);
+                            }
+                            else
+                            {
+                                contentBuffer.retain();
+                                content = Retainable.dispose(content);
+                            }
                         }
 
                         long bytes = (chunkBuffer != null ? chunkBuffer.remaining() : 0) +
                             (contentBuffer != null ? contentBuffer.remaining() : 0);
                         getHttpChannel().getHttpConnection().addBytesOut(bytes);
 
-                        EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
-                        RetainableByteBuffer toWrite = chunkBuffer != null ? RetainableByteBuffer.merge(chunkBuffer, contentBuffer) : contentBuffer;
-                        endPoint.write(toWrite, this);
-
-                        if (chunkBuffer != null)
-                            Retainable.dispose(toWrite);
-                        // Pairs either the slice above or the retain done in sendContent().
-                        Retainable.dispose(contentBuffer);
-                        if (!contentSliced)
-                            content = null;
-
-                        return Action.SCHEDULED;
+                        try (RetainableByteBuffer c = contentBuffer)
+                        {
+                            RetainableByteBuffer merged = chunkBuffer == null ? null : RetainableByteBuffer.merge(chunkBuffer, c);
+                            try (merged)
+                            {
+                                EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
+                                endPoint.write(merged != null ? merged : c, this);
+                                return Action.SCHEDULED;
+                            }
+                        }
                     }
                     case SHUTDOWN_OUT:
                     {
@@ -392,6 +408,7 @@ public class HttpSenderOverHTTP extends HttpSender
         private void release()
         {
             chunkBuffer = Retainable.dispose(chunkBuffer);
+            content = Retainable.dispose(content);
             reset();
         }
     }

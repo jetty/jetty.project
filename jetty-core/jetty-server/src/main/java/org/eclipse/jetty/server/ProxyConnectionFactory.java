@@ -29,7 +29,6 @@ import java.util.Map;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.StringUtil;
@@ -167,7 +166,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 try
                 {
                     if (_buffer == null)
-                        _buffer = WritableBufferPool.wrap(_connector.getByteBufferPool()).acquire(getInputBufferSize(), true);
+                        _buffer = _connector.getByteBufferPool().acquire(getInputBufferSize(), true);
 
                     while (_index < LF_INDEX)
                     {

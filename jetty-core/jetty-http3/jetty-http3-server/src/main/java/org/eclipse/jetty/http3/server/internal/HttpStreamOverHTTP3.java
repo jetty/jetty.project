@@ -357,25 +357,26 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 System.lineSeparator(), response.getHttpFields());
         }
 
+        RetainableByteBuffer data = hasContent ? content : null;
         boolean dl = dataLast;
         HeadersFrame tf = trailersFrame;
 
         // The content is sent after the headers have been written,
         // possibly asynchronously, so it must be retained until then.
-        if (content != null)
-            content.retain();
+        if (data != null)
+            data.retain();
 
         stream.respond(headersFrame, Promise.Invocable.from(callback.getInvocationType(), _ ->
         {
-            if (content != null)
+            if (data != null)
             {
                 // Releases the content retained above.
-                try (content)
+                try (data)
                 {
                     if (tf != null)
-                        sendDataAndTrailer(content, tf, callback);
+                        sendDataAndTrailer(data, tf, callback);
                     else
-                        sendData(content, dl, lastContent, callback);
+                        sendData(data, dl, lastContent, callback);
                 }
             }
             else
@@ -387,7 +388,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
             }
         }, x ->
         {
-            Retainable.dispose(content);
+            Retainable.dispose(data);
             callback.failed(x);
         }));
     }
@@ -395,11 +396,11 @@ public class HttpStreamOverHTTP3 implements HttpStream
     private void sendContent(MetaData.Request request, MetaData.Response response, RetainableByteBuffer content, boolean lastContent, Callback callback)
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
-        if (lastContent && content == null)
-            content = RetainableByteBuffer.empty();
         boolean hasContent = content != null && content.hasRemaining() && !isHeadRequest;
         if (hasContent || (lastContent && !isTunnel(request, response)))
         {
+            if (!hasContent)
+                content = RetainableByteBuffer.empty();
             if (lastContent)
             {
                 HttpFields trailers = retrieveTrailers();

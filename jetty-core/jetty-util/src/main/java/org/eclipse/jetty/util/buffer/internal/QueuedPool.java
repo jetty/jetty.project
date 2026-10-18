@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.io.internal;
+package org.eclipse.jetty.util.buffer.internal;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,17 +29,19 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 
-/**
- * <p>A {@link Queue} based implementation of {@link Pool}.</p>
- * <p>Entries are taken out of the pool when they are acquired
- * and they are added back when they are released which means
- * acquired and reserved entries do not account for the
- * {@code maxSize} calculation. This also means {@link QueuedPool}
- * is resistant to "release leaks".</p>
- * <p>This implementation does not support multiplexing.</p>
- *
- * @param <P> the type of the pooled objects
- */
+/// A [Queue] based implementation of [Pool].
+///
+/// Entries are taken out of the pool when they are acquired,
+/// and they are added back when they are released.
+/// Acquired and reserved entries do not account for the
+/// `maxSize` calculation.
+///
+/// [QueuedPool] is resistant to "release leaks": the leaked
+/// instance will just be garbage collected.
+///
+/// This implementation does not support multiplexing.
+///
+/// @param <P> the type of the pooled objects
 public class QueuedPool<P> implements Pool<P>, Dumpable
 {
     // All code that uses these three fields is fully thread-safe.

@@ -342,7 +342,7 @@ public class StreamEndPoint implements EndPoint
 
     /**
      * <p>Fills from this {@code StreamEndPoint}.</p>
-     * <p>This method should be used in alternative to {@link #fill(ByteBuffer)},
+     * <p>This method should be used in alternative to {@link #fill(RetainableByteBuffer.Mutable)},
      * when the {@link Connection} installed on top of this {@code StreamEndPoint}
      * needs to know both the bytes and whether the QUIC data is the last in the
      * stream, for example in HTTP/3.</p>

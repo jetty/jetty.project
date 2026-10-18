@@ -619,7 +619,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, RetainableByteBuffer.wrap(new byte[length]), callback);
+                response.write(true, RetainableByteBuffer.allocate(length, false), callback);
                 return true;
             }
         });

@@ -19,10 +19,10 @@ import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.parser.ControlParser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +31,12 @@ public class ControlStreamConnection extends AbstractConnection.NonBlocking impl
 {
     private static final Logger LOG = LoggerFactory.getLogger(ControlStreamConnection.class);
 
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final ControlParser parser;
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer.Mutable buffer;
 
-    public ControlStreamConnection(StreamEndPoint endPoint, Executor executor, WritableBufferPool bufferPool, ControlParser parser)
+    public ControlStreamConnection(StreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ControlParser parser)
     {
         super(endPoint, executor);
         this.bufferPool = bufferPool;
@@ -62,8 +62,8 @@ public class ControlStreamConnection extends AbstractConnection.NonBlocking impl
     @Override
     public void onUpgradeTo(RetainableByteBuffer.Mutable upgrade)
     {
-        upgrade.retain();
-        buffer = upgrade;
+        buffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+        buffer.put(upgrade);
     }
 
     @Override
@@ -89,7 +89,8 @@ public class ControlStreamConnection extends AbstractConnection.NonBlocking impl
                 parser.parse(buffer);
 
                 // Then read from the EndPoint.
-                int filled = getEndPoint().fill(buffer.clear());
+                buffer.clear();
+                int filled = getEndPoint().fill(buffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled {} on {}", filled, this);
 

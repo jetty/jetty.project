@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 import com.github.luben.zstd.ZstdCompressCtx;
 import org.eclipse.jetty.compression.zstandard.internal.ZstandardCompressCtxPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Pool;
@@ -243,7 +242,7 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
     public void testNewEncoderSinkWhenNotStarted() throws Exception
     {
         zstd = new ZstandardCompression();
-        zstd.setBufferPool(WritableBufferPool.wrap(trackingPool));
+        zstd.setBufferPool(trackingPool);
         Content.Sink sink = Content.Sink.from(new ByteArrayOutputStream());
         assertThrows(IllegalStateException.class, () -> zstd.newEncoderSink(sink));
 
@@ -302,7 +301,7 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
     public void testCompressPoolCapacity() throws Exception
     {
         zstd = new ZstandardCompression();
-        zstd.setBufferPool(WritableBufferPool.wrap(trackingPool));
+        zstd.setBufferPool(trackingPool);
         assertThat(zstd.getCompressPoolCapacity(), is(ZstandardCompressCtxPool.DEFAULT_CAPACITY));
         zstd.start();
         ZstandardCompressCtxPool defaultCompressCtxPool = zstd.getCompressCtxPool();
@@ -354,7 +353,7 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
                 };
             }
         };
-        zstd.setBufferPool(WritableBufferPool.wrap(trackingPool));
+        zstd.setBufferPool(trackingPool);
         zstd.setCompressPoolCapacity(0);
         zstd.start();
         assertThat(zstd.getCompressCtxPool().getPool(), nullValue());

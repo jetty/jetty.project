@@ -133,11 +133,11 @@ public class LowLevelQuicheTest
         ForeignQuicheConnection serverQuicheConnection = entry.getValue();
 
         // client sends 16 bytes of payload over stream 0
-        RetainableByteBuffer data = RetainableByteBuffer.Mutable.allocate(16, true)
-            .putInt(0xdeadbeef)
-            .putInt(0xcafebabe)
-            .putInt(0xdeadc0de)
-            .putInt(0xbaddecaf);
+        RetainableByteBuffer.Mutable data = RetainableByteBuffer.Mutable.allocate(16, true);
+        data.putInt(0xdeadbeef);
+        data.putInt(0xcafebabe);
+        data.putInt(0xdeadc0de);
+        data.putInt(0xbaddecaf);
         assertThat(clientQuicheConnection.feedClearBytesForStream(0, data.slice(), false), is(16L));
         drainClientToFeedServer(entry, 59);
 
@@ -191,11 +191,12 @@ public class LowLevelQuicheTest
         ForeignQuicheConnection serverQuicheConnection = entry.getValue();
 
         // client sends 16 bytes of payload over stream 0 and finish it
-        assertThat(clientQuicheConnection.feedClearBytesForStream(0, RetainableByteBuffer.Mutable.allocate(16, true)
-            .putInt(0xdeadbeef)
-            .putInt(0xcafebabe)
-            .putInt(0xdeadc0de)
-            .putInt(0xbaddecaf), false), is(16L));
+        RetainableByteBuffer.Mutable data = RetainableByteBuffer.Mutable.allocate(16, true);
+        data.putInt(0xdeadbeef);
+        data.putInt(0xcafebabe);
+        data.putInt(0xdeadc0de);
+        data.putInt(0xbaddecaf);
+        assertThat(clientQuicheConnection.feedClearBytesForStream(0, data, false), is(16L));
         clientQuicheConnection.feedFinForStream(0);
         drainClientToFeedServer(entry, 59);
 

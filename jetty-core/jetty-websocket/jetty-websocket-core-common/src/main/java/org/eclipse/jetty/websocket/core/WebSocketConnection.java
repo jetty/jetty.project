@@ -25,12 +25,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -86,7 +86,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     }
 
     private final AutoLock lock = new AutoLock();
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final Generator generator;
     private final Parser parser;
     private final WebSocketCoreSession coreSession;
@@ -145,7 +145,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         Objects.requireNonNull(executor, "Executor");
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
 
-        this.bufferPool = WritableBufferPool.wrap(bufferPool);
+        this.bufferPool = bufferPool;
         this.coreSession = coreSession;
         this.generator = new Generator();
         this.parser = new Parser(this.bufferPool, coreSession);
@@ -264,10 +264,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         flusher.onClose(cause);
 
         if (networkBuffer != null)
-        {
-            networkBuffer.clear();
-            releaseNetworkBuffer();
-        }
+            releaseNetworkBuffer(true);
     }
 
     @Override
@@ -343,18 +340,17 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return bufferPool.acquire(capacity, isUseInputDirectByteBuffers());
     }
 
-    private void releaseNetworkBuffer()
+    private void releaseNetworkBuffer(boolean force)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("releaseNetworkBuffer() released buffer {}", networkBuffer);
+            LOG.debug("releaseNetworkBuffer({}) released buffer {}", force, networkBuffer);
         if (networkBuffer == null)
             throw new IllegalStateException();
 
-        if (networkBuffer.hasRemaining())
+        if (!force && networkBuffer.hasRemaining())
             throw new IllegalStateException();
 
-        networkBuffer.release();
-        networkBuffer = null;
+        networkBuffer = Retainable.dispose(networkBuffer);
     }
 
     @Override
@@ -415,7 +411,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 {
                     fillingAndParsing = false;
                     if (networkBuffer != null && !networkBuffer.hasRemaining())
-                        releaseNetworkBuffer();
+                        releaseNetworkBuffer(false);
                     return false;
                 }
                 case DEMANDING, CANCELLED ->
@@ -522,12 +518,12 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
                     if (!getEndPoint().isOpen())
                     {
-                        releaseNetworkBuffer();
+                        releaseNetworkBuffer(false);
                         coreSession.onEof();
                         return;
                     }
 
-                    // If more references that 1(us), don't refill into buffer and risk compaction.
+                    // If more references than 1 (this class), don't refill into the buffer that will be cleared below.
                     if (networkBuffer.isRetained())
                         reacquireNetworkBuffer();
 
@@ -540,14 +536,14 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
                     if (filled < 0)
                     {
-                        releaseNetworkBuffer();
+                        releaseNetworkBuffer(false);
                         coreSession.onEof();
                         return;
                     }
 
                     if (filled == 0)
                     {
-                        releaseNetworkBuffer();
+                        releaseNetworkBuffer(false);
                         registerFillInterested = true;
                         return;
                     }
@@ -561,10 +557,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     LOG.debug("Error during fillAndParse() {}", t.toString());
 
                 if (networkBuffer != null)
-                {
-                    networkBuffer.clear();
-                    releaseNetworkBuffer();
-                }
+                    releaseNetworkBuffer(true);
                 coreSession.processConnectionError(t, Callback.NOOP);
             }
             finally

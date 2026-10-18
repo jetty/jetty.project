@@ -31,10 +31,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +47,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private final Runnable receiveNext = this::receiveNext;
     private final LongAdder inMessages = new LongAdder();
     private final HttpParser parser;
-    private final WritableBufferPool byteBufferPool;
+    private final ByteBufferPool byteBufferPool;
     private RetainableByteBuffer.Mutable networkBuffer;
     private State state = State.STATUS;
     private boolean unsolicited;
@@ -68,7 +68,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             parser.setHeaderCacheSize(httpTransport.getHeaderCacheSize());
             parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
         }
-        byteBufferPool = WritableBufferPool.wrap(httpClient.getByteBufferPool());
+        byteBufferPool = httpClient.getByteBufferPool();
     }
 
     void receive()
@@ -156,7 +156,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             if (failed)
                 getHttpConnection().close(failure);
-        }, x -> getHttpConnection().close(failure)));
+        }, _ -> getHttpConnection().close(failure)));
     }
 
     @Override
@@ -271,7 +271,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
                 assert !networkBuffer.hasRemaining();
 
-                int read = endPoint.fill(networkBuffer.clear());
+                networkBuffer.clear();
+                int read = endPoint.fill(networkBuffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Read {} bytes in {} from {} in {}", read, networkBuffer, endPoint, this);
 
@@ -373,7 +374,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Discarding unexpected content after response {}: {} in {}", status, networkBuffer, this);
-                            networkBuffer.clear();
+                            // Call consume() rather than clear(), as networkBuffer
+                            // may still be retained by applications as a response
+                            // content slice of the networkBuffer itself.
+                            networkBuffer.consume(networkBuffer.remaining());
                         }
                     }
 
@@ -396,7 +400,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             if (disposed)
             {
                 if (networkBuffer != null)
-                    networkBuffer.clear();
+                    networkBuffer.consume(networkBuffer.remaining());
                 return false;
             }
 
@@ -522,7 +526,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null || unsolicited)
         {
             // We received an unsolicited response from the server.
-            networkBuffer.clear();
+            networkBuffer.consume(networkBuffer.remaining());
             getHttpConnection().close();
             return false;
         }

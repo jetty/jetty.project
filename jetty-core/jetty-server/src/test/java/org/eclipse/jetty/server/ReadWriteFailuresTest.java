@@ -95,7 +95,7 @@ public class ReadWriteFailuresTest
             Content-Length: 1
             
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request, 5, TimeUnit.SECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.ACCEPTED_202, response.getStatus());
         assertEquals(content, response.getContent());
@@ -237,7 +237,7 @@ public class ReadWriteFailuresTest
             
             %s
             """.formatted(content.length(), content);
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(request, 5, TimeUnit.SECONDS));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request, 5, TimeUnit.SECONDS));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
         assertThat(response.getContent(), containsString("QuietException"));

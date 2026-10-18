@@ -17,8 +17,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
@@ -40,20 +38,22 @@ import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class FrameGenerator
 {
-    private final WritableBufferPool byteBufferPool;
+    private final ByteBufferPool byteBufferPool;
     private boolean useDirectBuffers;
 
     public FrameGenerator(ByteBufferPool byteBufferPool)
     {
-        this.byteBufferPool = WritableBufferPool.wrap(byteBufferPool);
+        this.byteBufferPool = byteBufferPool;
         setUseDirectBuffers(true);
     }
 
-    public WritableBufferPool getByteBufferPool()
+    public ByteBufferPool getByteBufferPool()
     {
         return byteBufferPool;
     }
@@ -68,7 +68,7 @@ public class FrameGenerator
         this.useDirectBuffers = useDirectBuffers;
     }
 
-    public long generate(RetainableByteBuffer.Accumulator accumulator, Frame frame)
+    public long generate(BufferAccumulator accumulator, Frame frame)
     {
         long type = frame.getFrameType();
         FrameType frameType = FrameType.from(type);
@@ -97,12 +97,12 @@ public class FrameGenerator
         };
     }
 
-    public BytesGenerated generate(RetainableByteBuffer.Accumulator accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
+    public BytesGenerated generate(BufferAccumulator accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
     {
         return generateStreamFrame(accumulator, frame, maxDataBytes, maxFrameBytes);
     }
 
-    private long generateNoContentFrame(RetainableByteBuffer.Accumulator accumulator, Frame frame)
+    private long generateNoContentFrame(BufferAccumulator accumulator, Frame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -113,7 +113,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generateAckFrame(RetainableByteBuffer.Accumulator accumulator, AckFrame frame)
+    private long generateAckFrame(BufferAccumulator accumulator, AckFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -154,7 +154,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generateResetStreamFrame(RetainableByteBuffer.Accumulator accumulator, ResetFrame frame)
+    private long generateResetStreamFrame(BufferAccumulator accumulator, ResetFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -174,7 +174,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generateStopSendingFrame(RetainableByteBuffer.Accumulator accumulator, StopSendingFrame frame)
+    private long generateStopSendingFrame(BufferAccumulator accumulator, StopSendingFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -191,7 +191,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generateCryptoFrame(RetainableByteBuffer.Accumulator accumulator, CryptoFrame frame)
+    private long generateCryptoFrame(BufferAccumulator accumulator, CryptoFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -210,7 +210,7 @@ public class FrameGenerator
         return capacity + length;
     }
 
-    private long generateNewTokenFrame(RetainableByteBuffer.Accumulator accumulator, NewTokenFrame frame)
+    private long generateNewTokenFrame(BufferAccumulator accumulator, NewTokenFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -226,7 +226,7 @@ public class FrameGenerator
         return capacity + length;
     }
 
-    private BytesGenerated generateStreamFrame(RetainableByteBuffer.Accumulator accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
+    private BytesGenerated generateStreamFrame(BufferAccumulator accumulator, StreamFrame frame, int maxDataBytes, int maxFrameBytes)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -276,7 +276,7 @@ public class FrameGenerator
         }
     }
 
-    private long generateMaxDataFrame(RetainableByteBuffer.Accumulator accumulator, MaxDataFrame frame)
+    private long generateMaxDataFrame(BufferAccumulator accumulator, MaxDataFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -290,7 +290,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generateStreamMaxDataFrame(RetainableByteBuffer.Accumulator accumulator, StreamMaxDataFrame frame)
+    private long generateStreamMaxDataFrame(BufferAccumulator accumulator, StreamMaxDataFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -307,7 +307,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generateMaxStreamsFrame(RetainableByteBuffer.Accumulator accumulator, MaxStreamsFrame frame)
+    private long generateMaxStreamsFrame(BufferAccumulator accumulator, MaxStreamsFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -321,7 +321,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generateDataBlockedFrame(RetainableByteBuffer.Accumulator accumulator, DataBlockedFrame frame)
+    private long generateDataBlockedFrame(BufferAccumulator accumulator, DataBlockedFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -335,7 +335,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generateStreamDataBlockedFrame(RetainableByteBuffer.Accumulator accumulator, StreamDataBlockedFrame frame)
+    private long generateStreamDataBlockedFrame(BufferAccumulator accumulator, StreamDataBlockedFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -352,7 +352,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generateStreamsBlockedFrame(RetainableByteBuffer.Accumulator accumulator, StreamsBlockedFrame frame)
+    private long generateStreamsBlockedFrame(BufferAccumulator accumulator, StreamsBlockedFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -366,7 +366,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generateNewConnectionIdFrame(RetainableByteBuffer.Accumulator accumulator, NewConnectionIdFrame frame)
+    private long generateNewConnectionIdFrame(BufferAccumulator accumulator, NewConnectionIdFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -389,7 +389,7 @@ public class FrameGenerator
         return capacity + connectionId.length + resetToken.length;
     }
 
-    private long generateRetireConnectionIdFrame(RetainableByteBuffer.Accumulator accumulator, RetireConnectionIdFrame frame)
+    private long generateRetireConnectionIdFrame(BufferAccumulator accumulator, RetireConnectionIdFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -403,7 +403,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generatePathChallengeFrame(RetainableByteBuffer.Accumulator accumulator, PathChallengeFrame frame)
+    private long generatePathChallengeFrame(BufferAccumulator accumulator, PathChallengeFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -417,7 +417,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generatePathResponseFrame(RetainableByteBuffer.Accumulator accumulator, PathResponseFrame frame)
+    private long generatePathResponseFrame(BufferAccumulator accumulator, PathResponseFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);
@@ -431,7 +431,7 @@ public class FrameGenerator
         return capacity;
     }
 
-    private long generateConnectionCloseFrame(RetainableByteBuffer.Accumulator accumulator, ConnectionCloseFrame frame)
+    private long generateConnectionCloseFrame(BufferAccumulator accumulator, ConnectionCloseFrame frame)
     {
         long frameType = frame.getFrameType();
         int capacity = VarLenInt.length(frameType);

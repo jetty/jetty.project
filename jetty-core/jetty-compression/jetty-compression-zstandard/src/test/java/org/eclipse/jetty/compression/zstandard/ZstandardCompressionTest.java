@@ -18,8 +18,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +37,7 @@ public class ZstandardCompressionTest
         for (int i = 0; i < 20; i++)
         {
             ZstandardCompression zstd = new ZstandardCompression();
-            zstd.setBufferPool(WritableBufferPool.wrap(new ArrayByteBufferPool()));
+            zstd.setBufferPool(new ArrayByteBufferPool());
             zstd.start();
             compressions.add(zstd);
         }

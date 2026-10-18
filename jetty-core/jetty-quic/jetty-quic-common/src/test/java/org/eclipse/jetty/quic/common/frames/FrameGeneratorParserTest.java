@@ -16,8 +16,6 @@ package org.eclipse.jetty.quic.common.frames;
 import java.util.List;
 import java.util.function.Function;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -29,6 +27,9 @@ import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,9 +51,9 @@ public class FrameGeneratorParserTest
 
     private <T extends Frame> List<T> generateParse(T frame)
     {
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.generate(accumulator, frame);
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             return parse(buffer);
         }
@@ -108,9 +109,9 @@ public class FrameGeneratorParserTest
     {
         byte[] bytes = "DATA".getBytes();
         StreamFrame frame = new StreamFrame(3290901290300L, RetainableByteBuffer.wrap(bytes), 120911129347656L, true, true);
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.generate(accumulator, frame, bytes.length, Frame.DEFAULT_MAX_SIZE);
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             List<StreamFrame> list = parse(buffer);
             list.forEach(result -> assertStreamFrameEqual(frame, result));

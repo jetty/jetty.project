@@ -85,7 +85,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -116,7 +116,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -146,7 +146,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -191,7 +191,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -231,7 +231,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        String response = connector.getResponseAsString("""
+        String response = connector.getResponse("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -261,7 +261,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -293,7 +293,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -335,7 +335,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        String response = connector.getResponseAsString("""
+        String response = connector.getResponse("""
             GET / HTTP/1.1
             Host: localhost
             
@@ -713,7 +713,7 @@ public class StateTrackingHandlerTest
         });
         start(stateTrackingHandler);
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
             GET / HTTP/1.1
             Host: localhost
             

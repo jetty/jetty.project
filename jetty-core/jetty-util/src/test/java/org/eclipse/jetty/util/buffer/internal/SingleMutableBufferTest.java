@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.internal;
+package org.eclipse.jetty.util.buffer.internal;
 
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;

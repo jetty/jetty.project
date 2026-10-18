@@ -19,10 +19,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,7 +75,7 @@ public abstract class AbstractZstdTest
     protected void startZstd() throws Exception
     {
         zstd = new ZstandardCompression();
-        zstd.setBufferPool(WritableBufferPool.wrap(trackingPool));
+        zstd.setBufferPool(trackingPool);
         zstd.start();
     }
 }

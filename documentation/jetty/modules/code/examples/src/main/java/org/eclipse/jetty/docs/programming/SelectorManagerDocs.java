@@ -15,7 +15,6 @@ package org.eclipse.jetty.docs.programming;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
@@ -28,13 +27,12 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 @SuppressWarnings("unused")
@@ -181,12 +179,12 @@ public class SelectorManagerDocs
             {
                 try
                 {
-                    ByteBuffer buffer = BufferUtil.allocate(1024);
+                    RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, true);
                     int filled = getEndPoint().fill(buffer);
                     if (filled > 0)
                     {
                         // Filled some bytes, echo them back.
-                        getEndPoint().write(this, buffer);
+                        getEndPoint().write(buffer, this);
                     }
                     else if (filled == 0)
                     {
@@ -228,10 +226,10 @@ public class SelectorManagerDocs
         // tag::echo-correct[]
         class EchoConnection extends AbstractConnection
         {
-            private final WritableBufferPool.Sized bufferPool;
+            private final ByteBufferPool.Sized bufferPool;
             private final IteratingCallback callback = new EchoIteratingCallback();
 
-            public EchoConnection(EndPoint endPoint, WritableBufferPool.Sized bufferPool, Executor executor)
+            public EchoConnection(EndPoint endPoint, ByteBufferPool.Sized bufferPool, Executor executor)
             {
                 super(endPoint, executor);
                 this.bufferPool = bufferPool;

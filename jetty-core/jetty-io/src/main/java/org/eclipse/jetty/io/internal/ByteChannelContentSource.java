@@ -22,12 +22,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -40,7 +39,7 @@ public class ByteChannelContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();
     private final SerializedInvoker _invoker = new SerializedInvoker(ByteChannelContentSource.class);
-    private final WritableBufferPool.Sized _bufferPool;
+    private final ByteBufferPool.Sized _bufferPool;
     private final long _offset;
     private final long _length;
     private ByteChannel _byteChannel;
@@ -51,7 +50,7 @@ public class ByteChannelContentSource implements Content.Source
 
     /**
      * Create a {@link ByteChannelContentSource} which reads from a {@link ByteChannel}.
-     * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+     * @param byteBufferPool The {@link ByteBufferPool.Sized} to use for any internal buffers.
      * @param byteChannel The {@link ByteChannel}s to use as the source.
      */
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel)
@@ -63,7 +62,7 @@ public class ByteChannelContentSource implements Content.Source
      * Create a {@link ByteChannelContentSource} which reads from a {@link ByteChannel}.
      * If the {@link ByteChannel} is an instance of {@link SeekableByteChannel} the implementation will use
      * {@link SeekableByteChannel#position(long)} to navigate to the starting offset.
-     * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+     * @param byteBufferPool The {@link ByteBufferPool.Sized} to use for any internal buffers.
      * @param byteChannel The {@link ByteChannel}s to use as the source.
      * @param offset the offset byte of the content to start from.
      *               Must be greater than or equal to 0 and less than the content length (if known).
@@ -74,7 +73,7 @@ public class ByteChannelContentSource implements Content.Source
      */
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel, long offset, long length)
     {
-        _bufferPool = byteBufferPool != null ? WritableBufferPool.wrap(byteBufferPool) : WritableBufferPool.SIZED_NON_POOLING;
+        _bufferPool = byteBufferPool != null ? byteBufferPool : ByteBufferPool.SIZED_NON_POOLING;
         _byteChannel = byteChannel;
         _offset = offset;
         _length = TypeUtil.checkOffsetLengthSize(offset, length, -1L);
@@ -168,7 +167,8 @@ public class ByteChannelContentSource implements Content.Source
                     // Discard all bytes read until we reach the staring offset.
                     while (_offsetRemaining > 0)
                     {
-                        long read = buffer.clear().write(b ->
+                        buffer.clear();
+                        long read = buffer.write(b ->
                         {
                             b.limit((int)Math.min(b.capacity(), _offsetRemaining));
                             return _byteChannel.read(b);
@@ -185,7 +185,8 @@ public class ByteChannelContentSource implements Content.Source
                     }
                 }
 
-                long read = buffer.clear().write(b ->
+                buffer.clear();
+                long read = buffer.write(b ->
                 {
                     if (_length > 0)
                         b.limit((int)Math.min(b.capacity(), _length - _totalRead));

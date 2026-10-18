@@ -124,12 +124,18 @@ public class RetainableByteBufferContentSource implements Content.Source
     @Override
     public void fail(Throwable failure)
     {
+        List<RetainableByteBuffer> unread = new ArrayList<>();
         try (AutoLock ignored = lock.lock())
         {
             if (terminated != null)
                 return;
             terminated = Content.Chunk.from(failure);
+            if (iterator == null)
+                iterator = buffers.iterator();
+            iterator.forEachRemaining(unread::add);
         }
+        // Release the buffers that have not been read.
+        unread.forEach(RetainableByteBuffer::release);
         // Demands are always serviced immediately so there is no
         // need to ask the invoker to run invokeDemandCallback here.
     }

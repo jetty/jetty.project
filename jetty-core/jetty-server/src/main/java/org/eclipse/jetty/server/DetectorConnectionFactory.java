@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
@@ -81,14 +80,17 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
         boolean needMoreBytes = true;
         for (Detecting detectingConnectionFactory : _detectingConnectionFactories)
         {
-            Detection detection = buffer.mapSlice(detectingConnectionFactory::detect);
-            if (detection == Detection.RECOGNIZED)
+            try (RetainableByteBuffer slice = buffer.slice())
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Detector {} recognized bytes using {}", getProtocol(), detection);
-                return Detection.RECOGNIZED;
+                Detection detection = detectingConnectionFactory.detect(slice);
+                if (detection == Detection.RECOGNIZED)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Detector {} recognized bytes using {}", getProtocol(), detection);
+                    return Detection.RECOGNIZED;
+                }
+                needMoreBytes &= detection == Detection.NEED_MORE_BYTES;
             }
-            needMoreBytes &= detection == Detection.NEED_MORE_BYTES;
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Detector {} {}", getProtocol(), (needMoreBytes ? "requires more bytes" : "failed to recognize bytes"));
@@ -147,7 +149,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
         {
             super(endPoint, connector.getExecutor());
             _connector = connector;
-            _buffer = WritableBufferPool.wrap(connector.getByteBufferPool()).acquire(getInputBufferSize(), true);
+            _buffer = connector.getByteBufferPool().acquire(getInputBufferSize(), true);
         }
 
         @Override
@@ -245,40 +247,43 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
             boolean notRecognized = true;
             for (Detecting detectingConnectionFactory : _detectingConnectionFactories)
             {
-                Detection detection = _buffer.mapSlice(detectingConnectionFactory::detect);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Detector {} performed detection from {} with {} which returned {}", getProtocol(), _buffer, detectingConnectionFactory, detection);
-                if (detection == Detection.RECOGNIZED)
+                try (RetainableByteBuffer slice = _buffer.slice())
                 {
-                    try
+                    Detection detection = detectingConnectionFactory.detect(slice);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Detector {} performed detection from {} with {} which returned {}", getProtocol(), _buffer, detectingConnectionFactory, detection);
+                    if (detection == Detection.RECOGNIZED)
                     {
-                        // This DetectingConnectionFactory recognized those bytes -> upgrade to the next one.
-                        Connection nextConnection = detectingConnectionFactory.newConnection(_connector, getEndPoint());
-                        if (!(nextConnection instanceof UpgradeTo))
-                            throw new IllegalStateException("Cannot upgrade: " + nextConnection + " does not implement " + UpgradeTo.class.getName());
-                        getEndPoint().upgrade(nextConnection);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Detector {} upgraded to {}", getProtocol(), nextConnection);
-                        return true;
+                        try
+                        {
+                            // This DetectingConnectionFactory recognized those bytes -> upgrade to the next one.
+                            Connection nextConnection = detectingConnectionFactory.newConnection(_connector, getEndPoint());
+                            if (!(nextConnection instanceof UpgradeTo))
+                                throw new IllegalStateException("Cannot upgrade: " + nextConnection + " does not implement " + UpgradeTo.class.getName());
+                            getEndPoint().upgrade(nextConnection);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Detector {} upgraded to {}", getProtocol(), nextConnection);
+                            return true;
+                        }
+                        catch (DetectionFailureException x)
+                        {
+                            // It's just bubbling up from a nested Detector, so it's already handled, just rethrow it.
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Detector {} failed to upgrade, rethrowing", getProtocol(), x);
+                            throw x;
+                        }
+                        catch (Throwable x)
+                        {
+                            // Two reasons that can make us end up here:
+                            // 1) detectingConnectionFactory.newConnection() failed, probably because it cannot find the next protocol
+                            // 2) nextConnection is not instanceof UpgradeTo, rethrow as DetectionFailureException
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Detector {} failed to upgrade", getProtocol());
+                            throw new DetectionFailureException(x);
+                        }
                     }
-                    catch (DetectionFailureException x)
-                    {
-                        // It's just bubbling up from a nested Detector, so it's already handled, just rethrow it.
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Detector {} failed to upgrade, rethrowing", getProtocol(), x);
-                        throw x;
-                    }
-                    catch (Throwable x)
-                    {
-                        // Two reasons that can make us end up here:
-                        // 1) detectingConnectionFactory.newConnection() failed, probably because it cannot find the next protocol
-                        // 2) nextConnection is not instanceof UpgradeTo, rethrow as DetectionFailureException
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Detector {} failed to upgrade", getProtocol());
-                        throw new DetectionFailureException(x);
-                    }
+                    notRecognized &= detection == Detection.NOT_RECOGNIZED;
                 }
-                notRecognized &= detection == Detection.NOT_RECOGNIZED;
             }
 
             if (notRecognized)

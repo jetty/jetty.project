@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee.proxy;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 
 import jakarta.servlet.ReadListener;
@@ -31,6 +30,9 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>Servlet 3.1 asynchronous proxy servlet.</p>
@@ -43,6 +45,17 @@ import org.eclipse.jetty.util.IteratingCallback;
 public class AsyncProxyServlet extends ProxyServlet
 {
     private static final String WRITE_LISTENER_ATTRIBUTE = AsyncProxyServlet.class.getName() + ".writeListener";
+
+    private ByteBufferPool.Sized bufferPool;
+
+    @Override
+    public void init() throws ServletException
+    {
+        super.init();
+        // A small pool to read from the ServletInputStream.
+        int capacity = getHttpClient().getRequestBufferSize();
+        bufferPool = new ByteBufferPool.Sized(new ArrayByteBufferPool(new int[]{capacity}, 16L * capacity, -1), false, capacity);
+    }
 
     @Override
     protected Request.Content proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
@@ -121,7 +134,6 @@ public class AsyncProxyServlet extends ProxyServlet
 
     protected class StreamReader extends IteratingCallback implements ReadListener
     {
-        private final byte[] buffer = new byte[getHttpClient().getRequestBufferSize()];
         private final HttpServletRequest request;
         private final Request proxyRequest;
         private final AsyncRequestContent content;
@@ -159,23 +171,33 @@ public class AsyncProxyServlet extends ProxyServlet
             int requestId = _log.isDebugEnabled() ? getRequestId(request) : 0;
             ServletInputStream input = request.getInputStream();
 
-            while (input.isReady())
+            try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire())
             {
-                int read = input.read(buffer);
-                if (_log.isDebugEnabled())
-                    _log.debug("{} asynchronous read {} bytes on {}", requestId, read, input);
-                if (read > 0)
+                while (input.isReady())
                 {
+                    int read = (int)buffer.write(b ->
+                    {
+                        int p = b.position();
+                        int r = input.read(b.array(), b.arrayOffset() + p, b.remaining());
+                        if (r > 0)
+                            b.position(p + r);
+                        return r;
+                    });
                     if (_log.isDebugEnabled())
-                        _log.debug("{} proxying content to upstream: {} bytes", requestId, read);
-                    onRequestContent(request, proxyRequest, content, buffer, 0, read, this);
-                    return Action.SCHEDULED;
-                }
-                else if (read < 0)
-                {
-                    if (_log.isDebugEnabled())
-                        _log.debug("{} asynchronous read complete on {}", requestId, input);
-                    return Action.SUCCEEDED;
+                        _log.debug("{} asynchronous read {} bytes on {}", requestId, read, input);
+                    if (read > 0)
+                    {
+                        if (_log.isDebugEnabled())
+                            _log.debug("{} proxying content to upstream: {} bytes", requestId, read);
+                        onRequestContent(request, proxyRequest, content, buffer, this);
+                        return Action.SCHEDULED;
+                    }
+                    else if (read < 0)
+                    {
+                        if (_log.isDebugEnabled())
+                            _log.debug("{} asynchronous read complete on {}", requestId, input);
+                        return Action.SUCCEEDED;
+                    }
                 }
             }
 
@@ -184,9 +206,9 @@ public class AsyncProxyServlet extends ProxyServlet
             return Action.IDLE;
         }
 
-        protected void onRequestContent(HttpServletRequest request, Request proxyRequest, AsyncRequestContent content, byte[] buffer, int offset, int length, Callback callback)
+        protected void onRequestContent(HttpServletRequest request, Request proxyRequest, AsyncRequestContent content, RetainableByteBuffer buffer, Callback callback)
         {
-            content.write(ByteBuffer.wrap(buffer, offset, length), callback);
+            content.offer(false, buffer, callback);
         }
 
         @Override

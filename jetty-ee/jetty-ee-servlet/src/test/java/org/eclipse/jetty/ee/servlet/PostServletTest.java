@@ -131,7 +131,7 @@ public class PostServletTest
         req.append("0\r\n");
         req.append("\r\n");
 
-        String resp = connector.getResponseAsString(req.toString());
+        String resp = connector.getResponse(req.toString());
 
         assertThat("resp", resp, containsString("HTTP/1.1 200 OK"));
         assertThat("resp", resp, containsString("chunked"));
@@ -160,7 +160,7 @@ public class PostServletTest
         req.append("\r\n");
         req.append("\r\n");
 
-        String resp = connector.getResponseAsString(req.toString());
+        String resp = connector.getResponse(req.toString());
         assertThat(resp, startsWith("HTTP/1.1 200 OK")); // exception eaten by handler
         assertTrue(complete.await(5, TimeUnit.SECONDS));
         assertThat(ex0.get(), not(nullValue()));

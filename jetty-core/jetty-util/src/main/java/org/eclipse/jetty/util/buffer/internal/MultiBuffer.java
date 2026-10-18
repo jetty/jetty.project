@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.internal;
+package org.eclipse.jetty.util.buffer.internal;
 
-import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,10 +26,10 @@ import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class MultiBuffer implements RetainableByteBuffer
 {
-    public static RetainableByteBuffer merge(List<RetainableByteBuffer> list)
+    public static RetainableByteBuffer merge(Collection<RetainableByteBuffer> collection)
     {
         List<RetainableByteBuffer> buffers = new ArrayList<>();
-        flatten(list, buffers);
+        flatten(collection, buffers);
         if (buffers.isEmpty())
             return RetainableByteBuffer.empty();
         if (buffers.size() == 1)
@@ -37,7 +37,7 @@ public class MultiBuffer implements RetainableByteBuffer
         return new MultiBuffer(buffers);
     }
 
-    private static void flatten(List<RetainableByteBuffer> input, List<RetainableByteBuffer> output)
+    private static void flatten(Collection<RetainableByteBuffer> input, List<RetainableByteBuffer> output)
     {
         for (RetainableByteBuffer buffer : input)
         {
@@ -58,9 +58,9 @@ public class MultiBuffer implements RetainableByteBuffer
     {
         this.buffers = buffers;
         long capacity = 0;
-        for (int i = 0; i < buffers.size(); i++)
+        for (RetainableByteBuffer buffer : buffers)
         {
-            capacity += buffers.get(i).capacity();
+            capacity += buffer.capacity();
         }
         this.capacity = capacity;
     }
@@ -82,7 +82,7 @@ public class MultiBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public RetainableByteBuffer readPosition(long newPosition)
+    public void readPosition(long newPosition)
     {
         if (newPosition < 0 || newPosition > capacity())
             throw new IllegalArgumentException();
@@ -102,7 +102,6 @@ public class MultiBuffer implements RetainableByteBuffer
             buffer.consume(buffer.remaining());
             newPosition -= buffer.capacity();
         }
-        return this;
     }
 
     @Override
@@ -407,12 +406,12 @@ public class MultiBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public long read(Reader reader) throws IOException
+    public <X extends Throwable> long read(Reader<X> reader) throws X
     {
         long read = 0;
         long totalRead = 0;
         boolean invoked = false;
-        GatheringReader gatherer = reader instanceof GatheringReader gr ? gr : null;
+        GatheringReader<X> gatherer = reader instanceof GatheringReader<X> gr ? gr : null;
         for (int i = 0; i < buffers.size(); ++i)
         {
             RetainableByteBuffer buffer = buffers.get(i);
@@ -438,10 +437,10 @@ public class MultiBuffer implements RetainableByteBuffer
                             if (gathers == null)
                             {
                                 gathers = new ByteBuffer[buffers.size()];
-                                gathers[idx++] = single.getByteBuffer();
+                                gathers[idx++] = single.byteBuffer(true);
                                 length = single.remaining();
                             }
-                            gathers[idx++] = nextSingle.getByteBuffer();
+                            gathers[idx++] = nextSingle.byteBuffer(true);
                             length += nextSingle.remaining();
                         }
                         else

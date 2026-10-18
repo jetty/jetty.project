@@ -183,7 +183,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, RetainableByteBuffer.wrap(new byte[10 * 1024]), callback);
+                response.write(true, RetainableByteBuffer.allocate(10 * 1024, false), callback);
                 return true;
             }
         });
