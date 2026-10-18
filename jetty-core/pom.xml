@@ -13,6 +13,7 @@
   <description>Jetty Core API Parent</description>
 
   <modules>
+    <module>jetty-acme</module>
     <module>jetty-alpn</module>
     <module>jetty-annotations</module>
     <module>jetty-bom</module>
