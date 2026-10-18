@@ -21,7 +21,8 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.generator.ControlGenerator;
 import org.eclipse.jetty.http3.parser.ControlParser;
 import org.eclipse.jetty.http3.parser.ParserListener;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -46,8 +47,8 @@ public class SettingsGenerateParseTest
     {
         SettingsFrame input = new SettingsFrame(settings);
 
-        WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
+        BufferAccumulator accumulator = new BufferAccumulator();
         new ControlGenerator(bufferPool, true).generate(accumulator, 0, input, null);
 
         List<SettingsFrame> frames = new ArrayList<>();
@@ -59,7 +60,7 @@ public class SettingsGenerateParseTest
                 frames.add(frame);
             }
         });
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             parser.parse(buffer);
             assertFalse(buffer.hasRemaining());

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.internal;
+package org.eclipse.jetty.util.buffer.internal;
 
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
-import org.eclipse.jetty.util.buffer.WritableBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -215,43 +215,39 @@ public class MultiBufferTest
     {
         List<RetainableByteBuffer> accumulatorCombinations = new ArrayList<>();
 
-        {
-            RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)1)
-                .flip());
-            accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2)));
-        }
-        {
-            RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)1)
-                .flip());
-            accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2)));
-        }
-        {
-            RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer3 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer4 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)1)
-                .flip());
-            accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2, buffer3, buffer4)));
-        }
+        RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)1)
+            .flip());
+        accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2)));
+
+        buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)1)
+            .flip());
+        accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2)));
+
+        buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer3 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer4 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)1)
+            .flip());
+        accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2, buffer3, buffer4)));
 
         for (RetainableByteBuffer acc : accumulatorCombinations)
         {
@@ -351,63 +347,59 @@ public class MultiBufferTest
     {
         List<RetainableByteBuffer> accumulatorCombinations = new ArrayList<>();
 
-        {
-            RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)1)
-                .flip());
-            accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2)));
-        }
-        {
-            RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)1)
-                .flip());
-            accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2)));
-        }
-        {
-            RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer3 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer4 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer5 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer6 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer7 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer8 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)1)
-                .flip());
-            accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2, buffer3, buffer4, buffer5, buffer6, buffer7, buffer8)));
-        }
+        RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)1)
+            .flip());
+        accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2)));
+
+        buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)1)
+            .flip());
+        accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2)));
+
+        buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer3 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer4 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer5 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer6 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer7 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer8 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)1)
+            .flip());
+        accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2, buffer3, buffer4, buffer5, buffer6, buffer7, buffer8)));
 
         for (RetainableByteBuffer acc : accumulatorCombinations)
         {
@@ -493,63 +485,59 @@ public class MultiBufferTest
     {
         List<RetainableByteBuffer> accumulatorCombinations = new ArrayList<>();
 
-        {
-            RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)1)
-                .flip());
-            accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2)));
-        }
-        {
-            RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)0)
-                .put((byte)1)
-                .flip());
-            accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2)));
-        }
-        {
-            RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer3 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer4 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer5 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer6 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer7 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)0)
-                .flip());
-            RetainableByteBuffer buffer8 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
-                .put((byte)1)
-                .flip());
-            accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2, buffer3, buffer4, buffer5, buffer6, buffer7, buffer8)));
-        }
+        RetainableByteBuffer buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)1)
+            .flip());
+        accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2)));
+
+        buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)0)
+            .put((byte)1)
+            .flip());
+        accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2)));
+
+        buffer1 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        buffer2 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer3 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer4 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer5 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer6 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer7 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)0)
+            .flip());
+        RetainableByteBuffer buffer8 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
+            .put((byte)1)
+            .flip());
+        accumulatorCombinations.add(RetainableByteBuffer.merge(List.of(buffer1, buffer2, buffer3, buffer4, buffer5, buffer6, buffer7, buffer8)));
 
         byte[] bytes = new byte[8];
         byte[] expected = new byte[]{0, 0, 0, 0, 0, 0, 0, 1};
@@ -767,7 +755,7 @@ public class MultiBufferTest
             .putInt(14)
             .flip());
         Path testResourcePathFile = MavenTestingUtils.getTestResourcePathFile("resource.txt");
-        RetainableByteBuffer buffer3 = RetainableByteBuffer.wrap(testResourcePathFile, WritableBufferPool.SIZED_NON_POOLING);
+        RetainableByteBuffer buffer3 = RetainableByteBuffer.wrap(testResourcePathFile, ByteBufferPool.SIZED_NON_POOLING);
         RetainableByteBuffer buffer4 = RetainableByteBuffer.wrap(ByteBuffer.allocate(10)
             .putInt(15)
             .putInt(16)
@@ -1097,45 +1085,41 @@ public class MultiBufferTest
         assertFalse(buffer3.release());
         assertFalse(buffer4.release());
 
-        {
-            RetainableByteBuffer slice = acc.slice(0, 2);
-            assertEquals(0, slice.readPosition());
-            assertEquals(2, slice.remaining());
-            assertEquals(2, slice.capacity());
-            assertEquals(0, slice.get());
-            assertEquals(1, slice.get());
-            assertTrue(slice.release());
-            assertEquals(1, rc1.getCount());
-            assertEquals(1, rc2.getCount());
-            assertEquals(1, rc3.getCount());
-            assertEquals(1, rc4.getCount());
-        }
-        {
-            RetainableByteBuffer slice = acc.slice(1, 3);
-            assertEquals(0, slice.readPosition());
-            assertEquals(3, slice.remaining());
-            assertEquals(3, slice.capacity());
-            assertEquals(1, slice.get());
-            assertEquals(2, slice.get());
-            assertEquals(3, slice.get());
-            assertTrue(slice.release());
-            assertEquals(1, rc1.getCount());
-            assertEquals(1, rc2.getCount());
-            assertEquals(1, rc3.getCount());
-            assertEquals(1, rc4.getCount());
-        }
-        {
-            RetainableByteBuffer slice = acc.slice(3, 1);
-            assertEquals(0, slice.readPosition());
-            assertEquals(1, slice.remaining());
-            assertEquals(1, slice.capacity());
-            assertEquals(3, slice.get());
-            assertTrue(slice.release());
-            assertEquals(1, rc1.getCount());
-            assertEquals(1, rc2.getCount());
-            assertEquals(1, rc3.getCount());
-            assertEquals(1, rc4.getCount());
-        }
+        RetainableByteBuffer slice = acc.slice(0, 2);
+        assertEquals(0, slice.readPosition());
+        assertEquals(2, slice.remaining());
+        assertEquals(2, slice.capacity());
+        assertEquals(0, slice.get());
+        assertEquals(1, slice.get());
+        assertTrue(slice.release());
+        assertEquals(1, rc1.getCount());
+        assertEquals(1, rc2.getCount());
+        assertEquals(1, rc3.getCount());
+        assertEquals(1, rc4.getCount());
+
+        slice = acc.slice(1, 3);
+        assertEquals(0, slice.readPosition());
+        assertEquals(3, slice.remaining());
+        assertEquals(3, slice.capacity());
+        assertEquals(1, slice.get());
+        assertEquals(2, slice.get());
+        assertEquals(3, slice.get());
+        assertTrue(slice.release());
+        assertEquals(1, rc1.getCount());
+        assertEquals(1, rc2.getCount());
+        assertEquals(1, rc3.getCount());
+        assertEquals(1, rc4.getCount());
+
+        slice = acc.slice(3, 1);
+        assertEquals(0, slice.readPosition());
+        assertEquals(1, slice.remaining());
+        assertEquals(1, slice.capacity());
+        assertEquals(3, slice.get());
+        assertTrue(slice.release());
+        assertEquals(1, rc1.getCount());
+        assertEquals(1, rc2.getCount());
+        assertEquals(1, rc3.getCount());
+        assertEquals(1, rc4.getCount());
 
         assertSame(RetainableByteBuffer.empty(), acc.slice(4, 0));
 
@@ -1168,21 +1152,21 @@ public class MultiBufferTest
             allocate(16383, (byte)10)
         );
 
-        RetainableByteBuffer acc = RetainableByteBuffer.merge(buffers);
-        acc.readPosition(16384);
-
+        try (RetainableByteBuffer acc = RetainableByteBuffer.merge(buffers))
         {
-            RetainableByteBuffer slice = acc.slice(16384, 16384);
-            assertEquals(16384, slice.remaining());
-            slice.release();
-        }
-        {
-            RetainableByteBuffer slice = acc.slice(32768, 16384);
-            assertEquals(16384, slice.remaining());
-            slice.release();
-        }
+            buffers.forEach(RetainableByteBuffer::release);
+            acc.readPosition(16384);
 
-        buffers.forEach(RetainableByteBuffer::release);
+            try (RetainableByteBuffer slice = acc.slice(16384, 16384))
+            {
+                assertEquals(16384, slice.remaining());
+            }
+
+            try (RetainableByteBuffer slice = acc.slice(32768, 16384))
+            {
+                assertEquals(16384, slice.remaining());
+            }
+        }
     }
 
     @Test

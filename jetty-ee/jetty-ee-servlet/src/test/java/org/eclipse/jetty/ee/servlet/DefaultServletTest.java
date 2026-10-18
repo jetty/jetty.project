@@ -54,7 +54,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -70,6 +69,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
@@ -295,7 +295,7 @@ public class DefaultServletTest
         Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
         context.addServlet(DefaultServlet.class, "/");
 
-        String rawResponse = connector.getResponse("""
+        String rawResponse = connector.getResponseAsString("""
             POST /context/file%s.txt HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -333,7 +333,7 @@ public class DefaultServletTest
             }
         }), "/dispatch");
 
-        String rawResponse = connector.getResponse("""
+        String rawResponse = connector.getResponseAsString("""
             POST /context/dispatch HTTP/1.1\r
             Host: local\r
             Connection: close\r

@@ -122,7 +122,7 @@ In the Jetty I/O library, you can call `EndPoint.fillInterested(Callback)` to de
 At the Java NIO level, a `SocketChannel` or `DatagramChannel` is always writable, unless it becomes congested.
 In order to be notified when a channel uncongests and it is therefore writable again, the `SelectionKey.OP_WRITE` flag must be set.
 
-In the Jetty I/O library, you can call `EndPoint.write(Callback, ByteBuffer\...)` to write the ``ByteBuffer``s and the `Callback` parameter is the object that is notified when the whole write is finished (i.e. _all_ ``ByteBuffer``s have been fully written, even if they are delayed by congestion/uncongestion).
+In the Jetty I/O library, you can call `EndPoint.write(RetainableByteBuffer, Callback)` to write the `RetainableByteBuffer` and the `Callback` parameter is the object that is notified when the whole write is finished (i.e. the `RetainableByteBuffer` have been fully written, even if the write operation is delayed by TCP congestion).
 
 The `EndPoint` APIs abstract out the Java NIO details by providing non-blocking APIs based on `Callback` objects for I/O operations.
 The `EndPoint` APIs are typically called by `Connection` implementations, see <<connection,this section>>.
@@ -208,7 +208,7 @@ Submitting the invocation of the callback to an `Executor` to be invoked in a di
 
 This side effect of asynchronous programming leading to `StackOverflowError` is so common that the Jetty libraries have a generic solution for it: a specialized `Callback` implementation named `org.eclipse.jetty.util.IteratingCallback` that turns recursion into iteration, therefore avoiding the `StackOverflowError`.
 
-`IteratingCallback` is a `Callback` implementation that should be passed to non-blocking APIs such as `EndPoint.write(Callback, ByteBuffer\...)` when they are performed in a loop.
+`IteratingCallback` is a `Callback` implementation that should be passed to non-blocking APIs such as `EndPoint.write(RetainableByteBuffer, Callback)` when they are performed in a loop.
 
 `IteratingCallback` works by starting the loop with `IteratingCallback.iterate()`.
 In turn, this calls `IteratingCallback.process()`, an abstract method that must be implemented with the code that should be executed for each loop.
@@ -229,11 +229,11 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/SelectorM
 ----
 
 When `onFillable()` is called, for example the first time that bytes are available from the network, the iteration is started.
-Starting the iteration calls `process()`, where a buffer is allocated and filled with bytes read from the network via `EndPoint.fill(ByteBuffer)`; the buffer is subsequently written back via `EndPoint.write(Callback, ByteBuffer\...)` -- note that the callback passed to `EndPoint.write()` is `this`, i.e. the `IteratingCallback` itself; finally `Action.SCHEDULED` is returned, returning from the `process()` method.
+Starting the iteration calls `process()`, where a buffer is allocated and filled with bytes read from the network via `EndPoint.fill(RetainableByteBuffer)`; the buffer is subsequently written back via `EndPoint.write(RetainableByteBuffer, Callback)` -- note that the callback passed to `EndPoint.write()` is `this`, i.e. the `IteratingCallback` itself; finally `Action.SCHEDULED` is returned, returning from the `process()` method.
 
-At this point, the call to `EndPoint.write(Callback, ByteBuffer\...)` may have completed synchronously; `IteratingCallback` would know that and call `process()` again; within `process()`, the buffer has already been allocated so it will be reused, saving further allocations; the buffer will be filled and possibly written again; `Action.SCHEDULED` is returned again, returning again from the `process()` method.
+At this point, the call to `EndPoint.write(RetainableByteBuffer, Callback)` may have completed synchronously; `IteratingCallback` would know that and call `process()` again; within `process()`, the buffer has already been allocated so it will be reused, saving further allocations; the buffer will be filled and possibly written again; `Action.SCHEDULED` is returned again, returning again from the `process()` method.
 
-At this point, the call to `EndPoint.write(Callback, ByteBuffer\...)` may have not completed synchronously, so `IteratingCallback` will not call `process()` again; the processing thread is free to return to the Jetty I/O system where it may be put back into the thread pool.
+At this point, the call to `EndPoint.write(RetainableByteBuffer, Callback)` may have not completed synchronously, so `IteratingCallback` will not call `process()` again; the processing thread is free to return to the Jetty I/O system where it may be put back into the thread pool.
 If this was the only active network connection, the system would now be idle, with no threads blocked, waiting that the `write()` completes. This thread-less wait is one of the most important features that make non-blocking asynchronous servers more scalable: they use less resources.
 
 Eventually, the Jetty I/O system will notify that the `write()` completed; this notifies the `IteratingCallback` that can now resume the loop and call `process()` again.
@@ -242,7 +242,7 @@ When `process()` is called, it is possible that zero bytes are read from the net
 
 Another possibility is that during `process()` the read returns `-1` indicating that the other peer has closed the connection; this means that there will not be more bytes to read and the loop can be exited, so you return `Action.SUCCEEDED`; `IteratingCallback` will then call `onCompleteSuccess()` where you can close the `EndPoint`.
 
-The last case is that during `process()` an exception is thrown, for example by `EndPoint.fill(ByteBuffer)` or, in more advanced implementations, by code that parses the bytes that have been read and finds them unacceptable; any exception thrown within `process()` will be caught by `IteratingCallback` that will exit the loop with a failure and call `onCompleteFailure(Throwable)` with the exception that has been thrown, where you can close the `EndPoint`, passing the exception that is the reason for closing prematurely the `EndPoint`.
+The last case is that during `process()` an exception is thrown, for example by `EndPoint.fill(RetainableByteBuffer)` or, in more advanced implementations, by code that parses the bytes that have been read and finds them unacceptable; any exception thrown within `process()` will be caught by `IteratingCallback` that will exit the loop with a failure and call `onCompleteFailure(Throwable)` with the exception that has been thrown, where you can close the `EndPoint`, passing the exception that is the reason for closing prematurely the `EndPoint`.
 
 Note that some failures may occur whilst a scheduled operation is in progress.
 Such failures are notified immediately via the `onFailure(Throwable)` method, but care must be taken to not release any resources that may still be in use by the scheduled operation.
@@ -266,11 +266,11 @@ The high-level abstraction that Jetty offers to read bytes is `org.eclipse.jetty
 
 A `Content.Chunk` groups the following information:
 
-* A `ByteBuffer` with the bytes that have been read; it may be empty.
+* A `RetainableByteBuffer` with the bytes that have been read via `Content.Source.read()`; it may be empty.
 * Whether the read reached end-of-file, via its `last` flag.
 * A failure that might have happened during the read, via its `getFailure()` method.
 
-The `Content.Chunk` returned from `Content.Source.read()` can either be a _normal_ chunk (a chunk containing a `ByteBuffer` and a `null` failure), or a _failure_ chunk (a chunk containing an empty `ByteBuffer` and a non-`null` failure).
+The `Content.Chunk` returned from `Content.Source.read()` can either be a _normal_ chunk (a chunk containing a `RetainableByteBuffer` and a `null` failure), or a _failure_ chunk (a chunk containing an empty `RetainableByteBuffer` and a non-`null` failure).
 
 A failure chunk also indicates (via the `last` flag) whether the failure is a fatal (when `last=true`) or transient (when `last=false`) failure.
 
@@ -286,15 +286,16 @@ Reading or demanding from an already fully consumed `Content.Source` is always i
 Once failed, a `Content.Source` is considered fully consumed.
 Further attempts to read from a failed `Content.Source` return a failure chunk whose `getFailure()` method returns the exception passed to `Content.Source.fail(Throwable)`.
 
-When reading a normal chunk, its `ByteBuffer` is typically a slice of a different `ByteBuffer` that has been read by a lower layer.
+When reading a normal chunk, its `RetainableByteBuffer` is typically a slice of a different `RetainableByteBuffer` that has been read, allocated or acquired from a pool by a lower layer.
 There may be multiple layers between the bottom layer (where the initial read typically happens) and the application layer that calls `Content.Source.read()`.
 
-By slicing the `ByteBuffer` (rather than copying its bytes), there is no copy of the bytes between the layers, which yields greater performance.
-However, this comes with the cost that the `ByteBuffer`, and the associated `Content.Chunk`, have an intrinsic lifecycle: the final consumer of a `Content.Chunk` at the application layer must indicate when it has consumed the chunk, so that the bottom layer may reuse/recycle the `ByteBuffer`.
+By slicing the `RetainableByteBuffer` (rather than copying its bytes), there is no copy of the bytes between the layers, which yields greater performance.
+However, this comes with the cost that the `RetainableByteBuffer`, and the associated `Content.Chunk`, have an intrinsic lifecycle: the final consumer of a `Content.Chunk` at the application layer must indicate when it has consumed the chunk, so that the bottom layer may reuse/recycle its `RetainableByteBuffer`.
+The application layer does so by calling `Content.Chunk.release()` or, equivalently, `Content.Chunk.close()`.
 
-Consuming the chunk means that the bytes in the `ByteBuffer` are read (or ignored), and that the application will not look at or reference that `ByteBuffer` ever again.
+Releasing/closing the chunk means that the bytes in the chunk's `RetainableByteBuffer` have been read (or ignored), and that the application will not look at or reference that `RetainableByteBuffer` ever again.
 
-`Content.Chunk` offers a retain/release model to deal with the `ByteBuffer` lifecycle, with a simple rule:
+`Content.Chunk` offers a retain/release model to deal with the `RetainableByteBuffer` lifecycle, with a simple rule:
 
 IMPORTANT: A `Content.Chunk` returned by a call to `Content.Source.read()` **must** be released, except for ``Content.Chunk``s that are failure chunks.
 Failure chunks _may_ be released, but they do not _need_ to be.
@@ -310,8 +311,8 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ContentDo
 
 Note how the reads happen in a loop, consuming the `Content.Source` as soon as it has content available to be read, and therefore no backpressure is applied to the reads.
 
-IMPORTANT: Calling `Content.Chunk.release()` must be done only after the bytes in the `ByteBuffer` returned by `Content.Chunk.getByteBuffer()` have been consumed.
-When the `Content.Chunk` is released, the implementation may reuse the `ByteBuffer` and overwrite the bytes with different bytes; if the application looks at the `ByteBuffer` _after_ having released the `Content.Chunk` is may see other, unrelated, bytes.
+IMPORTANT: Calling `Content.Chunk.release()` must be done only after the bytes in the `RetainableByteBuffer` returned by `Content.Chunk.acquire()` have been consumed, or otherwise not be looked at anymore.
+When the `Content.Chunk` is released, the implementation may reuse the underlying `RetainableByteBuffer` and overwrite the bytes with different bytes; if the application looks at the `RetainableByteBuffer` _after_ having released the `Content.Chunk` it may see other, unrelated, bytes.
 
 An alternative way to read from a `Content.Source`, to use when the chunk is consumed asynchronously, and you don't want to read again until the `Content.Chunk` is consumed, is the following:
 
@@ -320,20 +321,21 @@ An alternative way to read from a `Content.Source`, to use when the chunk is con
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ContentDocs.java[tags=async]
 ----
 <1> The `read()` that must be paired with a `release()`.
-<2> The `release()` that pairs the `read()`.
+<2> The `retain()` that keeps the chunk alive during the asynchronous operation.
+<3> The `release()` that pairs the `retain()`.
+<4> The `release()` that pairs the `read()`.
 
-Note how the reads do not happen in a loop, and therefore backpressure is applied to the reads, because there is not a next read until the chunk from the previous read has been consumed (and this may take time).
+Note how the reads do not happen in a loop, and therefore backpressure is applied to the reads.
+There is not a next read until the chunk from the previous read has been processed by the asynchronous operation (and this may take time).
 
-Since the `Chunk` is consumed asynchronously, you may need to retain it to extend its lifecycle, as explained in <<content-source-chunk,this section>>.
-
-You can use `Content.Source` static methods to conveniently read (in a blocking way or non-blocking way), for example via `static Content.Source.asStringAsync(Content.Source, Charset)`, or via an `InputStream` using `static Content.Source.asInputStream(Content.Source)`.
+You can use `Content.Source` static methods to conveniently read (in a blocking way or non-blocking way), for example via `static Content.Source.asStringAsync(Content.Source, Charset, Promise)`, or via an `InputStream` using `static Content.Source.asInputStream(Content.Source)`.
 
 Refer to the `Content.Source` link:{javadoc-url}/org/eclipse/jetty/io/Content.Source.html[`javadocs`] for further details.
 
 [[content-source-chunk]]
 === `Content.Chunk`
 
-`Content.Chunk` offers a retain/release API to control the lifecycle of its `ByteBuffer`.
+`Content.Chunk` offers a retain/release API to control the lifecycle of its `RetainableByteBuffer`.
 
 When ``Content.Chunk``s are consumed synchronously, no additional retain/release API call is necessary, for example:
 
@@ -359,7 +361,7 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ContentDo
 Note how method `consume(Content.Chunk)` retains the `Content.Chunk` because it does not consume it, but rather stores it away for later use.
 With this additional retain, the retain count is now `2`: one implicitly from the `read()` that returned the `Content.Chunk`, and one explicit in `consume(Content.Chunk)`.
 
-However, just after returning from `consume(Content.Chunk)` the `Content.Chunk` is released (pairing the implicit retain from `read()`), so that the retain count goes to `1`, and an additional release is still necessary.
+After returning from `consume(Content.Chunk)` the `Content.Chunk` is released (pairing the implicit retain from `read()`) by the try-with-resources block, so that the retain count goes to `1`, and an additional release is still necessary.
 
 Method `getResult()` arranges to release all the ``Content.Chunk``s that have been accumulated, pairing the retains done in `consume(Content.Chunk)`, so that the retain count for the ``Content.Chunk``s goes finally to `0`.
 
@@ -368,9 +370,9 @@ Method `getResult()` arranges to release all the ``Content.Chunk``s that have be
 
 The high-level abstraction that Jetty offers to write bytes is `org.eclipse.jetty.io.Content.Sink`.
 
-The primary method to use is `Content.Sink.write(boolean, ByteBuffer, Callback)`, which performs a non-blocking write of the given `ByteBuffer`, with the indication of whether the write is the last.
+The primary method to use is `Content.Sink.write(boolean, RetainableByteBuffer, Callback)`, which performs a non-blocking write of the given `RetainableByteBuffer`, with the indication of whether the write operation is the last.
 
-The `Callback` parameter is completed, successfully or with a failure, and possibly asynchronously by a different thread, when the write is complete.
+The `Callback` parameter is completed, successfully or with a failure, and possibly asynchronously by a different thread, when the write operation is complete.
 
 Your application can typically perform zero or more non-last writes, and one final last write.
 

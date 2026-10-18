@@ -25,10 +25,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FrameFlusherTest
 {
-    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
     private Scheduler scheduler;
 
     @BeforeEach
@@ -232,7 +232,7 @@ public class FrameFlusherTest
         public Parser parser;
         public LinkedBlockingQueue<Frame> incomingFrames = new LinkedBlockingQueue<>();
 
-        public CapturingEndPoint(WritableBufferPool bufferPool)
+        public CapturingEndPoint(ByteBufferPool bufferPool)
         {
             parser = new Parser(bufferPool);
         }
@@ -278,7 +278,7 @@ public class FrameFlusherTest
             blockTime = time;
         }
 
-        public BlockingEndpoint(WritableBufferPool bufferPool)
+        public BlockingEndpoint(ByteBufferPool bufferPool)
         {
             super(bufferPool);
         }

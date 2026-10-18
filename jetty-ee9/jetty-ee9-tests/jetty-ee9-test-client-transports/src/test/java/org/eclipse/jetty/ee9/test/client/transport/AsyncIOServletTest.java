@@ -294,8 +294,8 @@ public class AsyncIOServletTest extends AbstractTest
                 clientLatch.countDown();
             });
 
-        // HTTP/2 does not close a Connection when the request idle times out.
-        if (transportType != TransportType.H2C && transportType != TransportType.H2)
+        // Multiplexed transports do not close the Connection when the request idle times out.
+        if (!transportType.isMultiplexed())
             assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "close latch expired");
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS), "response latch expired");
         content.close();

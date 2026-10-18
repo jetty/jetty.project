@@ -340,11 +340,12 @@ public class RequestTest
             try (LocalEndPoint endPoint = _connector.connectToServer())
             {
                 endPoint.writeRequestString(request);
-
-                RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 1, TimeUnit.SECONDS);
-                assertNotNull(buffer);
-                String response = buffer.getString(StandardCharsets.UTF_8);
-                assertThat("Responses", response, startsWith("HTTP/1.1 500"));
+                try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 1, TimeUnit.SECONDS))
+                {
+                    assertNotNull(buffer);
+                    String response = buffer.getString(StandardCharsets.UTF_8);
+                    assertThat("Responses", response, startsWith("HTTP/1.1 500"));
+                }
             }
         }
     }

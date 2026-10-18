@@ -58,6 +58,69 @@ public class EventsHandlerTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
+    public void testEventsBufferAndChunkAreIndependentSlices(TransportType transportType) throws Exception
+    {
+        AtomicLong onRequestReadBytes = new AtomicLong();
+        AtomicLong onResponseWriteBytes = new AtomicLong();
+        AtomicLong onResponseWriteCompleteBytes = new AtomicLong();
+        EventsHandler eventsHandler = new EventsHandler(new EchoHandler())
+        {
+            @Override
+            protected void onRequestRead(Request request, Content.Chunk chunk)
+            {
+                if (chunk != null)
+                {
+                    // Consuming the chunk content must not affect the application.
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        long remaining = buffer.remaining();
+                        onRequestReadBytes.addAndGet(remaining);
+                        buffer.consume(remaining);
+                    }
+                }
+            }
+
+            @Override
+            protected void onResponseWrite(Request request, boolean last, RetainableByteBuffer content)
+            {
+                if (content != null)
+                {
+                    // Consuming the content must not affect the response.
+                    long remaining = content.remaining();
+                    onResponseWriteBytes.addAndGet(remaining);
+                    content.consume(remaining);
+                }
+            }
+
+            @Override
+            protected void onResponseWriteComplete(Request request, boolean last, RetainableByteBuffer content, Throwable failure)
+            {
+                if (content != null)
+                {
+                    // Consuming the content must not affect the response.
+                    long remaining = content.remaining();
+                    onResponseWriteCompleteBytes.addAndGet(remaining);
+                    content.consume(remaining);
+                }
+            }
+        };
+        startServer(transportType, eventsHandler);
+        startClient(transportType);
+
+        String content = "ABCDEF";
+        ContentResponse response = client.POST(newURI(transportType))
+            .body(new StringRequestContent(content))
+            .send();
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContentAsString(), is(content));
+        assertThat(onRequestReadBytes.get(), is((long)content.length()));
+        assertThat(onResponseWriteBytes.get(), is((long)content.length()));
+        assertThat(onResponseWriteCompleteBytes.get(), is((long)content.length()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
     public void testMultipleEventsHandlerChaining(TransportType transportType) throws Exception
     {
         String longString = "A".repeat(65536);

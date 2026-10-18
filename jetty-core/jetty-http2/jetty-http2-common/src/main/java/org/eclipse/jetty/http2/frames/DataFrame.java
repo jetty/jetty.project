@@ -86,7 +86,7 @@ public class DataFrame extends StreamFrame implements AutoCloseable
     @Override
     public DataFrame withStreamId(int streamId)
     {
-        return new DataFrame(streamId, data, isEndStream());
+        return new DataFrame(streamId, data, isEndStream(), padding);
     }
 
     @Override

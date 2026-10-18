@@ -248,8 +248,8 @@ public class SessionHandlerTest
 
         _server.start();
 
-        LocalConnector.LocalEndPoint endPoint = forwardedConnector.connect();
-        endPoint.addInput("""
+        LocalConnector.LocalEndPoint endPoint = forwardedConnector.connectToServer();
+        endPoint.writeRequestString("""
             GET /create HTTP/1.1
             Host: localhost
             X-Forwarded-Proto: https
@@ -313,7 +313,7 @@ public class SessionHandlerTest
     {
         _server.start();
 
-        String response = _connector.getResponse("""
+        String response = _connector.getResponseAsString("""
             GET /create/invalidate/recreate HTTP/1.1
             Host: localhost
 
@@ -328,14 +328,14 @@ public class SessionHandlerTest
     {
         _server.start();
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /create HTTP/1.1
             Host: localhost
 
             """));
         String id = parseCookieId(response.get(HttpHeader.SET_COOKIE));
 
-        response = HttpTester.parseResponse(_connector.getResponse("""
+        response = HttpTester.parseResponse(_connector.getResponseAsString("""
             GET /invalidate/recreate HTTP/1.1
             Host: localhost
             Cookie: SESSION_ID=%s

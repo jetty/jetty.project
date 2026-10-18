@@ -57,7 +57,6 @@ import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Handler;
@@ -74,6 +73,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -838,7 +838,8 @@ public class ResourceHandlerTest
             RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(IO.DEFAULT_BUFFER_SIZE, false);
             while (true)
             {
-                int filled = endPoint.fill(buffer.compact());
+                buffer.compact();
+                int filled = endPoint.fill(buffer);
                 if (filled > 0)
                 {
                     complete = parser.parseNext(buffer);

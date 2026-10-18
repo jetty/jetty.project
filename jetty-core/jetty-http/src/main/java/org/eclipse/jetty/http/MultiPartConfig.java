@@ -15,10 +15,10 @@ package org.eclipse.jetty.http;
 
 import java.nio.file.Path;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 import static org.eclipse.jetty.http.ComplianceViolation.Listener.NOOP;

@@ -15,27 +15,27 @@ package org.eclipse.jetty.http2.generator;
 
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HeaderGenerator
 {
     private int maxFrameSize = Frame.DEFAULT_MAX_SIZE;
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final boolean useDirectByteBuffers;
 
-    public HeaderGenerator(WritableBufferPool bufferPool)
+    public HeaderGenerator(ByteBufferPool bufferPool)
     {
         this(bufferPool, true);
     }
 
-    public HeaderGenerator(WritableBufferPool bufferPool, boolean useDirectByteBuffers)
+    public HeaderGenerator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         this.bufferPool = bufferPool;
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
-    public WritableBufferPool getBufferPool()
+    public ByteBufferPool getBufferPool()
     {
         return bufferPool;
     }

@@ -36,10 +36,8 @@ import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ServerConnector;
@@ -47,6 +45,8 @@ import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -148,7 +148,7 @@ public class HTTP2CServerTest extends AbstractServerTest
 
             assertTrue(upgrade.toCompleteString().startsWith("HTTP/1.1 101 "));
 
-            bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+            bufferPool = new ArrayByteBufferPool();
             generator = new Generator(bufferPool);
 
             final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
@@ -195,12 +195,12 @@ public class HTTP2CServerTest extends AbstractServerTest
             headersRef.set(null);
             dataRef.set(null);
             latchRef.set(new CountDownLatch(2));
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/two", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
             generator.control(accumulator, new HeadersFrame(3, metaData, null, true));
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(client.getOutputStream());
             }
@@ -231,10 +231,10 @@ public class HTTP2CServerTest extends AbstractServerTest
     {
         final CountDownLatch latch = new CountDownLatch(3);
 
-        bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+        bufferPool = new ArrayByteBufferPool();
         generator = new Generator(bufferPool);
 
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/test", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
@@ -244,7 +244,7 @@ public class HTTP2CServerTest extends AbstractServerTest
         {
             client.setSoTimeout(5000);
 
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(client.getOutputStream());
             }
@@ -328,17 +328,17 @@ public class HTTP2CServerTest extends AbstractServerTest
         // Now send an HTTP/2 direct request, which
         // will have the PRI * HTTP/2.0 preface.
 
-        bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+        bufferPool = new ArrayByteBufferPool();
         generator = new Generator(bufferPool);
 
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, new PrefaceFrame());
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
             client.setSoTimeout(5000);
 
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(client.getOutputStream());
             }

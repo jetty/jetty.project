@@ -53,7 +53,7 @@ public class ContentCopier extends IteratingNestedCallback
                 return Action.SCHEDULED;
             }
 
-            if (chunkProcessor != null && chunkProcessor.process(chunk, this))
+            if (chunkProcessor != null && process(chunkProcessor, chunk, this))
                 return Action.SCHEDULED;
 
             terminated = chunk.isLast();
@@ -64,12 +64,26 @@ public class ContentCopier extends IteratingNestedCallback
                 return Action.SCHEDULED;
             }
 
+            chunk.retain();
             try (RetainableByteBuffer buffer = chunk.acquire())
             {
-                sink.write(chunk.isLast(), buffer, this);
+                sink.write(chunk.isLast(), buffer, Callback.from(chunk::release, this));
             }
         }
         return Action.SCHEDULED;
+    }
+
+    private static boolean process(Content.Chunk.Processor processor, Content.Chunk chunk, Callback callback)
+    {
+        try
+        {
+            return processor.process(chunk, callback);
+        }
+        catch (Throwable x)
+        {
+            callback.failed(x);
+            return true;
+        }
     }
 
     @Override

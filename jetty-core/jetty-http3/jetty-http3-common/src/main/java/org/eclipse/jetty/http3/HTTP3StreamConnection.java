@@ -271,15 +271,18 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         else
                         {
                             // Retain because multiple frames can be parsed from the same QUIC chunk.
-                            Content.Chunk quicChunk = tryRetainData();
-                            if (quicChunk == null)
-                                throw new EofException("stream closed while reading");
-                            try (RetainableByteBuffer data = dataFrame.acquire())
+                            try (Content.Chunk quicChunk = tryRetainData())
                             {
-                                Content.Chunk h3Chunk = Content.Chunk.from(data, dataFrame.isLast());
-                                if (h3Chunk.isLast())
-                                    tryReleaseData(true);
-                                yield h3Chunk;
+                                if (quicChunk == null)
+                                    throw new EofException("stream closed while reading");
+                                // The H3 chunk holds its own reference to the data, release the QUIC chunk.
+                                try (RetainableByteBuffer data = dataFrame.acquire())
+                                {
+                                    Content.Chunk h3Chunk = Content.Chunk.from(data, dataFrame.isLast());
+                                    if (h3Chunk.isLast())
+                                        tryReleaseData(true);
+                                    yield h3Chunk;
+                                }
                             }
                         }
                     }

@@ -19,6 +19,9 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.content.ContentSourceInputStream;
+import org.eclipse.jetty.io.internal.BufferChunk;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -30,6 +33,34 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class ContentSourceInputStreamTest
 {
+    @Test
+    public void testSkippedEmptyChunksAreReleased() throws Exception
+    {
+        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
+        Content.Chunk empty1;
+        try (RetainableByteBuffer buffer = bufferPool.acquire(16, false))
+        {
+            empty1 = new BufferChunk(buffer, false);
+        }
+        Content.Chunk empty2;
+        try (RetainableByteBuffer buffer = bufferPool.acquire(16, false))
+        {
+            empty2 = new BufferChunk(buffer, false);
+        }
+
+        try (TestSource source = new TestSource(
+            empty1,
+            Content.Chunk.from(ByteBuffer.wrap("123".getBytes(US_ASCII)), false),
+            empty2,
+            Content.Chunk.EOF
+        ))
+        {
+            ContentSourceInputStream contentSourceInputStream = new ContentSourceInputStream(source);
+            assertThat(new String(contentSourceInputStream.readAllBytes(), US_ASCII), is("123"));
+        }
+        assertThat("Leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
+    }
+
     @Test
     public void testSingleByteReadInPresenceOfEmptyChunks() throws Exception
     {

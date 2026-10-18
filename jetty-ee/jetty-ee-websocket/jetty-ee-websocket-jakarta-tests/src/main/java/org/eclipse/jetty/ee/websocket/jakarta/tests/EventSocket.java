@@ -28,6 +28,7 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +73,8 @@ public class EventSocket
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} onMessage(): {}", this, message);
-        binaryMessages.offer(message);
+        // The ByteBuffer is only valid during this call, copy it.
+        binaryMessages.offer(BufferUtil.copy(message));
     }
 
     @OnClose

@@ -20,10 +20,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
@@ -250,7 +250,7 @@ public class ParserTest
         expected.put(b);
         expected.put(toBuffer(Integer.MAX_VALUE));
 
-        Parser parser = new Parser(WritableBufferPool.NON_POOLING);
+        Parser parser = new Parser(ByteBufferPool.NON_POOLING);
         assertNull(parser.parse(expected));
         assertThat(parser.getPayloadLength(), equalTo((long)Integer.MAX_VALUE));
     }
@@ -265,7 +265,7 @@ public class ParserTest
         expected.put(b);
         expected.put(toBuffer(Integer.MAX_VALUE + 1L));
 
-        Parser parser = new Parser(WritableBufferPool.NON_POOLING);
+        Parser parser = new Parser(ByteBufferPool.NON_POOLING);
         assertThrows(MessageTooLargeException.class, () -> parser.parse(expected));
     }
 
@@ -279,7 +279,7 @@ public class ParserTest
         expected.put(b);
         expected.put(new byte[]{(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF});
 
-        Parser parser = new Parser(WritableBufferPool.NON_POOLING);
+        Parser parser = new Parser(ByteBufferPool.NON_POOLING);
         assertThrows(MessageTooLargeException.class, () -> parser.parse(expected));
     }
 

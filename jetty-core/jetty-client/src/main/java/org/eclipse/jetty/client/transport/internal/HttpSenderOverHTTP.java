@@ -26,8 +26,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
-import org.eclipse.jetty.util.buffer.WritableBufferPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,7 +159,7 @@ public class HttpSenderOverHTTP extends HttpSender
         {
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
             HttpExchange exchange = getHttpExchange();
-            WritableBufferPool bufferPool = org.eclipse.jetty.io.WritableBufferPool.wrap(httpClient.getByteBufferPool());
+            ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             int requestHeadersSize = httpClient.getRequestBufferSize();
             int maxRequestHeadersSize = httpClient.getMaxRequestHeadersSize();
             boolean useDirectBuffers = httpClient.isUseOutputDirectByteBuffers();
@@ -300,7 +300,7 @@ public class HttpSenderOverHTTP extends HttpSender
         protected Action process() throws Exception
         {
             HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
-            WritableBufferPool bufferPool = org.eclipse.jetty.io.WritableBufferPool.wrap(httpClient.getByteBufferPool());
+            ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             boolean useDirectBuffers = httpClient.isUseOutputDirectByteBuffers();
             int chunkMaxLength = generator.getChunkMaxLength();
             RetainableByteBuffer contentBuffer = content;

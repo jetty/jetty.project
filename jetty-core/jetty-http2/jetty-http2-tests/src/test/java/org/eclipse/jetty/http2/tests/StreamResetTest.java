@@ -64,7 +64,6 @@ import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.SelectableChannelEndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -75,6 +74,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
@@ -853,13 +854,13 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(http2Client.getByteBufferPool());
+        ByteBufferPool bufferPool = http2Client.getByteBufferPool();
         String host = "localhost";
         int port = connector.getLocalPort();
         try (Socket socket = new Socket(host, port))
         {
             Generator generator = new Generator(bufferPool);
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -874,7 +875,7 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(socket.getOutputStream());
             }
@@ -883,7 +884,7 @@ public class StreamResetTest extends AbstractTest
             waitUntilTCPCongested(serverEndPointRef::get);
 
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(socket.getOutputStream());
             }
@@ -896,7 +897,7 @@ public class StreamResetTest extends AbstractTest
             {
                 while (true)
                 {
-                    socket.getInputStream().read(buffer.array(), buffer.arrayOffset(), buffer.remaining());
+                    socket.getInputStream().read(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
                     buffer.clear();
                 }
             }
@@ -948,13 +949,13 @@ public class StreamResetTest extends AbstractTest
         });
         connector.setIdleTimeout(serverIdleTimeout);
 
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(http2Client.getByteBufferPool());
+        ByteBufferPool bufferPool = http2Client.getByteBufferPool();
         String host = "localhost";
         int port = connector.getLocalPort();
         try (Socket socket = new Socket(host, port))
         {
             Generator generator = new Generator(bufferPool);
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -969,7 +970,7 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(socket.getOutputStream());
             }
@@ -978,7 +979,7 @@ public class StreamResetTest extends AbstractTest
             waitUntilTCPCongested(serverEndPointRef::get);
 
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(socket.getOutputStream());
             }
@@ -1040,13 +1041,13 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        WritableBufferPool bufferPool = WritableBufferPool.wrap(http2Client.getByteBufferPool());
+        ByteBufferPool bufferPool = http2Client.getByteBufferPool();
         String host = "localhost";
         int port = connector.getLocalPort();
         try (Socket socket = new Socket(host, port))
         {
             Generator generator = new Generator(bufferPool);
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             Map<Integer, Integer> clientSettings = new HashMap<>();
             // Max stream HTTP/2 flow control window.
@@ -1060,7 +1061,7 @@ public class StreamResetTest extends AbstractTest
             HeadersFrame headersFrame = new HeadersFrame(3, request, null, true);
             generator.control(accumulator, headersFrame);
 
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(socket.getOutputStream());
             }
@@ -1074,7 +1075,7 @@ public class StreamResetTest extends AbstractTest
             int streamId = 5;
             headersFrame = new HeadersFrame(streamId, request, null, true);
             generator.control(accumulator, headersFrame);
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(socket.getOutputStream());
             }
@@ -1082,7 +1083,7 @@ public class StreamResetTest extends AbstractTest
 
             // Now reset the second request, which has not started writing yet.
             generator.control(accumulator, new ResetFrame(streamId, ErrorCode.CANCEL_STREAM_ERROR.code));
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 buffer.putTo(socket.getOutputStream());
             }

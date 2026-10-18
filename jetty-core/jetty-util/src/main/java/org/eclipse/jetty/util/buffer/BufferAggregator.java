@@ -15,6 +15,7 @@ package org.eclipse.jetty.util.buffer;
 
 import java.nio.BufferOverflowException;
 import java.nio.charset.Charset;
+import java.util.Objects;
 
 import org.eclipse.jetty.util.Retainable;
 
@@ -28,29 +29,47 @@ import org.eclipse.jetty.util.Retainable;
 /// The _take_ operations return a [RetainableByteBuffer] that callers must release.
 /// The returned [RetainableByteBuffer] contains all the bytes of this aggregator,
 /// and the internal backing store of this aggregator becomes empty.
-public class Aggregator implements AutoCloseable
+public class BufferAggregator implements AutoCloseable
 {
-    private RetainableByteBuffer.Mutable buffer;
+    private final ByteBufferPool bufferPool;
+    private final boolean direct;
     private final boolean growable;
+    private final int initial;
+    private RetainableByteBuffer.Mutable buffer;
 
-    public Aggregator(boolean growable, int initialCapacity)
+    public BufferAggregator(boolean growable, int initialCapacity)
     {
+        this(null, false, growable, initialCapacity);
+    }
+
+    public BufferAggregator(ByteBufferPool bufferPool, boolean direct, boolean growable, int initialCapacity)
+    {
+        this.bufferPool = Objects.requireNonNullElse(bufferPool, ByteBufferPool.NON_POOLING);
+        this.direct = direct;
         this.growable = growable;
-        this.buffer = RetainableByteBuffer.Mutable.allocate(initialCapacity, true);
+        this.initial = initialCapacity;
+    }
+
+    /// @return whether this aggregator has bytes
+    public boolean hasRemaining()
+    {
+        return buffer != null && buffer.hasRemaining();
     }
 
     /// @return how many bytes are present in this aggregator
     public long remaining()
     {
-        return buffer.remaining();
+        return buffer == null ? 0 : buffer.remaining();
     }
 
     /// Appends the given [RetainableByteBuffer] to this aggregator,
     /// growing the backing store if configured so and if necessary.
     ///
     /// @return the number of bytes appended
-    public long append(RetainableByteBuffer data)
+    public long put(RetainableByteBuffer data)
     {
+        if (buffer == null)
+            buffer = bufferPool.acquire(initial, direct);
         long remaining = data.remaining();
         if (buffer.space() < remaining)
             grow(remaining);
@@ -64,25 +83,26 @@ public class Aggregator implements AutoCloseable
     /// @return the contents of this aggregator as a [String]
     public String getString(Charset charset)
     {
-        return buffer.getString(buffer.readPosition(), charset);
+        return buffer == null ? "" : buffer.getString(buffer.readPosition(), charset);
     }
 
     /// Returns the contents of this aggregator as a [RetainableByteBuffer] that must be released.
     ///
     /// This aggregator is modified, and the internal backing store is empty.
     ///
-    ///
+    /// @return the contents of this aggregator as a [RetainableByteBuffer]
     public RetainableByteBuffer take()
     {
         RetainableByteBuffer.Mutable result = buffer;
-        buffer = RetainableByteBuffer.Mutable.allocate((int)result.capacity(), true);
-        return result;
+        buffer = null;
+        return result != null ? result : RetainableByteBuffer.empty();
     }
 
     /// Empties the internal backing store.
     public void clear()
     {
-        buffer.clear();
+        if (buffer != null)
+            buffer.clear();
     }
 
     /// Closes this aggregator and releases the internal backing store.
@@ -102,7 +122,7 @@ public class Aggregator implements AutoCloseable
         long newCapacity = Math.max(capacity + capacity / 2, buffer.remaining() + extraCapacity);
         if (newCapacity >= Integer.MAX_VALUE)
             throw new BufferOverflowException();
-        RetainableByteBuffer.Mutable newBuffer = RetainableByteBuffer.Mutable.allocate((int)newCapacity, true);
+        RetainableByteBuffer.Mutable newBuffer = bufferPool.acquire((int)newCapacity, direct);
         newBuffer.put(buffer);
         buffer.release();
         buffer = newBuffer;

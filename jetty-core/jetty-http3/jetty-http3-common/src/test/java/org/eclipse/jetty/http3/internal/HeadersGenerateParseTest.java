@@ -28,8 +28,9 @@ import org.eclipse.jetty.http3.parser.MessageParser;
 import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -49,8 +50,8 @@ public class HeadersGenerateParseTest
 
         QpackEncoder encoder = new QpackEncoder(_ -> {});
         encoder.setMaxHeadersSize(4 * 1024);
-        WritableBufferPool bufferPool = WritableBufferPool.NON_POOLING;
-        RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+        ByteBufferPool bufferPool = ByteBufferPool.NON_POOLING;
+        BufferAccumulator accumulator = new BufferAccumulator();
         new MessageGenerator(bufferPool, encoder, true).generate(accumulator, 0, input, null);
 
         QpackDecoder decoder = new QpackDecoder(_ -> {});
@@ -66,7 +67,7 @@ public class HeadersGenerateParseTest
             }
         }, decoder, 13);
         parser.init(UnaryOperator.identity());
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             parser.parse(buffer, false);
             assertFalse(buffer.hasRemaining());

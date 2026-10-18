@@ -20,13 +20,14 @@ import java.util.Queue;
 
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.generator.ControlGenerator;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -39,7 +40,7 @@ public class ControlFlusher extends IteratingCallback
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> queue = new ArrayDeque<>();
-    private final RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+    private final BufferAccumulator accumulator = new BufferAccumulator();
     private final StreamEndPoint endPoint;
     private final ControlGenerator generator;
     private boolean initialized;
@@ -47,7 +48,7 @@ public class ControlFlusher extends IteratingCallback
     private List<Entry> entries;
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
 
-    public ControlFlusher(WritableBufferPool byteBufferPool, StreamEndPoint endPoint, boolean useDirectByteBuffers)
+    public ControlFlusher(ByteBufferPool byteBufferPool, StreamEndPoint endPoint, boolean useDirectByteBuffers)
     {
         this.endPoint = endPoint;
         this.generator = new ControlGenerator(byteBufferPool, useDirectByteBuffers);
@@ -99,7 +100,7 @@ public class ControlFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} bytes on {}", accumulator.remaining(), this);
 
-        try (RetainableByteBuffer buffer = accumulator.drain())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
             endPoint.write(false, buffer, this);
             return Action.SCHEDULED;

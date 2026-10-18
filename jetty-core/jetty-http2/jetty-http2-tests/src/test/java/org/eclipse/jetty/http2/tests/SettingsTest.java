@@ -38,6 +38,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -115,7 +116,7 @@ public class SettingsTest extends AbstractTest
             .put((byte)0)
             .putInt(1) // Non-Zero Stream ID
             .flip();
-        ((HTTP2Session)clientSession).getEndPoint().write(Callback.NOOP, byteBuffer);
+        ((HTTP2Session)clientSession).getEndPoint().write(RetainableByteBuffer.wrap(byteBuffer), Callback.NOOP);
 
         assertFalse(serverSettingsLatch.get().await(1, TimeUnit.SECONDS));
         assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
@@ -189,7 +190,7 @@ public class SettingsTest extends AbstractTest
             .putShort((short)SettingsFrame.ENABLE_PUSH)
             .putInt(1)
             .flip();
-        ((HTTP2Session)clientSession).getEndPoint().write(Callback.NOOP, byteBuffer);
+        ((HTTP2Session)clientSession).getEndPoint().write(RetainableByteBuffer.wrap(byteBuffer), Callback.NOOP);
 
         assertFalse(serverSettingsLatch.get().await(1, TimeUnit.SECONDS));
         assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
@@ -330,12 +331,12 @@ public class SettingsTest extends AbstractTest
                 try
                 {
                     HTTP2Session session = (HTTP2Session)stream.getSession();
-                    RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+                    BufferAccumulator accumulator = new BufferAccumulator();
                     MetaData.Request push = newRequest("GET", "/push", HttpFields.EMPTY);
                     PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 2, push);
                     session.getGenerator().control(accumulator, pushFrame);
 
-                    try (RetainableByteBuffer buffer = accumulator.drain())
+                    try (RetainableByteBuffer buffer = accumulator.take())
                     {
                         session.getEndPoint().write(buffer, Callback.NOOP);
                     }

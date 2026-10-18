@@ -20,8 +20,9 @@ import java.util.Random;
 import org.eclipse.jetty.http2.generator.DataGenerator;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +34,7 @@ public class DataGenerateParseTest
 {
     private final byte[] smallContent = new byte[128];
     private final byte[] largeContent = new byte[128 * 1024];
-    private final WritableBufferPool bufferPool = WritableBufferPool.wrap(new ArrayByteBufferPool());
+    private final ByteBufferPool bufferPool = new ArrayByteBufferPool();
 
     public DataGenerateParseTest()
     {
@@ -105,7 +106,7 @@ public class DataGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             try (RetainableByteBuffer slice = data.slice())
             {
                 int generated = 0;
@@ -119,7 +120,7 @@ public class DataGenerateParseTest
             }
 
             frames.clear();
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 UnknownParseTest.parse(parser, buffer);
             }
@@ -148,7 +149,7 @@ public class DataGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Accumulator accumulator = new RetainableByteBuffer.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             RetainableByteBuffer data = RetainableByteBuffer.wrap(largeContent);
             try (RetainableByteBuffer slice = data.slice())
             {
@@ -162,7 +163,7 @@ public class DataGenerateParseTest
                 }
             }
 
-            try (RetainableByteBuffer buffer = accumulator.drain())
+            try (RetainableByteBuffer buffer = accumulator.take())
             {
                 UnknownParseTest.parse(parser, buffer);
             }

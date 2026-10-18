@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.internal;
+package org.eclipse.jetty.util.buffer.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -39,15 +39,28 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
 
     public SingleMutableBuffer(ByteBuffer byteBuffer, Retainable retainable, boolean writeMode)
     {
+        this(byteBuffer, retainable, writeMode, true);
+    }
+
+    protected SingleMutableBuffer(ByteBuffer byteBuffer, Retainable retainable, boolean writeMode, boolean retain)
+    {
         this.byteBuffer = Objects.requireNonNull(byteBuffer);
         this.retainable = Objects.requireNonNull(retainable);
         this.flipPosition = writeMode ? 0 : -1;
-        retain();
+        if (retain)
+            retain();
     }
 
-    ByteBuffer getByteBuffer()
+    /// @param readMode whether the [ByteBuffer] is flipped to read or write mode
+    /// @return the [ByteBuffer] underlying this buffer
+    protected ByteBuffer byteBuffer(boolean readMode)
     {
-        return flipToRead();
+        return readMode ? flipToRead() : flipToWrite();
+    }
+
+    protected Retainable retainable()
+    {
+        return retainable;
     }
 
     private ByteBuffer flipToRead()
@@ -79,10 +92,9 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public RetainableByteBuffer readPosition(long newPosition)
+    public void readPosition(long newPosition)
     {
         flipToRead().position(Math.toIntExact(newPosition));
-        return this;
     }
 
     @Override
@@ -92,19 +104,18 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public Mutable writePosition(long newPosition)
+    public void writePosition(long newPosition)
     {
         flipToWrite().position(Math.toIntExact(newPosition));
-        return this;
     }
 
     @Override
-    public Mutable pad(long length)
+    public void pad(long length)
     {
-        return pad((byte)0, length);
+        pad((byte)0, length);
     }
 
-    private Mutable pad(byte value, long length)
+    private void pad(byte value, long length)
     {
         if (length < 0 || length > space())
             throw new IllegalArgumentException("invalid length " + length);
@@ -120,7 +131,6 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
         {
             b.put(value);
         }
-        return this;
     }
 
     @Override
@@ -221,92 +231,81 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public Mutable put(byte b)
+    public void put(byte b)
     {
         flipToWrite().put(b);
-        return this;
     }
 
     @Override
-    public Mutable put(long position, byte b)
+    public void put(long position, byte b)
     {
         flipToWrite().put(Math.toIntExact(position), b);
-        return this;
     }
 
     @Override
-    public Mutable putShort(short s)
+    public void putShort(short s)
     {
         flipToWrite().putShort(s);
-        return this;
     }
 
     @Override
-    public Mutable putShort(long position, short s)
+    public void putShort(long position, short s)
     {
         flipToWrite().putShort(Math.toIntExact(position), s);
-        return this;
     }
 
     @Override
-    public Mutable putInt(int i)
+    public void putInt(int i)
     {
         flipToWrite().putInt(i);
-        return this;
     }
 
     @Override
-    public Mutable putInt(long position, int i)
+    public void putInt(long position, int i)
     {
         flipToWrite().putInt(Math.toIntExact(position), i);
-        return this;
     }
 
     @Override
-    public Mutable putLong(long l)
+    public void putLong(long l)
     {
         flipToWrite().putLong(l);
-        return this;
     }
 
     @Override
-    public Mutable putLong(long position, long l)
+    public void putLong(long position, long l)
     {
         flipToWrite().putLong(Math.toIntExact(position), l);
-        return this;
     }
 
     @Override
-    public Mutable put(byte[] src, int offset, int length)
+    public void put(byte[] bytes, int offset, int length)
     {
-        flipToWrite().put(src, offset, length);
-        return this;
+        flipToWrite().put(bytes, offset, length);
     }
 
     @Override
-    public Mutable put(ByteBuffer byteBuffer)
+    public void put(ByteBuffer byteBuffer)
     {
         flipToWrite().put(byteBuffer);
-        return this;
     }
 
     @Override
-    public Mutable put(RetainableByteBuffer buffer)
+    public void put(RetainableByteBuffer buffer)
     {
         if (buffer instanceof SingleMutableBuffer smb)
         {
             put(smb.flipToRead());
-            return this;
         }
-
-        buffer.quietRead(src ->
+        else
         {
-            long result = src.remaining();
-            byteBuffer.put(src);
-            return result;
-        });
-
-        return this;
+            buffer.quietRead(src ->
+            {
+                long result = src.remaining();
+                flipToWrite().put(src);
+                return result;
+            });
+        }
     }
 
     @Override
@@ -341,34 +340,40 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
         }
         else
         {
-            RetainableByteBuffer slice = buffer.sliceAndConsume(space);
-            put(slice);
-            slice.release();
-            return space;
+            try (RetainableByteBuffer slice = buffer.sliceAndConsume(space))
+            {
+                put(slice);
+                return space;
+            }
         }
     }
 
     @Override
-    public Mutable compact()
+    public void compact()
     {
         if (isRetained())
             throw new IllegalStateException("cannot compact retained buffer");
         if (readPosition() == 0)
-            return this;
-        if (!hasRemaining())
-            return clear();
-        // ByteBuffer.compact() leaves the ByteBuffer in write mode.
-        flipToRead().compact();
-        flipPosition = 0;
-        return this;
+            return;
+        if (hasRemaining())
+        {
+            // ByteBuffer.compact() leaves the ByteBuffer in write mode.
+            flipToRead().compact();
+            flipPosition = 0;
+        }
+        else
+        {
+            clear();
+        }
     }
 
     @Override
-    public Mutable clear()
+    public void clear()
     {
+        if (isRetained())
+            throw new IllegalStateException("cannot clear retained buffer");
         flipToWrite().clear();
         flipPosition = 0;
-        return this;
     }
 
     @Override
@@ -376,19 +381,6 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     {
         return writer.writeTo(flipToWrite());
     }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x{fp=%d,b=%s,r=%s}",
-            TypeUtil.toShortName(getClass()),
-            hashCode(),
-            flipPosition,
-            BufferUtil.toDetailString(byteBuffer, (int)readPosition(), (int)writePosition(), (int)remaining()),
-            retainable);
-    }
-
-    // Retainable
 
     @Override
     public boolean isRetained()
@@ -406,6 +398,17 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     public boolean release()
     {
         return retainable.release();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{fp=%d,b=%s,r=%s}",
+            TypeUtil.toShortName(getClass()),
+            hashCode(),
+            flipPosition,
+            BufferUtil.toDetailString(byteBuffer, (int)readPosition(), (int)writePosition(), (int)remaining()),
+            retainable);
     }
 
     public static class Empty extends SingleMutableBuffer

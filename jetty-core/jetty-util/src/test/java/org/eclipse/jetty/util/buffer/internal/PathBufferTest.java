@@ -11,11 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.util.internal;
+package org.eclipse.jetty.util.buffer.internal;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -29,14 +31,15 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
-import org.eclipse.jetty.util.buffer.WritableBufferPool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -51,7 +54,7 @@ public class PathBufferTest
         Path targetFile = workDir.getEmptyPathDir().resolve("testGetInt.txt");
         Files.writeString(targetFile, "    aaaa", StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
 
-        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(targetFile, WritableBufferPool.SIZED_NON_POOLING))
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(targetFile, ByteBufferPool.SIZED_NON_POOLING))
         {
             assertEquals(8L, buffer.remaining());
             assertEquals(0L, buffer.readPosition());
@@ -90,7 +93,7 @@ public class PathBufferTest
         Path targetFile = workDir.getEmptyPathDir().resolve("testGetInt.txt");
         Files.writeString(targetFile, "    aaaa", StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
 
-        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(targetFile, WritableBufferPool.SIZED_NON_POOLING))
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(targetFile, ByteBufferPool.SIZED_NON_POOLING))
         {
             assertEquals(8L, buffer.remaining());
 
@@ -118,7 +121,7 @@ public class PathBufferTest
     public void testGetBytes() throws Exception
     {
         Path testResourcePathFile = MavenTestingUtils.getTestResourcePathFile("resource.txt");
-        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(testResourcePathFile, WritableBufferPool.SIZED_NON_POOLING))
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(testResourcePathFile, ByteBufferPool.SIZED_NON_POOLING))
         {
             byte[] bytes = new byte[Math.toIntExact(buffer.remaining())];
             buffer.get(bytes);
@@ -132,7 +135,7 @@ public class PathBufferTest
     public void testSlice() throws Exception
     {
         Path testResourcePathFile = MavenTestingUtils.getTestResourcePathFile("resource.txt");
-        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(testResourcePathFile, WritableBufferPool.SIZED_NON_POOLING))
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(testResourcePathFile, ByteBufferPool.SIZED_NON_POOLING))
         {
             byte[] bytes = new byte[Math.toIntExact(buffer.remaining())];
             buffer.get(bytes);
@@ -150,7 +153,7 @@ public class PathBufferTest
     public void testSlice2Args() throws Exception
     {
         Path testResourcePathFile = MavenTestingUtils.getTestResourcePathFile("resource.txt");
-        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(testResourcePathFile, WritableBufferPool.SIZED_NON_POOLING))
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(testResourcePathFile, ByteBufferPool.SIZED_NON_POOLING))
         {
             assertEquals(20L, buffer.remaining());
 
@@ -173,7 +176,7 @@ public class PathBufferTest
         try (FileChannel targetFc = FileChannel.open(targetFile, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE))
         {
             Path testResourcePathFile = MavenTestingUtils.getTestResourcePathFile("resource.txt");
-            try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(testResourcePathFile, WritableBufferPool.SIZED_NON_POOLING))
+            try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(testResourcePathFile, ByteBufferPool.SIZED_NON_POOLING))
             {
                 long totalWritten = 0L;
                 for (int i = 0; i < 20; i++)
@@ -200,7 +203,7 @@ public class PathBufferTest
         try (FileChannel targetFc = FileChannel.open(targetFile, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE))
         {
             Path testResourcePathFile = MavenTestingUtils.getTestResourcePathFile("resource.txt");
-            try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(testResourcePathFile, WritableBufferPool.SIZED_NON_POOLING))
+            try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(testResourcePathFile, ByteBufferPool.SIZED_NON_POOLING))
             {
                 long written = buffer.read(new RetainableByteBuffer.TransferringReader()
                 {
@@ -231,7 +234,7 @@ public class PathBufferTest
             b1.put("-- prefix --\n".getBytes(StandardCharsets.UTF_8));
 
             Path testResourcePathFile = MavenTestingUtils.getTestResourcePathFile("resource.txt");
-            try (RetainableByteBuffer b2 = RetainableByteBuffer.wrap(testResourcePathFile, WritableBufferPool.SIZED_NON_POOLING))
+            try (RetainableByteBuffer b2 = RetainableByteBuffer.wrap(testResourcePathFile, ByteBufferPool.SIZED_NON_POOLING))
             {
                 try (RetainableByteBuffer.Mutable b3 = RetainableByteBuffer.Mutable.allocate(20, false))
                 {
@@ -257,30 +260,7 @@ public class PathBufferTest
     @Test
     public void testReadWithAsyncOperation() throws Exception
     {
-        WritableBufferPool.Sized bufferPool = new WritableBufferPool.Sized(1024, false, (size, direct) ->
-        {
-            ByteBuffer bytes = direct ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
-            try (Retainable.ReferenceCounter retainable = new Retainable.ReferenceCounter())
-            {
-                return new SingleMutableBuffer(bytes, retainable, true)
-                {
-                    @Override
-                    public boolean release()
-                    {
-                        boolean released = super.release();
-                        if (released)
-                        {
-                            // Clear the bytes to verify that the buffer is not used after release.
-                            for (int i = 0; i < bytes.capacity(); ++i)
-                            {
-                                bytes.put(i, (byte)0);
-                            }
-                        }
-                        return released;
-                    }
-                };
-            }
-        });
+        ByteBufferPool.Sized bufferPool = new ByteBufferPool.Sized(new ArrayByteBufferPool.Tracking());
         Path targetFile = workDir.getEmptyPathDir().resolve("readWithAsync.txt");
         // Create a file large enough to be read in multiple passes.
         int length = 2 * bufferPool.getSize();
@@ -343,14 +323,16 @@ public class PathBufferTest
                 result.append((char)byteBuffer.get());
             }
 
-            // Verify that the reader is not invoked again.
             assertFalse(buffer.hasRemaining());
-            buffer.read(_ ->
+
+            // If invoked again, provides an empty buffer.
+            buffer.read(b ->
             {
                 count.incrementAndGet();
+                assertFalse(b.hasRemaining());
                 return 0;
             });
-            assertEquals(2, count.get());
+            assertEquals(3, count.get());
 
             assertEquals(content, result.toString());
         }
@@ -359,26 +341,8 @@ public class PathBufferTest
     @Test
     public void testSliceReadWithAsyncOperationDoesNotLeak() throws Exception
     {
-        AtomicInteger outstanding = new AtomicInteger();
-        WritableBufferPool.Sized bufferPool = new WritableBufferPool.Sized(1024, false, (size, direct) ->
-        {
-            ByteBuffer bytes = direct ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
-            try (Retainable.ReferenceCounter retainable = new Retainable.ReferenceCounter())
-            {
-                outstanding.incrementAndGet();
-                return new SingleMutableBuffer(bytes, retainable, true)
-                {
-                    @Override
-                    public boolean release()
-                    {
-                        boolean released = super.release();
-                        if (released)
-                            outstanding.decrementAndGet();
-                        return released;
-                    }
-                };
-            }
-        });
+        ArrayByteBufferPool.Tracking trackingBufferPool = new ArrayByteBufferPool.Tracking();
+        ByteBufferPool.Sized bufferPool = new ByteBufferPool.Sized(trackingBufferPool);
         Path targetFile = workDir.getEmptyPathDir().resolve("sliceReadWithAsync.txt");
         Files.write(targetFile, new byte[2 * bufferPool.getSize()], StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
 
@@ -389,26 +353,48 @@ public class PathBufferTest
 
         // Returning 0 keeps the file buffer of the slice, as the Reader may use it asynchronously.
         slice.read(_ -> 0);
-        assertEquals(1, outstanding.get());
+        assertEquals(1, trackingBufferPool.getLeaks().size());
 
         // Release the slice before the parent.
         assertTrue(slice.release());
         assertFalse(buffer.isRetained());
-        assertEquals(0, outstanding.get());
+        assertEquals(0, trackingBufferPool.getLeaks().size());
         assertTrue(buffer.release());
-        assertEquals(0, outstanding.get());
+        assertEquals(0, trackingBufferPool.getLeaks().size());
 
         // Another run that releases the parent before the slice.
         buffer = RetainableByteBuffer.wrap(targetFile, bufferPool);
         slice = buffer.slice(bufferPool.getSize() / 2, bufferPool.getSize());
         buffer.read(_ -> 0);
         slice.read(_ -> 0);
-        assertEquals(2, outstanding.get());
+        assertEquals(2, trackingBufferPool.getLeaks().size());
 
         // The parent is still retained by the slice.
         assertFalse(buffer.release());
-        assertEquals(2, outstanding.get());
+        assertEquals(2, trackingBufferPool.getLeaks().size());
         assertTrue(slice.release());
-        assertEquals(0, outstanding.get());
+        assertEquals(0, trackingBufferPool.getLeaks().size());
+    }
+
+    @Test
+    public void testFileChannelClosedAfterAllSlicesReleased() throws Exception
+    {
+        Path targetFile = workDir.getEmptyPathDir().resolve("fileChannelClosed.txt");
+        Files.writeString(targetFile, "abcdefgh", StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(targetFile, ByteBufferPool.SIZED_NON_POOLING);
+        RetainableByteBuffer slice = buffer.slice(2, 4);
+        RetainableByteBuffer nested = slice.slice(1, 2);
+
+        // The slices keep their parents retained, so the FileChannel is still open.
+        assertFalse(buffer.release());
+        assertFalse(slice.release());
+        assertEquals('d', nested.get(0));
+        assertEquals('e', nested.get(1));
+
+        // Releasing the last slice releases the parents and closes the FileChannel.
+        assertTrue(nested.release());
+        UncheckedIOException failure = assertThrows(UncheckedIOException.class, () -> nested.get(0));
+        assertInstanceOf(ClosedChannelException.class, failure.getCause());
     }
 }

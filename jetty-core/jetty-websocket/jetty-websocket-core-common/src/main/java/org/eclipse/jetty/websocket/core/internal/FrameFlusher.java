@@ -25,12 +25,12 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -60,7 +60,7 @@ public class FrameFlusher extends IteratingCallback
     private final AutoLock _lock = new AutoLock();
     private final LongAdder _messagesOut = new LongAdder();
     private final LongAdder _bytesOut = new LongAdder();
-    private final WritableBufferPool _bufferPool;
+    private final ByteBufferPool _bufferPool;
     private final EndPoint _endPoint;
     private final int _bufferSize;
     private final Generator _generator;
@@ -78,7 +78,7 @@ public class FrameFlusher extends IteratingCallback
     private Throwable _closedCause;
     private boolean _useDirectByteBuffers;
 
-    public FrameFlusher(WritableBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather, Behavior behavior)
+    public FrameFlusher(ByteBufferPool bufferPool, Scheduler scheduler, Generator generator, EndPoint endPoint, int bufferSize, int maxGather, Behavior behavior)
     {
         _behavior = behavior;
         _bufferPool = bufferPool;

@@ -74,7 +74,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -1554,7 +1554,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
             return 0;
         }
 
-        public abstract boolean generate(RetainableByteBuffer.Accumulator accumulator) throws HpackException;
+        public abstract boolean generate(BufferAccumulator accumulator) throws HpackException;
 
         boolean hasHighPriority()
         {
@@ -1645,7 +1645,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
 
         @Override
-        public boolean generate(RetainableByteBuffer.Accumulator accumulator) throws HpackException
+        public boolean generate(BufferAccumulator accumulator) throws HpackException
         {
             frameBytes = generator.control(accumulator, frame);
             beforeSend();
@@ -1749,7 +1749,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         }
 
         @Override
-        public boolean generate(RetainableByteBuffer.Accumulator accumulator)
+        public boolean generate(BufferAccumulator accumulator)
         {
             long dataRemaining = getDataBytesRemaining();
 
@@ -2482,15 +2482,30 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                 return;
 
             List<StreamFrame> frames = frameList.getFrames();
-            if (currentStreamId <= 0)
+            boolean assignStreamId = currentStreamId <= 0;
+            if (assignStreamId)
             {
                 frames = frames.stream()
                     .map(frame -> frame.withStreamId(streamId))
                     .collect(Collectors.toList());
             }
-            if (createLocalStream(slot, frames, promise, listener, streamId))
-                return;
-            freeSlot(slot, streamId);
+            try
+            {
+                if (createLocalStream(slot, frames, promise, listener, streamId))
+                    return;
+                freeSlot(slot, streamId);
+            }
+            finally
+            {
+                if (assignStreamId)
+                {
+                    frames.forEach(frame ->
+                    {
+                        if (frame instanceof DataFrame df)
+                            df.close();
+                    });
+                }
+            }
         }
 
         private Stream newUpgradeStream(HeadersFrame frame, Stream.Listener listener, Consumer<Throwable> failFn)

@@ -114,7 +114,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+        assertThat(stream.getResponseContentAsString(), equalTo(helloHandler.getMessage()));
     }
 
     @Test
@@ -150,7 +150,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+        assertThat(stream.getResponseContentAsString(), equalTo(helloHandler.getMessage()));
     }
 
     @Test
@@ -219,7 +219,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(stream.getResponseContent().remaining(), equalTo(10000));
+        assertThat(stream.getResponseContentAsString().length(), equalTo(10000));
     }
 
     @Test
@@ -297,7 +297,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
+        assertThat(stream.getResponseContentAsString(), equalTo(message));
     }
 
     @ParameterizedTest
@@ -340,7 +340,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
+        assertThat(stream.getResponseContentAsString(), equalTo(message));
     }
 
     @ParameterizedTest
@@ -400,7 +400,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
+        assertThat(stream.getResponseContentAsString(), equalTo(message));
     }
 
     @Test
@@ -575,7 +575,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().getLongField(HttpHeader.CONTENT_LENGTH), equalTo(5L));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
+        assertThat(stream.getResponseContentAsString(), equalTo("12345"));
     }
 
     @Test
@@ -821,7 +821,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+        assertThat(stream.getResponseContentAsString(), equalTo(helloHandler.getMessage()));
 
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
         assertThat(stream.read(), sameInstance(Content.Chunk.EOF));
@@ -863,7 +863,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
+        assertThat(stream.getResponseContentAsString(), equalTo("12345"));
 
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
         assertThat(stream.read(), nullValue());
@@ -906,7 +906,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
+        assertThat(stream.getResponseContentAsString(), equalTo("12345"));
 
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(true));
         assertThat(stream.read(), nullValue());
@@ -941,7 +941,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
+        assertThat(stream.getResponseContentAsString(), equalTo(message));
 
         // 2nd request
         fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -957,7 +957,7 @@ public class HttpChannelTest
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), nullValue());
         assertThat(stream.getResponseHeaders().getLongField(HttpHeader.CONTENT_LENGTH), equalTo(0L));
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(""));
+        assertThat(stream.getResponseContentAsString(), equalTo(""));
     }
 
     @Test
@@ -1071,7 +1071,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
+        assertThat(stream.getResponseContentAsString(), equalTo(message));
 
         Iterator<String> timeline = history.iterator();
 
@@ -1148,7 +1148,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
+        assertThat(stream.getResponseContentAsString(), equalTo(message));
 
         HttpFields trailersRcv = stream.getResponseTrailers();
         assertThat(trailersRcv, notNullValue());
@@ -1233,7 +1233,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("contentSize=" + (chunks * data.remaining())));
+        assertThat(stream.getResponseContentAsString(), equalTo("contentSize=" + (chunks * data.remaining())));
     }
 
     @Test

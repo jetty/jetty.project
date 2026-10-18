@@ -340,7 +340,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             {
                 // Special case: 7.2.3.6.  Generating an Empty Fragment Manually
                 // https://tools.ietf.org/html/rfc7692#section-7.2.3.6
-                buffer = buffer.put((byte)0);
+                buffer.put((byte)0);
             }
 
             if (LOG.isDebugEnabled())

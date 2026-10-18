@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -69,7 +70,7 @@ public class MemoryEndPointPipeTest
         Callback.Completable remoteFillCallback = new Callback.Completable();
         remoteEndPoint.fillInterested(remoteFillCallback);
 
-        RetainableByteBuffer.Mutable buffer = WritableBufferPool.wrap(buffers).acquire(512, false);
+        RetainableByteBuffer.Mutable buffer = buffers.acquire(512, false);
         try
         {
             byte[] smallZeros = new byte[(int)(buffer.capacity()) / 2];
@@ -130,7 +131,7 @@ public class MemoryEndPointPipeTest
 
         remoteFillCallback.get(5, TimeUnit.SECONDS);
 
-        RetainableByteBuffer.Mutable buffer = WritableBufferPool.wrap(buffers).acquire(512, false);
+        RetainableByteBuffer.Mutable buffer = buffers.acquire(512, false);
         try
         {
             int totalFilled = 0;
@@ -191,7 +192,7 @@ public class MemoryEndPointPipeTest
         // Wait for data to be available.
         remoteFillCallback.get(5, TimeUnit.SECONDS);
 
-        RetainableByteBuffer.Mutable buffer = WritableBufferPool.wrap(buffers).acquire(2 * data.length, false);
+        RetainableByteBuffer.Mutable buffer = buffers.acquire(2 * data.length, false);
         try
         {
             int totalFilled = 0;
@@ -262,7 +263,7 @@ public class MemoryEndPointPipeTest
         remoteFillCallback.get(5, TimeUnit.SECONDS);
 
         // Remote endpoint should be able to read existing data.
-        RetainableByteBuffer.Mutable buffer = WritableBufferPool.wrap(buffers).acquire(2 * data.length, false);
+        RetainableByteBuffer.Mutable buffer = buffers.acquire(2 * data.length, false);
         try
         {
             int filled = remoteEndPoint.fill(buffer);
@@ -333,6 +334,7 @@ public class MemoryEndPointPipeTest
         {
             RetainableByteBuffer.Mutable readBuffer = RetainableByteBuffer.Mutable.allocate(maxCapacity, false);
             remoteEndPoint.fill(readBuffer);
+            readBuffer.clear();
             if (flushed)
                 break;
             flushed = localEndPoint.flush(writeBuffer);

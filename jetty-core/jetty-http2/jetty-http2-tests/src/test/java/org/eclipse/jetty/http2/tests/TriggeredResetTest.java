@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.WindowRateControl;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -109,7 +110,7 @@ public class TriggeredResetTest extends AbstractTest
             byteBuffer.put(dataFrameBytes);
         }
         byteBuffer.flip();
-        ((HTTP2Session)session).getEndPoint().write(Callback.NOOP, byteBuffer);
+        ((HTTP2Session)session).getEndPoint().write(RetainableByteBuffer.wrap(byteBuffer), Callback.NOOP);
 
         await().atMost(5, TimeUnit.SECONDS).until(errorRef::get, equalTo(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code));
     }
@@ -164,7 +165,7 @@ public class TriggeredResetTest extends AbstractTest
             byteBuffer.put(dataFrameBytes);
         }
         byteBuffer.flip();
-        ((HTTP2Session)session).getEndPoint().write(Callback.NOOP, byteBuffer);
+        ((HTTP2Session)session).getEndPoint().write(RetainableByteBuffer.wrap(byteBuffer), Callback.NOOP);
 
         await().atMost(5, TimeUnit.SECONDS).until(errorRef::get, equalTo(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code));
     }

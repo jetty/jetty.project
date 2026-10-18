@@ -13,13 +13,14 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Files;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.MemoryResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -72,36 +74,13 @@ public class IOResources
         if (resource instanceof MemoryResource memoryResource)
             return RetainableByteBuffer.wrap(ByteBuffer.wrap(memoryResource.getBytes()));
 
-        long longLength = resource.length();
-
-        WritableBufferPool.Sized bufferPool = pool == null ? WritableBufferPool.SIZED_NON_POOLING : WritableBufferPool.wrap(pool);
+        ByteBufferPool.Sized bufferPool = pool == null ? ByteBufferPool.SIZED_NON_POOLING : pool;
 
         // Optimize for PathResource.
         Path path = resource.getPath();
-        if (path != null && longLength < Integer.MAX_VALUE)
-        {
-            // TODO: SIMON Just RBB.wrap(path...)?
-            try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire((int)longLength))
-            {
-                try (SeekableByteChannel seekableByteChannel = Files.newByteChannel(path))
-                {
-                    long totalRead = 0L;
-                    while (totalRead < longLength)
-                    {
-                        long read = buffer.write(seekableByteChannel::read);
-                        if (read == -1)
-                            break;
-                        totalRead += read;
-                    }
-                    buffer.retain();
-                    return buffer;
-                }
-                catch (IOException e)
-                {
-                    throw new UncheckedIOException(e);
-                }
-            }
-        }
+        long length = resource.length();
+        if (path != null && length >= 0 && length <= Integer.MAX_VALUE)
+            return toRetainableByteBuffer(path, (int)length, bufferPool);
 
         // Fallback to InputStream.
         try (InputStream inputStream = resource.newInputStream())
@@ -140,6 +119,42 @@ public class IOResources
         catch (IOException e)
         {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    private static RetainableByteBuffer toRetainableByteBuffer(Path path, int length, ByteBufferPool.Sized bufferPool)
+    {
+        if (length == 0)
+            return RetainableByteBuffer.empty();
+
+        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(length))
+        {
+            try (FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ))
+            {
+                long totalRead = 0L;
+                while (totalRead < length)
+                {
+                    long remaining = length - totalRead;
+                    long read = buffer.write(b ->
+                    {
+                        // The pooled buffer may be larger than the file,
+                        // do not read more than the expected length.
+                        if (b.remaining() > remaining)
+                            b.limit(b.position() + (int)remaining);
+                        return fileChannel.read(b);
+                    });
+                    // The file was truncated concurrently.
+                    if (read < 0)
+                        throw new EOFException("Unexpected EOF reading " + path);
+                    totalRead += read;
+                }
+                buffer.retain();
+                return buffer;
+            }
+            catch (IOException x)
+            {
+                throw new UncheckedIOException(x);
+            }
         }
     }
 
@@ -255,7 +270,7 @@ public class IOResources
             Path path = resource.getPath();
             if (path != null)
             {
-                RetainableByteBuffer pathBuffer = RetainableByteBuffer.wrap(path, offset, length, WritableBufferPool.wrap(bufferPool == null ? ByteBufferPool.SIZED_NON_POOLING : bufferPool));
+                RetainableByteBuffer pathBuffer = RetainableByteBuffer.wrap(path, offset, length, bufferPool == null ? ByteBufferPool.SIZED_NON_POOLING : bufferPool);
                 sink.write(true, pathBuffer, callback);
                 pathBuffer.release();
                 return;

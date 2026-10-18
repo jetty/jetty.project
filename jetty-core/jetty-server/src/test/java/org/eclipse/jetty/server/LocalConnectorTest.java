@@ -362,17 +362,21 @@ public class LocalConnectorTest
                 \r
                 """);
 
-        RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 10, TimeUnit.SECONDS);
-        assertNotNull(buffer);
-        String response = buffer.getString(StandardCharsets.ISO_8859_1);
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("pathInContext=/R1"));
+        try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 10, TimeUnit.SECONDS))
+        {
+            assertNotNull(buffer);
+            String response = buffer.getString(StandardCharsets.ISO_8859_1);
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("pathInContext=/R1"));
+        }
 
-        buffer = endPoint.awaitResponseBuffer(false, 10, TimeUnit.SECONDS);
-        assertNotNull(buffer);
-        response = buffer.getString(StandardCharsets.ISO_8859_1);
-        assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("pathInContext=/R2"));
+        try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 10, TimeUnit.SECONDS))
+        {
+            assertNotNull(buffer);
+            String response = buffer.getString(StandardCharsets.ISO_8859_1);
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("pathInContext=/R2"));
+        }
     }
 
     @Test

@@ -341,22 +341,22 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 out.openTag("security-constraint");
 
                 out.openTag("web-resource-collection");
+                if (m.getConstraint().getName() != null)
+                    out.tag("web-resource-name", m.getConstraint().getName());
+                if (m.getPathSpec() != null)
+                    out.tag("url-pattern", origin(md, "constraint.url." + m.getPathSpec()), m.getPathSpec());
+                if (m.getMethod() != null)
+                    out.tag("http-method", m.getMethod());
+
+                if (m.getMethodOmissions() != null)
                 {
-                    if (m.getConstraint().getName() != null)
-                        out.tag("web-resource-name", m.getConstraint().getName());
-                    if (m.getPathSpec() != null)
-                        out.tag("url-pattern", origin(md, "constraint.url." + m.getPathSpec()), m.getPathSpec());
-                    if (m.getMethod() != null)
-                        out.tag("http-method", m.getMethod());
-
-                    if (m.getMethodOmissions() != null)
-                        for (String o : m.getMethodOmissions())
-                        {
-                            out.tag("http-method-omission", o);
-                        }
-
-                    out.closeTag();
+                    for (String o : m.getMethodOmissions())
+                    {
+                        out.tag("http-method-omission", o);
+                    }
                 }
+
+                out.closeTag();
 
                 Constraint.Authorization authorization = m.getConstraint().getAuthorization();
 

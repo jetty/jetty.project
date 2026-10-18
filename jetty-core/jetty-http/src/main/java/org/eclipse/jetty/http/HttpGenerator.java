@@ -274,11 +274,11 @@ public class HttpGenerator
             }
 
             case END:
-                if (content.hasRemaining())
+                if (content != null && content.hasRemaining())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("discarding content in COMPLETING");
-                    content.readPosition(content.readPosition() + content.remaining());
+                    content.consume(content.remaining());
                 }
                 return Result.DONE;
 
@@ -318,7 +318,7 @@ public class HttpGenerator
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("discarding content in COMPLETING");
-            content.readPosition(content.readPosition() + content.remaining());
+            content.consume(content.remaining());
         }
 
         if (isChunking())
@@ -473,7 +473,7 @@ public class HttpGenerator
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("discarding content in COMPLETING");
-                    content.readPosition(content.readPosition() + content.remaining());
+                    content.consume(content.remaining());
                 }
                 return Result.DONE;
 
@@ -819,9 +819,7 @@ public class HttpGenerator
                 {
                     if (_contentPrepared == 0 && last)
                     {
-                        // TODO discard content for backward compatibility with 9.3 releases
-                        // TODO review if it is still needed in 9.4 or can we just throw.
-                        content.readPosition(content.readPosition() + content.remaining());
+                        content.consume(content.remaining());
                     }
                     else
                         throw new HttpException.RuntimeException(INTERNAL_SERVER_ERROR_500, "Content for no content response");

@@ -16,23 +16,24 @@ package org.eclipse.jetty.fcgi.generator;
 import java.util.Objects;
 
 import org.eclipse.jetty.fcgi.FCGI;
-import org.eclipse.jetty.io.WritableBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class Generator
 {
     public static final int MAX_CONTENT_LENGTH = 0xFF_FF;
 
-    private final WritableBufferPool bufferPool;
+    private final ByteBufferPool bufferPool;
     private final boolean useDirectByteBuffers;
 
-    public Generator(WritableBufferPool bufferPool, boolean useDirectByteBuffers)
+    public Generator(ByteBufferPool bufferPool, boolean useDirectByteBuffers)
     {
         this.bufferPool = bufferPool;
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
-    public WritableBufferPool getBufferPool()
+    public ByteBufferPool getBufferPool()
     {
         return bufferPool;
     }
@@ -42,7 +43,7 @@ public class Generator
         return useDirectByteBuffers;
     }
 
-    protected void generateContent(RetainableByteBuffer.Accumulator accumulator, int id, RetainableByteBuffer content, boolean lastContent, FCGI.FrameType frameType)
+    protected void generateContent(BufferAccumulator accumulator, int id, RetainableByteBuffer content, boolean lastContent, FCGI.FrameType frameType)
     {
         id &= 0xFF_FF;
 

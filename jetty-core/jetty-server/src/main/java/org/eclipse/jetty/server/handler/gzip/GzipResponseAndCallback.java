@@ -24,7 +24,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.WritableBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -293,6 +292,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
         {
             super(callback);
             _content = content == null ? RetainableByteBuffer.empty() : content;
+            _content.retain();
             _last = complete;
             if (LOG.isDebugEnabled())
                 LOG.debug("GzipBufferCB(complete={}, callback={}, content={})", complete, callback, content);
@@ -318,7 +318,7 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
 
             if (_buffer == null)
             {
-                _buffer = WritableBufferPool.wrap(getRequest().getComponents().getByteBufferPool()).acquire(_bufferSize, false);
+                _buffer = getRequest().getComponents().getByteBufferPool().acquire(_bufferSize, false);
                 // Per RFC-1952, GZIP is LITTLE_ENDIAN.
                 _buffer.quietWrite(b ->
                 {
@@ -342,6 +342,13 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                 case FINISHING -> finishing(deflater, _buffer);
                 default -> throw new IllegalStateException("Unexpected state [" + _state.get() + "]");
             };
+        }
+
+        @Override
+        protected void onCompleted(Throwable causeOrNull)
+        {
+            _content.release();
+            super.onCompleted(causeOrNull);
         }
 
         @Override
@@ -461,16 +468,21 @@ public class GzipResponseAndCallback extends Response.Wrapper implements Callbac
                 int p = output.position();
                 _content.read(input ->
                 {
-                    int startPosition = input.position();
+                    int position = input.position();
                     deflater.setInput(input);
                     deflater.deflate(output, getFlushMode());
-                    int endPosition = input.position();
+                    int consumed = input.position() - position;
 
                     // Update CRC with the bytes consumed by the deflater.
-                    input.position(startPosition);
-                    _crc.update(input);
-                    input.position(endPosition);
-                    return endPosition - startPosition;
+                    if (consumed > 0)
+                    {
+                        int limit = input.limit();
+                        input.position(position).limit(position + consumed);
+                        _crc.update(input);
+                        input.limit(limit);
+                    }
+
+                    return consumed;
                 });
                 return output.position() - p;
             });
