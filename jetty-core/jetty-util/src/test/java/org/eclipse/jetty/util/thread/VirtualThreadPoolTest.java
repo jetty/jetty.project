@@ -21,9 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledForJreRange;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.JRE;
-import org.junit.jupiter.api.condition.OS;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -106,7 +104,6 @@ public class VirtualThreadPoolTest
     }
 
     @Test
-    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
     public void testTrackingDump() throws Exception
     {
         VirtualThreadPool vtp = new VirtualThreadPool();
