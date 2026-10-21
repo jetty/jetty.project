@@ -272,8 +272,11 @@ public final class HttpCookieUtils
                     builder.append(HttpCookie.formatExpires(Instant.now().plusSeconds(maxAge)));
             }
 
-            builder.append("; Max-Age=");
-            builder.append(maxAge);
+            if (maxAge > 0)
+            {
+                builder.append("; Max-Age=");
+                builder.append(maxAge);
+            }
         }
 
         // add the other fields

@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.http.HttpDateTime;
 import org.eclipse.jetty.http.RFC6265SetCookieParser;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -169,7 +168,7 @@ public class HttpCookieTest
                     HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0),
                     HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true),
                     HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true))),
-                "everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",
+                "everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly",
                 "everything=something;Domain=domain;Path=path;Expires=Thu, 01 Jan 1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly"),
             new SetCookieCase(HttpCookie.build("everything", "something")
                     .attribute(HttpCookie.DOMAIN_ATTRIBUTE, "domain")
@@ -178,7 +177,7 @@ public class HttpCookieTest
                     .attribute(HttpCookie.HTTP_ONLY_ATTRIBUTE, "true")
                     .attribute(HttpCookie.SECURE_ATTRIBUTE, "true")
                     .build(),
-                "everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",
+                "everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly",
                 "everything=something;Domain=domain;Path=path;Expires=Thu, 01 Jan 1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly"),
             new SetCookieCase(HttpCookie.from("everything", "value", -1,
                 Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain",
@@ -186,7 +185,7 @@ public class HttpCookieTest
                     HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0),
                     HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true),
                     HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true))),
-                "everything=value; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly",
+                "everything=value; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly",
                 "everything=value;Domain=domain;Path=path;Expires=Thu, 01 Jan 1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly"),
             new SetCookieCase(HttpCookie.from("everything", "something", 0,
                 Map.of(HttpCookie.DOMAIN_ATTRIBUTE, "domain",
@@ -195,7 +194,7 @@ public class HttpCookieTest
                     HttpCookie.HTTP_ONLY_ATTRIBUTE, Boolean.toString(true),
                     HttpCookie.SECURE_ATTRIBUTE, Boolean.toString(true),
                     HttpCookie.COMMENT_ATTRIBUTE, "noncomment")),
-                "everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly" /* RFC6265 produces no Comment attribute */,
+                "everything=something; Path=path; Domain=domain; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure; HttpOnly" /* RFC6265 produces no Comment attribute */,
                 "everything=something;Version=1;Domain=domain;Path=path;Expires=Thu, 01 Jan 1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=noncomment"),
             // Tests of SameSite attribute
             new SetCookieCase(HttpCookie.from("everything", "value",
@@ -364,7 +363,7 @@ public class HttpCookieTest
     {
         RFC6265SetCookieParser setCookieParser = new RFC6265SetCookieParser();
         HttpCookie cookie = setCookieParser.parse(setCookieCase.expectedRFC2965SetCookie());
-        assertSameCookie(cookie, setCookieCase.httpCookie);
+        assertSameCookie(cookie, setCookieCase.httpCookie, setCookieCase.httpCookie.getMaxAge());
     }
 
     @ParameterizedTest
@@ -373,18 +372,19 @@ public class HttpCookieTest
     {
         RFC6265SetCookieParser setCookieParser = new RFC6265SetCookieParser();
         HttpCookie cookie = setCookieParser.parse(setCookieCase.expectedRFC6265SetCookie());
-        assertSameCookie(cookie, setCookieCase.httpCookie);
+        // RFC6265 Set-Cookie never emits Max-Age=0, only Expires
+        long expectedMaxAge = setCookieCase.httpCookie.getMaxAge() == 0 ? -1 : setCookieCase.httpCookie.getMaxAge();
+        assertSameCookie(cookie, setCookieCase.httpCookie, expectedMaxAge);
     }
 
-    private void assertSameCookie(HttpCookie actualCookie, HttpCookie expectedCookie)
+    private void assertSameCookie(HttpCookie actualCookie, HttpCookie expectedCookie, long expectedMaxAge)
     {
         assertThat("cookie.name", actualCookie.getName(), is(expectedCookie.getName()));
         String expectedValue = expectedCookie.getValue();
-        expectedValue = StringUtil.unquote(expectedValue == null ? "" : expectedValue);
-        assertThat("cookie.value", actualCookie.getValue(), is(expectedValue));
+        assertThat("cookie.value", actualCookie.getValue(), is(expectedValue == null ? "" : expectedValue));
         assertThat("cookie.domain", actualCookie.getDomain(), is(expectedCookie.getDomain()));
         assertThat("cookie.path", actualCookie.getPath(), is(expectedCookie.getPath()));
-        assertThat("cookie.maxAge", actualCookie.getMaxAge(), is(expectedCookie.getMaxAge()));
+        assertThat("cookie.maxAge", actualCookie.getMaxAge(), is(expectedMaxAge));
         assertThat("cookie.sameSite", actualCookie.getSameSite(), is(expectedCookie.getSameSite()));
         assertThat("cookie.secure", actualCookie.isSecure(), is(expectedCookie.isSecure()));
         assertThat("cookie.httpOnly", actualCookie.isHttpOnly(), is(expectedCookie.isHttpOnly()));
