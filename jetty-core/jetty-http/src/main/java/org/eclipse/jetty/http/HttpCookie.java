@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.http;
 
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
+
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-
-import java.time.Instant;
-import java.util.*;
 
 /**
  * <p>Implementation of RFC6265 HTTP Cookies (with fallback support for RFC2965).</p>
