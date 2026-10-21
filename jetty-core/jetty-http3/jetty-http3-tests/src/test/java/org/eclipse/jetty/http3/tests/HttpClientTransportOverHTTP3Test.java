@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.tests;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -183,7 +183,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(new byte[10 * 1024]), callback);
+                response.write(true, RetainableByteBuffer.wrap(new byte[10 * 1024]), callback);
                 return true;
             }
         });
@@ -206,17 +206,18 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
                         return;
                     }
 
-                    Content.Chunk chunk = contentSource.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = contentSource.read())
                     {
-                        demander.run();
-                        return;
+                        if (chunk == null)
+                        {
+                            demander.run();
+                            return;
+                        }
+                        if (chunk.hasRemaining())
+                            contentCount.incrementAndGet();
+                        if (!chunk.isLast())
+                            demander.run();
                     }
-                    if (chunk.hasRemaining())
-                        contentCount.incrementAndGet();
-                    chunk.release();
-                    if (!chunk.isLast())
-                        demander.run();
                 }
             })
             .transport(transport)

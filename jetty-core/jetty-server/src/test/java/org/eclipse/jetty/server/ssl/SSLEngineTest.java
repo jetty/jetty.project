@@ -21,6 +21,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.net.SocketFactory;
@@ -41,10 +42,10 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -376,11 +377,11 @@ public class SSLEngineTest
                 {
                     buf[i] = (byte)('0' + (i % 10));
                 }
-                response.write(true, BufferUtil.toBuffer(buf), callback);
+                response.write(true, RetainableByteBuffer.wrap(buf), callback);
             }
             else
             {
-                response.write(true, BufferUtil.toBuffer(HELLO_WORLD), callback);
+                response.write(true, RetainableByteBuffer.wrap(HELLO_WORLD, StandardCharsets.ISO_8859_1), callback);
             }
             return true;
         }

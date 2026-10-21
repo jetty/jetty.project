@@ -45,6 +45,7 @@ import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,9 +77,11 @@ public class ClientHTTP3Session extends ClientProtocolSession
         if (LOG.isDebugEnabled())
             LOG.debug("initializing HTTP/3 streams");
 
+        ByteBufferPool bufferPool = getByteBufferPool();
+
         long encoderStreamId = quicSession.newStreamId(false);
         StreamEndPoint encoderEndPoint = openInstructionEndPoint(encoderStreamId);
-        encoderFlusher = new InstructionFlusher(getByteBufferPool(), encoderEndPoint, StreamType.ENCODER_STREAM);
+        encoderFlusher = new InstructionFlusher(bufferPool, encoderEndPoint, StreamType.ENCODER_STREAM);
         installBean(encoderFlusher);
         encoder = new QpackEncoder(new InstructionHandler(encoderFlusher));
         encoder.setMaxHeadersSize(configuration.getMaxRequestHeadersSize());
@@ -88,7 +91,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
         long decoderStreamId = quicSession.newStreamId(false);
         StreamEndPoint decoderEndPoint = openInstructionEndPoint(decoderStreamId);
-        decoderFlusher = new InstructionFlusher(getByteBufferPool(), decoderEndPoint, StreamType.DECODER_STREAM);
+        decoderFlusher = new InstructionFlusher(bufferPool, decoderEndPoint, StreamType.DECODER_STREAM);
         installBean(decoderFlusher);
         decoder = new QpackDecoder(new InstructionHandler(decoderFlusher));
         installBean(decoder);
@@ -97,12 +100,12 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
         long controlStreamId = quicSession.newStreamId(false);
         StreamEndPoint controlEndPoint = openControlEndPoint(controlStreamId);
-        controlFlusher = new ControlFlusher(getByteBufferPool(), controlEndPoint, configuration.isUseOutputDirectByteBuffers());
+        controlFlusher = new ControlFlusher(bufferPool, controlEndPoint, configuration.isUseOutputDirectByteBuffers());
         installBean(controlFlusher);
         if (LOG.isDebugEnabled())
             LOG.debug("created control stream #{} on {}", controlStreamId, controlEndPoint);
 
-        messageFlusher = new MessageFlusher(getByteBufferPool(), encoder, configuration.isUseOutputDirectByteBuffers());
+        messageFlusher = new MessageFlusher(bufferPool, encoder, configuration.isUseOutputDirectByteBuffers());
         installBean(messageFlusher);
     }
 

@@ -44,7 +44,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Trailers;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
@@ -61,6 +60,8 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -180,18 +181,20 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         ContextHandler.CoreContextRequest coreContextRequest = getCoreRequest();
         if (coreContextRequest == null)
             return new HttpInput.ErrorContent(new IOException("Channel has been recycled"));
-        Content.Chunk chunk = coreContextRequest.read();
-        if (chunk == null)
-            return null;
+        try (Content.Chunk chunk = coreContextRequest.read())
+        {
+            if (chunk == null)
+                return null;
 
-        if (chunk.hasRemaining())
-            onContent(chunk);
-        if (chunk instanceof Trailers trailers)
-            onTrailers(trailers.getTrailers());
-        if (chunk.isLast())
-            onContentComplete();
+            if (chunk.hasRemaining())
+                onContent(chunk);
+            if (chunk instanceof Trailers trailers)
+                onTrailers(trailers.getTrailers());
+            if (chunk.isLast())
+                onContentComplete();
 
-        return HttpInput.Content.asChunk(chunk);
+            return HttpInput.Content.asChunk(chunk);
+        }
     }
 
     /**
@@ -820,7 +823,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _request.setHandled(true);
             _state.completing();
-            sendResponse(null, _response.getHttpOutput().getByteBuffer(), true, Callback.from(() -> _state.completed(null), _state::completed));
+            RetainableByteBuffer buffer = _response.getHttpOutput().takeContentAndClose();
+            Callback callback = Callback.from(buffer::release, Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
+            buffer.quietRead(b ->
+            {
+                int r = b.remaining();
+                sendResponse(null, b, true, callback);
+                return r;
+            });
         }
         catch (Throwable x)
         {
@@ -886,7 +896,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onContent {} {}", this, content);
-        _combinedListener.onRequestContent(_request, content.getByteBuffer().slice());
+        try (RetainableByteBuffer buffer = content.acquire())
+        {
+            buffer.quietRead(b ->
+            {
+                int r = b.remaining();
+                _combinedListener.onRequestContent(_request, b);
+                return r;
+            });
+        }
     }
 
     void onContentComplete()
@@ -1052,7 +1070,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             coreResponse.setStatus(response.getStatus());
             coreResponse.setTrailersSupplier(response.getTrailersSupplier());
         }
-        coreResponse.write(complete, content, callback);
+        coreResponse.write(complete, RetainableByteBuffer.wrap(content), callback);
     }
 
     public boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException
@@ -1435,7 +1453,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Commit failed", x);
-
             if (x instanceof HttpException httpException)
             {
                 MetaData.Response responseMeta = new MetaData.Response(httpException.getCode(), httpException.getReason(), HttpVersion.HTTP_1_1, HttpFields.build().add(HttpFields.CONNECTION_CLOSE), 0);

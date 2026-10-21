@@ -95,7 +95,7 @@ public class ServletLifeCycleTest
             "init class org.eclipse.jetty.ee9.servlet.ServletLifeCycleTest$TestServlet3"));
 
         events.clear();
-        connector.getResponse("GET /2/info HTTP/1.0\r\n\r\n");
+        connector.getResponseAsString("GET /2/info HTTP/1.0\r\n\r\n");
 
         assertThat(events, Matchers.contains(
             "Decorate class org.eclipse.jetty.ee9.servlet.ServletLifeCycleTest$TestServlet2",

@@ -16,7 +16,6 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -32,6 +31,7 @@ import java.util.function.Consumer;
 import org.eclipse.jetty.client.Response.Listener;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -313,7 +313,7 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
         }
 
         @Override
-        public int read(byte[] b, int offset, int length) throws IOException
+        public int read(byte[] bytes, int offset, int length) throws IOException
         {
             try
             {
@@ -339,13 +339,15 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
                         l.await();
                     }
 
-                    ByteBuffer buffer = chunkCallback.chunk().getByteBuffer();
-                    result = Math.min(buffer.remaining(), length);
-                    buffer.get(b, offset, result);
-                    if (!buffer.hasRemaining())
-                        chunkCallbacks.poll();
-                    else
-                        chunkCallback = null;
+                    try (RetainableByteBuffer buffer = chunkCallback.chunk().acquire())
+                    {
+                        result = Math.min((int)buffer.remaining(), length);
+                        buffer.get(bytes, offset, result);
+                        if (!buffer.hasRemaining())
+                            chunkCallbacks.poll();
+                        else
+                            chunkCallback = null;
+                    }
                 }
                 if (chunkCallback != null)
                     chunkCallback.releaseAndSucceed();
@@ -367,7 +369,7 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
         }
     }
 
-    private record ChunkCallback(Content.Chunk chunk, Runnable success, Consumer<Throwable> throwableConsumer)
+    private record ChunkCallback(Content.Chunk chunk, Runnable success, Consumer<Throwable> failure)
     {
         private void releaseAndSucceed()
         {
@@ -378,7 +380,7 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
         private void releaseAndFail(Throwable x)
         {
             chunk.release();
-            throwableConsumer.accept(x);
+            failure.accept(x);
         }
     }
 }

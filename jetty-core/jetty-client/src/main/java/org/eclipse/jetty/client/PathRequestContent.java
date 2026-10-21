@@ -16,8 +16,8 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.content.PathContentSource;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 
 /**
  * <p>A {@link Request.Content} for files using JDK 7's {@code java.nio.file} APIs.</p>

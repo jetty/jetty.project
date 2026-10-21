@@ -19,9 +19,10 @@ import java.util.List;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.WindowUpdateGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,16 +53,17 @@ public class WindowUpdateGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.generateWindowUpdate(accumulator, streamId, windowUpdate);
-
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            try (RetainableByteBuffer buffer = accumulator.take())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
         }
 
         assertEquals(1, frames.size());
-        WindowUpdateFrame frame = frames.get(0);
+        WindowUpdateFrame frame = frames.getFirst();
         assertEquals(streamId, frame.getStreamId());
         assertEquals(windowUpdate, frame.getWindowDelta());
     }
@@ -88,15 +90,16 @@ public class WindowUpdateGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.generateWindowUpdate(accumulator, streamId, windowUpdate);
-
             frames.clear();
-            parser.parse(accumulator.getByteBuffer());
-            accumulator.release();
+            try (RetainableByteBuffer buffer = accumulator.take())
+            {
+                parser.parse(buffer);
+            }
 
             assertEquals(1, frames.size());
-            WindowUpdateFrame frame = frames.get(0);
+            WindowUpdateFrame frame = frames.getFirst();
             assertEquals(streamId, frame.getStreamId());
             assertEquals(windowUpdate, frame.getWindowDelta());
         }

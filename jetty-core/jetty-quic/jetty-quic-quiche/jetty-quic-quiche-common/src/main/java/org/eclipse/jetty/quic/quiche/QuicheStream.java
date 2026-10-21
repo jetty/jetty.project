@@ -13,24 +13,21 @@
 
 package org.eclipse.jetty.quic.quiche;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.WritePendingException;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.common.AbstractStream;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.util.ErrorCode;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -45,7 +42,7 @@ public class QuicheStream extends AbstractStream
     private final AtomicReference<Writer> writer = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final QuicheSession session;
-    private RetainableByteBuffer inputBuffer;
+    private RetainableByteBuffer.Mutable networkBuffer;
     private Content.Chunk chunk;
     private boolean dataDemand;
 
@@ -122,35 +119,30 @@ public class QuicheStream extends AbstractStream
     @Override
     public Content.Chunk read()
     {
-        RetainableByteBuffer inputBuffer;
+        RetainableByteBuffer.Mutable buffer;
         try (AutoLock ignored = lock.lock())
         {
             if (chunk != null)
                 return chunk;
-            inputBuffer = this.inputBuffer;
-            this.inputBuffer = null;
+            buffer = networkBuffer;
+            networkBuffer = null;
         }
-        inputBuffer = tryAcquireInputBuffer(inputBuffer);
+        buffer = tryAcquireInputBuffer(buffer);
 
         try
         {
-            ByteBuffer byteBuffer = inputBuffer.getByteBuffer();
-            int position = byteBuffer.position();
-            byteBuffer.limit(byteBuffer.capacity());
-
             boolean finished = session.isFinished(this);
             if (LOG.isDebugEnabled())
                 LOG.debug("finished={} on {}", finished, this);
             if (finished)
             {
                 updateCloseState(CloseState.REMOTELY_CLOSED);
-                tryReleaseInputBuffer(inputBuffer);
+                tryReleaseInputBuffer(buffer);
                 return Content.Chunk.EOF;
             }
 
             boolean[] outLast = new boolean[1];
-            int filled = session.read(this, byteBuffer, outLast);
-            BufferUtil.flipToFlush(byteBuffer, position);
+            long filled = session.read(this, buffer, outLast);
             boolean last = outLast[0];
             if (LOG.isDebugEnabled())
                 LOG.debug("read {} bytes last={} on {}", filled, last, this);
@@ -159,29 +151,27 @@ public class QuicheStream extends AbstractStream
 
             if (filled > 0)
             {
-                ByteBuffer slice = byteBuffer.slice();
-                byteBuffer.position(byteBuffer.limit());
-                // Retain because multiple chunks can be read from the same inputBuffer.
-                inputBuffer.retain();
-                Content.Chunk chunk = Content.Chunk.asChunk(slice, last, inputBuffer);
+                RetainableByteBuffer slice = buffer.sliceAndConsume(filled);
+                Content.Chunk chunk = Content.Chunk.from(slice, last);
+                slice.release();
                 if (last)
-                    tryReleaseInputBuffer(inputBuffer);
+                    tryReleaseInputBuffer(buffer);
                 else
-                    tryStoreInputBuffer(inputBuffer);
+                    tryStoreInputBuffer(buffer);
                 return chunk;
             }
 
             if (filled == 0 && !last)
             {
                 // Keep the buffer around only if it is retained.
-                if (inputBuffer.isRetained())
-                    tryStoreInputBuffer(inputBuffer);
+                if (buffer.isRetained())
+                    tryStoreInputBuffer(buffer);
                 else
-                    tryReleaseInputBuffer(inputBuffer);
+                    tryReleaseInputBuffer(buffer);
                 return null;
             }
 
-            tryReleaseInputBuffer(inputBuffer);
+            tryReleaseInputBuffer(buffer);
             return Content.Chunk.EOF;
         }
         catch (Throwable x)
@@ -194,26 +184,25 @@ public class QuicheStream extends AbstractStream
             {
                 chunk = failure = Content.Chunk.from(x);
             }
-            tryReleaseInputBuffer(inputBuffer);
+            tryReleaseInputBuffer(buffer);
             updateCloseState(CloseState.REMOTELY_CLOSED);
             return failure;
         }
     }
 
-    private RetainableByteBuffer tryAcquireInputBuffer(RetainableByteBuffer buffer)
+    private RetainableByteBuffer.Mutable tryAcquireInputBuffer(RetainableByteBuffer.Mutable buffer)
     {
         QuicConfiguration quicConfiguration = session.getQuicConfiguration();
         if (buffer != null)
         {
             int minInputSpace = quicConfiguration.getMinInputBufferSpace();
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            if (minInputSpace < 0 || (byteBuffer.capacity() - byteBuffer.limit()) < minInputSpace)
+            if (minInputSpace < 0 || buffer.space() < minInputSpace)
             {
                 tryReleaseInputBuffer(buffer);
                 buffer = null;
             }
         }
-        RetainableByteBuffer candidate = buffer;
+        RetainableByteBuffer.Mutable candidate = buffer;
         if (candidate == null)
             candidate = getSession().getByteBufferPool().acquire(quicConfiguration.getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
         if (LOG.isDebugEnabled())
@@ -221,14 +210,14 @@ public class QuicheStream extends AbstractStream
         return candidate;
     }
 
-    private void tryStoreInputBuffer(RetainableByteBuffer buffer)
+    private void tryStoreInputBuffer(RetainableByteBuffer.Mutable buffer)
     {
         try (AutoLock ignored = lock.lock())
         {
-            assert inputBuffer == null;
+            assert networkBuffer == null;
             if (chunk == null)
             {
-                inputBuffer = buffer;
+                networkBuffer = buffer;
                 if (LOG.isDebugEnabled())
                     LOG.debug("stored {} on {}", buffer, this);
                 return;
@@ -265,7 +254,7 @@ public class QuicheStream extends AbstractStream
     }
 
     @Override
-    public void data(boolean last, List<ByteBuffer> buffers, Promise.Invocable<Stream> promise)
+    public void data(boolean last, RetainableByteBuffer buffer, Promise.Invocable<Stream> promise)
     {
         Writer current;
         while (true)
@@ -276,11 +265,16 @@ public class QuicheStream extends AbstractStream
                 promise.failed(new WritePendingException());
                 return;
             }
-            current = Writer.forWriting(last, buffers, promise);
+            current = Writer.forWriting(last, buffer, promise);
             if (writer.compareAndSet(null, current))
                 break;
+            else
+                current.close();
         }
-        write(current);
+        try (Writer writer = current)
+        {
+            write(writer);
+        }
     }
 
     @Override
@@ -292,41 +286,38 @@ public class QuicheStream extends AbstractStream
 
     private void write(Writer current)
     {
-        try
+        try (RetainableByteBuffer buffer = current.acquire())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("writing {} for {}", current, this);
 
-            int length = current.buffers().size();
-            for (int i = 0; i < length; ++i)
+            long remaining = buffer.remaining();
+            long written = session.data(this, current.last(), buffer);
+            if (written < remaining)
             {
-                ByteBuffer buffer = current.buffers().get(i);
+                // Write stalled, save state and return.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("pending {} for {}", current, this);
 
-                int remaining = buffer.remaining();
-                boolean lastBuffer = i == length - 1;
-
-                if (remaining == 0 && !lastBuffer)
-                    continue;
-
-                int written = session.data(this, current.last() && lastBuffer, buffer);
-                if (written != remaining)
+                if (current.pending())
                 {
-                    // Write stalled, save state and return.
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("pending {} for {}", current, this);
-                    if (!current.pending())
-                    {
-                        Writer pending = Writer.forPending(current);
-                        // If the CAS fails (e.g. due to asynchronous failures), just return.
-                        writer.compareAndSet(current, pending);
-                    }
-                    session.flush();
-                    return;
+                    // The current Writer was already pending from a previous write,
+                    // avoid creating another Writer instance by retaining the current.
+                    current.acquire();
                 }
+                else
+                {
+                    // Creating a pending Writer implicitly retains it.
+                    Writer pending = Writer.forPending(current);
+                    // The CAS may fail due to asynchronous failures.
+                    if (!writer.compareAndSet(current, pending))
+                        pending.close();
+                }
+                session.flush();
+                return;
             }
 
             session.flush();
-
             writer.set(null);
 
             if (current.last())
@@ -428,9 +419,20 @@ public class QuicheStream extends AbstractStream
         if (LOG.isDebugEnabled())
             LOG.debug("disconnecting with error 0x{} stop&reset={} {} {}", Long.toHexString(appErrorCode), stopAndReset, this, String.valueOf(failure));
 
-        Writer writer = this.writer.get();
-        if (writer != null)
-            writer.promise().failed(failure != null ? failure : new AsynchronousCloseException());
+        while (true)
+        {
+            Writer w = writer.get();
+            if (w == null || !w.pending())
+                break;
+            if (writer.compareAndSet(w, null))
+            {
+                try (w)
+                {
+                    w.promise().failed(failure != null ? failure : new AsynchronousCloseException());
+                }
+                break;
+            }
+        }
 
         CloseState previous = closeState.getAndSet(CloseState.CLOSED);
         if (previous != CloseState.CLOSED)
@@ -440,8 +442,8 @@ public class QuicheStream extends AbstractStream
         try (AutoLock ignored = lock.lock())
         {
             chunk = Content.Chunk.from(failure);
-            buffer = inputBuffer;
-            inputBuffer = null;
+            buffer = networkBuffer;
+            networkBuffer = null;
         }
         tryReleaseInputBuffer(buffer);
 
@@ -501,27 +503,29 @@ public class QuicheStream extends AbstractStream
     void resumeWrite()
     {
         Writer current = writer.get();
-        if (current == null)
-            return;
-        if (!current.pending)
+        if (current == null || !current.pending())
             return;
         if (LOG.isDebugEnabled())
             LOG.debug("resuming write pending for {}", this);
-        write(current);
+        try (current)
+        {
+            write(current);
+        }
     }
 
     void tryFailWrite()
     {
         Writer current = writer.get();
-        if (current == null)
-            return;
-        if (!current.pending)
+        if (current == null || !current.pending())
             return;
         if (!session.isFailed(this))
             return;
         if (LOG.isDebugEnabled())
             LOG.debug("failing write pending for {}", this);
-        write(current);
+        try (current)
+        {
+            write(current);
+        }
     }
 
     void onNewStream()
@@ -608,27 +612,68 @@ public class QuicheStream extends AbstractStream
         return "%s[%s,writer=%s]".formatted(super.toString(), closeState, writer);
     }
 
-    private record Writer(boolean last, List<ByteBuffer> buffers, Promise.Invocable<Stream> promise, boolean pending)
+    private static final class Writer implements AutoCloseable
     {
-        private static Writer forWriting(boolean last, List<ByteBuffer> buffers, Promise.Invocable<Stream> promise)
+        private final boolean last;
+        private final RetainableByteBuffer buffer;
+        private final Promise.Invocable<Stream> promise;
+        private final boolean pending;
+
+        private Writer(boolean last, RetainableByteBuffer buffer, Promise.Invocable<Stream> promise, boolean pending)
         {
-            return new Writer(last, buffers, promise, false);
+            this.last = last;
+            this.buffer = buffer;
+            this.promise = promise;
+            this.pending = pending;
+            buffer.retain();
+        }
+
+        private static Writer forWriting(boolean last, RetainableByteBuffer buffer, Promise.Invocable<Stream> promise)
+        {
+            return new Writer(last, buffer, promise, false);
         }
 
         public static Writer forPending(Writer writer)
         {
-            return new Writer(writer.last, writer.buffers, writer.promise, true);
+            return new Writer(writer.last(), writer.buffer, writer.promise(), true);
+        }
+
+        public boolean last()
+        {
+            return last;
+        }
+
+        public RetainableByteBuffer acquire()
+        {
+            buffer.retain();
+            return buffer;
+        }
+
+        public Promise.Invocable<Stream> promise()
+        {
+            return promise;
+        }
+
+        public boolean pending()
+        {
+            return pending;
+        }
+
+        @Override
+        public void close()
+        {
+            buffer.release();
         }
 
         @Override
         public String toString()
         {
-            return "%s@%x[last=%b,pending=%b,buffers=%s]".formatted(
+            return "%s@%x[last=%b,pending=%b,buffer=%s]".formatted(
                 TypeUtil.toShortName(getClass()),
                 hashCode(),
                 last,
                 pending,
-                buffers
+                buffer
             );
         }
     }

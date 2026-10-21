@@ -36,23 +36,24 @@ import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.internal.HttpConnection;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -82,7 +83,7 @@ public class HTTP2CServerTest extends AbstractServerTest
         {
             client.setSoTimeout(5000);
 
-            client.getOutputStream().write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            client.getOutputStream().write("GET / HTTP/1.0\r\n\r\n".getBytes(ISO_8859_1));
             client.getOutputStream().flush();
 
             String response = IO.toString(client.getInputStream());
@@ -99,8 +100,8 @@ public class HTTP2CServerTest extends AbstractServerTest
         {
             client.setSoTimeout(5000);
 
-            client.getOutputStream().write("GET /one HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
-            client.getOutputStream().write("GET /two HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            client.getOutputStream().write("GET /one HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes(ISO_8859_1));
+            client.getOutputStream().write("GET /two HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes(ISO_8859_1));
             client.getOutputStream().flush();
 
             String response = IO.toString(client.getInputStream());
@@ -120,13 +121,14 @@ public class HTTP2CServerTest extends AbstractServerTest
             client.setSoTimeout(5000);
 
             OutputStream output = client.getOutputStream();
-            output.write((
-                "GET /one HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Connection: something, else, upgrade, HTTP2-Settings\r\n" +
-                    "Upgrade: h2c\r\n" +
-                    "HTTP2-Settings: AAEAAEAAAAIAAAABAAMAAABkAAQBAAAAAAUAAEAA\r\n" +
-                    "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            output.write(("""
+                GET /one HTTP/1.1\r
+                Host: localhost\r
+                Connection: something, else, upgrade, HTTP2-Settings\r
+                Upgrade: h2c\r
+                HTTP2-Settings: AAEAAEAAAAIAAAABAAMAAABkAAQBAAAAAAUAAEAA\r
+                \r
+                """).getBytes(ISO_8859_1));
             output.flush();
 
             InputStream input = client.getInputStream();
@@ -182,7 +184,8 @@ public class HTTP2CServerTest extends AbstractServerTest
             DataFrame responseData = dataRef.get();
             assertNotNull(responseData);
 
-            String content = BufferUtil.toString(responseData.getByteBuffer());
+            RetainableByteBuffer buffer1 = responseData.acquire();
+            String content = StringUtil.toString(buffer1, ISO_8859_1);
 
             // The upgrade request is seen as HTTP/1.1.
             assertThat(content, containsString("Hello from Jetty using HTTP/2.0"));
@@ -192,12 +195,15 @@ public class HTTP2CServerTest extends AbstractServerTest
             headersRef.set(null);
             dataRef.set(null);
             latchRef.set(new CountDownLatch(2));
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.control(accumulator, new PrefaceFrame());
             generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/two", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
             generator.control(accumulator, new HeadersFrame(3, metaData, null, true));
-            accumulator.writeTo(Content.Sink.from(output), false);
+            try (RetainableByteBuffer buffer = accumulator.take())
+            {
+                buffer.putTo(client.getOutputStream());
+            }
             output.flush();
 
             parseResponse(client, parser);
@@ -212,7 +218,8 @@ public class HTTP2CServerTest extends AbstractServerTest
             responseData = dataRef.get();
             assertNotNull(responseData);
 
-            content = BufferUtil.toString(responseData.getByteBuffer());
+            RetainableByteBuffer buffer = responseData.acquire();
+            content = StringUtil.toString(buffer, ISO_8859_1);
 
             assertThat(content, containsString("Hello from Jetty using HTTP/2.0"));
             assertThat(content, containsString("uri=/two"));
@@ -227,7 +234,7 @@ public class HTTP2CServerTest extends AbstractServerTest
         bufferPool = new ArrayByteBufferPool();
         generator = new Generator(bufferPool);
 
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, new PrefaceFrame());
         generator.control(accumulator, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/test", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
@@ -237,10 +244,13 @@ public class HTTP2CServerTest extends AbstractServerTest
         {
             client.setSoTimeout(5000);
 
-            accumulator.writeTo(Content.Sink.from(client.getOutputStream()), false);
+            try (RetainableByteBuffer buffer = accumulator.take())
+            {
+                buffer.putTo(client.getOutputStream());
+            }
 
-            final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
-            final AtomicReference<DataFrame> dataRef = new AtomicReference<>();
+            AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
+            AtomicReference<DataFrame> dataRef = new AtomicReference<>();
             Parser parser = new Parser(bufferPool, 8192);
             parser.init(new Parser.Listener()
             {
@@ -277,7 +287,8 @@ public class HTTP2CServerTest extends AbstractServerTest
             DataFrame responseData = dataRef.get();
             assertNotNull(responseData);
 
-            String s = BufferUtil.toString(responseData.getByteBuffer());
+            RetainableByteBuffer buffer = responseData.acquire();
+            String s = StringUtil.toString(buffer, ISO_8859_1);
 
             assertThat(s, containsString("Hello from Jetty using HTTP/2.0"));
             assertThat(s, containsString("uri=/test"));
@@ -320,14 +331,17 @@ public class HTTP2CServerTest extends AbstractServerTest
         bufferPool = new ArrayByteBufferPool();
         generator = new Generator(bufferPool);
 
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+        BufferAccumulator accumulator = new BufferAccumulator();
         generator.control(accumulator, new PrefaceFrame());
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
             client.setSoTimeout(5000);
 
-            accumulator.writeTo(Content.Sink.from(client.getOutputStream()), false);
+            try (RetainableByteBuffer buffer = accumulator.take())
+            {
+                buffer.putTo(client.getOutputStream());
+            }
 
             // We sent an HTTP/2 preface, but the server has no "h2c" connection
             // factory so it does not know how to handle this request.

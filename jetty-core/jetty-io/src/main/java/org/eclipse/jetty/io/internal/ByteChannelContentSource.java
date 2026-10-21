@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io.internal;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SeekableByteChannel;
@@ -23,13 +22,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
@@ -41,11 +39,10 @@ public class ByteChannelContentSource implements Content.Source
 {
     private final AutoLock lock = new AutoLock();
     private final SerializedInvoker _invoker = new SerializedInvoker(ByteChannelContentSource.class);
-    private final ByteBufferPool.Sized _byteBufferPool;
-    private ByteChannel _byteChannel;
+    private final ByteBufferPool.Sized _bufferPool;
     private final long _offset;
     private final long _length;
-    private RetainableByteBuffer _buffer;
+    private ByteChannel _byteChannel;
     private long _offsetRemaining;
     private long _totalRead;
     private Runnable demandCallback;
@@ -53,7 +50,7 @@ public class ByteChannelContentSource implements Content.Source
 
     /**
      * Create a {@link ByteChannelContentSource} which reads from a {@link ByteChannel}.
-     * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+     * @param byteBufferPool The {@link ByteBufferPool.Sized} to use for any internal buffers.
      * @param byteChannel The {@link ByteChannel}s to use as the source.
      */
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel)
@@ -65,7 +62,7 @@ public class ByteChannelContentSource implements Content.Source
      * Create a {@link ByteChannelContentSource} which reads from a {@link ByteChannel}.
      * If the {@link ByteChannel} is an instance of {@link SeekableByteChannel} the implementation will use
      * {@link SeekableByteChannel#position(long)} to navigate to the starting offset.
-     * @param byteBufferPool The {@link org.eclipse.jetty.io.ByteBufferPool.Sized} to use for any internal buffers.
+     * @param byteBufferPool The {@link ByteBufferPool.Sized} to use for any internal buffers.
      * @param byteChannel The {@link ByteChannel}s to use as the source.
      * @param offset the offset byte of the content to start from.
      *               Must be greater than or equal to 0 and less than the content length (if known).
@@ -76,7 +73,7 @@ public class ByteChannelContentSource implements Content.Source
      */
     public ByteChannelContentSource(ByteBufferPool.Sized byteBufferPool, ByteChannel byteChannel, long offset, long length)
     {
-        _byteBufferPool = Objects.requireNonNullElse(byteBufferPool, ByteBufferPool.SIZED_NON_POOLING);
+        _bufferPool = byteBufferPool != null ? byteBufferPool : ByteBufferPool.SIZED_NON_POOLING;
         _byteChannel = byteChannel;
         _offset = offset;
         _length = TypeUtil.checkOffsetLengthSize(offset, length, -1L);
@@ -120,9 +117,6 @@ public class ByteChannelContentSource implements Content.Source
         else
             ExceptionUtil.addSuppressedIfNotAssociated(_terminal.getFailure(), terminal.getFailure());
         IO.close(_byteChannel);
-        if (_buffer != null)
-            _buffer.release();
-        _buffer = null;
     }
 
     private void lockedEnsureOpenOrTerminal()
@@ -166,27 +160,19 @@ public class ByteChannelContentSource implements Content.Source
                 return Content.Chunk.EOF;
             }
 
-            if (_buffer == null)
+            try (RetainableByteBuffer.Mutable buffer = _bufferPool.acquire())
             {
-                _buffer = _byteBufferPool.acquire();
-            }
-            else if (_buffer.isRetained())
-            {
-                _buffer.release();
-                _buffer = _byteBufferPool.acquire();
-            }
-
-            try
-            {
-                ByteBuffer byteBuffer = _buffer.getByteBuffer();
                 if (_offsetRemaining > 0)
                 {
                     // Discard all bytes read until we reach the staring offset.
                     while (_offsetRemaining > 0)
                     {
-                        BufferUtil.clearToFill(byteBuffer);
-                        byteBuffer.limit((int)Math.min(_buffer.capacity(), _offsetRemaining));
-                        int read = _byteChannel.read(byteBuffer);
+                        buffer.clear();
+                        long read = buffer.write(b ->
+                        {
+                            b.limit((int)Math.min(b.capacity(), _offsetRemaining));
+                            return _byteChannel.read(b);
+                        });
                         if (read < 0)
                         {
                             lockedSetTerminal(Content.Chunk.EOF);
@@ -199,32 +185,34 @@ public class ByteChannelContentSource implements Content.Source
                     }
                 }
 
-                BufferUtil.clearToFill(byteBuffer);
-                if (_length > 0)
-                    byteBuffer.limit((int)Math.min(_buffer.capacity(), _length - _totalRead));
-                int read = _byteChannel.read(byteBuffer);
-                BufferUtil.flipToFlush(byteBuffer, 0);
+                buffer.clear();
+                long read = buffer.write(b ->
+                {
+                    if (_length > 0)
+                        b.limit((int)Math.min(b.capacity(), _length - _totalRead));
+                    return _byteChannel.read(b);
+                });
                 if (read == 0)
                     return null;
                 if (read > 0)
                 {
                     _totalRead += read;
-                    _buffer.retain();
                     if (_length < 0 || _totalRead < _length)
-                        return Content.Chunk.asChunk(byteBuffer, false, _buffer);
+                        return Content.Chunk.from(buffer, false);
 
-                    Content.Chunk last = Content.Chunk.asChunk(byteBuffer, true, _buffer);
+                    Content.Chunk last = Content.Chunk.from(buffer, true);
                     lockedSetTerminal(Content.Chunk.EOF);
                     return last;
                 }
                 lockedSetTerminal(Content.Chunk.EOF);
+                return _terminal;
             }
             catch (Throwable t)
             {
                 lockedSetTerminal(Content.Chunk.from(t, true));
+                return _terminal;
             }
         }
-        return _terminal;
     }
 
     @Override

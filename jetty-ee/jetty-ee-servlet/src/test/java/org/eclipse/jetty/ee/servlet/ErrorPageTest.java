@@ -146,7 +146,7 @@ public class ErrorPageTest
         rawRequest.append("Accept-Charset: *\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(595));
@@ -201,7 +201,7 @@ public class ErrorPageTest
         rawRequest.append("Accept-Charset: *\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(594));
@@ -255,7 +255,7 @@ public class ErrorPageTest
         rawRequest.append("Accept-Charset: *\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(204));
@@ -303,7 +303,7 @@ public class ErrorPageTest
         rawRequest.append("Accept-Charset: *\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(595));
@@ -343,7 +343,7 @@ public class ErrorPageTest
         // No `Accept` header present
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(598));
@@ -386,7 +386,7 @@ public class ErrorPageTest
         rawRequest.append("Accept: application/bytes,text/html\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(598));
@@ -430,7 +430,7 @@ public class ErrorPageTest
         rawRequest.append("Accept: application/bytes\r\n"); // has an accept header, but not one supported by default in Jetty
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(598));
@@ -486,7 +486,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(597));
@@ -539,7 +539,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(599));
@@ -594,7 +594,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200)); // request should pass successfully
         assertThat(response.get(HttpHeader.DATE), notNullValue());
@@ -637,7 +637,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200)); // request should pass successfully
         assertThat(response.get(HttpHeader.DATE), notNullValue());
@@ -676,7 +676,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(599));
@@ -727,7 +727,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(599));
@@ -783,7 +783,7 @@ public class ErrorPageTest
             \r
             """;
 
-        String rawResponse = _connector.getResponse(rawRequest);
+        String rawResponse = _connector.getResponseAsString(rawRequest);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(599));
@@ -833,7 +833,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(599));
@@ -1095,7 +1095,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(599));
@@ -1137,7 +1137,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(599));
@@ -1203,7 +1203,7 @@ public class ErrorPageTest
             rawRequest.append("Connection: close\r\n");
             rawRequest.append("\r\n");
 
-            String rawResponse = _connector.getResponse(rawRequest.toString());
+            String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(500));
@@ -1277,7 +1277,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(598));
@@ -1325,7 +1325,7 @@ public class ErrorPageTest
             rawRequest.append("Connection: close\r\n");
             rawRequest.append("\r\n");
 
-            String rawResponse = _connector.getResponse(rawRequest.toString());
+            String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(500));
@@ -1388,7 +1388,7 @@ public class ErrorPageTest
             rawRequest.append("Connection: close\r\n");
             rawRequest.append("\r\n");
 
-            String rawResponse = _connector.getResponse(rawRequest.toString());
+            String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(400));
@@ -1527,7 +1527,7 @@ public class ErrorPageTest
             rawRequest.append("Connection: close\r\n");
             rawRequest.append("\r\n");
 
-            String rawResponse = _connector.getResponse(rawRequest.toString());
+            String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(599));
@@ -1588,7 +1588,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(404));
@@ -1635,7 +1635,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(500));
@@ -1683,7 +1683,7 @@ public class ErrorPageTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        String rawResponse = _connector.getResponse(rawRequest.toString());
+        String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(200));
@@ -1734,7 +1734,7 @@ public class ErrorPageTest
             rawRequest.append("Connection: close\r\n");
             rawRequest.append("\r\n");
 
-            String rawResponse = _connector.getResponse(rawRequest.toString());
+            String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(404));
@@ -1791,19 +1791,19 @@ public class ErrorPageTest
         try (StacklessLogging ignore = new StacklessLogging(contextHandler.getLogger(), LoggerFactory.getLogger(ServletChannel.class)))
         {
             String request = "GET /unavailable/info?for=1 HTTP/1.0\r\n\r\n";
-            HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+            HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
             assertThat(response.getStatus(), is(HttpStatus.SERVICE_UNAVAILABLE_503));
             assertFalse(destroyed.get());
 
             request = "GET /unavailable/info?ok=true HTTP/1.0\r\n\r\n";
-            response = HttpTester.parseResponse(_connector.getResponse(request));
+            response = HttpTester.parseResponse(_connector.getResponseAsString(request));
             assertThat(response.getStatus(), is(HttpStatus.SERVICE_UNAVAILABLE_503));
             assertFalse(destroyed.get());
 
             Thread.sleep(1500);
 
             request = "GET /unavailable/info?ok=true HTTP/1.0\r\n\r\n";
-            response = HttpTester.parseResponse(_connector.getResponse(request));
+            response = HttpTester.parseResponse(_connector.getResponseAsString(request));
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertFalse(destroyed.get());
         }
@@ -1842,7 +1842,7 @@ public class ErrorPageTest
             rawRequest.append("Connection: close\r\n");
             rawRequest.append("\r\n");
 
-            String rawResponse = _connector.getResponse(rawRequest.toString());
+            String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(500));
@@ -1896,7 +1896,7 @@ public class ErrorPageTest
             rawRequest.append("Connection: close\r\n");
             rawRequest.append("\r\n");
 
-            String rawResponse = _connector.getResponse(rawRequest.toString());
+            String rawResponse = _connector.getResponseAsString(rawRequest.toString());
 
             HttpTester.Response response = HttpTester.parseResponse(rawResponse);
             assertThat(response.getStatus(), is(500));
@@ -1958,7 +1958,7 @@ public class ErrorPageTest
             Host: localhost
             
             """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(599));
         String responseBody = response.getContent();
@@ -2012,7 +2012,7 @@ public class ErrorPageTest
             Host: localhost
             
             """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
 
         assertThat(response.getStatus(), is(598));
     }
@@ -2040,7 +2040,7 @@ public class ErrorPageTest
             \r
             """;
 
-        String rawResponse = _connector.getResponse(rawRequest);
+        String rawResponse = _connector.getResponseAsString(rawRequest);
         assertThat(rawResponse, startsWith("HTTP/1.1 404 Not Found"));
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(404));
@@ -2071,7 +2071,7 @@ public class ErrorPageTest
             \r
             """;
 
-        String rawResponse = _connector.getResponse(rawRequest);
+        String rawResponse = _connector.getResponseAsString(rawRequest);
         assertThat(rawResponse, startsWith("HTTP/1.1 404 Not Found"));
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(404));
@@ -2107,7 +2107,7 @@ public class ErrorPageTest
             \r
             """;
 
-        String rawResponse = _connector.getResponse(rawRequest);
+        String rawResponse = _connector.getResponseAsString(rawRequest);
         assertThat(rawResponse, startsWith("HTTP/1.1 403 Forbidden"));
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(403));

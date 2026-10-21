@@ -15,7 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 
 public class MockConnector extends AbstractConnector
 {

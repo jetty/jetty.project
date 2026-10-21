@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -53,11 +54,11 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Graceful;
 import org.junit.jupiter.api.Test;
 
@@ -67,6 +68,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -128,7 +130,7 @@ public class HTTP2Test extends AbstractTest
                     @Override
                     public void succeeded()
                     {
-                        stream.data(new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), NOOP);
+                        stream.data(RetainableByteBuffer.empty(), true, NOOP);
                     }
                 });
                 return null;
@@ -155,10 +157,11 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                assertTrue(data.frame().isEndStream());
-                data.release();
-                latch.countDown();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    assertTrue(chunk.isLast());
+                    latch.countDown();
+                }
             }
         });
 
@@ -205,12 +208,15 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                DataFrame frame = data.frame();
-                assertTrue(frame.isEndStream());
-                assertEquals(ByteBuffer.wrap(content), frame.getByteBuffer());
-                data.release();
-                latch.countDown();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    assertTrue(chunk.isLast());
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        assertArrayEquals(content, buffer.getArray());
+                        latch.countDown();
+                    }
+                }
             }
         });
 
@@ -240,16 +246,17 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                data.release();
-                if (data.frame().isEndStream())
-                    latch.countDown();
-                else
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk.isLast())
+                        latch.countDown();
+                    else
+                        stream.demand();
+                }
             }
         })
-        .thenCompose(s -> s.data(new DataFrame(s.getId(), ByteBuffer.allocate(512), false)))
-        .thenAccept(s -> s.data(new DataFrame(s.getId(), ByteBuffer.allocate(1024), true)));
+        .thenCompose(s -> s.data(RetainableByteBuffer.allocate(512, false), false))
+        .thenAccept(s -> s.data(RetainableByteBuffer.allocate(1024, false), true));
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -266,7 +273,7 @@ public class HTTP2Test extends AbstractTest
                 int download = (int)request.getHeaders().getLongField(downloadBytes);
                 byte[] content = new byte[download];
                 new Random().nextBytes(content);
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, RetainableByteBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -288,12 +295,13 @@ public class HTTP2Test extends AbstractTest
                 @Override
                 public void onDataAvailable(Stream stream)
                 {
-                    Stream.Data data = stream.readData();
-                    data.release();
-                    if (data.frame().isEndStream())
-                        latch.countDown();
-                    else
-                        stream.demand();
+                    try (Content.Chunk chunk = stream.read())
+                    {
+                        if (chunk.isLast())
+                            latch.countDown();
+                        else
+                            stream.demand();
+                    }
                 }
             });
         }
@@ -498,7 +506,7 @@ public class HTTP2Test extends AbstractTest
         assertEquals(2, session.getStreams().size());
 
         // End the second stream.
-        stream2.data(new DataFrame(stream2.getId(), BufferUtil.EMPTY_BUFFER, true), new Callback()
+        stream2.data(RetainableByteBuffer.empty(), true, new Callback()
         {
             @Override
             public void succeeded()
@@ -533,7 +541,7 @@ public class HTTP2Test extends AbstractTest
         await().atMost(Duration.ofSeconds(1)).until(() -> session.getStreams().size(), is(1));
 
         // End the first stream.
-        stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), new Callback()
+        stream1.data(RetainableByteBuffer.empty(), true, new Callback()
         {
             @Override
             public void succeeded()
@@ -561,16 +569,17 @@ public class HTTP2Test extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        data.release();
-                        if (data.frame().isEndStream())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            completable.thenAccept(s ->
-                                s.data(new DataFrame(s.getId(), BufferUtil.EMPTY_BUFFER, true)));
-                        }
-                        else
-                        {
-                            stream.demand();
+                            if (chunk.isLast())
+                            {
+                                completable.thenAccept(s ->
+                                    s.data(RetainableByteBuffer.empty(), true));
+                            }
+                            else
+                            {
+                                stream.demand();
+                            }
                         }
                     }
                 };
@@ -582,31 +591,31 @@ public class HTTP2Test extends AbstractTest
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         CountDownLatch completeLatch = new CountDownLatch(2);
-        Stream stream = session.newStream(frame, new Stream.Listener()
+        HTTP2Stream stream = (HTTP2Stream)session.newStream(frame, new Stream.Listener()
         {
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                data.release();
-                if (data.frame().isEndStream())
-                    completeLatch.countDown();
-                else
-                    stream.demand();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk.isLast())
+                        completeLatch.countDown();
+                    else
+                        stream.demand();
+                }
             }
         }).get(5, TimeUnit.SECONDS);
 
         long sleep = 1000;
-        DataFrame data1 = new DataFrame(stream.getId(), ByteBuffer.allocate(1024), false)
+        DataFrame data1 = new DataFrame(stream.getId(), RetainableByteBuffer.allocate(1024, false), false)
         {
             @Override
-            public ByteBuffer getByteBuffer()
+            public RetainableByteBuffer acquire()
             {
                 sleep(2 * sleep);
-                return super.getByteBuffer();
+                return super.acquire();
             }
         };
-        DataFrame data2 = new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true);
 
         new Thread(() ->
         {
@@ -616,7 +625,7 @@ public class HTTP2Test extends AbstractTest
                 @Override
                 public void succeeded()
                 {
-                    stream.data(data2, NOOP);
+                    stream.data(RetainableByteBuffer.empty(), true, NOOP);
                 }
             });
         }).start();
@@ -626,7 +635,7 @@ public class HTTP2Test extends AbstractTest
 
         // This data call is illegal because it does not
         // wait for the previous callback to complete.
-        stream.data(data2, new Callback()
+        stream.data(RetainableByteBuffer.empty(), true, new Callback()
         {
             @Override
             public void failed(Throwable x)
@@ -653,7 +662,6 @@ public class HTTP2Test extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                DataFrame dataFrame = new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true);
                 // The call to headers() is legal, but slow.
                 new Thread(() ->
                 {
@@ -665,7 +673,7 @@ public class HTTP2Test extends AbstractTest
                             sleep(2 * sleep);
                             return super.getMetaData();
                         }
-                    }, Callback.from(() -> stream.data(dataFrame, Callback.NOOP), Throwable::printStackTrace));
+                    }, Callback.from(() -> stream.data(RetainableByteBuffer.empty(), true, Callback.NOOP), Throwable::printStackTrace));
                 }).start();
 
                 // Wait for the headers() call to happen.
@@ -673,7 +681,7 @@ public class HTTP2Test extends AbstractTest
 
                 // This data call is illegal because it does not
                 // wait for the previous callback to complete.
-                stream.data(dataFrame, new Callback()
+                stream.data(RetainableByteBuffer.empty(), true, new Callback()
                 {
                     @Override
                     public void failed(Throwable x)
@@ -699,10 +707,11 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void onDataAvailable(Stream stream)
             {
-                Stream.Data data = stream.readData();
-                data.release();
-                if (data.frame().isEndStream())
-                    completeLatch.countDown();
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk.isLast())
+                        completeLatch.countDown();
+                }
             }
         });
 
@@ -884,17 +893,18 @@ public class HTTP2Test extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        data.release();
-                        dataLatch.countDown();
-                        if (data.frame().isEndStream())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                        }
-                        else
-                        {
-                            stream.demand();
+                            dataLatch.countDown();
+                            if (chunk.isLast())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            }
+                            else
+                            {
+                                stream.demand();
+                            }
                         }
                     }
                 };
@@ -947,14 +957,14 @@ public class HTTP2Test extends AbstractTest
         };
         clientSession.newStream(request1, promise1, listener);
         Stream stream1 = promise1.get(5, TimeUnit.SECONDS);
-        stream1.data(new DataFrame(stream1.getId(), ByteBuffer.allocate(1), false), Callback.NOOP);
+        stream1.data(RetainableByteBuffer.allocate(1, false), false, Callback.NOOP);
 
         MetaData.Request metaData2 = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame request2 = new HeadersFrame(metaData2, null, false);
         FuturePromise<Stream> promise2 = new FuturePromise<>();
         clientSession.newStream(request2, promise2, listener);
         Stream stream2 = promise2.get(5, TimeUnit.SECONDS);
-        stream2.data(new DataFrame(stream2.getId(), ByteBuffer.allocate(1), false), Callback.NOOP);
+        stream2.data(RetainableByteBuffer.allocate(1, false), false, Callback.NOOP);
 
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
 
@@ -978,8 +988,8 @@ public class HTTP2Test extends AbstractTest
         assertThrows(ExecutionException.class, () -> promise3.get(5, TimeUnit.SECONDS));
 
         // Finish the previous requests and expect the responses.
-        stream1.data(new DataFrame(stream1.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
-        stream2.data(new DataFrame(stream2.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
+        stream1.data(RetainableByteBuffer.empty(), true, Callback.NOOP);
+        stream2.data(RetainableByteBuffer.empty(), true, Callback.NOOP);
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
         assertNull(shutdown.get(5, TimeUnit.SECONDS));
 

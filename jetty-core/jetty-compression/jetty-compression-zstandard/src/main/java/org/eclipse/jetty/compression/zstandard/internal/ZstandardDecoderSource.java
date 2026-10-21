@@ -21,7 +21,7 @@ import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
 import org.eclipse.jetty.compression.zstandard.ZstandardDecoderConfig;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ZstandardDecoderSource extends DecoderSource
 {
@@ -43,19 +43,66 @@ public class ZstandardDecoderSource extends DecoderSource
     @Override
     protected Content.Chunk transform(Content.Chunk inputChunk)
     {
-        ByteBuffer input = inputChunk.getByteBuffer();
-        if (!inputChunk.hasRemaining())
+        if (!inputChunk.hasRemaining() && inputChunk.isLast())
             return inputChunk;
-        if (!input.isDirect())
-            throw new IllegalArgumentException("Read Chunk is not a Direct ByteBuffer");
-        RetainableByteBuffer dst = compression.acquireByteBuffer(bufferSize);
-        boolean last = inputChunk.isLast();
-        dst.getByteBuffer().clear();
-        boolean fullyFlushed = decompressCtx.decompressDirectByteBufferStream(dst.getByteBuffer(), input);
-        if (!fullyFlushed)
-            last = false;
-        dst.getByteBuffer().flip();
-        return Content.Chunk.asChunk(dst.getByteBuffer(), last, dst);
+
+        try (RetainableByteBuffer inputBuffer = inputChunk.acquire())
+        {
+            try (RetainableByteBuffer.Mutable outputBuffer = compression.acquireBuffer(bufferSize))
+            {
+                boolean last = inputChunk.isLast();
+                boolean[] fullyFlushed = new boolean[1];
+                inputBuffer.quietRead(input ->
+                {
+                    int position = input.position();
+
+                    // Zstandard requires direct buffers.
+                    RetainableByteBuffer.Mutable directBuffer;
+                    ByteBuffer inputBB;
+                    if (input.isDirect())
+                    {
+                        directBuffer = null;
+                        inputBB = input;
+                    }
+                    else
+                    {
+                        directBuffer = compression.acquireBuffer(input.remaining());
+                        directBuffer.put(input);
+                        ByteBuffer[] result = new ByteBuffer[1];
+                        directBuffer.quietRead(b ->
+                        {
+                            result[0] = b;
+                            return 0;
+                        });
+                        inputBB = result[0];
+                    }
+
+                    try (directBuffer)
+                    {
+                        int r = inputBB.remaining();
+                        outputBuffer.write(output ->
+                        {
+                            int p = output.position();
+                            fullyFlushed[0] = decompressCtx.decompressDirectByteBufferStream(output, inputBB);
+                            return output.position() - p;
+                        });
+                        int consumed = r - inputBB.remaining();
+
+                        if (!input.isDirect())
+                        {
+                            // The original heap input ByteBuffer was fully consumed by the copy to the
+                            // direct ByteBuffer, restore the position to what was effectively consumed.
+                            input.position(position + consumed);
+                        }
+
+                        return consumed;
+                    }
+                });
+                if (!fullyFlushed[0])
+                    last = false;
+                return Content.Chunk.from(outputBuffer, last);
+            }
+        }
     }
 
     @Override

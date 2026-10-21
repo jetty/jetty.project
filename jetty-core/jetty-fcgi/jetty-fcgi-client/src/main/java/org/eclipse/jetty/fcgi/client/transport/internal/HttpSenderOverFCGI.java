@@ -14,7 +14,6 @@
 package org.eclipse.jetty.fcgi.client.transport.internal;
 
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.Locale;
 
@@ -29,10 +28,11 @@ import org.eclipse.jetty.fcgi.generator.ClientGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class HttpSenderOverFCGI extends HttpSender
 {
@@ -52,7 +52,7 @@ public class HttpSenderOverFCGI extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendHeaders(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         Request request = exchange.getRequest();
         // Copy the request headers to be able to convert them properly
@@ -99,7 +99,7 @@ public class HttpSenderOverFCGI extends HttpSender
         HttpClientTransportOverFCGI transport = (HttpClientTransportOverFCGI)httpClient.getHttpClientTransport();
         transport.customize(request, fcgiHeaders);
 
-        ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+        BufferAccumulator accumulator = new BufferAccumulator();
         int id = getHttpChannel().getRequest();
         if (contentBuffer.hasRemaining() || lastContent)
         {
@@ -110,18 +110,24 @@ public class HttpSenderOverFCGI extends HttpSender
         {
             generator.generateRequestHeaders(accumulator, id, fcgiHeaders);
         }
-        getHttpChannel().flush(accumulator, callback);
+        try (RetainableByteBuffer buffer = accumulator.take())
+        {
+            getHttpChannel().flush(buffer, callback);
+        }
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
+    protected void sendContent(HttpExchange exchange, RetainableByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         if (contentBuffer.hasRemaining() || lastContent)
         {
-            ByteBufferPool.Accumulator accumulator = new ByteBufferPool.Accumulator();
+            BufferAccumulator accumulator = new BufferAccumulator();
             int request = getHttpChannel().getRequest();
             generator.generateRequestContent(accumulator, request, contentBuffer, lastContent);
-            getHttpChannel().flush(accumulator, callback);
+            try (RetainableByteBuffer buffer = accumulator.take())
+            {
+                getHttpChannel().flush(buffer, callback);
+            }
         }
         else
         {

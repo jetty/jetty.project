@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class PriorityBodyParser extends BodyParser
 {
@@ -39,7 +38,7 @@ public class PriorityBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -60,7 +59,7 @@ public class PriorityBodyParser extends BodyParser
                 {
                     // We must only peek the first byte and not advance the buffer
                     // because the 31 least significant bits represent the stream id.
-                    int currByte = buffer.get(buffer.position());
+                    int currByte = buffer.get(buffer.readPosition());
                     exclusive = (currByte & 0x80) == 0x80;
                     state = State.PARENT_STREAM_ID;
                     break;
@@ -110,7 +109,7 @@ public class PriorityBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onPriority(ByteBuffer buffer, int parentStreamId, int weight, boolean exclusive)
+    private boolean onPriority(RetainableByteBuffer buffer, int parentStreamId, int weight, boolean exclusive)
     {
         PriorityFrame frame = new PriorityFrame(getStreamId(), parentStreamId, weight, exclusive);
         if (!rateControlOnEvent(frame))

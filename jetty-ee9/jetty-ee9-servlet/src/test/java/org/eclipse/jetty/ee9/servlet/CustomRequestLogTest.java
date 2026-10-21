@@ -120,7 +120,7 @@ public class CustomRequestLogTest
     {
         start("Filename: %f", new SimpleServlet());
 
-        _connector.getResponse("GET /context/servlet/info HTTP/1.0\n\n");
+        _connector.getResponseAsString("GET /context/servlet/info HTTP/1.0\n\n");
         String log = _logs.poll(5, TimeUnit.SECONDS);
         String expected = _baseDir.resolve("servlet/info").toString();
         assertThat(log, is("Filename: " + expected));
@@ -131,7 +131,7 @@ public class CustomRequestLogTest
     {
         start("RequestHandler: %R", new SimpleServlet());
 
-        _connector.getResponse("GET /context/servlet/ HTTP/1.0\n\n");
+        _connector.getResponseAsString("GET /context/servlet/ HTTP/1.0\n\n");
         String log = _logs.poll(5, TimeUnit.SECONDS);
         assertThat(log, Matchers.containsString(SimpleServlet.class.getSimpleName()));
     }
@@ -142,11 +142,11 @@ public class CustomRequestLogTest
         String authHeader = HttpHeader.AUTHORIZATION + ": Basic " + Base64.getEncoder().encodeToString("username:password".getBytes());
         start("%u", new SimpleServlet());
 
-        _connector.getResponse("GET /context/servlet/unsecure HTTP/1.0\n\n");
+        _connector.getResponseAsString("GET /context/servlet/unsecure HTTP/1.0\n\n");
         String log = _logs.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("-"));
 
-        _connector.getResponse("GET /context/servlet/secure HTTP/1.0\n" + authHeader + "\n\n");
+        _connector.getResponseAsString("GET /context/servlet/secure HTTP/1.0\n" + authHeader + "\n\n");
         log = _logs.poll(5, TimeUnit.SECONDS);
         assertThat(log, is("username"));
     }

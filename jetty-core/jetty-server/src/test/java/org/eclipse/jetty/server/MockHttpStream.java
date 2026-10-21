@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -25,9 +26,10 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.BufferAggregator;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class MockHttpStream implements HttpStream
 {
@@ -43,8 +45,8 @@ public class MockHttpStream implements HttpStream
     private final AtomicReference<Content.Chunk> _content = new AtomicReference<>();
     private final AtomicReference<Throwable> _complete = new AtomicReference<>();
     private final CountDownLatch _completed = new CountDownLatch(1);
-    private final RetainableByteBuffer.DynamicCapacity _accumulator = new RetainableByteBuffer.DynamicCapacity();
-    private final AtomicReference<ByteBuffer> _out = new AtomicReference<>();
+    private final BufferAggregator _aggregator = new BufferAggregator(true, 1024);
+    private final AtomicReference<RetainableByteBuffer> _out = new AtomicReference<>();
     private final HttpChannel _channel;
     private final AtomicReference<MetaData.Response> _response = new AtomicReference<>();
     private final HttpFields.Mutable _responseHeaders = HttpFields.build();
@@ -104,19 +106,14 @@ public class MockHttpStream implements HttpStream
         return _responseTrailers;
     }
 
-    public ByteBuffer getResponseContent()
-    {
-        return _out.get();
-    }
-
     public String getResponseContentAsString()
     {
-        ByteBuffer buffer = _out.get();
+        RetainableByteBuffer buffer = _out.get();
         if (buffer == null)
             return null;
         if (buffer.remaining() == 0)
             return "";
-        return BufferUtil.toString(buffer);
+        return buffer.getString(buffer.readPosition(), StandardCharsets.ISO_8859_1);
     }
 
     public Throwable getFailure()
@@ -160,7 +157,7 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
     {
         if (response != null)
         {
@@ -180,7 +177,7 @@ public class MockHttpStream implements HttpStream
         }
 
         if (content != null)
-            _accumulator.append(content);
+            _aggregator.put(content);
 
         if (last)
         {
@@ -192,12 +189,19 @@ public class MockHttpStream implements HttpStream
                     _responseTrailers = HttpFields.build(trailers);
             }
 
-            if (!_out.compareAndSet(null, _accumulator.take().getByteBuffer()))
+            try (RetainableByteBuffer buffer = _aggregator.take())
             {
-                if (response != null || content != null)
+                if (_out.compareAndSet(null, buffer))
                 {
-                    callback.failed(new IOException("EOF"));
-                    return;
+                    buffer.retain();
+                }
+                else
+                {
+                    if (response != null || content != null)
+                    {
+                        callback.failed(new IOException("EOF"));
+                        return;
+                    }
                 }
             }
         }

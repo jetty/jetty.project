@@ -14,18 +14,18 @@
 package org.eclipse.jetty.quic.quiche;
 
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -66,7 +66,7 @@ public abstract class QuicheConnection extends AbstractConnection
         getEndPoint().fillInterested(fillableCallback);
     }
 
-    public abstract void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers);
+    public abstract void write(Callback callback, SocketAddress remoteAddress, RetainableByteBuffer buffer);
 
     @Override
     public abstract boolean onIdleExpired(TimeoutException timeoutException);

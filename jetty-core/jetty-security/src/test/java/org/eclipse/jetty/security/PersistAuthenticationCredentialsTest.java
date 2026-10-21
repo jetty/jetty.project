@@ -175,7 +175,7 @@ public class PersistAuthenticationCredentialsTest
             _securityHandler.setPersistAuthenticationCredentials(true);
         _server.start();
 
-        HttpTester.Response response = HttpTester.parseResponse(_localConnector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(_localConnector.getResponseAsString("""
             GET /hello HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -192,7 +192,7 @@ public class PersistAuthenticationCredentialsTest
             assertThat(getSessionData(), not(containsString("bar")));
 
         // Verify that we can load it from disk again.
-        response = HttpTester.parseResponse(_localConnector.getResponse("""
+        response = HttpTester.parseResponse(_localConnector.getResponseAsString("""
             GET /hello HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -209,7 +209,7 @@ public class PersistAuthenticationCredentialsTest
         _securityHandler.setPersistAuthenticationCredentials(true);
         _server.start();
 
-        HttpTester.Response response = HttpTester.parseResponse(_localConnector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(_localConnector.getResponseAsString("""
             GET /hello HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -228,7 +228,7 @@ public class PersistAuthenticationCredentialsTest
         _server.start();
 
         // Verify that we can load it from disk again.
-        response = HttpTester.parseResponse(_localConnector.getResponse("""
+        response = HttpTester.parseResponse(_localConnector.getResponseAsString("""
             GET /hello HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -248,7 +248,7 @@ public class PersistAuthenticationCredentialsTest
         _securityHandler.setPersistAuthenticationCredentials(false);
         _server.start();
 
-        HttpTester.Response response = HttpTester.parseResponse(_localConnector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(_localConnector.getResponseAsString("""
             GET /hello HTTP/1.1\r
             Host: local\r
             Connection: close\r
@@ -269,7 +269,7 @@ public class PersistAuthenticationCredentialsTest
         // The persisted authentication has no credentials, and credentials are now required to
         // re-login, so the cached authentication cannot be restored. Rather than failing the
         // request, it is treated as unauthenticated and the user must authenticate.
-        response = HttpTester.parseResponse(_localConnector.getResponse("""
+        response = HttpTester.parseResponse(_localConnector.getResponseAsString("""
             GET /hello HTTP/1.1\r
             Host: local\r
             Connection: close\r

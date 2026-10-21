@@ -190,8 +190,8 @@ public class CompressionHandler extends Handler.Wrapper
         }
         supportedEncodings.values().forEach(compression ->
         {
-            if (compression.getByteBufferPool() == null)
-                compression.setByteBufferPool(getServer().getByteBufferPool());
+            if (compression.getBufferPool() == null)
+                compression.setBufferPool(getServer().getByteBufferPool());
         });
 
         if (pathConfigs.isEmpty())

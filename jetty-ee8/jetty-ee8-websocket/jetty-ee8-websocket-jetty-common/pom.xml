@@ -14,6 +14,7 @@
     <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
     <ee9.module>jetty-ee9-websocket/jetty-ee9-websocket-jetty-common</ee9.module>
   </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.ee8.websocket</groupId>
@@ -22,6 +23,12 @@
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>jetty-websocket-core-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

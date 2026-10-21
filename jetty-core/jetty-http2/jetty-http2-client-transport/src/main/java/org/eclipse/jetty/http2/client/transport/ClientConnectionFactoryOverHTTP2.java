@@ -126,6 +126,7 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
                 @Override
                 public void failed(Throwable x)
                 {
+                    x.printStackTrace();
                     promise.failed(x);
                 }
             });

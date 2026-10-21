@@ -89,7 +89,7 @@ public class HandlerCollectionTest
             Connection: close
             
             """;
-        HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(localConnector.getResponseAsString(rawRequest));
         assertThat("status", response.getStatus(), is(200));
         assertThat("response content", response.getContent(), containsString("Got GET Request"));
     }

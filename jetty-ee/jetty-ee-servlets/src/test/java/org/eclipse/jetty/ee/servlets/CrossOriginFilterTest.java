@@ -83,7 +83,7 @@ public class CrossOriginFilterTest
             Connection: close\r
             \r
             """;
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertTrue(latch.await(1, TimeUnit.SECONDS));
@@ -110,7 +110,7 @@ public class CrossOriginFilterTest
             Origin: %s\r
             \r
             """.formatted(otherOrigin);
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -136,7 +136,7 @@ public class CrossOriginFilterTest
                 "Connection: close\r\n" +
                 "Origin: " + origin + "\r\n" +
                 "\r\n";
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -164,7 +164,7 @@ public class CrossOriginFilterTest
                 "Connection: close\r\n" +
                 "Origin: " + origin + "\r\n" +
                 "\r\n";
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -193,7 +193,7 @@ public class CrossOriginFilterTest
                 "Connection: close\r\n" +
                 "Origin: " + origin + "\r\n" +
                 "\r\n";
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -221,7 +221,7 @@ public class CrossOriginFilterTest
                 "Connection: close\r\n" +
                 "Origin: " + origin + "\r\n" +
                 "\r\n";
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -252,7 +252,7 @@ public class CrossOriginFilterTest
                 "Connection: close\r\n" +
                 "Origin: " + origin + "\r\n" +
                 "\r\n";
-        String response = connector.getResponse(request);
+        String response = connector.getResponseAsString(request);
         assertTrue(response.contains("HTTP/1.1 200"));
         assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER));
         assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER));
@@ -279,7 +279,7 @@ public class CrossOriginFilterTest
                 "Connection: close\r\n" +
                 "Origin: " + origin + "\r\n" +
                 "\r\n";
-        String response = connector.getResponse(request);
+        String response = connector.getResponseAsString(request);
         assertTrue(response.contains("HTTP/1.1 200"));
         assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER));
         assertTrue(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER));
@@ -307,7 +307,7 @@ public class CrossOriginFilterTest
                 // Use 2 spaces as separator to test that the implementation does not fail
                 "Origin: " + otherOrigin + " " + " " + origin + "\r\n" +
                 "\r\n";
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -335,7 +335,7 @@ public class CrossOriginFilterTest
             Origin: http://localhost\r
             \r
             """;
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -365,7 +365,7 @@ public class CrossOriginFilterTest
             Origin: http://localhost\r
             \r
             """;
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -395,7 +395,7 @@ public class CrossOriginFilterTest
             Origin: http://localhost\r
             \r
             """;
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -423,7 +423,7 @@ public class CrossOriginFilterTest
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": GET\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -452,7 +452,7 @@ public class CrossOriginFilterTest
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": PUT\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -472,7 +472,7 @@ public class CrossOriginFilterTest
             Origin: http://localhost\r
             \r
             """;
-        rawResponse = connector.getResponse(request);
+        rawResponse = connector.getResponseAsString(request);
         response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -504,7 +504,7 @@ public class CrossOriginFilterTest
             """.formatted(CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER,
             CrossOriginFilter.ACCESS_CONTROL_REQUEST_HEADERS_HEADER);
 
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -527,7 +527,7 @@ public class CrossOriginFilterTest
             Origin: http://localhost\r
             \r
             """;
-        rawResponse = connector.getResponse(request);
+        rawResponse = connector.getResponseAsString(request);
         response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -555,7 +555,7 @@ public class CrossOriginFilterTest
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_HEADERS_HEADER + ": origin,x-custom,x-requested-with\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -583,7 +583,7 @@ public class CrossOriginFilterTest
             Origin: http://localhost\r
             \r
             """;
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -610,7 +610,7 @@ public class CrossOriginFilterTest
             Origin: http://localhost\r
             \r
             """;
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -638,7 +638,7 @@ public class CrossOriginFilterTest
                 CrossOriginFilter.ACCESS_CONTROL_REQUEST_METHOD_HEADER + ": PUT\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
-        String rawResponse = connector.getResponse(request);
+        String rawResponse = connector.getResponseAsString(request);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));

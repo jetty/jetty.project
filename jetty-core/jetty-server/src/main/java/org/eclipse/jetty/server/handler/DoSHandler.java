@@ -182,7 +182,6 @@ public class DoSHandler extends ConditionalHandler.ElseNext
     @Override
     protected boolean onConditionsMet(Request request, Response response, Callback callback) throws Exception
     {
-
         // Calculate an id for the request (which may be global empty string).
         String id = _clientIdFn.apply(request);
 
@@ -349,7 +348,7 @@ public class DoSHandler extends ConditionalHandler.ElseNext
                     long elapsedSinceLastDrip = NanoTime.elapsed(_lastDripNanoTime, now);
                     long drips = elapsedSinceLastDrip / _nanosPerDrip;
                     _lastDripNanoTime = _lastDripNanoTime + drips * _nanosPerDrip;
-                    _bucket = Math.min(_bucketSize, Math.toIntExact(Math.max(0L, _bucket - drips) + 1));
+                    _bucket = (int)Math.min(_bucketSize, Math.max(0L, _bucket - drips) + 1);
                     _expireNanoTime = now + _bucket * _nanosPerDrip + _idleTimeout;
                     return _bucket < _bucketSize;
                 }

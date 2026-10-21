@@ -57,7 +57,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
@@ -74,7 +74,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.NOT_ACCEPTABLE_406, response.getStatus());
     }
 
@@ -92,7 +92,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.NOT_ACCEPTABLE_406, response.getStatus());
         assertThat(response.getContent(), containsString(rule.getMessage()));
     }
@@ -110,7 +110,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         // The rule is not invoked because byte NULL is rejected at parsing level.
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
@@ -128,7 +128,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.NOT_ACCEPTABLE_406, response.getStatus());
     }
 
@@ -145,7 +145,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         // The rule is not invoked because byte NULL is rejected at parsing level.
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
@@ -163,7 +163,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         // The rule is not invoked because byte CNTL bytes are rejected at parsing level.
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
@@ -181,7 +181,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         // The rule is not invoked because byte NULL is rejected at parsing level.
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
@@ -199,7 +199,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.NOT_ACCEPTABLE_406, response.getStatus());
     }
 
@@ -216,7 +216,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
@@ -233,7 +233,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         // The rule is not invoked because the UTF-8 sequence is invalid.
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
     }
@@ -253,7 +253,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.NOT_ACCEPTABLE_406, response.getStatus());
     }
 
@@ -272,7 +272,7 @@ public class InvalidURIRuleTest extends AbstractRuleTest
                         
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.NOT_ACCEPTABLE_406, response.getStatus());
     }
 }
