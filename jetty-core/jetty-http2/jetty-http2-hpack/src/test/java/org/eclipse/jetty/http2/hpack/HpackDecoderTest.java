@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -356,6 +357,15 @@ public class HpackDecoderTest
         catch (StreamException ex)
         {
             assertThat(ex.getMessage(), Matchers.containsString("Unsupported TE value 'not_trailers'"));
+        }
+
+        // 3: Sends a HEADERS frame that contains the other connection-specific header fields
+        for (HttpHeader header : List.of(HttpHeader.KEEP_ALIVE, HttpHeader.PROXY_CONNECTION, HttpHeader.TRANSFER_ENCODING, HttpHeader.UPGRADE))
+        {
+            mdb = new MetaDataBuilder(4096);
+            mdb.emit(new HttpField(header, "value"));
+            StreamException ex = assertThrows(StreamException.class, mdb::build);
+            assertThat(ex.getMessage(), Matchers.containsString("Connection specific field '" + header + "'"));
         }
 
         mdb = new MetaDataBuilder(4096);
