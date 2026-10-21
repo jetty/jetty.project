@@ -294,8 +294,6 @@ public abstract class AbstractLifeCycle implements LifeCycle
     private void setFailed(Throwable th)
     {
         _state = State.FAILED;
-        if (LOG.isDebugEnabled())
-            LOG.warn("FAILED {}: {}", this, th, th);
         for (EventListener listener : _eventListeners)
         {
             if (listener instanceof Listener)
