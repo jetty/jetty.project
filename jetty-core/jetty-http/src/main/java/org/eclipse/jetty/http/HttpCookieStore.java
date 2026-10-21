@@ -13,22 +13,16 @@
 
 package org.eclipse.jetty.http;
 
+import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.StringUtil;
+
 import java.net.URI;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
-
-import org.eclipse.jetty.util.NanoTime;
-import org.eclipse.jetty.util.StringUtil;
 
 /**
  * <p>A container for {@link HttpCookie}s.</p>
@@ -582,11 +576,10 @@ public interface HttpCookieStore
                 }
                 else if (maxAge > 0)
                 {
-                    return (NanoTime.secondsSince(creationNanoTime) > maxAge);
+                    return NanoTime.since(creationNanoTime) > TimeUnit.SECONDS.toNanos(maxAge);
                 }
                 else
                 {
-                    // We have no max-age, so we fall back to Expires
                     Instant expires = getExpires();
                     return expires != null && Instant.now().isAfter(expires);
                 }

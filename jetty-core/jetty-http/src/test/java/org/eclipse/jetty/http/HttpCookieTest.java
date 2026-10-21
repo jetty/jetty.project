@@ -13,18 +13,16 @@
 
 package org.eclipse.jetty.http;
 
-import java.time.Instant;
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.time.Instant;
+import java.util.List;
+
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -55,8 +53,8 @@ public class HttpCookieTest
             Arguments.of("A=B; a=", HttpCookie.build("A", "B").attribute("a", "").build()),
             Arguments.of("A=B; a=v", HttpCookie.build("A", "B").attribute("a", "v").build()),
             Arguments.of("A=B; Secure; Path=/", HttpCookie.build("A", "B").secure(true).path("/").build()),
-            Arguments.of("A=B; Max-Age=-2", HttpCookie.build("A", "B").maxAge(-2).build()),
-            Arguments.of("A=B; Max-Age=-1", HttpCookie.build("A", "B").maxAge(-1).build()),
+            Arguments.of("A=B; Max-Age=-2", HttpCookie.build("A", "B").maxAge(0).build()),
+            Arguments.of("A=B; Max-Age=-1", HttpCookie.build("A", "B").maxAge(0).build()),
             Arguments.of("A=B; Max-Age=0", HttpCookie.build("A", "B").maxAge(0).build()),
             Arguments.of("A=B; Max-Age=1", HttpCookie.build("A", "B").maxAge(1).build()),
             // Quoted cookie.
@@ -171,6 +169,6 @@ public class HttpCookieTest
 
         cookie = HttpCookie.build("A", "B").attribute("max-age", "-2").build();
         assertThat(cookie.getAttributes().size(), is(1));
-        assertThat(cookie.getMaxAge(), is(-2L));
+        assertThat(cookie.getMaxAge(), is(0L));
     }
 }

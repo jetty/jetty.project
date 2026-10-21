@@ -13,18 +13,16 @@
 
 package org.eclipse.jetty.http;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class HttpCookieStoreTest
 {
@@ -315,7 +313,7 @@ public class HttpCookieStoreTest
     }
 
     @Test
-    public void testExpiredWithMaxAgeCookieWillMatch()
+    public void testRetainCookieWithExpiresEpochAndPositiveMaxAge()
     {
         HttpCookieStore store = new HttpCookieStore.Default();
         URI uri = URI.create("https://example.com/");

@@ -13,16 +13,12 @@
 
 package org.eclipse.jetty.http;
 
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
-
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+
+import java.time.Instant;
+import java.util.*;
 
 /**
  * <p>Implementation of RFC6265 HTTP Cookies (with fallback support for RFC2965).</p>
@@ -84,17 +80,10 @@ public interface HttpCookie
      */
     default boolean isExpired()
     {
-        // A zero max-age is an automatically expired
         if (getMaxAge() == 0)
             return true;
-        // We have a positive max-age, this cookie, as it is configured cannot expire
-        // The storage of the cookie on the User-Agent will have a timestamp of when
-        // this cookie was received, and when the User-Agent wants to use this cookie
-        // it has to validate that the cookie is expired based on that timestamp
-        // and this max-age
         if (getMaxAge() > 0)
             return false;
-        // At this point we have no max-age, so we fall back to expires.
         Instant expires = getExpires();
         return expires != null && Instant.now().isAfter(expires);
     }
@@ -574,7 +563,7 @@ public interface HttpCookie
             {
                 case "expires" -> expires(StringUtil.isBlank(value) ? null : parseExpires(value));
                 case "httponly" -> httpOnly(asBoolean("httponly", value));
-                case "max-age" -> maxAge(StringUtil.isBlank(value) ? -1 : Long.parseLong(value));
+                case "max-age" -> maxAge(StringUtil.isBlank(value) ? -1 : Math.max(0, Long.parseLong(value)));
                 case "samesite" -> sameSite(SameSite.from(value));
                 case "secure" -> secure(asBoolean("secure", value));
                 case "partitioned" -> partitioned(asBoolean("partitioned", value));
