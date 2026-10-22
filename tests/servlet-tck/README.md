@@ -36,10 +36,7 @@ Jetty `Server` through `arquillian.junit.jupiter.manager.perClass`, so they do n
 
 ## In CI
 
-The Jenkins build passes `-Ptck` on every JDK stage, and a TCK failure fails the build. That
-last part needs saying out loud in the pom: `mavenBuild` adds `-Dmaven.test.failure.ignore=true`
-on the main branches, so the module sets `<testFailureIgnore>false</testFailureIgnore>` to opt
-back out of it.
+The Jenkins build passes `-Ptck` on every JDK stage, and a TCK failure fails the build. 
 
 ## Things that will bite you
 

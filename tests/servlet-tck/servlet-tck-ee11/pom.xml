@@ -270,9 +270,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <!-- The Jenkins build passes -Dmaven.test.failure.ignore=true on the main branches,
-               so say explicitly that a TCK failure must fail the build. -->
-          <testFailureIgnore>false</testFailureIgnore>
           <forkedProcessTimeoutInSeconds>15000</forkedProcessTimeoutInSeconds>
           <!-- The tests themselves live in the TCK jar, not in this module. -->
           <dependenciesToScan>

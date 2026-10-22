@@ -30,7 +30,7 @@
   </properties>
   <profiles>
     <!-- The TCK run is long and pulls in a big external dependency tree, so it is opt-in
-         with -Ptck. The Jenkins build enables it on every JDK stage. -->
+         with -Ptck. -->
     <profile>
       <id>tck</id>
       <modules>
