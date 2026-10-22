@@ -84,10 +84,11 @@ public interface HttpCookie
      */
     default boolean isExpired()
     {
-        if (getMaxAge() == 0)
-            return true;
-        if (getMaxAge() > 0)
-            return false;
+        // The Max-Age attribute takes precedence over the Expires attribute (RFC 6265 section 5.3).
+        // Use the attributes to know whether Max-Age is actually present, since getMaxAge() returns
+        // -1 both when the attribute is absent and when it has a (valid) negative value.
+        if (getAttributes().containsKey(MAX_AGE_ATTRIBUTE))
+            return getMaxAge() <= 0;
         Instant expires = getExpires();
         return expires != null && Instant.now().isAfter(expires);
     }

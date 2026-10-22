@@ -173,4 +173,34 @@ public class HttpCookieTest
         assertThat(cookie.getAttributes().size(), is(1));
         assertThat(cookie.getMaxAge(), is(0L));
     }
+
+    public static List<Arguments> expiries()
+    {
+        Instant past = Instant.now().minusSeconds(3600);
+        Instant future = Instant.now().plusSeconds(3600);
+        return List.of(
+            // No Max-Age and no Expires: a session cookie, which does not expire on its own.
+            Arguments.of(HttpCookie.build("A", "B").build(), false),
+            // Max-Age, where <= 0 means expired.
+            Arguments.of(HttpCookie.build("A", "B").maxAge(0).build(), true),
+            Arguments.of(HttpCookie.build("A", "B").maxAge(1).build(), false),
+            // A negative Max-Age is a valid value meaning "already expired", not "attribute absent".
+            Arguments.of(HttpCookie.build("A", "B").maxAge(-1).build(), true),
+            Arguments.of(HttpCookie.build("A", "B").maxAge(-5).build(), true),
+            // Expires only.
+            Arguments.of(HttpCookie.build("A", "B").expires(past).build(), true),
+            Arguments.of(HttpCookie.build("A", "B").expires(future).build(), false),
+            // Max-Age takes precedence over Expires (RFC 6265 section 5.3).
+            Arguments.of(HttpCookie.build("A", "B").maxAge(3600).expires(past).build(), false),
+            Arguments.of(HttpCookie.build("A", "B").maxAge(0).expires(future).build(), true),
+            Arguments.of(HttpCookie.build("A", "B").maxAge(-1).expires(future).build(), true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("expiries")
+    public void testIsExpired(HttpCookie cookie, boolean expired)
+    {
+        assertThat(cookie.isExpired(), is(expired));
+    }
 }

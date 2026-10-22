@@ -51,7 +51,22 @@ public class HttpCookieStoreTest
         HttpCookieStore store = new HttpCookieStore.Default();
         URI uri = URI.create("http://example.com");
         assertFalse(store.add(uri, HttpCookie.build("n", "v").maxAge(0).build()));
+        // A negative Max-Age is a valid value meaning "already expired", not "attribute absent".
+        assertFalse(store.add(uri, HttpCookie.build("n", "v").maxAge(-1).build()));
+        assertFalse(store.add(uri, HttpCookie.build("n", "v").maxAge(-5).build()));
         assertFalse(store.add(uri, HttpCookie.build("n", "v").expires(Instant.now().minusSeconds(1)).build()));
+        // A negative Max-Age takes precedence over a future Expires (RFC 6265 section 5.3).
+        assertFalse(store.add(uri, HttpCookie.build("n", "v").maxAge(-1).expires(Instant.now().plusSeconds(3600)).build()));
+    }
+
+    @Test
+    public void testRetainSessionCookie()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI uri = URI.create("http://example.com");
+        // No Max-Age and no Expires: a session cookie, which is retained.
+        assertTrue(store.add(uri, HttpCookie.build("n", "v").build()));
+        assertEquals(1, store.match(uri).size());
     }
 
     @Test

@@ -576,20 +576,18 @@ public interface HttpCookieStore
             @Override
             public boolean isExpired()
             {
-                long maxAge = getMaxAge();
-                if (maxAge == 0)
+                // The Max-Age attribute takes precedence over the Expires attribute (RFC 6265 section 5.3).
+                // Use the attributes to know whether Max-Age is actually present, since getMaxAge() returns
+                // -1 both when the attribute is absent and when it has a (valid) negative value.
+                if (getAttributes().containsKey(MAX_AGE_ATTRIBUTE))
                 {
-                    return true;
-                }
-                else if (maxAge > 0)
-                {
+                    long maxAge = getMaxAge();
+                    if (maxAge <= 0)
+                        return true;
                     return NanoTime.since(creationNanoTime) > TimeUnit.SECONDS.toNanos(maxAge);
                 }
-                else
-                {
-                    Instant expires = getExpires();
-                    return expires != null && Instant.now().isAfter(expires);
-                }
+                Instant expires = getExpires();
+                return expires != null && Instant.now().isAfter(expires);
             }
 
             @Override
