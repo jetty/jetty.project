@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<arquillian xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns="http://jboss.org/schema/arquillian"
+            xsi:schemaLocation="http://jboss.org/schema/arquillian https://jboss.org/schema/arquillian/arquillian_1_0.xsd">
+
+  <engine>
+    <!-- property name="deploymentExportPath">target/</property -->
+  </engine>
+
+  
+  <group qualifier="jetty-servers" default="true">
+    <container qualifier="http" default="true">
+      <configuration>
+        <property name="bindHttpPort">0</property>
+<!--        <property name="requestCookieCompliance">RFC2965</property>-->
+        <property name="requestCookieCompliance">RFC6265_STRICT</property>
+<!--        <property name="responseCookieCompliance">RFC2965</property>-->
+        <property name="responseCookieCompliance">RFC6265_STRICT</property>
+        <property name="realmProperties">src/test/resources/default.properties</property>
+        <property name="useArchiveNameAsContext">true</property>
+        <property name="inferredEncodings">
+          text/html iso-8859-1
+        </property>
+        <property name="h2cEnabled">true</property>
+        <property name="httpConfigurationProperties">
+          relativeRedirectAllowed false
+        </property>
+      </configuration>
+    </container>
+
+    <container qualifier="https">
+      <configuration>
+        <property name="bindHttpPort">0</property>
+        <!--        <property name="requestCookieCompliance">RFC2965</property>-->
+        <property name="requestCookieCompliance">RFC6265</property>
+        <!--        <property name="responseCookieCompliance">RFC2965</property>-->
+        <property name="responseCookieCompliance">RFC6265</property>
+        <property name="realmProperties">src/test/resources/default.properties</property>
+        <property name="useArchiveNameAsContext">true</property>
+        <property name="inferredEncodings">
+          text/html iso-8859-1
+        </property>
+        <property name="ssl">true</property>
+        <property name="keystorePath">target/test-classes/certificates/clientcert.jks</property>
+        <property name="trustStorePath">target/cacerts.jks</property>
+        <property name="keystorePassword">OBF:1vn21ugu1saj1v9i1v941sar1ugw1vo0</property>
+        <property name="trustStorePassword">OBF:1vn21ugu1saj1v9i1v941sar1ugw1vo0</property>
+        <property name="needClientAuth">true</property>
+        <property name="sniRequired">false</property>
+        <property name="sniHostCheck">false</property>
+        <property name="h2cEnabled">true</property>
+        <property name="relativeRedirectAllowed">false</property>
+        <property name="httpConfigurationProperties">
+          relativeRedirectAllowed false
+        </property>
+        <property name="crossContextDispatchSupported">true</property>
+      </configuration>
+    </container>
+  </group>
+
+</arquillian>

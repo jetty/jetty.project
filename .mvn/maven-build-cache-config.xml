@@ -16,6 +16,7 @@
       <discovery>
         <scanProfiles>
           <scanProfile>ci</scanProfile>
+          <scanProfile>tck</scanProfile>
         </scanProfiles>
       </discovery>
     </multiModule>
