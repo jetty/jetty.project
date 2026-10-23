@@ -568,7 +568,7 @@ public interface HttpCookie
             {
                 case "expires" -> expires(StringUtil.isBlank(value) ? null : parseExpires(value));
                 case "httponly" -> httpOnly(asBoolean("httponly", value));
-                case "max-age" -> maxAge(StringUtil.isBlank(value) ? -1 : Math.max(0, Long.parseLong(value)));
+                case "max-age" -> maxAge(StringUtil.isBlank(value) ? -1 : Long.parseLong(value));
                 case "samesite" -> sameSite(SameSite.from(value));
                 case "secure" -> secure(asBoolean("secure", value));
                 case "partitioned" -> partitioned(asBoolean("partitioned", value));
@@ -708,10 +708,9 @@ public interface HttpCookie
         if (attributes == null || attributes.isEmpty())
             return new Immutable(name, value, version, Collections.emptyMap());
 
-        Map<String, String> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        attrs.putAll(attributes);
-
-        return new Immutable(name, value, version, attrs);
+        HttpCookie.Builder builder = build(name, value, version);
+        attributes.forEach(builder::attribute);
+        return builder.build();
     }
 
     /**

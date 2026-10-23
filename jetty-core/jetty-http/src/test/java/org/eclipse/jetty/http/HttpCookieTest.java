@@ -70,14 +70,29 @@ public class HttpCookieTest
             Arguments.of(" A = \"1\" ; Expires= \"Thu, 01 Jan 1970 00:00:00 GMT\"", HttpCookie.build("A", "1").expires(Instant.EPOCH).build()),
             // Invalid cookie.
             Arguments.of("A=\"1\" Bad", null),
-            Arguments.of("A=1; Expires=blah", null),
-            Arguments.of("A=1; Expires=blah; HttpOnly", null),
             Arguments.of("A=1; HttpOnly=blah", null),
-            Arguments.of("A=1; Max-Age=blah", null),
             Arguments.of("A=1; SameSite=blah", null),
             Arguments.of("A=1; SameSite=blah; Secure", null),
             Arguments.of("A=1; Secure=blah", null),
-            Arguments.of("A=1; Max-Age=\"blah\"", null),
+            // RFC 6265, section 5.2.x: a malformed attribute value causes only that cookie-av to be
+            // ignored; the rest of the cookie is retained.
+            // Max-Age (section 5.2.2): an optional '-' followed by one or more digits, else ignored.
+            Arguments.of("A=B; Max-Age", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Max-Age=", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Max-Age=blah", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Max-Age=ABC", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Max-Age=NaN", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Max-Age=-123.45", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Max-Age=0.00", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Max-Age=\"blah\"", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Max-Age=blah; Secure", HttpCookie.build("A", "B").secure(true).build()),
+            // Expires (section 5.2.1): must parse as a cookie-date, else ignored.
+            Arguments.of("A=B; Expires=blah", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Expires=", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Expires=blah; HttpOnly", HttpCookie.build("A", "B").httpOnly(true).build()),
+            // Domain (section 5.2.3): an empty value is ignored.
+            Arguments.of("A=B; Domain=", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Domain=; Secure", HttpCookie.build("A", "B").secure(true).build()),
             // Weird cookie.
             Arguments.of("A=1; Domain=example.org; Domain=domain.com", HttpCookie.build("A", "1").domain("domain.com").build()),
             Arguments.of("A=1; Path=/; Path=/ctx", HttpCookie.build("A", "1").path("/ctx").build())
@@ -173,10 +188,10 @@ public class HttpCookieTest
         assertThat(cookie.getAttributes().size(), is(0));
         assertThat(cookie.getMaxAge(), is(-1L));
 
-        // A negative Max-Age parsed from a Set-Cookie attribute is normalized to 0 (already expired).
+        // Negative max-age in builder usage, means to remove the attribute.
         cookie = HttpCookie.build("A", "B").attribute("max-age", "-2").build();
-        assertThat(cookie.getAttributes().size(), is(1));
-        assertThat(cookie.getMaxAge(), is(0L));
+        assertThat(cookie.getAttributes().size(), is(0));
+        assertThat(cookie.getMaxAge(), is(-1L)); // absent
     }
 
     @Test
@@ -219,7 +234,7 @@ public class HttpCookieTest
         // leaving a session cookie rather than an expired one.
         SetCookieParser parser = SetCookieParser.newInstance();
         HttpCookie cookie = parser.parse("n=v; Max-Age");
-        assertFalse(cookie.getAttributes().containsKey(HttpCookie.MAX_AGE_ATTRIBUTE));
+        assertTrue(cookie.getAttributes().isEmpty());
         assertThat(cookie.getMaxAge(), is(-1L));
         assertFalse(cookie.isExpired());
     }

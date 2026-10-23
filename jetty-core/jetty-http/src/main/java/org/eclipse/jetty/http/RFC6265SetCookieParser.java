@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.http;
 
+import java.time.Instant;
+import java.util.Locale;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,7 +200,45 @@ public class RFC6265SetCookieParser implements SetCookieParser
     {
         try
         {
-            cookie.attribute(name, value);
+            switch (name.toLowerCase(Locale.ROOT))
+            {
+                case "max-age" ->
+                {
+                    // RFC 6265, section 5.2.2: the value must be an optional '-' followed by one or more
+                    // digits; otherwise ignore the cookie-av (keep the cookie without a Max-Age).
+                    // RFC 6265 §5.2.2: value must be -?DIGIT+, else ignore the attribute (session cookie), keep the cookie.
+                    if (value.matches("-?[0-9]+"))
+                    {
+                        // A Max-Age of zero or less means the cookie is already expired.
+                        cookie.maxAge(Math.max(0, Long.parseLong(value)));
+                    }
+                }
+                case "expires" ->
+                {
+                    // RFC 6265, section 5.2.1: if the value fails to parse as a cookie-date,
+                    // ignore the cookie-av (keep the cookie without an Expires).
+                    Instant expires;
+                    try
+                    {
+                        expires = HttpCookie.parseExpires(value);
+                    }
+                    catch (Throwable x)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("ignoring unparsable Expires: {}", value, x);
+                        return true;
+                    }
+                    cookie.expires(expires);
+                }
+                case "domain" ->
+                {
+                    // RFC 6265, section 5.2.3: if the value is empty, ignore the cookie-av.
+                    if (value.isEmpty())
+                        return true;
+                    cookie.attribute(name, value);
+                }
+                default -> cookie.attribute(name, value);
+            }
             return true;
         }
         catch (Throwable x)
