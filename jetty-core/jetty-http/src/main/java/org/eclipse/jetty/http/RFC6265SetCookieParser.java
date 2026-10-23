@@ -196,6 +196,21 @@ public class RFC6265SetCookieParser implements SetCookieParser
         return ch == ' ' || ch == '\t';
     }
 
+    /**
+     * <p>Applies a parsed {@code Set-Cookie} attribute to the cookie being built, following the
+     * RFC 6265 (section 5.2) parsing rules.</p>
+     * <p>For the attributes that RFC 6265 says to "ignore the cookie-av" on a malformed value
+     * ({@code Max-Age}, section 5.2.2; {@code Expires}, section 5.2.1; {@code Domain}, section 5.2.3),
+     * a malformed value is skipped and the rest of the cookie is retained, so this method returns
+     * {@code true}. For any other attribute, a value that cannot be applied rejects the whole
+     * {@code Set-Cookie}, so this method returns {@code false}.</p>
+     *
+     * @param cookie the cookie builder to update
+     * @param name the attribute name
+     * @param value the attribute value (possibly empty), with any surrounding quotes already stripped
+     * @return {@code true} if the attribute was applied or safely ignored and parsing may continue;
+     *         {@code false} if the whole {@code Set-Cookie} must be rejected
+     */
     private boolean setAttribute(HttpCookie.Builder cookie, String name, String value)
     {
         try
@@ -206,12 +221,9 @@ public class RFC6265SetCookieParser implements SetCookieParser
                 {
                     // RFC 6265, section 5.2.2: the value must be an optional '-' followed by one or more
                     // digits; otherwise ignore the cookie-av (keep the cookie without a Max-Age).
-                    // RFC 6265 §5.2.2: value must be -?DIGIT+, else ignore the attribute (session cookie), keep the cookie.
-                    if (value.matches("-?[0-9]+"))
-                    {
-                        // A Max-Age of zero or less means the cookie is already expired.
-                        cookie.maxAge(Math.max(0, Long.parseLong(value)));
-                    }
+                    long maxAge = parseMaxAge(value);
+                    if (maxAge >= 0)
+                        cookie.maxAge(maxAge);
                 }
                 case "expires" ->
                 {
@@ -247,6 +259,49 @@ public class RFC6265SetCookieParser implements SetCookieParser
                 LOG.debug("could not set attribute {}={}", name, value, x);
             return false;
         }
+    }
+
+    /**
+     * <p>Parses an RFC 6265 (section 5.2.2) {@code Max-Age} value using a character scan, so that an
+     * all-digit value that overflows a {@code long} is clamped to {@link Long#MAX_VALUE} rather than
+     * throwing a {@link NumberFormatException}.</p>
+     * <p>A valid value is an optional leading {@code '-'} followed by one or more ASCII digits; a
+     * value of zero or less means the cookie is already expired and is returned as {@code 0}.</p>
+     *
+     * @param value the {@code Max-Age} attribute value
+     * @return the Max-Age in seconds, clamped to the range {@code [0, Long.MAX_VALUE]}; or {@code -1}
+     *         if the value is not a valid {@code Max-Age} and the cookie-av must be ignored
+     */
+    private static long parseMaxAge(String value)
+    {
+        if (value == null || value.isEmpty())
+            return -1;
+        int i = 0;
+        boolean negative = value.charAt(0) == '-';
+        if (negative)
+        {
+            // A lone '-' is not a valid number.
+            if (value.length() == 1)
+                return -1;
+            i = 1;
+        }
+        long seconds = 0;
+        for (; i < value.length(); i++)
+        {
+            char c = value.charAt(i);
+            if (c < '0' || c > '9')
+                return -1;
+            if (!negative)
+            {
+                int digit = c - '0';
+                // Clamp on overflow: a huge Max-Age represents a far-future (non-expiring) cookie.
+                if (seconds > (Long.MAX_VALUE - digit) / 10)
+                    return Long.MAX_VALUE;
+                seconds = seconds * 10 + digit;
+            }
+        }
+        // RFC 6265, section 5.2.2: a Max-Age of zero or less means the cookie is already expired.
+        return negative ? 0 : seconds;
     }
 
     private enum State

@@ -86,6 +86,9 @@ public class HttpCookieTest
             Arguments.of("A=B; Max-Age=0.00", HttpCookie.build("A", "B").build()),
             Arguments.of("A=B; Max-Age=\"blah\"", HttpCookie.build("A", "B").build()),
             Arguments.of("A=B; Max-Age=blah; Secure", HttpCookie.build("A", "B").secure(true).build()),
+            // An all-digit Max-Age that overflows long is clamped, not dropped (section 5.2.2).
+            Arguments.of("A=B; Max-Age=99999999999999999999", HttpCookie.build("A", "B").maxAge(Long.MAX_VALUE).build()),
+            Arguments.of("A=B; Max-Age=-99999999999999999999", HttpCookie.build("A", "B").maxAge(0).build()),
             // Expires (section 5.2.1): must parse as a cookie-date, else ignored.
             Arguments.of("A=B; Expires=blah", HttpCookie.build("A", "B").build()),
             Arguments.of("A=B; Expires=", HttpCookie.build("A", "B").build()),
