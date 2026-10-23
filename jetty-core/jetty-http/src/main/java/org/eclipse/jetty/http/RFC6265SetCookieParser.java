@@ -58,6 +58,14 @@ public class RFC6265SetCookieParser implements SetCookieParser
                             LOG.debug("invalid character {} at index {} of {}", ch, i, setCookieValue);
                         return null;
                     }
+                    if (ch == ';')
+                    {
+                        // RFC 6265, section 5.2: the name-value-pair (the characters before the first
+                        // ';') lacks a '=', so ignore the set-cookie-string entirely.
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("no '=' in cookie name-value-pair of {}", setCookieValue);
+                        return null;
+                    }
                     if (ch == '=')
                     {
                         name = setCookieValue.substring(offset, i).trim();

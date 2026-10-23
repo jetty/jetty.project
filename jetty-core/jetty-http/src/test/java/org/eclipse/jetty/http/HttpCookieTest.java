@@ -70,6 +70,14 @@ public class HttpCookieTest
             Arguments.of(" A = \"1\" ; Expires= \"Thu, 01 Jan 1970 00:00:00 GMT\"", HttpCookie.build("A", "1").expires(Instant.EPOCH).build()),
             // Invalid cookie.
             Arguments.of("A=\"1\" Bad", null),
+            // RFC 6265 section 5.2: the name-value-pair (before the first ';') lacks '=', ignore entirely.
+            Arguments.of("foo; Max-Age=0", null),
+            Arguments.of("foo; Path=/", null),
+            Arguments.of("foo; Secure", null),
+            Arguments.of(" ; a=b", null),
+            // Secure (section 5.2.5), HttpOnly (section 5.2.6) and SameSite (RFC 6265bis section 5.4.7)
+            // are flag/enumerated attributes; Jetty currently rejects the whole Set-Cookie when their
+            // value is invalid (stricter than the RFC, which would set the flag and ignore the value).
             Arguments.of("A=1; HttpOnly=blah", null),
             Arguments.of("A=1; SameSite=blah", null),
             Arguments.of("A=1; SameSite=blah; Secure", null),
