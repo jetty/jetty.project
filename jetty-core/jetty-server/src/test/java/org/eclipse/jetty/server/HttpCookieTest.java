@@ -426,15 +426,8 @@ public class HttpCookieTest
     @MethodSource("setCookieMaxAge1Provider")
     public void testSetRFC6265SetCookieMaxAge1(HttpCookie httpCookie)
     {
-        Instant now = Instant.now();
         String actualSetCookie = HttpCookieUtils.getRFC6265SetCookie(httpCookie);
-        Pattern pattern = Pattern.compile("^everything=value; Path=/path; Expires=(.*); Max-Age=1$");
-        Matcher matcher = pattern.matcher(actualSetCookie);
-        assertTrue(matcher.matches(), "Actual Cookie doesn't match expected pattern: " + actualSetCookie);
-        String expires = matcher.group(1);
-        ZonedDateTime datetime = HttpDateTime.parse(expires);
-        long minutes = Duration.between(now, datetime.toInstant()).toMinutes();
-        assertThat(minutes, lessThan(2L));
+        assertThat(actualSetCookie, is("everything=value; Path=/path; Max-Age=1"));
     }
 
     public static Stream<HttpCookie> setCookieExpiresNowProvider()
