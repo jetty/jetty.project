@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.eclipse.jetty.tests</groupId>
+    <artifactId>servlet-tck</artifactId>
+    <version>12.1.14-SNAPSHOT</version>
+  </parent>
+  <artifactId>servlet-tck-ee11</artifactId>
+  <packaging>jar</packaging>
+  <name>Tests :: Servlet TCK :: EE11</name>
+
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.servlet.tck.ee11</bundle-symbolic-name>
+    <!-- The TCK jars ship classes that also live in their dependencies, which the ci profile
+         would otherwise fail the build on. -->
+    <duplicate-finder.skip>true</duplicate-finder.skip>
+    <http2.timeout/>
+    <!-- The TCK needs its own JVM flags on top of the repo defaults. Overriding this property
+         rather than <argLine> keeps the inherited @{argLine} that JaCoCo relies on. -->
+    <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -Duser.country=US -Djava.io.tmpdir=${project.build.directory} -showversion -Xmx8g -Xms4g -Xlog:gc:stderr:time,level,tags -Djava.locale.providers=COMPAT,CLDR -Djava.protocol.handler.pkgs=javax.net.ssl -Djavax.net.ssl.keyStore=${project.build.testOutputDirectory}/certificates/clientcert.jks -Djavax.net.ssl.keyStorePassword=changeit -Djavax.net.ssl.trustStore=${project.build.directory}/cacerts.jks -Djetty.version=${project.version}</jetty.surefire.argLine>
+    <!-- The repo default is a dynamic strategy with extension autodetection on. The TCK needs a
+         small fixed pool and autodetection off, otherwise Arquillian's thread local context
+         leaks between test classes. -->
+    <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
+    <junit.jupiter.execution.parallel.config.strategy>fixed</junit.jupiter.execution.parallel.config.strategy>
+    <junit.jupiter.execution.parallel.enabled>true</junit.jupiter.execution.parallel.enabled>
+    <junit.jupiter.execution.parallel.mode.classes.default>concurrent</junit.jupiter.execution.parallel.mode.classes.default>
+    <junit.jupiter.execution.parallel.mode.default>same_thread</junit.jupiter.execution.parallel.mode.default>
+    <junit.jupiter.extensions.autodetection.enabled>false</junit.jupiter.extensions.autodetection.enabled>
+    <!-- The TCK builds its web applications through ShrinkWrap, which embeds the Maven 3.9 /
+         resolver 1.9 stack. The rest of the build is pinned to Maven 3.10 / resolver 2.0, and
+         mixing the two gives a NoClassDefFoundError on org.eclipse.aether.util.PathUtils, so
+         move this module back onto the line ShrinkWrap expects. -->
+    <maven.deps.version>${maven.version}</maven.deps.version>
+    <maven.resolver.version>1.9.22</maven.resolver.version>
+    <!-- Also copied to target/servlet-api.jar for the TCK signature tests. -->
+    <servlet.tck.servlet.api.version>6.1.0</servlet.tck.servlet.api.version>
+    <!-- Settings file handed to the ShrinkWrap resolver, set by the jenkins profile below. -->
+    <shrinkwrap.settings.file/>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- The TCK pulls ShrinkWrap in transitively; keep the whole resolver family on one
+           version, and on the same one as the shrinkwrap-resolver-maven-plugin below. These are
+           listed one by one rather than through shrinkwrap-resolver-bom on purpose: importing
+           that BOM also imports its parent's dependencyManagement, which pins junit-jupiter to
+           JUnit 5 and beats the junit-bom the root pom imports. Surefire's provider then runs on
+           JUnit 6 against a JUnit 5 classpath and dies with NoSuchMethodError on
+           NamespacedHierarchicalStore$CloseAction. -->
+      <dependency>
+        <groupId>org.jboss.shrinkwrap.resolver</groupId>
+        <artifactId>shrinkwrap-resolver-api</artifactId>
+        <version>${shrinkwrap.resolver.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.shrinkwrap.resolver</groupId>
+        <artifactId>shrinkwrap-resolver-api-maven</artifactId>
+        <version>${shrinkwrap.resolver.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.shrinkwrap.resolver</groupId>
+        <artifactId>shrinkwrap-resolver-impl-maven</artifactId>
+        <version>${shrinkwrap.resolver.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.shrinkwrap.resolver</groupId>
+        <artifactId>shrinkwrap-resolver-spi</artifactId>
+        <version>${shrinkwrap.resolver.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.shrinkwrap.resolver</groupId>
+        <artifactId>shrinkwrap-resolver-spi-maven</artifactId>
+        <version>${shrinkwrap.resolver.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <version>${servlet.tck.servlet.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet.tck</groupId>
+      <artifactId>servlet-tck-runtime</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.glassfish.metro</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet.tck</groupId>
+      <artifactId>servlet-tck-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-deploy</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http-tools</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-jmx</artifactId>
+    </dependency>
+    <!-- Not used here, but declared so the ShrinkWrap resolver can put it in the generated
+         web applications, see the servlet.tck.slf4jimpl property below. -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util-ajax</artifactId>
+    </dependency>
+    <!-- The EE11 versions are spelled out rather than taken from jetty-ee11-bom. The TCK re-parses
+         this pom through ShrinkWrap, and a BOM import has to be fetched as an artifact, which it
+         cannot do before the reactor has installed it. -->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-servlet</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-webapp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>jetty-http2-server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.arquillian.container</groupId>
+      <artifactId>arquillian-container-test-spi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.arquillian.container</groupId>
+      <artifactId>arquillian-jetty-embedded-12-1-ee11</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-jdk-platform-logging</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-annotations</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-apache-jsp</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-glassfish-jstl</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.arquillian.junit5</groupId>
+      <artifactId>arquillian-junit5-container</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <!-- The signature tests compare the API jar against the JDK java.base image. -->
+          <execution>
+            <id>copy-servlet-api</id>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <phase>generate-test-resources</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.servlet</groupId>
+                  <artifactId>jakarta.servlet-api</artifactId>
+                  <version>${servlet.tck.servlet.api.version}</version>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                  <destFileName>servlet-api.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+            </configuration>
+          </execution>
+          <!-- The client certificate and the CTS certificate used by the secure tests are
+               shipped inside the TCK jar. -->
+          <execution>
+            <id>unpack-certificates</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <phase>generate-test-resources</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>jakarta.servlet.tck</groupId>
+                  <artifactId>servlet-tck-runtime</artifactId>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+                  <includes>**/**cts_cert,**/**clientcert.jks,**/**clientcert.p12</includes>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Almost all of this module's classpath comes from the TCK jar, which carries its own
+           Maven and ShrinkWrap stack at versions the rest of the build does not use. Keep every
+           other rule, but drop requireUpperBoundDeps: there is no shipped artifact to protect
+           here, and pinning a graph we do not control would only drift from what the TCK was
+           tested against. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-versions</id>
+            <configuration>
+              <rules combine.self="override">
+                <requireMavenVersion>
+                  <version>[3.9.2,)</version>
+                </requireMavenVersion>
+                <requireJavaVersion>
+                  <version>[17,)</version>
+                </requireJavaVersion>
+                <requireCompatibleVersionRedhat/>
+                <requireCompatibleVersionDebian/>
+                <requireCompatibleVersionOSGI/>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <forkedProcessTimeoutInSeconds>15000</forkedProcessTimeoutInSeconds>
+          <!-- The tests themselves live in the TCK jar, not in this module. -->
+          <dependenciesToScan>
+            <dependencyToScan>jakarta.servlet.tck:servlet-tck-runtime</dependencyToScan>
+          </dependenciesToScan>
+          <systemPropertyVariables>
+            <http2.timeout>${http2.timeout}</http2.timeout>
+            <servlet.tck.support.crossContext>false</servlet.tck.support.crossContext>
+            <servlet.tck.slf4jimpl>org.eclipse.jetty:jetty-slf4j-impl</servlet.tck.slf4jimpl>
+            <sigTestClasspath>${project.build.directory}/servlet-api.jar:${project.build.directory}/jimages/java.base</sigTestClasspath>
+            <jimage.dir>${project.build.directory}/jimages</jimage.dir>
+            <!-- Read by the ShrinkWrap resolver in configureResolverViaPlugin(). The local
+                 repository matters: Jenkins builds into a workspace .repository, and without
+                 this ShrinkWrap would look in ~/.m2 and miss every artifact the reactor just
+                 installed. -->
+            <maven.repo.local>${settings.localRepository}</maven.repo.local>
+            <org.apache.maven.offline>false</org.apache.maven.offline>
+            <org.apache.maven.user-settings>${shrinkwrap.settings.file}</org.apache.maven.user-settings>
+          </systemPropertyVariables>
+          <properties>
+            <configurationParameters>arquillian.junit.jupiter.manager.perClass=true
+              junit.jupiter.execution.parallel.enabled=${junit.jupiter.execution.parallel.enabled}
+              junit.jupiter.execution.parallel.mode.default=${junit.jupiter.execution.parallel.mode.default}
+              junit.jupiter.execution.parallel.mode.classes.default=${junit.jupiter.execution.parallel.mode.classes.default}
+              junit.jupiter.execution.parallel.config.strategy=${junit.jupiter.execution.parallel.config.strategy}
+              junit.jupiter.execution.parallel.config.fixed.parallelism=${junit.jupiter.execution.parallel.config.fixed.parallelism}
+              junit.jupiter.extensions.autodetection.enabled=${junit.jupiter.extensions.autodetection.enabled}</configurationParameters>
+          </properties>
+        </configuration>
+      </plugin>
+      <!-- Builds the trust store the secure tests run against, from the unpacked CTS
+           certificate. -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>keytool-maven-plugin</artifactId>
+        <configuration>
+          <noprompt>true</noprompt>
+          <alias>cts</alias>
+          <dname>CN=CTS, OU=Java Software, O=Sun Microsystems Inc., L=Burlington, ST=MA, C=US</dname>
+          <file>${project.build.testOutputDirectory}/certificates/cts_cert</file>
+          <storetype>JKS</storetype>
+          <keystore>${project.build.directory}/cacerts.jks</keystore>
+          <storepass>changeit</storepass>
+          <keypass>changeit</keypass>
+          <skipIfExist>true</skipIfExist>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>importCertificate</goal>
+            </goals>
+            <phase>process-test-resources</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Hands this module's dependency versions to the ShrinkWrap resolver, so the TCK can
+           build its web applications against the Jetty version under test. -->
+      <plugin>
+        <groupId>org.jboss.shrinkwrap.resolver</groupId>
+        <artifactId>shrinkwrap-resolver-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>propagate-execution-context</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <!-- On Jenkins the settings file comes from configFileProvider, and the ShrinkWrap
+         resolver needs to be pointed at it. -->
+    <profile>
+      <id>jenkins</id>
+      <activation>
+        <property>
+          <name>env.GLOBAL_MVN_SETTINGS</name>
+        </property>
+      </activation>
+      <properties>
+        <shrinkwrap.settings.file>${env.GLOBAL_MVN_SETTINGS}</shrinkwrap.settings.file>
+      </properties>
+    </profile>
+  </profiles>
+
+</project>

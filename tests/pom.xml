@@ -28,4 +28,14 @@
     <maven.source.skip>true</maven.source.skip>
     <spotbugs.skip>true</spotbugs.skip>
   </properties>
+  <profiles>
+    <!-- The TCK run is long and pulls in a big external dependency tree, so it is opt-in
+         with -Ptck. -->
+    <profile>
+      <id>tck</id>
+      <modules>
+        <module>servlet-tck</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>
