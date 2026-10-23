@@ -27,11 +27,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class CharsetStringBuilderTest
@@ -285,5 +287,16 @@ public class CharsetStringBuilderTest
             builder.append(c);
         }
         assertThat(builder.build(), is(string));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ISO_8859_1", "US-ASCII"})
+    public void testNonUtfCharsetsAppendBadChar(String charsetName)
+    {
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(Charset.forName(charsetName));
+        assertThrows(IllegalArgumentException.class, () -> builder.append('\u0141'));
+
+        String s = "abc" + '\u0141' + "xyz";
+        assertThrows(IllegalArgumentException.class, () -> builder.append(s, 0, s.length()));
     }
 }

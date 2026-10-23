@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io.internal;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -86,7 +87,7 @@ public class QueuedPoolTest
         assertThat(e1.release(), is(true));
         assertThat(e1.remove(), is(true));
         assertThat(e1.remove(), is(false));
-        assertThat(e1.getPooled(), nullValue());
+        assertThat(e1.getPooled(), is("aaa"));
     }
 
     @Test
@@ -99,7 +100,7 @@ public class QueuedPoolTest
         assertThat(e1.remove(), is(true));
         assertThat(e1.remove(), is(false));
         assertThat(e1.release(), is(false));
-        assertThat(e1.getPooled(), nullValue());
+        assertThat(e1.getPooled(), is("aaa"));
     }
 
     @Test
@@ -255,7 +256,7 @@ public class QueuedPoolTest
         assertThat(entry.enable("bbb", true), is(false));
 
         assertThat(entry.release(), is(false));
-        assertThat(entry.remove(), is(true));
+        assertThat(entry.remove(), is(false));
         assertThat(entry.remove(), is(false));
     }
 
@@ -373,5 +374,47 @@ public class QueuedPoolTest
         assertThat(pool.size(), is(2));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getInUseCount(), is(0));
+    }
+
+    @Test
+    public void testRemovePresentEntriesUsingStream()
+    {
+        Pool<String> pool = new QueuedPool<>(5);
+
+        pool.reserve().enable("aaa", false);
+        pool.reserve().enable("bbb", false);
+        assertThat(pool.size(), is(2));
+
+        // Remove an entry that is still in the queue multiple times.
+        pool.stream().filter(e -> e.getPooled().equals("aaa")).forEach(entry ->
+        {
+            assertThat(entry.remove(), is(true));
+            assertThat(entry.remove(), is(false));
+        });
+        assertThat(pool.size(), is(1));
+    }
+
+    @Test
+    public void testRemovePresentEntriesAfterTerminate()
+    {
+        Pool<String> pool = new QueuedPool<>(5);
+
+        pool.reserve().enable("aaa", false);
+        pool.reserve().enable("bbb", false);
+        assertThat(pool.size(), is(2));
+
+        List<Pool.Entry<String>> entries = pool.stream().toList();
+
+        List<Pool.Entry<String>> terminatedEntries = new ArrayList<>(pool.terminate());
+        assertThat(terminatedEntries.size(), is(2));
+        assertThat(terminatedEntries.get(0).isTerminated(), is(true));
+        assertThat(terminatedEntries.get(0).getPooled(), notNullValue());
+        assertThat(terminatedEntries.get(1).isTerminated(), is(true));
+        assertThat(terminatedEntries.get(1).getPooled(), notNullValue());
+        assertThat(pool.size(), is(0));
+
+        assertThat(entries.get(0).remove(), is(false));
+        assertThat(entries.get(1).remove(), is(false));
+        assertThat(pool.size(), is(0));
     }
 }

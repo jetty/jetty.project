@@ -18,6 +18,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -895,8 +896,7 @@ public interface HttpURI
             _uri = null;
             _canonicalPath = null;
             _emptySegment = false;
-            if (_violations != null)
-                _violations.clear();
+            clearViolations();
             return this;
         }
 
@@ -1198,6 +1198,33 @@ public interface HttpURI
         {
             _scheme = URIUtil.normalizeScheme(scheme);
             _uri = null;
+            return this;
+        }
+
+        /**
+         * Clears all violations
+         *
+         * @return this mutable for chaining.
+         */
+        public Mutable clearViolations()
+        {
+            if (_violations != null)
+                _violations.clear();
+            return this;
+        }
+
+        /**
+         * Adds a set of violations to the existing violations
+         *
+         * @param violations the violations to add
+         * @return this mutable for chaining.
+         */
+        public Mutable addViolations(Collection<Violation> violations)
+        {
+            if (_violations == null)
+                _violations = new HashSet<>(violations);
+            else
+                _violations.addAll(violations);
             return this;
         }
 
@@ -1711,7 +1738,7 @@ public interface HttpURI
                                     break;
                                 default:
                                     // The RFC does not allow unencoded path characters that are outside the ABNF
-                                    if (c > __pathCharacters.length || !__pathCharacters[c])
+                                    if (c >= __pathCharacters.length || !__pathCharacters[c])
                                         addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
                                     if (c < __suspiciousPathCharacters.length && __suspiciousPathCharacters[c])
                                        addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
@@ -1852,7 +1879,7 @@ public interface HttpURI
             for (int i = start; i < end; i++)
             {
                 char c = uri.charAt(i);
-                if (c > __pathCharacters.length || !__pathCharacters[c])
+                if (c >= __pathCharacters.length || !__pathCharacters[c])
                     addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
                 if (c < __suspiciousPathCharacters.length && __suspiciousPathCharacters[c])
                     addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);

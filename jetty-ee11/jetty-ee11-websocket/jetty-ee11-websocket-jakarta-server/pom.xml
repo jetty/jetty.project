@@ -20,6 +20,10 @@
       <artifactId>jakarta.websocket-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>jakarta.websocket</groupId>
+      <artifactId>jakarta.websocket-client-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-annotations</artifactId>
     </dependency>

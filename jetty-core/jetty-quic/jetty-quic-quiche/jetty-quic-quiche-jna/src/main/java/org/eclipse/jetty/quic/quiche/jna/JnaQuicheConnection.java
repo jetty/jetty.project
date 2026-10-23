@@ -134,6 +134,14 @@ public class JnaQuicheConnection extends Quiche
                 throw new IOException("Error loading trusted certificates file " + trustedCertsPemPath + " : " + QuicheConstants.quiche_error.errToString(rc));
         }
 
+        String curvesList = config.getCurvesList();
+        if (curvesList != null)
+        {
+            int rc = LibQuiche.INSTANCE.quiche_config_set_curves_list(quicheConfig, curvesList);
+            if (rc != 0)
+                throw new IOException("Error setting curves list " + curvesList + " : " + QuicheConstants.quiche_error.errToString(rc));
+        }
+
         String certChainPemPath = config.getCertChainPemPath();
         if (certChainPemPath != null)
         {

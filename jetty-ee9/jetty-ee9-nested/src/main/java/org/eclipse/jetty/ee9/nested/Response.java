@@ -985,6 +985,12 @@ public class Response implements HttpServletResponse
 
     public void completeOutput(Callback callback)
     {
+        if (_out.isBypassed())
+        {
+            callback.succeeded();
+            return;
+        }
+
         if (_outputType == OutputType.WRITER)
             _writer.markAsClosed();
         _out.complete(callback);

@@ -46,6 +46,10 @@ import static org.hamcrest.core.Is.is;
 @ExtendWith(WorkDirExtension.class)
 public class LowLevelQuicheTest
 {
+    // Post-quantum key shares make the ClientHello span multiple Initial packets,
+    // disable them to keep the handshake packet sizes deterministic.
+    private static final String NO_PQ_CURVES = "X25519:P-256:P-384";
+
     public WorkDir workDir;
 
     private final Collection<JnaQuicheConnection> connectionsToDisposeOf = new ArrayList<>();
@@ -73,6 +77,7 @@ public class LowLevelQuicheTest
 
         clientQuicheConfig = new QuicheConfig();
         clientQuicheConfig.setApplicationProtos("http/0.9");
+        clientQuicheConfig.setCurvesList(NO_PQ_CURVES);
         clientQuicheConfig.setDisableActiveMigration(true);
         clientQuicheConfig.setVerifyPeer(true);
         clientQuicheConfig.setTrustedCertsPemPath(PemExporter.exportTrustStore(keyStore, targetFolder).toString());
@@ -91,6 +96,7 @@ public class LowLevelQuicheTest
         serverQuicheConfig.setPrivKeyPemPath(keyPair[0].toString());
         serverQuicheConfig.setCertChainPemPath(keyPair[1].toString());
         serverQuicheConfig.setApplicationProtos("http/0.9");
+        serverQuicheConfig.setCurvesList(NO_PQ_CURVES);
         serverQuicheConfig.setVerifyPeer(false);
         serverQuicheConfig.setMaxIdleTimeout(1_000L);
         serverQuicheConfig.setInitialMaxData(10_000_000L);

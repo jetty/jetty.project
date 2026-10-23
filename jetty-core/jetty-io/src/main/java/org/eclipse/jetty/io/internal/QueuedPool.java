@@ -20,7 +20,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicMarkableReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
@@ -98,6 +97,22 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
         }
     }
 
+    private void remove(QueuedEntry<P> entry)
+    {
+        rwLock.readLock().lock();
+        try
+        {
+            if (terminated)
+                return;
+            if (queue.remove(entry))
+                queueSize.decrementAndGet();
+        }
+        finally
+        {
+            rwLock.readLock().unlock();
+        }
+    }
+
     @Override
     public Entry<P> acquire()
     {
@@ -106,13 +121,15 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
         {
             if (terminated)
                 return null;
-            QueuedEntry<P> entry = (QueuedEntry<P>)queue.poll();
-            if (entry != null)
+            while (true)
             {
+                QueuedEntry<P> entry = (QueuedEntry<P>)queue.poll();
+                if (entry == null)
+                    return null;
                 queueSize.decrementAndGet();
-                entry.acquire();
+                if (entry.acquire())
+                    return entry;
             }
-            return entry;
         }
         finally
         {
@@ -148,6 +165,7 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
             terminated = true;
             Collection<Entry<P>> copy = new ArrayList<>(queue);
             queue.clear();
+            copy.forEach(Entry::remove);
             queueSize.set(0);
             return copy;
         }
@@ -218,12 +236,17 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
 
     private static class QueuedEntry<P> implements Entry<P>
     {
+        private static final int RESERVED = 0;
+        private static final int IDLE = 1;
+        private static final int IN_USE = 2;
+        private static final int TERMINATED = 3;
+
         private final QueuedPool<P> pool;
-        // null/false -> reserved
-        // null/true  -> terminated
-        // val/false -> idle
-        // val/true  -> in use
-        private final AtomicMarkableReference<P> pooled = new AtomicMarkableReference<>(null, false);
+        private final AtomicInteger state = new AtomicInteger(RESERVED);
+        // The pooled object. This is not volatile as it is set once and then never changed.
+        // Other threads accessing must check the state field above first, so a good before/after
+        // relationship exists to make a memory barrier.
+        private P pooled;
 
         private QueuedEntry(QueuedPool<P> pool)
         {
@@ -235,138 +258,88 @@ public class QueuedPool<P> implements Pool<P>, Dumpable
         {
             Objects.requireNonNull(pooled);
 
-            boolean[] state = new boolean[1];
-            while (true)
+            int s = state.get();
+            if (s != RESERVED)
             {
-                P p = this.pooled.get(state);
-                if (p != null)
-                {
-                    if (pool.isTerminated())
-                        return false;
-                    throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
-                }
-                if (state[0])
-                    return false; // terminated
+                if (s == TERMINATED || pool.isTerminated())
+                    return false;
+                throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
+            }
 
-                if (!this.pooled.compareAndSet(null, pooled, false, acquire))
-                    continue;
+            this.pooled = pooled;
 
-                if (acquire)
+            if (!state.compareAndSet(RESERVED, acquire ? IN_USE : IDLE))
+                throw new IllegalStateException("Entry already enabled " + this + " for " + pool);
+
+            if (acquire)
+            {
+                if (pool.isTerminated())
                 {
-                    if (pool.isTerminated())
-                    {
-                        this.pooled.set(null, true);
-                        return false;
-                    }
-                    return true;
+                    state.set(TERMINATED);
+                    return false;
                 }
-                else
-                {
-                    return pool.requeue(this);
-                }
+                return true;
+            }
+            else
+            {
+                return pool.requeue(this);
             }
         }
 
         @Override
         public P getPooled()
         {
-            return pooled.getReference();
+            return pooled;
         }
 
-        void acquire()
+        private boolean acquire()
         {
-            boolean[] state = new boolean[1];
-            while (true)
-            {
-                P p = pooled.get(state);
-                boolean idle = isIdle(p, state[0]);
-                if (!idle)
-                    return;
-                if (pooled.compareAndSet(p, p, false, true))
-                    return;
-            }
+            return state.compareAndSet(IDLE, IN_USE);
         }
 
         @Override
         public boolean release()
         {
-            boolean[] state = new boolean[1];
-            while (true)
-            {
-                P p = pooled.get(state);
-                boolean inUse = isInUse(p, state[0]);
-                if (!inUse)
-                    return false;
-                if (pooled.compareAndSet(p, p, true, false))
-                    return pool.requeue(this);
-            }
+            return state.compareAndSet(IN_USE, IDLE) && pool.requeue(this);
         }
 
         @Override
         public boolean remove()
         {
-            boolean[] state = new boolean[1];
-            while (true)
+            int s = state.get();
+            if (s == TERMINATED)
+                return false;
+            if (state.compareAndSet(s, TERMINATED))
             {
-                P p = pooled.get(state);
-                boolean terminated = isTerminated(p, state[0]);
-                if (terminated)
-                    return false;
-                if (pooled.compareAndSet(p, null, state[0], true))
-                    return true;
+                if (s == IDLE)
+                    pool.remove(this);
+                return true;
             }
+            return false;
         }
 
         @Override
         public boolean isReserved()
         {
-            boolean[] state = new boolean[1];
-            P p = pooled.get(state);
-            return isReserved(p, state[0]);
-        }
-
-        private static boolean isReserved(Object item, boolean state)
-        {
-            return item == null && !state;
+            return state.get() == RESERVED;
         }
 
         @Override
         public boolean isIdle()
         {
-            boolean[] state = new boolean[1];
-            P p = pooled.get(state);
-            return isIdle(p, state[0]);
-        }
-
-        private static boolean isIdle(Object item, boolean state)
-        {
-            return item != null && !state;
+            return state.get() == IDLE;
         }
 
         @Override
         public boolean isInUse()
         {
-            boolean[] state = new boolean[1];
-            P p = pooled.get(state);
-            return isInUse(p, state[0]);
-        }
-
-        private static boolean isInUse(Object item, boolean state)
-        {
-            return item != null && state;
+            return state.get() == IN_USE;
         }
 
         @Override
         public boolean isTerminated()
         {
-            boolean[] state = new boolean[1];
-            P p = pooled.get(state);
-            return isTerminated(p, state[0]);
-        }
-
-        private static boolean isTerminated(Object item, boolean state)
-        {
-            return item == null && state;
+            return state.get() == TERMINATED;
         }
     }
 }

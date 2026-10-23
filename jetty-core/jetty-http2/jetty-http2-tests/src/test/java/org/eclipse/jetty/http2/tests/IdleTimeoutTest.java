@@ -52,11 +52,12 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -403,7 +404,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onIdleTimeout(Stream stream, TimeoutException x, Promise<Boolean> promise)
             {
-                assertThat(x, Matchers.instanceOf(TimeoutException.class));
+                assertThat(x, instanceOf(TimeoutException.class));
                 timeoutLatch.countDown();
                 promise.succeeded(true);
             }
@@ -755,7 +756,7 @@ public class IdleTimeoutTest extends AbstractTest
         assertTrue(extraLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
         // Wait for WINDOW_UPDATEs to be processed by the client.
-        await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Session)client).updateSendWindow(0), Matchers.greaterThan(0));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> ((HTTP2Session)client).updateSendWindow(0), greaterThan(0));
 
         // Wait for the server to finish serving requests.
         await().atMost(5, TimeUnit.SECONDS).until(handled::get, is(0));

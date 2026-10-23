@@ -17,10 +17,14 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.http.CookieCompliance;
+import org.eclipse.jetty.http.CookieParser;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -119,6 +123,16 @@ public class SessionHandlerTest
                                 return true;
                             }
                             session = request.getSession(true);
+                        }
+
+                        case "recreate" ->
+                        {
+                            session = request.getSession(true);
+                            if (session == null)
+                            {
+                                callback.failed(new IllegalStateException("Session not created"));
+                                return true;
+                            }
                         }
 
                         case "invalidate" ->
@@ -222,6 +236,34 @@ public class SessionHandlerTest
     }
 
     @Test
+    public void testCreateSessionForwardedSecureSetsSecureCookie() throws Exception
+    {
+        // The connector itself is plain HTTP, but ForwardedRequestCustomizer marks the
+        // request secure based on X-Forwarded-Proto, simulating a TLS-terminating reverse
+        // proxy. See https://github.com/jetty/jetty.project/issues/15871 .
+        HttpConnectionFactory http = new HttpConnectionFactory();
+        http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
+        LocalConnector forwardedConnector = new LocalConnector(_server, http);
+        _server.addConnector(forwardedConnector);
+
+        _server.start();
+
+        LocalConnector.LocalEndPoint endPoint = forwardedConnector.connect();
+        endPoint.addInput("""
+            GET /create HTTP/1.1
+            Host: localhost
+            X-Forwarded-Proto: https
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+
+        String setCookie = response.get(HttpHeader.SET_COOKIE);
+        assertThat(setCookie, containsString("; Secure"));
+    }
+
+    @Test
     public void testCreateSession() throws Exception
     {
         _server.start();
@@ -264,6 +306,57 @@ public class SessionHandlerTest
         assertThat(response.getStatus(), equalTo(200));
         content = response.getContent();
         assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+    }
+
+    @Test
+    public void testCreateInvalidateCreateSameRequest() throws Exception
+    {
+        _server.start();
+
+        String response = _connector.getResponse("""
+            GET /create/invalidate/recreate HTTP/1.1
+            Host: localhost
+
+            """);
+        HttpTester.Response r = HttpTester.parseResponse(response);
+        assertThat(r.getStatus(), equalTo(200));
+        assertThat(r.getContent(), containsString("New"));
+    }
+
+    @Test
+    public void testInvalidateExistingThenCreateSameRequest() throws Exception
+    {
+        _server.start();
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+            GET /create HTTP/1.1
+            Host: localhost
+
+            """));
+        String id = parseCookieId(response.get(HttpHeader.SET_COOKIE));
+
+        response = HttpTester.parseResponse(_connector.getResponse("""
+            GET /invalidate/recreate HTTP/1.1
+            Host: localhost
+            Cookie: SESSION_ID=%s
+
+            """.formatted(id)));
+        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getContent(), containsString("New"));
+        String newId = parseCookieId(response.get(HttpHeader.SET_COOKIE));
+        assertThat(newId, not(equalTo(id)));
+    }
+
+    private static String parseCookieId(String setCookie)
+    {
+        String[] sessionId = new String[1];
+        CookieParser cookieParser = CookieParser.newParser((name, value, version, domain, path, comment) ->
+        {
+            if (name.equals("SESSION_ID"))
+                sessionId[0] = value;
+        }, CookieCompliance.RFC6265, null);
+        cookieParser.parseField(setCookie);
+        return sessionId[0];
     }
 
     @Test

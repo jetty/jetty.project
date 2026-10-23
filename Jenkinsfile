@@ -40,13 +40,13 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK26") {
+        stage("Build / Test - JDK27") {
           agent { node { label 'linux-dind' } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk26", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk26", name: "Static Analysis jdk26", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
+              mavenBuild( "jdk27", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk27", name: "Static Analysis jdk27", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
             }
           }
         }
@@ -148,11 +148,11 @@ def mavenBuild(jdk, cmdline, mvnName) {
           def buildCache = useBuildCache()
           if (buildCache) {
             echo "Using build cache"
-            extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred  "
+            extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred -Dmaven.repository.credentialScope=id"
           } else {
             // when not using cache
             echo "Not using build cache"
-            extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.skipCache=true -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred "
+            extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.skipCache=true -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred -Dmaven.repository.credentialScope=id"
           }
           if (env.BRANCH_NAME ==~ /PR-\d+/) {
             if (pullRequest.labels.contains("build-all-tests")) {

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import jakarta.servlet.AsyncListener;
@@ -146,8 +147,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
                     case SSL_SESSION_ID -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.sslSessionId() : null;
                     case PEER_CERTIFICATES -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.peerCertificates() : null;
                     case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> _matchedResource.getResource().getServletHolder().getMultipartConfigElement();
-                    case FormFields.MAX_FIELDS_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormKeys();
-                    case FormFields.MAX_LENGTH_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormContentSize();
+                    case FormFields.MAX_FIELDS_ATTRIBUTE -> Objects.requireNonNullElseGet(getWrapped().getAttribute(name), () -> getServletContext().getServletContextHandler().getMaxFormKeys());
+                    case FormFields.MAX_LENGTH_ATTRIBUTE -> Objects.requireNonNullElseGet(getWrapped().getAttribute(name), () -> getServletContext().getServletContextHandler().getMaxFormContentSize());
                     default -> null;
                 };
             }

@@ -36,7 +36,8 @@ import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * A {@link HttpServletResponse} wrapped as a core {@link Response}.
- * All write operations are internally converted to blocking writes on the servlet API.
+ * Write operations are internally converted to writes on the servlet API, unless it is determined
+ * that it can be correctly (e.g. no wrappers) and efficiently bypassed.
  */
 public class ServletCoreResponse implements org.eclipse.jetty.server.Response
 {
@@ -141,7 +142,7 @@ public class ServletCoreResponse implements org.eclipse.jetty.server.Response
             if (!_wrapped && !_baseResponse.isWritingOrStreaming())
             {
                 // We can bypass the HttpOutput stream, but we need to update its bytes written
-                _baseResponse.getHttpOutput().addBytesWritten(byteBuffer.remaining());
+                _baseResponse.getHttpOutput().addBytesWrittenViaBypass(byteBuffer.remaining());
                 _coreResponse.write(last, byteBuffer, callback);
             }
             else

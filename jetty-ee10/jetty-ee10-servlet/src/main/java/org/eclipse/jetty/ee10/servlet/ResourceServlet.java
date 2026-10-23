@@ -557,14 +557,8 @@ public class ResourceServlet extends HttpServlet
                     ? servletChannel.getRequest()
                     : ServletCoreRequest.wrap(httpServletRequest);
 
-                // If the servlet response has been wrapped and has been written to,
-                // then the servlet response must be wrapped as a core response
-                // otherwise we can use the core response directly.
-                boolean writingOrStreaming = servletContextResponse.isWritingOrStreaming();
-                boolean useServletResponse = !(httpServletResponse instanceof ServletApiResponse) || writingOrStreaming;
-                Response coreResponse = useServletResponse
-                    ? new ServletCoreResponse(coreRequest, httpServletResponse, included)
-                    : servletChannel.getResponse();
+                // Always wrap the response so that we can re-use bypass logic there.
+                Response coreResponse = new ServletCoreResponse(coreRequest, httpServletResponse, included);
 
                 // If the core response is already committed then do nothing more
                 if (coreResponse.isCommitted())
@@ -578,7 +572,7 @@ public class ResourceServlet extends HttpServlet
                 long contentLength = content.getContentLengthValue();
 
                 // If the response is already written, then don't set the content-length.
-                if (writingOrStreaming)
+                if (servletContextResponse.isWritingOrStreaming())
                     content = new UnknownLengthHttpContent(content);
 
                 // The character encoding may be forced
