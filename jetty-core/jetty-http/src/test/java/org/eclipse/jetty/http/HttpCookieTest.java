@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -136,7 +137,7 @@ public class HttpCookieTest
         return List.of(
             Arguments.of("Expires", "blah", IllegalArgumentException.class),
             Arguments.of("HttpOnly", "blah", IllegalArgumentException.class),
-            Arguments.of("Max-Age", "blah", NumberFormatException.class),
+            Arguments.of("Max-Age", "blah", IllegalArgumentException.class),
             Arguments.of("SameSite", "blah", IllegalArgumentException.class),
             Arguments.of("Secure", "blah", IllegalArgumentException.class)
         );
@@ -258,6 +259,21 @@ public class HttpCookieTest
         assertTrue(cookie.getAttributes().isEmpty());
         assertThat(cookie.getMaxAge(), is(-1L));
         assertFalse(cookie.isExpired());
+    }
+
+    @Test
+    public void testFromMapInvalidAttributesThrow()
+    {
+        // from(Map) validates known attribute values; an invalid value throws IllegalArgumentException.
+        assertThrows(IllegalArgumentException.class, () -> HttpCookie.from("n", "v", Map.of("Max-Age", "blah")));
+        assertThrows(IllegalArgumentException.class, () -> HttpCookie.from("n", "v", Map.of("Expires", "blah")));
+        assertThrows(IllegalArgumentException.class, () -> HttpCookie.from("n", "v", Map.of("Secure", "blah")));
+        assertThrows(IllegalArgumentException.class, () -> HttpCookie.from("n", "v", Map.of("SameSite", "blah")));
+
+        // The Max-Age failure is a descriptive IllegalArgumentException, not a bare NumberFormatException.
+        IllegalArgumentException x = assertThrows(IllegalArgumentException.class,
+            () -> HttpCookie.from("n", "v", Map.of("Max-Age", "blah")));
+        assertTrue(x.getMessage().contains("Invalid Max-Age"), "message: " + x.getMessage());
     }
 
     public static List<Arguments> expiries()

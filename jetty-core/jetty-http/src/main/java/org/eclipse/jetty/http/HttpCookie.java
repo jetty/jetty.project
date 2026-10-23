@@ -559,6 +559,16 @@ public interface HttpCookie
             _version = version;
         }
 
+        /**
+         * <p>Sets a cookie attribute, validating the value of the known attributes.</p>
+         *
+         * @param name the attribute name (ignored if {@code null})
+         * @param value the attribute value
+         * @return this builder
+         * @throws IllegalArgumentException if a known attribute has an invalid value: a non-integer
+         *         {@code Max-Age}, an unparsable {@code Expires} date, a non-boolean {@code Secure},
+         *         {@code HttpOnly} or {@code Partitioned}, or an unknown {@code SameSite}
+         */
         public Builder attribute(String name, String value)
         {
             if (name == null)
@@ -568,7 +578,17 @@ public interface HttpCookie
             {
                 case "expires" -> expires(StringUtil.isBlank(value) ? null : parseExpires(value));
                 case "httponly" -> httpOnly(asBoolean("httponly", value));
-                case "max-age" -> maxAge(StringUtil.isBlank(value) ? -1 : Long.parseLong(value));
+                case "max-age" ->
+                {
+                    try
+                    {
+                        maxAge(StringUtil.isBlank(value) ? -1 : Long.parseLong(value));
+                    }
+                    catch (NumberFormatException x)
+                    {
+                        throw new IllegalArgumentException("Invalid Max-Age: " + value, x);
+                    }
+                }
                 case "samesite" -> sameSite(SameSite.from(value));
                 case "secure" -> secure(asBoolean("secure", value));
                 case "partitioned" -> partitioned(asBoolean("partitioned", value));
@@ -686,6 +706,9 @@ public interface HttpCookie
      * such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
      * {@link #isSecure()}, {@link #isPartitioned()}, {@link #getComment()}, plus any newly defined
      * attributes unknown to this code base.
+     * @throws IllegalArgumentException if a known attribute has an invalid value: a non-integer
+     * {@code Max-Age}, an unparsable {@code Expires} date, a non-boolean {@code Secure}, {@code HttpOnly}
+     * or {@code Partitioned}, or an unknown {@code SameSite}
      */
     static HttpCookie from(String name, String value, Map<String, String> attributes)
     {
@@ -702,6 +725,9 @@ public interface HttpCookie
      * such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
      * {@link #isSecure()}, {@link #isPartitioned()}, {@link #getComment()}, plus any newly defined
      * attributes unknown to this code base.
+     * @throws IllegalArgumentException if a known attribute has an invalid value: a non-integer
+     * {@code Max-Age}, an unparsable {@code Expires} date, a non-boolean {@code Secure}, {@code HttpOnly}
+     * or {@code Partitioned}, or an unknown {@code SameSite}
      */
     static HttpCookie from(String name, String value, int version, Map<String, String> attributes)
     {
