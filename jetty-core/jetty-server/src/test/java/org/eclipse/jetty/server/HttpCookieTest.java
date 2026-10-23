@@ -430,6 +430,38 @@ public class HttpCookieTest
         assertThat(actualSetCookie, is("everything=value; Path=/path; Max-Age=1"));
     }
 
+    public static Stream<HttpCookie> setCookieMaxAgeZeroProvider()
+    {
+        return Stream.of(
+            // Using attributes directly
+            HttpCookie.from("name1", "value1",
+                Map.of(HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0))),
+            // Using builder
+            HttpCookie.build("name1", "value1").maxAge(0).build()
+        );
+    }
+
+    /**
+     * Mimics the Servlet TCK {@code CookieTests.setMaxAgeZeroTest}: a cookie set with
+     * {@code setMaxAge(0)} must produce a {@code Set-Cookie} that deletes the cookie, which the
+     * TCK validates with the header matcher {@code name1=value1##!Max-Age##Expires=} (i.e. it
+     * contains {@code name1=value1}, it does NOT contain {@code Max-Age}, and it contains
+     * {@code Expires=}).
+     */
+    @ParameterizedTest
+    @MethodSource("setCookieMaxAgeZeroProvider")
+    public void testSetRFC6265SetCookieMaxAgeZero(HttpCookie httpCookie)
+    {
+        String actualSetCookie = HttpCookieUtils.getRFC6265SetCookie(httpCookie);
+        // TCK matcher: name1=value1##!Max-Age##Expires=
+        assertThat(actualSetCookie, allOf(
+            containsString("name1=value1"),
+            containsString("Expires=")));
+        assertFalse(actualSetCookie.contains("Max-Age"), "Set-Cookie must not contain Max-Age: " + actualSetCookie);
+        // The deletion is expressed as an Expires in the past (the epoch).
+        assertThat(actualSetCookie, is("name1=value1; Expires=Thu, 01 Jan 1970 00:00:00 GMT"));
+    }
+
     public static Stream<HttpCookie> setCookieExpiresNowProvider()
     {
         return Stream.of(
