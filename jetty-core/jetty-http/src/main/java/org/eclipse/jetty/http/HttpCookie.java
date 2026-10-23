@@ -85,8 +85,8 @@ public interface HttpCookie
     default boolean isExpired()
     {
         // The Max-Age attribute takes precedence over the Expires attribute (RFC 6265 section 5.3).
-        // Use the attributes to know whether Max-Age is actually present, since getMaxAge() returns
-        // -1 both when the attribute is absent and when it has a (valid) negative value.
+        // A negative Max-Age means "not specified" (a session cookie) and is not stored as an
+        // attribute, so a present Max-Age is always >= 0 here, where 0 means already expired.
         if (getAttributes().containsKey(MAX_AGE_ATTRIBUTE))
             return getMaxAge() <= 0;
         Instant expires = getExpires();
@@ -611,7 +611,10 @@ public interface HttpCookie
 
         public Builder maxAge(long maxAge)
         {
-            _attributes = lazyAttributePut(_attributes, MAX_AGE_ATTRIBUTE, Long.toString(maxAge));
+            if (maxAge < 0)
+                _attributes = lazyAttributeRemove(_attributes, MAX_AGE_ATTRIBUTE);
+            else
+                _attributes = lazyAttributePut(_attributes, MAX_AGE_ATTRIBUTE, Long.toString(maxAge));
             return this;
         }
 

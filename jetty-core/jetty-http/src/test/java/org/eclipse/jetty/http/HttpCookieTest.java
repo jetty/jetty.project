@@ -167,13 +167,61 @@ public class HttpCookieTest
     @Test
     public void testNegativeMaxAge()
     {
+        // A negative Max-Age set via the builder means "not specified" (a session cookie),
+        // so no Max-Age attribute is stored and getMaxAge() reports -1 (absent).
         HttpCookie cookie = HttpCookie.build("A", "B").maxAge(-1).build();
-        assertThat(cookie.getAttributes().size(), is(1));
+        assertThat(cookie.getAttributes().size(), is(0));
         assertThat(cookie.getMaxAge(), is(-1L));
 
+        // A negative Max-Age parsed from a Set-Cookie attribute is normalized to 0 (already expired).
         cookie = HttpCookie.build("A", "B").attribute("max-age", "-2").build();
         assertThat(cookie.getAttributes().size(), is(1));
         assertThat(cookie.getMaxAge(), is(0L));
+    }
+
+    @Test
+    public void testBuildFromJavaNetSessionCookieIsNotExpired()
+    {
+        // java.net.HttpCookie defaults to a max-age of -1 (MAX_AGE_UNSPECIFIED), i.e. a session cookie.
+        java.net.HttpCookie javaNetCookie = new java.net.HttpCookie("n", "v");
+        HttpCookie cookie = HttpCookie.build(javaNetCookie).build();
+        assertFalse(cookie.getAttributes().containsKey(HttpCookie.MAX_AGE_ATTRIBUTE));
+        assertThat(cookie.getMaxAge(), is(-1L));
+        assertFalse(cookie.isExpired());
+    }
+
+    @Test
+    public void testBuildFromJavaNetSessionCookieMaxAgeZeroIsExpired()
+    {
+        java.net.HttpCookie javaNetCookie = new java.net.HttpCookie("n", "v");
+        javaNetCookie.setMaxAge(0);
+        HttpCookie cookie = HttpCookie.build(javaNetCookie).build();
+        assertTrue(cookie.getAttributes().containsKey(HttpCookie.MAX_AGE_ATTRIBUTE));
+        assertThat(cookie.getMaxAge(), is(0L));
+        assertTrue(cookie.isExpired());
+    }
+
+    @Test
+    public void testBuildFromJavaNetSessionCookieMaxAgeNegativeIsNotExpired()
+    {
+        java.net.HttpCookie javaNetCookie = new java.net.HttpCookie("n", "v");
+        javaNetCookie.setMaxAge(-1);
+        HttpCookie cookie = HttpCookie.build(javaNetCookie).build();
+        assertFalse(cookie.getAttributes().containsKey(HttpCookie.MAX_AGE_ATTRIBUTE));
+        assertThat(cookie.getMaxAge(), is(-1L));
+        assertFalse(cookie.isExpired());
+    }
+
+    @Test
+    public void testParseBlankMaxAgeIsIgnored()
+    {
+        // RFC 6265 section 5.2.2: a Max-Age whose value is not a valid integer must be ignored,
+        // leaving a session cookie rather than an expired one.
+        SetCookieParser parser = SetCookieParser.newInstance();
+        HttpCookie cookie = parser.parse("n=v; Max-Age");
+        assertFalse(cookie.getAttributes().containsKey(HttpCookie.MAX_AGE_ATTRIBUTE));
+        assertThat(cookie.getMaxAge(), is(-1L));
+        assertFalse(cookie.isExpired());
     }
 
     public static List<Arguments> expiries()
@@ -183,19 +231,20 @@ public class HttpCookieTest
         return List.of(
             // No Max-Age and no Expires: a session cookie, which does not expire on its own.
             Arguments.of(HttpCookie.build("A", "B").build(), false),
-            // Max-Age, where <= 0 means expired.
+            // Max-Age, where 0 means expired.
             Arguments.of(HttpCookie.build("A", "B").maxAge(0).build(), true),
             Arguments.of(HttpCookie.build("A", "B").maxAge(1).build(), false),
-            // A negative Max-Age is a valid value meaning "already expired", not "attribute absent".
-            Arguments.of(HttpCookie.build("A", "B").maxAge(-1).build(), true),
-            Arguments.of(HttpCookie.build("A", "B").maxAge(-5).build(), true),
+            // A negative Max-Age means "not specified" (a session cookie), not "already expired".
+            Arguments.of(HttpCookie.build("A", "B").maxAge(-1).build(), false),
+            Arguments.of(HttpCookie.build("A", "B").maxAge(-5).build(), false),
             // Expires only.
             Arguments.of(HttpCookie.build("A", "B").expires(past).build(), true),
             Arguments.of(HttpCookie.build("A", "B").expires(future).build(), false),
-            // Max-Age takes precedence over Expires (RFC 6265 section 5.3).
+            // A positive Max-Age takes precedence over Expires (RFC 6265 section 5.3).
             Arguments.of(HttpCookie.build("A", "B").maxAge(3600).expires(past).build(), false),
             Arguments.of(HttpCookie.build("A", "B").maxAge(0).expires(future).build(), true),
-            Arguments.of(HttpCookie.build("A", "B").maxAge(-1).expires(future).build(), true)
+            // A negative Max-Age is not stored, so a session cookie with a future Expires is governed by Expires.
+            Arguments.of(HttpCookie.build("A", "B").maxAge(-1).expires(future).build(), false)
         );
     }
 
@@ -228,7 +277,8 @@ public class HttpCookieTest
         assertThat(cookie.getAttributes().get("Expires"), is(expectedExpires));
         Instant expectedExpiresInstant = HttpDateTime.parse(cookie.getAttributes().get("Expires")).toInstant();
         assertEquals(cookie.getExpires(), expectedExpiresInstant);
-        assertTrue(cookie.isExpired());
+        // The positive Max-Age takes precedence over the past Expires (RFC 6265 section 5.3), so not expired.
+        assertFalse(cookie.isExpired());
         assertEquals(3600, cookie.getMaxAge());
     }
 
