@@ -191,7 +191,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         if (stsMaxAge < 0)
             _stsField = null;
         else
-            _stsField = new PreEncodedHttpField(HttpHeader.STRICT_TRANSPORT_SECURITY, String.format("max-age=%d%s", stsMaxAge, isStsIncludeSubDomains() ? "; includeSubDomains" : ""));
+            _stsField = new PreEncodedHttpField(HttpHeader.STRICT_TRANSPORT_SECURITY, "max-age=" + stsMaxAge + (isStsIncludeSubDomains() ? "; includeSubDomains" : ""));
     }
 
     @Override

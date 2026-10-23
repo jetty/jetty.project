@@ -234,7 +234,7 @@ public class Origin
          */
         public String asString()
         {
-            return String.format("%s:%d", host, port);
+            return host + ":" + port;
         }
 
         /**
