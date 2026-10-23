@@ -416,6 +416,32 @@ public class HttpCookieTest
         assertNull(cookie.getDomain());
     }
 
+    public static Stream<String> malformedFlagProvider()
+    {
+        return Stream.of(
+            "x=y; Secure=blah",
+            "x=y; HttpOnly=blah",
+            "x=y; Partitioned=blah",
+            "x=y; SameSite=blah"
+        );
+    }
+
+    /**
+     * RFC 6265 sections 5.2.5 (Secure), 5.2.6 (HttpOnly), and RFC 6265bis section 5.4.7 (SameSite): a
+     * malformed value for a flag or {@code SameSite} attribute keeps the cookie rather than rejecting
+     * the whole {@code Set-Cookie}.
+     */
+    @ParameterizedTest
+    @MethodSource("malformedFlagProvider")
+    public void testRFC6265ParseKeepsCookieOnMalformedFlag(String setCookie)
+    {
+        RFC6265SetCookieParser setCookieParser = new RFC6265SetCookieParser();
+        HttpCookie cookie = setCookieParser.parse(setCookie);
+        assertNotNull(cookie, "cookie should be retained: " + setCookie);
+        assertThat(cookie.getName(), is("x"));
+        assertThat(cookie.getValue(), is("y"));
+    }
+
     private void assertSameCookie(HttpCookie actualCookie, HttpCookie expectedCookie, long expectedMaxAge)
     {
         assertThat("cookie.name", actualCookie.getName(), is(expectedCookie.getName()));

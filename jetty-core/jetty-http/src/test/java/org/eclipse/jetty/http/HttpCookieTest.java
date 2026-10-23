@@ -75,13 +75,23 @@ public class HttpCookieTest
             Arguments.of("foo; Path=/", null),
             Arguments.of("foo; Secure", null),
             Arguments.of(" ; a=b", null),
-            // Secure (section 5.2.5), HttpOnly (section 5.2.6) and SameSite (RFC 6265bis section 5.4.7)
-            // are flag/enumerated attributes; Jetty currently rejects the whole Set-Cookie when their
-            // value is invalid (stricter than the RFC, which would set the flag and ignore the value).
-            Arguments.of("A=1; HttpOnly=blah", null),
-            Arguments.of("A=1; SameSite=blah", null),
-            Arguments.of("A=1; SameSite=blah; Secure", null),
-            Arguments.of("A=1; Secure=blah", null),
+            // Secure (section 5.2.5), HttpOnly (section 5.2.6), and SameSite (RFC 6265bis section 5.4.7)
+            // are flag/enumerated attributes; an invalid value keeps the cookie (the flag is enabled,
+            // and an unknown SameSite falls back to the default) rather than rejecting the cookie.
+            Arguments.of("A=1; HttpOnly=blah", HttpCookie.build("A", "1").httpOnly(true).build()),
+            Arguments.of("A=1; Secure=blah", HttpCookie.build("A", "1").secure(true).build()),
+            Arguments.of("A=1; SameSite=blah", HttpCookie.build("A", "1").build()),
+            Arguments.of("A=1; SameSite=blah; Secure", HttpCookie.build("A", "1").secure(true).build()),
+            // An explicit true/false is honored; a valueless flag is enabled.
+            Arguments.of("A=B; Secure=true", HttpCookie.build("A", "B").secure(true).build()),
+            Arguments.of("A=B; Secure=false", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; HttpOnly=false", HttpCookie.build("A", "B").build()),
+            Arguments.of("A=B; Partitioned=blah", HttpCookie.build("A", "B").partitioned(true).build()),
+            // SameSite None/Lax/Strict are honored; a blank value falls back to the default.
+            Arguments.of("A=B; SameSite=None", HttpCookie.build("A", "B").sameSite(HttpCookie.SameSite.NONE).build()),
+            Arguments.of("A=B; SameSite=Lax", HttpCookie.build("A", "B").sameSite(HttpCookie.SameSite.LAX).build()),
+            Arguments.of("A=B; SameSite=Strict", HttpCookie.build("A", "B").sameSite(HttpCookie.SameSite.STRICT).build()),
+            Arguments.of("A=B; SameSite=", HttpCookie.build("A", "B").build()),
             // RFC 6265, section 5.2.x: a malformed attribute value causes only that cookie-av to be
             // ignored; the rest of the cookie is retained.
             // Max-Age (section 5.2.2): an optional '-' followed by one or more digits, else ignored.

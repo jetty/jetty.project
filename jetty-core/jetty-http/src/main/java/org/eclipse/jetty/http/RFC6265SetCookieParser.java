@@ -207,11 +207,14 @@ public class RFC6265SetCookieParser implements SetCookieParser
     /**
      * <p>Applies a parsed {@code Set-Cookie} attribute to the cookie being built, following the
      * RFC 6265 (section 5.2) parsing rules.</p>
-     * <p>For the attributes that RFC 6265 says to "ignore the cookie-av" on a malformed value
-     * ({@code Max-Age}, section 5.2.2; {@code Expires}, section 5.2.1; {@code Domain}, section 5.2.3),
-     * a malformed value is skipped and the rest of the cookie is retained, so this method returns
-     * {@code true}. For any other attribute, a value that cannot be applied rejects the whole
-     * {@code Set-Cookie}, so this method returns {@code false}.</p>
+     * <p>For the attributes whose value RFC 6265 tolerates, a malformed value never rejects the cookie:
+     * {@code Max-Age} (section 5.2.2), {@code Expires} (section 5.2.1), and an empty {@code Domain}
+     * (section 5.2.3) are ignored; and for the flag attributes {@code Secure} (section 5.2.5),
+     * {@code HttpOnly} (section 5.2.6), {@code Partitioned}, and {@code SameSite} (RFC 6265bis
+     * section 5.4.7) an invalid value still keeps the cookie (the flag is enabled, or {@code SameSite}
+     * falls back to the default). In all these cases this method returns {@code true}. For any other
+     * attribute, a value that cannot be applied rejects the whole {@code Set-Cookie}, so this method
+     * returns {@code false}.</p>
      *
      * @param cookie the cookie builder to update
      * @param name the attribute name
@@ -256,6 +259,19 @@ public class RFC6265SetCookieParser implements SetCookieParser
                     if (value.isEmpty())
                         return true;
                     cookie.attribute(name, value);
+                }
+                // RFC 6265, sections 5.2.5 (Secure) and 5.2.6 (HttpOnly): the attribute is a flag whose
+                // presence enables it; an invalid value keeps the cookie rather than rejecting it.
+                case "secure" -> cookie.secure(parseFlag(value));
+                case "httponly" -> cookie.httpOnly(parseFlag(value));
+                case "partitioned" -> cookie.partitioned(parseFlag(value));
+                case "samesite" ->
+                {
+                    // RFC 6265bis, section 5.4.7: a blank or unknown SameSite value falls back to the
+                    // default (no SameSite attribute set) rather than rejecting the cookie.
+                    HttpCookie.SameSite sameSite = parseSameSite(value);
+                    if (sameSite != null)
+                        cookie.sameSite(sameSite);
                 }
                 default -> cookie.attribute(name, value);
             }
@@ -310,6 +326,41 @@ public class RFC6265SetCookieParser implements SetCookieParser
         }
         // RFC 6265, section 5.2.2: a Max-Age of zero or less means the cookie is already expired.
         return negative ? 0 : seconds;
+    }
+
+    /**
+     * <p>Interprets the value of a flag attribute ({@code Secure}, {@code HttpOnly}, and
+     * {@code Partitioned}) per RFC 6265 sections 5.2.5 and 5.2.6: the attribute's presence enables the
+     * flag and its value is otherwise ignored. Jetty additionally honors an explicit {@code false} to
+     * disable the flag; any other (including invalid) value enables it rather than rejecting the
+     * cookie.</p>
+     *
+     * @param value the attribute value (possibly empty)
+     * @return whether the flag is enabled
+     */
+    private static boolean parseFlag(String value)
+    {
+        return !"false".equalsIgnoreCase(value);
+    }
+
+    /**
+     * <p>Resolves a {@code SameSite} attribute value per RFC 6265bis section 5.4.7, without throwing:
+     * a blank or unknown value falls back to the default (no {@code SameSite} attribute) instead of
+     * rejecting the cookie.</p>
+     *
+     * @param value the {@code SameSite} attribute value
+     * @return the matching {@link HttpCookie.SameSite}, or {@code null} to leave it unset (default)
+     */
+    private static HttpCookie.SameSite parseSameSite(String value)
+    {
+        try
+        {
+            return HttpCookie.SameSite.from(value);
+        }
+        catch (IllegalArgumentException ignored)
+        {
+            return null;
+        }
     }
 
     private enum State
