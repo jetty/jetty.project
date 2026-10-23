@@ -194,7 +194,7 @@ public class HttpCookieTest
     public void testExpiresEpochMaxAgeOneHour()
     {
         HttpCookie cookie = HttpCookie.build("name", "value").expires(Instant.EPOCH).maxAge(3600).build();
-        String expectedExpires = "Thu, 1 Jan 1970 00:00:00 GMT";
+        String expectedExpires = "Thu, 01 Jan 1970 00:00:00 GMT";
         assertThat(cookie.getAttributes().get("Expires"), is(expectedExpires));
         Instant expectedExpiresInstant = HttpDateTime.parse(cookie.getAttributes().get("Expires")).toInstant();
         assertEquals(cookie.getExpires(), expectedExpiresInstant);
