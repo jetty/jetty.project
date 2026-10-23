@@ -251,23 +251,23 @@ public final class HttpCookieUtils
         if (domain != null && !domain.isEmpty())
             builder.append("; Domain=").append(domain);
 
-        // Append Expires attribute (optional attribute in RFC 6265)
+        // Handle Expires and/or Max-Age
         String declaredExpires = httpCookie.getAttributes().get("Expires");
-        if (declaredExpires != null)
-            builder.append("; Expires=").append(declaredExpires);
-
-        // Handle max-age and/or expires
         long maxAge = httpCookie.getMaxAge();
         if (maxAge == 0)
         {
-            // Deletion cookie: TCK + RFC require a past Expires and no Max-Age.
-            if (declaredExpires == null)
-                builder.append("; Expires=").append(EPOCH_EXPIRES);
+            // Deletion cookie: Max-Age=0 means "delete now" and takes precedence over any declared
+            // Expires (RFC 6265 §5.3). As Max-Age=0 is not valid to emit (RFC 6265 §4.1.1), and the
+            // Servlet TCK requires no Max-Age here, the deletion is expressed as a past Expires.
+            builder.append("; Expires=").append(EPOCH_EXPIRES);
         }
-        else if (maxAge > 0)
+        else
         {
-            builder.append("; Max-Age=");
-            builder.append(maxAge);
+            // Append Expires attribute (optional attribute in RFC 6265)
+            if (declaredExpires != null)
+                builder.append("; Expires=").append(declaredExpires);
+            if (maxAge > 0)
+                builder.append("; Max-Age=").append(maxAge);
         }
 
         // add the other fields

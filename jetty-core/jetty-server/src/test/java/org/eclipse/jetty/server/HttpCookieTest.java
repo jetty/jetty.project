@@ -462,6 +462,37 @@ public class HttpCookieTest
         assertThat(actualSetCookie, is("name1=value1; Expires=Thu, 01 Jan 1970 00:00:00 GMT"));
     }
 
+    public static Stream<HttpCookie> setCookieMaxAgeZeroFutureExpiresProvider()
+    {
+        // A future Expires that must be overridden by Max-Age=0 (delete now, RFC 6265 §5.3).
+        String futureExpires = HttpCookie.formatExpires(Instant.now().plusSeconds(31536000L));
+        return Stream.of(
+            // Using attributes directly
+            HttpCookie.from("name1", "value1",
+                Map.of(HttpCookie.EXPIRES_ATTRIBUTE, futureExpires,
+                    HttpCookie.MAX_AGE_ATTRIBUTE, Long.toString(0))),
+            // Using builder
+            HttpCookie.build("name1", "value1")
+                .expires(Instant.now().plusSeconds(31536000L))
+                .maxAge(0)
+                .build()
+        );
+    }
+
+    /**
+     * When a cookie declares both {@code Max-Age=0} (delete now) and a future {@code Expires}, RFC 6265 §5.3
+     * gives {@code Max-Age} precedence, so the generated {@code Set-Cookie} must delete the cookie: the future
+     * {@code Expires} is overridden with the epoch and no {@code Max-Age} is emitted.
+     */
+    @ParameterizedTest
+    @MethodSource("setCookieMaxAgeZeroFutureExpiresProvider")
+    public void testSetRFC6265SetCookieMaxAgeZeroOverridesFutureExpires(HttpCookie httpCookie)
+    {
+        String actualSetCookie = HttpCookieUtils.getRFC6265SetCookie(httpCookie);
+        assertThat(actualSetCookie, is("name1=value1; Expires=Thu, 01 Jan 1970 00:00:00 GMT"));
+        assertFalse(actualSetCookie.contains("Max-Age"), "Set-Cookie must not contain Max-Age: " + actualSetCookie);
+    }
+
     public static Stream<HttpCookie> setCookieExpiresNowProvider()
     {
         return Stream.of(
