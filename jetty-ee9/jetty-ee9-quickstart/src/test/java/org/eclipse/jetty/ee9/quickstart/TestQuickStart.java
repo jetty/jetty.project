@@ -179,7 +179,7 @@ public class TestQuickStart
         quickstart.setResourceBase(testDir.getAbsolutePath());
         quickstart.addConfiguration(new QuickStartConfiguration());
         quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
-        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        quickstart.setDescriptor(MavenTestingUtils.getTargetFile("test-classes/web.xml").getAbsolutePath());
         server.setHandler(quickstart);
         server.setDryRun(true);
 
