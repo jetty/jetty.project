@@ -258,25 +258,16 @@ public final class HttpCookieUtils
 
         // Handle max-age and/or expires
         long maxAge = httpCookie.getMaxAge();
-        if (maxAge >= 0)
+        if (maxAge == 0)
         {
-            // Always include expires (if not declared)
-            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
+            // Deletion cookie: TCK + RFC require a past Expires and no Max-Age.
             if (declaredExpires == null)
-            {
-                // Generate a valid Expires header based on the value of maxAge.
-                builder.append("; Expires=");
-                if (maxAge == 0)
-                    builder.append(EPOCH_EXPIRES);
-                else
-                    builder.append(HttpCookie.formatExpires(Instant.now().plusSeconds(maxAge)));
-            }
-
-            if (maxAge > 0)
-            {
-                builder.append("; Max-Age=");
-                builder.append(maxAge);
-            }
+                builder.append("; Expires=").append(EPOCH_EXPIRES);
+        }
+        else if (maxAge > 0)
+        {
+            builder.append("; Max-Age=");
+            builder.append(maxAge);
         }
 
         // add the other fields
