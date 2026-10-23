@@ -823,6 +823,10 @@ public class HTTPClientDocs
 
         // Do not proxy requests for localhost:8080.
         proxy.getExcludedAddresses().add("localhost:8080");
+        // Do not proxy requests to internal services using wildcard pattern.
+        proxy.getExcludedAddresses().add("*.internal.corp");
+        // Do not proxy requests to private network using CIDR notation.
+        proxy.getExcludedAddresses().add("192.168.0.0/16");
 
         // Add the new proxy to the list of proxies already registered.
         ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
