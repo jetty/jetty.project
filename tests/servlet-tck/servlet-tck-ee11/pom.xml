@@ -43,23 +43,37 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- The EE11 artifact versions are managed in jetty-ee11/pom.xml, which this tree does
-           not inherit from. -->
-      <dependency>
-        <groupId>org.eclipse.jetty.ee11</groupId>
-        <artifactId>jetty-ee11-bom</artifactId>
-        <version>${project.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
       <!-- The TCK pulls ShrinkWrap in transitively; keep the whole resolver family on one
-           version, and on the same one as the shrinkwrap-resolver-maven-plugin below. -->
+           version, and on the same one as the shrinkwrap-resolver-maven-plugin below. These are
+           listed one by one rather than through shrinkwrap-resolver-bom on purpose: importing
+           that BOM also imports its parent's dependencyManagement, which pins junit-jupiter to
+           JUnit 5 and beats the junit-bom the root pom imports. Surefire's provider then runs on
+           JUnit 6 against a JUnit 5 classpath and dies with NoSuchMethodError on
+           NamespacedHierarchicalStore$CloseAction. -->
       <dependency>
         <groupId>org.jboss.shrinkwrap.resolver</groupId>
-        <artifactId>shrinkwrap-resolver-bom</artifactId>
+        <artifactId>shrinkwrap-resolver-api</artifactId>
         <version>${shrinkwrap.resolver.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.shrinkwrap.resolver</groupId>
+        <artifactId>shrinkwrap-resolver-api-maven</artifactId>
+        <version>${shrinkwrap.resolver.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.shrinkwrap.resolver</groupId>
+        <artifactId>shrinkwrap-resolver-impl-maven</artifactId>
+        <version>${shrinkwrap.resolver.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.shrinkwrap.resolver</groupId>
+        <artifactId>shrinkwrap-resolver-spi</artifactId>
+        <version>${shrinkwrap.resolver.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.shrinkwrap.resolver</groupId>
+        <artifactId>shrinkwrap-resolver-spi-maven</artifactId>
+        <version>${shrinkwrap.resolver.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -115,13 +129,18 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
     </dependency>
+    <!-- The EE11 versions are spelled out rather than taken from jetty-ee11-bom. The TCK re-parses
+         this pom through ShrinkWrap, and a BOM import has to be fetched as an artifact, which it
+         cannot do before the reactor has installed it. -->
     <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-servlet</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-webapp</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
@@ -163,16 +182,19 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-annotations</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-apache-jsp</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-glassfish-jstl</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -281,7 +303,11 @@
             <servlet.tck.slf4jimpl>org.eclipse.jetty:jetty-slf4j-impl</servlet.tck.slf4jimpl>
             <sigTestClasspath>${project.build.directory}/servlet-api.jar:${project.build.directory}/jimages/java.base</sigTestClasspath>
             <jimage.dir>${project.build.directory}/jimages</jimage.dir>
-            <!-- Read by the ShrinkWrap resolver in configureResolverViaPlugin(). -->
+            <!-- Read by the ShrinkWrap resolver in configureResolverViaPlugin(). The local
+                 repository matters: Jenkins builds into a workspace .repository, and without
+                 this ShrinkWrap would look in ~/.m2 and miss every artifact the reactor just
+                 installed. -->
+            <maven.repo.local>${settings.localRepository}</maven.repo.local>
             <org.apache.maven.offline>false</org.apache.maven.offline>
             <org.apache.maven.user-settings>${shrinkwrap.settings.file}</org.apache.maven.user-settings>
           </systemPropertyVariables>
