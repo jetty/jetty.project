@@ -133,6 +133,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private boolean _renegotiationAllowed; // Effectively final, set by ClientConnectionFactory.customize() right after creation.
     private int _renegotiationLimit = -1; // Set by ClientConnectionFactory.customize() right after creation, and updated by a single thread.
     private boolean _requireCloseMessage; // Effectively final, set by ClientConnectionFactory.customize() right after creation.
+    private boolean _startHandshakeOnOpen; // Effectively final, set by ClientConnectionFactory.customize() right after creation.
 
     private final Runnable _runFillable = new RunnableTask("runFillable")
     {
@@ -300,6 +301,24 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         _requireCloseMessage = requireCloseMessage;
     }
 
+    /**
+     * @return whether the TLS handshake is started when the connection is opened
+     */
+    public boolean isStartHandshakeOnOpen()
+    {
+        return _startHandshakeOnOpen;
+    }
+
+    /**
+     * @param startHandshakeOnOpen whether to start the TLS handshake when the connection is opened
+     */
+    public void setStartHandshakeOnOpen(boolean startHandshakeOnOpen)
+    {
+        if (_open)
+            throw new IllegalStateException("Cannot set start handshake on open on an open connection");
+        _startHandshakeOnOpen = startHandshakeOnOpen;
+    }
+
     private boolean isHandshakeInitial()
     {
         return _handshake.get() == HandshakeState.INITIAL;
@@ -369,6 +388,20 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         super.onOpen();
         getSslEndPoint().getConnection().onOpen();
         _open = true;
+        if (_startHandshakeOnOpen)
+        {
+            try
+            {
+                getSslEndPoint().flush(BufferUtil.EMPTY_BUFFER);
+            }
+            catch (Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not start the TLS handshake on open {}", SslConnection.this, x);
+                close();
+                throw new RuntimeException(x);
+            }
+        }
     }
 
     @Override

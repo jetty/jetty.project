@@ -43,6 +43,7 @@ public class SslClientConnectionFactory extends ClientConnectionFactory.Wrapper
     private boolean _directBuffersForEncryption = true;
     private boolean _directBuffersForDecryption = true;
     private boolean _requireCloseMessage;
+    private boolean _startHandshakeOnOpen;
 
     public SslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
     {
@@ -105,6 +106,24 @@ public class SslClientConnectionFactory extends ClientConnectionFactory.Wrapper
         _requireCloseMessage = requireCloseMessage;
     }
 
+    /**
+     * @return whether the client starts the TLS handshake when the connection is opened
+     * @see SslConnection#isStartHandshakeOnOpen()
+     */
+    public boolean isStartHandshakeOnOpen()
+    {
+        return _startHandshakeOnOpen;
+    }
+
+    /**
+     * @param startHandshakeOnOpen whether the client starts the TLS handshake when the connection is opened
+     * @see SslConnection#setStartHandshakeOnOpen(boolean)
+     */
+    public void setStartHandshakeOnOpen(boolean startHandshakeOnOpen)
+    {
+        _startHandshakeOnOpen = startHandshakeOnOpen;
+    }
+
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
@@ -149,6 +168,7 @@ public class SslClientConnectionFactory extends ClientConnectionFactory.Wrapper
             sslConnection.setRenegotiationAllowed(_sslContextFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(_sslContextFactory.getRenegotiationLimit());
             sslConnection.setRequireCloseMessage(isRequireCloseMessage());
+            sslConnection.setStartHandshakeOnOpen(isStartHandshakeOnOpen());
             ContainerLifeCycle client = (ContainerLifeCycle)context.get(ClientConnector.HTTP_CLIENT_CONTEXT_KEY);
             if (client != null)
                 client.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);
