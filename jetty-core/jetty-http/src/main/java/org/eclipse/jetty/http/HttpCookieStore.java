@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Predicate;
@@ -575,9 +576,16 @@ public interface HttpCookieStore
             @Override
             public boolean isExpired()
             {
-                long maxAge = getMaxAge();
-                if (maxAge >= 0 && NanoTime.secondsSince(creationNanoTime) > maxAge)
-                    return true;
+                // The Max-Age attribute takes precedence over the Expires attribute (RFC 6265 section 5.3).
+                // Use the attributes to know whether Max-Age is actually present, since getMaxAge() returns
+                // -1 both when the attribute is absent and when it has a (valid) negative value.
+                if (getAttributes().containsKey(MAX_AGE_ATTRIBUTE))
+                {
+                    long maxAge = getMaxAge();
+                    if (maxAge <= 0)
+                        return true;
+                    return NanoTime.since(creationNanoTime) > TimeUnit.SECONDS.toNanos(maxAge);
+                }
                 Instant expires = getExpires();
                 return expires != null && Instant.now().isAfter(expires);
             }

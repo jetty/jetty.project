@@ -84,8 +84,11 @@ public interface HttpCookie
      */
     default boolean isExpired()
     {
-        if (getMaxAge() == 0)
-            return true;
+        // The Max-Age attribute takes precedence over the Expires attribute (RFC 6265 section 5.3).
+        // A negative Max-Age means "not specified" (a session cookie) and is not stored as an
+        // attribute, so a present Max-Age is always >= 0 here, where 0 means already expired.
+        if (getAttributes().containsKey(MAX_AGE_ATTRIBUTE))
+            return getMaxAge() <= 0;
         Instant expires = getExpires();
         return expires != null && Instant.now().isAfter(expires);
     }
@@ -556,6 +559,16 @@ public interface HttpCookie
             _version = version;
         }
 
+        /**
+         * <p>Sets a cookie attribute, validating the value of the known attributes.</p>
+         *
+         * @param name the attribute name (ignored if {@code null})
+         * @param value the attribute value
+         * @return this builder
+         * @throws IllegalArgumentException if a known attribute has an invalid value: a non-integer
+         *         {@code Max-Age}, an unparsable {@code Expires} date, a non-boolean {@code Secure},
+         *         {@code HttpOnly} or {@code Partitioned}, or an unknown {@code SameSite}
+         */
         public Builder attribute(String name, String value)
         {
             if (name == null)
@@ -565,7 +578,17 @@ public interface HttpCookie
             {
                 case "expires" -> expires(StringUtil.isBlank(value) ? null : parseExpires(value));
                 case "httponly" -> httpOnly(asBoolean("httponly", value));
-                case "max-age" -> maxAge(StringUtil.isBlank(value) ? -1 : Long.parseLong(value));
+                case "max-age" ->
+                {
+                    try
+                    {
+                        maxAge(StringUtil.isBlank(value) ? -1 : Long.parseLong(value));
+                    }
+                    catch (NumberFormatException x)
+                    {
+                        throw new IllegalArgumentException("Invalid Max-Age: " + value, x);
+                    }
+                }
                 case "samesite" -> sameSite(SameSite.from(value));
                 case "secure" -> secure(asBoolean("secure", value));
                 case "partitioned" -> partitioned(asBoolean("partitioned", value));
@@ -608,7 +631,10 @@ public interface HttpCookie
 
         public Builder maxAge(long maxAge)
         {
-            _attributes = lazyAttributePut(_attributes, MAX_AGE_ATTRIBUTE, Long.toString(maxAge));
+            if (maxAge < 0)
+                _attributes = lazyAttributeRemove(_attributes, MAX_AGE_ATTRIBUTE);
+            else
+                _attributes = lazyAttributePut(_attributes, MAX_AGE_ATTRIBUTE, Long.toString(maxAge));
             return this;
         }
 
@@ -680,6 +706,9 @@ public interface HttpCookie
      * such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
      * {@link #isSecure()}, {@link #isPartitioned()}, {@link #getComment()}, plus any newly defined
      * attributes unknown to this code base.
+     * @throws IllegalArgumentException if a known attribute has an invalid value: a non-integer
+     * {@code Max-Age}, an unparsable {@code Expires} date, a non-boolean {@code Secure}, {@code HttpOnly}
+     * or {@code Partitioned}, or an unknown {@code SameSite}
      */
     static HttpCookie from(String name, String value, Map<String, String> attributes)
     {
@@ -696,16 +725,18 @@ public interface HttpCookie
      * such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
      * {@link #isSecure()}, {@link #isPartitioned()}, {@link #getComment()}, plus any newly defined
      * attributes unknown to this code base.
+     * @throws IllegalArgumentException if a known attribute has an invalid value: a non-integer
+     * {@code Max-Age}, an unparsable {@code Expires} date, a non-boolean {@code Secure}, {@code HttpOnly}
+     * or {@code Partitioned}, or an unknown {@code SameSite}
      */
     static HttpCookie from(String name, String value, int version, Map<String, String> attributes)
     {
         if (attributes == null || attributes.isEmpty())
             return new Immutable(name, value, version, Collections.emptyMap());
 
-        Map<String, String> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        attrs.putAll(attributes);
-
-        return new Immutable(name, value, version, attrs);
+        HttpCookie.Builder builder = build(name, value, version);
+        attributes.forEach(builder::attribute);
+        return builder.build();
     }
 
     /**

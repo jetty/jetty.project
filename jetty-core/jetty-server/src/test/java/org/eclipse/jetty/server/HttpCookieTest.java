@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -375,6 +376,70 @@ public class HttpCookieTest
         // RFC6265 Set-Cookie never emits Max-Age=0, only Expires
         long expectedMaxAge = setCookieCase.httpCookie.getMaxAge() == 0 ? -1 : setCookieCase.httpCookie.getMaxAge();
         assertSameCookie(cookie, setCookieCase.httpCookie, expectedMaxAge);
+    }
+
+    public static Stream<String> ignoredCookieAvProvider()
+    {
+        return Stream.of(
+            // RFC 6265 section 5.2.2: Max-Age must be an optional '-' followed by digits, else ignored.
+            "x=y; Max-Age=blah",
+            "x=y; Max-Age=ABC",
+            "x=y; Max-Age=NaN",
+            "x=y; Max-Age=-123.45",
+            "x=y; Max-Age=0.00",
+            "x=y; Max-Age=",
+            "x=y; Max-Age",
+            "x=y; Max-Age=\"blah\"",
+            // RFC 6265 section 5.2.1: Expires must parse as a cookie-date, else ignored.
+            "x=y; Expires=blah",
+            "x=y; Expires=",
+            // RFC 6265 section 5.2.3: an empty Domain is ignored.
+            "x=y; Domain="
+        );
+    }
+
+    /**
+     * RFC 6265 section 5.2.x: a malformed {@code Max-Age}/{@code Expires}/{@code Domain} attribute is
+     * ignored (just the cookie-av), while the rest of the cookie is retained.
+     */
+    @ParameterizedTest
+    @MethodSource("ignoredCookieAvProvider")
+    public void testRFC6265ParseIgnoresMalformedCookieAv(String setCookie)
+    {
+        RFC6265SetCookieParser setCookieParser = new RFC6265SetCookieParser();
+        HttpCookie cookie = setCookieParser.parse(setCookie);
+        assertNotNull(cookie, "cookie should be retained: " + setCookie);
+        assertThat(cookie.getName(), is("x"));
+        assertThat(cookie.getValue(), is("y"));
+        assertThat(cookie.getMaxAge(), is(-1L));
+        assertNull(cookie.getExpires());
+        assertNull(cookie.getDomain());
+    }
+
+    public static Stream<String> malformedFlagProvider()
+    {
+        return Stream.of(
+            "x=y; Secure=blah",
+            "x=y; HttpOnly=blah",
+            "x=y; Partitioned=blah",
+            "x=y; SameSite=blah"
+        );
+    }
+
+    /**
+     * RFC 6265 sections 5.2.5 (Secure), 5.2.6 (HttpOnly), and RFC 6265bis section 5.4.7 (SameSite): a
+     * malformed value for a flag or {@code SameSite} attribute keeps the cookie rather than rejecting
+     * the whole {@code Set-Cookie}.
+     */
+    @ParameterizedTest
+    @MethodSource("malformedFlagProvider")
+    public void testRFC6265ParseKeepsCookieOnMalformedFlag(String setCookie)
+    {
+        RFC6265SetCookieParser setCookieParser = new RFC6265SetCookieParser();
+        HttpCookie cookie = setCookieParser.parse(setCookie);
+        assertNotNull(cookie, "cookie should be retained: " + setCookie);
+        assertThat(cookie.getName(), is("x"));
+        assertThat(cookie.getValue(), is("y"));
     }
 
     private void assertSameCookie(HttpCookie actualCookie, HttpCookie expectedCookie, long expectedMaxAge)

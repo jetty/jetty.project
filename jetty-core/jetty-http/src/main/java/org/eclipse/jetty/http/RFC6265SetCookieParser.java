@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.http;
 
+import java.time.Instant;
+import java.util.Locale;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +56,14 @@ public class RFC6265SetCookieParser implements SetCookieParser
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("invalid character {} at index {} of {}", ch, i, setCookieValue);
+                        return null;
+                    }
+                    if (ch == ';')
+                    {
+                        // RFC 6265, section 5.2: the name-value-pair (the characters before the first
+                        // ';') lacks a '=', so ignore the set-cookie-string entirely.
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("no '=' in cookie name-value-pair of {}", setCookieValue);
                         return null;
                     }
                     if (ch == '=')
@@ -193,11 +204,77 @@ public class RFC6265SetCookieParser implements SetCookieParser
         return ch == ' ' || ch == '\t';
     }
 
+    /**
+     * <p>Applies a parsed {@code Set-Cookie} attribute to the cookie being built, following the
+     * RFC 6265 (section 5.2) parsing rules.</p>
+     * <p>For the attributes whose value RFC 6265 tolerates, a malformed value never rejects the cookie:
+     * {@code Max-Age} (section 5.2.2), {@code Expires} (section 5.2.1), and an empty {@code Domain}
+     * (section 5.2.3) are ignored; and for the flag attributes {@code Secure} (section 5.2.5),
+     * {@code HttpOnly} (section 5.2.6), {@code Partitioned}, and {@code SameSite} (RFC 6265bis
+     * section 5.4.7) an invalid value still keeps the cookie (the flag is enabled, or {@code SameSite}
+     * falls back to the default). In all these cases this method returns {@code true}. For any other
+     * attribute, a value that cannot be applied rejects the whole {@code Set-Cookie}, so this method
+     * returns {@code false}.</p>
+     *
+     * @param cookie the cookie builder to update
+     * @param name the attribute name
+     * @param value the attribute value (possibly empty), with any surrounding quotes already stripped
+     * @return {@code true} if the attribute was applied or safely ignored and parsing may continue;
+     *         {@code false} if the whole {@code Set-Cookie} must be rejected
+     */
     private boolean setAttribute(HttpCookie.Builder cookie, String name, String value)
     {
         try
         {
-            cookie.attribute(name, value);
+            switch (name.toLowerCase(Locale.ROOT))
+            {
+                case "max-age" ->
+                {
+                    // RFC 6265, section 5.2.2: the value must be an optional '-' followed by one or more
+                    // digits; otherwise ignore the cookie-av (keep the cookie without a Max-Age).
+                    long maxAge = parseMaxAge(value);
+                    if (maxAge >= 0)
+                        cookie.maxAge(maxAge);
+                }
+                case "expires" ->
+                {
+                    // RFC 6265, section 5.2.1: if the value fails to parse as a cookie-date,
+                    // ignore the cookie-av (keep the cookie without an Expires).
+                    Instant expires;
+                    try
+                    {
+                        expires = HttpCookie.parseExpires(value);
+                    }
+                    catch (Throwable x)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("ignoring unparsable Expires: {}", value, x);
+                        return true;
+                    }
+                    cookie.expires(expires);
+                }
+                case "domain" ->
+                {
+                    // RFC 6265, section 5.2.3: if the value is empty, ignore the cookie-av.
+                    if (value.isEmpty())
+                        return true;
+                    cookie.attribute(name, value);
+                }
+                // RFC 6265, sections 5.2.5 (Secure) and 5.2.6 (HttpOnly): the attribute is a flag whose
+                // presence enables it; an invalid value keeps the cookie rather than rejecting it.
+                case "secure" -> cookie.secure(parseFlag(value));
+                case "httponly" -> cookie.httpOnly(parseFlag(value));
+                case "partitioned" -> cookie.partitioned(parseFlag(value));
+                case "samesite" ->
+                {
+                    // RFC 6265bis, section 5.4.7: a blank or unknown SameSite value falls back to the
+                    // default (no SameSite attribute set) rather than rejecting the cookie.
+                    HttpCookie.SameSite sameSite = parseSameSite(value);
+                    if (sameSite != null)
+                        cookie.sameSite(sameSite);
+                }
+                default -> cookie.attribute(name, value);
+            }
             return true;
         }
         catch (Throwable x)
@@ -205,6 +282,84 @@ public class RFC6265SetCookieParser implements SetCookieParser
             if (LOG.isDebugEnabled())
                 LOG.debug("could not set attribute {}={}", name, value, x);
             return false;
+        }
+    }
+
+    /**
+     * <p>Parses an RFC 6265 (section 5.2.2) {@code Max-Age} value using a character scan, so that an
+     * all-digit value that overflows a {@code long} is clamped to {@link Long#MAX_VALUE} rather than
+     * throwing a {@link NumberFormatException}.</p>
+     * <p>A valid value is an optional leading {@code '-'} followed by one or more ASCII digits; a
+     * value of zero or less means the cookie is already expired and is returned as {@code 0}.</p>
+     *
+     * @param value the {@code Max-Age} attribute value
+     * @return the Max-Age in seconds, clamped to the range {@code [0, Long.MAX_VALUE]}; or {@code -1}
+     *         if the value is not a valid {@code Max-Age} and the cookie-av must be ignored
+     */
+    private static long parseMaxAge(String value)
+    {
+        if (value == null || value.isEmpty())
+            return -1;
+        int i = 0;
+        boolean negative = value.charAt(0) == '-';
+        if (negative)
+        {
+            // A lone '-' is not a valid number.
+            if (value.length() == 1)
+                return -1;
+            i = 1;
+        }
+        long seconds = 0;
+        for (; i < value.length(); i++)
+        {
+            char c = value.charAt(i);
+            if (c < '0' || c > '9')
+                return -1;
+            if (!negative)
+            {
+                int digit = c - '0';
+                // Clamp on overflow: a huge Max-Age represents a far-future (non-expiring) cookie.
+                if (seconds > (Long.MAX_VALUE - digit) / 10)
+                    return Long.MAX_VALUE;
+                seconds = seconds * 10 + digit;
+            }
+        }
+        // RFC 6265, section 5.2.2: a Max-Age of zero or less means the cookie is already expired.
+        return negative ? 0 : seconds;
+    }
+
+    /**
+     * <p>Interprets the value of a flag attribute ({@code Secure}, {@code HttpOnly}, and
+     * {@code Partitioned}) per RFC 6265 sections 5.2.5 and 5.2.6: the attribute's presence enables the
+     * flag and its value is otherwise ignored. Jetty additionally honors an explicit {@code false} to
+     * disable the flag; any other (including invalid) value enables it rather than rejecting the
+     * cookie.</p>
+     *
+     * @param value the attribute value (possibly empty)
+     * @return whether the flag is enabled
+     */
+    private static boolean parseFlag(String value)
+    {
+        return !"false".equalsIgnoreCase(value);
+    }
+
+    /**
+     * <p>Resolves a {@code SameSite} attribute value per RFC 6265bis section 5.4.7, without throwing:
+     * a blank or unknown value falls back to the default (no {@code SameSite} attribute) instead of
+     * rejecting the cookie.</p>
+     *
+     * @param value the {@code SameSite} attribute value
+     * @return the matching {@link HttpCookie.SameSite}, or {@code null} to leave it unset (default)
+     */
+    private static HttpCookie.SameSite parseSameSite(String value)
+    {
+        try
+        {
+            return HttpCookie.SameSite.from(value);
+        }
+        catch (IllegalArgumentException ignored)
+        {
+            return null;
         }
     }
 
