@@ -1029,22 +1029,8 @@ public class HttpChannelState
             if (_requestState != RequestState.COMPLETING)
                 throw new IllegalStateException(this.getStatusStringLocked(), failure);
 
-            if (_event == null)
-            {
-                _requestState = RequestState.COMPLETED;
-                aListeners = null;
-                event = null;
-                if (_state == State.WAITING)
-                {
-                    _state = State.WOKEN;
-                    handle = true;
-                }
-            }
-            else
-            {
-                aListeners = _asyncListeners;
-                event = _event;
-            }
+            aListeners = _event == null ? null : _asyncListeners;
+            event = _event;
         }
 
         // release any aggregate buffer from a closing flush
@@ -1074,15 +1060,18 @@ public class HttpChannelState
                 });
             }
             event.completed();
+        }
 
-            try (AutoLock l = lock())
+        // Only publish COMPLETED once the output has been completed, otherwise the
+        // handling thread may terminate and recycle this channel, and the
+        // HttpOutput completion above would close the output of the next request.
+        try (AutoLock l = lock())
+        {
+            _requestState = RequestState.COMPLETED;
+            if (_state == State.WAITING)
             {
-                _requestState = RequestState.COMPLETED;
-                if (_state == State.WAITING)
-                {
-                    _state = State.WOKEN;
-                    handle = true;
-                }
+                _state = State.WOKEN;
+                handle = true;
             }
         }
 
