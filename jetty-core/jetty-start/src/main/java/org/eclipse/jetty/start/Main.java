@@ -520,7 +520,11 @@ public class Main
         {
             CommandLineBuilder cmd = args.getMainArgs(args.getDryRunParts());
             cmd.debug();
-            System.out.println(cmd.toCommandLine());
+            switch (args.getDryRun())
+            {
+                case LEGACY -> cmd.writeCommandLine(System.out);
+                case ARGLINES -> cmd.writeArgLines(System.out);
+            }
         }
 
         if (args.isStopCommand())
