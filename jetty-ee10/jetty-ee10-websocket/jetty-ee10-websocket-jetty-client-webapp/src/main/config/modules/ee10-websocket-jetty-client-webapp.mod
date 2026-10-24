@@ -9,12 +9,14 @@ ee10
 [tags]
 websocket
 
-[depend]
+[depends]
 ee/common-websocket-jetty-client-webapp
 client
 ee10-annotations
 websocket-jetty-client
 
-[lib]
-lib/ee10-websocket/jetty-ee10-websocket-jetty-client-webapp-${jetty.version}.jar
+[files]
+maven://org.eclipse.jetty.ee10.websocket/jetty-ee10-websocket-jetty-client-webapp/${jetty.version}/jar|lib/ee10/jetty-ee10-websocket-jetty-client-webapp-${jetty.version}.jar
 
+[lib]
+lib/ee10/jetty-ee10-websocket-jetty-client-webapp-${jetty.version}.jar

@@ -3,13 +3,13 @@ Provides Native binary builds for the Quiche library.
 https://github.com/jetty-project/jetty-quiche-native
 
 [files]
-maven://org.mortbay.jetty.quiche/jetty-quiche-native/${jetty-quiche-native.version}|lib/quiche/jetty-quiche-native-${jetty-quiche-native.version}.jar
+maven://org.mortbay.jetty.quiche/jetty-quiche-native/${jetty-quiche-native.version}|lib/support/jetty-quiche-native-${jetty-quiche-native.version}.jar
 
 [ini]
 jetty-quiche-native.version?=@jetty-quiche-native.version@
 
 [lib]
-lib/quiche/jetty-quiche-native-${jetty-quiche-native.version}.jar
+lib/support/jetty-quiche-native-${jetty-quiche-native.version}.jar
 
 [license]
 Redistribution and use in source and binary forms, with or without

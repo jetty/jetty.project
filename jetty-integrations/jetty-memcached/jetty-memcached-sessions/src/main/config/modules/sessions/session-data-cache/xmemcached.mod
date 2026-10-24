@@ -11,14 +11,14 @@ session-store
 logging/slf4j
 
 [files]
-maven://com.googlecode.xmemcached/xmemcached/${xmemcached.version}|lib/xmemcached/xmemcached-${xmemcached.version}.jar
+maven://com.googlecode.xmemcached/xmemcached/${xmemcached.version}|lib/support/xmemcached-${xmemcached.version}.jar
 
 [ini]
 xmemcached.version?=@xmemcached.version@
 
 [lib]
 lib/jetty-memcached-sessions-${jetty.version}.jar
-lib/xmemcached/xmemcached-${xmemcached.version}.jar
+lib/support/xmemcached-${xmemcached.version}.jar
 
 [license]
 Xmemcached is an open source project hosted on Github and released under the Apache 2.0 license.

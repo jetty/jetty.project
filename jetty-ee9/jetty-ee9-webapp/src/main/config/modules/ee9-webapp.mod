@@ -6,16 +6,19 @@ This module enables support for Jakarta EE 9 web applications.
 [environment]
 ee9
 
-[depend]
+[depends]
 ee9-servlet
 ee9-security
 
 [xml]
 etc/jetty-ee9-webapp.xml
 
+[files]
+maven://org.eclipse.jetty.ee9/jetty-ee9-webapp/${jetty.version}/jar|lib/ee9/jetty-ee9-webapp-${jetty.version}.jar
+
 [lib]
 lib/jetty-ee-common-${jetty.version}.jar
-lib/jetty-ee9-webapp-${jetty.version}.jar
+lib/ee9/jetty-ee9-webapp-${jetty.version}.jar
 
 [ini-template]
 ## Customize protected and hidden classes for this web application context.

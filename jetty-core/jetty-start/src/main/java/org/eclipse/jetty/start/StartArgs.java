@@ -168,6 +168,7 @@ public class StartArgs
     private boolean stopCommand = false;
     private List<String> listModules = null;
     private List<String> showModules = null;
+    private List<String> validateModules = null;
     private boolean listClasspath = false;
     private boolean listConfig = false;
     private boolean version = false;
@@ -250,6 +251,12 @@ public class StartArgs
         FileArg arg = new FileArg(module, props.expand(uriLocation));
         if (!files.contains(arg))
             files.add(arg);
+    }
+
+    public StartEnvironment getEnvironment(Module module)
+    {
+        String envName = module == null ? null : module.getEnvironment();
+        return envName == null ? getJettyEnvironment() : getEnvironment(envName);
     }
 
     private List<StartEnvironment> getEnabledEnvironments(Module module)
@@ -705,13 +712,33 @@ public class StartArgs
     public boolean useMavenOffline()
     {
         String offline = getJettyEnvironment().getProperties().getString("maven.offline");
+
         if (Utils.isBlank(offline))
             offline = System.getenv("JETTY_MAVEN_OFFLINE");
 
         if (Utils.isBlank(offline))
             offline = System.getenv("MAVEN_OFFLINE");
 
+        if (Utils.isBlank(offline))
+            return false; // default value (not defined by property or environment)
+
         return Boolean.parseBoolean(offline);
+    }
+
+    public boolean readonlyMavenLocalRepo(boolean defaultValue)
+    {
+        String readonly = getJettyEnvironment().getProperties().getString("maven.local.repo.readonly");
+
+        if (Utils.isBlank(readonly))
+            readonly = System.getenv("JETTY_MAVEN_LOCAL_REPO_READONLY");
+
+        if (Utils.isBlank(readonly))
+            readonly = System.getenv("MAVEN_LOCAL_REPO_READONLY");
+
+        if (Utils.isBlank(readonly))
+            return defaultValue; // not defined by property or environment
+
+        return Boolean.parseBoolean(readonly);
     }
 
     public String getMavenLocalRepoDir()
@@ -873,6 +900,11 @@ public class StartArgs
         return showModules;
     }
 
+    public List<String> getValidateModules()
+    {
+        return validateModules;
+    }
+
     public boolean isRun()
     {
         return run;
@@ -910,7 +942,18 @@ public class StartArgs
 
     public String getMavenBaseUri()
     {
-        return mavenBaseUri;
+        String url = mavenBaseUri;
+
+        if (Utils.isBlank(url))
+            url = getJettyEnvironment().getProperties().getString("maven.repo.uri");
+
+        if (Utils.isBlank(url))
+            url = System.getenv("JETTY_MAVEN_CENTRAL_REPO");
+
+        if (Utils.isBlank(url))
+            url = System.getenv("MAVEN_CENTRAL_REPO");
+
+        return Utils.isNotBlank(url) ? url : "https://repo1.maven.org/maven2/";
     }
 
     public void parse(ConfigSources sources)
@@ -1141,6 +1184,20 @@ public class StartArgs
         if (arg.startsWith("--show-module=") || arg.startsWith("--show-modules="))
         {
             showModules = Props.getValues(arg);
+            run = false;
+            return environment;
+        }
+
+        if ("--validate-module".equals(arg) || "--validate-modules".equals(arg))
+        {
+            validateModules = List.of();
+            run = false;
+            return environment;
+        }
+
+        if (arg.startsWith("--validate-module=") || arg.startsWith("--validate-modules="))
+        {
+            validateModules = Props.getValues(arg);
             run = false;
             return environment;
         }

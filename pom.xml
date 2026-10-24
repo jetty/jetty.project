@@ -262,6 +262,7 @@
     <jffi.version>1.4.3</jffi.version>
     <jmh.version>1.37</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
+    <jna.version>5.19.1</jna.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.6.0</json-smart.version>
     <junit.jupiter.execution.parallel.config.dynamic.factor>0.8</junit.jupiter.execution.parallel.config.dynamic.factor>
@@ -526,6 +527,16 @@
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <version>${junit4.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna</artifactId>
+        <version>${jna.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna-jpms</artifactId>
+        <version>${jna.version}</version>
       </dependency>
       <dependency>
         <groupId>net.minidev</groupId>
@@ -1961,6 +1972,10 @@
             <includeRuntimeScope>true</includeRuntimeScope>
             <includeSystemScope>true</includeSystemScope>
             <includeTestScope>false</includeTestScope>
+            <!-- The CycloneDX BOMs are not deployed as Maven artifacts; they are
+                 bundled inside the home distributions (as <artifactId>-<version>-sbom.zip)
+                 and aggregated into jetty-home's sbom.zip instead. -->
+            <skipAttach>true</skipAttach>
           </configuration>
         </plugin>
         <plugin>

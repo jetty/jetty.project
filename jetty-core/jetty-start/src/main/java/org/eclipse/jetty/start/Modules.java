@@ -539,7 +539,7 @@ public class Modules implements Iterable<Module>
             newlyEnabled.add(module.getName());
 
             // Expand module properties
-            module.expandDependencies(_args.getJettyEnvironment().getProperties());
+            module.expandProperties(_args.getJettyEnvironment().getProperties());
 
             // Apply default configuration
             if (module.hasDefaultConfig())
@@ -671,6 +671,43 @@ public class Modules implements Iterable<Module>
 
         StartLog.debug("Available providers of [%s] are %s", name, providers);
         return providers;
+    }
+
+    BaseHome getBaseHome()
+    {
+        return _baseHome;
+    }
+
+    StartArgs getStartArgs()
+    {
+        return _args;
+    }
+
+    Set<Module> getProvided(String name)
+    {
+        return _provided.get(name);
+    }
+
+    Module find(String name) throws IOException
+    {
+        if (name.contains("/"))
+        {
+            Path file = getBaseHome().getPath("modules/" + name + ".mod");
+            if (Files.exists(file))
+                return new Module(_baseHome, file);
+        }
+
+        Module module = _names.get(name);
+        if (module != null)
+            return module;
+
+        String defaultProvider = _providedDefaults.get(name);
+        if (Utils.isNotBlank(defaultProvider))
+        {
+            return find(defaultProvider);
+        }
+
+        return null;
     }
 
     public Module get(String name)
