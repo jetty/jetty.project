@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -157,7 +158,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
         webappAttr.put("xmlns", ns);
         webappAttr.put("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
-        webappAttr.put("xsi:schemaLocation", String.format("%s %s/web-app_%d_%d.xsd", ns, ns, major, minor));
+        webappAttr.put("xsi:schemaLocation", String.format(Locale.ROOT, "%s %s/web-app_%d_%d.xsd", ns, ns, major, minor));
         webappAttr.put("metadata-complete", Boolean.toString(context.getMetaData().isMetaDataComplete()));
         webappAttr.put("version", major + "." + minor);
 
