@@ -15,6 +15,7 @@ package org.eclipse.jetty.security.siwe.util;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 
 /**
  * A utility to generate Sign-In with Ethereum message to be used for testing.
@@ -52,7 +53,7 @@ public class SignInWithEthereumGenerator
             null);
     }
 
-    public static String generateMessage(String scheme, String domain, String address, String nonce, LocalDateTime expiresAt, LocalDateTime notBefore)
+    public static String generateMessage(String scheme, String domain, String address, String nonce, TemporalAccessor expiresAt, TemporalAccessor notBefore)
     {
         return generateMessage(scheme,
             domain,
@@ -77,9 +78,9 @@ public class SignInWithEthereumGenerator
                                          String version,
                                          String chainId,
                                          String nonce,
-                                         LocalDateTime issuedAt,
-                                         LocalDateTime expirationTime,
-                                         LocalDateTime notBefore,
+                                         TemporalAccessor issuedAt,
+                                         TemporalAccessor expirationTime,
+                                         TemporalAccessor notBefore,
                                          String requestId,
                                          String resources)
     {
@@ -93,11 +94,11 @@ public class SignInWithEthereumGenerator
         sb.append("Version: ").append(version).append("\n");
         sb.append("Chain ID: ").append(chainId).append("\n");
         sb.append("Nonce: ").append(nonce).append("\n");
-        sb.append("Issued At: ").append(issuedAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        sb.append("Issued At: ").append(DateTimeFormatter.ISO_DATE_TIME.format(issuedAt));
         if (expirationTime != null)
-            sb.append("\nExpiration Time: ").append(expirationTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            sb.append("\nExpiration Time: ").append(DateTimeFormatter.ISO_DATE_TIME.format(expirationTime));
         if (notBefore != null)
-            sb.append("\nNot Before: ").append(notBefore.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            sb.append("\nNot Before: ").append(DateTimeFormatter.ISO_DATE_TIME.format(notBefore));
         if (requestId != null)
             sb.append("\nRequest ID: ").append(requestId);
         if (resources != null)

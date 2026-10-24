@@ -40,9 +40,16 @@ import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.CookieCompliance;
+import org.eclipse.jetty.http.CookieParser;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpCookieUtils;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -61,12 +68,15 @@ import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -299,6 +309,82 @@ public class SessionHandlerTest
         {
             server.stop();
         }
+    }
+
+    @Test
+    public void testNonServletRequestInvalidateThenCreateSameRequest() throws Exception
+    {
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector(server);
+        server.addConnector(connector);
+
+        SessionHandler sessionHandler = new SessionHandler();
+        sessionHandler.setSessionCookie("SESSION_ID");
+        server.setHandler(sessionHandler);
+        sessionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                Session session = request.getSession(Request.getPathInContext(request).startsWith("/create"));
+                if (session != null && !Request.getPathInContext(request).equals("/create"))
+                {
+                    session.invalidate();
+                    assertNull(request.getSession(false));
+                    session = request.getSession(true);
+                }
+                Content.Sink.write(response, true, session == null ? "No Session" : "Session=" + session.getId() + " valid=" + session.isValid() + " new=" + session.isNew(), callback);
+                return true;
+            }
+        });
+        server.start();
+
+        try
+        {
+            // Session created, invalidated and re-created in the same request.
+            HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+                GET /create/invalidate/recreate HTTP/1.1
+                Host: localhost
+                
+                """));
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            assertThat(response.getContent(), containsString("valid=true new=true"));
+
+            // Existing session invalidated and re-created in the same request.
+            response = HttpTester.parseResponse(connector.getResponse("""
+                GET /create HTTP/1.1
+                Host: localhost
+                
+                """));
+            String id = parseCookieId(response.get(HttpHeader.SET_COOKIE));
+
+            response = HttpTester.parseResponse(connector.getResponse("""
+                GET /invalidate/recreate HTTP/1.1
+                Host: localhost
+                Cookie: SESSION_ID=%s
+                
+                """.formatted(id)));
+            assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+            assertThat(response.getContent(), containsString("valid=true new=true"));
+            String newId = parseCookieId(response.get(HttpHeader.SET_COOKIE));
+            assertThat(newId, not(equalTo(id)));
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+    private static String parseCookieId(String setCookie)
+    {
+        String[] sessionId = new String[1];
+        CookieParser cookieParser = CookieParser.newParser((name, value, version, domain, path, comment) ->
+        {
+            if (name.equals("SESSION_ID"))
+                sessionId[0] = value;
+        }, CookieCompliance.RFC6265, null);
+        cookieParser.parseField(setCookie);
+        return sessionId[0];
     }
 
     @Test

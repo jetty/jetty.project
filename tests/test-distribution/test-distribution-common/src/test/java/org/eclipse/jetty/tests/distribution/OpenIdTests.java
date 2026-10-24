@@ -169,21 +169,10 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 String uri = "http://localhost:" + port + "/test";
                 // Initially not authenticated
-                // Keycloak 26.4+ sets Secure flag on cookies even over HTTP;
-                // use a cookie store that sends secure cookies over plain HTTP.
                 startHttpClient(() ->
                 {
                     HttpClient httpClient = new HttpClient();
-                    httpClient.setHttpCookieStore(new HttpCookieStore.Default()
-                    {
-                        @Override
-                        public List<HttpCookie> match(URI uri)
-                        {
-                            return all().stream()
-                                .filter(c -> !c.isExpired())
-                                .toList();
-                        }
-                    });
+                    httpClient.setHttpCookieStore(new LocalhostSecureCookieStore());
                     return httpClient;
                 });
                 ContentResponse contentResponse = client.GET(uri + "/");
@@ -247,6 +236,27 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 content = contentResponse.getContentAsString();
                 assertThat(content, containsString("not authenticated"));
             }
+        }
+    }
+
+    /**
+     * Keycloak treats localhost as a secure context, like browsers do, so it marks
+     * its login cookies as Secure even over plain http. This store sends them back
+     * to localhost over http the same way a browser would.
+     */
+    private static class LocalhostSecureCookieStore extends HttpCookieStore.Default
+    {
+        @Override
+        public List<HttpCookie> match(URI uri)
+        {
+            if ("http".equalsIgnoreCase(uri.getScheme()) && isLocalhost(uri.getHost()))
+                uri = URI.create("https:" + uri.getRawSchemeSpecificPart());
+            return super.match(uri);
+        }
+
+        private static boolean isLocalhost(String host)
+        {
+            return "localhost".equalsIgnoreCase(host) || (host != null && host.startsWith("127.")) || "[::1]".equals(host);
         }
     }
 }

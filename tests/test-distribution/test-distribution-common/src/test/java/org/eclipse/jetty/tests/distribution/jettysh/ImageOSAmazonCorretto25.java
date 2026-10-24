@@ -47,12 +47,7 @@ public class ImageOSAmazonCorretto25 extends ImageOS
                         "echo \"JETTY_HOME=${JETTY_HOME}\" > /etc/default/jetty ; " +
                         "echo \"JETTY_BASE=${JETTY_BASE}\" >> /etc/default/jetty ; " +
                         "echo \"JETTY_RUN=${JETTY_BASE}\" >> /etc/default/jetty ")
-                    // setup Jetty Home
-                    .copy("/opt/jetty/", "${JETTY_HOME}/")
-                    .env("PATH", "$PATH:${JETTY_HOME}/bin/")
-                    .run("chmod ugo+x ${JETTY_HOME}/bin/jetty.sh")
                     .build()
         );
-        withFileFromFile("/opt/jetty/", getJettyHomeDir());
     }
 }

@@ -23,11 +23,14 @@ public class ImageUserRoot extends ImageFromDSL
         super(osImage, "user-root", builder ->
             builder
                 .from(osImage.getDockerImageName())
+                // setup Jetty Home
+                .copy("/opt/jetty/", "${JETTY_HOME}/")
                 .run("mkdir -p ${JETTY_BASE} ; " +
-                    "chmod u+x ${JETTY_HOME}/bin/jetty.sh ; " +
+                    "chmod a+x ${JETTY_HOME}/bin/jetty.sh ; " +
                     "chmod a+w ${JETTY_BASE}")
                 // Configure Jetty Base
                 .workDir("${JETTY_BASE}")
                 .build());
+        withFileFromFile("/opt/jetty/", osImage.getJettyHomeDir());
     }
 }
