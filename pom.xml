@@ -178,7 +178,7 @@
     <!-- bctls 1.86 shipped a broken multi-release jar, see bcgit/bc-java#2448 -->
     <bouncycastle.tls.version>1.86.2</bouncycastle.tls.version>
     <bouncycastle.version>1.86</bouncycastle.version>
-    <brotli4j.version>1.23.0</brotli4j.version>
+    <brotli4j.version>1.24.0</brotli4j.version>
     <build-helper.maven.plugin.version>3.6.2</build-helper.maven.plugin.version>
     <build-support.version>1.6</build-support.version>
     <buildnumber.maven.plugin.version>3.3.1</buildnumber.maven.plugin.version>
