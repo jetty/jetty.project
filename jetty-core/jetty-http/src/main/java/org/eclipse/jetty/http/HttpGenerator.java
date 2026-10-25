@@ -56,6 +56,7 @@ public class HttpGenerator
         .caseSensitive(false)
         .with(HttpMethod.POST.asString(), Boolean.TRUE)
         .with(HttpMethod.PUT.asString(), Boolean.TRUE)
+        .with(HttpMethod.QUERY.asString(), Boolean.TRUE)
         .build();
 
     // states
