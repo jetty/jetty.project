@@ -166,6 +166,9 @@ You can add as beans many `Connection.Listener` objects, each with its own logic
 
 The Jetty I/O library provides useful `Connection.Listener` implementations that you should evaluate before writing your own, for example link:{javadoc-url}/org/eclipse/jetty/io/ConnectionStatistics.html[`ConnectionStatistics`].
 
+`ConnectionStatistics` exposes its statistics via JMX.
+The `ConnectionStatisticsAsTabularData` attribute provides per-connection-class statistics as JMX `TabularData`, allowing JMX clients to display structured data with columns for connection counts, bytes transferred, messages transferred, and connection durations.
+
 Here is a simple example of a `Connection.Listener` used both on the client and on the server:
 
 [,java,indent=0]
