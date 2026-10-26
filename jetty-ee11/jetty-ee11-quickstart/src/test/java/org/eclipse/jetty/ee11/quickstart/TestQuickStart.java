@@ -164,7 +164,7 @@ public class TestQuickStart
     }
     
     @ParameterizedTest
-    @ValueSource(strings = {"en-US", "ar-EG"})
+    @ValueSource(strings = {"en-US", "ar-EG-u-nu-arab"})
     public void testSchemaLocationDoesNotDependOnDefaultLocale(String languageTag) throws Exception
     {
         File testDir = MavenTestingUtils.getTargetTestingDir("schemaLocation-" + languageTag);
@@ -184,7 +184,7 @@ public class TestQuickStart
         server.setHandler(quickstart);
         server.setDryRun(true);
 
-        // The Arabic-Egyptian locale does not format numbers using the ascii characters 0-9,
+        // The Arabic-Egyptian locale with Arabic digits does not format numbers using the ascii characters 0-9,
         // if it was used the schema location would contain web-app_٦_١.xsd for instance.
         Locale defaultLocale = Locale.getDefault();
         try

@@ -149,7 +149,7 @@ public class AltSvcTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en-US", "ar-EG"})
+    @ValueSource(strings = {"en-US", "ar-EG-u-nu-arab"})
     public void testAltSvcHeaderWithCustomMaxAge(String languageTag) throws Exception
     {
         // Setup server with HTTP/2 (TLS) and HTTP/3 on different ports
@@ -219,7 +219,7 @@ public class AltSvcTest
         client.start();
 
         // Make HTTP/2 request, the Alt-Svc header must not depend on the default Locale
-        // as the Arabic-Egyptian locale does not format numbers using the ascii
+        // as the Arabic-Egyptian locale with Arabic digits does not format numbers using the ascii
         // characters 0-9 but with other UTF characters instead.
         ContentResponse response;
         Locale defaultLocale = Locale.getDefault();

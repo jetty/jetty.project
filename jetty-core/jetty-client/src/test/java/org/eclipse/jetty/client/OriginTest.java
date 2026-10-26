@@ -27,10 +27,10 @@ import static org.hamcrest.Matchers.is;
 public class OriginTest
 {
     @ParameterizedTest
-    @ValueSource(strings = {"en-US", "ar-EG"})
+    @ValueSource(strings = {"en-US", "ar-EG-u-nu-arab"})
     public void testAddressAsStringDoesNotDependOnDefaultLocale(String languageTag)
     {
-        // The Arabic-Egyptian locale does not format numbers using the ascii characters 0-9
+        // The Arabic-Egyptian locale with Arabic digits does not format numbers using the ascii characters 0-9
         // but with other UTF characters instead. If the locale was used to format numbers,
         // the address would then be formatted as "example.com:٤٤٣".
 

@@ -19,6 +19,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,13 +35,13 @@ public class SecureRequestCustomizerTest
     private Server server;
 
     @AfterEach
-    public void dispose() throws Exception
+    public void dispose()
     {
-        server.stop();
+        LifeCycle.stop(server);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en-US", "ar-EG"})
+    @ValueSource(strings = {"en-US", "ar-EG-u-nu-arab"})
     public void testStrictTransportSecurityDoesNotDependOnDefaultLocale(String languageTag) throws Exception
     {
         SecureRequestCustomizer customizer = new SecureRequestCustomizer();
