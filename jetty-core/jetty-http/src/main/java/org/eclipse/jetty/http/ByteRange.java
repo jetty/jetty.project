@@ -16,6 +16,7 @@ package org.eclipse.jetty.http;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,7 @@ public record ByteRange(long first, long last)
      */
     public String toHeaderValue(long length)
     {
-        return "bytes %d-%d/%d".formatted(first, last, length);
+        return String.format(Locale.ROOT, "bytes %d-%d/%d", first, last, length);
     }
 
     /**

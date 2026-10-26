@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.server;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http.HttpField;
@@ -69,7 +70,7 @@ public class HTTP3ServerConnector extends QuicServerConnector
     {
         LOG.info("HTTP/3+QUIC support is experimental and not suited for production use.");
         super.doStart();
-        altSvcHttpField = new PreEncodedHttpField(HttpHeader.ALT_SVC, String.format("h3=\":%d\"", getLocalPort()));
+        altSvcHttpField = new PreEncodedHttpField(HttpHeader.ALT_SVC, String.format(Locale.ROOT, "h3=\":%d\"", getLocalPort()));
     }
 
     public HttpField getAltSvcHttpField()

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -296,7 +297,7 @@ public class ShutdownMonitor
             if (port == 0)
             {
                 port = serverSocket.getLocalPort();
-                System.out.printf("STOP.PORT=%d%n", port);
+                System.out.printf(Locale.ROOT, "STOP.PORT=%d%n", port);
                 setPort(port);
             }
 
