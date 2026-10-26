@@ -14,24 +14,35 @@
 package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// Isolated because the default Locale and System.out are changed.
+@Isolated
 public class ShutdownMonitorTest
 {
     @AfterEach
@@ -98,6 +109,42 @@ public class ShutdownMonitorTest
                 // Socket must be closed afterwards.
                 assertNull(input.readLine());
             }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"en-US", "ar-EG-u-nu-arab"})
+    public void testStopPortDoesNotDependOnDefaultLocale(String languageTag) throws Exception
+    {
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(0);
+        monitor.setExitVm(false);
+
+        // The Arabic-Egyptian locale with Arabic digits does not format numbers using the ascii
+        // characters 0-9, if it was used the port would be printed as STOP.PORT=٤٥٦٧٨ for instance.
+        Locale defaultLocale = Locale.getDefault();
+        PrintStream defaultOut = System.out;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try
+        {
+            Locale.setDefault(Locale.forLanguageTag(languageTag));
+            System.setOut(new PrintStream(out, true, StandardCharsets.UTF_8));
+            monitor.start();
+        }
+        finally
+        {
+            System.setOut(defaultOut);
+            Locale.setDefault(defaultLocale);
+        }
+
+        try
+        {
+            assertThat(out.toString(StandardCharsets.UTF_8), containsString("STOP.PORT=" + monitor.getPort() + System.lineSeparator()));
+        }
+        finally
+        {
+            stop("stop", monitor.getPort(), monitor.getKey(), true);
+            assertTrue(monitor.await(5, TimeUnit.SECONDS));
         }
     }
 

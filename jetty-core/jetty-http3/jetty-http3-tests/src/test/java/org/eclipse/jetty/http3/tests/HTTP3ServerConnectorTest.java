@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.tests;
 
 import java.io.InputStream;
 import java.security.KeyStore;
+import java.util.Locale;
 import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
@@ -27,10 +28,16 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
+// Isolated because the default Locale is changed.
+@Isolated
 public class HTTP3ServerConnectorTest
 {
     public WorkDir workDir;
@@ -111,6 +118,39 @@ public class HTTP3ServerConnectorTest
         }
         finally
         {
+            LifeCycle.stop(server);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"en-US", "ar-EG-u-nu-arab"})
+    public void testAltSvcHttpFieldDoesNotDependOnDefaultLocale(String languageTag) throws Exception
+    {
+        Server server = new Server();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        try (InputStream is = getClass().getResourceAsStream("/keystore.p12"))
+        {
+            keyStore.load(is, "storepwd".toCharArray());
+        }
+        sslContextFactory.setKeyStore(keyStore);
+        sslContextFactory.setKeyManagerPassword("storepwd");
+        ServerQuicConfiguration quicConfiguration = new ServerQuicConfiguration(sslContextFactory, workDir.getEmptyPathDir());
+        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(quicConfiguration));
+        server.addConnector(connector);
+
+        // The Arabic-Egyptian locale with Arabic digits does not format numbers using the ascii
+        // characters 0-9, if it was used the port would be formatted as h3=":٤٥٦٧٨" for instance.
+        Locale defaultLocale = Locale.getDefault();
+        try
+        {
+            Locale.setDefault(Locale.forLanguageTag(languageTag));
+            server.start();
+            assertEquals("h3=\":" + connector.getLocalPort() + "\"", connector.getAltSvcHttpField().getValue());
+        }
+        finally
+        {
+            Locale.setDefault(defaultLocale);
             LifeCycle.stop(server);
         }
     }

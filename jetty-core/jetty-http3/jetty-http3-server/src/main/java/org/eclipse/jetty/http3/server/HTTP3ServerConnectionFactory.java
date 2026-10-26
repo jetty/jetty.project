@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.server;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
@@ -62,7 +63,7 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
             ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
             Connector connector = connectionMetaData.getConnector();
             if (connector instanceof NetworkConnector networkConnector && HttpVersion.HTTP_2 == connectionMetaData.getHttpVersion())
-                responseHeaders.add(HttpHeader.ALT_SVC, String.format("h3=\":%d\"", networkConnector.getLocalPort()));
+                responseHeaders.add(HttpHeader.ALT_SVC, String.format(Locale.ROOT, "h3=\":%d\"", networkConnector.getLocalPort()));
             return request;
         }
     }
