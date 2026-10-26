@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.http3.generator;
 
-import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.util.VarLenInt;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class DataGenerator extends FrameGenerator
 {
@@ -35,25 +34,22 @@ public class DataGenerator extends FrameGenerator
     }
 
     @Override
-    public long generate(RetainableByteBuffer.Mutable accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(BufferAccumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         DataFrame dataFrame = (DataFrame)frame;
         return generateDataFrame(accumulator, dataFrame);
     }
 
-    private long generateDataFrame(RetainableByteBuffer.Mutable accumulator, DataFrame frame)
+    private long generateDataFrame(BufferAccumulator accumulator, DataFrame frame)
     {
-        ByteBuffer data = frame.getByteBuffer();
+        RetainableByteBuffer data = frame.acquire();
         long dataLength = data.remaining();
         int headerLength = VarLenInt.length(FrameType.DATA.type()) + VarLenInt.length(dataLength);
-        RetainableByteBuffer header = getByteBufferPool().acquire(headerLength, useDirectByteBuffers);
-        ByteBuffer byteBuffer = header.getByteBuffer();
-        BufferUtil.clearToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, FrameType.DATA.type());
-        VarLenInt.encode(byteBuffer, dataLength);
-        byteBuffer.flip();
-        accumulator.add(header);
-        accumulator.add(data);
+        RetainableByteBuffer.Mutable header = getByteBufferPool().acquire(headerLength, useDirectByteBuffers);
+        accumulator.addRetained(header);
+        VarLenInt.encode(header, FrameType.DATA.type());
+        VarLenInt.encode(header, dataLength);
+        accumulator.addRetained(data);
         return headerLength + dataLength;
     }
 }

@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -38,9 +37,10 @@ import org.eclipse.jetty.server.NetworkTrafficServerConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -136,16 +136,16 @@ public class NetworkTrafficListenerTest
         connector.setNetworkTrafficListener(new NetworkTrafficListener()
         {
             @Override
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, RetainableByteBuffer bytes)
             {
-                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, UTF_8));
+                serverIncoming.set(serverIncoming.get() + StringUtil.toString(bytes, UTF_8));
                 serverIncomingLatch.countDown();
             }
 
             @Override
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, RetainableByteBuffer bytes)
             {
-                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
+                serverOutgoing.set(serverOutgoing.get() + StringUtil.toString(bytes, UTF_8));
                 serverOutgoingLatch.countDown();
             }
         });
@@ -157,16 +157,16 @@ public class NetworkTrafficListenerTest
         client.listener.set(new NetworkTrafficListener()
         {
             @Override
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, RetainableByteBuffer bytes)
             {
-                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
+                clientOutgoing.set(clientOutgoing.get() + StringUtil.toString(bytes, UTF_8));
                 clientOutgoingLatch.countDown();
             }
 
             @Override
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, RetainableByteBuffer bytes)
             {
-                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, UTF_8));
+                clientIncoming.set(clientIncoming.get() + StringUtil.toString(bytes, UTF_8));
                 clientIncomingLatch.countDown();
             }
         });
@@ -193,7 +193,7 @@ public class NetworkTrafficListenerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, UTF_8.encode(responseContent), callback);
+                response.write(true, RetainableByteBuffer.wrap(UTF_8.encode(responseContent)), callback);
                 return true;
             }
         });
@@ -205,16 +205,16 @@ public class NetworkTrafficListenerTest
         connector.setNetworkTrafficListener(new NetworkTrafficListener()
         {
             @Override
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, RetainableByteBuffer bytes)
             {
-                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, UTF_8));
+                serverIncoming.set(serverIncoming.get() + StringUtil.toString(bytes, UTF_8));
                 serverIncomingLatch.countDown();
             }
 
             @Override
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, RetainableByteBuffer bytes)
             {
-                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
+                serverOutgoing.set(serverOutgoing.get() + StringUtil.toString(bytes, UTF_8));
                 serverOutgoingLatch.countDown();
             }
         });
@@ -226,16 +226,16 @@ public class NetworkTrafficListenerTest
         client.listener.set(new NetworkTrafficListener()
         {
             @Override
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, RetainableByteBuffer bytes)
             {
-                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
+                clientOutgoing.set(clientOutgoing.get() + StringUtil.toString(bytes, UTF_8));
                 clientOutgoingLatch.countDown();
             }
 
             @Override
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, RetainableByteBuffer bytes)
             {
-                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, UTF_8));
+                clientIncoming.set(clientIncoming.get() + StringUtil.toString(bytes, UTF_8));
                 clientIncomingLatch.countDown();
             }
         });
@@ -275,16 +275,16 @@ public class NetworkTrafficListenerTest
         connector.setNetworkTrafficListener(new NetworkTrafficListener()
         {
             @Override
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, RetainableByteBuffer bytes)
             {
-                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, UTF_8));
+                serverIncoming.set(serverIncoming.get() + StringUtil.toString(bytes, UTF_8));
                 serverIncomingLatch.countDown();
             }
 
             @Override
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, RetainableByteBuffer bytes)
             {
-                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
+                serverOutgoing.set(serverOutgoing.get() + StringUtil.toString(bytes, UTF_8));
                 if (serverOutgoing.get().endsWith("\r\n0\r\n\r\n"))
                     serverOutgoingLatch.countDown();
             }
@@ -297,16 +297,16 @@ public class NetworkTrafficListenerTest
         client.listener.set(new NetworkTrafficListener()
         {
             @Override
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, RetainableByteBuffer bytes)
             {
-                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
+                clientOutgoing.set(clientOutgoing.get() + StringUtil.toString(bytes, UTF_8));
                 clientOutgoingLatch.countDown();
             }
 
             @Override
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, RetainableByteBuffer bytes)
             {
-                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, UTF_8));
+                clientIncoming.set(clientIncoming.get() + StringUtil.toString(bytes, UTF_8));
                 if (clientIncoming.get().endsWith("\r\n0\r\n\r\n"))
                     clientIncomingLatch.countDown();
             }
@@ -347,16 +347,16 @@ public class NetworkTrafficListenerTest
         connector.setNetworkTrafficListener(new NetworkTrafficListener()
         {
             @Override
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, RetainableByteBuffer bytes)
             {
-                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, UTF_8));
+                serverIncoming.set(serverIncoming.get() + StringUtil.toString(bytes, UTF_8));
                 serverIncomingLatch.countDown();
             }
 
             @Override
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, RetainableByteBuffer bytes)
             {
-                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
+                serverOutgoing.set(serverOutgoing.get() + StringUtil.toString(bytes, UTF_8));
                 serverOutgoingLatch.countDown();
             }
         });
@@ -368,16 +368,16 @@ public class NetworkTrafficListenerTest
         client.listener.set(new NetworkTrafficListener()
         {
             @Override
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, RetainableByteBuffer bytes)
             {
-                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
+                clientOutgoing.set(clientOutgoing.get() + StringUtil.toString(bytes, UTF_8));
                 clientOutgoingLatch.countDown();
             }
 
             @Override
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, RetainableByteBuffer bytes)
             {
-                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, UTF_8));
+                clientIncoming.set(clientIncoming.get() + StringUtil.toString(bytes, UTF_8));
                 clientIncomingLatch.countDown();
             }
         });
@@ -420,15 +420,15 @@ public class NetworkTrafficListenerTest
         connector.setNetworkTrafficListener(new NetworkTrafficListener()
         {
             @Override
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, RetainableByteBuffer bytes)
             {
-                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, UTF_8));
+                serverIncoming.set(serverIncoming.get() + StringUtil.toString(bytes, UTF_8));
             }
 
             @Override
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, RetainableByteBuffer bytes)
             {
-                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
+                serverOutgoing.set(serverOutgoing.get() + StringUtil.toString(bytes, UTF_8));
                 serverOutgoingLatch.countDown();
             }
         });
@@ -439,15 +439,15 @@ public class NetworkTrafficListenerTest
         client.listener.set(new NetworkTrafficListener()
         {
             @Override
-            public void outgoing(Socket socket, ByteBuffer bytes)
+            public void outgoing(Socket socket, RetainableByteBuffer bytes)
             {
-                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
+                clientOutgoing.set(clientOutgoing.get() + StringUtil.toString(bytes, UTF_8));
             }
 
             @Override
-            public void incoming(Socket socket, ByteBuffer bytes)
+            public void incoming(Socket socket, RetainableByteBuffer bytes)
             {
-                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, UTF_8));
+                clientIncoming.set(clientIncoming.get() + StringUtil.toString(bytes, UTF_8));
                 clientIncomingLatch.countDown();
             }
         });

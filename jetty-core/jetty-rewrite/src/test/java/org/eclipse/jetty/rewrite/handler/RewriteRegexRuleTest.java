@@ -98,7 +98,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
             
             """.replace("$T", scenario.pathQuery);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus(), "Response status code");
         assertEquals(scenario.expectedPath, response.get("X-Path"), "Response X-Path header value");
         if (scenario.expectedQuery != null)
@@ -132,7 +132,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
             
             """.replace("$T", target);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus(), "Response status code");
         String result = response.get("X-Path");
         String query = response.get("X-Query");
@@ -171,7 +171,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
             
             """.replace("$T", target);
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(HttpStatus.OK_200, response.getStatus(), "Response status code");
         String result = response.get("X-Path");
         String query = response.get("X-Query");

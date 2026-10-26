@@ -11,12 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.io;
+package org.eclipse.jetty.util;
 
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * <p>A reference counted resource, for example one that is borrowed from a pool,
@@ -48,28 +45,41 @@ import org.eclipse.jetty.util.TypeUtil;
  * </ol>
  * </ol>
  */
-public interface Retainable
+public interface Retainable extends AutoCloseable
 {
     Retainable NON_RETAINABLE = new Retainable()
     {
     };
 
-    /**
-     * <p>Returns whether this resource is referenced counted by calls to {@link #retain()}
-     * and {@link #release()}.</p>
-     * <p>Implementations may decide that special resources are not not referenced counted (for example,
-     * {@code static} constants) so calling {@link #retain()} is a no-operation, and
-     * calling {@link #release()} on those special resources is a no-operation that always returns true.</p>
-     *
-     * @return true if calls to {@link #retain()} are reference counted.
-     */
-    default boolean canRetain()
+    /// Convenience method that replaces code like:
+    ///
+    /// ```
+    /// if (buffer != null)
+    /// {
+    ///     buffer.release();
+    ///     buffer = null;
+    /// }
+    /// ```
+    ///
+    /// with:
+    ///
+    /// ```
+    /// buffer = Retainable.dispose(buffer);
+    /// ```
+    ///
+    /// @param retainable The [Retainable] to release, if not `null`.
+    /// @param <R> The type of the [Retainable]
+    /// @return always returns `null`
+    static <R extends Retainable> R dispose(R retainable)
     {
-        return false;
+        if (retainable != null)
+            retainable.release();
+        return null;
     }
 
     /**
      * <p>Returns whether {@link #retain()} has been called at least one more time than {@link #release()}.</p>
+     *
      * @return whether this buffer is retained
      */
     default boolean isRetained()
@@ -88,74 +98,17 @@ public interface Retainable
      * <p>Releases this resource, potentially decrementing a reference count (if any).</p>
      *
      * @return {@code true} when the reference count goes to zero or if there was no reference count,
-     *         {@code false} otherwise.
+     * {@code false} otherwise.
      */
     default boolean release()
     {
         return true;
     }
 
-    /**
-     * <p>Get the retained count. This value is volatile and should only be used for informational/debugging purposes.</p>
-     * @return the retained count
-     */
-    default int getRetained()
+    @Override
+    default void close()
     {
-        return -1;
-    }
-
-    /**
-     * A wrapper of {@link Retainable} instances.
-     */
-    class Wrapper implements Retainable
-    {
-        private final Retainable wrapped;
-
-        public Wrapper(Retainable wrapped)
-        {
-            this.wrapped = Objects.requireNonNull(wrapped);
-        }
-
-        public Retainable getWrapped()
-        {
-            return wrapped;
-        }
-
-        @Override
-        public boolean canRetain()
-        {
-            return getWrapped().canRetain();
-        }
-
-        @Override
-        public int getRetained()
-        {
-            return getWrapped().getRetained();
-        }
-
-        @Override
-        public boolean isRetained()
-        {
-            return getWrapped().isRetained();
-        }
-
-        @Override
-        public void retain()
-        {
-            getWrapped().retain();
-        }
-
-        @Override
-        public boolean release()
-        {
-            return getWrapped().release();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "%s@%x[%s]".formatted(TypeUtil.toShortName(getClass()), hashCode(), getWrapped());
-        }
+        release();
     }
 
     /**
@@ -185,7 +138,7 @@ public interface Retainable
         /**
          * @return the current reference count
          */
-        public int get()
+        public int getCount()
         {
             return references.get();
         }
@@ -199,12 +152,6 @@ public interface Retainable
         {
             if (references.getAndUpdate(c -> c == 0 ? 1 : c) != 0)
                 throw new IllegalStateException("acquired while in use " + this);
-        }
-
-        @Override
-        public boolean canRetain()
-        {
-            return get() > 0;
         }
 
         @Override
@@ -234,45 +181,13 @@ public interface Retainable
         @Override
         public boolean isRetained()
         {
-            return references.get() > 1;
-        }
-
-        @Override
-        public int getRetained()
-        {
-            return references.get();
+            return getCount() > 1;
         }
 
         @Override
         public String toString()
         {
-            return String.format("%s@%x[rc=%d]", TypeUtil.toShortName(getClass()), hashCode(), get());
+            return String.format("%s@%x[rc=%d]", TypeUtil.toShortName(getClass()), hashCode(), getCount());
         }
-    }
-
-    /**
-     * Convenience method that replaces code like:
-     * <pre>{@code
-     *   if (buffer != null)
-     *   {
-     *       buffer.release();
-     *       buffer = null;
-     *   }
-     * }
-     * </pre>
-     * with:
-     * <pre>{@code
-     *   buffer = Retainable.release(buffer);
-     * }
-     * </pre>
-     * @param retainable The retainable to release, if not {@code null}.
-     * @param <R> The type of the retainable
-     * @return always returns {@code null}
-     */
-    static <R extends Retainable> R release(R retainable)
-    {
-        if (retainable != null)
-            retainable.release();
-        return null;
     }
 }

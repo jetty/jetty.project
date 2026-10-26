@@ -33,6 +33,7 @@ import org.eclipse.jetty.quic.quiche.QuicheConstants;
 import org.eclipse.jetty.quic.quiche.QuicheConstants.quic_error;
 import org.eclipse.jetty.quic.quiche.QuicheConstants.quiche_error;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -598,7 +599,7 @@ public class ForeignQuicheConnection extends Quiche
                 {
                     // If the ByteBuffer is direct, it can be used without any copy.
                     MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
-                    received = quiche_h.quiche_conn_recv(quicheConn, bufferSegment, buffer.remaining(), recvInfo);
+                    received = quiche_h.quiche_conn_recv(quicheConn, bufferSegment, bufferSegment.byteSize(), recvInfo);
                 }
                 else
                 {
@@ -607,7 +608,7 @@ public class ForeignQuicheConnection extends Quiche
                     int prevPosition = buffer.position();
                     bufferSegment.asByteBuffer().put(buffer);
                     buffer.position(prevPosition);
-                    received = quiche_h.quiche_conn_recv(quicheConn, bufferSegment, buffer.remaining(), recvInfo);
+                    received = quiche_h.quiche_conn_recv(quicheConn, bufferSegment, bufferSegment.byteSize(), recvInfo);
                 }
             }
             // If quiche_conn_recv() fails, quiche_conn_local_error() can be called to get the standard error.
@@ -634,7 +635,7 @@ public class ForeignQuicheConnection extends Quiche
             {
                 // If the ByteBuffer is direct, it can be used without any copy.
                 MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
-                written = quiche_h.quiche_conn_send(quicheConn, bufferSegment, buffer.remaining(), sendInfo);
+                written = quiche_h.quiche_conn_send(quicheConn, bufferSegment, bufferSegment.byteSize(), sendInfo);
             }
             else
             {
@@ -642,7 +643,7 @@ public class ForeignQuicheConnection extends Quiche
                 try (Arena scope = Arena.ofConfined())
                 {
                     MemorySegment bufferSegment = scope.allocate(buffer.remaining());
-                    written = quiche_h.quiche_conn_send(quicheConn, bufferSegment, buffer.remaining(), sendInfo);
+                    written = quiche_h.quiche_conn_send(quicheConn, bufferSegment, bufferSegment.byteSize(), sendInfo);
                     if (written > 0)
                     {
                         buffer.put(bufferSegment.asByteBuffer().slice().limit((int)written));
@@ -856,99 +857,101 @@ public class ForeignQuicheConnection extends Quiche
     }
 
     @Override
-    public int feedClearBytesForStream(long streamId, ByteBuffer buffer, boolean last) throws IOException
+    public long feedClearBytesForStream(long streamId, RetainableByteBuffer buffer, boolean last) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
                 throw new IOException("connection was released");
 
-            long written;
             try (Arena scope = Arena.ofConfined())
             {
                 MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
-                if (buffer.isDirect())
+
+                long[] total = new long[1];
+                long toSend = buffer.remaining();
+                buffer.read(b ->
                 {
-                    // If the ByteBuffer is direct, it can be used without any copy.
-                    MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
-                    written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment, buffer.remaining(), last, outErrorCode);
-                }
-                else
-                {
-                    // If the ByteBuffer is heap-allocated, it must be copied to native memory.
-                    if (buffer.remaining() == 0)
+                    MemorySegment bufferSegment;
+                    if (b.hasRemaining())
                     {
-                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, MemorySegment.NULL, 0, last, outErrorCode);
+                        if (b.isDirect())
+                        {
+                            bufferSegment = MemorySegment.ofBuffer(b);
+                        }
+                        else
+                        {
+                            bufferSegment = scope.allocate(b.remaining());
+                            bufferSegment.asByteBuffer().put(b.slice());
+                        }
                     }
                     else
                     {
-                        MemorySegment bufferSegment = scope.allocate(buffer.remaining());
-                        int prevPosition = buffer.position();
-                        bufferSegment.asByteBuffer().put(buffer);
-                        buffer.position(prevPosition);
-                        written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment, buffer.remaining(), last, outErrorCode);
+                        bufferSegment = MemorySegment.NULL;
                     }
-                }
-            }
 
-            if (written == quiche_error.QUICHE_ERR_DONE)
-            {
-                int rc = quiche_h.quiche_conn_stream_writable(quicheConn, streamId, buffer.remaining());
-                if (rc < 0)
-                    throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(rc));
-                return 0;
+                    int length = b.remaining();
+                    boolean isLast = last && (total[0] + length == toSend);
+                    long sent = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment, length, isLast, outErrorCode);
+                    if (sent > 0)
+                    {
+                        b.position(b.position() + (int)sent);
+                        total[0] += sent;
+                    }
+
+                    if (sent >= 0)
+                        return sent;
+
+                    if (sent == quiche_error.QUICHE_ERR_DONE)
+                    {
+                        int rc = quiche_h.quiche_conn_stream_writable(quicheConn, streamId, toSend - total[0]);
+                        if (rc < 0)
+                            throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(rc));
+                        return 0;
+                    }
+
+                    throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(sent));
+                });
+
+                return total[0];
             }
-            if (written < 0L)
-                throw new IOException("failed to write to stream " + streamId + "; quiche_err=" + quiche_error.errToString(written));
-            buffer.position((int)(buffer.position() + written));
-            return (int)written;
         }
     }
 
     @Override
-    public int drainClearBytesForStream(long streamId, ByteBuffer buffer, boolean[] last) throws IOException
+    public long drainClearBytesForStream(long streamId, RetainableByteBuffer.Mutable buffer, boolean[] last) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
                 throw new IOException("connection was released");
 
-            long read;
             try (Arena scope = Arena.ofConfined())
             {
                 MemorySegment fin = scope.allocate(NativeHelper.C_BOOL);
                 MemorySegment outErrorCode = scope.allocate(NativeHelper.C_LONG);
-                if (buffer.isDirect())
+                return buffer.write(b ->
                 {
-                    // If the ByteBuffer is direct, it can be used without any copy.
-                    MemorySegment bufferSegment = MemorySegment.ofBuffer(buffer);
-                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin, outErrorCode);
+                    MemorySegment bufferSegment = b.isDirect() ? MemorySegment.ofBuffer(b) : scope.allocate(b.remaining());
+                    int read = (int)quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, bufferSegment.byteSize(), fin, outErrorCode);
                     if (read >= 0)
                     {
-                        buffer.position(buffer.position() + (int)read);
                         last[0] = fin.get(NativeHelper.C_BOOL, 0L) != 0;
+                        if (b.isDirect())
+                            b.position(b.position() + read);
+                        else
+                            b.put(bufferSegment.asByteBuffer().limit(read));
                     }
-                }
-                else
-                {
-                    // If the ByteBuffer is heap-allocated, native memory must be copied to it.
-                    MemorySegment bufferSegment = scope.allocate(buffer.remaining());
-                    read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment, buffer.remaining(), fin, outErrorCode);
-                    if (read >= 0)
-                    {
-                        buffer.put(bufferSegment.asByteBuffer().limit((int)read));
-                        last[0] = fin.get(NativeHelper.C_BOOL, 0L) != 0;
-                    }
-                }
-            }
 
-            if (read == quiche_error.QUICHE_ERR_DONE)
-                return isStreamFinished(streamId) ? -1 : 0;
-            if (read == quiche_error.QUICHE_ERR_STREAM_RESET)
-                throw new EOFException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
-            if (read < 0L)
-                throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
-            return (int)read;
+                    if (read == quiche_error.QUICHE_ERR_DONE)
+                        return isStreamFinished(streamId) ? -1 : 0;
+                    if (read == quiche_error.QUICHE_ERR_STREAM_RESET)
+                        throw new EOFException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
+                    if (read < 0L)
+                        throw new IOException("failed to read from stream " + streamId + "; quiche_err=" + quiche_error.errToString(read));
+                    return read;
+                });
+            }
         }
     }
 

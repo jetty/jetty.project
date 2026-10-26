@@ -67,6 +67,7 @@ public class RFC7230Test
         ConditionalHandler options = new ConditionalHandler.ElseNext()
         {
             final DefaultHandler optionsHandler = new DefaultHandler();
+
             {
                 installBean(optionsHandler);
             }
@@ -134,7 +135,7 @@ public class RFC7230Test
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req));
 
         assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
     }
@@ -142,7 +143,7 @@ public class RFC7230Test
     @Test
     public void testInvalidWhiteSpaceInField_3_2() throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET http://localhost/path HTTP/1.1
             Host: localhost
             Bad : whitespace
@@ -157,7 +158,7 @@ public class RFC7230Test
     @Disabled // TODO
     public void testInvalidWhiteSpaceInTE_3_2() throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString("""
             GET http://localhost/path HTTP/1.1
             Host: localhost
             Transfer-Encoding: identity;bad = space,chunked
@@ -183,7 +184,7 @@ public class RFC7230Test
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(req));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(req));
 
         assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
     }

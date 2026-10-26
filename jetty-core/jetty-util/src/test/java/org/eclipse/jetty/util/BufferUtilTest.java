@@ -182,78 +182,6 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testPutInt()
-    {
-        int[] val =
-            {
-                0, 42, 43, -44, -45, Integer.MIN_VALUE, Integer.MAX_VALUE
-            };
-
-        String[] str =
-            {
-                "0", "42", "43", "-44", "-45", "" + Integer.MIN_VALUE, "" + Integer.MAX_VALUE
-            };
-
-        ByteBuffer buffer = ByteBuffer.allocate(24);
-
-        for (int i = 0; i < val.length; i++)
-        {
-            BufferUtil.clearToFill(buffer);
-            BufferUtil.putDecInt(buffer, val[i]);
-            BufferUtil.flipToFlush(buffer, 0);
-            assertEquals(str[i], BufferUtil.toString(buffer), "t" + i);
-        }
-    }
-
-    @Test
-    public void testPutLong()
-    {
-        long[] val =
-            {
-                0L, 42L, 43L, -44L, -45L, Long.MIN_VALUE, Long.MAX_VALUE
-            };
-
-        String[] str =
-            {
-                "0", "42", "43", "-44", "-45", "" + Long.MIN_VALUE, "" + Long.MAX_VALUE
-            };
-
-        ByteBuffer buffer = ByteBuffer.allocate(50);
-
-        for (int i = 0; i < val.length; i++)
-        {
-            BufferUtil.clearToFill(buffer);
-            BufferUtil.putDecLong(buffer, val[i]);
-            BufferUtil.flipToFlush(buffer, 0);
-            assertEquals(str[i], BufferUtil.toString(buffer), "t" + i);
-        }
-    }
-
-    @Test
-    public void testPutHexInt()
-    {
-        int[] val =
-            {
-                0, 42, 43, -44, -45, -2147483648, 2147483647
-            };
-
-        String[] str =
-            {
-                "0", "2A", "2B", "-2C", "-2D", "-80000000", "7FFFFFFF"
-            };
-
-        ByteBuffer buffer = ByteBuffer.allocate(50);
-
-        for (int i = 0; i < val.length; i++)
-        {
-            BufferUtil.clearToFill(buffer);
-            BufferUtil.putHexInt(buffer, val[i]);
-            BufferUtil.flipToFlush(buffer, 0);
-            assertEquals(str[i], BufferUtil.toString(buffer), "t" + i);
-        }
-    }
-
-    @Test
     public void testPut()
     {
         ByteBuffer to = BufferUtil.allocate(10);
@@ -386,7 +314,6 @@ public class BufferUtilTest
         assertEquals("Cruel", BufferUtil.toString(b1));
         ByteBuffer b2 = b1.slice();
         assertEquals("Cruel", BufferUtil.toString(b2));
-        System.err.println(BufferUtil.toDetailString(b2));
         assertEquals(8, b2.arrayOffset());
         assertEquals(5, b2.capacity());
 

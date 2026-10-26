@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,9 +22,10 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.WindowRateControl;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -82,10 +82,9 @@ public class FrameFloodTest
             }
         };
         HpackEncoder encoder = new HpackEncoder();
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
         encoder.encode(buffer, metadata);
-        buffer.flip();
-        byte[] payload = new byte[buffer.remaining()];
+        byte[] payload = new byte[(int)buffer.remaining()];
         buffer.get(payload);
         testFrameFlood(null, frameFrom(payload.length, FrameType.HEADERS.getType(), Flags.END_HEADERS, 13, payload));
     }
@@ -175,7 +174,7 @@ public class FrameFloodTest
 
         if (preamble != null)
         {
-            ByteBuffer buffer = ByteBuffer.wrap(preamble);
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(preamble);
             while (buffer.hasRemaining())
             {
                 parser.parse(buffer);
@@ -185,7 +184,7 @@ public class FrameFloodTest
         int count = 0;
         while (failed.get() == 0)
         {
-            ByteBuffer buffer = ByteBuffer.wrap(bytes);
+            RetainableByteBuffer buffer = RetainableByteBuffer.wrap(bytes);
             while (buffer.hasRemaining())
             {
                 parser.parse(buffer);

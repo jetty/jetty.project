@@ -13,29 +13,47 @@
 
 package org.eclipse.jetty.ee9.test;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Handler;
+import org.eclipse.jetty.ee9.nested.HttpInput;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled //TODO needs investigation
 public class HttpInputInterceptorTest
 {
     private Server server;
@@ -49,7 +67,7 @@ public class HttpInputInterceptorTest
         connector = new ServerConnector(server, 1, 1, httpConnectionFactory);
         server.addConnector(connector);
 
-        server.setHandler(handler);
+        server.setHandler(new ContextHandler("/", handler));
 
         client = new HttpClient();
         server.addBean(client);
@@ -67,7 +85,7 @@ public class HttpInputInterceptorTest
     public void testBlockingReadInterceptorThrows() throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        /*        start(new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
@@ -75,7 +93,7 @@ public class HttpInputInterceptorTest
                 jettyRequest.setHandled(true);
         
                 // Throw immediately from the interceptor.
-                jettyRequest.getHttpInput().addInterceptor(content ->
+                jettyRequest.getHttpInput().addInterceptor(_ ->
                 {
                     throw new RuntimeException();
                 });
@@ -84,7 +102,7 @@ public class HttpInputInterceptorTest
                 serverLatch.countDown();
                 response.setStatus(HttpStatus.NO_CONTENT_204);
             }
-        });*/
+        });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
@@ -100,7 +118,7 @@ public class HttpInputInterceptorTest
     public void testBlockingReadInterceptorConsumesHalfThenThrows() throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        /*        start(new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
@@ -114,14 +132,13 @@ public class HttpInputInterceptorTest
                     int reads = readCount.incrementAndGet();
                     if (reads == 1)
                     {
-                        ByteBuffer buffer = content.getByteBuffer();
-                        int half = buffer.remaining() / 2;
-                        int limit = buffer.limit();
-                        buffer.limit(buffer.position() + half);
-                        ByteBuffer chunk = buffer.slice();
-                        buffer.position(buffer.limit());
-                        buffer.limit(limit);
-                        return new HttpInput.Content(chunk);
+                        try (RetainableByteBuffer buffer = content.acquire())
+                        {
+                            try (RetainableByteBuffer slice = buffer.sliceAndConsume(buffer.remaining() / 2))
+                            {
+                                return new HttpInput.Content(slice);
+                            }
+                        }
                     }
                     throw new RuntimeException();
                 });
@@ -131,7 +148,6 @@ public class HttpInputInterceptorTest
                 response.setStatus(HttpStatus.NO_CONTENT_204);
             }
         });
-        */
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
             .body(new BytesRequestContent(new byte[1024]))
@@ -146,7 +162,7 @@ public class HttpInputInterceptorTest
     public void testAvailableReadInterceptorThrows() throws Exception
     {
         CountDownLatch interceptorLatch = new CountDownLatch(1);
-        /*        start(new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -154,7 +170,7 @@ public class HttpInputInterceptorTest
                 jettyRequest.setHandled(true);
         
                 // Throw immediately from the interceptor.
-                jettyRequest.getHttpInput().addInterceptor(content ->
+                jettyRequest.getHttpInput().addInterceptor(_ ->
                 {
                     interceptorLatch.countDown();
                     throw new RuntimeException();
@@ -163,7 +179,7 @@ public class HttpInputInterceptorTest
                 int available = request.getInputStream().available();
                 assertEquals(0, available);
             }
-        });*/
+        });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
@@ -181,7 +197,7 @@ public class HttpInputInterceptorTest
         AsyncRequestContent asyncRequestContent = new AsyncRequestContent(ByteBuffer.wrap(new byte[1]));
         CountDownLatch interceptorLatch = new CountDownLatch(1);
         CountDownLatch readFailureLatch = new CountDownLatch(1);
-        /*        start(new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -216,7 +232,7 @@ public class HttpInputInterceptorTest
                         assertDoesNotThrow(() -> assertEquals(0, input.read()));
         
                         // Make the client send more content so that the interceptor will be called again.
-                        asyncRequestContent.offer(ByteBuffer.wrap(new byte[1]));
+                        asyncRequestContent.write(false, RetainableByteBuffer.wrap(new byte[1]), Callback.NOOP);
                         asyncRequestContent.close();
                         sleep(500); // Wait a little to make sure the content arrived by next isReady() call.
         
@@ -240,7 +256,7 @@ public class HttpInputInterceptorTest
                     }
                 });
             }
-        });*/
+        });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
@@ -258,7 +274,7 @@ public class HttpInputInterceptorTest
     {
         RuntimeException failure = new RuntimeException();
         CountDownLatch interceptorLatch = new CountDownLatch(1);
-        /*        start(new AbstractHandler()
+        start(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -266,7 +282,7 @@ public class HttpInputInterceptorTest
                 jettyRequest.setHandled(true);
         
                 // Throw immediately from the interceptor.
-                jettyRequest.getHttpInput().addInterceptor(content ->
+                jettyRequest.getHttpInput().addInterceptor(_ ->
                 {
                     interceptorLatch.countDown();
                     failure.addSuppressed(new Throwable());
@@ -296,7 +312,7 @@ public class HttpInputInterceptorTest
                     }
                 });
             }
-        });*/
+        });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)

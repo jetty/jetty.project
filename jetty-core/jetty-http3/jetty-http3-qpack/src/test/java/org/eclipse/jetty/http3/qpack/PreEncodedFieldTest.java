@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http3.qpack.internal.EncodableEntry;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 public class PreEncodedFieldTest
@@ -30,21 +28,17 @@ public class PreEncodedFieldTest
         HttpField httpField = new HttpField("name", "value");
 
         EncodableEntry entry = EncodableEntry.getLiteralEntry(httpField, true);
-        ByteBuffer encodedEntry = BufferUtil.allocate(1024);
-        BufferUtil.clearToFill(encodedEntry);
+        RetainableByteBuffer.Mutable encodedEntry = RetainableByteBuffer.Mutable.allocate(1024, false);
         entry.encode(encodedEntry, -1);
-        BufferUtil.flipToFlush(encodedEntry, 0);
 
         PreEncodedHttpField preEncodedField = new PreEncodedHttpField(httpField.getName(), httpField.getValue());
-        ByteBuffer buffer = BufferUtil.allocate(1024);
-        BufferUtil.clearToFill(buffer);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
         preEncodedField.putTo(buffer, HttpVersion.HTTP_3);
-        BufferUtil.flipToFlush(buffer, 0);
 
         assertEqual(buffer, encodedEntry);
     }
 
-    public void assertEqual(ByteBuffer b1, ByteBuffer b2)
+    public void assertEqual(RetainableByteBuffer b1, RetainableByteBuffer b2)
     {
         if (b1 == null || b2 == null)
         {
@@ -59,9 +53,7 @@ public class PreEncodedFieldTest
         for (int i = 0; b1.hasRemaining(); i++)
         {
             if (b1.get() != b2.get())
-            {
                 throw new IllegalStateException("Mismatch at position: " + i);
-            }
         }
     }
 }

@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.quic.util;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -28,9 +28,8 @@ public class VarLenIntTest
     @ValueSource(longs = {37L, 15293L, 494878333L, 151288809941952652L})
     public void testEncodeDecode(long value)
     {
-        ByteBuffer buffer = ByteBuffer.allocate(8);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(8, false);
         VarLenInt.encode(buffer, value);
-        buffer.flip();
 
         long result = VarLenInt.decodeLong(buffer);
         assertEquals(value, result);
@@ -40,9 +39,8 @@ public class VarLenIntTest
     @ValueSource(longs = {37L, 15293L, 494878333L, 151288809941952652L})
     public void testEncodeTryDecode(long value)
     {
-        ByteBuffer buffer = ByteBuffer.allocate(8);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(8, false);
         VarLenInt.encode(buffer, value);
-        buffer.flip();
 
         AtomicLong result = new AtomicLong();
         boolean parsed = new VarLenInt().tryDecode(buffer, result::set);

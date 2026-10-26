@@ -17,12 +17,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -34,6 +32,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -80,7 +79,7 @@ public class ResponseHeadersTest
         HttpServlet testServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws IOException
             {
                 response.setHeader("DeletedWithSetNullValue", "not-null");
                 response.setHeader("DeletedWithSetNullValue", null);
@@ -113,7 +112,7 @@ public class ResponseHeadersTest
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContent(), is("OK"));
@@ -137,7 +136,7 @@ public class ResponseHeadersTest
         HttpServlet fakeWsServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response)
             {
                 response.setHeader("Upgrade", "WebSocket");
                 response.addHeader("Connection", "Upgrade");
@@ -156,7 +155,7 @@ public class ResponseHeadersTest
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -174,7 +173,7 @@ public class ResponseHeadersTest
         HttpServlet multilineServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse response) throws IOException
             {
                 // The bad use-case
                 String pathInfo = URIUtil.decodePath(req.getPathInfo());
@@ -204,8 +203,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -246,8 +244,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -265,7 +262,7 @@ public class ResponseHeadersTest
         HttpServlet charsetResetToJsonMimeTypeServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // We set an initial desired behavior.
                 response.setContentType("text/html; charset=US-ASCII");
@@ -292,8 +289,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -310,7 +306,7 @@ public class ResponseHeadersTest
         HttpServlet charsetChangeToJsonMimeTypeServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // We set an initial desired behavior.
                 response.setContentType("text/html; charset=US-ASCII");
@@ -335,8 +331,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -353,7 +348,7 @@ public class ResponseHeadersTest
         HttpServlet charsetChangeToJsonMimeTypeSetCharsetToNullServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // We set an initial desired behavior.
                 response.setContentType("text/html; charset=us-ascii");
@@ -380,8 +375,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -398,7 +392,7 @@ public class ResponseHeadersTest
         HttpServlet addHeaderNullServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Add the header
                 response.addHeader("X-Foo", "foo-value");
@@ -442,8 +436,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -462,7 +455,7 @@ public class ResponseHeadersTest
         HttpServlet addHeaderNullServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Add the header
                 response.addDateHeader("X-Foo", date);
@@ -492,8 +485,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -513,7 +505,7 @@ public class ResponseHeadersTest
         HttpServlet addHeaderNullServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Add the header
                 response.addIntHeader("X-Foo", foovalue);
@@ -542,8 +534,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -560,7 +551,7 @@ public class ResponseHeadersTest
         HttpServlet addHeaderServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.addIntHeader("X-Foo", 10);
                 response.setIntHeader("X-Foo", 20);
@@ -580,8 +571,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -599,7 +589,7 @@ public class ResponseHeadersTest
         HttpServlet flushResponseServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 PrintWriter writer = response.getWriter();
                 writer.println("Hello");
@@ -621,7 +611,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat("Response Code", response.getStatus(), is(200));
@@ -636,7 +626,7 @@ public class ResponseHeadersTest
         HttpServlet contentTypeServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.setContentType("text/xml;charset=ISO-8859-7");
                 PrintWriter pw = response.getWriter();
@@ -657,7 +647,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat("Response Code", response.getStatus(), is(200));
@@ -707,7 +697,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat("Content Type", response.getField("Content-Type").getValue(), containsString("text/html;charset=iso-8859-1"));
@@ -722,7 +712,7 @@ public class ResponseHeadersTest
         HttpServlet contentTypeServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.setContentType("text/html;charset=Shift_Jis");
                 response.setContentType("text/xml");
@@ -742,7 +732,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat("Response Code", response.getStatus(), is(200));
@@ -758,7 +748,7 @@ public class ResponseHeadersTest
         HttpServlet contentTypeServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.setContentType("text/html;charset=Shift_Jis");
                 response.setContentType(null);
@@ -779,7 +769,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat("Response Code", response.getStatus(), is(200));
@@ -795,7 +785,7 @@ public class ResponseHeadersTest
         HttpServlet contentTypeServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.setContentType("text/json");
                 assertThat(response.getCharacterEncoding(), is("utf-8"));
@@ -834,7 +824,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat("Response Code", response.getStatus(), is(200));
@@ -850,7 +840,7 @@ public class ResponseHeadersTest
         HttpServlet addHeaderServlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.setHeader("Test", "Before");
                 response.setHeader("Content-Length", "2");
@@ -880,7 +870,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat(response.getStatus(), is(200));

@@ -16,15 +16,14 @@ package org.eclipse.jetty.io.content;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
@@ -66,7 +65,7 @@ public class InputStreamContentSource implements Content.Source
     {
         length = TypeUtil.checkOffsetLengthSize(offset, length, -1);
         this.inputStream = Objects.requireNonNull(inputStream);
-        this.bufferPool =  Objects.requireNonNullElse(bufferPool, ByteBufferPool.SIZED_NON_POOLING);
+        this.bufferPool = bufferPool != null ? bufferPool : ByteBufferPool.SIZED_NON_POOLING;
         if (length != 0)
             skipToOffset(inputStream, offset);
         this.toRead = length;
@@ -99,26 +98,25 @@ public class InputStreamContentSource implements Content.Source
                 return Content.Chunk.EOF;
         }
 
-        RetainableByteBuffer streamBuffer = bufferPool.acquire(false);
-        try
+        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(false))
         {
-            ByteBuffer buffer = streamBuffer.getByteBuffer();
-            int read = fillBufferFromInputStream(inputStream, buffer.array(), buffer.arrayOffset());
+            long read = buffer.write(b ->
+            {
+                int position = b.position();
+                int r = fillBufferFromInputStream(inputStream, b.array(), b.arrayOffset() + position);
+                if (r > 0)
+                    b.position(position + r);
+                return r;
+            });
             if (read < 0)
             {
-                streamBuffer.release();
                 close();
                 return Content.Chunk.EOF;
             }
-            else
-            {
-                buffer.limit(read);
-                return Content.Chunk.asChunk(buffer, false, streamBuffer);
-            }
+            return Content.Chunk.from(buffer, false);
         }
         catch (Throwable x)
         {
-            streamBuffer.release();
             return failure(x);
         }
     }

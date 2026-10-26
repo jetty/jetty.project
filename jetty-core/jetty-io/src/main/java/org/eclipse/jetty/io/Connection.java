@@ -14,10 +14,10 @@
 package org.eclipse.jetty.io;
 
 import java.io.Closeable;
-import java.nio.ByteBuffer;
 import java.util.EventListener;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Container;
 
 /**
@@ -107,16 +107,15 @@ public interface Connection extends Closeable
     {
         /**
          * <p>Invoked during an {@link EndPoint#upgrade(Connection) upgrade}
-         * to produce a buffer containing bytes that have not been consumed by
-         * this connection, and that must be consumed by the upgrade-to
+         * to produce a buffer containing bytes that have not been consumed
+         * by this connection, and that must be consumed by the upgrade-to
          * connection.</p>
+         * <p>The returned buffer must be released by the caller of this method.</p>
          *
          * @return a buffer of unconsumed bytes to pass to the upgrade-to connection.
-         * The buffer does not belong to any pool and should be discarded after
-         * having consumed its bytes.
          * The returned buffer may be null if there are no unconsumed bytes.
          */
-        ByteBuffer onUpgradeFrom();
+        RetainableByteBuffer.Mutable onUpgradeFrom();
     }
 
     /**
@@ -137,7 +136,7 @@ public interface Connection extends Closeable
          * The buffer does not belong to any pool and should be discarded after
          * having consumed its bytes.
          */
-        void onUpgradeTo(ByteBuffer buffer);
+        void onUpgradeTo(RetainableByteBuffer.Mutable buffer);
     }
 
     /**

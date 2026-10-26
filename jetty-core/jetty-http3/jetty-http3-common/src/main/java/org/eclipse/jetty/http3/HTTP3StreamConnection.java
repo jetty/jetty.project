@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -169,10 +170,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
                                 yield interim;
                             }
-                            case EOF ->
-                            {
-                                yield false;
-                            }
+                            case EOF -> false;
                         };
 
                         if (loop)
@@ -249,10 +247,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
             Content.Chunk chunk = switch (result)
             {
-                case NO_FRAME ->
-                {
-                    yield null;
-                }
+                case NO_FRAME -> null;
                 case BLOCKED_FRAME ->
                 {
                     // A QPACK-blocked trailer HEADERS frame.
@@ -268,7 +263,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     Frame frame = action.frame();
                     if (frame instanceof DataFrame dataFrame)
                     {
-                        if (dataFrame.isLast() && !dataFrame.getByteBuffer().hasRemaining())
+                        if (dataFrame.isLast() && dataFrame.remaining() == 0)
                         {
                             tryReleaseData(true);
                             yield Content.Chunk.EOF;
@@ -276,13 +271,19 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                         else
                         {
                             // Retain because multiple frames can be parsed from the same QUIC chunk.
-                            Content.Chunk quicChunk = tryRetainData();
-                            if (quicChunk == null)
-                                throw new EofException("stream closed while reading");
-                            Content.Chunk h3Chunk = Content.Chunk.asChunk(dataFrame.getByteBuffer(), dataFrame.isLast(), quicChunk);
-                            if (h3Chunk.isLast())
-                                tryReleaseData(true);
-                            yield h3Chunk;
+                            try (Content.Chunk quicChunk = tryRetainData())
+                            {
+                                if (quicChunk == null)
+                                    throw new EofException("stream closed while reading");
+                                // The H3 chunk holds its own reference to the data, release the QUIC chunk.
+                                try (RetainableByteBuffer data = dataFrame.acquire())
+                                {
+                                    Content.Chunk h3Chunk = Content.Chunk.from(data, dataFrame.isLast());
+                                    if (h3Chunk.isLast())
+                                        tryReleaseData(true);
+                                    yield h3Chunk;
+                                }
+                            }
                         }
                     }
 
@@ -290,10 +291,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     tryReleaseData(true);
                     yield Content.Chunk.EOF;
                 }
-                case EOF ->
-                {
-                    yield Content.Chunk.EOF;
-                }
+                case EOF -> Content.Chunk.EOF;
             };
 
             if (LOG.isDebugEnabled())
@@ -320,26 +318,24 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             while (true)
             {
                 // Retain so that a concurrent release does not recycle the buffer being parsed.
-                Content.Chunk chunk = tryRetainData();
-                if (chunk != null)
+                try (Content.Chunk chunk = tryRetainData())
                 {
-                    try
+                    if (chunk != null)
                     {
-                        MessageParser.Result result = parser.parse(chunk.getByteBuffer(), chunk.isLast());
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("parsed {} from {} on {}", result, chunk, this);
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            MessageParser.Result result = parser.parse(buffer, chunk.isLast());
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("parsed {} from {} on {}", result, chunk, this);
 
-                        if (result == MessageParser.Result.FRAME)
-                            return ParseResult.FRAME;
-                        if (result == MessageParser.Result.BLOCKED_FRAME)
-                            return ParseResult.BLOCKED_FRAME;
-                    }
-                    finally
-                    {
-                        chunk.release();
-                    }
+                            if (result == MessageParser.Result.FRAME)
+                                return ParseResult.FRAME;
+                            if (result == MessageParser.Result.BLOCKED_FRAME)
+                                return ParseResult.BLOCKED_FRAME;
 
-                    tryReleaseData(true);
+                            tryReleaseData(true);
+                        }
+                    }
                 }
 
                 Content.Chunk filled = getEndPoint().fill();

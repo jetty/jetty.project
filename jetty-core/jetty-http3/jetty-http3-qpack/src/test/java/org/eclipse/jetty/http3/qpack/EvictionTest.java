@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.nio.ByteBuffer;
 import java.util.Random;
 
 import org.eclipse.jetty.http.HttpField;
@@ -21,6 +20,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -60,7 +60,7 @@ public class EvictionTest
     @Test
     public void test() throws Exception
     {
-        ByteBuffer encodedFields = ByteBuffer.allocate(1024);
+        RetainableByteBuffer.Mutable encodedFields = RetainableByteBuffer.Mutable.allocate(1024, false);
 
         for (int i = 0; i < 10000; i++)
         {
@@ -68,11 +68,10 @@ public class EvictionTest
             long streamId = getPositiveInt(10);
 
             _encoder.encode(encodedFields, streamId, new MetaData(HttpVersion.HTTP_3, httpFields));
-            _decoder.parseInstructions(_encoderHandler.getInstructionBuffer());
+            _decoder.parseInstructions(_encoderHandler.acquireInstructionBuffer());
 
-            encodedFields.flip();
             _decoder.decode(streamId, encodedFields, _decoderHandler);
-            _encoder.parseInstructions(_decoderHandler.getInstructionBuffer());
+            _encoder.parseInstructions(_decoderHandler.acquireInstructionBuffer());
 
             MetaData result = _decoderHandler.getMetaData();
             assertNotNull(result);

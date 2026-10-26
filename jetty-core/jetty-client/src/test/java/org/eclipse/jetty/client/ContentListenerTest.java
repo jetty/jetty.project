@@ -46,9 +46,11 @@ public class ContentListenerTest
         contentListener.onContentSource(response, originalSource);
 
         // Assert that the source was failed.
-        Content.Chunk lastChunk = originalSource.read();
-        assertThat(Content.Chunk.isFailure(lastChunk, true), is(true));
-        assertThat(lastChunk.getFailure(), instanceOf(NumberFormatException.class));
+        try (Content.Chunk lastChunk = originalSource.read())
+        {
+            assertThat(Content.Chunk.isFailure(lastChunk, true), is(true));
+            assertThat(lastChunk.getFailure(), instanceOf(NumberFormatException.class));
+        }
 
         // Assert that the response was aborted.
         assertThat(response.getRequest().getAbortCause(), instanceOf(NumberFormatException.class));

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -28,10 +27,10 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ContentSourceCompletableFuture;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static org.eclipse.jetty.util.UrlEncoded.decodeHexByte;
 
@@ -469,7 +468,7 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
     private final CharsetStringBuilder _builder;
     private final int _maxFields;
     private final int _maxLength;
-    private int _length;
+    private long _length;
     private String _name;
     private int _percent = 0;
     private byte _percentCode;
@@ -498,10 +497,9 @@ public class FormFields extends ContentSourceCompletableFuture<Fields>
                 throw new HttpException.IllegalStateException(HttpStatus.PAYLOAD_TOO_LARGE_413, "form too large > " + _maxLength);
         }
 
-        try
+        try (RetainableByteBuffer buffer = chunk.acquire())
         {
-            ByteBuffer buffer = chunk.getByteBuffer();
-            while (BufferUtil.hasContent(buffer))
+            while (buffer.hasRemaining())
             {
                 byte b = buffer.get();
                 switch (_percent)

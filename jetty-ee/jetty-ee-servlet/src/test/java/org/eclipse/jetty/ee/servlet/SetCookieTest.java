@@ -82,7 +82,7 @@ public class SetCookieTest
             Connection: close
             
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
         assertThat(response.getStatus(), is(200));
         assertThat(response.get(HttpHeader.SET_COOKIE), is("key=foo; SameSite=Lax"));
     }
@@ -118,7 +118,7 @@ public class SetCookieTest
             Connection: close
 
             """;
-        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponseAsString(rawRequest));
         assertThat(response.getStatus(), is(200));
         assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
     }

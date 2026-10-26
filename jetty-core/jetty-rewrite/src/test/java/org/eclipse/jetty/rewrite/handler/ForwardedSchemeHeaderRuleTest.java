@@ -54,7 +54,7 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(200, response.getStatus());
         assertEquals("https", response.get("request-scheme"));
     }
@@ -75,7 +75,7 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(200, response.getStatus());
         assertEquals("wss", response.get("request-scheme"));
     }
@@ -96,7 +96,7 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTest
             
             """;
 
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(200, response.getStatus());
         assertEquals("http", response.get("request-scheme"));
 
@@ -109,7 +109,7 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTest
             
             """;
 
-        response = HttpTester.parseResponse(_connector.getResponse(request));
+        response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(200, response.getStatus());
         assertEquals("other", response.get("request-scheme"));
 
@@ -123,7 +123,7 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTest
             
             """;
 
-        response = HttpTester.parseResponse(_connector.getResponse(request));
+        response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertEquals(200, response.getStatus());
         assertEquals("ws", response.get("request-scheme"));
     }

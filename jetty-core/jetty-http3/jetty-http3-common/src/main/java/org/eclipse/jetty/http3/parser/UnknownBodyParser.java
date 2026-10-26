@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.http3.parser;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class UnknownBodyParser extends BodyParser
 {
@@ -25,20 +25,20 @@ public class UnknownBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer, boolean last)
+    public Result parse(RetainableByteBuffer buffer, boolean last)
     {
         if (length < 0)
             length = getBodyLength();
-        int remaining = buffer.remaining();
+        long remaining = buffer.remaining();
         if (remaining >= length)
         {
-            buffer.position(buffer.position() + (int)length);
+            buffer.consume(length);
             length = -1;
             return Result.WHOLE_FRAME;
         }
         else
         {
-            buffer.position(buffer.limit());
+            buffer.consume(remaining);
             length -= remaining;
             return Result.NO_FRAME;
         }

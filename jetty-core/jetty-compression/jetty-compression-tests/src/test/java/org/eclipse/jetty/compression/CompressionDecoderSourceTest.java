@@ -18,10 +18,10 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -154,7 +154,7 @@ public class CompressionDecoderSourceTest extends AbstractCompressionTest
     public void testDecodeText(Class<Compression> compressionClass, String textResourceName) throws Exception
     {
         startCompression(compressionClass);
-        String compressedName = String.format("%s.%s", textResourceName, compression.getFileExtensionNames().get(0));
+        String compressedName = String.format("%s.%s", textResourceName, compression.getFileExtensionNames().getFirst());
         Path compressed = MavenPaths.findTestResourceFile(compressedName);
         Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
 
@@ -173,7 +173,7 @@ public class CompressionDecoderSourceTest extends AbstractCompressionTest
     public void testDecodeTextOneByteAtATime(Class<Compression> compressionClass, String textResourceName) throws Exception
     {
         startCompression(compressionClass);
-        String compressedName = String.format("%s.%s", textResourceName, compression.getFileExtensionNames().get(0));
+        String compressedName = String.format("%s.%s", textResourceName, compression.getFileExtensionNames().getFirst());
         Path compressed = MavenPaths.findTestResourceFile(compressedName);
         Path uncompressed = MavenPaths.findTestResourceFile(textResourceName);
 

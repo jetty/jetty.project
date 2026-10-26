@@ -140,7 +140,7 @@ public class ServerTest
                 Host: hostname\r
                 \r
                 """;
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponseAsString(request));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), is("Hello"));
     }
@@ -154,7 +154,7 @@ public class ServerTest
         assertThat(dump, containsString("oejs.Server@"));
         assertThat(dump, containsString("oejut.QueuedThreadPool"));
         assertThat(dump, containsString("+= oejut.ReservedThreadExecutor@"));
-        assertThat(dump, containsString("oeji.ArrayByteBufferPool@"));
+        assertThat(dump, containsString("oejub.ArrayByteBufferPool@"));
         assertThat(dump, containsString("+- System Properties size="));
         assertThat(dump, containsString("+> java.home: "));
         assertThat(dump, containsString("+> java.runtime.version: "));
@@ -219,7 +219,7 @@ public class ServerTest
                 Host: hostname\r
                 \r
                 """;
-        String rawResponse = _connector.getResponse(request);
+        String rawResponse = _connector.getResponseAsString(request);
 
         if (succeeded || written)
             assertThat(rawResponse, containsString("HTTP/1.1 200 OK"));

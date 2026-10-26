@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.quic.common.internal.frames;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.quic.api.frames.StreamDataBlockedFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class StreamDataBlockedParser
 {
@@ -30,25 +29,25 @@ public class StreamDataBlockedParser
         this.varLenInt = varLenInt;
     }
 
-    public StreamDataBlockedFrame parse(ByteBuffer byteBuffer)
+    public StreamDataBlockedFrame parse(RetainableByteBuffer buffer)
     {
-        while (byteBuffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
             switch (state)
             {
                 case FRAME_TYPE ->
                 {
-                    byteBuffer.get();
+                    buffer.get();
                     state = State.STREAM_ID;
                 }
                 case STREAM_ID ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, v -> streamId = v))
+                    if (varLenInt.tryDecode(buffer, v -> streamId = v))
                         state = State.MAX_DATA;
                 }
                 case MAX_DATA ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, v -> maxData = v))
+                    if (varLenInt.tryDecode(buffer, v -> maxData = v))
                         return result();
                 }
             }

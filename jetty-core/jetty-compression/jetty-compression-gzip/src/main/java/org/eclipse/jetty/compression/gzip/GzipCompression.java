@@ -32,7 +32,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 
@@ -56,10 +56,15 @@ public class GzipCompression extends Compression
     }
 
     @Override
-    public RetainableByteBuffer.Mutable acquireByteBuffer(int length)
+    public RetainableByteBuffer.Mutable acquireBuffer(int length)
     {
-        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(length, true);
-        buffer.getByteBuffer().order(getByteOrder());
+        RetainableByteBuffer.Mutable buffer = getBufferPool().acquire(length, true);
+        // Per RFC-1952, GZIP is LITTLE_ENDIAN
+        buffer.quietWrite(b ->
+        {
+            b.order(ByteOrder.LITTLE_ENDIAN);
+            return 0;
+        });
         return buffer;
     }
 
@@ -193,11 +198,5 @@ public class GzipCompression extends Compression
 
         removeBean(deflaterPool);
         deflaterPool = null;
-    }
-
-    private ByteOrder getByteOrder()
-    {
-        // Per RFC-1952, GZIP is LITTLE_ENDIAN
-        return ByteOrder.LITTLE_ENDIAN;
     }
 }
