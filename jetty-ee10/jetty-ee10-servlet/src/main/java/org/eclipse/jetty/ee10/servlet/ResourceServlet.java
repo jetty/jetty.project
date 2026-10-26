@@ -573,7 +573,7 @@ public class ResourceServlet extends HttpServlet
                         asyncContext.setTimeout(0);
                         startedHere = true;
                     }
-                    Callback callback = new AsyncContextCallback(asyncContext, httpServletResponse)
+                    Callback callback = new AsyncContextCallback(httpServletResponse)
                     {
                         @Override
                         protected void complete()
@@ -980,7 +980,7 @@ public class ResourceServlet extends HttpServlet
     {
         private final HttpServletResponse _response;
 
-        private AsyncContextCallback(AsyncContext asyncContext, HttpServletResponse response)
+        private AsyncContextCallback(HttpServletResponse response)
         {
             _response = response;
         }
