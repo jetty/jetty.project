@@ -19,6 +19,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -681,7 +682,7 @@ public class IdleTimeoutTest extends AbstractTest
         server.addConnector(connector);
         AtomicInteger requests = new AtomicInteger();
         AtomicInteger handled = new AtomicInteger();
-        AtomicReference<CountDownLatch> phaser = new AtomicReference<>();
+        Semaphore dispatched = new Semaphore(0);
         server.setHandler(new Handler.Abstract()
         {
             @Override
@@ -689,7 +690,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 requests.incrementAndGet();
                 handled.incrementAndGet();
-                phaser.get().countDown();
+                dispatched.release();
                 // Hold the dispatched requests enough for the idle requests to idle timeout.
                 sleep(2 * idleTimeout);
                 callback.succeeded();
@@ -710,7 +711,6 @@ public class IdleTimeoutTest extends AbstractTest
         while (true)
         {
             ++count;
-            phaser.set(new CountDownLatch(1));
 
             MetaData.Request request = newRequest("GET", "/" + count, HttpFields.EMPTY);
             HeadersFrame frame = new HeadersFrame(request, null, false);
@@ -729,7 +729,7 @@ public class IdleTimeoutTest extends AbstractTest
             ByteBuffer data = ByteBuffer.allocate(10);
             stream.data(new DataFrame(stream.getId(), data, true), Callback.NOOP);
 
-            if (!phaser.get().await(idleTimeout / 2, TimeUnit.MILLISECONDS))
+            if (!dispatched.tryAcquire(idleTimeout / 2, TimeUnit.MILLISECONDS))
                 break;
         }
 
@@ -763,8 +763,76 @@ public class IdleTimeoutTest extends AbstractTest
         assertThat(requests.get(), is(count - 1));
 
         // The first 2 requests are handled normally and responded with 200, the last 2 are
-        // not handled due to timeout while queued, but they are responded anyway with a 500.
+        // not handled due to timeout while queued, but they are responded anyway with a 503.
         await().atMost(5, TimeUnit.SECONDS).until(responses::get, is(count + 1));
+    }
+
+    @Test
+    public void testQueuedRequestIdleTimeoutRespondsWith503() throws Exception
+    {
+        long idleTimeout = 750;
+        // Use a small thread pool to cause request queueing.
+        QueuedThreadPool serverExecutor = new QueuedThreadPool(5);
+        serverExecutor.setName("server");
+        server = new Server(serverExecutor);
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(new HttpConfiguration());
+        h2.setStreamIdleTimeout(idleTimeout);
+        connector = new ServerConnector(server, 1, 1, h2);
+        connector.setIdleTimeout(10 * idleTimeout);
+        server.addConnector(connector);
+        Semaphore dispatched = new Semaphore(0);
+        CountDownLatch release = new CountDownLatch(1);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                dispatched.release();
+                // Hold the dispatched requests until the queued request idle times out.
+                assertTrue(release.await(10 * idleTimeout, TimeUnit.MILLISECONDS));
+                callback.succeeded();
+                return true;
+            }
+        });
+        server.start();
+
+        prepareClient();
+        http2Client.start();
+
+        Session client = newClientSession(new Session.Listener() {});
+
+        // Send requests until one is queued on the server but not dispatched.
+        int count = 0;
+        while (true)
+        {
+            ++count;
+            CountDownLatch latch = new CountDownLatch(1);
+            AtomicReference<MetaData.Response> responseRef = new AtomicReference<>();
+
+            MetaData.Request request = newRequest("GET", "/" + count, HttpFields.EMPTY);
+            HeadersFrame frame = new HeadersFrame(request, null, true);
+            client.newStream(frame, new FuturePromise<>(), new Stream.Listener()
+            {
+                @Override
+                public void onHeaders(Stream stream, HeadersFrame frame)
+                {
+                    responseRef.set((MetaData.Response)frame.getMetaData());
+                    latch.countDown();
+                    // Read the response body to avoid leaks.
+                    Stream.Listener.super.onHeaders(stream, frame);
+                }
+            });
+
+            if (!dispatched.tryAcquire(idleTimeout / 2, TimeUnit.MILLISECONDS))
+            {
+                // This request is queued: wait for its idle timeout response.
+                assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+                // Release the dispatched requests before asserting.
+                release.countDown();
+                assertThat(responseRef.get().getStatus(), is(HttpStatus.SERVICE_UNAVAILABLE_503));
+                break;
+            }
+        }
     }
 
     @Test
