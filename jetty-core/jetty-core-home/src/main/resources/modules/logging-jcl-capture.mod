@@ -19,6 +19,9 @@ maven://org.slf4j/jcl-over-slf4j/${slf4j.version}|lib/logging/jcl-over-slf4j-${s
 [lib]
 lib/logging/jcl-over-slf4j-${slf4j.version}.jar
 
+[ini]
+jetty.webapp.addHiddenClasses+=,org.apache.commons.logging.
+
 [license]
 SLF4J is distributed under the MIT License.
 Copyright (c) 2004-2013 QOS.ch

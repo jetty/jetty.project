@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.server;
 
 import java.io.EOFException;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
@@ -266,9 +267,9 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
                     if (port > 0)
                     {
                         StringBuilder altSvc = new StringBuilder();
-                        altSvc.append(String.format("h3=\":%d\"", port));
+                        altSvc.append(String.format(Locale.ROOT, "h3=\":%d\"", port));
                         if (_maxAge != null)
-                            altSvc.append(String.format("; ma=%d", _maxAge.toSeconds()));
+                            altSvc.append(String.format(Locale.ROOT, "; ma=%d", _maxAge.toSeconds()));
                         if (_persist)
                             altSvc.append("; persist=1");
                         responseHeaders.add(HttpHeader.ALT_SVC, altSvc.toString());

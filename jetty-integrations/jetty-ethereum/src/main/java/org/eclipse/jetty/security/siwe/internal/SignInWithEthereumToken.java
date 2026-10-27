@@ -13,8 +13,12 @@
 
 package org.eclipse.jetty.security.siwe.internal;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -121,17 +125,17 @@ public record SignInWithEthereumToken(String scheme,
         if (!"1".equals(version()))
             throw new ServerAuthException("unsupported version " + version);
 
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
         if (StringUtil.isNotBlank(expirationTime()))
         {
-            LocalDateTime expirationTime = LocalDateTime.parse(expirationTime(), DateTimeFormatter.ISO_DATE_TIME);
+            Instant expirationTime = toInstant(expirationTime());
             if (now.isAfter(expirationTime))
                 throw new ServerAuthException("expired SIWE message");
         }
 
         if (StringUtil.isNotBlank(notBefore()))
         {
-            LocalDateTime notBefore = LocalDateTime.parse(notBefore(), DateTimeFormatter.ISO_DATE_TIME);
+            Instant notBefore = toInstant(notBefore());
             if (now.isBefore(notBefore))
                 throw new ServerAuthException("SIWE message not yet valid");
         }
@@ -140,5 +144,14 @@ public record SignInWithEthereumToken(String scheme,
             throw new ServerAuthException("unregistered domain: " + domain());
         if (validateChainId != null && !validateChainId.test(chainId()))
             throw new ServerAuthException("unregistered chainId: " + chainId());
+    }
+
+    private static Instant toInstant(String dateTime)
+    {
+        // The offset of the date-time must be honored, if there is no offset it is taken as local time.
+        TemporalAccessor parsed = DateTimeFormatter.ISO_DATE_TIME.parseBest(dateTime, OffsetDateTime::from, LocalDateTime::from);
+        if (parsed instanceof OffsetDateTime offsetDateTime)
+            return offsetDateTime.toInstant();
+        return LocalDateTime.from(parsed).atZone(ZoneId.systemDefault()).toInstant();
     }
 }

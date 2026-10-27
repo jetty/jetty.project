@@ -235,6 +235,44 @@ public class EagerContentHandlerTest
     }
 
     @Test
+    public void testEagerRetainedContentCallbackFailed() throws Exception
+    {
+        EagerContentHandler eagerContentHandler = new EagerContentHandler(new EagerContentHandler.RetainedContentLoaderFactory());
+        _server.setHandler(eagerContentHandler);
+        eagerContentHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.failed(new Exception("simulated response failure"));
+                return true;
+            }
+        });
+        _server.start();
+
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            // If the failure is not forwarded to the original callback, no response is ever sent.
+            socket.setSoTimeout(10_000);
+            String request = """
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Content-Length: 10\r
+                \r
+                1234567890\r
+                """;
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertEquals(HttpStatus.INTERNAL_SERVER_ERROR_500, response.getStatus());
+        }
+    }
+
+    @Test
     public void testEagerContentInContext() throws Exception
     {
         ContextHandler context = new ContextHandler();

@@ -41,6 +41,12 @@ public class TestFileInitializer extends FileInitializer
     }
 
     @Override
+    public boolean exists(URI uri) throws IOException
+    {
+        return true;
+    }
+
+    @Override
     public boolean create(URI uri, String location) throws IOException
     {
         Path destination = getDestination(uri, location);

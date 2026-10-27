@@ -617,7 +617,7 @@ public class EagerContentHandler extends ConditionalHandler.ElseNext
                 }
 
                 @Override
-                public void fail(Throwable failure)
+                public void failed(Throwable failure)
                 {
                     release();
                     _callback.failed(failure);

@@ -14,10 +14,12 @@
 package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -25,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.awaitility.Awaitility;
@@ -34,16 +37,20 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// Isolated because the default Locale and System.out are changed.
+@Isolated
 public class ShutdownServiceTest
 {
     @Test
@@ -190,6 +197,39 @@ public class ShutdownServiceTest
             assertEquals(9595, service.getPort());
             assertEquals("SEAWALL", service.getKey());
             assertFalse(service.isExitVm());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"en-US", "ar-EG-u-nu-arab"})
+    public void testStopPortDoesNotDependOnDefaultLocale(String languageTag) throws Exception
+    {
+        ShutdownService shutdown = new ShutdownService("localhost", 0, null, false);
+
+        // The Arabic-Egyptian locale with Arabic digits does not format numbers using the ascii
+        // characters 0-9, if it was used the port would be printed as STOP.PORT=٤٥٦٧٨ for instance.
+        Locale defaultLocale = Locale.getDefault();
+        PrintStream defaultOut = System.out;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try
+        {
+            Locale.setDefault(Locale.forLanguageTag(languageTag));
+            System.setOut(new PrintStream(out, true, StandardCharsets.UTF_8));
+            shutdown.start();
+        }
+        finally
+        {
+            System.setOut(defaultOut);
+            Locale.setDefault(defaultLocale);
+        }
+
+        try
+        {
+            assertThat(out.toString(StandardCharsets.UTF_8), containsString("STOP.PORT=" + shutdown.getLocalPort() + System.lineSeparator()));
+        }
+        finally
+        {
+            shutdown.stop();
         }
     }
 

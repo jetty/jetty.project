@@ -164,6 +164,106 @@ public class DeploymentScannerTest extends AbstractCleanEnvironmentTest
     }
 
     @Test
+    public void testActionListDirectoryWithDotsAndProperties() throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir();
+        Path webapp = dir.resolve("foo.com");
+        FS.ensureDirExists(webapp);
+        Path properties = dir.resolve("foo.com.properties");
+        Files.writeString(properties, "environment=core", UTF_8);
+
+        AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
+        deploymentScanner.addWebappsDirectory(dir);
+
+        Map<Path, Scanner.Notification> changeSet = new HashMap<>();
+        changeSet.put(webapp, Scanner.Notification.ADDED);
+        changeSet.put(properties, Scanner.Notification.ADDED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(1));
+            DeployAction action = actions.get(0);
+            assertThat("action.name", action.name(), is("foo.com"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.DEPLOY));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(webapp, properties));
+            assertThat("action.app.mainPath", app.getMainPath(), is(webapp));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+    }
+
+    @Test
+    public void testActionListDirectoryWithDotsRemoved() throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir();
+        Path webapp = dir.resolve("foo.com");
+        FS.ensureDirExists(webapp);
+
+        AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
+        deploymentScanner.addWebappsDirectory(dir);
+
+        Map<Path, Scanner.Notification> changeSet = new HashMap<>();
+        changeSet.put(webapp, Scanner.Notification.ADDED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(1));
+            assertThat("action.name", actions.get(0).name(), is("foo.com"));
+            assertThat("action.type", actions.get(0).type(), is(DeployAction.Type.DEPLOY));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+
+        // The removed directory no longer exists, but still belongs to the same app.
+        FS.ensureDeleted(webapp);
+        changeSet.clear();
+        changeSet.put(webapp, Scanner.Notification.REMOVED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(1));
+            DeployAction action = actions.get(0);
+            assertThat("action.name", action.name(), is("foo.com"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.UNDEPLOY));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.paths[dir].state", app.getPaths().get(webapp), is(PathsApp.State.REMOVED));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+    }
+
+    @Test
+    public void testActionListXmlWithNominatedDirectory() throws IOException
+    {
+        Path dir = workDir.getEmptyPathDir();
+        Path xml = dir.resolve("foo.xml");
+        Files.writeString(xml, "XML for foo", UTF_8);
+        Path nominated = dir.resolve("foo.d");
+        FS.ensureDirExists(nominated);
+
+        AssertActionListDeploymentScanner deploymentScanner = new AssertActionListDeploymentScanner();
+        deploymentScanner.addWebappsDirectory(dir);
+
+        Map<Path, Scanner.Notification> changeSet = new HashMap<>();
+        changeSet.put(xml, Scanner.Notification.ADDED);
+        changeSet.put(nominated, Scanner.Notification.ADDED);
+
+        deploymentScanner.assertActionList = (actions) ->
+        {
+            assertThat("actions.size", actions.size(), is(1));
+            DeployAction action = actions.get(0);
+            assertThat("action.name", action.name(), is("foo"));
+            assertThat("action.type", action.type(), is(DeployAction.Type.DEPLOY));
+            PathsApp app = deploymentScanner.findApp(action.name());
+            assertThat("action.app.paths", app.getPaths().keySet(), containsInAnyOrder(xml, nominated));
+            assertThat("action.app.mainPath", app.getMainPath(), is(xml));
+        };
+
+        deploymentScanner.pathsChanged(changeSet);
+    }
+
+    @Test
     public void testActionListNewXmlAndWarOnly() throws IOException
     {
         Path dir = workDir.getEmptyPathDir();
