@@ -14,14 +14,20 @@
 package org.eclipse.jetty.http;
 
 import java.util.List;
+import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+// Isolated because the default Locale is changed.
+@Isolated
 public class ByteRangeTest
 {
     private void assertInvalidRange(String rangeString)
@@ -65,6 +71,27 @@ public class ByteRangeTest
         List<ByteRange> ranges = ByteRange.parse(strings, size);
         assertNotNull(ranges, "Satisfiable Ranges should not be null");
         return ranges;
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"en-US", "ar-EG-u-nu-arab"})
+    public void testHeaderValueDoesNotDependOnDefaultLocale(String languageTag)
+    {
+        // The Arabic-Egyptian locale with Arabic digits does not format numbers using the ascii
+        // characters 0-9, if it was used the header value would be "bytes ١٠-٢٠/١٠٠" for instance.
+        ByteRange range = new ByteRange(10, 20);
+        Locale defaultLocale = Locale.getDefault();
+        String headerValue;
+        try
+        {
+            Locale.setDefault(Locale.forLanguageTag(languageTag));
+            headerValue = range.toHeaderValue(100);
+        }
+        finally
+        {
+            Locale.setDefault(defaultLocale);
+        }
+        assertThat(headerValue, is("bytes 10-20/100"));
     }
 
     @Test

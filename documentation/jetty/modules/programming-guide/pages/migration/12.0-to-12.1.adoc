@@ -33,6 +33,28 @@ The xref:operations-guide:deploy/index.adoc[deployer] is the Jetty component tha
 
 The rewrite allowed to use only one scanner (Jetty 12.0.x had one for each Jakarta EE environment), and allowed to define the deployment of xref:operations-guide:deploy/index.adoc#web-application-format-core[Jetty core web applications] and xref:operations-guide:deploy/index.adoc#web-application-format-static[static web applications].
 
+[[component-changes-lib-layout]]
+=== Distribution `lib/` Layout
+
+The layout of the `lib/` directory in `$JETTY_HOME`, and the locations that modules download their dependencies into under `$JETTY_BASE`, have been reorganized in Jetty 12.1.x.
+
+Environment-specific (Jakarta EE) libraries are now kept under per-environment directories such as `lib/ee8/`, `lib/ee9/`, `lib/ee10/` and `lib/ee11/` (each with its own `support/` subdirectory), while the third-party libraries required by core modules now download into `$JETTY_BASE/lib/support/` rather than into a per-module directory.
+For example, the MongoDB and Hazelcast session store jars that in Jetty 12.0.x were downloaded into `$JETTY_BASE/lib/nosql/` and `$JETTY_BASE/lib/hazelcast/` are now downloaded into `$JETTY_BASE/lib/support/`.
+
+[IMPORTANT]
+====
+When upgrading an existing `$JETTY_BASE` that was created with an earlier version, the jars previously downloaded by these modules may still reside in their old locations, while the module now expects them under the new location.
+Because a missing `[lib]` file is silently skipped at startup, an affected module may start without its jars and only fail later at runtime.
+
+After upgrading, re-run `--create-files` to download the relocated jars into their new locations:
+
+----
+$ java -jar $JETTY_HOME/start.jar --create-files
+----
+
+The now-unused jars left behind in the old per-module directories can be safely deleted.
+====
+
 [[component-changes-authentication]]
 === Authentication
 
