@@ -159,7 +159,6 @@ def mavenBuild(jdk, cmdline, mvnName) {
           // registry mirror cannot do this: dockerd only consults a mirror for Docker Hub.
           def gcloudImage = " -Dgcloud.docker.image.name=nexus-service.nexus.svc.cluster.local:8082/google.com/cloudsdktool/cloud-sdk "
           // fork PRs run this Jenkinsfile from the base branch, so the file may already be gone
-          sh "if [ -f jenkins-mimir-daemon.properties ]; then mkdir -p ~/.mimir && cp jenkins-mimir-daemon.properties ~/.mimir/daemon.properties && cat ~/.mimir/daemon.properties; fi"
           sh "mvn $extraArgs $dashProfile $gcloudImage -s $GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
