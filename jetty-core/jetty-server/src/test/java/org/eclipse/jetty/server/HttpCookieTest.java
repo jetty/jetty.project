@@ -426,8 +426,74 @@ public class HttpCookieTest
     @MethodSource("setCookieMaxAge1Provider")
     public void testSetRFC6265SetCookieMaxAge1(HttpCookie httpCookie)
     {
+        // A positive max-age with no declared Expires yields a synthetic Expires derived from maxAge
+        // (required by the Servlet TCK, see testSetRFC6265SetCookieServletTCKSessionCookieConfig).
+        Instant now = Instant.now();
         String actualSetCookie = HttpCookieUtils.getRFC6265SetCookie(httpCookie);
-        assertThat(actualSetCookie, is("everything=value; Path=/path; Max-Age=1"));
+        Pattern pattern = Pattern.compile("^everything=value; Path=/path; Expires=(.*); Max-Age=1$");
+        Matcher matcher = pattern.matcher(actualSetCookie);
+        assertTrue(matcher.matches(), "Actual Cookie doesn't match expected pattern: " + actualSetCookie);
+        String expires = matcher.group(1);
+        ZonedDateTime datetime = HttpDateTime.parse(expires);
+        long minutes = Duration.between(now, datetime.toInstant()).toMinutes();
+        assertThat(minutes, lessThan(2L));
+    }
+
+    /**
+     * <p>Replicates the {@code Set-Cookie} generation exercised by the Jakarta Servlet TCK test
+     * {@code servlet.tck.api.jakarta_servlet_http.sessioncookieconfig.SessionCookieConfigTests#constructortest1}.</p>
+     *
+     * <p>In that TCK test the web application's {@code TestListener.contextInitialized(...)} configures the
+     * {@code jakarta.servlet.SessionCookieConfig} of the session cookie with the following values (taken
+     * directly from the TCK {@code TestListener} source):</p>
+     * <ul>
+     *   <li>name {@code TCK_Cookie_Name}</li>
+     *   <li>domain {@code sun.com}</li>
+     *   <li>path {@code <contextPath>/TestServlet}, which resolves to
+     *       {@code /servlet_jsh_sessioncookieconfig_web/TestServlet}</li>
+     *   <li>secure {@code true}</li>
+     *   <li>httpOnly {@code false}</li>
+     *   <li>maxAge {@code 50000}</li>
+     *   <li>attribute {@code a1=b2}</li>
+     * </ul>
+     *
+     * <p>The TCK validates the resulting {@code Set-Cookie} response header with its {@code SetCookieHandler},
+     * which lower-cases the header and requires it to contain every {@code ##}-delimited substring configured
+     * as the test's {@code EXPECTED_HEADERS}:</p>
+     * <pre>{@code TCK_Cookie_Name=##Expires=##Path=/servlet_jsh_sessioncookieconfig_web/TestServlet##Secure}</pre>
+     *
+     * <p>The {@code Expires=} token is the critical one: the TCK requires an {@code Expires} attribute even
+     * though only {@code Max-Age} was configured, so {@link HttpCookieUtils#getRFC6265SetCookie(HttpCookie)}
+     * must synthesize {@code Expires} from {@code maxAge}.</p>
+     */
+    @Test
+    public void testSetRFC6265SetCookieServletTCKSessionCookieConfig()
+    {
+        // Values set by the TCK's TestListener.contextInitialized(...).
+        HttpCookie httpCookie = HttpCookie.build("TCK_Cookie_Name", "node0abc")
+            .domain("sun.com")
+            .path("/servlet_jsh_sessioncookieconfig_web/TestServlet")
+            .secure(true)
+            .httpOnly(false)
+            .maxAge(50000)
+            .attribute("a1", "b2")
+            .build();
+
+        String actualSetCookie = HttpCookieUtils.getRFC6265SetCookie(httpCookie);
+
+        // The four ##-delimited substrings the TCK SetCookieHandler requires to be present.
+        assertThat(actualSetCookie, allOf(
+            containsString("TCK_Cookie_Name="),
+            containsString("Expires="),
+            containsString("Path=/servlet_jsh_sessioncookieconfig_web/TestServlet"),
+            containsString("Secure")));
+
+        // Pin down the full structure; the Expires value is derived from maxAge, so match it loosely.
+        Pattern pattern = Pattern.compile("^TCK_Cookie_Name=node0abc; " +
+            "Path=/servlet_jsh_sessioncookieconfig_web/TestServlet; " +
+            "Domain=sun.com; Expires=(.*); Max-Age=50000; Secure; a1=b2$");
+        assertTrue(pattern.matcher(actualSetCookie).matches(),
+            "Actual Set-Cookie doesn't match expected pattern: " + actualSetCookie);
     }
 
     public static Stream<HttpCookie> setCookieMaxAgeZeroProvider()
