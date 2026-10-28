@@ -261,13 +261,36 @@ public final class HttpCookieUtils
             // Servlet TCK requires no Max-Age here, the deletion is expressed as a past Expires.
             builder.append("; Expires=").append(EPOCH_EXPIRES);
         }
+        else if (maxAge > 0)
+        {
+            // Expiring cookie: emit Expires (declared, else synthetic from Max-Age), then Max-Age.
+            if (declaredExpires != null)
+            {
+                builder.append("; Expires=").append(declaredExpires);
+            }
+            else
+            {
+                // Although RFC 6265 §4.1.2.2 makes Max-Age sufficient on its own (and gives it precedence
+                // over Expires), the Servlet TCK requires that a synthetic Expires attribute also be emitted
+                // when only a positive max-age was configured. See the Jakarta Servlet TCK test
+                // servlet.tck.api.jakarta_servlet_http.sessioncookieconfig.SessionCookieConfigTests#constructortest1,
+                // whose SetCookieHandler asserts the response Set-Cookie header contains an "Expires=" attribute.
+                // The Expires value is derived from maxAge so the two attributes stay consistent.
+                // See TCK challenges on the need for this synthetic "Expires" attribute at
+                //  - https://github.com/jakartaee/servlet/issues/493
+                //  - https://github.com/jakartaee/servlet/issues/1120
+                builder.append("; Expires=").append(HttpCookie.formatExpires(Instant.now().plusSeconds(maxAge)));
+            }
+
+            builder.append("; Max-Age=").append(maxAge);
+        }
         else
         {
-            // Append Expires attribute (optional attribute in RFC 6265)
+            // Session cookie (negative Max-Age): no Max-Age is emitted; keep a declared Expires if present.
             if (declaredExpires != null)
+            {
                 builder.append("; Expires=").append(declaredExpires);
-            if (maxAge > 0)
-                builder.append("; Max-Age=").append(maxAge);
+            }
         }
 
         // add the other fields
