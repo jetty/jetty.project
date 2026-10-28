@@ -17,6 +17,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Locale;
 
 import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
@@ -35,6 +36,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -159,6 +162,44 @@ public class TestQuickStart
         assertTrue(webapp.isContextPathDefault());
     }
     
+    @ParameterizedTest
+    @ValueSource(strings = {"en-US", "ar-EG-u-nu-arab"})
+    public void testSchemaLocationDoesNotDependOnDefaultLocale(String languageTag) throws Exception
+    {
+        File testDir = MavenTestingUtils.getTargetTestingDir("schemaLocation-" + languageTag);
+        FS.ensureEmpty(testDir);
+        File webInf = new File(testDir, "WEB-INF");
+        FS.ensureDirExists(webInf);
+
+        File quickstartXml = new File(webInf, "quickstart-web.xml");
+        assertFalse(quickstartXml.exists());
+
+        // generate a quickstart-web.xml
+        WebAppContext quickstart = new WebAppContext();
+        quickstart.setBaseResourceAsPath(testDir.toPath());
+        quickstart.addConfiguration(new QuickStartConfiguration());
+        quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
+        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        server.setHandler(quickstart);
+        server.setDryRun(true);
+
+        // The Arabic-Egyptian locale with Arabic digits does not format numbers using the ascii characters 0-9,
+        // if it was used the schema location would contain web-app_٦_١.xsd for instance.
+        Locale defaultLocale = Locale.getDefault();
+        try
+        {
+            Locale.setDefault(Locale.forLanguageTag(languageTag));
+            server.start();
+        }
+        finally
+        {
+            Locale.setDefault(defaultLocale);
+        }
+
+        assertTrue(quickstartXml.exists());
+        assertThat(Files.readString(quickstartXml.toPath()), Matchers.containsString("xsi:schemaLocation=\"https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd\""));
+    }
+
     @Test
     public void testDefaultRequestAndResponseEncodings() throws Exception
     {

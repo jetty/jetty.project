@@ -13,14 +13,14 @@ ssl
 alpn-impl
 
 [files]
-maven://org.conscrypt/conscrypt-openjdk-uber/${conscrypt.version}|lib/conscrypt/conscrypt-uber-${conscrypt.version}.jar
+maven://org.conscrypt/conscrypt-openjdk-uber/${conscrypt.version}|lib/support/conscrypt-uber-${conscrypt.version}.jar
 basehome:modules/conscrypt/jetty-conscrypt.xml|etc/jetty-conscrypt.xml
 
 [xml]
 etc/jetty-conscrypt.xml
 
 [lib]
-lib/conscrypt/conscrypt-uber-${conscrypt.version}.jar
+lib/support/conscrypt-uber-${conscrypt.version}.jar
 lib/jetty-alpn-conscrypt-server-${jetty.version}.jar
 
 [license]

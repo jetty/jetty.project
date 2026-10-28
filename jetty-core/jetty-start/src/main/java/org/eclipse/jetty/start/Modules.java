@@ -458,12 +458,12 @@ public class Modules implements Iterable<Module>
             newlyEnabled.add(module.getName());
 
             // Expand module properties
-            module.expandDependencies(_args.getJettyEnvironment().getProperties());
+            module.expandProperties(_args.getJettyEnvironment().getProperties());
 
             // Apply default configuration
             if (module.hasDefaultConfig())
             {
-                String source = module.getName() + "[ini]";
+                String source = module.getName() + " [ini]";
                 StartEnvironment environment = _args.getJettyEnvironment();
                 environment = _args.parse(environment, "--module=" + module.getName(), source);
 
@@ -471,7 +471,7 @@ public class Modules implements Iterable<Module>
                     environment = _args.parse(environment, line, source);
 
                 for (Module m : _modules)
-                    m.expandDependencies(environment.getProperties());
+                    m.expandProperties(environment.getProperties());
             }
         }
 
@@ -497,7 +497,7 @@ public class Modules implements Iterable<Module>
                     Path file = _baseHome.getPath("modules/" + dependentModule + ".mod");
                     if (!isConditional || Files.exists(file))
                     {
-                        registerModule(file).expandDependencies(_args.getJettyEnvironment().getProperties());
+                        registerModule(file).expandProperties(_args.getJettyEnvironment().getProperties());
                         providers = _provided.get(dependentModule);
                         if (providers == null || providers.isEmpty())
                             throw new UsageException("Module %s does not provide %s", _baseHome.toShortForm(file), dependentModule);
@@ -597,6 +597,43 @@ public class Modules implements Iterable<Module>
 
         StartLog.debug("Available providers of [%s] are %s", name, providers);
         return providers;
+    }
+
+    BaseHome getBaseHome()
+    {
+        return _baseHome;
+    }
+
+    StartArgs getStartArgs()
+    {
+        return _args;
+    }
+
+    Set<Module> getProvided(String name)
+    {
+        return _provided.get(name);
+    }
+
+    Module find(String name) throws IOException
+    {
+        if (name.contains("/"))
+        {
+            Path file = getBaseHome().getPath("modules/" + name + ".mod");
+            if (Files.exists(file))
+                return new Module(_baseHome, file);
+        }
+
+        Module module = _names.get(name);
+        if (module != null)
+            return module;
+
+        String defaultProvider = _providedDefaults.get(name);
+        if (Utils.isNotBlank(defaultProvider))
+        {
+            return find(defaultProvider);
+        }
+
+        return null;
     }
 
     public Module get(String name)

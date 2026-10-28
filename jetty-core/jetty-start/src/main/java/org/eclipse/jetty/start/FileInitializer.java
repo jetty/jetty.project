@@ -48,6 +48,15 @@ public abstract class FileInitializer
     }
 
     /**
+     * Test if URI exists (is accessible)
+     *
+     * @param uri the URI of the resource acting as its source
+     * @return true if URI exists (is accessible)
+     * @throws IOException if there was an attempt to initialize, but an error occurred.
+     */
+    public abstract boolean exists(URI uri) throws IOException;
+
+    /**
      * Initialize a file resource
      *
      * @param uri the URI of the resource acting as its source
@@ -56,7 +65,6 @@ public abstract class FileInitializer
      * @return true if local file system is modified.
      * @throws IOException if there was an attempt to initialize, but an error occurred.
      */
-
     public abstract boolean create(URI uri, String location) throws IOException;
 
     public boolean check(URI uri, String location) throws IOException
@@ -91,11 +99,42 @@ public abstract class FileInitializer
                 return true;
             }
 
+            if (isProvidedByHome(location))
+                return true;
+
             StartLog.error("Missing Required File: %s", _basehome.toShortForm(location));
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Test if ${jetty.home} already has this file.
+     *
+     * <p>
+     * A module can list the same jar in both {@code [files]} and {@code [lib]}, so that a base can
+     * fetch it when the distribution does not ship it. When the distribution does ship it,
+     * {@code [lib]} finds it in ${jetty.home} and there is nothing to fetch.
+     * </p>
+     *
+     * @param location the file location, relative to ${jetty.base}
+     * @return true if ${jetty.home} has a readable file at the same location
+     */
+    protected boolean isProvidedByHome(String location)
+    {
+        // Directories are always created in ${jetty.base}.
+        if (location == null || location.endsWith("/") || !_basehome.isBaseDifferent())
+            return false;
+
+        Path homeDir = _basehome.getHomePath().toAbsolutePath();
+        Path homeFile = homeDir.resolve(location).normalize().toAbsolutePath();
+
+        // An absolute location can point anywhere, only look inside ${jetty.home}.
+        if (!homeFile.startsWith(homeDir))
+            return false;
+
+        return Files.isRegularFile(homeFile) && Files.isReadable(homeFile);
     }
 
     protected Path getDestination(URI uri, String location) throws IOException

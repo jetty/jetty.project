@@ -259,7 +259,7 @@ public class ShutdownService
             configure(serverSocket);
             serverSocket.bind(new InetSocketAddress(InetAddress.getByName(getHost()), getPort()));
             // Output to STDOUT the stop details (used by scripting to know the port and key)
-            System.out.printf("STOP.PORT=%d%n", getLocalPort());
+            System.out.printf(Locale.ROOT, "STOP.PORT=%d%n", getLocalPort());
             System.out.printf("STOP.KEY=%s%n", getKey());
             System.out.printf("STOP.EXIT=%s%n", isExitVm());
         }
