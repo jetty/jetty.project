@@ -64,6 +64,7 @@ import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.SelectableChannelEndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -78,14 +79,17 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPoolBudget;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1385,6 +1389,123 @@ public class StreamResetTest extends AbstractTest
 
         // The second request content chunk must not arrive to the server.
         assertEquals(1, dataCount.get());
+    }
+
+    @Test
+    public void testBlockedReadIsWokenUpWhenInvalidContentLengthResetsStream() throws Exception
+    {
+        AtomicReference<Throwable> readFailure = new AtomicReference<>();
+        AtomicReference<Thread> threadRef = new AtomicReference<>();
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                try
+                {
+                    threadRef.set(Thread.currentThread());
+                    // Use a blocking call to read the content from the request.
+                    Content.Source.consumeAll(request);
+                    callback.succeeded();
+                }
+                catch (Throwable x)
+                {
+                    readFailure.set(x);
+                    callback.failed(x);
+                }
+                return true;
+            }
+        });
+
+        Session client = newClientSession(new Session.Listener() {});
+        HttpFields fields = HttpFields.build().put(HttpHeader.CONTENT_LENGTH, 1024);
+        MetaData.Request request = newRequest("POST", fields);
+        CountDownLatch resetLatch = new CountDownLatch(1);
+        Stream stream = client.newStream(new HeadersFrame(request, null, false), new Stream.Listener()
+        {
+            @Override
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
+            {
+                if (frame.getError() == ErrorCode.PROTOCOL_ERROR.code)
+                    resetLatch.countDown();
+                callback.succeeded();
+            }
+        }).get(5, TimeUnit.SECONDS);
+
+        // Wait for the server to block in read().
+        await().atMost(5, TimeUnit.SECONDS).until(() ->
+        {
+            Thread thread = threadRef.get();
+            return thread != null && thread.getState() == Thread.State.WAITING;
+        });
+
+        // End the request content before Content-Length bytes have been sent.
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(0), true));
+
+        assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertInstanceOf(EofException.class, readFailure.get()));
+        assertEquals("protocol_error/invalid_data_length", readFailure.get().getMessage());
+    }
+
+    @Test
+    public void testLengthMismatchBeforeHandlingStillResetsWithProtocolError() throws Exception
+    {
+        AtomicInteger nonHoldRequestCount = new AtomicInteger();
+        CountDownLatch holdLatch = new CountDownLatch(1);
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                if (Request.getPathInContext(request).startsWith("/hold"))
+                    assertTrue(holdLatch.await(15, TimeUnit.SECONDS));
+                else
+                    nonHoldRequestCount.incrementAndGet();
+                callback.succeeded();
+                return true;
+            }
+        }, new HttpConfiguration());
+        QueuedThreadPool serverThreads = (QueuedThreadPool)server.getThreadPool();
+        ThreadPoolBudget threadPoolBudget = serverThreads.getThreadPoolBudget();
+        int poolThreadCount = threadPoolBudget == null ? 20 : threadPoolBudget.getLeasedThreads() + 10;
+        serverThreads.setMaxThreads(poolThreadCount);
+
+        Session clientSession = newClientSession(new Session.Listener() {});
+
+        // Occupy every worker thread (and queue a few more handler tasks).
+        for (int i = 0; i < poolThreadCount + (poolThreadCount / 2); i++)
+        {
+            MetaData.Request hold = newRequest("GET", "/hold" + i, HttpFields.EMPTY);
+            clientSession.newStream(new HeadersFrame(hold, null, true), new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+        }
+        // Wait until the server pool is saturated.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> serverThreads.getIdleThreads() == 0 && serverThreads.getQueueSize() > 0);
+
+        // Send the bad POST request.
+        HeadersFrame headers = new HeadersFrame(newRequest("POST", "/bad", HttpFields.build().put(HttpHeader.CONTENT_LENGTH, 10)), null, false);
+        AtomicInteger resetError = new AtomicInteger();
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        ((HTTP2Session)clientSession).newStream(new HTTP2Stream.FrameList(headers, new DataFrame(ByteBuffer.wrap(new byte[]{'a', 'b', 'c'}), true), null), promise, new Stream.Listener()
+        {
+            @Override
+            public void onReset(Stream stream, ResetFrame frame, Callback callback)
+            {
+                resetError.set(frame.getError());
+                callback.succeeded();
+            }
+        });
+        promise.get(5, TimeUnit.SECONDS);
+
+        // Assert that the server responds with a RESET frame and the correct error code.
+        await().atMost(5, TimeUnit.SECONDS).until(resetError::get, is(not(0)));
+        assertEquals(ErrorCode.PROTOCOL_ERROR.code, resetError.get());
+
+        holdLatch.countDown();
+        // Wait until the server pool is idle.
+        await().during(1, TimeUnit.SECONDS).atMost(5, TimeUnit.SECONDS).until(() -> serverThreads.getQueueSize() == 0);
+
+        // The handler should not be invoked b/c HttpStreamOverHTTP2 skips failed streams.
+        assertEquals(0, nonHoldRequestCount.get());
     }
 
     private void waitUntilTCPCongested(Supplier<SelectableChannelEndPoint> selectableChannelEndPointRef)
