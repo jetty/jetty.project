@@ -668,12 +668,18 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     public void onStreamFailure(int streamId, int error, String reason)
     {
         HTTP2Stream stream = getStream(streamId);
-        Callback callback = Callback.from(() -> reset(stream, new ResetFrame(streamId, error), Callback.NOOP));
-        Throwable failure = toFailure(error, reason);
-        if (stream != null)
-            onStreamFailure(stream, error, reason, failure, callback);
-        else
-            callback.succeeded();
+        ResetFrame resetFrame = new ResetFrame(streamId, error);
+        if (stream == null)
+        {
+            reset(null, resetFrame, Callback.NOOP);
+            return;
+        }
+        // Reset the stream before notifying the application, so that
+        // the RST_STREAM frame carries this error code, rather than the
+        // one of any reset that the application may trigger in reaction
+        // to the failure (e.g. failing to write an error response).
+        stream.reset(resetFrame, Callback.NOOP);
+        onStreamFailure(stream, error, reason, toFailure(error, reason), Callback.NOOP);
     }
 
     protected void onStreamFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
