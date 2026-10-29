@@ -354,6 +354,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
                                 validator.setOcspResponderURL(getOcspResponderURL());
                                 validator.validate(keyStore, x509C); // TODO what about truststore?
                             }
+
+                            LOG.info("x509={} for {}", new X509(alias, x509C), this);
                         }
                     }
                 }
