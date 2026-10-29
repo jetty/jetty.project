@@ -586,16 +586,28 @@ public class ResourceServlet extends HttpServlet
                 {
                     // send the content asynchronously
                     AsyncContext asyncContext;
+                    boolean startedHere;
                     if (httpServletRequest.isAsyncStarted())
                     {
                         asyncContext = httpServletRequest.getAsyncContext();
+                        startedHere = false;
                     }
                     else
                     {
                         asyncContext = httpServletRequest.startAsync();
                         asyncContext.setTimeout(0);
+                        startedHere = true;
                     }
-                    Callback callback = new AsyncContextCallback(asyncContext, httpServletResponse);
+                    Callback callback = new AsyncContextCallback(httpServletResponse)
+                    {
+                        @Override
+                        protected void complete()
+                        {
+                            if (startedHere)
+                                asyncContext.complete();
+                        }
+                    };
+
                     _resourceService.doGet(coreRequest, coreResponse, callback, content);
                 }
                 else
@@ -983,21 +995,19 @@ public class ResourceServlet extends HttpServlet
         EXACT
     }
 
-    private static class AsyncContextCallback implements Callback
+    private abstract static class AsyncContextCallback implements Callback
     {
-        private final AsyncContext _asyncContext;
         private final HttpServletResponse _response;
 
-        private AsyncContextCallback(AsyncContext asyncContext, HttpServletResponse response)
+        private AsyncContextCallback(HttpServletResponse response)
         {
-            _asyncContext = asyncContext;
             _response = response;
         }
 
         @Override
         public void succeeded()
         {
-            _asyncContext.complete();
+            complete();
         }
 
         @Override
@@ -1006,7 +1016,7 @@ public class ResourceServlet extends HttpServlet
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("AsyncContextCallback failed {}", _asyncContext, x);
+                    LOG.debug("AsyncContextCallback failed for response {}", _response, x);
                 // It is known that this callback is only failed if the response is already committed,
                 // thus we can only abort the response here.
                 _response.sendError(-1);
@@ -1017,10 +1027,12 @@ public class ResourceServlet extends HttpServlet
             }
             finally
             {
-                _asyncContext.complete();
+                complete();
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("Async get failed", x);
         }
+
+        protected abstract void complete();
     }
 }
