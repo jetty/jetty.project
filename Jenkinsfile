@@ -21,7 +21,7 @@ pipeline {
                 properties([buildDiscarder(logRotator(artifactNumToKeepStr: '5', numToKeepStr: env.BRANCH_NAME=='jetty-12.1.x'?'60':'5'))])
               }
               checkout scm
-              mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              mavenBuild( "jdk21", "clean install -Ptck -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
@@ -34,7 +34,7 @@ pipeline {
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk25", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              mavenBuild( "jdk25", "clean install -Ptck -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk25", name: "Static Analysis jdk25", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
             }
           }
@@ -45,7 +45,7 @@ pipeline {
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk27", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              mavenBuild( "jdk27", "clean install -Ptck -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk27", name: "Static Analysis jdk27", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
             }
           }
@@ -75,7 +75,7 @@ pipeline {
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk17", "clean install -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
+              mavenBuild( "jdk17", "clean install -Ptck -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
