@@ -297,6 +297,13 @@
           <dependenciesToScan>
             <dependencyToScan>jakarta.servlet.tck:servlet-tck-runtime</dependencyToScan>
           </dependenciesToScan>
+          <!-- Known TCK failures. They live in a file because Surefire only accepts
+               Class#method patterns there, not in <excludes>. -->
+          <excludesFile>${project.basedir}/tck-excludes.txt</excludesFile>
+          <!-- An excludes file switches off Surefire's default exclude, so put it back. -->
+          <excludes>
+            <exclude>**/*$*</exclude>
+          </excludes>
           <systemPropertyVariables>
             <http2.timeout>${http2.timeout}</http2.timeout>
             <servlet.tck.support.crossContext>false</servlet.tck.support.crossContext>

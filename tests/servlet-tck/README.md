@@ -38,6 +38,10 @@ Jetty `Server` through `arquillian.junit.jupiter.manager.perClass`, so they do n
 
 The Jenkins build passes `-Ptck` on every JDK stage, and a TCK failure fails the build. 
 
+Known failures are skipped through `servlet-tck-ee11/tck-excludes.txt`, one `Class#method` per
+line with a comment saying why. Running with `-Dtest=` ignores that list, which is handy for
+checking whether an excluded test passes now.
+
 ## Things that will bite you
 
 **The Maven stack is pinned down, on purpose.** The TCK builds its web applications through
