@@ -625,6 +625,9 @@ public class MultiPartTest
         assertThat(MultiPart.encodeContentDispositionFileName("test.xml"), is("filename=\"test.xml\""));
         assertThat(MultiPart.encodeContentDispositionFileName("test ✓.xml"), is("filename=\"test _.xml\"; filename*=UTF-8''test%20%E2%9C%93.xml"));
         assertThat(MultiPart.encodeContentDispositionFileName("test ✓.xml", StandardCharsets.UTF_16), is("filename=\"test _.xml\"; filename*=UTF-16''╆䔥䙆┰ぴ┰づ┰び┰ぴ┰〫┲㜥ㄳ┰〮┰へ┰ね┰ぬ"));
+        assertThat(MultiPart.encodeContentDispositionFileName("quote\".xml"), is("filename=\"quote_.xml\"; filename*=UTF-8''quote%22.xml"));
+        assertThat(MultiPart.encodeContentDispositionFileName("back\\slash.xml"), is("filename=\"back_slash.xml\"; filename*=UTF-8''back%5Cslash.xml"));
+        assertThat(MultiPart.encodeContentDispositionFileName("x\"; name=\"other"), is("filename=\"x_; name=_other\"; filename*=UTF-8''x%22%3B%20name%3D%22other"));
     }
 
     @Test
