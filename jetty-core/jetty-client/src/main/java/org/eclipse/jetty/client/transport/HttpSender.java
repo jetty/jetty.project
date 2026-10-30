@@ -263,7 +263,7 @@ public abstract class HttpSender
         {
             if (failure != null)
             {
-                if (!getHttpChannel().isLastDataReceived() && exchange.responseComplete(failure))
+                if (shouldAbortResponse(failure) && exchange.responseComplete(failure))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Response failure from request {} {}", request, exchange);
@@ -284,6 +284,15 @@ public abstract class HttpSender
             if (ordered)
                 channel.exchangeTerminated(exchange, result);
         }
+    }
+
+    /**
+     * @param failure the request failure
+     * @return whether the request failure should also abort the response
+     */
+    protected boolean shouldAbortResponse(Throwable failure)
+    {
+        return !getHttpChannel().isLastDataReceived();
     }
 
     /**
