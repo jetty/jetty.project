@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>servlet-tck</artifactId>
-    <version>12.1.15-SNAPSHOT</version>
+    <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>servlet-tck-ee11</artifactId>
+  <artifactId>servlet-tck-ee</artifactId>
   <packaging>jar</packaging>
-  <name>Tests :: Servlet TCK :: EE11</name>
+  <name>Tests :: Servlet TCK :: EE</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.servlet.tck.ee11</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.servlet.tck.ee</bundle-symbolic-name>
     <!-- The TCK jars ship classes that also live in their dependencies, which the ci profile
          would otherwise fail the build on. -->
     <duplicate-finder.skip>true</duplicate-finder.skip>
@@ -129,17 +129,17 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
     </dependency>
-    <!-- The EE11 versions are spelled out rather than taken from jetty-ee11-bom. The TCK re-parses
+    <!-- The EE versions are spelled out rather than taken from jetty-ee-bom. The TCK re-parses
          this pom through ShrinkWrap, and a BOM import has to be fetched as an artifact, which it
          cannot do before the reactor has installed it. -->
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-servlet</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-webapp</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -152,6 +152,7 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.arquillian.container</groupId>
+      <!-- TODO: this needs to be updated to Jetty 13 EE12 -->
       <artifactId>arquillian-jetty-embedded-12-1-ee11</artifactId>
     </dependency>
     <dependency>
@@ -180,20 +181,20 @@
       <version>${slf4j.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-annotations</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-apache-jsp</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-apache-jsp</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee11</groupId>
-      <artifactId>jetty-ee11-glassfish-jstl</artifactId>
+      <groupId>org.eclipse.jetty.ee</groupId>
+      <artifactId>jetty-ee-glassfish-jstl</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
