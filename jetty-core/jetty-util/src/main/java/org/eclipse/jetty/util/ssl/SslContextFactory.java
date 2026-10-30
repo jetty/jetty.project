@@ -43,13 +43,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.CertPathTrustManagerParameters;
@@ -113,6 +116,30 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
      * String name of keystore password property.
      */
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
+    /**
+     * Alias mapper for {@link #setAliasMapper(UnaryOperator)}
+     * that returns the {@link KeyManager} alias passed as parameter unmodified.
+     */
+    public static final UnaryOperator<String> ALIAS_MAPPER_IDENTITY = keyManagerAlias -> keyManagerAlias;
+    /**
+     * <p>Alias mapper for {@link #setAliasMapper(UnaryOperator)}
+     * that returns {@code null} for the {@link KeyManager} alias passed as parameter.</p>
+     * <p>This alias mapper works with any
+     * {@link #setKeyManagerFactoryAlgorithm(String) KeyManagerFactory} algorithm,
+     * but the retrieval of the certificate for each {@link KeyManager} alias may be slow,
+     * in particular for the {@code PKIX} algorithm, where it costs milliseconds per alias.
+     * Prefer {@link #ALIAS_MAPPER_OPENJDK_PKIX} when using the OpenJDK {@code PKIX} algorithm.</p>
+     */
+    public static final UnaryOperator<String> ALIAS_MAPPER_NULL = keyManagerAlias -> null;
+    /**
+     * <p>Alias mapper for {@link #setAliasMapper(UnaryOperator)}
+     * that converts the {@link KeyManager} aliases of the OpenJDK {@code PKIX}
+     * {@link KeyManagerFactory} algorithm, in the form {@code N.0.alias},
+     * to the {@link KeyStore} alias {@code alias}.</p>
+     * <p>{@link KeyManager} aliases that are not in that form are mapped to
+     * {@code null}, and are therefore handled like {@link #ALIAS_MAPPER_NULL}.</p>
+     */
+    public static final UnaryOperator<String> ALIAS_MAPPER_OPENJDK_PKIX = SslContextFactory::openJDKPKIXAlias;
 
     private static final Logger LOG = LoggerFactory.getLogger(SslContextFactory.class);
     private static final Logger LOG_CONFIG = LoggerFactory.getLogger(LOG.getName() + ".config");
@@ -139,15 +166,13 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         "^.*_anon_.*$"
     };
     private static final String X_509 = "X.509";
+    static final String ALIAS_X509 = SslContextFactory.class.getName() + ".alias.x509";
 
     private final AutoLock _lock = new AutoLock();
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
     private final Set<String> _includeProtocols = new LinkedHashSet<>();
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
     private final Set<String> _includeCipherSuites = new LinkedHashSet<>();
-    private final Map<String, X509> _aliasX509 = new HashMap<>();
-    private final Map<String, X509> _certHosts = new HashMap<>();
-    private final Map<String, X509> _certWilds = new HashMap<>();
     private String[] _selectedProtocols;
     private boolean _useCipherSuitesOrder = true;
     private Comparator<String> _cipherComparator;
@@ -156,6 +181,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     private String _keyStoreProvider;
     private String _keyStoreType = "PKCS12";
     private String _certAlias;
+    private UnaryOperator<String> _aliasMapper = ALIAS_MAPPER_IDENTITY;
     private Resource _trustStoreResource;
     private String _trustStoreProvider;
     private String _trustStoreType;
@@ -304,25 +330,20 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
 
                 Collection<? extends CRL> crls = loadCRL(getCrlPath());
 
-                // Look for X.509 certificates to create alias map
                 if (keyStore != null)
                 {
                     for (String alias : Collections.list(keyStore.aliases()))
                     {
                         Certificate certificate = keyStore.getCertificate(alias);
-                        if (certificate != null && X_509.equals(certificate.getType()))
+                        if (certificate instanceof X509Certificate x509C)
                         {
-                            X509Certificate x509C = (X509Certificate)certificate;
-
-                            // Exclude certificates with special uses
+                            // Exclude certificates with special uses.
                             if (X509.isCertSign(x509C))
                             {
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("Skipping {}", x509C);
                                 continue;
                             }
-                            X509 x509 = new X509(alias, x509C);
-                            _aliasX509.put(alias, x509);
 
                             if (isValidateCerts())
                             {
@@ -334,16 +355,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
                                 validator.validate(keyStore, x509C); // TODO what about truststore?
                             }
 
-                            LOG.info("x509={} for {}", x509, this);
-
-                            for (String h : x509.getHosts())
-                            {
-                                _certHosts.put(h, x509);
-                            }
-                            for (String w : x509.getWilds())
-                            {
-                                _certWilds.put(w, x509);
-                            }
+                            LOG.info("x509={} for {}", new X509(alias, x509C), this);
                         }
                     }
                 }
@@ -455,24 +467,53 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         _factory = null;
         _selectedProtocols = null;
         _selectedCipherSuites = null;
-        _aliasX509.clear();
-        _certHosts.clear();
-        _certWilds.clear();
     }
 
-    Map<String, X509> aliasCerts()
+    Map<String, X509> aliasCerts(SSLSession session)
     {
-        return _aliasX509;
+        @SuppressWarnings("unchecked")
+        Map<String, X509> aliasCerts = session != null ? (Map<String, X509>)session.getValue(ALIAS_X509) : null;
+        if (aliasCerts == null)
+        {
+            aliasCerts = aliasCerts();
+            if (session != null)
+                session.putValue(ALIAS_X509, aliasCerts);
+        }
+        return aliasCerts;
     }
 
-    Map<String, X509> hostCerts()
+    private Map<String, X509> aliasCerts()
     {
-        return _certHosts;
-    }
-
-    Map<String, X509> wildCerts()
-    {
-        return _certWilds;
+        KeyStore keyStore = getKeyStore();
+        if (keyStore == null)
+            return Map.of();
+        try
+        {
+            Map<String, X509> aliasCerts = new LinkedHashMap<>();
+            Enumeration<String> aliases = keyStore.aliases();
+            while (aliases.hasMoreElements())
+            {
+                String alias = aliases.nextElement();
+                Certificate certificate = keyStore.getCertificate(alias);
+                if (certificate instanceof X509Certificate x509)
+                {
+                    if (X509.isCertSign(x509))
+                        continue;
+                    aliasCerts.put(alias, new X509(alias, x509));
+                }
+            }
+            return aliasCerts;
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Cannot retrieve certificates from KeyStore", x);
+            // The KeyStore may be under concurrent modification,
+            // or otherwise its content cannot be determined.
+            // Fail this request (for example a new connection),
+            // and likely the caller will try again and succeed.
+            return Map.of();
+        }
     }
 
     @ManagedAttribute(value = "The selected TLS protocol versions", readonly = true)
@@ -501,12 +542,12 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
 
     public Set<String> getAliases()
     {
-        return Collections.unmodifiableSet(_aliasX509.keySet());
+        return Collections.unmodifiableSet(aliasCerts().keySet());
     }
 
     public X509 getX509(String alias)
     {
-        return _aliasX509.get(alias);
+        return aliasCerts().get(alias);
     }
 
     /**
@@ -723,17 +764,94 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     }
 
     /**
-     * Set the default certificate Alias.
-     * <p>This can be used if there are multiple non-SNI certificates
-     * to specify the certificate that should be used, or with SNI
-     * certificates to set a certificate to try if no others match
-     * </p>
+     * <p>Sets the preferred KeyStore alias.</p>
+     * <p>On the client, if the KeyStore contains multiple aliases,
+     * calling this method indicates the alias to use.</p>
+     * <p>On the server, calling this method indicates the alias
+     * to use across aliases that match SNI selection.</p>
      *
-     * @param certAlias Alias of SSL certificate for the connector
+     * @param certAlias the preferred KeyStore alias
      */
     public void setCertAlias(String certAlias)
     {
         _certAlias = certAlias;
+    }
+
+    /**
+     * @return the alias mapper function that converts a {@link KeyManager} alias to a {@link KeyStore} alias
+     */
+    public UnaryOperator<String> getAliasMapper()
+    {
+        return _aliasMapper;
+    }
+
+    /**
+     * <p>Sets the alias mapper function that converts a {@link KeyManager} alias to a {@link KeyStore} alias.</p>
+     * <p>This function is invoked when the alias of the certificate must be chosen, for example
+     * on the server to choose the certificate based on SNI, or on the client to choose the
+     * certificate with the {@link #setCertAlias(String) configured alias}.</p>
+     * <p>For simple cases that use default {@code KeyManagerFactory} algorithms, such as {@code SunX509}, use
+     * {@link #ALIAS_MAPPER_IDENTITY}.</p>
+     * <p>For more advanced cases that use the OpenJDK {@code PKIX} {@code KeyManagerFactory} algorithm, use
+     * {@link #ALIAS_MAPPER_OPENJDK_PKIX}; for other JSSE implementations, use {@link #ALIAS_MAPPER_NULL},
+     * or a custom function mapper that works with the JSSE implementation.</p>
+     * <p>A PKIX {@code KeyManager} can be used with multiple {@code KeyStore}s that can be
+     * changed dynamically (by adding/removing entries), so their aliases typically encode
+     * the {@code KeyStore}, the alias and the change version.
+     * For example, OpenJDK's PKIX {@code KeyManager} aliases have the form {@code N.M.alias},
+     * but other implementations such as BouncyCastle have the form {@code M.alias.N}.</p>
+     * <p>Returning {@code null} tells the alias logic to use the {@code KeyManager} alias, which
+     * may have a negative performance impact on the retrieval of the corresponding certificate.</p>
+     *
+     * @param aliasMapper the alias mapper function that converts a {@link KeyManager} alias to a {@link KeyStore} alias
+     */
+    public void setAliasMapper(UnaryOperator<String> aliasMapper)
+    {
+        _aliasMapper = Objects.requireNonNull(aliasMapper);
+    }
+
+    private static String openJDKPKIXAlias(String keyManagerAlias)
+    {
+        // OpenJDK's PKIX KeyManager aliases have the form
+        // <uid>.<builderIndex>.<keyStoreAlias>, and there is
+        // only one KeyStore, so the builder index must be 0.
+        int dot1 = keyManagerAlias.indexOf('.');
+        if (dot1 <= 0 || !keyManagerAlias.substring(0, dot1).chars().allMatch(c -> c >= '0' && c <= '9'))
+            return null;
+        int dot2 = keyManagerAlias.indexOf('.', dot1 + 1);
+        if (dot2 < 0 || !"0".equals(keyManagerAlias.substring(dot1 + 1, dot2)))
+            return null;
+        String keyStoreAlias = keyManagerAlias.substring(dot2 + 1);
+        return keyStoreAlias.isEmpty() ? null : keyStoreAlias;
+    }
+
+    /**
+     * <p>Converts the given {@link KeyManager} alias to a {@link KeyStore} alias.</p>
+     * <p>The {@link #getAliasMapper() alias mapper} is tried first; if it returns
+     * {@code null}, the {@link KeyStore} alias is found by matching the certificate
+     * of the {@link KeyManager} alias with the certificates in {@code aliasCerts}.</p>
+     *
+     * @param keyManager the {@link KeyManager} that produced the {@link KeyManager} alias
+     * @param keyManagerAlias the {@link KeyManager} alias
+     * @param aliasCerts the {@link KeyStore} aliases and their certificates
+     * @return the {@link KeyStore} alias, or {@code null} if it cannot be determined
+     */
+    String toKeyStoreAlias(X509ExtendedKeyManager keyManager, String keyManagerAlias, Map<String, X509> aliasCerts)
+    {
+        String keyStoreAlias = getAliasMapper().apply(keyManagerAlias);
+        if (keyStoreAlias != null && aliasCerts.containsKey(keyStoreAlias))
+            return keyStoreAlias;
+        X509Certificate[] chain = keyManager.getCertificateChain(keyManagerAlias);
+        if (chain == null || chain.length == 0)
+            return null;
+        X509Certificate certificate = chain[0];
+        for (X509 x509 : aliasCerts.values())
+        {
+            X509Certificate c = x509.getCertificate();
+            if (c == certificate || c.equals(certificate))
+                return x509.getAlias();
+        }
+        return null;
     }
 
     @ManagedAttribute("The trustStore path")
@@ -1202,19 +1320,6 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
             KeyManagerFactory keyManagerFactory = getKeyManagerFactoryInstance();
             keyManagerFactory.init(keyStore, _keyManagerCredential == null ? (_keyStoreCredential == null ? null : _keyStoreCredential.toString().toCharArray()) : _keyManagerCredential.toString().toCharArray());
             managers = keyManagerFactory.getKeyManagers();
-
-            if (managers != null)
-            {
-                String alias = getCertAlias();
-                if (alias != null)
-                {
-                    for (int idx = 0; idx < managers.length; idx++)
-                    {
-                        if (managers[idx] instanceof X509ExtendedKeyManager)
-                            managers[idx] = new AliasedX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx], alias);
-                    }
-                }
-            }
         }
 
         if (LOG.isDebugEnabled())
@@ -1920,7 +2025,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     {
         sslParams.setEndpointIdentificationAlgorithm(getEndpointIdentificationAlgorithm());
         sslParams.setUseCipherSuitesOrder(isUseCipherSuitesOrder());
-        if (!_certHosts.isEmpty() || !_certWilds.isEmpty())
+        if (this instanceof Server)
             sslParams.setSNIMatchers(List.of(new AliasSNIMatcher()));
         if (_selectedCipherSuites != null)
             sslParams.setCipherSuites(_selectedCipherSuites);
@@ -2164,6 +2269,25 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
 
         @Override
+        protected KeyManager[] getKeyManagers(KeyStore keyStore) throws Exception
+        {
+            KeyManager[] managers = super.getKeyManagers(keyStore);
+            if (managers != null)
+            {
+                String alias = getCertAlias();
+                if (alias != null)
+                {
+                    for (int idx = 0; idx < managers.length; idx++)
+                    {
+                        if (managers[idx] instanceof X509ExtendedKeyManager)
+                            managers[idx] = new AliasedX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx], this);
+                    }
+                }
+            }
+            return managers;
+        }
+
+        @Override
         public void customize(SSLEngine sslEngine)
         {
             SSLParameters sslParameters = sslEngine.getSSLParameters();
@@ -2251,6 +2375,9 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
     @ManagedObject
     public static class Server extends SslContextFactory implements SniX509ExtendedKeyManager.SniSelector
     {
+        /**
+         * {@link SSLSession} attribute key for the SNI host.
+         */
         public static final String SNI_HOST = "org.eclipse.jetty.util.ssl.sniHost";
 
         private boolean _needClientAuth;
@@ -2333,34 +2460,6 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
             _sniRequired = sniRequired;
         }
 
-        @Override
-        protected KeyManager[] getKeyManagers(KeyStore keyStore) throws Exception
-        {
-            KeyManager[] managers = super.getKeyManagers(keyStore);
-
-            boolean hasSniX509ExtendedKeyManager = false;
-
-            // Is SNI needed to select a certificate?
-            if (isSniRequired() || !wildCerts().isEmpty() || hostCerts().size() > 1 || (hostCerts().size() == 1 && aliasCerts().size() > 1))
-            {
-                for (int idx = 0; idx < managers.length; idx++)
-                {
-                    if (managers[idx] instanceof X509ExtendedKeyManager)
-                    {
-                        managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
-                        hasSniX509ExtendedKeyManager = true;
-                    }
-                }
-            }
-
-            if (isSniRequired())
-            {
-                if (managers == null || !hasSniX509ExtendedKeyManager)
-                    throw new IllegalStateException("No SNI Key managers when SNI is required");
-            }
-            return managers;
-        }
-
         /**
          * @return the custom function to select certificates based on SNI information
          */
@@ -2380,6 +2479,30 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
         }
 
         @Override
+        protected KeyManager[] getKeyManagers(KeyStore keyStore) throws Exception
+        {
+            boolean hasSniX509ExtendedKeyManager = false;
+            KeyManager[] managers = super.getKeyManagers(keyStore);
+            if (managers != null)
+            {
+                for (int idx = 0; idx < managers.length; idx++)
+                {
+                    if (managers[idx] instanceof X509ExtendedKeyManager)
+                    {
+                        managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
+                        hasSniX509ExtendedKeyManager = true;
+                    }
+                }
+            }
+            if (isSniRequired())
+            {
+                if (managers == null || !hasSniX509ExtendedKeyManager)
+                    throw new IllegalStateException("No SNI Key managers when SNI is required");
+            }
+            return managers;
+        }
+
+        @Override
         public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates)
         {
             boolean sniRequired = isSniRequired();
@@ -2396,27 +2519,42 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
             else
             {
                 // Match the SNI host.
+                Date now = new Date();
                 List<X509> matching = certificates.stream()
+                    // Keep only certificates that are already valid (but may be expired).
+                    .filter(x509 -> !now.before(x509.getCertificate().getNotBefore()))
                     .filter(x509 -> x509.matches(sniHost))
+                    .sorted(Comparator
+                        // Prefer non-expired certificates.
+                        .comparing((X509 x509) -> now.after(x509.getCertificate().getNotAfter()))
+                        // Then prefer strict matches to wildcard matches.
+                        .thenComparingInt(x509 -> x509.getWilds().size())
+                        // Then prefer most recently issued.
+                        .thenComparing(x509 -> x509.getCertificate().getNotBefore(), Comparator.reverseOrder()))
                     .toList();
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Selecting alias among valid, sni-matching, certificates {}", matching);
 
                 if (matching.isEmpty())
                 {
                     // There is no match for this SNI among the certificates valid for
                     // this keyType; check if there is any certificate that matches this
                     // SNI, as we will likely be called again with a different keyType.
-                    boolean anyMatching = aliasCerts().values().stream()
+                    boolean anyMatching = aliasCerts(session).values().stream()
+                        .filter(x509 -> !now.before(x509.getCertificate().getNotBefore()))
                         .anyMatch(x509 -> x509.matches(sniHost));
                     alias = sniRequired || anyMatching ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
                 }
                 else
                 {
                     alias = matching.get(0).getAlias();
-                    if (matching.size() > 1)
+                    String preferredAlias = getCertAlias();
+                    if (preferredAlias != null)
                     {
-                        // Prefer strict matches over wildcard matches.
                         alias = matching.stream()
-                            .min(Comparator.comparingInt(cert -> cert.getWilds().size()))
+                            .filter(x509 -> preferredAlias.equals(x509.getAlias()))
+                            .findFirst()
                             .map(X509::getAlias)
                             .orElse(alias);
                     }

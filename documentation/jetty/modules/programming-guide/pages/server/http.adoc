@@ -641,6 +641,18 @@ For embedded usage the `KeyStoreScanner` should be created for the specific `Ssl
 include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=keyStoreScanner]
 ----
 
+[[connector-protocol-tls-dynamic-keystore]]
+==== SslContextFactory & Dynamic KeyStore Updates
+
+The JDK `KeyStore` API allows applications to dynamically update the `KeyStore` object by adding and removing entries, for example by adding renewed certificates and removing expired ones, or adding new certificates for domains of newly deployed web applications.
+
+In order to support this advanced usage, `SslContextFactory` must be configured with the `PKIX` `KeyManagerFactory` algorithm, and with an SNI alias mapper function that works for PKIX:
+
+[,java,indent=0,options=nowrap]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=dynamicKeyStore]
+----
+
 [[connector-protocol-proxy-http11]]
 ==== Jetty Behind a Load Balancer
 
