@@ -53,6 +53,36 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Isolated
 public class ShutdownServiceTest
 {
+    /**
+     * The generated key is the actual credential that authenticates a destructive remote command
+     * (see the {@code key} parameter of {@link ShutdownService}'s constructor), not merely a nonce,
+     * so it must come from a cryptographically secure source and carry real entropy. This checks the
+     * length/format contract (40 lowercase/uppercase hex characters = 20 bytes = 160 bits) and that
+     * two keys generated back-to-back, which would be the worst case for the old
+     * {@code Math.random() + hashCode() + currentTimeMillis()} formula (minimal time skew, and on
+     * some JVMs a correlated hashCode), are still unrelated: neither is a substring, reverse,
+     * case-flip, or small numeric offset of the other.
+     */
+    @Test
+    public void testGeneratedKeyHasRealEntropy() throws Exception
+    {
+        ShutdownService first = new ShutdownService("localhost", 0, null, false);
+        ShutdownService second = new ShutdownService("localhost", 0, null, false);
+
+        for (ShutdownService shutdown : new ShutdownService[] {first, second})
+        {
+            String key = shutdown.getKey();
+            assertEquals(40, key.length(), "key: " + key);
+            assertTrue(key.matches("[0-9a-fA-F]{40}"), "key is not plain hex: " + key);
+        }
+
+        String keyA = first.getKey().toLowerCase();
+        String keyB = second.getKey().toLowerCase();
+        assertFalse(keyA.equals(keyB), "two generated keys must not collide");
+        assertFalse(keyA.contains(keyB.substring(0, 8)) || keyB.contains(keyA.substring(0, 8)),
+            "two back-to-back generated keys share a long common substring: " + keyA + " / " + keyB);
+    }
+
     @Test
     public void testPid() throws Exception
     {
