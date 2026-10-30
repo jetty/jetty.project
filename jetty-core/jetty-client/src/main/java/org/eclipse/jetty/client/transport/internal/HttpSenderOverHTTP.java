@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.Retainable;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
@@ -46,6 +47,7 @@ public class HttpSenderOverHTTP extends HttpSender
     private boolean lastContent;
     private Callback callback;
     private boolean shutdown;
+    private Throwable writeFailure;
 
     public HttpSenderOverHTTP(HttpChannelOverHTTP channel)
     {
@@ -110,8 +112,20 @@ public class HttpSenderOverHTTP extends HttpSender
     }
 
     @Override
+    protected boolean shouldAbortResponse(Throwable failure)
+    {
+        // A failed write may leave a response buffered or unread in the endpoint.
+        // Let the receiver consume it, or fail independently on EOF or timeout.
+        if (failure == writeFailure && failure instanceof EofException &&
+            getHttpChannel().getHttpConnection().getEndPoint().isOpen())
+            return false;
+        return super.shouldAbortResponse(failure);
+    }
+
+    @Override
     protected void reset()
     {
+        writeFailure = null;
         headersCallback.reset();
         contentCallback.reset();
         generator.reset();
@@ -277,6 +291,7 @@ public class HttpSenderOverHTTP extends HttpSender
         @Override
         protected void onFailure(Throwable cause)
         {
+            writeFailure = cause;
             callback.failed(cause);
         }
 
@@ -369,6 +384,7 @@ public class HttpSenderOverHTTP extends HttpSender
         @Override
         protected void onFailure(Throwable cause)
         {
+            writeFailure = cause;
             callback.failed(cause);
         }
 
