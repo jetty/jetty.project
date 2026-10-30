@@ -458,7 +458,10 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         // Otherwise treat as a failure.
-        return new IdleTimeoutTask(onFailure(t), requestHandled);
+        // If the request has not been handled yet (e.g. it is queued waiting for a thread),
+        // the server is too busy to handle it, so fail it with a 503 rather than a 500.
+        Throwable failure = requestHandled ? t : new HttpException.RuntimeException(HttpStatus.SERVICE_UNAVAILABLE_503, "Idle timeout", t);
+        return new IdleTimeoutTask(onFailure(failure), requestHandled);
     }
 
     @Override
