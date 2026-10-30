@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.security.KeyStore;
 import java.security.Security;
 import java.time.Duration;
 import java.util.List;
@@ -694,6 +695,38 @@ public class HTTPServerDocs
 
         server.start();
         // end::keyStoreScanner[]
+    }
+
+    public void dynamicKeyStore() throws Exception
+    {
+        // tag::dynamicKeyStore[]
+        // A dynamic KeyStore created in memory.
+        KeyStore dynamicKeyStore = KeyStore.getInstance("PKCS12");
+        char[] password = "secret".toCharArray();
+        dynamicKeyStore.load(null, password);
+
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        // Set the dynamic KeyStore directly.
+        sslContextFactory.setKeyStore(dynamicKeyStore);
+        // Configure the PKIX algorithm to support dynamic KeyStores.
+        sslContextFactory.setKeyManagerFactoryAlgorithm("PKIX");
+        // Configure the alias mapper function that works with PKIX.
+        sslContextFactory.setAliasMapper(SslContextFactory.ALIAS_MAPPER_OPENJDK_PKIX);
+        sslContextFactory.start();
+
+        // -------- //
+        // In another part of the code, when a certificate is updated.
+        KeyStore.PasswordProtection protection = new KeyStore.PasswordProtection(password);
+        KeyStore.Entry entry = createEntryForRenewedCertificate(protection);
+        // Update the KeyStore dynamically.
+        dynamicKeyStore.setEntry("alias", entry, protection);
+        // From now on, new connections may use the new KeyStore entry.
+        // end::dynamicKeyStore[]
+    }
+
+    private static KeyStore.Entry createEntryForRenewedCertificate(KeyStore.PasswordProtection protection)
+    {
+        return null;
     }
 
     public void handlerTree()

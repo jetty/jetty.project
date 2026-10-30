@@ -55,6 +55,28 @@ public class HttpCookieStoreTest
     }
 
     @Test
+    public void testAddSessionCookieWithNegativeMaxAge()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI uri = URI.create("http://example.com");
+        // A negative Max-Age means "not specified" (a session cookie), which is retained, not rejected.
+        assertTrue(store.add(uri, HttpCookie.build("n1", "v").maxAge(-1).build()));
+        assertTrue(store.add(uri, HttpCookie.build("n2", "v").maxAge(-5).build()));
+        // A negative Max-Age does not force expiry, so a future Expires keeps the cookie.
+        assertTrue(store.add(uri, HttpCookie.build("n3", "v").maxAge(-1).expires(Instant.now().plusSeconds(3600)).build()));
+    }
+
+    @Test
+    public void testRetainSessionCookie()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI uri = URI.create("http://example.com");
+        // No Max-Age and no Expires: a session cookie, which is retained.
+        assertTrue(store.add(uri, HttpCookie.build("n", "v").build()));
+        assertEquals(1, store.match(uri).size());
+    }
+
+    @Test
     public void testRejectCookieForNonMatchingDomain()
     {
         HttpCookieStore store = new HttpCookieStore.Default();
@@ -312,6 +334,24 @@ public class HttpCookieStoreTest
 
         List<HttpCookie> matches = store.match(cookieURI);
         assertEquals(0, matches.size());
+    }
+
+    @Test
+    public void testRetainCookieWithExpiresEpochAndPositiveMaxAge()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI uri = URI.create("https://example.com/");
+        HttpCookie cookie = HttpCookie.build("n1", "v1")
+            .maxAge(3600)
+            .expires(Instant.EPOCH)
+            .build();
+
+        assertTrue(store.add(uri, cookie));
+        List<HttpCookie> matches = store.match(uri);
+        assertEquals(1, matches.size());
+        HttpCookie matched = matches.get(0);
+        assertEquals("n1", matched.getName());
+        assertEquals("v1", matched.getValue());
     }
 
     @Test

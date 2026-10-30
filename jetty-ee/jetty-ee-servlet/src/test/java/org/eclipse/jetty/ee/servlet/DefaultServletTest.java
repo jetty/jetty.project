@@ -34,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -45,6 +46,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
@@ -1145,6 +1147,80 @@ public class DefaultServletTest
             HttpStatus.OK_200,
             (response) -> assertThat(response.getContent(), containsString("<h1>Three Index</h1>"))
         );
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testConditionalGetOfLargeWelcomeFileInCombinedDirectory(boolean wrapResponse) throws Exception
+    {
+        // A directory present in two base resources has an unknown length,
+        // so the request for it is handled asynchronously.
+        Path dirA = workDir.getEmptyPathDir().resolve("a");
+        Path dirB = workDir.getPath().resolve("b");
+        FS.ensureDirExists(dirA.resolve("dir"));
+        FS.ensureDirExists(dirB.resolve("dir"));
+        // The welcome file is larger than the output buffer, so it is also served asynchronously.
+        String welcome = "x".repeat(64 * 1024);
+        Files.writeString(dirB.resolve("dir/index.html"), welcome, UTF_8);
+
+        server.stop();
+        context.setBaseResource(ResourceFactory.combine(
+            ResourceFactory.root().newResource(dirA),
+            ResourceFactory.root().newResource(dirB)));
+        if (wrapResponse)
+        {
+            FilterHolder filterHolder = new FilterHolder((request, response, chain) ->
+            {
+                boolean started;
+                AsyncContext asyncContext;
+                if (request.isAsyncStarted())
+                {
+                    asyncContext = request.getAsyncContext();
+                    started = false;
+                }
+                else
+                {
+                    asyncContext = request.startAsync();
+                    started = true;
+                }
+                try
+                {
+                    chain.doFilter(request, new HttpServletResponseWrapper((HttpServletResponse)response));
+                }
+                finally
+                {
+                    if (started)
+                        asyncContext.complete();
+                }
+            });
+            filterHolder.setAsyncSupported(true);
+            context.addFilter(filterHolder, "/*", EnumSet.allOf(DispatcherType.class));
+        }
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
+        defHolder.setAsyncSupported(true);
+        defHolder.setInitParameter("dirAllowed", "false");
+        server.start();
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+            GET /context/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), is(welcome));
+        String lastModified = response.get(HttpHeader.LAST_MODIFIED);
+        assertNotNull(lastModified);
+
+        response = HttpTester.parseResponse(connector.getResponse("""
+            GET /context/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            If-Modified-Since: %s\r
+            \r
+            """.formatted(lastModified)));
+        assertNotNull(response, "connection aborted");
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
     }
 
     public static Stream<Arguments> welcomeScenarios()

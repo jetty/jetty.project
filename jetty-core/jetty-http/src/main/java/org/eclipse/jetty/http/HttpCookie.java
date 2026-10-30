@@ -18,7 +18,9 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -84,8 +86,11 @@ public interface HttpCookie
      */
     default boolean isExpired()
     {
-        if (getMaxAge() == 0)
-            return true;
+        // The Max-Age attribute takes precedence over the Expires attribute (RFC 6265 section 5.3).
+        // A negative Max-Age means "not specified" (a session cookie) and is not stored as an
+        // attribute, so a present Max-Age is always >= 0 here, where 0 means already expired.
+        if (getAttributes().containsKey(MAX_AGE_ATTRIBUTE))
+            return getMaxAge() <= 0;
         Instant expires = getExpires();
         return expires != null && Instant.now().isAfter(expires);
     }
@@ -161,7 +166,18 @@ public interface HttpCookie
 
     private boolean isSetToNotFalse(String attribute)
     {
-        String value = getAttributes().get(attribute);
+        return isAttributeTrue(getAttributes().get(attribute));
+    }
+
+    /**
+     * <p>Interprets a boolean-like cookie attribute value, such as {@code Secure}, {@code HttpOnly}
+     * or {@code Partitioned}.</p>
+     *
+     * @param value the attribute value, or {@code null} if the attribute is absent
+     * @return whether the flag is enabled, i.e. the attribute is present and not explicitly {@code false}
+     */
+    static boolean isAttributeTrue(String value)
+    {
         return value != null && !StringUtil.asciiEqualsIgnoreCase("false", value);
     }
 
@@ -544,6 +560,9 @@ public interface HttpCookie
      */
     class Builder
     {
+        // RFC 6265, section 5.2.2: a Max-Age value is an optional leading '-' followed by one or more digits.
+        private static final Pattern MAX_AGE_PATTERN = Pattern.compile("-?\\d+");
+
         private final String _name;
         private final String _value;
         private final int _version;
@@ -556,6 +575,17 @@ public interface HttpCookie
             _version = version;
         }
 
+        /**
+         * <p>Sets a cookie attribute, validating the value of the known attributes.</p>
+         *
+         * @param name the attribute name (ignored if {@code null})
+         * @param value the attribute value
+         * @return this builder
+         * @throws IllegalArgumentException if a known attribute has an invalid value: a non-integer
+         *         {@code Max-Age}, an unparsable {@code Expires} date, or an unknown {@code SameSite}.
+         *         The boolean-like flags {@code Secure}, {@code HttpOnly} and {@code Partitioned} do
+         *         not throw: they follow {@link #isAttributeTrue(String)} (present and not {@code false}).
+         */
         public Builder attribute(String name, String value)
         {
             if (name == null)
@@ -564,25 +594,41 @@ public interface HttpCookie
             switch (name.toLowerCase(Locale.ROOT))
             {
                 case "expires" -> expires(StringUtil.isBlank(value) ? null : parseExpires(value));
-                case "httponly" -> httpOnly(asBoolean("httponly", value));
-                case "max-age" -> maxAge(StringUtil.isBlank(value) ? -1 : Long.parseLong(value));
+                case "httponly" -> httpOnly(isAttributeTrue(value));
+                case "max-age" -> maxAge(StringUtil.isBlank(value) ? -1
+                    : parseMaxAgeValue(value).orElseThrow(() -> new IllegalArgumentException("Invalid Max-Age: " + value)));
                 case "samesite" -> sameSite(SameSite.from(value));
-                case "secure" -> secure(asBoolean("secure", value));
-                case "partitioned" -> partitioned(asBoolean("partitioned", value));
+                case "secure" -> secure(isAttributeTrue(value));
+                case "partitioned" -> partitioned(isAttributeTrue(value));
                 default -> _attributes = lazyAttributePut(_attributes, name, value);
             }
             return this;
         }
 
-        private boolean asBoolean(String attribute, String value)
+        /**
+         * <p>Parses a {@code Max-Age} value per RFC 6265 (section 5.2.2): an optional leading {@code '-'}
+         * followed by one or more ASCII digits (a leading {@code '+'} is not permitted). An all-digit
+         * value that overflows a {@code long} is clamped in magnitude to {@link Long#MAX_VALUE} (positive)
+         * or {@link Long#MIN_VALUE} (negative); the sign is always preserved, leaving each caller to apply
+         * its own policy for non-positive values. Shared with {@link RFC6265SetCookieParser}.</p>
+         *
+         * @param value the raw {@code Max-Age} value
+         * @return the Max-Age in seconds (sign preserved, magnitude clamped on overflow), or an empty
+         *         {@link OptionalLong} if the value is not a valid {@code Max-Age}
+         */
+        static OptionalLong parseMaxAgeValue(String value)
         {
-            if (value == null)
-                return false;
-            if (value.isEmpty() || "true".equalsIgnoreCase(value))
-                return true;
-            if ("false".equalsIgnoreCase(value))
-                return false;
-            throw new IllegalArgumentException("Invalid value for " + attribute);
+            if (value == null || !MAX_AGE_PATTERN.matcher(value).matches())
+                return OptionalLong.empty();
+            try
+            {
+                return OptionalLong.of(Long.parseLong(value));
+            }
+            catch (NumberFormatException x)
+            {
+                // An all-digit value that overflows a long: clamp the magnitude, preserve the sign.
+                return OptionalLong.of(value.charAt(0) == '-' ? Long.MIN_VALUE : Long.MAX_VALUE);
+            }
         }
 
         public Builder comment(String comment)
@@ -608,7 +654,10 @@ public interface HttpCookie
 
         public Builder maxAge(long maxAge)
         {
-            _attributes = lazyAttributePut(_attributes, MAX_AGE_ATTRIBUTE, Long.toString(maxAge));
+            if (maxAge < 0)
+                _attributes = lazyAttributeRemove(_attributes, MAX_AGE_ATTRIBUTE);
+            else
+                _attributes = lazyAttributePut(_attributes, MAX_AGE_ATTRIBUTE, Long.toString(maxAge));
             return this;
         }
 
@@ -680,6 +729,9 @@ public interface HttpCookie
      * such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
      * {@link #isSecure()}, {@link #isPartitioned()}, {@link #getComment()}, plus any newly defined
      * attributes unknown to this code base.
+     * @throws IllegalArgumentException if a known attribute has an invalid value: a non-integer
+     * {@code Max-Age}, an unparsable {@code Expires} date, a non-boolean {@code Secure}, {@code HttpOnly}
+     * or {@code Partitioned}, or an unknown {@code SameSite}
      */
     static HttpCookie from(String name, String value, Map<String, String> attributes)
     {
@@ -696,16 +748,18 @@ public interface HttpCookie
      * such as {@link #getDomain()}, {@link #getPath()}, {@link #getMaxAge()}, {@link #isHttpOnly()},
      * {@link #isSecure()}, {@link #isPartitioned()}, {@link #getComment()}, plus any newly defined
      * attributes unknown to this code base.
+     * @throws IllegalArgumentException if a known attribute has an invalid value: a non-integer
+     * {@code Max-Age}, an unparsable {@code Expires} date, a non-boolean {@code Secure}, {@code HttpOnly}
+     * or {@code Partitioned}, or an unknown {@code SameSite}
      */
     static HttpCookie from(String name, String value, int version, Map<String, String> attributes)
     {
         if (attributes == null || attributes.isEmpty())
             return new Immutable(name, value, version, Collections.emptyMap());
 
-        Map<String, String> attrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        attrs.putAll(attributes);
-
-        return new Immutable(name, value, version, attrs);
+        HttpCookie.Builder builder = build(name, value, version);
+        attributes.forEach(builder::attribute);
+        return builder.build();
     }
 
     /**

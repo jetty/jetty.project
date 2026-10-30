@@ -111,4 +111,10 @@ etc/jetty-ssl-context.xml
 
 ## Whether TLS session caching should be used.
 # jetty.sslContext.sessionCachingEnabled=true
+
+## The alias mapper function.
+## Use ALIAS_MAPPER_OPENJDK_PKIX when using jetty.sslContext.keyManagerFactoryAlgorithm=PKIX
+## and the OpenJDK JSSE implementation, otherwise ALIAS_MAPPER_NULL (which may be slow)
+## with PKIX and other JSSE implementations.
+# jetty.sslContext.aliasMapper=ALIAS_MAPPER_IDENTITY
 # end::documentation[]

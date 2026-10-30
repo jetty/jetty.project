@@ -297,12 +297,14 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     {
         try (StacklessLogging ignore = new StacklessLogging(HttpChannelState.class))
         {
-            CountDownLatch serverLatch = new CountDownLatch(1);
+            CountDownLatch serverEnterLatch = new CountDownLatch(1);
+            CountDownLatch serverExitLatch = new CountDownLatch(1);
             start(scenario, new EmptyServerHandler()
             {
                 @Override
                 protected void service(org.eclipse.jetty.server.Request request, Response response) throws Exception
                 {
+                    serverEnterLatch.countDown();
                     try
                     {
                         InputStream inputStream = org.eclipse.jetty.server.Request.asInputStream(request);
@@ -311,7 +313,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                     }
                     finally
                     {
-                        serverLatch.countDown();
+                        serverExitLatch.countDown();
                     }
                 }
             });
@@ -325,25 +327,36 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             {
                 request.onRequestContent((r, c) ->
                 {
-                    r.abort(cause).thenAccept(b ->
+                    try
                     {
-                        aborted.set(b);
-                        latch.countDown();
-                    });
-                }).body(new ByteBufferRequestContent(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
+                        assertTrue(serverEnterLatch.await(2, TimeUnit.SECONDS));
+                        r.abort(cause).thenAccept(b ->
+                        {
+                            aborted.set(b);
+                            latch.countDown();
+                        });
+                    }
+                    catch (InterruptedException e)
+                    {
+                        e.printStackTrace();
+                    }
+                })
+                .body(new ByteBufferRequestContent(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
                 {
                     @Override
                     public long getLength()
                     {
                         return -1;
                     }
-                }).timeout(5, TimeUnit.SECONDS).send();
+                })
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
             });
             assertTrue(latch.await(5, TimeUnit.SECONDS));
             if (aborted.get())
                 assertSame(cause, x.getCause());
 
-            assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(serverExitLatch.await(5, TimeUnit.SECONDS));
 
             HttpDestination destination = (HttpDestination)client.resolveDestination(request);
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();

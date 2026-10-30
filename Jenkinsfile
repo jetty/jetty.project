@@ -38,7 +38,7 @@ pipeline {
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk25", "clean install -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
+              mavenBuild( "jdk25", "clean install -Ptck -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
               recordIssues id: "analysis-jdk25", name: "Static Analysis jdk25", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
@@ -54,13 +54,13 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK26") {
+        stage("Build / Test - JDK27") {
           agent { node { label 'linux-dind' } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk26", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk26", name: "Static Analysis jdk26", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
+              mavenBuild( "jdk27", "clean install -Ptck -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk27", name: "Static Analysis jdk27", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
             }
           }
         }
@@ -144,8 +144,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
           // Pull the gcloud emulator image through the local Nexus proxy instead of gcr.io. A
           // registry mirror cannot do this: dockerd only consults a mirror for Docker Hub.
           def gcloudImage = " -Dgcloud.docker.image.name=nexus-service.nexus.svc.cluster.local:8082/google.com/cloudsdktool/cloud-sdk "
-          sh "mkdir ~/.mimir"
-          sh "cp jenkins-mimir-daemon.properties ~/.mimir/daemon.properties"
+          // fork PRs run this Jenkinsfile from the base branch, so the file may already be gone
           sh "mvn $extraArgs $dashProfile $gcloudImage -s $GLOBAL_MVN_SETTINGS -Dsettings.path=$GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false

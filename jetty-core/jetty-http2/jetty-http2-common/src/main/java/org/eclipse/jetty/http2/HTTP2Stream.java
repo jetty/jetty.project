@@ -511,7 +511,8 @@ public class HTTP2Stream implements Stream, Attachable, Closeable, Callback, Dum
                 if (LOG.isDebugEnabled())
                     LOG.debug("Invalid data length {} for {}", data, this);
                 session.dataConsumed(this, data.frame().flowControlLength());
-                reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
+                // Reset the stream, then notify the application of the failure.
+                session.onStreamFailure(streamId, ErrorCode.PROTOCOL_ERROR.code, "invalid_data_length");
                 return;
             }
         }
