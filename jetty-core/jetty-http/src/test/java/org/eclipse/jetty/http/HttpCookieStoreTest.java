@@ -117,6 +117,31 @@ public class HttpCookieStoreTest
         assertTrue(store.add(uri, HttpCookie.build("n", "v").domain(address).build()));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "0.1",
+        "0.0.1",
+        "168.0.1",
+        "3.4]"
+    })
+    public void testRejectCookieForPartialIPAddress(String domain)
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        assertFalse(store.add(URI.create("http://10.0.0.1"), HttpCookie.build("n", "v").domain(domain).build()));
+        assertFalse(store.add(URI.create("http://192.168.0.1"), HttpCookie.build("n", "v").domain(domain).build()));
+        assertFalse(store.add(URI.create("http://[::ffff:1.2.3.4]"), HttpCookie.build("n", "v").domain(domain).build()));
+        assertEquals(0, store.all().size());
+    }
+
+    @Test
+    public void testIPAddressCookieNotSentToOtherIPAddress()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        store.add(URI.create("http://10.0.0.1"), HttpCookie.build("n", "v").domain("0.1").build());
+        assertEquals(0, store.match(URI.create("http://192.168.0.1/")).size());
+        assertEquals(0, store.match(URI.create("http://172.16.0.1/")).size());
+    }
+
     @Test
     public void testReplaceCookie()
     {
