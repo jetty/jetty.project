@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -229,6 +230,28 @@ public class CommandLineBuilder
     public String toCommandLine()
     {
         return commandLine.toString();
+    }
+
+    /**
+     * Write the command line following Shell Command Line format.
+     * <p>
+     *     Note: Every arg is evaluated for potential {@code '} (single-quote tick) wrapping.
+     * </p>
+     */
+    public void writeCommandLine(PrintStream writer)
+    {
+        writer.print(commandLine);
+    }
+
+    /**
+     * Write the command line following {@code java @arglines} format.
+     */
+    public void writeArgLines(PrintStream writer)
+    {
+        for (String arg: args)
+        {
+            writer.println(arg);
+        }
     }
 
     public void debug()
