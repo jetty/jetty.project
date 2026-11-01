@@ -50,6 +50,7 @@ public class OpenIdCredentials implements Serializable
 
     private final String redirectUri;
     private String authCode;
+    private String codeVerifier;
     private Map<String, Object> response;
     private Map<String, Object> claims;
     private Fields errorFields;
@@ -63,8 +64,20 @@ public class OpenIdCredentials implements Serializable
 
     public OpenIdCredentials(String authCode, String redirectUri)
     {
+        this(authCode, redirectUri, null);
+    }
+
+    /**
+     * @param authCode the Authorization Code from the authentication response.
+     * @param redirectUri the redirect URI sent with the authentication request.
+     * @param codeVerifier the PKCE code verifier (RFC 7636) whose challenge was sent with the authentication request,
+     * or null if none was sent.
+     */
+    public OpenIdCredentials(String authCode, String redirectUri, String codeVerifier)
+    {
         this.authCode = authCode;
         this.redirectUri = redirectUri;
+        this.codeVerifier = codeVerifier;
     }
 
     public String getUserId()
@@ -149,8 +162,9 @@ public class OpenIdCredentials implements Serializable
             }
             finally
             {
-                // reset authCode as it can only be used once
+                // reset authCode as it can only be used once, and the verifier with it
                 authCode = null;
+                codeVerifier = null;
             }
         }
     }
@@ -218,6 +232,8 @@ public class OpenIdCredentials implements Serializable
         fields.add("code", authCode);
         fields.add("redirect_uri", redirectUri);
         fields.add("grant_type", "authorization_code");
+        if (codeVerifier != null)
+            fields.add("code_verifier", codeVerifier);
 
         Request request = configuration.getHttpClient().POST(configuration.getTokenEndpoint());
         switch (configuration.getAuthenticationMethod())
@@ -230,6 +246,9 @@ public class OpenIdCredentials implements Serializable
             case "client_secret_post":
                 fields.add("client_id", configuration.getClientId());
                 fields.add("client_secret", configuration.getClientSecret());
+                break;
+            case OpenIdConfiguration.AUTHENTICATION_METHOD_NONE:
+                fields.add("client_id", configuration.getClientId());
                 break;
             default:
                 throw new IllegalStateException(configuration.getAuthenticationMethod());

@@ -44,9 +44,13 @@ etc/jetty-openid.xml
 ## True if all certificates should be trusted by the default SslContextFactory
 # jetty.openid.sslContextFactory.trustAll=false
 
-## What authentication method to use with the Token Endpoint (client_secret_post, client_secret_basic).
+## What authentication method to use with the Token Endpoint (client_secret_post, client_secret_basic, or none for a
+## public client, which has no clientSecret).
 # jetty.openid.authenticationMethod=client_secret_post
 
 ## Whether the user should be logged out after the idToken expires.
 # jetty.openid.logoutWhenIdTokenIsExpired=false
+
+## Whether to use Proof Key for Code Exchange (RFC 7636) with the S256 method.
+# jetty.openid.pkce=true
 # end::documentation[]

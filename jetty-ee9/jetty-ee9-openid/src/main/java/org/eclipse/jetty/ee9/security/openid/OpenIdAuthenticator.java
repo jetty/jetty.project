@@ -18,8 +18,11 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -482,7 +485,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 }
 
                 // Attempt to login with the provided authCode.
-                OpenIdCredentials credentials = new OpenIdCredentials(authCode, getRedirectUri(request));
+                OpenIdCredentials credentials = new OpenIdCredentials(authCode, getRedirectUri(request), uriRedirectInfo.getCodeVerifier());
                 credentials.redeemAuthCode(_openIdConfiguration);
                 if (credentials.getErrorFields() != null)
                 {
@@ -699,11 +702,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     {
         HttpSession session = request.getSession();
         String antiForgeryToken;
+        String codeVerifier = _openIdConfiguration.isPkce() ? newCodeVerifier() : null;
         synchronized (session)
         {
             Map<String, UriRedirectInfo> csrfMap = ensureCsrfMap(session);
             antiForgeryToken = new BigInteger(130, _secureRandom).toString(32);
-            csrfMap.put(antiForgeryToken, new UriRedirectInfo(request));
+            csrfMap.put(antiForgeryToken, new UriRedirectInfo(request, codeVerifier));
         }
 
         // any custom scopes requested from configuration
@@ -713,12 +717,47 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             scopes.append(" ").append(s);
         }
 
-        return _openIdConfiguration.getAuthorizationEndpoint() +
-            "?client_id=" + UrlEncoded.encodeString(_openIdConfiguration.getClientId(), StandardCharsets.UTF_8) +
-            "&redirect_uri=" + UrlEncoded.encodeString(getRedirectUri(request), StandardCharsets.UTF_8) +
-            "&scope=openid" + UrlEncoded.encodeString(scopes.toString(), StandardCharsets.UTF_8) +
-            "&state=" + antiForgeryToken +
-            "&response_type=code";
+        StringBuilder challengeUri = new StringBuilder(_openIdConfiguration.getAuthorizationEndpoint())
+            .append("?client_id=").append(UrlEncoded.encodeString(_openIdConfiguration.getClientId(), StandardCharsets.UTF_8))
+            .append("&redirect_uri=").append(UrlEncoded.encodeString(getRedirectUri(request), StandardCharsets.UTF_8))
+            .append("&scope=openid").append(UrlEncoded.encodeString(scopes.toString(), StandardCharsets.UTF_8))
+            .append("&state=").append(antiForgeryToken)
+            .append("&response_type=code");
+        if (codeVerifier != null)
+        {
+            challengeUri.append("&code_challenge=").append(codeChallenge(codeVerifier))
+                .append("&code_challenge_method=S256");
+        }
+        return challengeUri.toString();
+    }
+
+    /**
+     * @return a new PKCE code verifier: 32 random bytes, base64url encoded without padding, which is 43 characters
+     * of the unreserved alphabet that RFC 7636 section 4.1 allows.
+     */
+    private String newCodeVerifier()
+    {
+        byte[] bytes = new byte[32];
+        _secureRandom.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    /**
+     * @param codeVerifier the PKCE code verifier.
+     * @return the {@code S256} code challenge for the verifier, {@code BASE64URL(SHA256(ASCII(code_verifier)))}
+     * as defined by RFC 7636 section 4.2.
+     */
+    static String codeChallenge(String codeVerifier)
+    {
+        try
+        {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(codeVerifier.getBytes(StandardCharsets.US_ASCII));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override
@@ -778,11 +817,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         private final String _uri;
         private final String _method;
         private final Fields _formParameters;
+        private final String _codeVerifier;
 
-        public UriRedirectInfo(Request request)
+        public UriRedirectInfo(Request request, String codeVerifier)
         {
             _uri = request.getRequestURI();
             _method = request.getMethod();
+            _codeVerifier = codeVerifier;
 
             if (MimeTypes.Type.FORM_ENCODED.is(request.getContentType()) && HttpMethod.POST.is(request.getMethod()))
             {
@@ -809,6 +850,14 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         public Fields getFormParameters()
         {
             return _formParameters;
+        }
+
+        /**
+         * @return the PKCE code verifier for this request, or null if PKCE was not used.
+         */
+        public String getCodeVerifier()
+        {
+            return _codeVerifier;
         }
     }
 
