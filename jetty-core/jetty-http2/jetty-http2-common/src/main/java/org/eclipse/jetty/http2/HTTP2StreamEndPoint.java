@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2StreamEndPoint.class);
 
+    private final AutoLock lock = new AutoLock();
     private final AtomicReference<WriteState> writeState = new AtomicReference<>(WriteState.IDLE);
     private final AtomicReference<Callback> readCallback = new AtomicReference<>();
     private final long created = System.currentTimeMillis();
@@ -159,7 +161,9 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                 data.release();
             shutdownOutput();
             stream.close();
-            connection.onClose(cause);
+            Connection connection = getConnection();
+            if (connection != null)
+                connection.onClose(cause);
             onClose(cause);
         }
     }
@@ -438,13 +442,19 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
     @Override
     public Connection getConnection()
     {
-        return connection;
+        try (AutoLock ignored = lock.lock())
+        {
+            return connection;
+        }
     }
 
     @Override
     public void setConnection(Connection connection)
     {
-        this.connection = connection;
+        try (AutoLock ignored = lock.lock())
+        {
+            this.connection = connection;
+        }
     }
 
     @Override
@@ -476,11 +486,20 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
         if (LOG.isDebugEnabled())
             LOG.debug("upgrading from {} to {} with data {} on {}", oldConnection, newConnection, BufferUtil.toDetailString(buffer), this);
 
-        setConnection(newConnection);
+        boolean open;
+        try (AutoLock ignored = lock.lock())
+        {
+            open = isOpen();
+            if (open)
+                this.connection = newConnection;
+        }
         if (newConnection instanceof Connection.UpgradeTo && buffer != null)
             ((Connection.UpgradeTo)newConnection).onUpgradeTo(buffer);
 
         newConnection.onOpen();
+        // Closed (e.g. by a stream reset) before the connection was set.
+        if (!open)
+            newConnection.onClose(null);
     }
 
     protected void processDataAvailable()
