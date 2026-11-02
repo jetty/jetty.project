@@ -1,2 +1,0 @@
-Host=Virtual
-Resource=R2
