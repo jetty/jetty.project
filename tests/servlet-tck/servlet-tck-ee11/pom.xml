@@ -7,9 +7,9 @@
     <artifactId>servlet-tck</artifactId>
     <version>13.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>servlet-tck-ee</artifactId>
+  <artifactId>servlet-tck-ee11</artifactId>
   <packaging>jar</packaging>
-  <name>Tests :: Servlet TCK :: EE</name>
+  <name>Tests :: Servlet TCK :: EE11</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlet.tck.ee</bundle-symbolic-name>
@@ -35,8 +35,12 @@
          move this module back onto the line ShrinkWrap expects. -->
     <maven.deps.version>${maven.version}</maven.deps.version>
     <maven.resolver.version>1.9.22</maven.resolver.version>
+    <!-- The Jetty 13 Arquillian container is not released yet, build it from the jetty-13 branch of
+         arquillian-container-jetty. -->
+    <servlet.tck.arquillian.jetty.version>3.0.0.Final-SNAPSHOT</servlet.tck.arquillian.jetty.version>
     <!-- Also copied to target/servlet-api.jar for the TCK signature tests. -->
     <servlet.tck.servlet.api.version>6.1.0</servlet.tck.servlet.api.version>
+    <servlet.tck.weld.version>6.0.4.Final</servlet.tck.weld.version>
     <!-- Settings file handed to the ShrinkWrap resolver, set by the jenkins profile below. -->
     <shrinkwrap.settings.file/>
   </properties>
@@ -142,6 +146,14 @@
       <artifactId>jetty-ee-webapp</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!-- The Arquillian container only uses the shared Jetty EE classes, so EE 11 is picked here.
+         jetty-ee11-cdi brings the rest of the ee11 modules, including the env.properties marker in
+         jetty-ee11-servlet that tells Jetty which EE it runs. -->
+    <dependency>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-cdi</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
       <artifactId>jetty-http2-server</artifactId>
@@ -152,8 +164,14 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.arquillian.container</groupId>
-      <!-- TODO: this needs to be updated to Jetty 13 EE12 -->
-      <artifactId>arquillian-jetty-embedded-12-1-ee11</artifactId>
+      <artifactId>arquillian-jetty-embedded-13</artifactId>
+      <version>${servlet.tck.arquillian.jetty.version}</version>
+    </dependency>
+    <!-- Its ServletContainerInitializer starts Weld in every TCK web application. -->
+    <dependency>
+      <groupId>org.jboss.weld.servlet</groupId>
+      <artifactId>weld-servlet-core</artifactId>
+      <version>${servlet.tck.weld.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

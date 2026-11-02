@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.tests.tck.ee11;
 
-import org.jboss.arquillian.container.jetty.embedded_12_1_ee11.WebAppContextProcessor;
+import org.jboss.arquillian.container.jetty.embedded_13.WebAppContextProcessor;
 import org.jboss.arquillian.core.spi.LoadableExtension;
 
 /**

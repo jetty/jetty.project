@@ -38,7 +38,7 @@ pipeline {
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk25", "clean install -Ptck -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
+              mavenBuild( "jdk25", "clean install -Dspotbugs.skip=true", "maven3") // javadoc:javadoc -Ptck
               recordIssues id: "analysis-jdk25", name: "Static Analysis jdk25", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
@@ -59,7 +59,7 @@ pipeline {
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk27", "clean install -Ptck -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              mavenBuild( "jdk27", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3") // -Ptck
               recordIssues id: "jdk27", name: "Static Analysis jdk27", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
             }
           }
