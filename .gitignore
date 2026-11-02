@@ -54,6 +54,9 @@ bin/
 # reports
 reports/
 
+# Claude Code per-developer local instructions (each developer keeps their own)
+CLAUDE.local.md
+
 .launchable
 
 
