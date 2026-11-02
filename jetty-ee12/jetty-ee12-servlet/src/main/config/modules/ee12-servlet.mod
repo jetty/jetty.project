@@ -12,9 +12,9 @@ server
 sessions
 
 [files]
-maven://jakarta.servlet/jakarta.servlet-api/6.1.0/jar|lib/ee12/support/jakarta.servlet.jakarta.servlet-api-6.1.0.jar
+maven://jakarta.servlet/jakarta.servlet-api/6.2.0-M2/jar|lib/ee12/support/jakarta.servlet.jakarta.servlet-api-6.2.0-M2.jar
 maven://org.eclipse.jetty.ee12/jetty-ee12-servlet/${jetty.version}/jar|lib/ee12/jetty-ee12-servlet-${jetty.version}.jar
 
 [lib]
 lib/ee12/jetty-ee12-servlet-${jetty.version}.jar
-lib/ee12/support/jakarta.servlet.jakarta.servlet-api-6.1.0.jar
+lib/ee12/support/jakarta.servlet.jakarta.servlet-api-6.2.0-M2.jar
