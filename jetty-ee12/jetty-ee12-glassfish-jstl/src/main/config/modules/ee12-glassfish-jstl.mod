@@ -9,6 +9,13 @@ ee12
 [depends]
 ee12-apache-jsp
 
+[ini]
+ee12.jakarta.servlet.jsp.jstl.impl.version?=@ee12.jakarta.servlet.jsp.jstl.impl.version@
+
+[files]
+maven://jakarta.servlet.jsp.jstl/jakarta.servlet.jsp.jstl-api/3.0.2/jar|lib/ee12/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-3.0.2.jar
+maven://org.glassfish.wasp/wasp/${ee12.jakarta.servlet.jsp.jstl.impl.version}/jar|lib/ee12/support/org.glassfish.wasp.wasp-${ee12.jakarta.servlet.jsp.jstl.impl.version}.jar
+
 [lib]
-lib/ee12-glassfish-jstl/@jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api@
-lib/ee12-glassfish-jstl/@org.glassfish.wasp:wasp@
+lib/ee12/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-3.0.2.jar
+lib/ee12/support/org.glassfish.wasp.wasp-${ee12.jakarta.servlet.jsp.jstl.impl.version}.jar

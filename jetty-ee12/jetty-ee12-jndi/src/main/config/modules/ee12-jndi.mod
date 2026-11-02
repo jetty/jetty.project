@@ -6,12 +6,15 @@ Adds the Jetty EE12 JNDI reference factories
 [environment]
 ee12
 
-[depend]
+[depends]
 ee/common-jndi
 jndi
 
-[lib]
-lib/jetty-ee12-jndi-${jetty.version}.jar
-
 [ini]
 jetty.webapp.addHiddenClasses+=,-org.eclipse.jetty.ee.jndi.factories.
+
+[files]
+maven://org.eclipse.jetty.ee12/jetty-ee12-jndi/${jetty.version}/jar|lib/ee12/jetty-ee12-jndi-${jetty.version}.jar
+
+[lib]
+lib/ee12/jetty-ee12-jndi-${jetty.version}.jar

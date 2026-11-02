@@ -224,8 +224,12 @@
           <!--<forkMode>always</forkMode>-->
           <useSystemClassLoader>true</useSystemClassLoader>
           <useManifestOnlyJar>false</useManifestOnlyJar>
+          <argLine>@{argLine}
+            ${jetty.surefire.argLine}
+            --enable-native-access=org.eclipse.jetty.quic.quiche.foreign</argLine>
         </configuration>
       </plugin>
     </plugins>
   </build>
+
 </project>

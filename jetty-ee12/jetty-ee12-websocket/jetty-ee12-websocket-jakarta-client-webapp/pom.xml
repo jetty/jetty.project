@@ -15,7 +15,6 @@
   </properties>
 
   <dependencies>
-
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
