@@ -40,8 +40,6 @@
     <ee11.angus.activation.version>2.0.3</ee11.angus.activation.version>
     <ee11.angus.mail.version>2.0.5</ee11.angus.mail.version>
     <ee11.jakarta.bom.version>11.0.0</ee11.jakarta.bom.version>
-    <ee11.jakarta.servlet.api.version>6.1.0</ee11.jakarta.servlet.api.version>
-    <ee11.jakarta.servlet.jsp.api.version>4.0.0</ee11.jakarta.servlet.jsp.api.version>
     <ee11.jakarta.servlet.jsp.jstl.impl.version>4.0.4</ee11.jakarta.servlet.jsp.jstl.impl.version>
     <ee11.jakarta.xml.bind.api.version>4.0.5</ee11.jakarta.xml.bind.api.version>
     <ee11.jakarta.xml.bind.impl.version>4.0.9</ee11.jakarta.xml.bind.impl.version>
