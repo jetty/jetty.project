@@ -27,6 +27,12 @@
       <type>zip</type>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.ee12</groupId>
+      <artifactId>jetty-ee12-home</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.ee11</groupId>
       <artifactId>jetty-ee11-home</artifactId>
       <version>${project.version}</version>
@@ -164,6 +170,12 @@
                       <replacement>$1</replacement>
                     </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
                   </fileMappers>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.eclipse.jetty.ee12</groupId>
+                  <artifactId>jetty-ee12-home</artifactId>
+                  <version>${project.version}</version>
+                  <type>zip</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.eclipse.jetty.ee11</groupId>

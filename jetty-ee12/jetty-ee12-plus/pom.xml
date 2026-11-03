@@ -18,12 +18,25 @@
 
   <dependencies>
     <dependency>
-      <groupId>jakarta.enterprise</groupId>
-      <artifactId>jakarta.enterprise.cdi-api</artifactId>
+      <groupId>jakarta.cdi</groupId>
+      <artifactId>jakarta.cdi-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>jakarta.enterprise</groupId>
-      <artifactId>jakarta.enterprise.lang-model</artifactId>
+      <groupId>jakarta.cdi</groupId>
+      <artifactId>jakarta.cdi-lang-model-api</artifactId>
+      <!-- The 12.0.0-SNAPSHOT jakartaee-bom manages the wrong artifactId for this
+           (jakarta.cdi.lang-model-api, which does not exist), so pin the real one explicitly.
+           Remove this version once jakartaee-api PR #203 is merged and released:
+           https://github.com/jakartaee/jakartaee-api/pull/203 -->
+      <version>${ee12.jakarta.enterprise.cdi.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.el</groupId>
+      <artifactId>jakarta.el-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.inject</groupId>
+      <artifactId>jakarta.inject-api</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.interceptor</groupId>

@@ -16,17 +16,20 @@
   </properties>
 
   <dependencies>
+
     <dependency>
       <groupId>org.eclipse.jetty.ee</groupId>
       <artifactId>jetty-ee-test-cdi-common-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
     </dependency>
+
     <dependency>
-      <groupId>jakarta.enterprise</groupId>
-      <artifactId>jakarta.enterprise.cdi-api</artifactId>
+      <groupId>jakarta.cdi</groupId>
+      <artifactId>jakarta.cdi-api</artifactId>
       <scope>provided</scope>
     </dependency>
+
     <dependency>
       <groupId>jakarta.inject</groupId>
       <artifactId>jakarta.inject-api</artifactId>
@@ -38,6 +41,7 @@
       <artifactId>jakarta.servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
+
   </dependencies>
 
   <build>

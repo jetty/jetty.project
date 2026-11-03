@@ -6,11 +6,15 @@ Enables standard Servlet handling.
 [environment]
 ee12
 
-[depend]
+[depends]
 ee/common-servlet
 server
 sessions
 
+[files]
+maven://jakarta.servlet/jakarta.servlet-api/6.2.0-M2/jar|lib/ee12/support/jakarta.servlet.jakarta.servlet-api-6.2.0-M2.jar
+maven://org.eclipse.jetty.ee12/jetty-ee12-servlet/${jetty.version}/jar|lib/ee12/jetty-ee12-servlet-${jetty.version}.jar
+
 [lib]
-lib/@jakarta.servlet:jakarta.servlet-api@
-lib/jetty-ee12-servlet-${jetty.version}.jar
+lib/ee12/jetty-ee12-servlet-${jetty.version}.jar
+lib/ee12/support/jakarta.servlet.jakarta.servlet-api-6.2.0-M2.jar
