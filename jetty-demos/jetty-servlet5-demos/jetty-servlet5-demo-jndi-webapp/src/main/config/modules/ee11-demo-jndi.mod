@@ -16,25 +16,11 @@ ext
 jdbc
 ee11-plus
 ee11-jndi
+ee11-mail
+ee11-activation
 ee11-demo-mock-resources
-
-[ini]
-ee11.jakarta.mail.api.version?=@version(jakarta.mail:jakarta.mail-api)@
-ee11.jakarta.activation.api.version?=@version(jakarta.activation:jakarta.activation-api)@
-ee11.org.eclipse.angus.mail.version?=@version(org.eclipse.angus:angus-mail)@
-ee11.org.eclipse.angus.activation.version?=@version(org.eclipse.angus:angus-activation)@
 
 [files]
 basehome:modules/demo.d/ee11-demo-jndi.xml|webapps/ee11-demo-jndi.xml
 basehome:modules/demo.d/ee11-demo-jndi.properties|webapps/ee11-demo-jndi.properties
 maven://org.eclipse.jetty.demos/jetty-servlet5-demo-jndi-webapp/${jetty.version}/war|webapps/ee11-demo-jndi.war
-maven://jakarta.mail/jakarta.mail-api/${ee11.jakarta.mail.api.version}/jar|lib/ee11/jakarta.mail-api-${ee11.jakarta.mail.api.version}.jar
-maven://jakarta.activation/jakarta.activation-api/${ee11.jakarta.activation.api.version}/jar|lib/ee11/jakarta.activation-api-${ee11.jakarta.activation.api.version}.jar
-maven://org.eclipse.angus/angus-mail/${ee11.org.eclipse.angus.mail.version}/jar|lib/ee11/angus-mail-${ee11.org.eclipse.angus.mail.version}.jar
-maven://org.eclipse.angus/angus-activation/${ee11.org.eclipse.angus.activation.version}/jar|lib/ee11/angus-activation-${ee11.org.eclipse.angus.activation.version}.jar
-
-[lib]
-lib/ee11/jakarta.mail-api-${ee11.jakarta.mail.api.version}.jar
-lib/ee11/jakarta.activation-api-${ee11.jakarta.activation.api.version}.jar
-lib/ee11/angus-mail-${ee11.org.eclipse.angus.mail.version}.jar
-lib/ee11/angus-activation-${ee11.org.eclipse.angus.activation.version}.jar

@@ -16,19 +16,11 @@ ext
 jdbc
 ee9-jndi
 ee9-plus
+ee9-mail
+ee9-activation
 ee9-demo-mock-resources
-
-[ini]
-ee9.com.sun.mail.jakarta.mail.version?=@version(com.sun.mail:jakarta.mail)@
-ee9.com.sun.activation.jakarta.activation.version?=@version(com.sun.activation:jakarta.activation)@
 
 [files]
 basehome:modules/demo.d/ee9-demo-jndi.xml|webapps/ee9-demo-jndi.xml
 basehome:modules/demo.d/ee9-demo-jndi.properties|webapps/ee9-demo-jndi.properties
 maven://org.eclipse.jetty.demos/jetty-servlet5-demo-jndi-webapp/${jetty.version}/war|webapps/ee9-demo-jndi.war
-maven://com.sun.mail/jakarta.mail/${ee9.com.sun.mail.jakarta.mail.version}/jar|lib/ee9/jakarta.mail-${ee9.com.sun.mail.jakarta.mail.version}.jar
-maven://com.sun.activation/jakarta.activation/${ee9.com.sun.activation.jakarta.activation.version}/jar|lib/ee9/jakarta.activation-${ee9.com.sun.activation.jakarta.activation.version}.jar
-
-[lib]
-lib/ee9/jakarta.mail-${ee9.com.sun.mail.jakarta.mail.version}.jar
-lib/ee9/jakarta.activation-${ee9.com.sun.activation.jakarta.activation.version}.jar
