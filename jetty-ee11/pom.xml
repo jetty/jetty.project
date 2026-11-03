@@ -58,8 +58,11 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <!-- API+IMPL: single artifact carrying both the Jakarta Mail API and its
-           implementation; not a removable API-only entry (absent from jakartaee-bom). -->
+      <!-- API+IMPL: one artifact carrying both the Jakarta Mail API and its
+           implementation (absent from jakartaee-bom).
+           Legacy line: (active development moved to Eclipse Angus).
+           Security: 2.0.2 fixes CVE-2025-7962 (SMTP injection via CR/LF).
+           No API changes. -->
       <dependency>
         <groupId>com.sun.mail</groupId>
         <artifactId>jakarta.mail</artifactId>

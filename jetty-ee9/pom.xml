@@ -63,8 +63,11 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <!-- API+IMPL: single artifact carrying both the Jakarta Mail API and its
-           implementation; not a removable API-only entry (absent from jakartaee-bom). -->
+      <!-- API+IMPL: one artifact carrying both the Jakarta Mail API and its
+           implementation (absent from jakartaee-bom).
+           Legacy line: (active development moved to Eclipse Angus).
+           Security: 2.0.2 fixes CVE-2025-7962 (SMTP injection via CR/LF).
+           No API changes. -->
       <dependency>
         <groupId>com.sun.mail</groupId>
         <artifactId>jakarta.mail</artifactId>
@@ -75,6 +78,9 @@
         <artifactId>jaxws-rt</artifactId>
         <version>${ee9.jakarta.xml.jaxws.impl.version}</version>
       </dependency>
+      <!-- This is known to be the EE10 release of the API.
+           We use this version here, as it adds a root module-info (JPMS) to the JAR.
+           No API changes. -->
       <dependency>
         <groupId>jakarta.inject</groupId>
         <artifactId>jakarta.inject-api</artifactId>
