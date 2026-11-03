@@ -37,9 +37,11 @@
   </modules>
 
   <properties>
-    <ee10.jakarta.activation.api.version>2.1.3</ee10.jakarta.activation.api.version>
+    <ee10.angus.activation.version>2.0.3</ee10.angus.activation.version>
+    <ee10.angus.mail.version>2.0.5</ee10.angus.mail.version>
+    <ee10.jakarta.activation.api.version>2.1.4</ee10.jakarta.activation.api.version>
     <ee10.jakarta.inject.api.version>2.0.1</ee10.jakarta.inject.api.version>
-    <ee10.jakarta.mail.api.version>2.1.3</ee10.jakarta.mail.api.version>
+    <ee10.jakarta.mail.api.version>2.1.5</ee10.jakarta.mail.api.version>
     <ee10.jakarta.servlet.api.version>6.0.0</ee10.jakarta.servlet.api.version>
     <ee10.jakarta.servlet.jsp.api.version>3.1.1</ee10.jakarta.servlet.jsp.api.version>
     <ee10.jakarta.servlet.jsp.jstl.impl.version>3.0.1</ee10.jakarta.servlet.jsp.jstl.impl.version>
@@ -49,7 +51,6 @@
     <ee10.jakarta.xml.jaxws.impl.version>4.0.5</ee10.jakarta.xml.jaxws.impl.version>
     <ee10.jersey.version>3.1.12</ee10.jersey.version>
     <ee10.jsp.impl.version>10.1.56</ee10.jsp.impl.version>
-    <ee10.mail.impl.version>2.0.2</ee10.mail.impl.version>
     <ee10.weld.version>5.1.7.Final</ee10.weld.version>
   </properties>
 
@@ -62,20 +63,15 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <!-- API+IMPL: one artifact carrying both the Jakarta Mail API and its
-           implementation (absent from jakartaee-bom).
-           Legacy line: (active development moved to Eclipse Angus).
-           Security: 2.0.2 fixes CVE-2025-7962 (SMTP injection via CR/LF).
-           No API changes. -->
-      <dependency>
-        <groupId>com.sun.mail</groupId>
-        <artifactId>jakarta.mail</artifactId>
-        <version>${ee10.mail.impl.version}</version>
-      </dependency>
       <dependency>
         <groupId>com.sun.xml.ws</groupId>
         <artifactId>jaxws-rt</artifactId>
         <version>${ee10.jakarta.xml.jaxws.impl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.activation</groupId>
+        <artifactId>jakarta.activation-api</artifactId>
+        <version>${ee10.jakarta.activation.api.version}</version>
       </dependency>
       <!-- Adds a root module-info (JPMS) to the JAR.
            No API changes. -->
@@ -96,6 +92,14 @@
         <groupId>jakarta.json.bind</groupId>
         <artifactId>jakarta.json.bind-api</artifactId>
         <version>3.0.4</version>
+      </dependency>
+      <!-- Override of jakartaee-bom: angus-mail / angus-activation require these API
+           levels; pinned to satisfy RequireUpperBoundDeps. EE10-level patches of
+           Jakarta Mail / Activation 2.1; no API changes. -->
+      <dependency>
+        <groupId>jakarta.mail</groupId>
+        <artifactId>jakarta.mail-api</artifactId>
+        <version>${ee10.jakarta.mail.api.version}</version>
       </dependency>
       <!-- Override of jakartaee-bom (3.1.0): backports jsp-api#239 so static imports
            in a JSP are visible to EL on that page.
@@ -126,6 +130,19 @@
         <groupId>jakarta.xml.bind</groupId>
         <artifactId>jakarta.xml.bind-api</artifactId>
         <version>${ee10.jakarta.xml.bind.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.angus</groupId>
+        <artifactId>angus-activation</artifactId>
+        <version>${ee10.angus.activation.version}</version>
+      </dependency>
+      <!-- Eclipse Angus: the Jakarta Mail and Activation implementation for EE10
+           (successor to com.sun.mail / JavaMail; the package and module prefix is
+           org.eclipse.angus.mail). -->
+      <dependency>
+        <groupId>org.eclipse.angus</groupId>
+        <artifactId>angus-mail</artifactId>
+        <version>${ee10.angus.mail.version}</version>
       </dependency>
       <!-- Jetty EE10 Dependencies -->
       <dependency>
