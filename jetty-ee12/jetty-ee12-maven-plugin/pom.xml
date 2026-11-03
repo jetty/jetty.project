@@ -246,6 +246,7 @@
         <artifactId>maven-invoker-plugin</artifactId>
         <configuration>
           <extraArtifacts>
+            <extraArtifact>jakarta.platform:jakarta.jakartaee-bom:${ee12.jakarta.bom.version}:pom</extraArtifact>
             <extraArtifact>org.eclipse.jetty.ee:jetty-ee-bom:${project.version}:pom</extraArtifact>
             <extraArtifact>org.eclipse.jetty:jetty-slf4j-impl:${project.version}</extraArtifact>
             <extraArtifact>org.eclipse.jetty.ee12:jetty-ee12-apache-jsp:${project.version}</extraArtifact>
