@@ -11,10 +11,13 @@ plus
 ee8-plus
 annotations
 
+[ini]
+ee8.jakarta.annotation.api.version?=@version(jakarta.annotation:jakarta.annotation-api)@
+
 [files]
-maven://jakarta.annotation/jakarta.annotation-api/1.3.5/jar|lib/ee8/support/jakarta.annotation.jakarta.annotation-api-1.3.5.jar
+maven://jakarta.annotation/jakarta.annotation-api/${ee8.jakarta.annotation.api.version}/jar|lib/ee8/support/jakarta.annotation.jakarta.annotation-api-${ee8.jakarta.annotation.api.version}.jar
 maven://org.eclipse.jetty.ee8/jetty-ee8-annotations/${jetty.version}/jar|lib/ee8/jetty-ee8-annotations-${jetty.version}.jar
 
 [lib]
 lib/ee8/jetty-ee8-annotations-${jetty.version}.jar
-lib/ee8/support/jakarta.annotation.jakarta.annotation-api-1.3.5.jar
+lib/ee8/support/jakarta.annotation.jakarta.annotation-api-${ee8.jakarta.annotation.api.version}.jar

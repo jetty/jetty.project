@@ -18,17 +18,23 @@ ee10-plus
 ee10-jndi
 ee10-demo-mock-resources
 
+[ini]
+ee10.jakarta.mail.api.version?=@version(jakarta.mail:jakarta.mail-api)@
+ee10.jakarta.activation.api.version?=@version(jakarta.activation:jakarta.activation-api)@
+ee10.org.eclipse.angus.mail.version?=@version(org.eclipse.angus:angus-mail)@
+ee10.org.eclipse.angus.activation.version?=@version(org.eclipse.angus:angus-activation)@
+
 [files]
 basehome:modules/demo.d/ee10-demo-jndi.xml|webapps/ee10-demo-jndi.xml
 basehome:modules/demo.d/ee10-demo-jndi.properties|webapps/ee10-demo-jndi.properties
 maven://org.eclipse.jetty.demos/jetty-servlet5-demo-jndi-webapp/${jetty.version}/war|webapps/ee10-demo-jndi.war
-maven://jakarta.mail/jakarta.mail-api/2.1.3/jar|lib/ee10/jakarta.mail-api-2.1.3.jar
-maven://jakarta.activation/jakarta.activation-api/2.1.3/jar|lib/ee10/jakarta.activation-api-2.1.3.jar
-maven://org.eclipse.angus/angus-mail/2.0.5/jar|lib/ee10/angus-mail-2.0.5.jar
-maven://org.eclipse.angus/angus-activation/2.0.3/jar|lib/ee10/angus-activation-2.0.3.jar
+maven://jakarta.mail/jakarta.mail-api/${ee10.jakarta.mail.api.version}/jar|lib/ee10/jakarta.mail-api-${ee10.jakarta.mail.api.version}.jar
+maven://jakarta.activation/jakarta.activation-api/${ee10.jakarta.activation.api.version}/jar|lib/ee10/jakarta.activation-api-${ee10.jakarta.activation.api.version}.jar
+maven://org.eclipse.angus/angus-mail/${ee10.org.eclipse.angus.mail.version}/jar|lib/ee10/angus-mail-${ee10.org.eclipse.angus.mail.version}.jar
+maven://org.eclipse.angus/angus-activation/${ee10.org.eclipse.angus.activation.version}/jar|lib/ee10/angus-activation-${ee10.org.eclipse.angus.activation.version}.jar
 
 [lib]
-lib/ee10/jakarta.mail-api-2.1.3.jar
-lib/ee10/jakarta.activation-api-2.1.3.jar
-lib/ee10/angus-mail-2.0.5.jar
-lib/ee10/angus-activation-2.0.3.jar
+lib/ee10/jakarta.mail-api-${ee10.jakarta.mail.api.version}.jar
+lib/ee10/jakarta.activation-api-${ee10.jakarta.activation.api.version}.jar
+lib/ee10/angus-mail-${ee10.org.eclipse.angus.mail.version}.jar
+lib/ee10/angus-activation-${ee10.org.eclipse.angus.activation.version}.jar

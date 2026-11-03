@@ -213,8 +213,6 @@
     <ee8.jakarta.websocket.api.version>1.1.2</ee8.jakarta.websocket.api.version>
     <ee8.javax.mail.glassfish.version>1.4.1.v201005082020</ee8.javax.mail.glassfish.version>
     <ee9.jakarta.bom.version>9.1.0</ee9.jakarta.bom.version>
-    <!-- TODO: Remove this javax.* entries? -->
-    <ee9.javax.mail.glassfish.version>1.4.1.v201005082020</ee9.javax.mail.glassfish.version>
 
     <felix.version>7.0.5</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>

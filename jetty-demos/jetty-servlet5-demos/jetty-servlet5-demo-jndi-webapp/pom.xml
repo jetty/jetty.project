@@ -12,6 +12,23 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlet5.jndi</bundle-symbolic-name>
   </properties>
+  <dependencyManagement>
+    <!-- EE9 (Jakarta Mail 2.0) impls referenced by ee9-demo-jndi.mod. Managed here so the
+         mod-files version(...) selector can resolve them, without putting them on the
+         classpath alongside the Angus impls used by the ee10/ee11 demo-jndi modules. -->
+    <dependencies>
+      <dependency>
+        <groupId>com.sun.activation</groupId>
+        <artifactId>jakarta.activation</artifactId>
+        <version>2.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.mail</groupId>
+        <artifactId>jakarta.mail</artifactId>
+        <version>2.0.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   <dependencies>
     <dependency>
       <groupId>jakarta.servlet</groupId>
