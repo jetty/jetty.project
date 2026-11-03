@@ -42,8 +42,6 @@
     <checkstyle.skip>true</checkstyle.skip>
     <ee8.jakarta.activation.api.version>1.2.2</ee8.jakarta.activation.api.version>
     <ee8.jakarta.bom.version>8.0.0</ee8.jakarta.bom.version>
-    <!-- Workaround pins for defects in jakarta.jakartaee-bom:8.0.0; see dependencyManagement. -->
-    <ee8.jakarta.persistence.api.version>2.2.3</ee8.jakarta.persistence.api.version>
     <ee8.jakarta.xml.bind.api.version>2.3.2</ee8.jakarta.xml.bind.api.version>
 
     <ee8.javax.security.auth.message>1.0.0.v201108011116</ee8.javax.security.auth.message>
@@ -91,7 +89,7 @@
       <dependency>
         <groupId>jakarta.persistence</groupId>
         <artifactId>jakarta.persistence-api</artifactId>
-        <version>${ee8.jakarta.persistence.api.version}</version>
+        <version>2.2.3</version>
       </dependency>
       <!-- Workaround for jakarta.jakartaee-bom:8.0.0 defect 2: JAXB is missing from
            the BOM. 2.3.x is the EE 8 (javax.xml.bind) level, required on JDK 11+. -->

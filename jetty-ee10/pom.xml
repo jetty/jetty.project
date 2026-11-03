@@ -39,14 +39,10 @@
   <properties>
     <ee10.angus.activation.version>2.0.3</ee10.angus.activation.version>
     <ee10.angus.mail.version>2.0.5</ee10.angus.mail.version>
-    <ee10.jakarta.activation.api.version>2.1.4</ee10.jakarta.activation.api.version>
     <ee10.jakarta.inject.api.version>2.0.1</ee10.jakarta.inject.api.version>
-    <ee10.jakarta.mail.api.version>2.1.5</ee10.jakarta.mail.api.version>
     <ee10.jakarta.servlet.api.version>6.0.0</ee10.jakarta.servlet.api.version>
     <ee10.jakarta.servlet.jsp.api.version>3.1.1</ee10.jakarta.servlet.jsp.api.version>
     <ee10.jakarta.servlet.jsp.jstl.impl.version>3.0.1</ee10.jakarta.servlet.jsp.jstl.impl.version>
-    <ee10.jakarta.websocket.api.version>2.1.1</ee10.jakarta.websocket.api.version>
-    <ee10.jakarta.xml.bind.api.version>4.0.5</ee10.jakarta.xml.bind.api.version>
     <ee10.jakarta.xml.bind.impl.version>4.0.9</ee10.jakarta.xml.bind.impl.version>
     <ee10.jakarta.xml.jaxws.impl.version>4.0.5</ee10.jakarta.xml.jaxws.impl.version>
     <ee10.jersey.version>3.1.12</ee10.jersey.version>
@@ -68,10 +64,13 @@
         <artifactId>jaxws-rt</artifactId>
         <version>${ee10.jakarta.xml.jaxws.impl.version}</version>
       </dependency>
+      <!-- Override of jakartaee-bom (2.1.0): angus-activation requires this API level;
+           pinned to satisfy RequireUpperBoundDeps. EE10-level patch of Jakarta
+           Activation 2.1; no API changes. -->
       <dependency>
         <groupId>jakarta.activation</groupId>
         <artifactId>jakarta.activation-api</artifactId>
-        <version>${ee10.jakarta.activation.api.version}</version>
+        <version>2.1.4</version>
       </dependency>
       <!-- Adds a root module-info (JPMS) to the JAR.
            No API changes. -->
@@ -99,7 +98,7 @@
       <dependency>
         <groupId>jakarta.mail</groupId>
         <artifactId>jakarta.mail-api</artifactId>
-        <version>${ee10.jakarta.mail.api.version}</version>
+        <version>2.1.5</version>
       </dependency>
       <!-- Override of jakartaee-bom (3.1.0): backports jsp-api#239 so static imports
            in a JSP are visible to EL on that page.
@@ -107,6 +106,8 @@
       <dependency>
         <groupId>jakarta.servlet.jsp</groupId>
         <artifactId>jakarta.servlet.jsp-api</artifactId>
+        <!-- Version kept as a property: jetty-ee10-osgi-boot-jsp also references
+             ${ee10.jakarta.servlet.jsp.api.version} for its OSGi bundle version ranges. -->
         <version>${ee10.jakarta.servlet.jsp.api.version}</version>
       </dependency>
       <!-- Override of jakartaee-bom (2.1.0) for both websocket-api and
@@ -115,12 +116,12 @@
       <dependency>
         <groupId>jakarta.websocket</groupId>
         <artifactId>jakarta.websocket-api</artifactId>
-        <version>${ee10.jakarta.websocket.api.version}</version>
+        <version>2.1.1</version>
       </dependency>
       <dependency>
         <groupId>jakarta.websocket</groupId>
         <artifactId>jakarta.websocket-client-api</artifactId>
-        <version>${ee10.jakarta.websocket.api.version}</version>
+        <version>2.1.1</version>
       </dependency>
       <!-- Override of jakartaee-bom (4.0.0): rolls up bug fixes through 4.0.5
            (spec-compliant parseBoolean, OSGi mediator support, DatatypeConverter and
@@ -129,7 +130,7 @@
       <dependency>
         <groupId>jakarta.xml.bind</groupId>
         <artifactId>jakarta.xml.bind-api</artifactId>
-        <version>${ee10.jakarta.xml.bind.api.version}</version>
+        <version>4.0.5</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.angus</groupId>
