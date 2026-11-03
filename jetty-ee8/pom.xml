@@ -44,6 +44,7 @@
     <ee8.jakarta.bom.version>8.0.0</ee8.jakarta.bom.version>
     <ee8.jakarta.xml.bind.api.version>2.3.2</ee8.jakarta.xml.bind.api.version>
 
+    <ee8.javax.mail.glassfish.version>1.4.1.v201005082020</ee8.javax.mail.glassfish.version>
     <ee8.javax.security.auth.message>1.0.0.v201108011116</ee8.javax.security.auth.message>
     <ee8.javax.servlet.jsp.jstl.impl.version>1.2.5</ee8.javax.servlet.jsp.jstl.impl.version>
     <ee8.javax.websocket.api.version>1.1.2</ee8.javax.websocket.api.version>
