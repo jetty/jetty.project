@@ -212,6 +212,13 @@ public class MetaDataBuilder
                         streamException("Connection specific field '%s'", header);
                     break;
 
+                case KEEP_ALIVE:
+                case PROXY_CONNECTION:
+                case TRANSFER_ENCODING:
+                case UPGRADE:
+                    streamException("Connection specific field '%s'", header);
+                    break;
+
                 default:
                     if (name.charAt(0) == ':')
                         streamException("Unknown pseudo header '%s'", name);
