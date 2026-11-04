@@ -20,9 +20,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-javax-websocket-api</artifactId>
-      <version>1.1.2</version>
+      <groupId>jakarta.websocket</groupId>
+      <artifactId>jakarta.websocket-api</artifactId>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -37,7 +36,10 @@
             <supportedProjectType>war</supportedProjectType>
           </supportedProjectTypes>
           <instructions>
-            <Import-Package>javax.servlet.jsp.*;version="3.0",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
+            <!-- jakarta.websocket-api:1.1.2 declares the javax.websocket package at version 1.1.2, but the
+                 ee8 websocket stack (and the OSGi test's provisioned API bundle) export it at 1.1.0; widen
+                 the computed import range so the bundle resolves against that export. -->
+            <Import-Package>javax.servlet.jsp.*;version="3.0",javax.websocket.*;version="[1.1.0,2.0.0)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
             <Export-Package>!org.example*</Export-Package>
             <!-- the test webapp is configured via a jetty xml file
             in order to add the security handler. -->
