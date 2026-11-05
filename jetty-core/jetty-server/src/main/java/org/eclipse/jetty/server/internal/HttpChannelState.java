@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -403,10 +404,13 @@ public class HttpChannelState implements HttpChannel, Components
     @Override
     public Runnable onIdleTimeout(TimeoutException t)
     {
+        boolean requestHandled;
         try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onIdleTimeout {}", this, t);
+
+            requestHandled = _handling != null || _handled;
 
             Runnable invokeOnContentAvailable = null;
             if (_readFailure == null)
@@ -456,7 +460,10 @@ public class HttpChannelState implements HttpChannel, Components
         }
 
         // Otherwise treat as a failure.
-        return onFailure(t);
+        // If the request has not been handled yet (e.g. it is queued waiting for a thread),
+        // the server is too busy to handle it, so fail it with a 503 rather than a 500.
+        Throwable failure = requestHandled ? t : new HttpException.RuntimeException(HttpStatus.SERVICE_UNAVAILABLE_503, "Idle timeout", t);
+        return onFailure(failure);
     }
 
     @Override
