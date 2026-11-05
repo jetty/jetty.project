@@ -2913,7 +2913,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Supplie
         protected ContextRequest wrapRequest(org.eclipse.jetty.server.Request request, Response response)
         {
             HttpChannel httpChannel = (HttpChannel)request.getComponents().getCache().getAttribute(HttpChannel.class.getName());
-            if (httpChannel == null)
+            // Do not reuse an aborted channel, as late callbacks of the aborted request could affect the next request.
+            if (httpChannel == null || httpChannel.isAborted())
             {
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
                 request.getComponents().getCache().setAttribute(HttpChannel.class.getName(), httpChannel);
