@@ -36,7 +36,13 @@ pipeline {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk25", "clean install -Ptck -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk25", name: "Static Analysis jdk25", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
+              script {
+                // Skip publishing static-analysis warnings on PRs (and other non-release
+                // branches); the full matrix on release lines records them instead.
+                if (isReleaseLine()) {
+                  recordIssues id: "jdk25", name: "Static Analysis jdk25", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
+                }
+              }
             }
           }
         }
