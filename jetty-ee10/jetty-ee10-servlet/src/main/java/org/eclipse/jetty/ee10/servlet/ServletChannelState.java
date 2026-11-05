@@ -28,7 +28,6 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -193,6 +192,7 @@ public class ServletChannelState
     private Thread _onTimeoutThread;
     private Throwable _failure;
     private boolean _failureListener;
+    private boolean _eventCompletedNotified;
 
     protected ServletChannelState(ServletChannel servletChannel)
     {
@@ -1112,7 +1112,7 @@ public class ServletChannelState
 
     protected void completed(Throwable failure)
     {
-        final List<AsyncListener> aListeners;
+        final List<AsyncListener> asyncListeners;
         final AsyncContextEvent event;
         boolean handle = false;
 
@@ -1121,60 +1121,101 @@ public class ServletChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("completed {}", toStringLocked());
 
+            // If abort() was already called, this is a no-op: the handling thread
+            // may have already terminated and recycled this channel.
             if (_requestState != RequestState.COMPLETING)
-                failure = ExceptionUtil.combine(failure, new IllegalStateException(getStatusStringLocked()));
+            {
+                // A completed request that was not aborted means completed() was called twice.
+                if (_requestState == RequestState.COMPLETED && _outputState != OutputState.ABORTED)
+                    LOG.warn("Unexpected completed() call", new IllegalStateException(getStatusStringLocked(), failure));
+                else if (LOG.isDebugEnabled())
+                    LOG.debug("Ignoring completed() call after abort {}", getStatusStringLocked(), failure);
+                return;
+            }
 
             if (failure != null)
                 abortResponse(failure);
 
-            aListeners = _event == null ? null : _asyncListeners;
+            _eventCompletedNotified = true;
+            asyncListeners = _event == null ? null : _asyncListeners;
             event = _event;
-        }
 
-        // release any aggregate buffer from a closing flush
-        _servletChannel.getHttpOutput().completed(failure);
+            // Tell the HttpOutput that the request cycle has been completed.
+            _servletChannel.getHttpOutput().lockedCompleted();
+        }
 
         if (event != null)
-        {
-            cancelTimeout(event);
-            if (aListeners != null)
-            {
-                runInContext(event, () ->
-                {
-                    for (AsyncListener listener : aListeners)
-                    {
-                        try
-                        {
-                            listener.onComplete(event);
-                        }
-                        catch (Throwable x)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.warn("{} while invoking onComplete listener {}", x, listener, x);
-                            else
-                                LOG.warn("{} while invoking onComplete listener {}", x, listener);
-                        }
-                    }
-                });
-            }
-            event.completed();
-        }
+            notifyEventCompleted(event, asyncListeners);
 
         // Only publish COMPLETED once the output has been completed, otherwise the
         // handling thread may terminate and recycle this channel, and the
         // HttpOutput completion above would close the output of the next request.
         try (AutoLock ignored = lock())
         {
-            _requestState = RequestState.COMPLETED;
-            if (_state == State.WAITING)
+            if (_requestState == RequestState.COMPLETING)
             {
-                _state = State.WOKEN;
-                handle = true;
+                _requestState = RequestState.COMPLETED;
+                if (_state == State.WAITING)
+                {
+                    _state = State.WOKEN;
+                    handle = true;
+                }
             }
         }
 
         if (handle)
             _servletChannel.handle();
+    }
+
+    /**
+     * Called by the handling thread when the request lifecycle is terminated,
+     * to complete the async context and notify the async listeners when
+     * {@link #completed(Throwable)} did not, which happens when the request is aborted.
+     */
+    void completeEventIfNeeded()
+    {
+        List<AsyncListener> asyncListeners;
+        AsyncContextEvent event;
+        try (AutoLock ignored = lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("completeEventIfNeeded {}", toStringLocked());
+
+            if (_eventCompletedNotified)
+                return;
+            _eventCompletedNotified = true;
+            asyncListeners = _event == null ? null : _asyncListeners;
+            event = _event;
+        }
+
+        if (event != null)
+            notifyEventCompleted(event, asyncListeners);
+    }
+
+    private void notifyEventCompleted(AsyncContextEvent event, List<AsyncListener> asyncListeners)
+    {
+        cancelTimeout(event);
+        if (asyncListeners != null)
+        {
+            runInContext(event, () ->
+            {
+                for (AsyncListener listener : asyncListeners)
+                {
+                    try
+                    {
+                        listener.onComplete(event);
+                    }
+                    catch (Throwable x)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.warn("{} while invoking onComplete listener {}", x, listener, x);
+                        else
+                            LOG.warn("{} while invoking onComplete listener {}", x, listener);
+                    }
+                }
+            });
+        }
+        event.completed();
     }
 
     protected void recycle()
@@ -1205,6 +1246,7 @@ public class ServletChannelState
             _timeoutMs = DEFAULT_TIMEOUT;
             _event = null;
             _failureListener = false;
+            _eventCompletedNotified = false;
         }
     }
 

@@ -61,6 +61,7 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -128,6 +129,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public ContextHandler getContextHandler()
     {
         return _contextHandler;
+    }
+
+    public boolean isAborted()
+    {
+        return _state.isAborted();
     }
 
     public boolean isSendError()
@@ -930,6 +936,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             _request.setAttribute(CustomRequestLog.LOG_DETAIL, logDetail);
         }
 
+        // Notify the async listeners if completed() did not, i.e. when the request was aborted.
+        _state.completeEventIfNeeded();
+
         _request.onCompleted();
         _combinedListener.onComplete(_request);
         Callback callback = _coreCallback;
@@ -1444,7 +1453,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     @Override
                     public void succeeded()
                     {
-                        _response.getHttpOutput().completed(null);
+                        try (AutoLock ignored = _state.lock())
+                        {
+                            _response.getHttpOutput().lockedCompleted();
+                        }
                         super.failed(x);
                     }
 

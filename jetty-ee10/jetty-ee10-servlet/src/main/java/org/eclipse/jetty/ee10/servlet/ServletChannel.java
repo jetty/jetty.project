@@ -797,6 +797,9 @@ public class ServletChannel
         if (LOG.isDebugEnabled())
             LOG.debug("onCompleted for {} written app={} net={}", apiRequest.getRequestURI(), getHttpOutput().getWritten(), getBytesWritten());
 
+        // Notify the async listeners if completed() did not, i.e. when the request was aborted.
+        _state.completeEventIfNeeded();
+
         if (CustomRequestLog.isLogDetailRequired(getServer()))
         {
             CustomRequestLog.LogDetail logDetail = new CustomRequestLog.LogDetail(
