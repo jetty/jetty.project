@@ -489,15 +489,19 @@ public class HttpOutput extends ServletOutputStream
     }
 
     /**
-     * Called to indicate that the request cycle has been completed.
+     * Called to indicate that the request cycle has been completed
+     * and this instance can be considered closed.
      */
-    public void completed(Throwable ignored)
+    void lockedCompleted()
     {
-        try (AutoLock ignoredLock = _channelState.lock())
-        {
-            _state = State.CLOSED;
-            lockedReleaseBuffer();
-        }
+        assert _channelState.isLockHeldByCurrentThread();
+        _state = State.CLOSED;
+        // Release the aggregate buffer now that the request cycle is over: it may not have
+        // been released by a closing flush, or it may have been written directly as the content
+        // of an error response by ServletChannel.sendErrorResponseAndComplete().
+        // Do not wait for recycle() to release it, so that the buffer goes back to the pool
+        // whether and whenever the channel gets recycled.
+        lockedReleaseBuffer();
     }
 
     @Override

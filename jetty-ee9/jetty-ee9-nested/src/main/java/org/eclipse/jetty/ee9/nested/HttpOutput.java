@@ -521,15 +521,19 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     }
 
     /**
-     * Called to indicate that the request cycle has been completed.
+     * Called to indicate that the request cycle has been completed
+     * and this instance can be considered closed.
      */
-    public void completed(Throwable failure)
+    void lockedCompleted()
     {
-        try (AutoLock l = _channelState.lock())
-        {
-            _state = State.CLOSED;
-            lockedReleaseBuffer();
-        }
+        assert _channelState.isLockHeldByCurrentThread();
+        _state = State.CLOSED;
+        // Release the aggregate buffer now that the request cycle is over: it may not have
+        // been released by a closing flush, or it may have been written directly as the content
+        // of an error response by HttpChannel.sendResponseAndComplete().
+        // recycle() cannot be relied upon to release it, as the HttpChannel of a WebSocket
+        // request is never recycled, see ContextHandler.CoreContextHandler.wrapRequest().
+        lockedReleaseBuffer();
     }
 
     @Override
