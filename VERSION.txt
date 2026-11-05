@@ -1,3 +1,5 @@
+jetty-12.1.16-SNAPSHOT
+
 12.1.15 - 05 November 2026
  + 14127 Jetty Core webapps not deployed when directory contains dots (@sharanggupta)
  + 14536 Jetty 12.1.6 ResourceHandler not respecting start of byte range request when setUseFileMapping is true (@sharanggupta)
