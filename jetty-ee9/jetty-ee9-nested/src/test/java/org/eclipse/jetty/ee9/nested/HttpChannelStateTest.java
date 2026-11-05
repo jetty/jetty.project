@@ -52,13 +52,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpChannelStateTest
 {
+    private ArrayByteBufferPool.Tracking bufferPool;
     private Server server;
     private LocalConnector connector;
 
     @BeforeEach
     public void setUp()
     {
-        server = new Server();
+        bufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(null, null, bufferPool);
         connector = new LocalConnector(server);
         server.addConnector(connector);
     }
@@ -66,7 +68,14 @@ public class HttpChannelStateTest
     @AfterEach
     public void tearDown() throws Exception
     {
-        server.stop();
+        try
+        {
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0)));
+        }
+        finally
+        {
+            server.stop();
+        }
     }
 
     @Test
@@ -352,13 +361,6 @@ public class HttpChannelStateTest
     @Test
     public void testOutputBufferReleasedWhenChannelNotRecycled() throws Exception
     {
-        // Use a server with a tracking buffer pool.
-        server.stop();
-        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
-        server = new Server(null, null, bufferPool);
-        connector = new LocalConnector(server);
-        server.addConnector(connector);
-
         ContextHandler contextHandler = new ContextHandler("/");
         contextHandler.setHandler(new AbstractHandler()
         {
