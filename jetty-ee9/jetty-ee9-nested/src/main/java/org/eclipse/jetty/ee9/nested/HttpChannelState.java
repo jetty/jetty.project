@@ -149,6 +149,7 @@ public class HttpChannelState
     private Thread _onTimeoutThread;
     private Throwable _failure;
     private boolean _failureListener;
+    private boolean _eventCompletedNotified;
 
     protected HttpChannelState(HttpChannel channel)
     {
@@ -277,6 +278,14 @@ public class HttpChannelState
         try (AutoLock l = lock())
         {
             return getStatusStringLocked();
+        }
+    }
+
+    public boolean isAborted()
+    {
+        try (AutoLock l = lock())
+        {
+            return _outputState == OutputState.ABORTED;
         }
     }
 
@@ -1013,7 +1022,7 @@ public class HttpChannelState
 
     protected void completed(Throwable failure)
     {
-        final List<AsyncListener> aListeners;
+        final List<AsyncListener> asyncListeners;
         final AsyncContextEvent event;
         boolean handle = false;
 
@@ -1022,60 +1031,32 @@ public class HttpChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("completed {}", toStringLocked());
 
-            // If abort() was already called, this is a no-op.
-            if (_requestState == RequestState.COMPLETED)
-                return;
-
+            // If abort() was already called, or if completed() is called twice, this is a
+            // no-op: the handling thread may have already terminated and recycled this channel.
             if (_requestState != RequestState.COMPLETING)
-                throw new IllegalStateException(this.getStatusStringLocked(), failure);
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Ignoring completed() call {}", getStatusStringLocked(), failure);
+                return;
+            }
 
-            if (_event == null)
-            {
-                _requestState = RequestState.COMPLETED;
-                aListeners = null;
-                event = null;
-                if (_state == State.WAITING)
-                {
-                    _state = State.WOKEN;
-                    handle = true;
-                }
-            }
-            else
-            {
-                aListeners = _asyncListeners;
-                event = _event;
-            }
+            _eventCompletedNotified = true;
+            asyncListeners = _event == null ? null : _asyncListeners;
+            event = _event;
+
+            // Tell the HttpOutput that the request cycle has been completed.
+            _channel.getResponse().getHttpOutput().lockedCompleted();
         }
 
-        // release any aggregate buffer from a closing flush
-        _channel.getResponse().getHttpOutput().completed(failure);
-
         if (event != null)
-        {
-            cancelTimeout(event);
-            if (aListeners != null)
-            {
-                runInContext(event, () ->
-                {
-                    for (AsyncListener listener : aListeners)
-                    {
-                        try
-                        {
-                            listener.onComplete(event);
-                        }
-                        catch (Throwable x)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.warn("{} while invoking onComplete listener {}", x.toString(), listener, x);
-                            else
-                                LOG.warn("{} while invoking onComplete listener {}", x.toString(), listener);
-                        }
-                    }
-                });
-            }
-            event.completed();
+            notifyEventCompleted(event, asyncListeners);
 
-            try (AutoLock l = lock())
+        // Only publish COMPLETED once the output has been completed, otherwise the
+        // handling thread may terminate and recycle this channel, and the
+        // HttpOutput completion above would close the output of the next request.
+        try (AutoLock l = lock())
+        {
+            if (_requestState == RequestState.COMPLETING)
             {
                 _requestState = RequestState.COMPLETED;
                 if (_state == State.WAITING)
@@ -1088,6 +1069,57 @@ public class HttpChannelState
 
         if (handle)
             _channel.handle();
+    }
+
+    /**
+     * Called by the handling thread when the request lifecycle is terminated,
+     * to complete the async context and notify the async listeners when
+     * {@link #completed(Throwable)} did not, which happens when the request is aborted.
+     */
+    void completeEventIfNeeded()
+    {
+        List<AsyncListener> asyncListeners;
+        AsyncContextEvent event;
+        try (AutoLock l = lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("completeEventIfNeeded {}", toStringLocked());
+
+            if (_eventCompletedNotified)
+                return;
+            _eventCompletedNotified = true;
+            asyncListeners = _event == null ? null : _asyncListeners;
+            event = _event;
+        }
+
+        if (event != null)
+            notifyEventCompleted(event, asyncListeners);
+    }
+
+    private void notifyEventCompleted(AsyncContextEvent event, List<AsyncListener> asyncListeners)
+    {
+        cancelTimeout(event);
+        if (asyncListeners != null)
+        {
+            runInContext(event, () ->
+            {
+                for (AsyncListener listener : asyncListeners)
+                {
+                    try
+                    {
+                        listener.onComplete(event);
+                    }
+                    catch (Throwable x)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.warn("{} while invoking onComplete listener {}", x.toString(), listener, x);
+                        else
+                            LOG.warn("{} while invoking onComplete listener {}", x.toString(), listener);
+                    }
+                }
+            });
+        }
+        event.completed();
     }
 
     protected void recycle()
@@ -1110,13 +1142,16 @@ public class HttpChannelState
             _asyncListeners = null;
             _state = State.IDLE;
             _requestState = RequestState.BLOCKING;
-            _outputState = OutputState.OPEN;
+            // An aborted channel must not be reused, see ContextHandler.CoreContextHandler.wrapRequest().
+            if (_outputState != OutputState.ABORTED)
+                _outputState = OutputState.OPEN;
             _initial = true;
             _inputState = InputState.IDLE;
             _asyncWritePossible = false;
             _timeoutMs = DEFAULT_TIMEOUT;
             _event = null;
             _failureListener = false;
+            _eventCompletedNotified = false;
         }
     }
 
