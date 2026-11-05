@@ -1118,15 +1118,12 @@ public class ServletChannelState
             if (LOG.isDebugEnabled())
                 LOG.debug("completed {}", toStringLocked());
 
-            // If abort() was already called, this is a no-op: the handling thread
-            // may have already terminated and recycled this channel.
+            // If abort() was already called, or if completed() is called twice, this is a
+            // no-op: the handling thread may have already terminated and recycled this channel.
             if (_requestState != RequestState.COMPLETING)
             {
-                // A completed request that was not aborted means completed() was called twice.
-                if (_requestState == RequestState.COMPLETED && _outputState != OutputState.ABORTED)
-                    LOG.warn("Unexpected completed() call", new IllegalStateException(getStatusStringLocked(), failure));
-                else if (LOG.isDebugEnabled())
-                    LOG.debug("Ignoring completed() call after abort {}", getStatusStringLocked(), failure);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Ignoring completed() call {}", getStatusStringLocked(), failure);
                 return;
             }
 

@@ -30,6 +30,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -48,13 +49,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletChannelStateTest
 {
+    private ArrayByteBufferPool.Tracking bufferPool;
     private Server server;
     private LocalConnector connector;
 
     @BeforeEach
     public void setUp()
     {
-        server = new Server();
+        bufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(null, null, bufferPool);
         connector = new LocalConnector(server);
         server.addConnector(connector);
     }
@@ -62,7 +65,14 @@ public class ServletChannelStateTest
     @AfterEach
     public void tearDown() throws Exception
     {
-        server.stop();
+        try
+        {
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Server leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0)));
+        }
+        finally
+        {
+            server.stop();
+        }
     }
 
     @Test
