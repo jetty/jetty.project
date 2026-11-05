@@ -13,7 +13,7 @@ pipeline {
   stages {
     stage("Parallel Stage") {
       parallel {
-        stage("Build / Test - JDK21") {
+        stage("Build / Test - JDK21 (LTS)") {
           agent { node { label 'linux-dind' } }
           when { beforeAgent true; expression { isReleaseLine() } }
           steps {
@@ -30,9 +30,8 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK25") {
+        stage("Build / Test - JDK25 (LTS)") {
           agent { node { label 'linux-dind' } }
-          when { beforeAgent true; expression { isReleaseLine() } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
@@ -44,6 +43,7 @@ pipeline {
 
         stage("Build / Test - JDK27") {
           agent { node { label 'linux-dind' } }
+          when { beforeAgent true; expression { isReleaseLine() } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
@@ -73,7 +73,7 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK17") {
+        stage("Build / Test - JDK17 (LTS)") {
           agent { node { label 'linux-dind' } }
           when { beforeAgent true; expression { isReleaseLine() } }
           steps {
@@ -221,7 +221,7 @@ def isMainBranch() {
 
 /**
  * The release lines that build the full JDK matrix. Every other build (PRs and all
- * other branches) runs only the latest-JDK stage, which has no `when` guard.
+ * other branches) runs only the latest-LTS stage (JDK25), which has no `when` guard.
  */
 def isReleaseLine() {
   return (env.BRANCH_NAME == 'jetty-12.0.x' ||
