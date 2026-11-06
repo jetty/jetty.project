@@ -23,6 +23,7 @@ import jakarta.websocket.SendHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -110,13 +111,9 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
                 if (messageType == -1) // new message
                 {
                     if ((opcode == OpCode.BINARY) || (opcode == OpCode.TEXT))
-                    {
                         messageType = opcode;
-                    }
                     else
-                    {
                         throw new WebSocketException("Encountered invalid Data Frame opcode " + opcode);
-                    }
                 }
                 else if ((messageType == OpCode.BINARY) && (opcode == OpCode.TEXT))
                 {
@@ -147,7 +144,6 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
         }
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public void sendObject(Object data, Callback callback) throws IOException, EncodeException
     {
         try
@@ -157,44 +153,51 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
                 LOG.debug("sendObject({}, {})", data, callback);
 
             Encoder encoder = session.getEncoders().getInstanceFor(data.getClass());
-            if (encoder == null)
-                throw new IllegalArgumentException("No encoder for type: " + data.getClass());
-
-            if (encoder instanceof Encoder.Text textEncoder)
+            switch (encoder)
             {
-                String msg = textEncoder.encode(data);
-                sendFrame(new Frame(OpCode.TEXT).setPayload(msg), callback, batch);
-                return;
-            }
-
-            if (encoder instanceof Encoder.TextStream textStreamEncoder)
-            {
-                try (MessageWriter writer = newMessageWriter())
+                case null -> throw new IllegalArgumentException("No encoder for type: " + data.getClass());
+                case Encoder.Text _ ->
                 {
-                    writer.setCallback(callback);
-                    textStreamEncoder.encode(data, writer);
-                    return;
+                    @SuppressWarnings("unchecked")
+                    Encoder.Text<Object> text = (Encoder.Text<Object>)encoder;
+                    String msg = text.encode(data);
+                    try (Frame frame = new Frame(OpCode.TEXT, msg))
+                    {
+                        sendFrame(frame, callback, batch);
+                    }
                 }
-            }
-
-            if (encoder instanceof Encoder.Binary binaryEncoder)
-            {
-                ByteBuffer buf = binaryEncoder.encode(data);
-                sendFrame(new Frame(OpCode.BINARY).setPayload(buf), callback, batch);
-                return;
-            }
-
-            if (encoder instanceof Encoder.BinaryStream binaryStreamEncoder)
-            {
-                try (MessageOutputStream out = newMessageOutputStream())
+                case Encoder.TextStream _ ->
                 {
-                    out.setCallback(callback);
-                    binaryStreamEncoder.encode(data, out);
-                    return;
+                    @SuppressWarnings("unchecked")
+                    Encoder.TextStream<Object> text = (Encoder.TextStream<Object>)encoder;
+                    try (MessageWriter writer = newMessageWriter())
+                    {
+                        writer.setCallback(callback);
+                        text.encode(data, writer);
+                    }
                 }
+                case Encoder.Binary _ ->
+                {
+                    @SuppressWarnings("unchecked")
+                    Encoder.Binary<Object> bin = (Encoder.Binary<Object>)encoder;
+                    ByteBuffer buf = bin.encode(data);
+                    try (Frame frame = new Frame(OpCode.BINARY, RetainableByteBuffer.wrap(buf)))
+                    {
+                        sendFrame(frame, callback, batch);
+                    }
+                }
+                case Encoder.BinaryStream _ ->
+                {
+                    @SuppressWarnings("unchecked")
+                    Encoder.BinaryStream<Object> bin = (Encoder.BinaryStream<Object>)encoder;
+                    try (MessageOutputStream out = newMessageOutputStream())
+                    {
+                        out.setCallback(callback);
+                        bin.encode(data, out);
+                    }
+                }
+                default -> throw new IllegalArgumentException("Unknown encoder type: " + encoder);
             }
-
-            throw new IllegalArgumentException("Unknown encoder type: " + encoder);
         }
         catch (RuntimeException | IOException | EncodeException e)
         {
@@ -217,9 +220,12 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
         if (BufferUtil.remaining(data) > Frame.MAX_CONTROL_PAYLOAD)
             throw new IllegalArgumentException("Pong payload is too large");
 
-        FutureCallback b = new FutureCallback();
-        sendFrame(new Frame(OpCode.PING).setPayload(data), b, batch);
-        b.block();
+        try (Frame frame = new Frame(OpCode.PING, RetainableByteBuffer.wrap(data)))
+        {
+            FutureCallback b = new FutureCallback();
+            sendFrame(frame, b, batch);
+            b.block();
+        }
     }
 
     @Override
@@ -231,24 +237,23 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
         if (BufferUtil.remaining(data) > Frame.MAX_CONTROL_PAYLOAD)
             throw new IllegalArgumentException("Pong payload is too large");
 
-        FutureCallback b = new FutureCallback();
-        sendFrame(new Frame(OpCode.PONG).setPayload(data), b, batch);
-        b.block();
+        try (Frame frame = new Frame(OpCode.PONG, RetainableByteBuffer.wrap(data)))
+        {
+            FutureCallback b = new FutureCallback();
+            sendFrame(frame, b, batch);
+            b.block();
+        }
     }
 
     protected void assertMessageNotNull(Object data)
     {
         if (data == null)
-        {
             throw new IllegalArgumentException("message cannot be null");
-        }
     }
 
     protected void assertSendHandlerNotNull(SendHandler handler)
     {
         if (handler == null)
-        {
             throw new IllegalArgumentException("SendHandler cannot be null");
-        }
     }
 }

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -69,7 +68,7 @@ public class FrameFlusher extends IteratingCallback
     private final Deque<FlusherEntry> _queue = new ArrayDeque<>();
     private final List<FlusherEntry> _currentEntries;
     private final List<FlusherEntry> _completedEntries = new ArrayList<>();
-    private final List<RetainableByteBuffer> _releasableBuffers = new ArrayList<>();
+    private final List<RetainableByteBuffer> _buffersToRelease = new ArrayList<>();
     private final Behavior _behavior;
     private long _currentMessageExpiry = Long.MAX_VALUE;
 
@@ -159,7 +158,8 @@ public class FrameFlusher extends IteratingCallback
             {
                 switch (opCode)
                 {
-                    case OpCode.CLOSE:
+                    case OpCode.CLOSE ->
+                    {
                         closeStatus = CloseStatus.getCloseStatus(frame);
                         if (closeStatus.isAbnormal())
                         {
@@ -167,16 +167,12 @@ public class FrameFlusher extends IteratingCallback
                             failedEntries = new ArrayList<>(_queue);
                             _queue.clear();
                         }
-                        _queue.offerLast(entry);
-                        this._canEnqueue = false;
-                        break;
-
-                    case OpCode.PING:
-                    case OpCode.PONG:
-                        _queue.offerFirst(entry);
-                        break;
-
-                    default:
+                        enqueue(entry, false);
+                        _canEnqueue = false;
+                    }
+                    case OpCode.PING, OpCode.PONG -> enqueue(entry, true);
+                    default ->
+                    {
                         if (entry.isExpired())
                         {
                             // For DATA frames there is a possibility that the message timeout has already expired in the
@@ -186,9 +182,9 @@ public class FrameFlusher extends IteratingCallback
                         }
                         else
                         {
-                            _queue.offerLast(entry);
+                            enqueue(entry, false);
                         }
-                        break;
+                    }
                 }
 
                 if (!abort)
@@ -206,6 +202,7 @@ public class FrameFlusher extends IteratingCallback
             for (FlusherEntry e : failedEntries)
             {
                 notifyCallbackFailure(e.getCallback(), failure);
+                e.getFrame().release();
             }
         }
 
@@ -220,6 +217,15 @@ public class FrameFlusher extends IteratingCallback
         if (LOG.isDebugEnabled())
             LOG.debug("Enqueued {} to {}", entry, this);
         return true;
+    }
+
+    private void enqueue(FlusherEntry entry, boolean first)
+    {
+        entry.getFrame().retain();
+        if (first)
+            _queue.offerFirst(entry);
+        else
+            _queue.offerLast(entry);
     }
 
     public void onClose(Throwable cause)
@@ -257,9 +263,9 @@ public class FrameFlusher extends IteratingCallback
 
         // Process the entries outside the lock, as inside the ICB we only need the lock to modify _entries but not iterate it.
         boolean canBatch = true;
-        List<RetainableByteBuffer> buffers = new ArrayList<>((_maxGather * 2) + 1);
+        List<RetainableByteBuffer> buffersToWrite = new ArrayList<>((_maxGather * 2) + 1);
         if (_batchBuffer != null)
-            buffers.add(_batchBuffer);
+            buffersToWrite.add(_batchBuffer);
         for (FlusherEntry entry : _currentEntries)
         {
             if (entry.getFrame() == FLUSH_FRAME)
@@ -278,7 +284,7 @@ public class FrameFlusher extends IteratingCallback
                 if (_batchBuffer == null)
                 {
                     _batchBuffer = acquireBuffer(_bufferSize);
-                    buffers.add(_batchBuffer);
+                    buffersToWrite.add(_batchBuffer);
                 }
 
                 // Generate the frame into the batchBuffer.
@@ -295,25 +301,27 @@ public class FrameFlusher extends IteratingCallback
                 {
                     // Add headers to the list of buffers.
                     RetainableByteBuffer.Mutable headerBuffer = acquireBuffer(Generator.MAX_HEADER_LENGTH);
-                    _releasableBuffers.add(headerBuffer);
+                    _buffersToRelease.add(headerBuffer);
                     _generator.generateHeader(entry.getFrame(), headerBuffer);
-                    buffers.add(headerBuffer);
+                    buffersToWrite.add(headerBuffer);
                 }
 
                 // Add the payload to the list of buffers.
-                ByteBuffer payload = entry.getFrame().getPayload();
-                if (payload != null && payload.hasRemaining())
+                try (RetainableByteBuffer payload = entry.getFrame().acquire())
                 {
-                    if (entry.getFrame().isMasked())
+                    if (payload.hasRemaining())
                     {
-                        RetainableByteBuffer.Mutable masked = acquireBuffer(payload.remaining());
-                        _releasableBuffers.add(masked);
-                        _generator.generatePayload(entry.getFrame(), masked);
-                        buffers.add(masked);
-                    }
-                    else
-                    {
-                        buffers.add(RetainableByteBuffer.wrap(payload));
+                        if (entry.getFrame().isMasked())
+                        {
+                            RetainableByteBuffer.Mutable masked = acquireBuffer((int)payload.remaining());
+                            _buffersToRelease.add(masked);
+                            _generator.generatePayload(entry.getFrame(), masked);
+                            buffersToWrite.add(masked);
+                        }
+                        else
+                        {
+                            buffersToWrite.add(payload);
+                        }
                     }
                 }
 
@@ -335,11 +343,11 @@ public class FrameFlusher extends IteratingCallback
             // If we're flushing we should release the batch buffer upon completion.
             if (_batchBuffer != null)
             {
-                _releasableBuffers.add(_batchBuffer);
+                _buffersToRelease.add(_batchBuffer);
                 _batchBuffer = null;
             }
 
-            try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(buffers))
+            try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(buffersToWrite))
             {
                 _bytesOut.add(buffer.remaining());
                 _endPoint.write(buffer, this);
@@ -387,11 +395,12 @@ public class FrameFlusher extends IteratingCallback
             if (entry.getFrame().getOpCode() == OpCode.CLOSE && _behavior == Behavior.SERVER)
                 _endPoint.shutdownOutput();
             notifyCallbackSuccess(entry.getCallback());
+            entry.getFrame().release();
         }
         _completedEntries.clear();
 
-        _releasableBuffers.forEach(RetainableByteBuffer::release);
-        _releasableBuffers.clear();
+        _buffersToRelease.forEach(RetainableByteBuffer::release);
+        _buffersToRelease.clear();
         super.onSuccess();
     }
 
@@ -422,11 +431,12 @@ public class FrameFlusher extends IteratingCallback
         for (FlusherEntry entry : _completedEntries)
         {
             notifyCallbackFailure(entry.getCallback(), failure);
+            entry.getFrame().release();
         }
         _completedEntries.clear();
 
-        _releasableBuffers.forEach(RetainableByteBuffer::release);
-        _releasableBuffers.clear();
+        _buffersToRelease.forEach(RetainableByteBuffer::release);
+        _buffersToRelease.clear();
         _endPoint.close(_closedCause);
     }
 

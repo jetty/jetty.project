@@ -42,9 +42,11 @@ public class GeneratorParserRoundTripTest
         try
         {
             // Generate Buffer
-            Frame frame = new Frame(OpCode.TEXT).setPayload(message);
-            gen.generateHeader(frame, out);
-            gen.generatePayload(frame, out);
+            try (Frame frame = new Frame(OpCode.TEXT, message))
+            {
+                gen.generateHeader(frame, out);
+                gen.generatePayload(frame, out);
+            }
 
             // Parse Buffer
             capture.parse(out);
@@ -55,32 +57,34 @@ public class GeneratorParserRoundTripTest
         }
 
         // Validate
-        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Text parsed", txt.getPayloadAsUTF8(), is(message));
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Text parsed", txt.getPayloadAsUTF8(), is(message));
+        }
     }
 
     @Test
     public void testParserAndGeneratorMasked() throws Exception
     {
         Generator gen = new Generator();
-        ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
+        ParserCapture capture = new ParserCapture(Behavior.SERVER);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
         RetainableByteBuffer.Mutable out = bufferPool.acquire(8192, false);
         try
         {
-            // Setup Frame
-            Frame frame = new Frame(OpCode.TEXT).setPayload(message);
-
-            // Add masking
+            // Setup masking
             byte[] mask = new byte[4];
             Arrays.fill(mask, (byte)0xFF);
-            frame.setMask(mask);
 
             // Generate Buffer
-            gen.generateHeader(frame, out);
-            gen.generatePayload(frame, out);
+            try (Frame unmasked = new Frame(OpCode.TEXT, message);
+                 Frame frame = unmasked.withMask(mask))
+            {
+                gen.generateHeader(frame, out);
+                gen.generatePayload(frame, out);
+            }
 
             // Parse Buffer
             capture.parse(out);
@@ -91,8 +95,10 @@ public class GeneratorParserRoundTripTest
         }
 
         // Validate
-        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertTrue(txt.isMasked(), "Text.isMasked");
-        assertThat("Text parsed", txt.getPayloadAsUTF8(), is(message));
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertTrue(txt.isMasked(), "Text.isMasked");
+            assertThat("Text parsed", txt.getPayloadAsUTF8(), is(message));
+        }
     }
 }

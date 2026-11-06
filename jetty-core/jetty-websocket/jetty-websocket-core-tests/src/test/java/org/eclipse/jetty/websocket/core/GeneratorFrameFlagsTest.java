@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.Generator;
+import org.eclipse.jetty.websocket.core.internal.ParsedFrame;
 import org.eclipse.jetty.websocket.core.util.FrameValidation;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -37,18 +38,18 @@ public class GeneratorFrameFlagsTest
     public static Stream<Arguments> data()
     {
         return Stream.of(
-            Arguments.of(new Frame(OpCode.PING).setFin(false)),
-            Arguments.of(new Frame(OpCode.PING).setRsv1(true)),
-            Arguments.of(new Frame(OpCode.PING).setRsv2(true)),
-            Arguments.of(new Frame(OpCode.PING).setRsv3(true)),
-            Arguments.of(new Frame(OpCode.PONG).setFin(false)),
-            Arguments.of(new Frame(OpCode.PING).setRsv1(true)),
-            Arguments.of(new Frame(OpCode.PONG).setRsv2(true)),
-            Arguments.of(new Frame(OpCode.PONG).setRsv3(true)),
-            Arguments.of(new Frame(OpCode.CLOSE).setFin(false)),
-            Arguments.of(new Frame(OpCode.CLOSE).setRsv1(true)),
-            Arguments.of(new Frame(OpCode.CLOSE).setRsv2(true)),
-            Arguments.of(new Frame(OpCode.CLOSE).setRsv3(true))
+            Arguments.of(new Frame(OpCode.PING, false, "")),
+            Arguments.of(new Frame(OpCode.PING, true, true, RetainableByteBuffer.empty())),
+            Arguments.of(new ParsedFrame((byte)(0x80 | 0x20 | OpCode.PING), null, RetainableByteBuffer.empty())),
+            Arguments.of(new ParsedFrame((byte)(0x80 | 0x10 | OpCode.PING), null, RetainableByteBuffer.empty())),
+            Arguments.of(new Frame(OpCode.PONG, false, "")),
+            Arguments.of(new Frame(OpCode.PING, true, true, RetainableByteBuffer.empty())),
+            Arguments.of(new ParsedFrame((byte)(0x80 | 0x20 | OpCode.PONG), null, RetainableByteBuffer.empty())),
+            Arguments.of(new ParsedFrame((byte)(0x80 | 0x10 | OpCode.PONG), null, RetainableByteBuffer.empty())),
+            Arguments.of(new Frame(OpCode.CLOSE, false, "")),
+            Arguments.of(new Frame(OpCode.CLOSE, true, true, RetainableByteBuffer.empty())),
+            Arguments.of(new ParsedFrame((byte)(0x80 | 0x20 | OpCode.CLOSE), null, RetainableByteBuffer.empty())),
+            Arguments.of(new ParsedFrame((byte)(0x80 | 0x10 | OpCode.CLOSE), null, RetainableByteBuffer.empty()))
         );
     }
 

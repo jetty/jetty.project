@@ -15,7 +15,9 @@ package org.eclipse.jetty.websocket.core.messages;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.util.MethodHolder;
@@ -46,8 +48,11 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
         {
             if (frame.hasPayload() || frame.isFin())
             {
-                invoke(getMethodHolder(), frame.getPayload(), frame.isFin(), callback);
-                autoDemand();
+                try (RetainableByteBuffer buffer = frame.acquire())
+                {
+                    invoke(getMethodHolder(), buffer, frame.isFin(), callback);
+                    autoDemand();
+                }
             }
             else
             {
@@ -61,9 +66,40 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
         }
     }
 
-    protected void invoke(MethodHolder methodHolder, ByteBuffer byteBuffer, boolean fin, Callback callback) throws Throwable
+    /**
+     * <p>Invokes the application function once for each {@link ByteBuffer} of the given buffer.</p>
+     * <p>The application function is invoked with {@code last=true} only for the
+     * {@link ByteBuffer} that contains the last bytes of a {@code fin} frame.</p>
+     *
+     * @param methodHolder the application function
+     * @param buffer the frame payload
+     * @param fin whether the frame is the last of the message
+     * @param callback the callback to complete when the payload has been processed
+     * @throws Throwable if the invocation fails
+     */
+    protected void invoke(MethodHolder methodHolder, RetainableByteBuffer buffer, boolean fin, Callback callback) throws Throwable
     {
-        methodHolder.invoke(byteBuffer, fin);
+        long remaining = buffer.remaining();
+        if (remaining == 0)
+        {
+            methodHolder.invoke(BufferUtil.EMPTY_BUFFER, fin);
+            callback.succeeded();
+            return;
+        }
+
+        // The buffer may wrap multiple ByteBuffers.
+        // The application is only given the ByteBuffer, not the Callback.
+        // Since the invocation is synchronous, we do not need to retain.
+        long[] total = new long[1];
+        buffer.read(b ->
+        {
+            int p = b.position();
+            int r = b.remaining();
+            total[0] += r;
+            methodHolder.invoke(b.slice(), fin && total[0] == remaining);
+            b.position(p + r);
+            return r;
+        });
         callback.succeeded();
     }
 }

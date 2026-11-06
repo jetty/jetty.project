@@ -16,9 +16,10 @@ package org.eclipse.jetty.websocket.core;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Objects;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.NullAppendable;
@@ -118,68 +119,59 @@ public class CloseStatus
         }
     }
 
-    public CloseStatus(Frame frame)
+    public static CloseStatus from(ByteBuffer payload)
     {
-        this(frame.getPayload());
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(payload))
+        {
+            return from(buffer);
+        }
     }
 
-    public CloseStatus(ByteBuffer payload)
+    public static CloseStatus from(Frame frame)
+    {
+        try (RetainableByteBuffer buffer = frame.acquire())
+        {
+            return from(buffer);
+        }
+    }
+
+    public static CloseStatus from(RetainableByteBuffer payload)
     {
         // RFC-6455 Spec Required Close Frame validation.
-        this.cause = null;
         int statusCode = NO_CODE;
-
-        if ((payload == null) || (payload.remaining() == 0))
+        String reasonPhrase = null;
+        payload = Objects.requireNonNullElse(payload, RetainableByteBuffer.empty());
+        try (RetainableByteBuffer slice = payload.slice())
         {
-            this.code = statusCode;
-            this.reason = null;
-            return;
-        }
-
-        ByteBuffer data = payload.slice();
-        if (data.remaining() == 1)
-        {
-            throw new ProtocolException("Invalid CLOSE payload");
-        }
-
-        if (data.remaining() > Frame.MAX_CONTROL_PAYLOAD)
-        {
-            throw new ProtocolException("Invalid control frame length of " + data.remaining() + " bytes");
-        }
-
-        if (data.remaining() >= 2)
-        {
-            // Status Code
-            statusCode = 0; // start with 0
-            statusCode |= (data.get() & 0xFF) << 8;
-            statusCode |= (data.get() & 0xFF);
-
-            if (!isTransmittableStatusCode(statusCode))
+            if (slice.hasRemaining())
             {
-                throw new ProtocolException("Invalid CLOSE Code: " + statusCode);
-            }
+                if (slice.remaining() == 1)
+                    throw new ProtocolException("Invalid CLOSE payload");
+                if (slice.remaining() > Frame.MAX_CONTROL_PAYLOAD)
+                    throw new ProtocolException("Invalid control frame length of " + slice.remaining() + " bytes");
 
-            if (data.remaining() > 0)
-            {
-                // Reason (trimmed to max reason size)
-                int len = Math.min(data.remaining(), CloseStatus.MAX_REASON_PHRASE);
-                byte[] reasonBytes = new byte[len];
-                data.get(reasonBytes, 0, len);
+                if (slice.remaining() >= 2)
+                {
+                    statusCode = slice.getShortAsInt();
+                    if (!isTransmittableStatusCode(statusCode))
+                        throw new ProtocolException("Invalid CLOSE Code: " + statusCode);
 
-                // Spec Requirement : throw BadPayloadException on invalid UTF8
-                Utf8StringBuilder utf = new Utf8StringBuilder();
-                // if this throws, we know we have bad UTF8
-                utf.append(reasonBytes, 0, reasonBytes.length);
-                String reason = utf.takeCompleteString(BadPayloadException.InvalidUtf8::new);
+                    if (slice.hasRemaining())
+                    {
+                        // Reason (trimmed to max reason size).
+                        int len = (int)Math.min(slice.remaining(), CloseStatus.MAX_REASON_PHRASE);
+                        byte[] reasonBytes = slice.getArray(slice.readPosition(), len);
 
-                this.code = statusCode;
-                this.reason = reason;
-                return;
+                        // Spec Requirement : throw BadPayloadException on invalid UTF8.
+                        Utf8StringBuilder utf = new Utf8StringBuilder();
+                        // If this throws, we know we have bad UTF8.
+                        utf.append(reasonBytes);
+                        reasonPhrase = utf.takeCompleteString(BadPayloadException.InvalidUtf8::new);
+                    }
+                }
             }
         }
-
-        this.code = statusCode;
-        this.reason = null;
+        return new CloseStatus(statusCode, reasonPhrase, null);
     }
 
     public static CloseStatus getCloseStatus(Frame frame)
@@ -187,7 +179,7 @@ public class CloseStatus
         if (frame instanceof CloseStatus.Supplier)
             return ((CloseStatus.Supplier)frame).getCloseStatus();
         if (frame.getOpCode() == OpCode.CLOSE)
-            return new CloseStatus(frame);
+            return from(frame);
         throw new IllegalArgumentException("not a close frame");
     }
 
@@ -216,20 +208,18 @@ public class CloseStatus
         return reason;
     }
 
-    public ByteBuffer asPayloadBuffer()
+    public RetainableByteBuffer asPayloadBuffer()
     {
         return asPayloadBuffer(code, reason);
     }
 
-    public static ByteBuffer asPayloadBuffer(int statusCode, String reason)
+    public static RetainableByteBuffer asPayloadBuffer(int statusCode, String reason)
     {
         if (!isTransmittableStatusCode(statusCode))
             throw new ProtocolException("Invalid close status code: " + statusCode);
 
         int len = 2; // status code
-
         byte[] reasonBytes = null;
-
         if (reason != null)
         {
             byte[] utf8Bytes = reason.getBytes(StandardCharsets.UTF_8);
@@ -238,18 +228,13 @@ public class CloseStatus
                 len += reasonBytes.length;
         }
 
-        ByteBuffer buf = BufferUtil.allocate(len);
-        BufferUtil.flipToFill(buf);
-        buf.put((byte)((statusCode >>> 8) & 0xFF));
-        buf.put((byte)(statusCode & 0xFF));
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(len, false);
+        buffer.putShort((short)statusCode);
 
-        if ((reasonBytes != null) && (reasonBytes.length > 0))
-        {
-            buf.put(reasonBytes, 0, reasonBytes.length);
-        }
-        BufferUtil.flipToFlush(buf, 0);
+        if (reasonBytes != null && reasonBytes.length > 0)
+            buffer.put(reasonBytes);
 
-        return buf;
+        return buffer;
     }
 
     private static byte[] truncateToFit(byte[] bytes, int maxBytes)
@@ -291,9 +276,12 @@ public class CloseStatus
 
     public Frame toFrame()
     {
-        if (isTransmittableStatusCode(code))
-            return new CloseFrame(OpCode.CLOSE, true, asPayloadBuffer(code, reason));
-        return new CloseFrame(OpCode.CLOSE);
+        if (!isTransmittableStatusCode(code))
+            return new CloseFrame(RetainableByteBuffer.empty());
+        try (RetainableByteBuffer payload = asPayloadBuffer())
+        {
+            return new CloseFrame(payload);
+        }
     }
 
     public static Frame toFrame(int closeStatus)
@@ -308,43 +296,26 @@ public class CloseStatus
 
     public static String codeString(int closeStatus)
     {
-        switch (closeStatus)
+        return switch (closeStatus)
         {
-            case NORMAL:
-                return "NORMAL";
-            case SHUTDOWN:
-                return "SHUTDOWN";
-            case PROTOCOL:
-                return "PROTOCOL";
-            case BAD_DATA:
-                return "BAD_DATA";
-            case RESERVED:
-                return "RESERVED";
-            case NO_CODE:
-                return "NO_CODE";
-            case NO_CLOSE:
-                return "NO_CLOSE";
-            case BAD_PAYLOAD:
-                return "BAD_PAYLOAD";
-            case POLICY_VIOLATION:
-                return "POLICY_VIOLATION";
-            case MESSAGE_TOO_LARGE:
-                return "MESSAGE_TOO_LARGE";
-            case EXTENSION_ERROR:
-                return "EXTENSION_ERROR";
-            case SERVER_ERROR:
-                return "SERVER_ERROR";
-            case SERVICE_RESTART:
-                return "SERVICE_RESTART";
-            case TRY_AGAIN_LATER:
-                return "TRY_AGAIN_LATER";
-            case BAD_GATEWAY:
-                return "BAD_GATEWAY";
-            case FAILED_TLS_HANDSHAKE:
-                return "FAILED_TLS_HANDSHAKE";
-            default:
-                return "UNKNOWN";
-        }
+            case NORMAL -> "NORMAL";
+            case SHUTDOWN -> "SHUTDOWN";
+            case PROTOCOL -> "PROTOCOL";
+            case BAD_DATA -> "BAD_DATA";
+            case RESERVED -> "RESERVED";
+            case NO_CODE -> "NO_CODE";
+            case NO_CLOSE -> "NO_CLOSE";
+            case BAD_PAYLOAD -> "BAD_PAYLOAD";
+            case POLICY_VIOLATION -> "POLICY_VIOLATION";
+            case MESSAGE_TOO_LARGE -> "MESSAGE_TOO_LARGE";
+            case EXTENSION_ERROR -> "EXTENSION_ERROR";
+            case SERVER_ERROR -> "SERVER_ERROR";
+            case SERVICE_RESTART -> "SERVICE_RESTART";
+            case TRY_AGAIN_LATER -> "TRY_AGAIN_LATER";
+            case BAD_GATEWAY -> "BAD_GATEWAY";
+            case FAILED_TLS_HANDSHAKE -> "FAILED_TLS_HANDSHAKE";
+            default -> "UNKNOWN";
+        };
     }
 
     public boolean isNormal()
@@ -363,16 +334,25 @@ public class CloseStatus
         CloseStatus getCloseStatus();
     }
 
-    class CloseFrame extends Frame implements CloseStatus.Supplier
+    private class CloseFrame extends Frame implements CloseStatus.Supplier
     {
-        public CloseFrame(byte opcode)
+        private CloseFrame(RetainableByteBuffer payload)
         {
-            super(opcode);
+            this(null, payload);
         }
 
-        public CloseFrame(byte opCode, boolean fin, ByteBuffer payload)
+        private CloseFrame(byte[] mask, RetainableByteBuffer payload)
         {
-            super(opCode, fin, payload);
+            super((byte)(0x80 | OpCode.CLOSE), mask, payload);
+        }
+
+        @Override
+        public Frame withMask(byte[] mask)
+        {
+            try (RetainableByteBuffer buffer = acquire())
+            {
+                return new CloseFrame(mask, buffer);
+            }
         }
 
         @Override
@@ -384,7 +364,7 @@ public class CloseStatus
         @Override
         public String toString()
         {
-            return super.toString() + ":" + CloseStatus.this.toString();
+            return super.toString() + ":" + CloseStatus.this;
         }
     }
 }

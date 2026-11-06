@@ -60,14 +60,12 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
     @Parameter (defaultValue = "${project.build.outputDirectory}", required = true)
     protected File classesDirectory;
     
-
     /**
      * An optional pattern for includes/excludes of classes in the classesDirectory
      */
     @Parameter
     protected ScanPattern scanClassesPattern;
     
-
     /**
      * Default root directory for all html/jsp etc files.
      * Used to initialize webApp.setBaseResource().

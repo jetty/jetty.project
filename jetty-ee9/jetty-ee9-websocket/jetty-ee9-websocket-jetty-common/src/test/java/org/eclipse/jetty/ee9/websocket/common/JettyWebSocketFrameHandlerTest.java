@@ -122,7 +122,10 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(coreSession, Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello?").setFin(true), Callback.NOOP);
+        try (Frame frame = new Frame(OpCode.TEXT, "Hello?"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
         localEndpoint.onClosed(new CloseStatus(StatusCode.NORMAL, "Normal"), Callback.NOOP);
 
         // Validate Events
@@ -166,14 +169,19 @@ public class JettyWebSocketFrameHandlerTest
 
             // Trigger Events
             localEndpoint.onOpen(coreSession, Callback.NOOP);
-            localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello Text Stream").setFin(true), Callback.NOOP);
-            localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL, "Normal"), Callback.NOOP);
+            try (Frame frame = new Frame(OpCode.TEXT, "Hello Text Stream"))
+            {
+                localEndpoint.onFrame(frame, Callback.NOOP);
+                try (Frame close = CloseStatus.toFrame(StatusCode.NORMAL, "Normal"))
+                {
+                    localEndpoint.onFrame(close, Callback.NOOP);
+                }
 
-            // Await completion (of threads)
-            socket.streamLatch.await(2, TimeUnit.SECONDS);
-
-            // Validate Events
-            socket.events.assertEvents("onTextStream\\(Hello Text Stream\\)");
+                // Await completion (of threads)
+                assertTrue(socket.streamLatch.await(2, TimeUnit.SECONDS));
+                // Validate Events
+                socket.events.assertEvents("onTextStream\\(Hello Text Stream\\)");
+            }
         });
     }
 
@@ -188,17 +196,23 @@ public class JettyWebSocketFrameHandlerTest
 
             // Trigger Events
             localEndpoint.onOpen(coreSession, Callback.NOOP);
-            localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hel").setFin(false), Callback.NOOP);
-            localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("lo ").setFin(false), Callback.NOOP);
-            localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Wor").setFin(false), Callback.NOOP);
-            localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("ld").setFin(true), Callback.NOOP);
-            localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL, "Normal"), Callback.NOOP);
+            try (Frame frame1 = new Frame(OpCode.TEXT, false, "Hel");
+                 Frame frame2 = new Frame(OpCode.CONTINUATION, false, "lo ");
+                 Frame frame3 = new Frame(OpCode.CONTINUATION, false, "Wor");
+                 Frame frame4 = new Frame(OpCode.CONTINUATION, "ld");
+                 Frame close = CloseStatus.toFrame(StatusCode.NORMAL, "Normal"))
+            {
+                localEndpoint.onFrame(frame1, Callback.NOOP);
+                localEndpoint.onFrame(frame2, Callback.NOOP);
+                localEndpoint.onFrame(frame3, Callback.NOOP);
+                localEndpoint.onFrame(frame4, Callback.NOOP);
+                localEndpoint.onFrame(close, Callback.NOOP);
 
-            // Await completion (of threads)
-            assertTrue(socket.streamLatch.await(2, TimeUnit.SECONDS));
-
-            // Validate Events
-            socket.events.assertEvents("onTextStream\\(Hello World\\)");
+                // Await completion (of threads)
+                assertTrue(socket.streamLatch.await(2, TimeUnit.SECONDS));
+                // Validate Events
+                socket.events.assertEvents("onTextStream\\(Hello World\\)");
+            }
         });
     }
 
@@ -211,13 +225,34 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(coreSession, Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL), Callback.NOOP);
+        try (Frame frame = new Frame(OpCode.TEXT, false, "Hello"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, false, " "))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, "World"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.BINARY, false, "Save"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, false, " the "))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, "Pig"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = CloseStatus.toFrame(StatusCode.NORMAL))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
         localEndpoint.onClosed(CloseStatus.NORMAL_STATUS, Callback.NOOP);
 
         // Validate Events
@@ -242,19 +277,37 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(coreSession, Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
+        try (Frame frame = new Frame(OpCode.TEXT, false, "Hello"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, false, " "))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, "World"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.BINARY, false, "Save"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, false, " the "))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, "Pig"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
         localEndpoint.onClosed(new CloseStatus(StatusCode.NORMAL, "Normal"), Callback.NOOP);
 
         // Validate Events
         socket.events.assertEvents(
             "onWebSocketConnect\\([^\\)]*\\)",
             "onWebSocketText\\(\"Hello World\"\\)",
-            "onWebSocketBinary\\(\\[12\\], 0, 12\\)",
+            "onWebSocketBinary\\(\\[\\d+\\], 0, 12\\)",
             "onWebSocketClose\\(NORMAL, \"Normal\"\\)"
         );
     }
@@ -268,8 +321,14 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(coreSession, Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
+        try (Frame frame = new Frame(OpCode.TEXT, false, "Hello"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, false, " "))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
         localEndpoint.onError(new RuntimeException("Nothing to see here"), Callback.NOOP);
 
         // Validate Events
@@ -288,13 +347,34 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(coreSession, Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(CloseStatus.toFrame(StatusCode.NORMAL, "Normal"), Callback.NOOP);
+        try (Frame frame = new Frame(OpCode.TEXT, false, "Hello"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, false, " "))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, "World"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.BINARY, false, "Save"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, false, " the "))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, "Pig"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = CloseStatus.toFrame(StatusCode.NORMAL, "Normal"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
 
         // Validate Events
         socket.events.assertEvents(
@@ -318,14 +398,38 @@ public class JettyWebSocketFrameHandlerTest
 
         // Trigger Events
         localEndpoint.onOpen(coreSession, Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.PING).setPayload("You there?"), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.BINARY).setPayload("Save").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" the ").setFin(false), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.PONG).setPayload("You there?"), Callback.NOOP);
-        localEndpoint.onFrame(new Frame(OpCode.CONTINUATION).setPayload("Pig").setFin(true), Callback.NOOP);
+        try (Frame frame = new Frame(OpCode.TEXT, false, "Hello"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, false, " "))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.PING, "You there?"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, "World"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.BINARY, false, "Save"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, false, " the "))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.PONG, "You there?"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, "Pig"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
         localEndpoint.onClosed(new CloseStatus(StatusCode.NORMAL, "Normal"), Callback.NOOP);
 
         // Validate Events

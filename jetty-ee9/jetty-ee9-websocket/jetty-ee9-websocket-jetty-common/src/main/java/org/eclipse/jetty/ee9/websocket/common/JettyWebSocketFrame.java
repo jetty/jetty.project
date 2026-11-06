@@ -14,16 +14,19 @@
 package org.eclipse.jetty.ee9.websocket.common;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.Frame;
 
-public class JettyWebSocketFrame implements org.eclipse.jetty.ee9.websocket.api.Frame
+public class JettyWebSocketFrame implements org.eclipse.jetty.ee9.websocket.api.Frame, AutoCloseable
 {
     private final Frame frame;
 
     public JettyWebSocketFrame(Frame frame)
     {
-        this.frame = frame;
+        this.frame = Objects.requireNonNull(frame);
+        frame.retain();
     }
 
     @Override
@@ -41,13 +44,19 @@ public class JettyWebSocketFrame implements org.eclipse.jetty.ee9.websocket.api.
     @Override
     public ByteBuffer getPayload()
     {
-        return frame.getPayload().asReadOnlyBuffer();
+        try (RetainableByteBuffer buffer = frame.acquire())
+        {
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                return slice.getByteBuffer(false);
+            }
+        }
     }
 
     @Override
     public int getPayloadLength()
     {
-        return frame.getPayloadLength();
+        return Math.toIntExact(frame.getPayloadLength());
     }
 
     @Override
@@ -90,6 +99,12 @@ public class JettyWebSocketFrame implements org.eclipse.jetty.ee9.websocket.api.
     public boolean isRsv3()
     {
         return frame.isRsv3();
+    }
+
+    @Override
+    public void close()
+    {
+        frame.release();
     }
 
     @Override

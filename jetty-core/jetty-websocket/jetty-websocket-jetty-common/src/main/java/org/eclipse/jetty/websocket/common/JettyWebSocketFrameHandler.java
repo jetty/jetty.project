@@ -17,13 +17,12 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
@@ -192,36 +191,38 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onFrame(Frame frame, Callback coreCallback)
+    public void onFrame(Frame coreFrame, Callback coreCallback)
     {
-        if (frame.getOpCode() == OpCode.TEXT || frame.getOpCode() == OpCode.BINARY)
-            messageType = frame.getOpCode();
+        if (coreFrame.getOpCode() == OpCode.TEXT || coreFrame.getOpCode() == OpCode.BINARY)
+            messageType = coreFrame.getOpCode();
 
         if (frameHandle != null)
         {
             try
             {
-                byte effectiveOpCode = frame.isDataFrame() ? messageType : frame.getOpCode();
-                frameHandle.invoke(new JettyWebSocketFrame(frame, effectiveOpCode),
-                    org.eclipse.jetty.websocket.api.Callback.from(coreCallback::succeeded, coreCallback::failed));
+                byte effectiveOpCode = coreFrame.isDataFrame() ? messageType : coreFrame.getOpCode();
+                try (JettyWebSocketFrame frame = new JettyWebSocketFrame(coreFrame, effectiveOpCode))
+                {
+                    var callback = org.eclipse.jetty.websocket.api.Callback.from(coreCallback::succeeded, coreCallback::failed);
+                    frameHandle.invoke(frame, callback);
+                }
+                autoDemand();
             }
             catch (Throwable cause)
             {
                 coreCallback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " FRAME method error: " + cause.getMessage(), cause));
             }
-
-            autoDemand();
             return;
         }
 
-        switch (frame.getOpCode())
+        switch (coreFrame.getOpCode())
         {
-            case OpCode.TEXT -> onTextFrame(frame, coreCallback);
-            case OpCode.BINARY -> onBinaryFrame(frame, coreCallback);
-            case OpCode.CONTINUATION -> onContinuationFrame(frame, coreCallback);
-            case OpCode.PING -> onPingFrame(frame, coreCallback);
-            case OpCode.PONG -> onPongFrame(frame, coreCallback);
-            case OpCode.CLOSE -> onCloseFrame(frame, coreCallback);
+            case OpCode.TEXT -> onTextFrame(coreFrame, coreCallback);
+            case OpCode.BINARY -> onBinaryFrame(coreFrame, coreCallback);
+            case OpCode.CONTINUATION -> onContinuationFrame(coreFrame, coreCallback);
+            case OpCode.PING -> onPingFrame(coreFrame, coreCallback);
+            case OpCode.PONG -> onPongFrame(coreFrame, coreCallback);
+            case OpCode.CLOSE -> onCloseFrame(coreFrame, coreCallback);
             default -> coreCallback.failed(new IllegalStateException());
         }
     }
@@ -296,14 +297,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         if (pingHandle != null)
         {
-            try
+            try (RetainableByteBuffer buffer = frame.acquire())
             {
-                ByteBuffer payload = frame.getPayload();
-                if (payload == null)
-                    payload = BufferUtil.EMPTY_BUFFER;
-                else
-                    payload = BufferUtil.copy(payload);
-                pingHandle.invoke(payload);
+                pingHandle.invoke(buffer.getByteBuffer(false));
                 callback.succeeded();
                 autoDemand();
             }
@@ -315,23 +311,26 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         else
         {
             // Automatically respond.
-            getSession().sendPong(frame.getPayload(), new org.eclipse.jetty.websocket.api.Callback()
+            try (RetainableByteBuffer buffer = frame.acquire())
             {
-                @Override
-                public void succeed()
+                getSession().sendPong(buffer, new org.eclipse.jetty.websocket.api.Callback()
                 {
-                    callback.succeeded();
-                    internalDemand();
-                }
+                    @Override
+                    public void succeed()
+                    {
+                        callback.succeeded();
+                        internalDemand();
+                    }
 
-                @Override
-                public void fail(Throwable x)
-                {
-                    // Ignore failures, we might be output closed and receive a PING.
-                    callback.succeeded();
-                    internalDemand();
-                }
-            });
+                    @Override
+                    public void fail(Throwable x)
+                    {
+                        // Ignore failures, we might be output closed and receive a PING.
+                        callback.succeeded();
+                        internalDemand();
+                    }
+                });
+            }
         }
     }
 
@@ -339,14 +338,9 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         if (pongHandle != null)
         {
-            try
+            try (RetainableByteBuffer buffer = frame.acquire())
             {
-                ByteBuffer payload = frame.getPayload();
-                if (payload == null)
-                    payload = BufferUtil.EMPTY_BUFFER;
-                else
-                    payload = BufferUtil.copy(payload);
-                pongHandle.invoke(payload);
+                pongHandle.invoke(buffer.getByteBuffer(false));
                 callback.succeeded();
                 autoDemand();
             }

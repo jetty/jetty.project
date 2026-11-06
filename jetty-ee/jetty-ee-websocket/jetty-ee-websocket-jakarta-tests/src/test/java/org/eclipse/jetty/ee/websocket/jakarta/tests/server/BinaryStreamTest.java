@@ -34,10 +34,9 @@ import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.ee.websocket.jakarta.client.JakartaWebSocketClientContainer;
-import org.eclipse.jetty.ee.websocket.jakarta.tests.DataUtils;
 import org.eclipse.jetty.ee.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.ee.websocket.jakarta.tests.WebSocketTester;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -91,7 +90,7 @@ public class BinaryStreamTest
         testEcho(server.getServerContainer().getDefaultMaxBinaryMessageBufferSize());
     }
 
-    private byte[] newData(int size)
+    private RetainableByteBuffer newData(int size)
     {
         byte[] pattern = "01234567890abcdefghijlklmopqrstuvwxyz".getBytes(StandardCharsets.UTF_8);
         byte[] data = new byte[size];
@@ -99,18 +98,18 @@ public class BinaryStreamTest
         {
             data[i] = pattern[i % pattern.length];
         }
-        return data;
+        return RetainableByteBuffer.wrap(data);
     }
 
     private void testEcho(int size) throws Exception
     {
-        byte[] data = newData(size);
+        RetainableByteBuffer data = newData(size);
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.BINARY).setPayload(data));
+        send.add(new Frame(OpCode.BINARY, data));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        ByteBuffer expectedMessage = DataUtils.copyOf(data);
+        ByteBuffer expectedMessage = data.slice().getByteBuffer(false);
 
         try (WebSocketTester session = server.newWebSocketTester("/echo"))
         {
@@ -124,13 +123,13 @@ public class BinaryStreamTest
     public void testMoreThanLargestMessageOneByteAtATime() throws Exception
     {
         int size = server.getServerContainer().getDefaultMaxBinaryMessageBufferSize() + 16;
-        byte[] data = newData(size);
+        RetainableByteBuffer data = newData(size);
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.BINARY).setPayload(data));
+        send.add(new Frame(OpCode.BINARY, data));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        ByteBuffer expectedMessage = DataUtils.copyOf(data);
+        ByteBuffer expectedMessage = data.slice().getByteBuffer(false);
 
         try (WebSocketTester session = server.newWebSocketTester("/echo"))
         {
@@ -144,7 +143,7 @@ public class BinaryStreamTest
     public void testNotReadingToEndOfStream() throws Exception
     {
         int size = 32;
-        byte[] data = newData(size);
+        RetainableByteBuffer data = newData(size);
         URI uri = server.getWsUri().resolve(PATH);
 
         CountDownLatch handlerComplete = new CountDownLatch(1);
@@ -157,7 +156,7 @@ public class BinaryStreamTest
         });
 
         Session session = wsClient.connectToServer(client, uri);
-        session.getBasicRemote().sendBinary(BufferUtil.toBuffer(data));
+        session.getBasicRemote().sendBinary(data.getByteBuffer(false));
         assertTrue(handlerComplete.await(5, TimeUnit.SECONDS));
 
         session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "close from test"));
@@ -170,7 +169,7 @@ public class BinaryStreamTest
     public void testClosingBeforeReadingToEndOfStream() throws Exception
     {
         int size = 32;
-        byte[] data = newData(size);
+        RetainableByteBuffer data = newData(size);
         URI uri = server.getWsUri().resolve(PATH);
 
         CountDownLatch handlerComplete = new CountDownLatch(1);
@@ -186,7 +185,7 @@ public class BinaryStreamTest
         });
 
         Session session = wsClient.connectToServer(client, uri);
-        session.getBasicRemote().sendBinary(BufferUtil.toBuffer(data));
+        session.getBasicRemote().sendBinary(data.getByteBuffer(false));
         assertTrue(handlerComplete.await(5, TimeUnit.SECONDS));
 
         session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "close from test"));

@@ -99,11 +99,11 @@ public class InputStreamEchoTest
         String requestPath = "/echo/stream";
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.BINARY).setPayload("Hello World"));
+        send.add(new Frame(OpCode.BINARY, "Hello World"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.TEXT).setPayload("Hello World"));
+        expect.add(new Frame(OpCode.TEXT, "Hello World"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         try (WebSocketTester session = server.newWebSocketTester(requestPath))
@@ -119,11 +119,11 @@ public class InputStreamEchoTest
         String requestPath = "/echo/stream-param/Every%20Person";
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.BINARY).setPayload("Hello World"));
+        send.add(new Frame(OpCode.BINARY, "Hello World"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.TEXT).setPayload("Hello World|Every%20Person"));
+        expect.add(new Frame(OpCode.TEXT, "Hello World|Every%20Person"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         try (WebSocketTester session = server.newWebSocketTester(requestPath))

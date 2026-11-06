@@ -18,6 +18,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.function.Predicate;
 
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.exceptions.WebSocketTimeoutException;
 
@@ -73,7 +74,15 @@ public interface Session extends Configurable, Closeable
      * @param buffer the message bytes to send
      * @param callback callback to notify when the send operation is complete
      */
-    void sendBinary(ByteBuffer buffer, Callback callback);
+    default void sendBinary(ByteBuffer buffer, Callback callback)
+    {
+        try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(buffer))
+        {
+            sendBinary(payload, callback);
+        }
+    }
+
+    void sendBinary(RetainableByteBuffer buffer, Callback callback);
 
     /**
      * <p>Initiates the asynchronous send of a BINARY frame, possibly part
@@ -86,7 +95,15 @@ public interface Session extends Configurable, Closeable
      * @param last whether this is the last frame of the message
      * @param callback callback to notify when the send operation is complete
      */
-    void sendPartialBinary(ByteBuffer buffer, boolean last, Callback callback);
+    default void sendPartialBinary(ByteBuffer buffer, boolean last, Callback callback)
+    {
+        try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(buffer))
+        {
+            sendPartialBinary(payload, last, callback);
+        }
+    }
+
+    void sendPartialBinary(RetainableByteBuffer buffer, boolean last, Callback callback);
 
     /**
      * <p>Initiates the asynchronous send of a TEXT message, notifying
@@ -119,7 +136,15 @@ public interface Session extends Configurable, Closeable
      * @param applicationData the data to be carried in the PING frame
      * @param callback callback to notify when the send operation is complete
      */
-    void sendPing(ByteBuffer applicationData, Callback callback);
+    default void sendPing(ByteBuffer applicationData, Callback callback)
+    {
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(applicationData))
+        {
+            sendPing(buffer, callback);
+        }
+    }
+
+    void sendPing(RetainableByteBuffer applicationData, Callback callback);
 
     /**
      * <p>Initiates the asynchronous send of a PONG frame, notifying the given
@@ -129,7 +154,15 @@ public interface Session extends Configurable, Closeable
      * @param applicationData the data to be carried in the PONG frame
      * @param callback callback to notify when the send operation is complete
      */
-    void sendPong(ByteBuffer applicationData, Callback callback);
+    default void sendPong(ByteBuffer applicationData, Callback callback)
+    {
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(applicationData))
+        {
+            sendPong(buffer, callback);
+        }
+    }
+
+    void sendPong(RetainableByteBuffer applicationData, Callback callback);
 
     /**
      * <p>Equivalent to {@code close(StatusCode.NORMAL, null, Callback.NOOP)}.</p>
@@ -240,6 +273,15 @@ public interface Session extends Configurable, Closeable
          * <p>A WebSocket frame has been received.</p>
          * <p>The received frames may be control frames such as PING, PONG or CLOSE,
          * or data frames either BINARY or TEXT.</p>
+         * <p>If this method is invoked, then the other methods for the corresponding
+         * frame are not called.</p>
+         * <p>The frame payload lifecycle is not bound to the {@link Callback} parameter.
+         * The frame payload may be {@link Frame#acquire() acquired} and released
+         * within the method, or stored aside for later processing, as long as it is
+         * eventually released.</p>
+         * <p>The {@link Callback} parameter indicates that the processing
+         * of the frame is finished, and that the implementation can perform
+         * possibly terminal actions such as closing the connection.</p>
          *
          * @param frame the received frame
          * @param callback the callback to complete once the frame has been processed.
@@ -268,7 +310,7 @@ public interface Session extends Configurable, Closeable
 
         /**
          * <p>A WebSocket BINARY (or associated CONTINUATION) frame has been received.</p>
-         * <p>The {@code ByteBuffer} is read-only, and will be recycled when the {@code callback}
+         * <p>The {@code ByteBuffer} will be recycled when the {@code callback}
          * is completed.</p>
          *
          * @param payload the BINARY frame payload

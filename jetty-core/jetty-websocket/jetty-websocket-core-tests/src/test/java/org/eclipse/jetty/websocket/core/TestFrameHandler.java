@@ -17,7 +17,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,8 +63,10 @@ public class TestFrameHandler implements SynchronousFrameHandler
     public void onFrame(Frame frame)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onFrame: {}:{}", OpCode.name(frame.getOpCode()), BufferUtil.toDetailString(frame.getPayload()));
-        receivedFrames.offer(Frame.copy(frame));
+            LOG.debug("onFrame: {}", frame);
+        // The frame is stored, so it must be retained.
+        frame.retain();
+        receivedFrames.offer(frame);
         demand();
     }
 

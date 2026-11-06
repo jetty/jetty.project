@@ -43,13 +43,16 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         MethodHolder copyHandle = getAcceptHandle(copy, Reader.class);
         ReaderMessageSink sink = new ReaderMessageSink(session.getCoreSession(), copyHandle, true);
 
-        FutureCallback finCallback = new FutureCallback();
-        sink.accept(new Frame(OpCode.TEXT).setPayload("Hello World"), finCallback);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        try (Frame frame = new Frame(OpCode.TEXT, "Hello World"))
+        {
+            FutureCallback finCallback = new FutureCallback();
+            sink.accept(frame, finCallback);
+            coreSession.waitForDemand(1, TimeUnit.SECONDS);
+            finCallback.get(1, TimeUnit.SECONDS);
+        }
 
         StringWriter writer = copyFuture.get(1, TimeUnit.SECONDS);
         assertThat("Writer.contents", writer.getBuffer().toString(), is("Hello World"));
-        assertThat("FinCallback.done", finCallback.isDone(), is(true));
     }
 
     @Test
@@ -64,12 +67,21 @@ public class ReaderMessageSinkTest extends AbstractMessageSinkTest
         FutureCallback callback2 = new FutureCallback();
         FutureCallback finCallback = new FutureCallback();
 
-        sink.accept(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false), callback1);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
-        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false), callback2);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
-        sink.accept(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true), finCallback);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        try (Frame frame = new Frame(OpCode.TEXT, false, "Hello"))
+        {
+            sink.accept(frame, callback1);
+            coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, false, ", "))
+        {
+            sink.accept(frame, callback2);
+            coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, true, "World"))
+        {
+            sink.accept(frame, finCallback);
+            coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        }
 
         StringWriter writer = copyFuture.get(1, TimeUnit.SECONDS);
         assertThat("Writer contents", writer.getBuffer().toString(), is("Hello, World"));

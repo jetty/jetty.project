@@ -35,7 +35,12 @@ public class UnitGenerator extends Generator
     public void generate(RetainableByteBuffer.Mutable buffer, Frame frame)
     {
         if (applyMask)
-            frame.setMask(MASK);
-        generateWholeFrame(frame, buffer);
+            frame = frame.withMask(MASK);
+        else
+            frame.retain();
+        try (Frame f = frame)
+        {
+            generateWholeFrame(f, buffer);
+        }
     }
 }

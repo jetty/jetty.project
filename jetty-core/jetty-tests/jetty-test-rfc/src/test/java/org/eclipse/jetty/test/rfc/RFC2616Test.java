@@ -1298,7 +1298,6 @@ public class RFC2616Test
         assertByteRange("bytes=-3", "24-26/27", alpha.substring(24, 26 + 1));
     }
 
-
     /**
      * Test Range (Header Field)
      *

@@ -73,7 +73,10 @@ public class LargeContainerTest
                     byte[] txt = new byte[100 * 1024];
                     Arrays.fill(txt, (byte)'o');
                     String msg = new String(txt, StandardCharsets.UTF_8);
-                    coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(msg), Callback.NOOP, false);
+                    try (Frame frame = new Frame(OpCode.TEXT, msg))
+                    {
+                        coreSession.sendFrame(frame, Callback.NOOP, false);
+                    }
 
                     // Confirm echo
                     String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);

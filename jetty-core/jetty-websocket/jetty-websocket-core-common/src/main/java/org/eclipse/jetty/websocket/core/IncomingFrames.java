@@ -16,19 +16,23 @@ package org.eclipse.jetty.websocket.core;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * Interface for dealing with Incoming Frames.
+ * Interface for dealing with incoming WebSocket frames,
+ * from the network to upper layers and eventually the application.
  */
 public interface IncomingFrames
 {
     /**
-     * <p>Process the incoming frame.</p>
-     *
-     * <p>Note: if you need to hang onto any information from the frame, be sure
-     * to copy it, as the information contained in the Frame will be released
-     * and/or reused by the implementation.</p>
-     *
+     * <p>Processes the incoming frame.</p>
+     * <p>Implementations are free to transform the frame, for example
+     * by splitting it or decompressing its payload.</p>
+     * <p>Transforming the frame may require to handle the {@link Callback}
+     * accordingly: splitting may require to forward different callback
+     * for each split frame, failing the original one as soon as a split
+     * callback fails, but succeeding the original one only when the last
+     * split callback succeeds.</p>
      * <p>Failure of the callback will propagate the failure back to the {@link CoreSession}
      * to fail the connection and attempt to send a close {@link Frame} if one has not been sent.</p>
+     *
      * @param frame the frame to process.
      * @param callback the read completion.
      */

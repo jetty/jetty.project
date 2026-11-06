@@ -103,7 +103,6 @@ public class CreationTest
 
     }
     
-    
     /**
      * Test creating a session when the cache is set to
      * evict after the request exits.

@@ -73,16 +73,20 @@ public class FlushTest
 
         // Once we flush the frame is received.
         clientHandler.getCoreSession().flush(Callback.NOOP);
-        Frame frame = Objects.requireNonNull(serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS));
-        assertThat(frame.getOpCode(), is(OpCode.TEXT));
-        assertThat(frame.getPayloadAsUTF8(), is("text payload"));
+        try (Frame frame = Objects.requireNonNull(serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS)))
+        {
+            assertThat(frame.getOpCode(), is(OpCode.TEXT));
+            assertThat(frame.getPayloadAsUTF8(), is("text payload"));
+        }
 
         clientHandler.sendClose();
-        frame = Objects.requireNonNull(serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS));
-        assertThat(CloseStatus.getCloseStatus(frame).getCode(), is(CloseStatus.NO_CODE));
-        assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
-        assertNull(clientHandler.getError());
-        assertThat(clientHandler.closeStatus.getCode(), is(CloseStatus.NO_CODE));
+        try (Frame frame = Objects.requireNonNull(serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS)))
+        {
+            assertThat(CloseStatus.getCloseStatus(frame).getCode(), is(CloseStatus.NO_CODE));
+            assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
+            assertNull(clientHandler.getError());
+            assertThat(clientHandler.closeStatus.getCode(), is(CloseStatus.NO_CODE));
+        }
     }
 
     @Test
@@ -100,15 +104,19 @@ public class FlushTest
 
         // Sending the close initiates the flush and the frame is received.
         clientHandler.sendClose();
-        Frame frame = Objects.requireNonNull(serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS));
-        assertThat(frame.getOpCode(), is(OpCode.TEXT));
-        assertThat(frame.getPayloadAsUTF8(), is("text payload"));
+        try (Frame frame = Objects.requireNonNull(serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS)))
+        {
+            assertThat(frame.getOpCode(), is(OpCode.TEXT));
+            assertThat(frame.getPayloadAsUTF8(), is("text payload"));
+        }
 
-        frame = Objects.requireNonNull(serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS));
-        assertThat(CloseStatus.getCloseStatus(frame).getCode(), is(CloseStatus.NO_CODE));
-        assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
-        assertNull(clientHandler.getError());
-        assertThat(clientHandler.closeStatus.getCode(), is(CloseStatus.NO_CODE));
+        try (Frame frame = Objects.requireNonNull(serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS)))
+        {
+            assertThat(CloseStatus.getCloseStatus(frame).getCode(), is(CloseStatus.NO_CODE));
+            assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
+            assertNull(clientHandler.getError());
+            assertThat(clientHandler.closeStatus.getCode(), is(CloseStatus.NO_CODE));
+        }
     }
 
     @Test

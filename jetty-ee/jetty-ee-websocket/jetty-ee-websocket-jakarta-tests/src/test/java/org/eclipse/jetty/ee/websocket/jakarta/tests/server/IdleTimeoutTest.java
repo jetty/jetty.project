@@ -25,6 +25,7 @@ import org.eclipse.jetty.ee.websocket.jakarta.tests.WSServer;
 import org.eclipse.jetty.ee.websocket.jakarta.tests.WebSocketTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -73,16 +74,26 @@ public class IdleTimeoutTest
             // wait 1 second to allow timeout to fire off
             TimeUnit.SECONDS.sleep(1);
 
-            IOException error = assertThrows(IOException.class,
-                () -> session.sendFrames(new Frame(OpCode.TEXT).setPayload("You shouldn't be there")));
+            IOException error = assertThrows(IOException.class, () ->
+            {
+                try (Frame frame = new Frame(OpCode.TEXT, "You shouldn't be there"))
+                {
+                    session.sendFrames(frame);
+                }
+            });
             assertThat(error.getCause(), instanceOf(ClosedChannelException.class));
 
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
-            Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
-            assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CLOSE));
-            CloseStatus closeStatus = new CloseStatus(frame.getPayload());
-            assertThat("Close.statusCode", closeStatus.getCode(), is(CloseStatus.SHUTDOWN));
-            assertThat("Close.reason", closeStatus.getReason(), containsString("Timeout"));
+            try (Frame frame = framesQueue.poll(1, TimeUnit.SECONDS))
+            {
+                assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CLOSE));
+                try (RetainableByteBuffer buffer = frame.acquire())
+                {
+                    CloseStatus closeStatus = CloseStatus.from(buffer);
+                    assertThat("Close.statusCode", closeStatus.getCode(), is(CloseStatus.SHUTDOWN));
+                    assertThat("Close.reason", closeStatus.getReason(), containsString("Timeout"));
+                }
+            }
         }
     }
 

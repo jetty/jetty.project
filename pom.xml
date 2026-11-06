@@ -191,7 +191,7 @@
     <build-support.version>1.6</build-support.version>
     <buildnumber.maven.plugin.version>3.3.1</buildnumber.maven.plugin.version>
     <built-by>${user.name}</built-by>
-    <checkstyle.version>10.26.1</checkstyle.version>
+    <checkstyle.version>14.4.0</checkstyle.version>
     <commons-codec.version>1.23.0</commons-codec.version>
     <commons-io.version>2.22.0</commons-io.version>
     <commons-lang3.version>3.21.0</commons-lang3.version>

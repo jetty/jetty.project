@@ -40,7 +40,6 @@ public class EchoServlet extends HttpServlet
         ByteBuffer buffer = ByteBuffer.allocate(8192);
         while (input.read(buffer) >= 0)
         {
-            buffer.flip();
             output.write(buffer);
             buffer.clear();
         }

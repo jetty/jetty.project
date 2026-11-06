@@ -34,6 +34,7 @@ import org.eclipse.jetty.ee.websocket.jakarta.tests.CoreServer;
 import org.eclipse.jetty.ee.websocket.jakarta.tests.DataUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -244,12 +245,18 @@ public class MessageReceivingTest
             for (int i = 0; i < parts.length; i++)
             {
                 if (i > 0)
-                    getCoreSession().sendFrame(new Frame(OpCode.CONTINUATION).setPayload(" ").setFin(false), Callback.NOOP, true);
+                {
+                    try (Frame frame = new Frame(OpCode.CONTINUATION, false, " "))
+                    {
+                        getCoreSession().sendFrame(frame, Callback.NOOP, true);
+                    }
+                }
                 boolean last = (i >= (parts.length - 1));
-                Frame frame = new Frame((i == 0) ? OpCode.TEXT : OpCode.CONTINUATION);
-                frame.setPayload(BufferUtil.toBuffer(parts[i], UTF_8));
-                frame.setFin(last);
-                getCoreSession().sendFrame(frame, Callback.NOOP, !last);
+                byte opCode = i == 0 ? OpCode.TEXT : OpCode.CONTINUATION;
+                try (Frame frame = new Frame(opCode, last, parts[i]))
+                {
+                    getCoreSession().sendFrame(frame, Callback.NOOP, !last);
+                }
             }
             callback.succeeded();
         }
@@ -271,9 +278,7 @@ public class MessageReceivingTest
             int segmentSize = 128 * 1024;
             int segmentCount = Math.max(1, copy.remaining() / segmentSize);
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug(".onWholeBinary(payload.length={}): segmentCount={}", wholeMessage.remaining(), segmentCount);
-            }
             for (int i = 0; i < segmentCount; i++)
             {
                 ByteBuffer segment = copy.slice();
@@ -281,18 +286,16 @@ public class MessageReceivingTest
                 int remaining = segment.remaining();
                 segment.limit(segment.position() + Math.min(remaining, segmentSize));
                 boolean last = (i >= (segmentCount - 1));
-                Frame frame;
-                if (i == 0)
-                    frame = new Frame(OpCode.BINARY);
-                else
-                    frame = new Frame(OpCode.CONTINUATION);
-                frame.setPayload(segment);
-                frame.setFin(last);
-                if (LOG.isDebugEnabled())
+                byte opCode = i == 0 ? OpCode.BINARY : OpCode.CONTINUATION;
+                try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(segment))
                 {
-                    LOG.debug("segment[{}]: {}", i, frame);
+                    try (Frame frame = new Frame(opCode, last, payload))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("segment[{}]: {}", i, frame);
+                        getCoreSession().sendFrame(frame, Callback.NOOP, false);
+                    }
                 }
-                getCoreSession().sendFrame(frame, Callback.NOOP, false);
             }
             callback.succeeded();
         }
@@ -311,10 +314,7 @@ public class MessageReceivingTest
         public void onBinary(ByteBuffer wholeMessage, Callback callback)
         {
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug("{}.onWholeBinary({})", EchoWholeMessageFrameHandler.class.getSimpleName(), BufferUtil.toDetailString(wholeMessage));
-            }
-
             sendBinary(wholeMessage, callback, false);
         }
 
@@ -322,10 +322,7 @@ public class MessageReceivingTest
         public void onText(String wholeMessage, Callback callback)
         {
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug("{}.onWholeText({})", EchoWholeMessageFrameHandler.class.getSimpleName(), TextUtils.hint(wholeMessage));
-            }
-
             sendText(wholeMessage, callback, false);
         }
 
@@ -429,9 +426,7 @@ public class MessageReceivingTest
         public void onMessage(ByteBuffer messagePart, boolean last)
         {
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug("PartialByteBufferCaptureHandler.onMessage({}, {})", BufferUtil.toDetailString(messagePart), last);
-            }
 
             final ByteBuffer bufferCopy = DataUtils.copyOf(messagePart);
             currentMessage.add(bufferCopy);

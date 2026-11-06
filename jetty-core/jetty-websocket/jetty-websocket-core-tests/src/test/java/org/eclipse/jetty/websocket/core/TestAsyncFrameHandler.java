@@ -60,7 +60,9 @@ public class TestAsyncFrameHandler implements FrameHandler
     {
         if (LOG.isDebugEnabled())
             LOG.debug("[{}] onFrame {}", name, frame);
-        receivedFrames.offer(Frame.copy(frame));
+        // The frame is stored, so it must be retained.
+        frame.retain();
+        receivedFrames.offer(frame);
         callback.succeeded();
         coreSession.demand();
     }

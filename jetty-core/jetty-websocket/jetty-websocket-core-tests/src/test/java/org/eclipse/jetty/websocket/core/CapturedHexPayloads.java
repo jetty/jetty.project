@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class CapturedHexPayloads implements OutgoingFrames
 {
@@ -25,8 +26,10 @@ public class CapturedHexPayloads implements OutgoingFrames
     @Override
     public void sendFrame(OutgoingEntry entry)
     {
-        String hexPayload = Hex.asHex(entry.getFrame().getPayload());
-        captured.add(hexPayload);
+        try (RetainableByteBuffer payload = entry.getFrame().acquire())
+        {
+            captured.add(Hex.asHex(payload.getArray()));
+        }
         entry.getCallback().succeeded();
     }
 

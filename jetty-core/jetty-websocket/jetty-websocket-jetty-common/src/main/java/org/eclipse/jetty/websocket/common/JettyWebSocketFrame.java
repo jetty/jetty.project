@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import java.nio.ByteBuffer;
+import java.util.Objects;
 
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 
-public class JettyWebSocketFrame implements org.eclipse.jetty.websocket.api.Frame
+public class JettyWebSocketFrame implements org.eclipse.jetty.websocket.api.Frame, AutoCloseable
 {
     private final Frame frame;
     private final byte effectiveOpCode;
@@ -40,8 +41,9 @@ public class JettyWebSocketFrame implements org.eclipse.jetty.websocket.api.Fram
      */
     JettyWebSocketFrame(Frame frame, byte effectiveOpCode)
     {
-        this.frame = frame;
+        this.frame = Objects.requireNonNull(frame);
         this.effectiveOpCode = effectiveOpCode;
+        frame.retain();
     }
 
     @Override
@@ -57,13 +59,13 @@ public class JettyWebSocketFrame implements org.eclipse.jetty.websocket.api.Fram
     }
 
     @Override
-    public ByteBuffer getPayload()
+    public RetainableByteBuffer acquire()
     {
-        return frame.getPayload().asReadOnlyBuffer();
+        return frame.acquire();
     }
 
     @Override
-    public int getPayloadLength()
+    public long getPayloadLength()
     {
         return frame.getPayloadLength();
     }
@@ -114,6 +116,12 @@ public class JettyWebSocketFrame implements org.eclipse.jetty.websocket.api.Fram
     public byte getEffectiveOpCode()
     {
         return effectiveOpCode;
+    }
+
+    @Override
+    public void close()
+    {
+        frame.release();
     }
 
     @Override

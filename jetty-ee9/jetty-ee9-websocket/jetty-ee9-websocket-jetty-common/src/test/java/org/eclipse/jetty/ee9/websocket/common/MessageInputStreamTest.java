@@ -14,17 +14,16 @@
 package org.eclipse.jetty.ee9.websocket.common;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -44,20 +43,20 @@ public class MessageInputStreamTest
     {
         assertTimeout(Duration.ofMillis(5000), () ->
         {
+            // A single message (simple, short)
             try (MessageInputStream stream = new MessageInputStream(new CoreSession.Empty()))
             {
-                // Append a single message (simple, short)
-                Frame frame = new Frame(OpCode.TEXT);
-                frame.setPayload("Hello World");
-                frame.setFin(true);
-                stream.accept(frame, Callback.NOOP);
+                try (Frame frame = new Frame(OpCode.TEXT, "Hello World"))
+                {
+                    stream.accept(frame, Callback.NOOP);
 
-                // Read entire message it from the stream.
-                byte[] data = IO.readBytes(stream);
-                String message = new String(data, 0, data.length, StandardCharsets.UTF_8);
+                    // Read entire message it from the stream.
+                    byte[] data = IO.readBytes(stream);
+                    String message = new String(data, StandardCharsets.UTF_8);
 
-                // Test it
-                assertThat("Message", message, is("Hello World"));
+                    // Test it
+                    assertThat("Message", message, is("Hello World"));
+                }
             }
         });
     }
@@ -65,30 +64,30 @@ public class MessageInputStreamTest
     @Test
     public void testMultipleReadsIntoSingleByteArray() throws IOException
     {
+        // A single message (simple, short)
         try (MessageInputStream stream = new MessageInputStream(new CoreSession.Empty()))
         {
-            // Append a single message (simple, short)
-            Frame frame = new Frame(OpCode.TEXT);
-            frame.setPayload("Hello World");
-            frame.setFin(true);
-            stream.accept(frame, Callback.NOOP);
+            try (Frame frame = new Frame(OpCode.TEXT, "Hello World"))
+            {
+                stream.accept(frame, Callback.NOOP);
 
-            // Read entire message it from the stream.
-            byte[] bytes = new byte[100];
+                // Read entire message it from the stream.
+                byte[] bytes = new byte[100];
 
-            int read = stream.read(bytes, 0, 6);
-            assertThat(read, is(6));
+                int read = stream.read(bytes, 0, 6);
+                assertThat(read, is(6));
 
-            read = stream.read(bytes, 6, 10);
-            assertThat(read, is(5));
+                read = stream.read(bytes, 6, 10);
+                assertThat(read, is(5));
 
-            read = stream.read(bytes, 11, 10);
-            assertThat(read, is(-1));
+                read = stream.read(bytes, 11, 10);
+                assertThat(read, is(-1));
 
-            String message = new String(bytes, 0, 11, StandardCharsets.UTF_8);
+                String message = new String(bytes, 0, 11, StandardCharsets.UTF_8);
 
-            // Test it
-            assertThat("Message", message, is("Hello World"));
+                // Test it
+                assertThat("Message", message, is("Hello World"));
+            }
         }
     }
 
@@ -99,40 +98,45 @@ public class MessageInputStreamTest
         {
             try (MessageInputStream stream = new MessageInputStream(new CoreSession.Empty()))
             {
-                final AtomicBoolean hadError = new AtomicBoolean(false);
-                final CountDownLatch startLatch = new CountDownLatch(1);
-
-                // This thread fills the stream (from the "worker" thread)
-                // But slowly (intentionally).
-                new Thread(() ->
+                try (Frame frame1 = new Frame(OpCode.BINARY, false, "Saved");
+                     Frame frame2 = new Frame(OpCode.CONTINUATION, false, " by ");
+                     Frame frame3 = new Frame(OpCode.CONTINUATION, "Zero"))
                 {
-                    try
+                    AtomicBoolean hadError = new AtomicBoolean(false);
+                    CountDownLatch startLatch = new CountDownLatch(1);
+
+                    // This thread fills the stream (from the "worker" thread)
+                    // But slowly (intentionally).
+                    new Thread(() ->
                     {
-                        startLatch.countDown();
-                        TimeUnit.MILLISECONDS.sleep(200);
-                        stream.accept(new Frame(OpCode.BINARY).setPayload("Saved").setFin(false), Callback.NOOP);
-                        TimeUnit.MILLISECONDS.sleep(200);
-                        stream.accept(new Frame(OpCode.CONTINUATION).setPayload(" by ").setFin(false), Callback.NOOP);
-                        TimeUnit.MILLISECONDS.sleep(200);
-                        stream.accept(new Frame(OpCode.CONTINUATION).setPayload("Zero").setFin(true), Callback.NOOP);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        hadError.set(true);
-                        e.printStackTrace(System.err);
-                    }
-                }).start();
+                        try
+                        {
+                            startLatch.countDown();
+                            TimeUnit.MILLISECONDS.sleep(200);
+                            stream.accept(frame1, Callback.NOOP);
+                            TimeUnit.MILLISECONDS.sleep(200);
+                            stream.accept(frame2, Callback.NOOP);
+                            TimeUnit.MILLISECONDS.sleep(200);
+                            stream.accept(frame3, Callback.NOOP);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            hadError.set(true);
+                            e.printStackTrace(System.err);
+                        }
+                    }).start();
 
-                // wait for thread to start
-                startLatch.await();
+                    // wait for thread to start
+                    startLatch.await();
 
-                // Read it from the stream.
-                byte[] data = IO.readBytes(stream);
-                String message = new String(data, 0, data.length, StandardCharsets.UTF_8);
+                    // Read it from the stream.
+                    byte[] data = IO.readBytes(stream);
+                    String message = new String(data, 0, data.length, StandardCharsets.UTF_8);
 
-                // Test it
-                assertThat("Error when appending", hadError.get(), is(false));
-                assertThat("Message", message, is("Saved by Zero"));
+                    // Test it
+                    assertThat("Error when appending", hadError.get(), is(false));
+                    assertThat("Message", message, is("Saved by Zero"));
+                }
             }
         });
     }
@@ -144,30 +148,32 @@ public class MessageInputStreamTest
         {
             try (MessageInputStream stream = new MessageInputStream(new CoreSession.Empty()))
             {
-                final AtomicBoolean hadError = new AtomicBoolean(false);
-
-                new Thread(() ->
+                try (Frame frame = new Frame(OpCode.BINARY, "I will conquer"))
                 {
-                    try
+                    AtomicBoolean hadError = new AtomicBoolean(false);
+                    new Thread(() ->
                     {
-                        // wait for a little bit before populating buffers
-                        TimeUnit.MILLISECONDS.sleep(400);
-                        stream.accept(new Frame(OpCode.BINARY).setPayload("I will conquer").setFin(true), Callback.NOOP);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        hadError.set(true);
-                        e.printStackTrace(System.err);
-                    }
-                }).start();
+                        try
+                        {
+                            // wait for a little bit before populating buffers
+                            TimeUnit.MILLISECONDS.sleep(400);
+                            stream.accept(frame, Callback.NOOP);
+                        }
+                        catch (InterruptedException e)
+                        {
+                            hadError.set(true);
+                            e.printStackTrace(System.err);
+                        }
+                    }).start();
 
-                // Read byte from stream.
-                int b = stream.read();
-                // Should be a byte, blocking till byte received.
+                    // Read byte from stream.
+                    int b = stream.read();
+                    // Should be a byte, blocking till byte received.
 
-                // Test it
-                assertThat("Error when appending", hadError.get(), is(false));
-                assertThat("Initial byte", b, is((int)'I'));
+                    // Test it
+                    assertThat("Error when appending", hadError.get(), is(false));
+                    assertThat("Initial byte", b, is((int)'I'));
+                }
             }
         });
     }
@@ -179,41 +185,46 @@ public class MessageInputStreamTest
         {
             try (MessageInputStream stream = new MessageInputStream(new CoreSession.Empty()))
             {
-                final AtomicBoolean hadError = new AtomicBoolean(false);
-
-                new Thread(() ->
+                try (Frame emptyFrame = new Frame(OpCode.TEXT))
                 {
-                    try
+                    AtomicBoolean hadError = new AtomicBoolean(false);
+                    new Thread(() ->
                     {
-                        // wait for a little bit before sending input closed
-                        TimeUnit.MILLISECONDS.sleep(400);
-                        stream.accept(new Frame(OpCode.TEXT, true, BufferUtil.EMPTY_BUFFER), Callback.NOOP);
-                    }
-                    catch (Throwable t)
+                        try
+                        {
+                            // wait for a little bit before sending input closed
+                            TimeUnit.MILLISECONDS.sleep(400);
+                            stream.accept(emptyFrame, Callback.NOOP);
+                        }
+                        catch (Throwable t)
+                        {
+                            hadError.set(true);
+                            t.printStackTrace(System.err);
+                        }
+                    }).start();
+
+                    // Read byte from stream.
+                    int b = stream.read();
+
+                    // Should be a -1, indicating the end of the stream.
+                    assertThat("Error when closing", hadError.get(), is(false));
+                    assertThat("Initial byte (Should be EOF)", b, is(-1));
+
+                    // Close the stream.
+                    stream.close();
+
+                    // Any frame content after stream is closed should be discarded, and the callback succeeded.
+                    try (Frame frame = new Frame(OpCode.TEXT, "hello world"))
                     {
-                        hadError.set(true);
-                        t.printStackTrace(System.err);
+                        FutureCallback callback = new FutureCallback();
+                        stream.accept(frame, callback);
+                        callback.block(5, TimeUnit.SECONDS);
                     }
-                }).start();
 
-                // Read byte from stream.
-                int b = stream.read();
-
-                // Should be a -1, indicating the end of the stream.
-                assertThat("Error when closing", hadError.get(), is(false));
-                assertThat("Initial byte (Should be EOF)", b, is(-1));
-
-                // Close the stream.
-                stream.close();
-
-                // Any frame content after stream is closed should be discarded, and the callback succeeded.
-                FutureCallback callback = new FutureCallback();
-                stream.accept(new Frame(OpCode.TEXT, true, BufferUtil.toBuffer("hello world")), callback);
-                callback.block(5, TimeUnit.SECONDS);
-
-                // Any read after the stream is closed leads to an IOException.
-                IOException error = assertThrows(IOException.class, stream::read);
-                assertThat(error.getMessage(), is("Closed"));
+                    // Any read after the stream is closed leads to an IOException.
+                    IOException error = assertThrows(IOException.class, stream::read);
+                    assertThat(error.getMessage(), is("Closed"));
+                }
             }
         });
     }
@@ -223,52 +234,24 @@ public class MessageInputStreamTest
     {
         assertTimeout(Duration.ofMillis(5000), () ->
         {
+            // Parts of message, what is being tested is the empty payload of msg2
             try (MessageInputStream stream = new MessageInputStream(new CoreSession.Empty()))
             {
-                // Append parts of message
-                Frame msg1 = new Frame(OpCode.BINARY).setPayload("Hello ").setFin(false);
-                // what is being tested (an empty payload)
-                Frame msg2 = new Frame(OpCode.CONTINUATION).setPayload(new byte[0]).setFin(false);
-                Frame msg3 = new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true);
+                try (Frame msg1 = new Frame(OpCode.BINARY, false, "Hello ");
+                     Frame msg2 = new Frame(OpCode.CONTINUATION, false, RetainableByteBuffer.empty());
+                     Frame msg3 = new Frame(OpCode.CONTINUATION, "World"))
+                {
+                    stream.accept(msg1, Callback.NOOP);
+                    stream.accept(msg2, Callback.NOOP);
+                    stream.accept(msg3, Callback.NOOP);
 
-                stream.accept(msg1, Callback.NOOP);
-                stream.accept(msg2, Callback.NOOP);
-                stream.accept(msg3, Callback.NOOP);
+                    // Read entire message it from the stream.
+                    byte[] data = IO.readBytes(stream);
+                    String message = new String(data, 0, data.length, StandardCharsets.UTF_8);
 
-                // Read entire message it from the stream.
-                byte[] data = IO.readBytes(stream);
-                String message = new String(data, 0, data.length, StandardCharsets.UTF_8);
-
-                // Test it
-                assertThat("Message", message, is("Hello World"));
-            }
-        });
-    }
-
-    @Test
-    public void testAppendNullPayloadRead() throws IOException
-    {
-        assertTimeout(Duration.ofMillis(5000), () ->
-        {
-            try (MessageInputStream stream = new MessageInputStream(new CoreSession.Empty()))
-            {
-                // Append parts of message
-                Frame msg1 = new Frame(OpCode.BINARY).setPayload("Hello ").setFin(false);
-                // what is being tested (a null payload)
-                ByteBuffer nilPayload = null;
-                Frame msg2 = new Frame(OpCode.CONTINUATION).setPayload(nilPayload).setFin(false);
-                Frame msg3 = new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true);
-
-                stream.accept(msg1, Callback.NOOP);
-                stream.accept(msg2, Callback.NOOP);
-                stream.accept(msg3, Callback.NOOP);
-
-                // Read entire message it from the stream.
-                byte[] data = IO.readBytes(stream);
-                String message = new String(data, 0, data.length, StandardCharsets.UTF_8);
-
-                // Test it
-                assertThat("Message", message, is("Hello World"));
+                    // Test it
+                    assertThat("Message", message, is("Hello World"));
+                }
             }
         });
     }
@@ -276,14 +259,12 @@ public class MessageInputStreamTest
     @Test
     public void testReadSingleByteIsNotSigned() throws Exception
     {
-        try (MessageInputStream stream = new MessageInputStream(new CoreSession.Empty()))
+        // Byte must be greater than 127.
+        int theByte = 200;
+        // A single message (simple, short)
+        try (MessageInputStream stream = new MessageInputStream(new CoreSession.Empty());
+             Frame frame = new Frame(OpCode.BINARY, RetainableByteBuffer.wrap(new byte[]{(byte)theByte})))
         {
-            // Byte must be greater than 127.
-            int theByte = 200;
-            // Append a single message (simple, short)
-            Frame frame = new Frame(OpCode.BINARY);
-            frame.setPayload(new byte[]{(byte)theByte});
-            frame.setFin(true);
             stream.accept(frame, Callback.NOOP);
 
             // Single byte read must not return a signed byte.

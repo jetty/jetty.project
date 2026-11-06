@@ -85,11 +85,17 @@ public interface FrameHandler extends IncomingFrames
      * <p>CLOSE frames may be responded from this method, but if
      * they are not responded, then the implementation will respond
      * when the callback is completed.</p>
-     * <p>The callback argument must be completed to indicate
-     * that the buffers associated with the frame can be recycled.</p>
      * <p>Additional WebSocket frames (of any type, including CLOSE
      * frames) cannot be received  until a call to
      * {@link CoreSession#demand()} is made.</p>
+     * <p>The {@link Frame} lifecycle is bound to the invocation of
+     * this method: the frame and its payload are valid for the
+     * method invocation.
+     * Applications may extend the lifecycle of the Frame and its
+     * payload by retaining the frame and arrange its release later.</p>
+     * <p>The {@link Callback} parameter indicates that the processing
+     * of the frame is finished, and that the implementation can perform
+     * possibly terminal actions such as closing the connection.</p>
      *
      * @param frame the WebSocket frame.
      * @param callback the callback to indicate success or failure of

@@ -58,7 +58,7 @@ public class OutgoingNetworkBytesCapture implements OutgoingFrames
     {
         Frame frame = entry.getFrame();
         Callback callback = entry.getCallback();
-        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(Generator.MAX_HEADER_LENGTH + frame.getPayloadLength(), false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(Generator.MAX_HEADER_LENGTH + Math.toIntExact(frame.getPayloadLength()), false);
         generator.generateWholeFrame(frame, buffer);
         captured.add(buffer);
         callback.succeeded();

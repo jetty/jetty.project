@@ -28,8 +28,9 @@ public class IncomingFramesCapture implements IncomingFrames
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
-        Frame copy = Frame.copy(frame);
-        frames.offer(copy);
+        // The frame is stored, so it must be retained.
+        frame.retain();
+        frames.offer(frame);
         callback.succeeded();
     }
 

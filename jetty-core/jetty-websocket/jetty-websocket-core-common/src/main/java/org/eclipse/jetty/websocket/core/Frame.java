@@ -13,123 +13,94 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.Closeable;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.Objects;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-/**
- * A Base Frame as seen in <a href="https://tools.ietf.org/html/rfc6455#section-5.2">RFC 6455. Sec 5.2</a>
- *
- * <pre>
- *    0                   1                   2                   3
- *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- *   +-+-+-+-+-------+-+-------------+-------------------------------+
- *   |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
- *   |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
- *   |N|V|V|V|       |S|             |   (if payload len==126/127)   |
- *   | |1|2|3|       |K|             |                               |
- *   +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
- *   |     Extended payload length continued, if payload len == 127  |
- *   + - - - - - - - - - - - - - - - +-------------------------------+
- *   |                               |Masking-key, if MASK set to 1  |
- *   +-------------------------------+-------------------------------+
- *   | Masking-key (continued)       |          Payload Data         |
- *   +-------------------------------- - - - - - - - - - - - - - - - +
- *   :                     Payload Data continued ...                :
- *   + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
- *   |                     Payload Data continued ...                |
- *   +---------------------------------------------------------------+
- * </pre>
- */
-public class Frame
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+/// A WebSocket frame as defined by [RFC 6455. Sec 5.2](https://tools.ietf.org/html/rfc6455#section-5.2)
+/// ```
+///    0                   1                   2                   3
+///    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+///   +-+-+-+-+-------+-+-------------+-------------------------------+
+///   |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
+///   |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+///   |N|V|V|V|       |S|             |   (if payload len==126/127)   |
+///   | |1|2|3|       |K|             |                               |
+///   +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+///   |     Extended payload length continued, if payload len == 127  |
+///   + - - - - - - - - - - - - - - - +-------------------------------+
+///   |                               |Masking-key, if MASK set to 1  |
+///   +-------------------------------+-------------------------------+
+///   | Masking-key (continued)       |          Payload Data         |
+///   +-------------------------------- - - - - - - - - - - - - - - - +
+///   :                     Payload Data continued ...                :
+///   + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+///   |                     Payload Data continued ...                |
+///   +---------------------------------------------------------------+
+/// ```
+public class Frame implements Retainable
 {
-    public static Frame copyWithoutPayload(Frame original)
-    {
-        Frame copy = new Frame(original.getOpCode());
-        copy.copyHeaders(original);
-        return copy;
-    }
-
-    public static Frame copy(Frame original)
-    {
-        Frame copy = copyWithoutPayload(original);
-        copy.setPayload(BufferUtil.copy(original.getPayload()));
-        return copy;
-    }
-
-    /**
-     * Maximum size of Control frame, per RFC 6455
-     */
+    /// Maximum size of control frames, per RFC 6455
     public static final int MAX_CONTROL_PAYLOAD = 125;
 
-    /**
-     * Combined FIN + RSV1 + RSV2 + RSV3 + OpCode byte.
-     *
-     * <pre>
-     *   1000_0000 (0x80) = fin
-     *   0100_0000 (0x40) = rsv1
-     *   0010_0000 (0x20) = rsv2
-     *   0001_0000 (0x10) = rsv3
-     *   0000_1111 (0x0F) = opcode
-     * </pre>
-     */
-    protected byte finRsvOp;
-    protected byte[] mask;
+    /// Combined FIN + RSV1 + RSV2 + RSV3 + OpCode byte.
+    /// ```
+    ///   1000_0000 (0x80) = fin
+    ///   0100_0000 (0x40) = rsv1
+    ///   0010_0000 (0x20) = rsv2
+    ///   0001_0000 (0x10) = rsv3
+    ///   0000_1111 (0x0F) = opcode
+    /// ```
+    private final byte finRsvOp;
+    private final byte[] mask;
+    private final RetainableByteBuffer payload;
 
-    /**
-     * The payload data.
-     * <p>
-     * It is assumed to always be in FLUSH mode (ready to read) in this object.
-     */
-    protected ByteBuffer payload;
-
-    /**
-     * Construct form opcode
-     *
-     * @param opcode the opcode the frame is based on
-     */
-    public Frame(byte opcode)
+    public Frame(byte opCode)
     {
-        this((byte)(0x80 | (opcode & 0x0F)), null, null);
-    }
-
-    public Frame(byte opCode, ByteBuffer payload)
-    {
-        this(opCode);
-        setPayload(payload);
+        this(opCode, RetainableByteBuffer.empty());
     }
 
     public Frame(byte opCode, String payload)
     {
-        this(opCode);
-        setPayload(payload);
+        this(opCode, true, payload);
     }
 
-    public Frame(byte opCode, boolean fin, ByteBuffer payload)
+    public Frame(byte opCode, RetainableByteBuffer payload)
     {
-        this(opCode, payload);
-        setFin(fin);
+        this(opCode, true, payload);
     }
 
     public Frame(byte opCode, boolean fin, String payload)
     {
-        this(opCode, payload);
-        setFin(fin);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(payload, UTF_8);
+        this(opCode, fin, buffer);
+        buffer.release();
     }
 
-    protected Frame()
+    public Frame(byte opCode, boolean fin, RetainableByteBuffer payload)
     {
-        this(OpCode.UNDEFINED, null, null);
+        this(opCode, fin, false, payload);
     }
 
-    public Frame(byte finRsvOp, byte[] mask, ByteBuffer payload)
+    public Frame(byte opCode, boolean fin, boolean rsv1, RetainableByteBuffer payload)
+    {
+        byte finRsvOp = (byte)((fin ? 0x80 : 0x00) | (rsv1 ? 0x40 : 0x00) | (opCode & 0x0F));
+        this(finRsvOp, null, payload);
+    }
+
+    /// @param finRsvOp the combined FIN, RSV1, RSV2, RSV3 and OpCode bits
+    /// @param mask the masking key, or `null` if the frame is not masked
+    /// @param payload the payload of the frame, retained by this frame
+    protected Frame(byte finRsvOp, byte[] mask, RetainableByteBuffer payload)
     {
         this.finRsvOp = finRsvOp;
         this.mask = mask;
-        this.payload = payload;
+        this.payload = Objects.requireNonNull(payload);
+        retain();
     }
 
     public boolean isControlFrame()
@@ -142,55 +113,6 @@ public class Frame
         return OpCode.isDataFrame(getOpCode());
     }
 
-    protected void copyHeaders(Frame frame)
-    {
-        final byte opCode = (byte)(finRsvOp & 0x0F);
-        finRsvOp = 0x00;
-        finRsvOp |= frame.isFin() ? 0x80 : 0x00;
-        finRsvOp |= frame.isRsv1() ? 0x40 : 0x00;
-        finRsvOp |= frame.isRsv2() ? 0x20 : 0x00;
-        finRsvOp |= frame.isRsv3() ? 0x10 : 0x00;
-        finRsvOp |= opCode;
-        if (frame.isMasked())
-            mask = Arrays.copyOf(frame.getMask(), frame.getMask().length);
-        else
-            mask = null;
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
-        {
-            return true;
-        }
-        if (obj == null)
-        {
-            return false;
-        }
-        if (getClass() != obj.getClass())
-        {
-            return false;
-        }
-        Frame other = (Frame)obj;
-        if (payload == null)
-        {
-            if (other.payload != null)
-            {
-                return false;
-            }
-        }
-        else if (!payload.equals(other.payload))
-        {
-            return false;
-        }
-        if (finRsvOp != other.finRsvOp)
-        {
-            return false;
-        }
-        return Arrays.equals(mask, other.mask);
-    }
-
     public byte[] getMask()
     {
         return mask;
@@ -201,55 +123,33 @@ public class Frame
         return OpCode.getOpCode(finRsvOp);
     }
 
-    /**
-     * Get the payload ByteBuffer.
-     */
-    public ByteBuffer getPayload()
+    public RetainableByteBuffer acquire()
     {
-        if (payload == null)
-            return BufferUtil.EMPTY_BUFFER;
-
+        retain();
         return payload;
     }
 
-    /**
-     * Get the payload of the frame as a UTF-8 string.
-     * <p>Should only be used in testing, does not validate the
-     * UTF-8 and a non fin frame can contain partial UTF-8 characters.</p>
-     *
-     * @return the payload as a UTF-8 string.
-     */
+    /// Returns the payload of the frame as a UTF-8 string.
+    ///
+    /// The payload is not consumed by this call.
+    ///
+    /// Should only be used in testing, because it does not validate the
+    /// UTF-8 and a non-FIN frame can contain partial UTF-8 characters.
+    ///
+    /// @return the payload as a UTF-8 string.
     public String getPayloadAsUTF8()
     {
-        if (payload == null)
-            return "";
-
-        return BufferUtil.toUTF8String(payload);
+        return payload.getString(payload.readPosition(), UTF_8);
     }
 
-    public int getPayloadLength()
+    public long getPayloadLength()
     {
-        if (payload == null)
-        {
-            return 0;
-        }
         return payload.remaining();
-    }
-
-    @Override
-    public int hashCode()
-    {
-        final int prime = 31;
-        int result = 1;
-        result = (prime * result) + ((payload == null) ? 0 : payload.hashCode());
-        result = (prime * result) + finRsvOp;
-        result = (prime * result) + Arrays.hashCode(mask);
-        return result;
     }
 
     public boolean hasPayload()
     {
-        return (getPayload().remaining() > 0);
+        return payload.hasRemaining();
     }
 
     public boolean isFin()
@@ -277,125 +177,27 @@ public class Frame
         return (byte)(finRsvOp & 0x10) != 0;
     }
 
-    public void reset()
+    public Frame withMask(byte[] mask)
     {
-        finRsvOp = (byte)0x80; // FIN (!RSV, opcode 0)
-        payload = null;
-        mask = null;
+        return new Frame(finRsvOp, mask, payload);
     }
 
-    public Frame setFin(boolean fin)
+    @Override
+    public boolean isRetained()
     {
-        // set bit 1
-        this.finRsvOp = (byte)((finRsvOp & 0x7F) | (fin ? 0x80 : 0x00));
-        return this;
+        return payload.isRetained();
     }
 
-    public Frame setMask(byte[] maskingKey)
+    @Override
+    public void retain()
     {
-        this.mask = maskingKey;
-        return this;
+        payload.retain();
     }
 
-    protected Frame setOpCode(byte op)
+    @Override
+    public boolean release()
     {
-        this.finRsvOp = (byte)((finRsvOp & 0xF0) | (op & 0x0F));
-        return this;
-    }
-
-    /**
-     * Set the data payload.
-     * <p>
-     * The provided buffer will be used as is, no copying of bytes performed.
-     * <p>
-     * The provided buffer should be flipped and ready to READ from.
-     *
-     * @param buf the bytebuffer to set
-     * @return the frame itself
-     */
-    public Frame setPayload(ByteBuffer buf)
-    {
-        payload = buf;
-        return this;
-    }
-
-    public Frame setPayload(String str)
-    {
-        setPayload(ByteBuffer.wrap(StringUtil.getUtf8Bytes(str)));
-        return this;
-    }
-
-    public Frame setPayload(byte[] buf)
-    {
-        setPayload(ByteBuffer.wrap(buf));
-        return this;
-    }
-
-    public Frame setRsv1(boolean rsv1)
-    {
-        // set bit 2
-        this.finRsvOp = (byte)((finRsvOp & 0xBF) | (rsv1 ? 0x40 : 0x00));
-        return this;
-    }
-
-    public Frame setRsv2(boolean rsv2)
-    {
-        // set bit 3
-        this.finRsvOp = (byte)((finRsvOp & 0xDF) | (rsv2 ? 0x20 : 0x00));
-        return this;
-    }
-
-    public Frame setRsv3(boolean rsv3)
-    {
-        // set bit 4
-        this.finRsvOp = (byte)((finRsvOp & 0xEF) | (rsv3 ? 0x10 : 0x00));
-        return this;
-    }
-
-    public Frame asReadOnly()
-    {
-        return new ReadOnly(this);
-    }
-
-    public boolean hasRsv()
-    {
-        return (finRsvOp & 0x70) != 0;
-    }
-
-    public void demask()
-    {
-        if (isMasked() && hasPayload())
-        {
-            int maskInt = 0;
-            for (byte maskByte : mask)
-            {
-                maskInt = (maskInt << 8) + (maskByte & 0xFF);
-            }
-
-            int maskOffset = 0;
-
-            int start = payload.position();
-            int end = payload.limit();
-            int offset = maskOffset;
-            int remaining;
-            while ((remaining = end - start) > 0)
-            {
-                if (remaining >= 4 && (offset & 3) == 0)
-                {
-                    payload.putInt(start, payload.getInt(start) ^ maskInt);
-                    start += 4;
-                    offset += 4;
-                }
-                else
-                {
-                    payload.put(start, (byte)(payload.get(start) ^ mask[offset & 3]));
-                    ++start;
-                    ++offset;
-                }
-            }
-
-            Arrays.fill(mask, (byte)0);
-        }
+        return payload.release();
     }
 
     @Override
@@ -414,151 +216,7 @@ public class Frame
         b.append(((finRsvOp & 0x10) != 0) ? '1' : '0');
         b.append(",m=").append(mask == null ? "null" : StringUtil.toHexString(mask));
         b.append(']');
-        if (payload != null)
-            b.append(BufferUtil.toDetailString(payload));
+        b.append(payload);
         return b.toString();
-    }
-
-    /**
-     * Immutable, Read-only, Frame implementation.
-     */
-    private static class ReadOnly extends Frame
-    {
-        private ReadOnly(Frame frame)
-        {
-            super(frame.finRsvOp, frame.isMasked() ? frame.getMask() : null, frame.getPayload());
-        }
-
-        @Override
-        public ByteBuffer getPayload()
-        {
-            ByteBuffer buffer = super.getPayload();
-            if (buffer == null)
-                return null;
-
-            return buffer.asReadOnlyBuffer();
-        }
-
-        @Override
-        protected void copyHeaders(Frame frame)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void reset()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Frame setFin(boolean fin)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Frame setMask(byte[] maskingKey)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        protected Frame setOpCode(byte op)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Frame setPayload(ByteBuffer buf)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Frame setPayload(String str)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Frame setPayload(byte[] buf)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Frame setRsv1(boolean rsv1)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Frame setRsv2(boolean rsv2)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Frame setRsv3(boolean rsv3)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Frame asReadOnly()
-        {
-            return this;
-        }
-    }
-
-    public static class Parsed extends Frame implements Closeable, CloseStatus.Supplier
-    {
-        final CloseStatus closeStatus;
-        final Runnable releaser;
-
-        public Parsed(byte firstByte, byte[] mask, ByteBuffer payload, Runnable releaser)
-        {
-            super(firstByte, mask, payload);
-            demask();
-            this.releaser = releaser;
-            if (getOpCode() == OpCode.CLOSE)
-            {
-                if (hasPayload())
-                    closeStatus = new CloseStatus(payload.duplicate());
-                else
-                    closeStatus = CloseStatus.NO_CODE_STATUS;
-            }
-            else
-            {
-                closeStatus = null;
-            }
-        }
-
-        @Override
-        public void close()
-        {
-            if (releaser != null)
-                releaser.run();
-        }
-
-        @Override
-        public CloseStatus getCloseStatus()
-        {
-            return closeStatus;
-        }
-
-        public boolean isReleaseable()
-        {
-            return releaser != null;
-        }
-
-        @Override
-        public String toString()
-        {
-            if (closeStatus == null)
-                return super.toString();
-            return super.toString() + ":" + closeStatus;
-        }
     }
 }

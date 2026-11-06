@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -137,20 +136,23 @@ public class RawFrameBuilder
 
     public static byte[] buildClose(CloseStatus status, boolean masked)
     {
-        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(2048, false);
-
-        byte[] bytes = status == null ? null : BufferUtil.toArray(status.asPayloadBuffer());
-        RawFrameBuilder.putOpFin(buffer, OpCode.CLOSE, true);
-        putLength(buffer, bytes == null ? 0 : bytes.length, masked);
-        if (masked)
+        try (RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(2048, false))
         {
-            byte[] mask = new byte[4];
-            // ThreadLocalRandom.current().nextBytes(mask);
-            buffer.put(mask);
-            mask(bytes, mask);
+            try (RetainableByteBuffer closePayload = status.asPayloadBuffer())
+            {
+                RawFrameBuilder.putOpFin(buffer, OpCode.CLOSE, true);
+                byte[] closePayloadBytes = closePayload.getArray();
+                putLength(buffer, closePayloadBytes.length, masked);
+                if (masked)
+                {
+                    byte[] mask = new byte[4];
+                    // ThreadLocalRandom.current().nextBytes(mask);
+                    buffer.put(mask);
+                    mask(closePayloadBytes, mask);
+                }
+                buffer.put(closePayloadBytes);
+                return buffer.getArray();
+            }
         }
-        if (bytes != null)
-            buffer.put(bytes);
-        return buffer.getArray();
     }
 }

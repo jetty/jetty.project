@@ -23,6 +23,7 @@ import jakarta.websocket.SendHandler;
 import jakarta.websocket.SendResult;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -59,12 +60,13 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
     {
         assertMessageNotNull(data);
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("sendBinary({})", BufferUtil.toDetailString(data));
+        try (Frame frame = new Frame(OpCode.BINARY, RetainableByteBuffer.wrap(data)))
+        {
+            FutureCallback future = new FutureCallback();
+            sendFrame(frame, future, batch);
+            return future;
         }
-        FutureCallback future = new FutureCallback();
-        sendFrame(new Frame(OpCode.BINARY).setPayload(data), future, batch);
-        return future;
     }
 
     @Override
@@ -73,10 +75,11 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         assertMessageNotNull(data);
         assertSendHandlerNotNull(handler);
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("sendBinary({},{})", BufferUtil.toDetailString(data), handler);
+        try (Frame frame = new Frame(OpCode.BINARY, RetainableByteBuffer.wrap(data)))
+        {
+            sendFrame(frame, new SendHandlerCallback(handler), batch);
         }
-        sendFrame(new Frame(OpCode.BINARY).setPayload(data), new SendHandlerCallback(handler), batch);
     }
 
     @Override
@@ -94,8 +97,6 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         return future;
     }
 
-    @SuppressWarnings(
-        {"rawtypes", "unchecked"})
     @Override
     public void sendObject(Object data, SendHandler handler)
     {
@@ -107,71 +108,69 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         }
 
         Encoder encoder = session.getEncoders().getInstanceFor(data.getClass());
-        if (encoder == null)
+        switch (encoder)
         {
-            throw new IllegalArgumentException("No encoder for type: " + data.getClass());
+            case null -> throw new IllegalArgumentException("No encoder for type: " + data.getClass());
+            case Encoder.Text _ ->
+            {
+                @SuppressWarnings("unchecked")
+                Encoder.Text<Object> text = (Encoder.Text<Object>)encoder;
+                try
+                {
+                    String msg = text.encode(data);
+                    sendText(msg, handler);
+                }
+                catch (EncodeException e)
+                {
+                    handler.onResult(new SendResult(e));
+                }
+            }
+            case Encoder.TextStream _ ->
+            {
+                @SuppressWarnings("unchecked")
+                Encoder.TextStream<Object> text = (Encoder.TextStream<Object>)encoder;
+                SendHandlerCallback callback = new SendHandlerCallback(handler);
+                try (MessageWriter writer = newMessageWriter())
+                {
+                    writer.setCallback(callback);
+                    text.encode(data, writer);
+                }
+                catch (EncodeException | IOException e)
+                {
+                    handler.onResult(new SendResult(e));
+                }
+            }
+            case Encoder.Binary _ ->
+            {
+                @SuppressWarnings("unchecked")
+                Encoder.Binary<Object> bin = (Encoder.Binary<Object>)encoder;
+                try
+                {
+                    ByteBuffer buf = bin.encode(data);
+                    sendBinary(buf, handler);
+                }
+                catch (EncodeException e)
+                {
+                    handler.onResult(new SendResult(e));
+                }
+            }
+            case Encoder.BinaryStream _ ->
+            {
+                @SuppressWarnings("unchecked")
+                Encoder.BinaryStream<Object> bin = (Encoder.BinaryStream<Object>)encoder;
+                SendHandlerCallback callback = new SendHandlerCallback(handler);
+                try (MessageOutputStream out = newMessageOutputStream())
+                {
+                    out.setCallback(callback);
+                    bin.encode(data, out);
+                }
+                catch (EncodeException | IOException e)
+                {
+                    handler.onResult(new SendResult(e));
+                }
+            }
+            default -> throw new IllegalArgumentException("Unknown encoder type: " + encoder);
         }
-
-        if (encoder instanceof Encoder.Text)
-        {
-            Encoder.Text etxt = (Encoder.Text)encoder;
-            try
-            {
-                String msg = etxt.encode(data);
-                sendText(msg, handler);
-                return;
-            }
-            catch (EncodeException e)
-            {
-                handler.onResult(new SendResult(e));
-            }
-        }
-        else if (encoder instanceof Encoder.TextStream)
-        {
-            Encoder.TextStream etxt = (Encoder.TextStream)encoder;
-            SendHandlerCallback callback = new SendHandlerCallback(handler);
-            try (MessageWriter writer = newMessageWriter())
-            {
-                writer.setCallback(callback);
-                etxt.encode(data, writer);
-                return;
-            }
-            catch (EncodeException | IOException e)
-            {
-                handler.onResult(new SendResult(e));
-            }
-        }
-        else if (encoder instanceof Encoder.Binary)
-        {
-            Encoder.Binary ebin = (Encoder.Binary)encoder;
-            try
-            {
-                ByteBuffer buf = ebin.encode(data);
-                sendBinary(buf, handler);
-                return;
-            }
-            catch (EncodeException e)
-            {
-                handler.onResult(new SendResult(e));
-            }
-        }
-        else if (encoder instanceof Encoder.BinaryStream)
-        {
-            Encoder.BinaryStream ebin = (Encoder.BinaryStream)encoder;
-            SendHandlerCallback callback = new SendHandlerCallback(handler);
-            try (MessageOutputStream out = newMessageOutputStream())
-            {
-                out.setCallback(callback);
-                ebin.encode(data, out);
-                return;
-            }
-            catch (EncodeException | IOException e)
-            {
-                handler.onResult(new SendResult(e));
-            }
-        }
-
-        throw new IllegalArgumentException("Unknown encoder type: " + encoder);
     }
 
     @Override
@@ -179,12 +178,13 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
     {
         assertMessageNotNull(text);
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("sendText({})", TextUtils.hint(text));
+        try (Frame frame = new Frame(OpCode.TEXT, text))
+        {
+            FutureCallback future = new FutureCallback();
+            sendFrame(frame, future, batch);
+            return future;
         }
-        FutureCallback future = new FutureCallback();
-        sendFrame(new Frame(OpCode.TEXT).setPayload(text), future, batch);
-        return future;
     }
 
     @Override
@@ -193,9 +193,10 @@ public class JakartaWebSocketAsyncRemote extends JakartaWebSocketRemoteEndpoint 
         assertMessageNotNull(text);
         assertSendHandlerNotNull(handler);
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("sendText({},{})", TextUtils.hint(text), handler);
+        try (Frame frame = new Frame(OpCode.TEXT, text))
+        {
+            sendFrame(frame, new SendHandlerCallback(handler), batch);
         }
-        sendFrame(new Frame(OpCode.TEXT).setPayload(text), new SendHandlerCallback(handler), batch);
     }
 }

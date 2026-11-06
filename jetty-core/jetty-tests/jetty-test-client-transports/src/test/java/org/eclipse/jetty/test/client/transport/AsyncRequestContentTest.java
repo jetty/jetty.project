@@ -15,6 +15,7 @@ package org.eclipse.jetty.test.client.transport;
 
 import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -256,7 +257,7 @@ public class AsyncRequestContentTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testBufferReuseAfterCallbackCompleted(TransportType transportType) throws Exception
+    public void testBufferReuseAfterRelease(TransportType transportType) throws Exception
     {
         start(transportType, new ConsumeInputHandler());
 
@@ -278,12 +279,20 @@ public class AsyncRequestContentTest extends AbstractTest
         byte second = '2';
         byte[] bytes = new byte[1];
         bytes[0] = first;
-        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(bytes);
-        content.offer(false, buffer, Callback.from(() ->
+        // The offer() callback is completed when the content is read, before it is written,
+        // so the bytes can only be reused when the buffer is released by the implementation.
+        Runnable releaser = () ->
         {
             bytes[0] = second;
-            content.offer(false, RetainableByteBuffer.wrap(bytes), Callback.from(content::close));
-        }));
+            try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(bytes))
+            {
+                content.offer(false, buffer, Callback.from(content::close));
+            }
+        };
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(ByteBuffer.wrap(bytes), releaser))
+        {
+            content.offer(false, buffer, Callback.NOOP);
+        }
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertEquals(2, requestContent.size());

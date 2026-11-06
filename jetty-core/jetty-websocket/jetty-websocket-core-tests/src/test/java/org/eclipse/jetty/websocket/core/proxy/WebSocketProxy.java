@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -175,7 +176,16 @@ class WebSocketProxy
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("[{}] onFrame {}", this, frame);
-            receivedFrames.offer(Frame.copy(frame));
+            // The frame is forwarded below, which consumes its payload,
+            // so store a frame with a slice of the payload instead.
+            try (RetainableByteBuffer payload = frame.acquire())
+            {
+                try (RetainableByteBuffer slice = payload.slice())
+                {
+                    Frame received = new Frame(frame.getOpCode(), frame.isFin(), frame.isRsv1(), slice);
+                    receivedFrames.offer(received);
+                }
+            }
 
             boolean demand = false;
             Callback sendCallback = callback;
@@ -542,7 +552,16 @@ class WebSocketProxy
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("[{}] onFrame {}", this, frame);
-            receivedFrames.offer(Frame.copy(frame));
+            // The frame is forwarded below, which consumes its payload,
+            // so store a frame with a slice of the payload instead.
+            try (RetainableByteBuffer payload = frame.acquire())
+            {
+                try (RetainableByteBuffer slice = payload.slice())
+                {
+                    Frame received = new Frame(frame.getOpCode(), frame.isFin(), frame.isRsv1(), slice);
+                    receivedFrames.offer(received);
+                }
+            }
 
             boolean demand = false;
             Callback sendCallback = callback;

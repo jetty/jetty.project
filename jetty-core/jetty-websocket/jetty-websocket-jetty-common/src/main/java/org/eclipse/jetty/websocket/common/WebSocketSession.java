@@ -15,13 +15,12 @@ package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
@@ -33,8 +32,6 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class WebSocketSession implements Session, Dumpable
 {
@@ -62,42 +59,41 @@ public class WebSocketSession implements Session, Dumpable
     }
 
     @Override
-    public void sendBinary(ByteBuffer buffer, Callback callback)
+    public void sendBinary(RetainableByteBuffer buffer, Callback callback)
     {
-        callback = Objects.requireNonNullElse(callback, Callback.NOOP);
-        coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(buffer),
-            org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail),
-            false);
+        try (Frame frame = new Frame(OpCode.BINARY, buffer))
+        {
+            callback = Objects.requireNonNullElse(callback, Callback.NOOP);
+            var ucb = org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail);
+            coreSession.sendFrame(frame, ucb, false);
+        }
     }
 
     @Override
-    public void sendPartialBinary(ByteBuffer buffer, boolean last, Callback callback)
+    public void sendPartialBinary(RetainableByteBuffer buffer, boolean last, Callback callback)
     {
-        callback = Objects.requireNonNullElse(callback, Callback.NOOP);
-        Frame frame = switch (messageType)
+        byte opCode;
+        switch (messageType)
         {
             case OpCode.UNDEFINED ->
             {
                 // new message
                 messageType = OpCode.BINARY;
-                yield new Frame(OpCode.BINARY);
+                opCode = OpCode.BINARY;
             }
-            case OpCode.BINARY -> new Frame(OpCode.CONTINUATION);
+            case OpCode.BINARY -> opCode = OpCode.CONTINUATION;
             default ->
             {
                 callback.fail(new ProtocolException("Attempt to send partial BINARY during " + OpCode.name(messageType)));
-                yield null;
+                return;
             }
-        };
+        }
 
-        if (frame != null)
+        try (Frame frame = new Frame(opCode, last, buffer))
         {
-            frame.setPayload(buffer);
-            frame.setFin(last);
-
-            var cb = org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail);
-            coreSession.sendFrame(frame, cb, false);
-
+            callback = Objects.requireNonNullElse(callback, Callback.NOOP);
+            var ucb = org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail);
+            coreSession.sendFrame(frame, ucb, false);
             if (last)
                 messageType = OpCode.UNDEFINED;
         }
@@ -107,54 +103,60 @@ public class WebSocketSession implements Session, Dumpable
     public void sendText(String text, Callback callback)
     {
         callback = Objects.requireNonNullElse(callback, Callback.NOOP);
-        var cb = org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail);
-        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text), cb, false);
+        var ucb = org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail);
+        try (Frame frame = new Frame(OpCode.TEXT, text))
+        {
+            coreSession.sendFrame(frame, ucb, false);
+        }
     }
 
     @Override
     public void sendPartialText(String text, boolean last, Callback callback)
     {
-        Frame frame = switch (messageType)
+        byte opCode;
+        switch (messageType)
         {
             case OpCode.UNDEFINED ->
             {
                 // new message
                 messageType = OpCode.TEXT;
-                yield new Frame(OpCode.TEXT);
+                opCode = OpCode.TEXT;
             }
-            case OpCode.TEXT -> new Frame(OpCode.CONTINUATION);
+            case OpCode.TEXT -> opCode = OpCode.CONTINUATION;
             default ->
             {
                 callback.fail(new ProtocolException("Attempt to send partial TEXT during " + OpCode.name(messageType)));
-                yield null;
+                return;
             }
-        };
+        }
 
-        if (frame != null)
+        try (Frame frame = new Frame(opCode, last, text))
         {
-            frame.setPayload(BufferUtil.toBuffer(text, UTF_8));
-            frame.setFin(last);
-
-            var cb = org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail);
-            coreSession.sendFrame(frame, cb, false);
-
+            var ucb = org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail);
+            coreSession.sendFrame(frame, ucb, false);
             if (last)
                 messageType = OpCode.UNDEFINED;
         }
     }
 
     @Override
-    public void sendPing(ByteBuffer applicationData, Callback callback)
+    public void sendPing(RetainableByteBuffer applicationData, Callback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PING).setPayload(applicationData),
-            org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail), false);
+        try (Frame frame = new Frame(OpCode.PING, applicationData))
+        {
+            var ucb = org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail);
+            coreSession.sendFrame(frame, ucb, false);
+        }
     }
 
     @Override
-    public void sendPong(ByteBuffer applicationData, Callback callback)
+    public void sendPong(RetainableByteBuffer applicationData, Callback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData),
-            org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail), false);
+        try (Frame frame = new Frame(OpCode.PONG, applicationData))
+        {
+            var ucb = org.eclipse.jetty.util.Callback.from(callback::succeed, callback::fail);
+            coreSession.sendFrame(frame, ucb, false);
+        }
     }
 
     @Override

@@ -38,6 +38,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.FrameFlusher;
 import org.eclipse.jetty.websocket.core.internal.Generator;
+import org.eclipse.jetty.websocket.core.internal.ParsedFrame;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -279,14 +280,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         return closeConnection;
     }
 
-    protected void onFrame(Frame.Parsed frame)
+    private void onFrame(ParsedFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onFrame({})", frame);
-
-        RetainableByteBuffer referenced = frame.hasPayload() && !frame.isReleaseable() ? networkBuffer : null;
-        if (referenced != null)
-            referenced.retain();
 
         coreSession.onFrame(frame, new Callback()
         {
@@ -295,10 +292,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("succeeded onFrame({})", frame);
-
-                frame.close();
-                if (referenced != null)
-                    referenced.release();
             }
 
             @Override
@@ -306,11 +299,6 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("failed onFrame({}) {}", frame, cause.toString());
-
-                frame.close();
-                if (referenced != null)
-                    referenced.release();
-
                 // notify session & endpoint
                 coreSession.processHandlerError(cause, NOOP);
             }
@@ -488,21 +476,23 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     boolean moreDemand = true;
                     while (networkBuffer.hasRemaining())
                     {
-                        Frame.Parsed frame = parser.parse(networkBuffer);
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("fillAndParse() parsed frame: {}", frame);
-                        if (frame == null)
-                            break;
+                        try (ParsedFrame frame = parser.parse(networkBuffer))
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("fillAndParse() parsed frame: {}", frame);
+                            if (frame == null)
+                                break;
 
-                        messagesIn.increment();
+                            messagesIn.increment();
 
-                        if (meetDemand())
-                            onFrame(frame);
+                            if (meetDemand())
+                                onFrame(frame);
 
-                        // If there is no more demand we need to break into the outermost loop not return.
-                        moreDemand = moreDemand();
-                        if (!moreDemand)
-                            break;
+                            // If there is no more demand we need to break into the outermost loop not return.
+                            moreDemand = moreDemand();
+                            if (!moreDemand)
+                                break;
+                        }
                     }
 
                     // Continue to fill the network buffer only if there is more demand.
@@ -744,13 +734,26 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      */
     public void enqueueFrame(OutgoingEntry outgoingEntry)
     {
-        if (coreSession.getBehavior() == Behavior.CLIENT)
+        Frame frame = outgoingEntry.getFrame();
+        // FLUSH_FRAME is never sent over the network, and FrameFlusher
+        // detects it by identity, so it must not be replaced by a masked copy.
+        if (coreSession.getBehavior() == Behavior.CLIENT && frame != FrameFlusher.FLUSH_FRAME)
         {
             byte[] mask = new byte[4];
             random.nextBytes(mask);
-            outgoingEntry.getFrame().setMask(mask);
+            try (Frame masked = frame.withMask(mask))
+            {
+                enqueue(new OutgoingEntry.Builder(outgoingEntry).frame(masked).build());
+            }
         }
+        else
+        {
+            enqueue(outgoingEntry);
+        }
+    }
 
+    private void enqueue(OutgoingEntry outgoingEntry)
+    {
         if (flusher.enqueue(outgoingEntry))
             flusher.iterate();
     }

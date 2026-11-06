@@ -20,9 +20,10 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.common.internal.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -70,72 +71,46 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
     public void sendFrame(OutgoingEntry entry)
     {
         Frame frame = entry.getFrame();
-        ByteBuffer payload = frame.getPayload();
-        switch (frame.getOpCode())
+        var callback = entry.getCallback();
+        try (RetainableByteBuffer buffer = frame.acquire())
         {
-            case OpCode.CLOSE:
+            String event = switch (frame.getOpCode())
             {
-                CloseStatus closeStatus = new CloseStatus(payload);
-                String event = String.format("CLOSE:%s:%s", CloseStatus.codeString(closeStatus.getCode()), closeStatus.getReason());
-                if (LOG.isDebugEnabled())
-                    LOG.debug(event);
+                case OpCode.CLOSE ->
+                {
+                    CloseStatus closeStatus = CloseStatus.from(buffer);
+                    yield String.format("CLOSE:%s:%s", CloseStatus.codeString(closeStatus.getCode()), closeStatus.getReason());
+                }
+                case OpCode.PING -> String.format("PING:%s", dataHint(buffer));
+                case OpCode.PONG -> String.format("PONG:%s", dataHint(buffer));
+                case OpCode.TEXT ->
+                {
+                    messageSink = new StringMessageSink(this, MethodHolder.from(wholeTextHandle), true);
+                    yield String.format("TEXT:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
+                }
+                case OpCode.BINARY ->
+                {
+                    messageSink = new ByteBufferMessageSink(this, MethodHolder.from(wholeBinaryHandle), true);
+                    yield String.format("BINARY:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
+                }
+                case OpCode.CONTINUATION -> String.format("CONTINUATION:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
+                default -> null;
+            };
+            if (LOG.isDebugEnabled())
+                LOG.debug(event);
+            if (event != null)
                 events.add(event);
-                break;
-            }
-            case OpCode.PING:
-            {
-                String event = String.format("PING:%s", dataHint(payload));
-                if (LOG.isDebugEnabled())
-                    LOG.debug(event);
-                events.add(event);
-                break;
-            }
-            case OpCode.PONG:
-            {
-                String event = String.format("PONG:%s", dataHint(payload));
-                if (LOG.isDebugEnabled())
-                    LOG.debug(event);
-                events.add(event);
-                break;
-            }
-            case OpCode.TEXT:
-            {
-                String event = String.format("TEXT:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
-                if (LOG.isDebugEnabled())
-                    LOG.debug(event);
-                events.add(event);
-                messageSink = new StringMessageSink(this, MethodHolder.from(wholeTextHandle), true);
-                break;
-            }
-            case OpCode.BINARY:
-            {
-                String event = String.format("BINARY:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
-                if (LOG.isDebugEnabled())
-                    LOG.debug(event);
-                events.add(event);
-                messageSink = new ByteBufferMessageSink(this, MethodHolder.from(wholeBinaryHandle), true);
-                break;
-            }
-            case OpCode.CONTINUATION:
-            {
-                String event = String.format("CONTINUATION:fin=%b:len=%d", frame.isFin(), frame.getPayloadLength());
-                if (LOG.isDebugEnabled())
-                    LOG.debug(event);
-                events.add(event);
-                break;
-            }
-        }
 
-        if (OpCode.isDataFrame(frame.getOpCode()))
-        {
-            Frame copy = Frame.copy(frame);
-            messageSink.accept(copy, org.eclipse.jetty.util.Callback.from(() -> {}, Throwable::printStackTrace));
-            if (frame.isFin())
-                messageSink = null;
-        }
+            if (OpCode.isDataFrame(frame.getOpCode()))
+            {
+                messageSink.accept(frame, org.eclipse.jetty.util.Callback.from(() -> {}, Throwable::printStackTrace));
+                if (frame.isFin())
+                    messageSink = null;
+            }
 
-        payload.position(payload.limit());
-        entry.getCallback().succeeded();
+            buffer.consume(buffer.remaining());
+            callback.succeeded();
+        }
     }
 
     @Override
@@ -158,25 +133,28 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
         callback.succeed();
     }
 
-    private String dataHint(ByteBuffer payload)
+    private String dataHint(RetainableByteBuffer payload)
     {
         if (payload == null)
             return "<null>";
-
-        StringBuilder hint = new StringBuilder();
-        hint.append('[');
-        ByteBuffer sliced = payload.slice();
-        if (sliced.remaining() > 20)
+        try (RetainableByteBuffer slice = payload.slice())
         {
-            sliced.limit(20);
-            hint.append(Hex.asHex(sliced));
-            hint.append("...");
+            StringBuilder hint = new StringBuilder();
+            hint.append('[');
+            if (slice.remaining() > 20)
+            {
+                try (RetainableByteBuffer s = slice.slice(20))
+                {
+                    hint.append(StringUtil.toHexString(s));
+                    hint.append("...");
+                }
+            }
+            else
+            {
+                hint.append(StringUtil.toHexString(slice));
+            }
+            hint.append(']');
+            return hint.toString();
         }
-        else
-        {
-            hint.append(Hex.asHex(sliced));
-        }
-        hint.append(']');
-        return hint.toString();
     }
 }

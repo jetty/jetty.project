@@ -69,15 +69,15 @@ public class JakartaWebSocketFrameHandlerOnMessageBinaryStreamTest extends Abstr
     {
         TrackingSocket socket = performOnMessageInvocation(new MessageStreamSocket(), (endpoint) ->
         {
-            try
+            try (Frame frame = new Frame(OpCode.BINARY, "Hello World"))
             {
-                endpoint.onFrame(new Frame(OpCode.BINARY).setPayload("Hello World").setFin(true), Callback.NOOP);
+                endpoint.onFrame(frame, Callback.NOOP);
+                return null;
             }
             catch (Exception e)
             {
                 throw new RuntimeException("Unexpected error", e);
             }
-            return null;
         });
 
         String event = socket.events.poll(1, TimeUnit.SECONDS);
