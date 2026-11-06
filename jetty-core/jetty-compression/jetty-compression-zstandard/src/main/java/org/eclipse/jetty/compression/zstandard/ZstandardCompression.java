@@ -59,8 +59,8 @@ public class ZstandardCompression extends Compression
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
     private static final int DEFAULT_MIN_ZSTD_SIZE = 48;
     private static final List<String> EXTENSIONS = List.of("zst");
+    private static final Cleaner CLEANER = Cleaner.create();
 
-    private final Cleaner cleaner = Cleaner.create();
     private ZstandardEncoderConfig defaultEncoderConfig = new ZstandardEncoderConfig();
     private ZstandardDecoderConfig defaultDecoderConfig = new ZstandardDecoderConfig();
 
@@ -184,7 +184,7 @@ public class ZstandardCompression extends Compression
 
     public Cleaner getCleaner()
     {
-        return cleaner;
+        return CLEANER;
     }
 
     private static class BufferPoolAdapter implements BufferPool
