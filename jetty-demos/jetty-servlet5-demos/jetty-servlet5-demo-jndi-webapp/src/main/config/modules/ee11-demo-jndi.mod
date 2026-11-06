@@ -16,19 +16,11 @@ ext
 jdbc
 ee11-plus
 ee11-jndi
+ee11-mail
+ee11-activation
 ee11-demo-mock-resources
 
 [files]
 basehome:modules/demo.d/ee11-demo-jndi.xml|webapps/ee11-demo-jndi.xml
 basehome:modules/demo.d/ee11-demo-jndi.properties|webapps/ee11-demo-jndi.properties
 maven://org.eclipse.jetty.demos/jetty-servlet5-demo-jndi-webapp/${jetty.version}/war|webapps/ee11-demo-jndi.war
-maven://jakarta.mail/jakarta.mail-api/2.1.3/jar|lib/ee11/jakarta.mail-api-2.1.3.jar
-maven://jakarta.activation/jakarta.activation-api/2.1.3/jar|lib/ee11/jakarta.activation-api-2.1.3.jar
-maven://org.eclipse.angus/angus-mail/2.0.5/jar|lib/ee11/angus-mail-2.0.5.jar
-maven://org.eclipse.angus/angus-activation/2.0.3/jar|lib/ee11/angus-activation-2.0.3.jar
-
-[lib]
-lib/ee11/jakarta.mail-api-2.1.3.jar
-lib/ee11/jakarta.activation-api-2.1.3.jar
-lib/ee11/angus-mail-2.0.5.jar
-lib/ee11/angus-activation-2.0.3.jar

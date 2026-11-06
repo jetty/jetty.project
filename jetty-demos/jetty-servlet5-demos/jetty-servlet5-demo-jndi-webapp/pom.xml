@@ -41,24 +41,4 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <includeArtifactIds>jakarta.transaction-api,jetty-servlet5-demo-mock-resources</includeArtifactIds>
-              <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 </project>
