@@ -103,7 +103,10 @@ public class OnMessageReturnTest
                 try
                 {
                     // Send message
-                    coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("Hello World"), Callback.NOOP, false);
+                    try (Frame frame = new Frame(OpCode.TEXT, "Hello World"))
+                    {
+                        coreSession.sendFrame(frame, Callback.NOOP, false);
+                    }
 
                     // Confirm response
                     String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);

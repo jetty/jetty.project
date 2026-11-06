@@ -21,9 +21,11 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.Generator;
+import org.eclipse.jetty.websocket.core.internal.ParsedFrame;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,7 +40,7 @@ public class ParserReservedBitTest
         ParserCapture parserCapture = new ParserCapture();
 
         // generate raw bytebuffer of provided frames
-        int size = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
+        int size = Math.toIntExact(frames.stream().mapToLong(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum());
         Generator generator = new Generator();
         RetainableByteBuffer.Mutable raw = RetainableByteBuffer.Mutable.allocate(size, false);
         frames.forEach(frame -> generator.generateWholeFrame(frame, raw));
@@ -63,7 +65,7 @@ public class ParserReservedBitTest
     public void testCase31()
     {
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload("small").setRsv1(true)); // intentionally bad
+        send.add(new Frame(OpCode.TEXT, true, true, RetainableByteBuffer.wrap("small", UTF_8))); // intentionally bad
 
         expectProtocolException(send);
     }
@@ -80,9 +82,9 @@ public class ParserReservedBitTest
     public void testCase32()
     {
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload("small"));
-        send.add(new Frame(OpCode.TEXT).setPayload("small").setRsv2(true)); // intentionally bad
-        send.add(new Frame(OpCode.PING).setPayload("ping"));
+        send.add(new Frame(OpCode.TEXT, "small"));
+        send.add(new ParsedFrame((byte)(0x80 | 0x20 | OpCode.TEXT), null, RetainableByteBuffer.wrap("small", UTF_8))); // intentionally bad
+        send.add(new Frame(OpCode.PING, "ping"));
 
         expectProtocolException(send);
     }
@@ -99,9 +101,9 @@ public class ParserReservedBitTest
     public void testCase33()
     {
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload("small"));
-        send.add(new Frame(OpCode.TEXT).setPayload("small").setRsv1(true).setRsv2(true)); // intentionally bad
-        send.add(new Frame(OpCode.PING).setPayload("ping"));
+        send.add(new Frame(OpCode.TEXT, "small"));
+        send.add(new ParsedFrame((byte)(0x80 | 0x40 | 0x20 | OpCode.TEXT), null, RetainableByteBuffer.wrap("small", UTF_8))); // intentionally bad
+        send.add(new Frame(OpCode.PING, "ping"));
 
         expectProtocolException(send);
     }
@@ -118,9 +120,9 @@ public class ParserReservedBitTest
     public void testCase34()
     {
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload("small"));
-        send.add(new Frame(OpCode.TEXT).setPayload("small").setRsv3(true)); // intentionally bad
-        send.add(new Frame(OpCode.PING).setPayload("ping"));
+        send.add(new Frame(OpCode.TEXT, "small"));
+        send.add(new ParsedFrame((byte)(0x80 | 0x10 | OpCode.TEXT), null, RetainableByteBuffer.wrap("small", UTF_8))); // intentionally bad
+        send.add(new Frame(OpCode.PING, "ping"));
 
         expectProtocolException(send);
     }
@@ -140,7 +142,7 @@ public class ParserReservedBitTest
         Arrays.fill(payload, (byte)0xFF);
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.BINARY).setPayload(payload).setRsv3(true).setRsv1(true)); // intentionally bad
+        send.add(new ParsedFrame((byte)(0x80 | 0x40 | 0x10 | OpCode.BINARY), null, RetainableByteBuffer.wrap(payload))); // intentionally bad
 
         expectProtocolException(send);
     }
@@ -160,7 +162,7 @@ public class ParserReservedBitTest
         Arrays.fill(payload, (byte)0xFF);
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.PING).setPayload(payload).setRsv3(true).setRsv2(true)); // intentionally bad
+        send.add(new ParsedFrame((byte)(0x80 | 0x20 | 0x10 | OpCode.PING), null, RetainableByteBuffer.wrap(payload))); // intentionally bad
 
         expectProtocolException(send);
     }
@@ -177,11 +179,8 @@ public class ParserReservedBitTest
     public void testCase37()
     {
         List<Frame> send = new ArrayList<>();
-        Frame frame = CloseStatus.toFrame(1000);
-        frame.setRsv1(true);
-        frame.setRsv2(true);
-        frame.setRsv3(true);
-        send.add(frame); // intentionally bad
+        RetainableByteBuffer payload = CloseStatus.asPayloadBuffer(1000, null);
+        send.add(new ParsedFrame((byte)(0x80 | 0x40 | 0x20 | 0x10 | OpCode.CLOSE), null, payload)); // intentionally bad
 
         expectProtocolException(send);
     }

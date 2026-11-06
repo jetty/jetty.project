@@ -44,6 +44,7 @@ import org.eclipse.jetty.ee.websocket.jakarta.tests.WSEndpointTracker;
 import org.eclipse.jetty.ee.websocket.jakarta.tests.WebSocketTester;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -111,7 +112,7 @@ public class TextStreamTest
         byte[] data = newData(size);
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(data)));
+        send.add(new Frame(OpCode.TEXT, RetainableByteBuffer.wrap(data)));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         ByteBuffer expectedMessage = DataUtils.copyOf(data);
@@ -138,7 +139,7 @@ public class TextStreamTest
         byte[] data = newData(size);
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload(ByteBuffer.wrap(data)));
+        send.add(new Frame(OpCode.TEXT, RetainableByteBuffer.wrap(data)));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         // make copy of raw data (to avoid client masking during send)

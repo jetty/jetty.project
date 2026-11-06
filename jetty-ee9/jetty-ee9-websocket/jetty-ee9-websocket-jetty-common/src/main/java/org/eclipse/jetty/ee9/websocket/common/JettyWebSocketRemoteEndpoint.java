@@ -20,17 +20,15 @@ import java.util.Objects;
 
 import org.eclipse.jetty.ee9.websocket.api.BatchMode;
 import org.eclipse.jetty.ee9.websocket.api.WriteCallback;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint
 {
@@ -49,28 +47,39 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.webso
     @Override
     public void sendString(String text) throws IOException
     {
-        sendBlocking(new Frame(OpCode.TEXT).setPayload(text));
+        try (Frame frame = new Frame(OpCode.TEXT, text))
+        {
+            sendBlocking(frame);
+        }
     }
 
     @Override
     public void sendString(String text, WriteCallback callback)
     {
-        Callback cb = callback == null ? Callback.NOOP : Callback.from(callback::writeSuccess, callback::writeFailed);
-        coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(text), cb, isBatch());
+        try (Frame frame = new Frame(OpCode.TEXT, text))
+        {
+            Callback cb = callback == null ? Callback.NOOP : Callback.from(callback::writeSuccess, callback::writeFailed);
+            coreSession.sendFrame(frame, cb, isBatch());
+        }
     }
 
     @Override
     public void sendBytes(ByteBuffer data) throws IOException
     {
-        sendBlocking(new Frame(OpCode.BINARY).setPayload(data));
+        try (Frame frame = new Frame(OpCode.BINARY, RetainableByteBuffer.wrap(data)))
+        {
+            sendBlocking(frame);
+        }
     }
 
     @Override
     public void sendBytes(ByteBuffer data, WriteCallback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.BINARY).setPayload(data),
-            Callback.from(callback::writeSuccess, callback::writeFailed),
-            isBatch());
+        try (Frame frame = new Frame(OpCode.BINARY, RetainableByteBuffer.wrap(data)))
+        {
+            Callback cb = callback == null ? Callback.NOOP : Callback.from(callback::writeSuccess, callback::writeFailed);
+            coreSession.sendFrame(frame, cb, isBatch());
+        }
     }
 
     @Override
@@ -89,29 +98,27 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.webso
 
     private void sendPartialBytes(ByteBuffer fragment, boolean isLast, Callback callback)
     {
-        Frame frame;
+        byte opCode;
         switch (messageType)
         {
-            case -1: // new message
-                frame = new Frame(OpCode.BINARY);
+            case -1 ->
+            {
                 messageType = OpCode.BINARY;
-                break;
-            case OpCode.BINARY:
-                frame = new Frame(OpCode.CONTINUATION);
-                break;
-            default:
+                opCode = OpCode.BINARY;
+            }
+            case OpCode.BINARY -> opCode = OpCode.CONTINUATION;
+            default ->
+            {
                 callback.failed(new ProtocolException("Attempt to send Partial Binary during active opcode " + messageType));
                 return;
+            }
         }
 
-        frame.setPayload(fragment);
-        frame.setFin(isLast);
-
-        coreSession.sendFrame(frame, callback, isBatch());
-
-        if (isLast)
+        try (Frame frame = new Frame(opCode, isLast, RetainableByteBuffer.wrap(fragment)))
         {
-            messageType = -1;
+            coreSession.sendFrame(frame, callback, isBatch());
+            if (isLast)
+                messageType = -1;
         }
     }
 
@@ -132,54 +139,62 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.ee9.webso
     @Override
     public void sendPing(ByteBuffer applicationData) throws IOException
     {
-        sendBlocking(new Frame(OpCode.PING).setPayload(applicationData));
+        try (Frame frame = new Frame(OpCode.PING, RetainableByteBuffer.wrap(applicationData)))
+        {
+            sendBlocking(frame);
+        }
     }
 
     @Override
     public void sendPing(ByteBuffer applicationData, WriteCallback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PING).setPayload(applicationData),
-            Callback.from(callback::writeSuccess, callback::writeFailed), false);
+        try (Frame frame = new Frame(OpCode.PING, RetainableByteBuffer.wrap(applicationData)))
+        {
+            coreSession.sendFrame(frame, Callback.from(callback::writeSuccess, callback::writeFailed), false);
+        }
     }
 
     @Override
     public void sendPong(ByteBuffer applicationData) throws IOException
     {
-        sendBlocking(new Frame(OpCode.PONG).setPayload(applicationData));
+        try (Frame frame = new Frame(OpCode.PONG, RetainableByteBuffer.wrap(applicationData)))
+        {
+            sendBlocking(frame);
+        }
     }
 
     @Override
     public void sendPong(ByteBuffer applicationData, WriteCallback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(applicationData),
-            Callback.from(callback::writeSuccess, callback::writeFailed), false);
+        try (Frame frame = new Frame(OpCode.PONG, RetainableByteBuffer.wrap(applicationData)))
+        {
+            coreSession.sendFrame(frame, Callback.from(callback::writeSuccess, callback::writeFailed), false);
+        }
     }
 
     private void sendPartialText(String fragment, boolean isLast, Callback callback)
     {
-        Frame frame;
+        byte opCode;
         switch (messageType)
         {
-            case -1: // new message
-                frame = new Frame(OpCode.TEXT);
+            case -1 ->
+            {
                 messageType = OpCode.TEXT;
-                break;
-            case OpCode.TEXT:
-                frame = new Frame(OpCode.CONTINUATION);
-                break;
-            default:
+                opCode = OpCode.TEXT;
+            }
+            case OpCode.TEXT -> opCode = OpCode.CONTINUATION;
+            default ->
+            {
                 callback.failed(new ProtocolException("Attempt to send Partial Text during active opcode " + messageType));
                 return;
+            }
         }
 
-        frame.setPayload(BufferUtil.toBuffer(fragment, UTF_8));
-        frame.setFin(isLast);
-
-        coreSession.sendFrame(frame, callback, isBatch());
-
-        if (isLast)
+        try (Frame frame = new Frame(opCode, isLast, fragment))
         {
-            messageType = -1;
+            coreSession.sendFrame(frame, callback, isBatch());
+            if (isLast)
+                messageType = -1;
         }
     }
 

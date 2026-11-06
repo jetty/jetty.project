@@ -430,7 +430,6 @@ public abstract class AbstractSessionDataStoreTest
         }
     }
     
-    
     /**
      * Test that a session containing no attributes can be stored and re-read
      * @throws Exception if there is an unspecified problem

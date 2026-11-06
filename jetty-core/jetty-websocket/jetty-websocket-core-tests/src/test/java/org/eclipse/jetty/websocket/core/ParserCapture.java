@@ -30,22 +30,14 @@ public class ParserCapture
     private final WebSocketCoreSession coreSession;
     public BlockingQueue<Frame> framesQueue = new LinkedBlockingDeque<>();
     public boolean closed = false;
-    public boolean copy;
 
     public ParserCapture()
     {
-        this(true);
+        this(Behavior.CLIENT);
     }
 
-    public ParserCapture(boolean copy)
+    public ParserCapture(Behavior behavior)
     {
-        this(copy, Behavior.CLIENT);
-    }
-
-    public ParserCapture(boolean copy, Behavior behavior)
-    {
-        this.copy = copy;
-
         WebSocketComponents components = new WebSocketComponents();
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
         exStack.negotiate(new LinkedList<>(), new LinkedList<>());
@@ -59,14 +51,16 @@ public class ParserCapture
     {
         while (buffer.hasRemaining())
         {
-            Frame frame = parser.parse(buffer);
-            if (frame == null)
-                break;
+            try (Frame frame = parser.parse(buffer))
+            {
+                if (frame == null)
+                    break;
 
-            FrameValidation.assertValidIncoming(frame, coreSession);
+                FrameValidation.assertValidIncoming(frame, coreSession);
 
-            if (!onFrame(frame))
-                break;
+                if (!onFrame(frame))
+                    break;
+            }
         }
     }
 
@@ -83,7 +77,9 @@ public class ParserCapture
 
     public boolean onFrame(Frame frame)
     {
-        framesQueue.offer(copy ? Frame.copy(frame) : frame);
+        // The frame is stored, so it must be retained.
+        frame.retain();
+        framesQueue.offer(frame);
         if (frame.getOpCode() == OpCode.CLOSE)
             closed = true;
         return true; // it is consumed

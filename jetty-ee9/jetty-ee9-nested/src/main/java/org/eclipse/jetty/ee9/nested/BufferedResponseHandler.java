@@ -262,7 +262,7 @@ public class BufferedResponseHandler extends HandlerWrapper
                         getNextInterceptor().write(content, true, callback);
                         return;
                     }
-                    _accumulator.add(RetainableByteBuffer.wrap(content, () -> {}));
+                    _accumulator.add(RetainableByteBuffer.wrap(content));
                 }
 
                 if (LOG.isDebugEnabled())

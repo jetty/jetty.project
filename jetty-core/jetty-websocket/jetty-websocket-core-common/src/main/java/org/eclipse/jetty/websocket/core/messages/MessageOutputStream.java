@@ -38,7 +38,8 @@ public class MessageOutputStream extends OutputStream
 
     private final AutoLock lock = new AutoLock();
     private final CoreSession coreSession;
-    private final RetainableByteBuffer.Mutable buffer;
+    private final ByteBufferPool bufferPool;
+    private RetainableByteBuffer.Mutable buffer;
     private long frameCount;
     private long bytesSent;
     private Callback callback;
@@ -48,13 +49,14 @@ public class MessageOutputStream extends OutputStream
     public MessageOutputStream(CoreSession coreSession, ByteBufferPool bufferPool)
     {
         this.coreSession = coreSession;
+        this.bufferPool = bufferPool;
         int bufferSize = coreSession.getOutputBufferSize();
         this.buffer = bufferPool.acquire(bufferSize, true);
     }
 
-    void setMessageType(byte opcode)
+    void setMessageType(byte opCode)
     {
-        this.messageOpCode = opcode;
+        this.messageOpCode = opCode;
     }
 
     @Override
@@ -125,25 +127,30 @@ public class MessageOutputStream extends OutputStream
 
             if (closed)
                 throw new IOException("Stream is closed");
-
             closed = fin;
-            Frame frame = new Frame(frameCount == 0 ? messageOpCode : OpCode.CONTINUATION);
-            frame.setFin(fin);
-            buffer.read(b ->
-            {
-                frame.setPayload(b);
-                return 0;
-            });
 
             long initialBufferSize = buffer.remaining();
-            FutureCallback b = new FutureCallback();
-            coreSession.sendFrame(frame, b, false);
-            b.block();
+            try (Frame frame = new Frame(frameCount == 0 ? messageOpCode : OpCode.CONTINUATION, fin, buffer))
+            {
+                FutureCallback b = new FutureCallback();
+                coreSession.sendFrame(frame, b, false);
+                b.block();
+            }
 
             // Any flush after the first will be a CONTINUATION frame.
             bytesSent += initialBufferSize;
             ++frameCount;
-            buffer.clear();
+
+            // The frame may have been retained, for example an extension.
+            if (buffer.isRetained())
+            {
+                buffer.release();
+                buffer = bufferPool.acquire(coreSession.getOutputBufferSize(), true);
+            }
+            else
+            {
+                buffer.clear();
+            }
         }
     }
 

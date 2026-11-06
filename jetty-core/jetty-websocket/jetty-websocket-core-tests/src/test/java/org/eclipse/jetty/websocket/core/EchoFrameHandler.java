@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.core;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class EchoFrameHandler extends TestAsyncFrameHandler
 {
@@ -39,7 +40,9 @@ public class EchoFrameHandler extends TestAsyncFrameHandler
     {
         if (LOG.isDebugEnabled())
             LOG.debug("[{}] onFrame {}", name, frame);
-        receivedFrames.offer(Frame.copy(frame));
+        // The frame is stored, so it must be retained.
+        frame.retain();
+        receivedFrames.offer(frame);
 
         if (throwOnFrame)
             throw new RuntimeException("intentionally throwing in server onFrame()");
@@ -48,8 +51,17 @@ public class EchoFrameHandler extends TestAsyncFrameHandler
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("[{}] echoDataFrame {}", name, frame);
-            Frame echo = new Frame(frame.getOpCode(), frame.isFin(), frame.getPayload());
-            coreSession.sendFrame(echo, callback, false);
+            // Echo a slice of the payload, so that the stored frame is not consumed.
+            try (RetainableByteBuffer payload = frame.acquire())
+            {
+                try (RetainableByteBuffer slice = payload.slice())
+                {
+                    try (Frame echo = new Frame(frame.getOpCode(), frame.isFin(), slice))
+                    {
+                        coreSession.sendFrame(echo, callback, false);
+                    }
+                }
+            }
         }
         else
         {

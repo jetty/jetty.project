@@ -13,11 +13,8 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.BufferAggregator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -31,7 +28,7 @@ import org.eclipse.jetty.websocket.core.util.MethodHolder;
  */
 public class ByteArrayMessageSink extends AbstractMessageSink
 {
-    private BufferAccumulator accumulator;
+    private BufferAggregator aggregator;
 
     /**
      * Creates a new {@link ByteArrayMessageSink}.
@@ -50,24 +47,23 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     {
         try
         {
-            long size = (accumulator == null ? 0 : accumulator.remaining()) + frame.getPayloadLength();
+            long size = (aggregator == null ? 0 : aggregator.remaining()) + frame.getPayloadLength();
             long maxSize = getCoreSession().getMaxBinaryMessageSize();
             if (maxSize > 0 && size > maxSize)
-            {
-                callback.failed(new MessageTooLargeException(String.format("Binary message too large: %,d > %,d", size, maxSize)));
-                return;
-            }
+                throw new MessageTooLargeException(String.format("Binary message too large: %,d > %,d", size, maxSize));
 
             // If the frame is fin and no accumulator has been
             // created or used, then we don't need to aggregate.
-            ByteBuffer payload = frame.getPayload();
-            if (frame.isFin() && (accumulator == null || !accumulator.hasRemaining()))
+            if (frame.isFin() && (aggregator == null || !aggregator.hasRemaining()))
             {
-                byte[] buf = BufferUtil.toArray(payload);
-                getMethodHolder().invoke(buf, 0, buf.length);
-                callback.succeeded();
-                autoDemand();
-                return;
+                try (RetainableByteBuffer buffer = frame.acquire())
+                {
+                    byte[] bytes = buffer.getArray();
+                    getMethodHolder().invoke(bytes, 0, bytes.length);
+                    callback.succeeded();
+                    autoDemand();
+                    return;
+                }
             }
 
             if (!frame.isFin() && !frame.hasPayload())
@@ -77,16 +73,23 @@ public class ByteArrayMessageSink extends AbstractMessageSink
                 return;
             }
 
-            if (accumulator == null)
-                accumulator = new BufferAccumulator();
-            accumulator.addRetained(RetainableByteBuffer.wrap(payload, callback::succeeded));
+            if (aggregator == null)
+            {
+                int initial = maxSize > 0 ? (int)Math.min(1024, maxSize) : 1024;
+                aggregator = new BufferAggregator(getCoreSession().getByteBufferPool(), false, true, initial, maxSize);
+            }
+
+            try (RetainableByteBuffer buffer = frame.acquire())
+            {
+                aggregator.append(buffer);
+                callback.succeeded();
+                // Do not complete twice the callback if the invocation fails.
+                callback = Callback.NOOP;
+            }
 
             if (frame.isFin())
             {
-                // Do not complete twice the callback if the invocation fails.
-                callback = Callback.NOOP;
-
-                try (RetainableByteBuffer buffer = accumulator.take())
+                try (RetainableByteBuffer buffer = aggregator.take())
                 {
                     byte[] bytes = buffer.getArray();
                     getMethodHolder().invoke(bytes, 0, bytes.length);
@@ -95,6 +98,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
             }
             else
             {
+                // Did not call the application so must explicitly demand here.
                 getCoreSession().demand();
             }
         }
@@ -108,7 +112,7 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     @Override
     public void fail(Throwable failure)
     {
-        if (accumulator != null)
-            accumulator.clear();
+        if (aggregator != null)
+            aggregator.clear();
     }
 }

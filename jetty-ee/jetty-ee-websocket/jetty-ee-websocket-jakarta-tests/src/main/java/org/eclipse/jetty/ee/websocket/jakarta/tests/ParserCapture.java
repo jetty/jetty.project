@@ -36,17 +36,21 @@ public class ParserCapture
     {
         while (buffer.hasRemaining())
         {
-            Frame frame = parser.parse(buffer);
-            if (frame == null)
-                break;
-            if (!onFrame(frame))
-                break;
+            try (Frame frame = parser.parse(buffer))
+            {
+                if (frame == null)
+                    break;
+                if (!onFrame(frame))
+                    break;
+            }
         }
     }
 
     public boolean onFrame(Frame frame)
     {
-        framesQueue.offer(Frame.copy(frame));
+        // The frame is stored, so it must be retained.
+        frame.retain();
+        framesQueue.offer(frame);
         if (frame.getOpCode() == OpCode.CLOSE)
             closed = true;
         return true; // it is consumed

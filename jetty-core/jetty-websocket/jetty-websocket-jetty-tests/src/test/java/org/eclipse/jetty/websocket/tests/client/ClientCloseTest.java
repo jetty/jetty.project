@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
@@ -471,71 +472,73 @@ public class ClientCloseTest
         @Override
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
-            if (frame.getOpCode() == OpCode.CLOSE)
+            try (RetainableByteBuffer buffer = frame.acquire())
             {
-                CloseStatus closeInfo = new CloseStatus(frame.getPayload());
-                String reason = closeInfo.getReason();
+                if (frame.getOpCode() == OpCode.CLOSE)
+                {
+                    CloseStatus closeInfo = CloseStatus.from(buffer);
+                    String reason = closeInfo.getReason();
 
-                if (reason.equals("send-more-frames"))
-                {
-                    try
+                    if (reason.equals("send-more-frames"))
                     {
-                        session.sendText("Hello", Callback.NOOP);
-                        session.sendText("World", Callback.NOOP);
+                        try
+                        {
+                            session.sendText("Hello", Callback.NOOP);
+                            session.sendText("World", Callback.NOOP);
+                        }
+                        catch (Throwable x)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("", x);
+                        }
                     }
-                    catch (Throwable x)
+                    else if (reason.equals("abort"))
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("", x);
+                        try
+                        {
+                            SECONDS.sleep(1);
+                            LOG.info("Server aborting session abruptly");
+                            session.disconnect();
+                        }
+                        catch (Throwable x)
+                        {
+                            if (LOG.isTraceEnabled())
+                                LOG.trace("IGNORED", x);
+                        }
+                    }
+                    else if (reason.startsWith("sleep|"))
+                    {
+                        int idx = reason.indexOf('|');
+                        int timeMs = Integer.parseInt(reason.substring(idx + 1));
+                        try
+                        {
+                            LOG.info("Server Sleeping for {} ms", timeMs);
+                            TimeUnit.MILLISECONDS.sleep(timeMs);
+                        }
+                        catch (InterruptedException x)
+                        {
+                            if (LOG.isTraceEnabled())
+                                LOG.trace("IGNORED", x);
+                        }
+                    }
+                    else
+                    {
+                        session.close(closeInfo.getCode(), reason, callback);
+                        return;
                     }
                 }
-                else if (reason.equals("abort"))
+                else if (frame.getEffectiveOpCode() == OpCode.TEXT)
                 {
-                    try
+                    stringBuilder.append(buffer);
+                    if (frame.isFin())
                     {
-                        SECONDS.sleep(1);
-                        LOG.info("Server aborting session abruptly");
-                        session.disconnect();
-                    }
-                    catch (Throwable x)
-                    {
-                        if (LOG.isTraceEnabled())
-                            LOG.trace("IGNORED", x);
+                        String completeString = stringBuilder.toCompleteString();
+                        stringBuilder.reset();
+                        onText(completeString);
                     }
                 }
-                else if (reason.startsWith("sleep|"))
-                {
-                    int idx = reason.indexOf('|');
-                    int timeMs = Integer.parseInt(reason.substring(idx + 1));
-                    try
-                    {
-                        LOG.info("Server Sleeping for {} ms", timeMs);
-                        TimeUnit.MILLISECONDS.sleep(timeMs);
-                    }
-                    catch (InterruptedException x)
-                    {
-                        if (LOG.isTraceEnabled())
-                            LOG.trace("IGNORED", x);
-                    }
-                }
-                else
-                {
-                    session.close(closeInfo.getCode(), reason, callback);
-                    return;
-                }
+                callback.succeed();
             }
-            else if (frame.getEffectiveOpCode() == OpCode.TEXT)
-            {
-                stringBuilder.append(frame.getPayload());
-                if (frame.isFin())
-                {
-                    String completeString = stringBuilder.toCompleteString();
-                    stringBuilder.reset();
-                    onText(completeString);
-                }
-            }
-
-            callback.succeed();
         }
     }
 }

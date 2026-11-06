@@ -68,9 +68,15 @@ public abstract class WebSocketFlusher implements OutgoingFrames
         try (AutoLock ignored = _lock.lock())
         {
             if (_failure == null)
+            {
+                // Retain the frame because the entry is stored for later processing.
+                entry.getFrame().retain();
                 _entries.add(entry);
+            }
             else
+            {
                 failure = _failure;
+            }
         }
 
         if (failure == null)
@@ -147,8 +153,10 @@ public abstract class WebSocketFlusher implements OutgoingFrames
         {
             if (_completed)
             {
-                notifyCallbackSuccess(_current);
+                OutgoingEntry current = _current;
                 _current = null;
+                notifyCallbackSuccess(current);
+                current.getFrame().release();
             }
         }
 
@@ -169,12 +177,17 @@ public abstract class WebSocketFlusher implements OutgoingFrames
 
             if (_current != null)
             {
-                notifyCallbackFailure(_current, t);
+                OutgoingEntry current = _current;
                 _current = null;
+                notifyCallbackFailure(current, t);
+                current.getFrame().release();
             }
 
             for (OutgoingEntry entry : entries)
+            {
                 notifyCallbackFailure(entry, t);
+                entry.getFrame().release();
+            }
 
             // Allow any subclass to clean up internal state on failure.
             WebSocketFlusher.this.onCompleteFailure(t);

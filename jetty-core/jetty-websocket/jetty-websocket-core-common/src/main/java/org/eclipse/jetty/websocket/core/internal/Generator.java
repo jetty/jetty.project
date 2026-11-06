@@ -90,7 +90,7 @@ public class Generator
         b = (frame.isMasked() ? (byte)0x80 : (byte)0x00);
 
         // Payload length.
-        int payloadLength = frame.getPayloadLength();
+        long payloadLength = frame.getPayloadLength();
 
         // If length is over 65535 then it is a 7 + 64 bit length.
         if (payloadLength > 0xFF_FF)
@@ -135,48 +135,41 @@ public class Generator
      */
     public void generatePayload(Frame frame, RetainableByteBuffer.Mutable buffer)
     {
-        ByteBuffer payload = frame.getPayload();
-        if (payload == null || !payload.hasRemaining())
-            return;
-
-        if (frame.isMasked())
-            maskPayload(frame, buffer);
-        else
-            buffer.put(payload);
+        try (RetainableByteBuffer payload = frame.acquire())
+        {
+            if (!payload.hasRemaining())
+                return;
+            if (frame.isMasked())
+                maskPayload(frame, buffer);
+            else
+                buffer.put(payload);
+        }
     }
 
     private void maskPayload(Frame frame, RetainableByteBuffer.Mutable buffer)
     {
         byte[] mask = frame.getMask();
-        int maskInt = 0;
-        for (byte maskByte : mask)
-        {
-            maskInt = (maskInt << 8) + (maskByte & 0xFF);
-        }
+        int maskInt = ByteBuffer.wrap(mask).getInt();
 
         // Perform data masking here.
-        ByteBuffer payload = frame.getPayload();
-        if (payload != null && payload.hasRemaining())
+        try (RetainableByteBuffer payload = frame.acquire())
         {
-            int maskOffset = 0;
-            int start = payload.position();
-            int end = payload.limit();
-            int remaining;
-            while ((remaining = end - start) > 0)
+            if (payload.hasRemaining())
             {
-                if (remaining >= 4)
+                int maskOffset = 0;
+                while (payload.hasRemaining())
                 {
-                    buffer.putInt(payload.getInt(start) ^ maskInt);
-                    start += 4;
-                }
-                else
-                {
-                    buffer.put((byte)(payload.get(start) ^ mask[maskOffset & 3]));
-                    ++start;
-                    ++maskOffset;
+                    if (payload.remaining() >= 4)
+                    {
+                        buffer.putInt(payload.getInt() ^ maskInt);
+                    }
+                    else
+                    {
+                        buffer.put((byte)(payload.get() ^ mask[maskOffset & 3]));
+                        ++maskOffset;
+                    }
                 }
             }
-            payload.position(end);
         }
     }
 }

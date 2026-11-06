@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee.websocket.jakarta.common;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.ClientEndpoint;
@@ -50,10 +49,12 @@ public class JakartaWebSocketFrameHandlerOnMessageBinaryTest extends AbstractJak
         assertThat("Has Binary Metadata", localEndpoint.getBinaryMetadata(), notNullValue());
 
         // This invocation is the same for all tests
-        ByteBuffer byteBuffer = ByteBuffer.wrap("Hello World".getBytes(StandardCharsets.UTF_8));
-        localEndpoint.onFrame(new Frame(OpCode.BINARY).setPayload(byteBuffer).setFin(true), Callback.NOOP);
-        String event = socket.events.poll(1, TimeUnit.SECONDS);
-        assertThat("Event", event, eventMatcher);
+        try (Frame frame = new Frame(OpCode.BINARY, "Hello World"))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+            String event = socket.events.poll(1, TimeUnit.SECONDS);
+            assertThat("Event", event, eventMatcher);
+        }
     }
 
     @ClientEndpoint

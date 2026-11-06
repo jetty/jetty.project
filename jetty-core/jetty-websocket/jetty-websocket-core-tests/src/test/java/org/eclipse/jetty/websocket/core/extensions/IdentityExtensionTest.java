@@ -14,11 +14,7 @@
 package org.eclipse.jetty.websocket.core.extensions;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -44,22 +40,25 @@ public class IdentityExtensionTest extends AbstractExtensionTest
         Extension ext = new IdentityExtension();
         ext.setNextIncomingFrames(capture);
 
-        Frame frame = new Frame(OpCode.TEXT).setPayload("hello");
-        ext.onFrame(frame, Callback.NOOP);
+        try (Frame frame = new Frame(OpCode.TEXT, "hello"))
+        {
+            ext.onFrame(frame, Callback.NOOP);
+        }
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.TEXT, 1);
-        Frame actual = capture.frames.poll();
+        try (Frame actual = capture.frames.poll())
+        {
+            assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
+            assertThat("Frame.fin", actual.isFin(), is(true));
+            assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+            assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+            assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
-        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
-        assertThat("Frame.fin", actual.isFin(), is(true));
-        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
-
-        ByteBuffer expected = BufferUtil.toBuffer("hello", StandardCharsets.UTF_8);
-        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+            String expected = "hello";
+            assertThat("Frame.payloadLength", actual.getPayloadLength(), is((long)expected.length()));
+            assertThat("Frame.payload", actual.getPayloadAsUTF8(), is(expected));
+        }
     }
 
     /**
@@ -75,22 +74,25 @@ public class IdentityExtensionTest extends AbstractExtensionTest
         Extension ext = new IdentityExtension();
         ext.setNextOutgoingFrames(capture);
 
-        Frame frame = new Frame(OpCode.TEXT).setPayload("hello");
-        ext.sendFrame(frame, Callback.NOOP, false);
+        try (Frame frame = new Frame(OpCode.TEXT, "hello"))
+        {
+            ext.sendFrame(frame, Callback.NOOP, false);
+        }
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.TEXT, 1);
 
-        Frame actual = capture.frames.poll();
+        try (Frame actual = capture.frames.poll())
+        {
+            assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
+            assertThat("Frame.fin", actual.isFin(), is(true));
+            assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+            assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+            assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
-        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
-        assertThat("Frame.fin", actual.isFin(), is(true));
-        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
-
-        ByteBuffer expected = BufferUtil.toBuffer("hello", StandardCharsets.UTF_8);
-        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+            String expected = "hello";
+            assertThat("Frame.payloadLength", actual.getPayloadLength(), is((long)expected.length()));
+            assertThat("Frame.payload", actual.getPayloadAsUTF8(), is(expected));
+        }
     }
 }

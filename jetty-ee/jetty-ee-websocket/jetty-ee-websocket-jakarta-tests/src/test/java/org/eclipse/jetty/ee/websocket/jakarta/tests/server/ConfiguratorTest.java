@@ -433,7 +433,10 @@ public class ConfiguratorTest
         CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload(HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString()), Callback.NOOP, false);
+            try (Frame frame = new Frame(OpCode.TEXT, HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString()))
+            {
+                coreSession.sendFrame(frame, Callback.NOOP, false);
+            }
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Request Header [" + HttpHeader.SEC_WEBSOCKET_EXTENSIONS.asString() + "]: identity"));
@@ -457,7 +460,10 @@ public class ConfiguratorTest
         CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("NegoExts"), Callback.NOOP, false);
+            try (Frame frame = new Frame(OpCode.TEXT, "NegoExts"))
+            {
+                coreSession.sendFrame(frame, Callback.NOOP, false);
+            }
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("negotiatedExtensions=[]"));
@@ -481,7 +487,10 @@ public class ConfiguratorTest
         CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("X-Dummy"), Callback.NOOP, false);
+            try (Frame frame = new Frame(OpCode.TEXT, "X-Dummy"))
+            {
+                coreSession.sendFrame(frame, Callback.NOOP, false);
+            }
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Request Header [X-Dummy]: Bogus"));
@@ -506,7 +515,10 @@ public class ConfiguratorTest
         try
         {
             // first request has this UserProperty
-            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, false);
+            try (Frame frame = new Frame(OpCode.TEXT, "apple"))
+            {
+                coreSession.sendFrame(frame, Callback.NOOP, false);
+            }
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = \"fruit from tree\""));
@@ -525,9 +537,15 @@ public class ConfiguratorTest
         try
         {
             // as this is second request, this should be null
-            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("apple"), Callback.NOOP, false);
+            try (Frame frame = new Frame(OpCode.TEXT, "apple"))
+            {
+                coreSession.sendFrame(frame, Callback.NOOP, false);
+            }
             // second request has this UserProperty
-            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("blueberry"), Callback.NOOP, false);
+            try (Frame frame = new Frame(OpCode.TEXT, "blueberry"))
+            {
+                coreSession.sendFrame(frame, Callback.NOOP, false);
+            }
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming Message", incomingMessage, is("Requested User Property: [apple] = <null>"));
@@ -555,7 +573,10 @@ public class ConfiguratorTest
             SocketAddress expectedLocal = coreSession.getLocalAddress();
             SocketAddress expectedRemote = coreSession.getRemoteAddress();
 
-            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("addr"), Callback.NOOP, false);
+            try (Frame frame = new Frame(OpCode.TEXT, "addr"))
+            {
+                coreSession.sendFrame(frame, Callback.NOOP, false);
+            }
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
 
@@ -657,7 +678,10 @@ public class ConfiguratorTest
         CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("getProtocols"), Callback.NOOP, false);
+            try (Frame frame = new Frame(OpCode.TEXT, "getProtocols"))
+            {
+                coreSession.sendFrame(frame, Callback.NOOP, false);
+            }
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming message", incomingMessage, responseMatcher);
@@ -684,7 +708,10 @@ public class ConfiguratorTest
         CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
         try
         {
-            coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("2016-06-20T14:27:44"), Callback.NOOP, false);
+            try (Frame frame = new Frame(OpCode.TEXT, "2016-06-20T14:27:44"))
+            {
+                coreSession.sendFrame(frame, Callback.NOOP, false);
+            }
 
             String incomingMessage = clientSocket.messageQueue.poll(5, TimeUnit.SECONDS);
             assertThat("Incoming message", incomingMessage, is("cal=2016.06.20 AD at 14:27:44 +0000"));

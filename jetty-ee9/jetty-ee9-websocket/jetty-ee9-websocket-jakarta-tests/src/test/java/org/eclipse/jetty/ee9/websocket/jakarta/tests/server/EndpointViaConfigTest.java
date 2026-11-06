@@ -71,7 +71,10 @@ public class EndpointViaConfigTest
                 CoreSession coreSession = clientConnectFuture.get(5, TimeUnit.SECONDS);
                 try
                 {
-                    coreSession.sendFrame(new Frame(OpCode.TEXT).setPayload("Hello World"), Callback.NOOP, false);
+                    try (Frame frame = new Frame(OpCode.TEXT, "Hello World"))
+                    {
+                        coreSession.sendFrame(frame, Callback.NOOP, false);
+                    }
 
                     String incomingMessage = clientSocket.messageQueue.poll(1, TimeUnit.SECONDS);
                     assertThat("Expected message", incomingMessage, is("Hello World"));

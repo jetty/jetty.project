@@ -66,11 +66,11 @@ public class AnnotatedServerEndpointTest
         headers.put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), subprotocol);
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload(message));
+        send.add(new Frame(OpCode.TEXT, message));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.TEXT).setPayload(expectedText));
+        expect.add(new Frame(OpCode.TEXT, expectedText));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         try (WebSocketTester session = server.newWebSocketTester(path, headers))

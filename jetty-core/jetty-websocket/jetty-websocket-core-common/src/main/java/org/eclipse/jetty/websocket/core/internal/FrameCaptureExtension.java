@@ -44,8 +44,6 @@ public class FrameCaptureExtension extends AbstractExtension
     private Generator generator;
     private Path outputDir;
     private String prefix = "frame";
-    private Path incomingFramesPath;
-    private Path outgoingFramesPath;
 
     private final AtomicInteger incomingCount = new AtomicInteger(0);
     private final AtomicInteger outgoingCount = new AtomicInteger(0);
@@ -94,38 +92,36 @@ public class FrameCaptureExtension extends AbstractExtension
     private void saveFrame(Frame frame, boolean outgoing)
     {
         if (outputDir == null || generator == null)
-        {
             return;
-        }
 
-        @SuppressWarnings("resource")
-        SeekableByteChannel channel = (outgoing) ? outgoingChannel : incomingChannel;
-
+        SeekableByteChannel channel = outgoing ? outgoingChannel : incomingChannel;
         if (channel == null)
-        {
             return;
-        }
 
-        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(BUFSIZE, false);
-        try
+        try (RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(BUFSIZE, false))
         {
-            Frame f = Frame.copy(frame);
-            f.setMask(null); // TODO is this needed?
-            generator.generateHeader(f, buffer);
-            buffer.read(channel::write);
-            if (frame.hasPayload())
-                channel.write(frame.getPayload().slice());
-            if (LOG.isDebugEnabled())
-                LOG.debug("Saved {} frame #{}", (outgoing) ? "outgoing" : "incoming",
-                    (outgoing) ? outgoingCount.incrementAndGet() : incomingCount.incrementAndGet());
+            try (Frame f = frame.withMask(null))
+            {
+                generator.generateHeader(f, buffer);
+                buffer.read(channel::write);
+                if (f.hasPayload())
+                {
+                    try (RetainableByteBuffer payload = frame.acquire())
+                    {
+                        try (RetainableByteBuffer slice = payload.slice())
+                        {
+                            slice.read(channel::write);
+                        }
+                    }
+                }
+                long count = outgoing ? outgoingCount.incrementAndGet() : incomingCount.incrementAndGet();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Saved {} frame #{}", outgoing ? "outgoing" : "incoming", count);
+            }
         }
         catch (IOException e)
         {
             LOG.warn("Unable to save frame: {}", frame, e);
-        }
-        finally
-        {
-            buffer.release();
         }
     }
 
@@ -139,20 +135,14 @@ public class FrameCaptureExtension extends AbstractExtension
         {
             Path path = new File(cfgOutputDir).toPath();
             if (Files.isDirectory(path) && Files.exists(path) && Files.isWritable(path))
-            {
                 this.outputDir = path;
-            }
             else
-            {
                 LOG.warn("Unable to configure {}: not a valid output directory", path.toAbsolutePath());
-            }
         }
 
         String cfgPrefix = config.getParameter("prefix", "frame");
         if (StringUtil.isNotBlank(cfgPrefix))
-        {
             this.prefix = cfgPrefix;
-        }
 
         if (this.outputDir != null)
         {
@@ -162,8 +152,8 @@ public class FrameCaptureExtension extends AbstractExtension
 
                 // create a non-validating, read-only generator
                 String tstamp = String.format("%1$tY%1$tm%1$td-%1$tH%1$tM%1$tS", Calendar.getInstance());
-                incomingFramesPath = dir.resolve(String.format("%s-%s-incoming.dat", this.prefix, tstamp));
-                outgoingFramesPath = dir.resolve(String.format("%s-%s-outgoing.dat", this.prefix, tstamp));
+                Path incomingFramesPath = dir.resolve(String.format("%s-%s-incoming.dat", this.prefix, tstamp));
+                Path outgoingFramesPath = dir.resolve(String.format("%s-%s-outgoing.dat", this.prefix, tstamp));
 
                 incomingChannel = Files.newByteChannel(incomingFramesPath, CREATE, WRITE);
                 outgoingChannel = Files.newByteChannel(outgoingFramesPath, CREATE, WRITE);

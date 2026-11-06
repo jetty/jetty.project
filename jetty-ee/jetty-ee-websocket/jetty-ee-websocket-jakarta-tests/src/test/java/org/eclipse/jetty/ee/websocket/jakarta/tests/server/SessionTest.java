@@ -231,11 +231,11 @@ public class SessionTest
                                 String expectedResponse) throws Exception
     {
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload(requestMessage));
+        send.add(new Frame(OpCode.TEXT, requestMessage));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.TEXT).setPayload(expectedResponse));
+        expect.add(new Frame(OpCode.TEXT, expectedResponse));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         try (WebSocketTester session = server.newWebSocketTester(requestPath))

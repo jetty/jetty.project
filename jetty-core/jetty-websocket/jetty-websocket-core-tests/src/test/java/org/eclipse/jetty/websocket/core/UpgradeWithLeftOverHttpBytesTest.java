@@ -26,7 +26,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -109,8 +108,10 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         int numFrames = 1000;
         for (int i = 0; i < numFrames; i++)
         {
-            Frame frame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(Integer.toString(i)));
-            serverSocket.getOutputStream().write(toByteArray(frame));
+            try (Frame frame = new Frame(OpCode.TEXT, Integer.toString(i)))
+            {
+                serverSocket.getOutputStream().write(toByteArray(frame));
+            }
         }
         Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
         serverSocket.getOutputStream().write(toByteArray(closeFrame));
@@ -153,8 +154,10 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         int numFrames = 1000;
         for (int i = 0; i < numFrames; i++)
         {
-            Frame frame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(Integer.toString(i)));
-            serverSocket.getOutputStream().write(toByteArray(frame));
+            try (Frame frame = new Frame(OpCode.TEXT, Integer.toString(i)))
+            {
+                serverSocket.getOutputStream().write(toByteArray(frame));
+            }
         }
         Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
         serverSocket.getOutputStream().write(toByteArray(closeFrame));
@@ -217,8 +220,10 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         int numFrames = 1000;
         for (int i = 0; i < numFrames; i++)
         {
-            Frame frame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(Integer.toString(i)));
-            serverSocket.getOutputStream().write(toByteArray(frame));
+            try (Frame frame = new Frame(OpCode.TEXT, Integer.toString(i)))
+            {
+                serverSocket.getOutputStream().write(toByteArray(frame));
+            }
         }
         Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
         serverSocket.getOutputStream().write(toByteArray(closeFrame));
@@ -271,8 +276,10 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         int numFrames = 1000;
         for (int i = 0; i < numFrames; i++)
         {
-            Frame frame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(Integer.toString(i)));
-            serverSocket.getOutputStream().write(toByteArray(frame));
+            try (Frame frame = new Frame(OpCode.TEXT, Integer.toString(i)))
+            {
+                serverSocket.getOutputStream().write(toByteArray(frame));
+            }
         }
         Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
         serverSocket.getOutputStream().write(toByteArray(closeFrame));
@@ -299,7 +306,7 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
 
     public RetainableByteBuffer generateFrame(Frame frame)
     {
-        int size = Generator.MAX_HEADER_LENGTH + frame.getPayloadLength();
+        int size = Generator.MAX_HEADER_LENGTH + Math.toIntExact(frame.getPayloadLength());
         RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(size, false);
         generator.generateWholeFrame(frame, buffer);
         return buffer;

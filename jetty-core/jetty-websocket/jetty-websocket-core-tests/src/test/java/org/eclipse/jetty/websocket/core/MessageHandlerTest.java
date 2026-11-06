@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.internal.MessageHandler;
@@ -63,7 +64,10 @@ public class MessageHandlerTest
             @Override
             public void sendFrame(OutgoingEntry entry)
             {
-                frames.add(entry.getFrame());
+                // The frame is stored, so it must be retained.
+                Frame frame = entry.getFrame();
+                frame.retain();
+                frames.add(frame);
                 entry.getCallback().succeeded();
             }
 
@@ -166,19 +170,19 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(fourByteUtf8Bytes, 0, 2)), callback);
+        handler.onFrame(new Frame(OpCode.TEXT, false, RetainableByteBuffer.wrap(fourByteUtf8Bytes, 0, 2)), callback);
         assertThat(callback.isDone(), is(true));
         assertThat(textMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
 
         callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.CONTINUATION, false, BufferUtil.toBuffer(fourByteUtf8Bytes, 2, 1)), callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, false, RetainableByteBuffer.wrap(fourByteUtf8Bytes, 2, 1)), callback);
         assertThat(callback.isDone(), is(true));
         assertThat(textMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
 
         callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.CONTINUATION, true, BufferUtil.toBuffer(fourByteUtf8Bytes, 3, 1)), callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, true, RetainableByteBuffer.wrap(fourByteUtf8Bytes, 3, 1)), callback);
         assertThat(callback.isDone(), is(false));
         assertThat(textMessages.size(), is(1));
         assertThat(textMessages.get(0), is(fourByteUtf8String));
@@ -197,13 +201,13 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(fourByteUtf8Bytes, 0, 2)), callback);
+        handler.onFrame(new Frame(OpCode.TEXT, false, RetainableByteBuffer.wrap(fourByteUtf8Bytes, 0, 2)), callback);
         assertThat(callback.isDone(), is(true));
         assertThat(textMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
 
         callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.CONTINUATION, true, BufferUtil.toBuffer(fourByteUtf8Bytes, 2, 1)), callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, true, RetainableByteBuffer.wrap(fourByteUtf8Bytes, 2, 1)), callback);
         assertThat(callback.isDone(), is(true));
         assertThat(textMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
@@ -221,7 +225,7 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(nonUtf8Bytes)), callback);
+        handler.onFrame(new Frame(OpCode.TEXT, false, RetainableByteBuffer.wrap(nonUtf8Bytes)), callback);
         assertThat(callback.isDone(), is(true));
         assertThat(textMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
@@ -239,13 +243,13 @@ public class MessageHandlerTest
         FutureCallback callback;
 
         callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(nonUtf8Bytes, 0, 1)), callback);
+        handler.onFrame(new Frame(OpCode.TEXT, false, RetainableByteBuffer.wrap(nonUtf8Bytes, 0, 1)), callback);
         assertThat(callback.isDone(), is(true));
         assertThat(textMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
 
         callback = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.CONTINUATION, true, BufferUtil.toBuffer(nonUtf8Bytes, 1, nonUtf8Bytes.length - 1)), callback);
+        handler.onFrame(new Frame(OpCode.CONTINUATION, true, RetainableByteBuffer.wrap(nonUtf8Bytes, 1, nonUtf8Bytes.length - 1)), callback);
         assertThat(callback.isDone(), is(true));
         assertThat(textMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
@@ -327,13 +331,13 @@ public class MessageHandlerTest
         coreSession.setMaxTextMessageSize(4);
 
         FutureCallback callback1 = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.TEXT, false, BufferUtil.toBuffer(fourByteUtf8Bytes)), callback1);
+        handler.onFrame(new Frame(OpCode.TEXT, false, RetainableByteBuffer.wrap(fourByteUtf8Bytes)), callback1);
         assertThat(callback1.isDone(), is(true));
         assertThat(textMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
         assertDoesNotThrow(() -> callback1.get());
         FutureCallback callback2 = new FutureCallback();
-        handler.onFrame(new Frame(OpCode.TEXT, true, BufferUtil.toBuffer(fourByteUtf8Bytes)), callback2);
+        handler.onFrame(new Frame(OpCode.TEXT, true, RetainableByteBuffer.wrap(fourByteUtf8Bytes)), callback2);
         assertThat(callback2.isDone(), is(true));
         assertThat(textMessages.size(), is(0));
         assertThat(callbacks.size(), is(0));
@@ -345,30 +349,38 @@ public class MessageHandlerTest
     public void testSendText()
     {
         handler.sendText("Hello", NOOP, false);
-        Frame frame = frames.get(0);
-        assertThat(frame.getOpCode(), is(OpCode.TEXT));
-        assertThat(frame.isFin(), is(true));
-        assertThat(frame.getPayloadAsUTF8(), is("Hello"));
+        try (Frame frame = frames.get(0))
+        {
+            assertThat(frame.getOpCode(), is(OpCode.TEXT));
+            assertThat(frame.isFin(), is(true));
+            assertThat(frame.getPayloadAsUTF8(), is("Hello"));
+        }
     }
 
     @Test
     public void testSendSplitText()
     {
         handler.sendText(NOOP, false, "Hello", " ", "World");
-        Frame frame = frames.get(0);
-        assertThat(frame.getOpCode(), is(OpCode.TEXT));
-        assertThat(frame.isFin(), is(false));
-        assertThat(frame.getPayloadAsUTF8(), is("Hello"));
+        try (Frame frame = frames.get(0))
+        {
+            assertThat(frame.getOpCode(), is(OpCode.TEXT));
+            assertThat(frame.isFin(), is(false));
+            assertThat(frame.getPayloadAsUTF8(), is("Hello"));
+        }
 
-        frame = frames.get(1);
-        assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
-        assertThat(frame.isFin(), is(false));
-        assertThat(frame.getPayloadAsUTF8(), is(" "));
+        try (Frame frame = frames.get(1))
+        {
+            assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
+            assertThat(frame.isFin(), is(false));
+            assertThat(frame.getPayloadAsUTF8(), is(" "));
+        }
 
-        frame = frames.get(2);
-        assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
-        assertThat(frame.isFin(), is(true));
-        assertThat(frame.getPayloadAsUTF8(), is("World"));
+        try (Frame frame = frames.get(2))
+        {
+            assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
+            assertThat(frame.isFin(), is(true));
+            assertThat(frame.getPayloadAsUTF8(), is("World"));
+        }
     }
 
     @Test
@@ -488,30 +500,38 @@ public class MessageHandlerTest
     public void testSendBinary()
     {
         handler.sendBinary(toBuffer("Hello"), NOOP, false);
-        Frame frame = frames.get(0);
-        assertThat(frame.getOpCode(), is(OpCode.BINARY));
-        assertThat(frame.isFin(), is(true));
-        assertThat(frame.getPayloadAsUTF8(), is("Hello"));
+        try (Frame frame = frames.get(0))
+        {
+            assertThat(frame.getOpCode(), is(OpCode.BINARY));
+            assertThat(frame.isFin(), is(true));
+            assertThat(frame.getPayloadAsUTF8(), is("Hello"));
+        }
     }
 
     @Test
     public void testSendSplitBinary()
     {
         handler.sendBinary(NOOP, false, toBuffer("Hello"), toBuffer(" "), toBuffer("World"));
-        Frame frame = frames.get(0);
-        assertThat(frame.getOpCode(), is(OpCode.BINARY));
-        assertThat(frame.isFin(), is(false));
-        assertThat(frame.getPayloadAsUTF8(), is("Hello"));
+        try (Frame frame = frames.get(0))
+        {
+            assertThat(frame.getOpCode(), is(OpCode.BINARY));
+            assertThat(frame.isFin(), is(false));
+            assertThat(frame.getPayloadAsUTF8(), is("Hello"));
+        }
 
-        frame = frames.get(1);
-        assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
-        assertThat(frame.isFin(), is(false));
-        assertThat(frame.getPayloadAsUTF8(), is(" "));
+        try (Frame frame = frames.get(1))
+        {
+            assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
+            assertThat(frame.isFin(), is(false));
+            assertThat(frame.getPayloadAsUTF8(), is(" "));
+        }
 
-        frame = frames.get(2);
-        assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
-        assertThat(frame.isFin(), is(true));
-        assertThat(frame.getPayloadAsUTF8(), is("World"));
+        try (Frame frame = frames.get(2))
+        {
+            assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
+            assertThat(frame.isFin(), is(true));
+            assertThat(frame.getPayloadAsUTF8(), is("World"));
+        }
     }
 
     @Test

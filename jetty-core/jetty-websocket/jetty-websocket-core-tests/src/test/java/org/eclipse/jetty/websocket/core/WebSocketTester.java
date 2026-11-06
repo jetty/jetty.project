@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.core.internal.ParsedFrame;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -152,16 +153,27 @@ public class WebSocketTester
         return client;
     }
 
-    protected Frame.Parsed receiveFrame(InputStream in) throws IOException
+    protected ParsedFrame receiveFrame(InputStream in) throws IOException
     {
         if (buffer == null)
             buffer = bufferPool.acquire(4096, false);
 
         while (true)
         {
-            Frame.Parsed frame = parser.parse(buffer);
+            ParsedFrame frame = parser.parse(buffer);
             if (!buffer.hasRemaining())
-                buffer.clear();
+            {
+                // Parsed frames may retain the buffer, so it cannot be cleared.
+                if (buffer.isRetained())
+                {
+                    buffer.release();
+                    buffer = bufferPool.acquire(4096, false);
+                }
+                else
+                {
+                    buffer.clear();
+                }
+            }
             if (frame != null)
                 return frame;
 

@@ -157,9 +157,11 @@ public class WriteTimeoutTest
         long messageWriteTimeout = 1000;
         try (Blocker.Callback callback = Blocker.callback())
         {
-            Frame frame = new Frame(OpCode.TEXT, false, "hello");
-            session.sendFrame(new OutgoingEntry.Builder(frame, callback).messageTimeout(messageWriteTimeout).build());
-            callback.block();
+            try (Frame frame = new Frame(OpCode.TEXT, false, "hello"))
+            {
+                session.sendFrame(new OutgoingEntry.Builder(frame, callback).messageTimeout(messageWriteTimeout).build());
+                callback.block();
+            }
         }
 
         // The next frame of the message should fail because we waited half a second over the write timeout.

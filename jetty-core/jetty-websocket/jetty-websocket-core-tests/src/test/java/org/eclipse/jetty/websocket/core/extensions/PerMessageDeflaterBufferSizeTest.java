@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -133,11 +134,13 @@ public class PerMessageDeflaterBufferSizeTest
         StringBuilder receivedMessage = new StringBuilder();
         while (true)
         {
-            Frame frame = Objects.requireNonNull(serverHandler.getFrames().poll(5, TimeUnit.SECONDS));
-            receivedMessage.append(frame.getPayloadAsUTF8());
-            numFrames++;
-            if (frame.isFin())
-                break;
+            try (Frame frame = Objects.requireNonNull(serverHandler.getFrames().poll(5, TimeUnit.SECONDS)))
+            {
+                receivedMessage.append(frame.getPayloadAsUTF8());
+                numFrames++;
+                if (frame.isFin())
+                    break;
+            }
         }
 
         // Check we got the message and it was split into multiple frames.
@@ -188,11 +191,13 @@ public class PerMessageDeflaterBufferSizeTest
         StringBuilder receivedMessage = new StringBuilder();
         while (true)
         {
-            Frame frame = Objects.requireNonNull(clientHandler.getFrames().poll(5, TimeUnit.SECONDS));
-            receivedMessage.append(frame.getPayloadAsUTF8());
-            numFrames++;
-            if (frame.isFin())
-                break;
+            try (Frame frame = Objects.requireNonNull(clientHandler.getFrames().poll(5, TimeUnit.SECONDS)))
+            {
+                receivedMessage.append(frame.getPayloadAsUTF8());
+                numFrames++;
+                if (frame.isFin())
+                    break;
+            }
         }
 
         // Check we got the message and it was split into multiple frames.
@@ -243,11 +248,13 @@ public class PerMessageDeflaterBufferSizeTest
         StringBuilder receivedMessage = new StringBuilder();
         while (true)
         {
-            Frame frame = Objects.requireNonNull(clientHandler.getFrames().poll(5, TimeUnit.SECONDS));
-            receivedMessage.append(frame.getPayloadAsUTF8());
-            numFrames++;
-            if (frame.isFin())
-                break;
+            try (Frame frame = Objects.requireNonNull(clientHandler.getFrames().poll(5, TimeUnit.SECONDS)))
+            {
+                receivedMessage.append(frame.getPayloadAsUTF8());
+                numFrames++;
+                if (frame.isFin())
+                    break;
+            }
         }
 
         // Check we got the message and it was split into multiple frames.
@@ -291,18 +298,24 @@ public class PerMessageDeflaterBufferSizeTest
         // We should now only be able to send this message in multiple frames as it exceeds deflate_buffer_size.
         String message = "0123456789";
         ByteBuffer payload = toBuffer(message, true);
-        clientHandler.getCoreSession().sendFrame(new Frame(OpCode.TEXT, payload), Callback.NOOP, false);
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(payload);
+             Frame frame = new Frame(OpCode.TEXT, buffer))
+        {
+            clientHandler.getCoreSession().sendFrame(frame, Callback.NOOP, false);
+        }
 
         // Verify the frame has been fragmented into multiple parts.
         int numFrames = 0;
         StringBuilder receivedMessage = new StringBuilder();
         while (true)
         {
-            Frame frame = Objects.requireNonNull(serverHandler.getFrames().poll(5, TimeUnit.SECONDS));
-            receivedMessage.append(frame.getPayloadAsUTF8());
-            numFrames++;
-            if (frame.isFin())
-                break;
+            try (Frame frame = Objects.requireNonNull(serverHandler.getFrames().poll(5, TimeUnit.SECONDS)))
+            {
+                receivedMessage.append(frame.getPayloadAsUTF8());
+                numFrames++;
+                if (frame.isFin())
+                    break;
+            }
         }
 
         // Check we got the message and it was split into multiple frames.

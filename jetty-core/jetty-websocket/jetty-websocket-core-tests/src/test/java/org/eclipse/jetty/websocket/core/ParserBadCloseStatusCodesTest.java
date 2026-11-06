@@ -22,10 +22,12 @@ import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -98,5 +100,33 @@ public class ParserBadCloseStatusCodesTest
             Exception e = assertThrows(ProtocolException.class, () -> capture.parse(raw));
             assertThat(e.getMessage(), containsString("Invalid CLOSE Code: " + closeCode));
         }
+    }
+
+    @ParameterizedTest(name = "masked={0}")
+    @ValueSource(booleans = {false, true})
+    public void testBadStatusCodeDoesNotLeakPayload(boolean masked)
+    {
+        // A masked frame is only valid from a client, so parse it as a server.
+        ParserCapture capture = new ParserCapture(masked ? Behavior.SERVER : Behavior.CLIENT);
+
+        byte[] payload = {(byte)(999 >>> 8), (byte)999, 'o', 'k'};
+        byte[] mask = masked ? new byte[]{0x11, 0x22, 0x33, 0x44} : null;
+        if (masked)
+            RawFrameBuilder.mask(payload, mask);
+
+        RetainableByteBuffer.Mutable raw = RetainableByteBuffer.Mutable.allocate(256, false);
+        RawFrameBuilder.putOpFin(raw, OpCode.CLOSE, true);
+        RawFrameBuilder.putLengthAndMask(raw, payload.length, mask);
+        raw.put(payload);
+
+        try (StacklessLogging ignore = new StacklessLogging(Parser.class))
+        {
+            Exception e = assertThrows(ProtocolException.class, () -> capture.parse(raw));
+            assertThat(e.getMessage(), containsString("Invalid CLOSE Code: 999"));
+        }
+
+        // The frame that failed to parse its CloseStatus must not retain the payload.
+        assertThat(raw.isRetained(), is(false));
+        assertThat(raw.release(), is(true));
     }
 }

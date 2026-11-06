@@ -13,12 +13,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.internal.Generator;
+import org.eclipse.jetty.websocket.core.internal.ParsedFrame;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -28,7 +29,7 @@ public class WebSocketFrameTest
 
     private RetainableByteBuffer generateWholeFrame(Generator generator, Frame frame)
     {
-        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH, false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(Math.toIntExact(frame.getPayloadLength()) + Generator.MAX_HEADER_LENGTH, false);
         generator.generateWholeFrame(frame, buffer);
         return buffer;
     }
@@ -41,7 +42,7 @@ public class WebSocketFrameTest
     @Test
     public void testInvalidClose()
     {
-        Frame frame = new Frame(OpCode.CLOSE).setFin(false);
+        Frame frame = new Frame(OpCode.CLOSE, false, "");
         RetainableByteBuffer actual = generateWholeFrame(generator, frame);
         String expected = "0800";
         assertFrameHex("Invalid Close Frame", expected, actual);
@@ -50,7 +51,7 @@ public class WebSocketFrameTest
     @Test
     public void testInvalidPing()
     {
-        Frame frame = new Frame(OpCode.PING).setFin(false);
+        Frame frame = new Frame(OpCode.PING, false, "");
         RetainableByteBuffer actual = generateWholeFrame(generator, frame);
         String expected = "0900";
         assertFrameHex("Invalid Ping Frame", expected, actual);
@@ -77,9 +78,7 @@ public class WebSocketFrameTest
     @Test
     public void testRsv1()
     {
-        Frame frame = new Frame(OpCode.TEXT);
-        frame.setPayload("Hi");
-        frame.setRsv1(true);
+        Frame frame = new Frame(OpCode.TEXT, true, true, RetainableByteBuffer.wrap("Hi", UTF_8));
         RetainableByteBuffer actual = generateWholeFrame(generator, frame);
         String expected = "C1024869";
         assertFrameHex("Text Frame with RSV1", expected, actual);
@@ -88,9 +87,7 @@ public class WebSocketFrameTest
     @Test
     public void testRsv2()
     {
-        Frame frame = new Frame(OpCode.TEXT);
-        frame.setPayload("Hi");
-        frame.setRsv2(true);
+        Frame frame = new ParsedFrame((byte)(0x80 | 0x20 | OpCode.TEXT), null, RetainableByteBuffer.wrap("Hi", UTF_8));
         RetainableByteBuffer actual = generateWholeFrame(generator, frame);
         String expected = "A1024869";
         assertFrameHex("Text Frame with RSV2", expected, actual);
@@ -99,9 +96,7 @@ public class WebSocketFrameTest
     @Test
     public void testRsv3()
     {
-        Frame frame = new Frame(OpCode.TEXT);
-        frame.setPayload("Hi");
-        frame.setRsv3(true);
+        Frame frame = new ParsedFrame((byte)(0x80 | 0x10 | OpCode.TEXT), null, RetainableByteBuffer.wrap("Hi", UTF_8));
         RetainableByteBuffer actual = generateWholeFrame(generator, frame);
         String expected = "91024869";
         assertFrameHex("Text Frame with RSV3", expected, actual);
@@ -112,11 +107,12 @@ public class WebSocketFrameTest
     {
         for (int i = 0; i <= 8; i++)
         {
-            Frame frame = new Frame(OpCode.BINARY);
-            frame.setPayload(StringUtil.fromHexString("0000FFFF000FFFF0".substring(0, i * 2)));
-            frame.setMask(StringUtil.fromHexString("FF00FF00"));
-            frame.demask();
-            assertEquals("Ff0000FfFf0f00F0".substring(0, i * 2), BufferUtil.toHexString(frame.getPayload()), "len=" + i);
+            // ParsedFrame demasks the payload on construction.
+            try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(StringUtil.fromHexString("0000FFFF000FFFF0".substring(0, i * 2)));
+                 Frame ignored = new ParsedFrame((byte)(0x80 | OpCode.BINARY), StringUtil.fromHexString("FF00FF00"), payload))
+            {
+                assertEquals("Ff0000FfFf0f00F0".substring(0, i * 2), StringUtil.toHexString(payload.getArray()), "len=" + i);
+            }
         }
     }
 }

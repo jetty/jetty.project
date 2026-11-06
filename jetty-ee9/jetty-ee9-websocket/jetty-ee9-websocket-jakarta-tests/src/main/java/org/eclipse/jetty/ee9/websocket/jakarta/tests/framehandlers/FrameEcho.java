@@ -47,7 +47,7 @@ public class FrameEcho implements FrameHandler
         if (frame.isControlFrame())
             succeedAndDemand.run();
         else
-            coreSession.sendFrame(Frame.copy(frame), Callback.from(succeedAndDemand, callback::failed), false);
+            coreSession.sendFrame(frame, Callback.from(succeedAndDemand, callback::failed), false);
     }
 
     @Override

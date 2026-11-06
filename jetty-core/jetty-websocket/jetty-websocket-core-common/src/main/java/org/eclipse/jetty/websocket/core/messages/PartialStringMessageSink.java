@@ -15,6 +15,7 @@ package org.eclipse.jetty.websocket.core.messages;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.exception.BadPayloadException;
@@ -49,7 +50,10 @@ public class PartialStringMessageSink extends AbstractMessageSink
             if (accumulator == null)
                 accumulator = new Utf8StringBuilder(getCoreSession().getInputBufferSize());
 
-            accumulator.append(frame.getPayload());
+            try (RetainableByteBuffer buffer = frame.acquire())
+            {
+                accumulator.append(buffer);
+            }
 
             if (frame.isFin())
             {

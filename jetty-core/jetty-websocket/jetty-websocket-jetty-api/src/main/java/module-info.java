@@ -20,5 +20,7 @@ module org.eclipse.jetty.websocket.api
     exports org.eclipse.jetty.websocket.api.exceptions;
     exports org.eclipse.jetty.websocket.api.util;
 
+    requires org.eclipse.jetty.util;
+
     uses ExtensionConfig.Parser;
 }

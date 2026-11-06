@@ -129,14 +129,18 @@ public class ParseFrameAfterCloseTest
         }
 
         // We get first frame before abort.
-        Frame frame = Objects.requireNonNull(serverFrameHandler.getFrames().poll(5, TimeUnit.SECONDS));
-        assertThat(frame.getOpCode(), equalTo(OpCode.TEXT));
-        assertThat(frame.getPayloadAsUTF8(), equalTo("message1"));
+        try (Frame frame = Objects.requireNonNull(serverFrameHandler.getFrames().poll(5, TimeUnit.SECONDS)))
+        {
+            assertThat(frame.getOpCode(), equalTo(OpCode.TEXT));
+            assertThat(frame.getPayloadAsUTF8(), equalTo("message1"));
+        }
 
         // The connection is aborted after the first frame, but the second frame is still read as it was in the network buffer.
-        frame = Objects.requireNonNull(serverFrameHandler.getFrames().poll(5, TimeUnit.SECONDS));
-        assertThat(frame.getOpCode(), equalTo(OpCode.TEXT));
-        assertThat(frame.getPayloadAsUTF8(), equalTo("message2"));
+        try (Frame frame = Objects.requireNonNull(serverFrameHandler.getFrames().poll(5, TimeUnit.SECONDS)))
+        {
+            assertThat(frame.getOpCode(), equalTo(OpCode.TEXT));
+            assertThat(frame.getPayloadAsUTF8(), equalTo("message2"));
+        }
 
         // Close connection.
         coreSession.close(Callback.NOOP);

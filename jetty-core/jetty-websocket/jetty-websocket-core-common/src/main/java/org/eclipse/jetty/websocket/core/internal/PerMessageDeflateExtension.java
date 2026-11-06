@@ -270,14 +270,22 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         {
             if (first)
             {
-                if (entry.getFrame().isControlFrame())
+                Frame frame = entry.getFrame();
+                if (frame.isControlFrame())
                 {
                     nextOutgoingFrame(entry);
                     return true;
                 }
 
                 // Provide the frames payload as input to the Deflater.
-                getDeflater().setInput(entry.getFrame().getPayload());
+                try (RetainableByteBuffer buffer = frame.acquire())
+                {
+                    buffer.read(b ->
+                    {
+                        getDeflater().setInput(b);
+                        return 0;
+                    });
+                }
             }
 
             boolean finished = deflate(entry, first);
@@ -346,20 +354,17 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             if (LOG.isDebugEnabled())
                 LOG.debug("Compressed {}: payload:{}", frame, buffer.remaining());
 
-            Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
-            chunk.setRsv1(first && frame.getOpCode() != OpCode.CONTINUATION);
-            buffer.read(b ->
+            byte opCode = first ? frame.getOpCode() : OpCode.CONTINUATION;
+            boolean fin = frame.isFin() && finished;
+            boolean rsv1 = first && frame.getOpCode() != OpCode.CONTINUATION;
+            try (Frame decoded = new Frame(opCode, fin, rsv1, buffer))
             {
-                chunk.setPayload(b);
-                return b.remaining();
-            });
-            chunk.setFin(frame.isFin() && finished);
-
-            nextOutgoingFrame(new OutgoingEntry.Builder(entry)
-                .frame(chunk)
-                .callback(callback)
-                .build());
-            return finished;
+                nextOutgoingFrame(new OutgoingEntry.Builder(entry)
+                    .frame(decoded)
+                    .callback(callback)
+                    .build());
+                return finished;
+            }
         }
     }
 
@@ -411,7 +416,14 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
 
                 // Provide the frames payload as input to the Inflater.
                 _tailBytes = false;
-                getInflater().setInput(frame.getPayload());
+                try (RetainableByteBuffer buffer = frame.acquire())
+                {
+                    buffer.read(b ->
+                    {
+                        getInflater().setInput(b);
+                        return 0;
+                    });
+                }
             }
 
             return inflate(frame, callback, first);
@@ -471,39 +483,35 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
                 }
             }
 
-            Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
-            chunk.setRsv1(false);
-            payload.read(b ->
+            byte opCode = first ? frame.getOpCode() : OpCode.CONTINUATION;
+            boolean fin = frame.isFin() && complete;
+            try (Frame encoded = new  Frame(opCode, fin, payload))
             {
-                chunk.setPayload(b);
-                return b.remaining();
-            });
-            chunk.setFin(frame.isFin() && complete);
+                // If we are complete we return true, then DemandingFlusher.process() will null out the Frame and Callback.
+                // The application may decide to hold onto the buffer and delay completing the callback, so we need to capture
+                // references to these in the payloadCallback and not rely on state of the flusher which may have moved on.
+                // This flusher could be failed while the application already has the payloadCallback, so we need protection against
+                // the flusher failing and the application completing the callback, that's why we use the payload AtomicReference.
+                boolean completeCallback = complete;
+                AtomicReference<RetainableByteBuffer> payloadRef = _payloadRef;
+                Callback payloadCallback = Callback.from(() ->
+                {
+                    releasePayload(payloadRef);
+                    if (completeCallback)
+                        callback.succeeded();
+                }, t ->
+                {
+                    releasePayload(payloadRef);
+                    if (completeCallback)
+                        callback.failed(t);
+                    failFlusher(t);
+                });
 
-            // If we are complete we return true, then DemandingFlusher.process() will null out the Frame and Callback.
-            // The application may decide to hold onto the buffer and delay completing the callback, so we need to capture
-            // references to these in the payloadCallback and not rely on state of the flusher which may have moved on.
-            // This flusher could be failed while the application already has the payloadCallback, so we need protection against
-            // the flusher failing and the application completing the callback, that's why we use the payload AtomicReference.
-            boolean completeCallback = complete;
-            AtomicReference<RetainableByteBuffer> payloadRef = _payloadRef;
-            Callback payloadCallback = Callback.from(() ->
-            {
-                releasePayload(payloadRef);
-                if (completeCallback)
-                    callback.succeeded();
-            }, t ->
-            {
-                releasePayload(payloadRef);
-                if (completeCallback)
-                    callback.failed(t);
-                failFlusher(t);
-            });
-
-            emitFrame(chunk, payloadCallback);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Decompress finished: {} {}", complete, chunk);
-            return complete;
+                emitFrame(encoded, payloadCallback);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Decompress finished: {} {}", complete, encoded);
+                return complete;
+            }
         }
 
         @Override

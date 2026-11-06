@@ -224,8 +224,14 @@ public class SessionAddMessageHandlerTest
         assertThat("session", session, SessionMatchers.isMessageHandlerTypeRegistered(MessageType.TEXT));
         assertThat("session", session, Matchers.not(SessionMatchers.isMessageHandlerTypeRegistered(MessageType.PONG)));
 
-        frameHandler.onFrame(new Frame(OpCode.TEXT).setPayload("G'day").setFin(true), Callback.NOOP);
-        frameHandler.onFrame(new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
+        try (Frame frame = new Frame(OpCode.TEXT, true, "G'day"))
+        {
+            frameHandler.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.TEXT, true, "Hello World"))
+        {
+            frameHandler.onFrame(frame, Callback.NOOP);
+        }
 
         assertThat("Received msgs", received.size(), is(2));
         assertThat("Received Message[0]", received.get(0), is("G'day"));
@@ -255,8 +261,14 @@ public class SessionAddMessageHandlerTest
         assertThat("session", session, Matchers.not(SessionMatchers.isMessageHandlerTypeRegistered(MessageType.TEXT)));
         assertThat("session", session, Matchers.not(SessionMatchers.isMessageHandlerTypeRegistered(MessageType.PONG)));
 
-        frameHandler.onFrame(new Frame(OpCode.BINARY).setPayload("G'day").setFin(false), Callback.NOOP);
-        frameHandler.onFrame(new Frame(OpCode.CONTINUATION).setPayload(" World").setFin(true), Callback.NOOP);
+        try (Frame frame = new Frame(OpCode.BINARY, false, "G'day"))
+        {
+            frameHandler.onFrame(frame, Callback.NOOP);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, true, " World"))
+        {
+            frameHandler.onFrame(frame, Callback.NOOP);
+        }
 
         assertThat("Received partial", received.size(), is(2));
         assertThat("Received Message[0].buffer", BufferUtil.toUTF8String((ByteBuffer)received.get(0)[0]), is("G'day"));

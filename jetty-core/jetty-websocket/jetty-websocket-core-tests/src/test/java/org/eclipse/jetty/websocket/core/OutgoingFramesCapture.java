@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,7 +42,6 @@ public class OutgoingFramesCapture implements OutgoingFrames
         for (Frame frame : frames)
         {
             System.out.printf("[%3d] %s%n", i++, frame);
-            System.out.printf("      %s%n", BufferUtil.toDetailString(frame.getPayload()));
         }
     }
 
@@ -66,10 +63,9 @@ public class OutgoingFramesCapture implements OutgoingFrames
     {
         Frame frame = entry.getFrame();
         Callback callback = entry.getCallback();
-        frames.add(Frame.copy(frame));
-        // Consume bytes
-        ByteBuffer payload = frame.getPayload();
-        payload.position(payload.limit());
+        // The frame is stored, so it must be retained.
+        frame.retain();
+        frames.add(frame);
         // notify callback
         callback.succeeded();
     }

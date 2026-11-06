@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -106,7 +107,11 @@ public class PerMessageDeflateDemandTest
         ByteBuffer message = randomBytes(1024);
         ByteBuffer messageSlice = message.slice();
         coreSession.setMaxFrameSize(64);
-        coreSession.sendFrame(new Frame(OpCode.BINARY, message).setFin(true), Callback.NOOP, false);
+        try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(message);
+             Frame frame = new Frame(OpCode.BINARY, payload))
+        {
+            coreSession.sendFrame(frame, Callback.NOOP, false);
+        }
 
         coreSession.close(CloseStatus.NORMAL, null, Callback.NOOP);
         assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
@@ -143,8 +148,14 @@ public class PerMessageDeflateDemandTest
             ByteBuffer message = randomBytes(1024);
 
             // Send the same message twice.
-            coreSession.sendFrame(new Frame(OpCode.BINARY, message.slice()).setFin(true), Callback.NOOP, false);
-            coreSession.sendFrame(new Frame(OpCode.BINARY, message.slice()).setFin(true), Callback.NOOP, false);
+            for (int i = 0; i < 2; i++)
+            {
+                try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(message.slice());
+                     Frame frame = new Frame(OpCode.BINARY, payload))
+                {
+                    coreSession.sendFrame(frame, Callback.NOOP, false);
+                }
+            }
 
             // If we demand we receive the first message.
             serverHandler.getCoreSession().demand();

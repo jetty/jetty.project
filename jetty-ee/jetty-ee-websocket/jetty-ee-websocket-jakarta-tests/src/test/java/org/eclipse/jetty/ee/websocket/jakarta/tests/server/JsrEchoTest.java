@@ -188,11 +188,11 @@ public class JsrEchoTest
         String requestPath = endpointClass.getAnnotation(ServerEndpoint.class).value();
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
+        send.add(new Frame(OpCode.TEXT, "Hello Echo"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
+        expect.add(new Frame(OpCode.TEXT, "Hello Echo"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         try (WebSocketTester session = server.newWebSocketTester(requestPath))

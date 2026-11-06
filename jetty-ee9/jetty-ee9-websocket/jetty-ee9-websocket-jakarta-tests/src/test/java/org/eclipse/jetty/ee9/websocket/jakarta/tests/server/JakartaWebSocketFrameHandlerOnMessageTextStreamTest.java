@@ -98,9 +98,9 @@ public class JakartaWebSocketFrameHandlerOnMessageTextStreamTest extends Abstrac
     {
         MessageStreamSocket socket = performOnMessageInvocation(new MessageStreamSocket(), (endpoint) ->
         {
-            try
+            try (Frame frame = new Frame(OpCode.TEXT, "Hello World"))
             {
-                endpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
+                endpoint.onFrame(frame, Callback.NOOP);
             }
             catch (Exception e)
             {
@@ -136,9 +136,9 @@ public class JakartaWebSocketFrameHandlerOnMessageTextStreamTest extends Abstrac
         uriParams.put("param", "foo");
         MessageStreamParamSocket socket = performOnMessageInvocation(new MessageStreamParamSocket(), (endpoint) ->
         {
-            try
+            try (Frame frame = new Frame(OpCode.TEXT, "Hello World"))
             {
-                endpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
+                endpoint.onFrame(frame, Callback.NOOP);
             }
             catch (Exception e)
             {

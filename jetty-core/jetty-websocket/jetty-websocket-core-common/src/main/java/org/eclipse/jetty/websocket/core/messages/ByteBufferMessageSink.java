@@ -14,11 +14,9 @@
 package org.eclipse.jetty.websocket.core.messages;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAggregator;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -32,7 +30,7 @@ import org.eclipse.jetty.websocket.core.util.MethodHolder;
  */
 public class ByteBufferMessageSink extends AbstractMessageSink
 {
-    private Accumulator accumulator;
+    private BufferAggregator aggregator;
 
     /**
      * Creates a new {@link ByteBufferMessageSink}.
@@ -51,7 +49,7 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     {
         try
         {
-            long size = (accumulator == null ? 0 : accumulator.getLength()) + frame.getPayloadLength();
+            long size = (aggregator == null ? 0 : aggregator.remaining()) + frame.getPayloadLength();
             long maxSize = getCoreSession().getMaxBinaryMessageSize();
             if (maxSize > 0 && size > maxSize)
             {
@@ -59,13 +57,19 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 return;
             }
 
-            // If the frame is fin and no accumulator has been
+            // If the frame is fin and no aggregator has been
             // created or used, then we don't need to aggregate.
-            if (frame.isFin() && (accumulator == null || accumulator.getLength() == 0))
+            if (frame.isFin() && (aggregator == null || !aggregator.hasRemaining()))
             {
-                invoke(getMethodHolder(), frame.getPayload(), callback);
-                autoDemand();
-                return;
+                try (RetainableByteBuffer buffer = frame.acquire())
+                {
+                    try (RetainableByteBuffer coalesced = coalesce(buffer))
+                    {
+                        invoke(getMethodHolder(), coalesced, callback);
+                        autoDemand();
+                        return;
+                    }
+                }
             }
 
             if (!frame.isFin() && !frame.hasPayload())
@@ -75,18 +79,30 @@ public class ByteBufferMessageSink extends AbstractMessageSink
                 return;
             }
 
-            if (accumulator == null)
-                accumulator = new Accumulator();
-            accumulator.addEntry(frame.getPayload(), callback);
+            if (aggregator == null)
+            {
+                int initial = maxSize > 0 ? (int)Math.min(1024, maxSize) : 1024;
+                aggregator = new BufferAggregator(getCoreSession().getByteBufferPool(), false, true, initial, maxSize);
+            }
+
+            try (RetainableByteBuffer buffer = frame.acquire())
+            {
+                aggregator.append(buffer);
+                callback.succeeded();
+                // Do not complete twice the callback if the invocation fails.
+                callback = Callback.NOOP;
+            }
 
             if (frame.isFin())
             {
-                ByteBufferPool bufferPool = getCoreSession().getByteBufferPool();
-                RetainableByteBuffer.Mutable buffer = bufferPool.acquire(accumulator.getLength(), false);
-                accumulator.writeTo(buffer);
-                callback = Callback.from(buffer::release);
-                invoke(getMethodHolder(), buffer, callback);
-                autoDemand();
+                try (RetainableByteBuffer buffer = aggregator.take())
+                {
+                    try (RetainableByteBuffer coalesced = coalesce(buffer))
+                    {
+                        invoke(getMethodHolder(), coalesced, callback);
+                        autoDemand();
+                    }
+                }
             }
             else
             {
@@ -104,81 +120,51 @@ public class ByteBufferMessageSink extends AbstractMessageSink
     @Override
     public void fail(Throwable failure)
     {
-        if (accumulator != null)
-            accumulator.fail(failure);
+        if (aggregator != null)
+            aggregator.clear();
     }
 
-    private void invoke(MethodHolder methodHolder, RetainableByteBuffer buffer, Callback callback) throws Throwable
+    /**
+     * <p>Returns a buffer whose bytes can be read from a single {@link ByteBuffer}.</p>
+     * <p>If the given buffer has multiple byte sources, its bytes are copied into
+     * the returned buffer, otherwise the original buffer is returned.</p>
+     * <p>The returned buffer must be released.</p>
+     * <p>Coalescing is necessary to maintain the semantic that WebSocket messages
+     * are delivered via a single {@link ByteBuffer} in a single invocation.</p>
+     *
+     * @param buffer the buffer to coalesce
+     * @return a new coalesced buffer, or the original buffer
+     */
+    private RetainableByteBuffer coalesce(RetainableByteBuffer buffer)
     {
-        try
+        long remaining = buffer.remaining();
+        boolean coalesce = buffer.read(b -> remaining == b.remaining() ? 0 : -1) < 0;
+        if (coalesce)
         {
-            buffer.read(byteBuffer ->
-            {
-                try
-                {
-                    invoke(methodHolder, byteBuffer, callback);
-                    return 0;
-                }
-                catch (Throwable x)
-                {
-                    throw new RuntimeException(x);
-                }
-            });
+            RetainableByteBuffer.Mutable copy = getCoreSession().getByteBufferPool().acquire(Math.toIntExact(remaining), false);
+            copy.append(buffer);
+            return copy;
         }
-        catch (RuntimeException x)
+        else
         {
-            throw x.getCause();
+            buffer.retain();
+            return buffer;
         }
     }
 
-    protected void invoke(MethodHolder methodHolder, ByteBuffer byteBuffer, Callback callback) throws Throwable
+    protected void invoke(MethodHolder methodHolder, RetainableByteBuffer buffer, Callback callback) throws Throwable
     {
-        methodHolder.invoke(byteBuffer);
-        callback.succeeded();
-    }
-
-    private static class Accumulator
-    {
-        private final List<Entry> _entries = new ArrayList<>();
-        private int _length;
-
-        private void addEntry(ByteBuffer buffer, Callback callback)
+        // The buffer is coalesced, so buffer.read() is a single invocation.
+        // The application is only given the ByteBuffer, not the Callback.
+        // Since the invocation is synchronous, we do not need to retain.
+        buffer.read(b ->
         {
-            _entries.add(new Entry(buffer, callback));
-            _length = Math.addExact(_length, buffer.remaining());
-        }
-
-        private int getLength()
-        {
-            return _length;
-        }
-
-        private void writeTo(RetainableByteBuffer.Mutable buffer)
-        {
-            if (buffer.space() < _length)
-                throw new IllegalArgumentException("not enough buffer space remaining");
-
-            for (Entry entry : _entries)
-            {
-                buffer.put(entry.buffer());
-                entry.callback().succeeded();
-            }
-            _entries.clear();
-            _length = 0;
-        }
-
-        private void fail(Throwable t)
-        {
-            // In some usages the callback recursively fails the accumulator.
-            // So we copy and clear to avoid double completing the callback.
-            List<Entry> entries = new ArrayList<>(_entries);
-            _entries.clear();
-            _length = 0;
-            entries.forEach(e -> e.callback().failed(t));
-        }
-
-        private record Entry(ByteBuffer buffer, Callback callback)
-        {
-        }
+            int p = b.position();
+            int r = b.remaining();
+            methodHolder.invoke(b.slice());
+            b.position(p + r);
+            callback.succeeded();
+            return r;
+        });
     }
 }

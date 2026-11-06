@@ -16,6 +16,7 @@ package org.eclipse.jetty.io.content;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -69,6 +70,17 @@ public class AsyncContentSource implements Content.Source, Closeable
     /// The [Callback] is notified _before_ the [RetainableByteBuffer] content is released.
     /// The code that offers the content must be aware that it cannot reuse the
     /// [RetainableByteBuffer] if it is still [retained][RetainableByteBuffer#isRetained()].
+    ///
+    /// Note that, while the signature is identical, the semantic of this method is different
+    /// from [Content.Sink#write(boolean, RetainableByteBuffer, Callback)]:
+    /// * In [Content.Sink#write(boolean, RetainableByteBuffer, Callback)], the callback is
+    /// completed when the buffer has been written; the buffer is not in use anymore.
+    /// * In this method, the callback is completed when the buffer is read; the buffer may
+    /// still be in use.
+    ///
+    /// [RetainableByteBuffer#wrap(ByteBuffer, Runnable)] can be used by code that needs
+    /// to be notified when the buffer has been fully released, for example when wrapping
+    /// a `byte[]` or [ByteBuffer] that is reused across calls to this method.
     ///
     /// @param last whether the content is the last
     /// @param buffer the [RetainableByteBuffer] content
@@ -226,7 +238,7 @@ public class AsyncContentSource implements Content.Source, Closeable
             return current;
 
         // Readers may skip empty chunks without releasing them,
-        // so release them here to succeed the offer callback.
+        // so release them here and return the chunk constants.
         current.release();
         return current.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
     }

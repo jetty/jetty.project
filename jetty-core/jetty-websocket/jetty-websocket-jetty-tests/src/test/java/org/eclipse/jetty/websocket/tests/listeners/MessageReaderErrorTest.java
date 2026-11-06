@@ -148,7 +148,7 @@ public class MessageReaderErrorTest
         session.sendPartialText("lo ", false, Callback.NOOP);
         session.sendPartialText("wor", false, Callback.NOOP);
         session.sendPartialText("ld", false, Callback.NOOP);
-        session.sendPartialText(null, true, Callback.NOOP);
+        session.sendPartialText("", true, Callback.NOOP);
 
         assertThat(serverEndpoint.textMessages.poll(5, TimeUnit.SECONDS), equalTo("hello world"));
 
@@ -177,7 +177,7 @@ public class MessageReaderErrorTest
         session.sendPartialText("lo ", false, Callback.NOOP);
         session.sendPartialText("wor", false, Callback.NOOP);
         session.sendPartialText("ld", false, Callback.NOOP);
-        session.sendPartialText(null, true, Callback.NOOP);
+        session.sendPartialText("", true, Callback.NOOP);
 
         assertThat(serverEndpoint.textMessages.poll(5, TimeUnit.SECONDS), equalTo("hello"));
 

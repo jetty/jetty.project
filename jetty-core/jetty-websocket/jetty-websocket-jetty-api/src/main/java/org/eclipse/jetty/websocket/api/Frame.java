@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.websocket.api;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-/**
- * An immutable websocket frame.
- */
+/// An immutable websocket frame.
 public interface Frame
 {
     enum Type
@@ -79,14 +77,17 @@ public interface Frame
 
     byte getOpCode();
 
-    ByteBuffer getPayload();
+    /// Acquires the [RetainableByteBuffer] with the payload bytes of this frame.
+    ///
+    /// The buffer is retained and must be released or closed.
+    ///
+    /// Reading the buffer consumes the payload.
+    ///
+    /// @return the [RetainableByteBuffer] with the payload bytes of this frame
+    RetainableByteBuffer acquire();
 
-    /**
-     * The original payload length ({@link ByteBuffer#remaining()})
-     *
-     * @return the original payload length ({@link ByteBuffer#remaining()})
-     */
-    int getPayloadLength();
+    /// @return the current payload length
+    long getPayloadLength();
 
     Type getType();
 
@@ -111,12 +112,11 @@ public interface Frame
     {
     }
 
-    /**
-     * The effective opcode of the frame accounting for the CONTINUATION opcode.
-     * If the frame is a CONTINUATION frame for a TEXT message, this will return TEXT.
-     * If the frame is a CONTINUATION frame for a BINARY message, this will return BINARY.
-     * Otherwise, this will return the same opcode as the frame.
-     * @return the effective opcode of the frame.
-     */
+    /// The effective opcode of the frame accounting for the CONTINUATION opcode.
+    /// If the frame is a CONTINUATION frame for a TEXT message, this will return TEXT.
+    /// If the frame is a CONTINUATION frame for a BINARY message, this will return BINARY.
+    /// Otherwise, this will return the same opcode as the frame.
+    ///
+    /// @return the effective opcode of the frame.
     byte getEffectiveOpCode();
 }
