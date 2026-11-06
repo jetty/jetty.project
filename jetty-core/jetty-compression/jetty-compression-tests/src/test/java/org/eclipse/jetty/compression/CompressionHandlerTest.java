@@ -24,7 +24,9 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -54,6 +56,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -68,6 +71,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -1185,6 +1189,68 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                 assertThat(decoded, is("This line should be flushed\nThis line should be seen afterwards\n"));
             }
         }
+    }
+
+    @Test
+    public void testClientCloseDuringCompressedResponseReleasesEncoder() throws Exception
+    {
+        pool = new ArrayByteBufferPool.Tracking();
+        GzipCompression gzipCompression = new GzipCompression();
+        gzipCompression.setByteBufferPool(pool);
+        compression = gzipCompression;
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(gzipCompression);
+        compressionHandler.putConfiguration("/", CompressionConfig.builder().build());
+
+        CountDownLatch writeFailedLatch = new CountDownLatch(1);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain");
+                Random random = new Random(1);
+                byte[] raw = new byte[32 * 1024];
+                try
+                {
+                    // Write incompressible content until the client closes the connection.
+                    for (int i = 0; i < 400; i++)
+                    {
+                        random.nextBytes(raw);
+                        FutureCallback writeCallback = new FutureCallback();
+                        response.write(false, ByteBuffer.wrap(HexFormat.of().formatHex(raw).getBytes(UTF_8)), writeCallback);
+                        writeCallback.get();
+                    }
+                    callback.failed(new IllegalStateException("write did not fail"));
+                }
+                catch (Throwable x)
+                {
+                    writeFailedLatch.countDown();
+                    callback.failed(x);
+                }
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        try (Socket socket = new Socket(serverURI.getHost(), serverURI.getPort()))
+        {
+            String rawRequest = """
+                GET /test HTTP/1.1\r
+                Accept-Encoding: gzip\r
+                Host: %s\r
+                \r
+                """.formatted(serverURI.getAuthority());
+            socket.getOutputStream().write(rawRequest.getBytes(UTF_8));
+            socket.getInputStream().readNBytes(20_000);
+        }
+
+        assertTrue(writeFailedLatch.await(5, TimeUnit.SECONDS));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> gzipCompression.getDeflaterPool().getPool().getInUseCount(), is(0));
+        await().atMost(5, TimeUnit.SECONDS).until(() -> pool.getLeaks().size(), is(0));
     }
 
     /**
