@@ -183,6 +183,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
                 data.release();
             shutdownOutput();
             stream.close();
+            stream.getSession().removeStream(stream);
             connection.onClose(cause);
             onClose(cause);
         }
