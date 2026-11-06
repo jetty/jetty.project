@@ -16,6 +16,7 @@ pipeline {
 
         stage("Build / Test - JDK25 Javadoc") {
           agent { node { label 'linux-light' } }
+          when { beforeAgent true; expression { isReleaseLine() } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
@@ -33,15 +34,21 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK25") {
+        stage("Build / Test - JDK25 (LTS)") {
           agent { node { label 'linux-dind' } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
               mavenBuild( "jdk25", "clean install -Dspotbugs.skip=true", "maven3") // javadoc:javadoc -Ptck
-              recordIssues id: "analysis-jdk25", name: "Static Analysis jdk25", aggregatingResults: true, enabledForFailure: true,
-                            tools: [mavenConsole(), java(), javaDoc()],
-                            skipPublishingChecks: true, skipBlames: true
+              script {
+                // Skip publishing static-analysis warnings on PRs (and other non-release
+                // branches); the full matrix on release lines records them instead.
+                if (isReleaseLine()) {
+                  recordIssues id: "analysis-jdk25", name: "Static Analysis jdk25", aggregatingResults: true, enabledForFailure: true,
+                                tools: [mavenConsole(), java(), javaDoc()],
+                                skipPublishingChecks: true, skipBlames: true
+                }
+              }
               script {
                 if (isMainBranch()) {
                   recordCoverage id: "coverage-jdk25", name: "Coverage jdk25",
@@ -56,6 +63,7 @@ pipeline {
 
         stage("Build / Test - JDK27") {
           agent { node { label 'linux-dind' } }
+          when { beforeAgent true; expression { isReleaseLine() } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
@@ -191,6 +199,16 @@ def saveHome() {
 
 def isMainBranch() {
   return (env.BRANCH_NAME == 'jetty-13.0.x')
+}
+
+/**
+ * The release lines that build the full JDK matrix. Every other build (PRs and all
+ * other branches) runs only the latest-LTS stage (JDK25), which has no `when` guard.
+ */
+def isReleaseLine() {
+  return (env.BRANCH_NAME == 'jetty-12.0.x' ||
+          env.BRANCH_NAME == 'jetty-12.1.x' ||
+          env.BRANCH_NAME == 'jetty-13.0.x')
 }
 
 def isIgnoreFailure() {
