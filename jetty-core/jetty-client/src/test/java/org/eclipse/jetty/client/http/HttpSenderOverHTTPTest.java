@@ -13,30 +13,42 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.ByteBufferRequestContent;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Promise;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpSenderOverHTTPTest
@@ -183,6 +195,64 @@ public class HttpSenderOverHTTPTest
         endPoint.takeOutputString();
 
         assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    @Timeout(10)
+    public void testReceiveResponseAfterRequestWriteFailure(boolean receiveBeforeFailure) throws Exception
+    {
+        EofException failure = new EofException("write failure");
+        AtomicBoolean failWrites = new AtomicBoolean();
+        ByteArrayEndPoint endPoint = new ByteArrayEndPoint()
+        {
+            @Override
+            public boolean flush(ByteBuffer... buffers) throws IOException
+            {
+                if (failWrites.get())
+                    throw failure;
+                return super.flush(buffers);
+            }
+        };
+        HttpDestination destination = new HttpDestination(client, new Origin("http", "localhost", 8080));
+        destination.start();
+        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise<>() {});
+        endPoint.setConnection(connection);
+        OutputStreamRequestContent content = new OutputStreamRequestContent();
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+        Request request = client.newRequest("http://localhost/").body(content);
+        connection.send(request, listener);
+
+        endPoint.addInput("HTTP/1.1 500 Server Error\r\n" +
+            "Transfer-Encoding: chunked\r\n" +
+            "\r\n" +
+            "5\r\nnope!\r\n0\r\n\r\n");
+        if (receiveBeforeFailure)
+        {
+            // Buffer the response without consuming its content.
+            connection.getHttpChannel().receive();
+            assertEquals(500, listener.get(5, TimeUnit.SECONDS).getStatus());
+        }
+
+        failWrites.set(true);
+        assertThrows(IOException.class, () ->
+        {
+            content.getOutputStream().write(1);
+            content.getOutputStream().flush();
+        });
+
+        // The response may still be unread in the endpoint when the write fails.
+        if (!receiveBeforeFailure)
+            connection.getHttpChannel().receive();
+        assertEquals(500, listener.get(5, TimeUnit.SECONDS).getStatus());
+        try (var input = listener.getInputStream())
+        {
+            assertEquals("nope!", new String(input.readAllBytes(), StandardCharsets.UTF_8));
+        }
+        Result result = listener.await(5, TimeUnit.SECONDS);
+        assertSame(failure, result.getRequestFailure());
+        assertNull(result.getResponseFailure());
+        assertTrue(connection.isClosed());
     }
 
     @Test
