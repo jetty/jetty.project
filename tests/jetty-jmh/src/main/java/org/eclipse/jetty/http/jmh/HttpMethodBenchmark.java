@@ -13,14 +13,13 @@
 
 package org.eclipse.jetty.http.jmh;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -35,15 +34,25 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+
 @State(Scope.Benchmark)
 @Threads(4)
 @Warmup(iterations = 5, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 5, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 public class HttpMethodBenchmark
 {
-    private static final ByteBuffer GET = BufferUtil.toBuffer("GET / HTTP/1.1\r\n\r\n");
-    private static final ByteBuffer POST = BufferUtil.toBuffer("POST / HTTP/1.1\r\n\r\n");
-    private static final ByteBuffer MOVE = BufferUtil.toBuffer("MOVE / HTTP/1.1\r\n\r\n");
+    private static final RetainableByteBuffer GET;
+    private static final RetainableByteBuffer POST;
+    private static final RetainableByteBuffer MOVE;
+
+    static
+    {
+        GET = RetainableByteBuffer.wrap("GET / HTTP/1.1\r\n\r\n", StandardCharsets.ISO_8859_1);
+        POST = RetainableByteBuffer.wrap("POST / HTTP/1.1\r\n\r\n", StandardCharsets.ISO_8859_1);
+        MOVE = RetainableByteBuffer.wrap("MOVE / HTTP/1.1\r\n\r\n", StandardCharsets.ISO_8859_1);
+    }
+
     private static final Map<String, HttpMethod> MAP = new HashMap<>();
 
     static
@@ -85,7 +94,7 @@ public class HttpMethodBenchmark
         for (int i = 0; i < GET.remaining(); i++)
         {
             if (GET.get(i) == (byte)' ')
-                return MAP.get(BufferUtil.toString(GET, 0, i, StandardCharsets.US_ASCII));
+                return MAP.get(GET.getString(0, i, US_ASCII));
         }
         return null;
     }

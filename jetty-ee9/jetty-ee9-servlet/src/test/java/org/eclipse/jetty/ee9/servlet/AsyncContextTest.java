@@ -141,9 +141,9 @@ public class AsyncContextTest
                 \r
                 """;
 
-        try (LocalConnector.LocalEndPoint localEndPoint = _connector.connect())
+        try (LocalConnector.LocalEndPoint localEndPoint = _connector.connectToServer())
         {
-            localEndPoint.addInputAndExecute(request);
+            localEndPoint.writeRequestString(request);
             assertThat(localEndPoint.getResponse(false, 1, TimeUnit.SECONDS), nullValue());
 
             await().atMost(5, TimeUnit.SECONDS).until(asyncContextRef::get, not(nullValue())).complete();

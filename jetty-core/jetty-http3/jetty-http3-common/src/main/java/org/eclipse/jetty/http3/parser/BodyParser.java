@@ -14,18 +14,18 @@
 package org.eclipse.jetty.http3.parser;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.Objects;
 
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p>The base parser for the frame body of HTTP/3 frames.</p>
- * <p>Subclasses implement {@link #parse(ByteBuffer, boolean)} to parse
+ * <p>Subclasses implement {@link #parse(RetainableByteBuffer, boolean)} to parse
  * the frame specific body.</p>
  *
  * @see MessageParser
@@ -39,8 +39,8 @@ public abstract class BodyParser
 
     protected BodyParser(HeaderParser headerParser, ParserListener listener)
     {
-        this.headerParser = headerParser;
-        this.listener = listener;
+        this.headerParser = Objects.requireNonNull(headerParser);
+        this.listener = Objects.requireNonNull(listener);
     }
 
     protected ParserListener getParserListener()
@@ -61,16 +61,16 @@ public abstract class BodyParser
      * @param buffer the buffer to parse
      * @return the result of the parsing
      */
-    public abstract Result parse(ByteBuffer buffer, boolean last);
+    public abstract Result parse(RetainableByteBuffer buffer, boolean last);
 
-    protected void emptyBody(ByteBuffer buffer, boolean last)
+    protected void emptyBody(RetainableByteBuffer buffer, boolean last)
     {
         sessionFailure(buffer, HTTP3ErrorCode.PROTOCOL_ERROR.code(), "invalid_frame", new IOException("invalid empty body frame"));
     }
 
-    protected void sessionFailure(ByteBuffer buffer, long error, String reason, Throwable failure)
+    protected void sessionFailure(RetainableByteBuffer buffer, long error, String reason, Throwable failure)
     {
-        BufferUtil.clear(buffer);
+        buffer.consume(buffer.remaining());
         notifySessionFailure(error, reason, failure);
     }
 

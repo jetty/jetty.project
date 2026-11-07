@@ -61,20 +61,21 @@ public class HttpClientUploadDuringServerShutdownTest
                 {
                     while (true)
                     {
-                        Content.Chunk chunk = request.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = request.read())
                         {
-                            try (Blocker.Runnable blocker = _blocking.runnable())
+                            if (chunk == null)
                             {
-                                request.demand(blocker);
+                                try (Blocker.Runnable blocker = _blocking.runnable())
+                                {
+                                    request.demand(blocker);
+                                }
                             }
-                        }
-                        else
-                        {
-                            chunk.release();
-                            if (chunk.isLast())
-                                break;
-                            NanoTime.spinWait(TimeUnit.MICROSECONDS.toNanos(1));
+                            else
+                            {
+                                if (chunk.isLast())
+                                    break;
+                                NanoTime.spinWait(TimeUnit.MICROSECONDS.toNanos(1));
+                            }
                         }
                     }
                 }

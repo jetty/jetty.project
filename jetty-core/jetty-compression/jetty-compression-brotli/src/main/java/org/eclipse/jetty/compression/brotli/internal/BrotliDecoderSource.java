@@ -21,8 +21,7 @@ import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.compression.brotli.BrotliCompression;
 import org.eclipse.jetty.compression.brotli.BrotliDecoderConfig;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class BrotliDecoderSource extends DecoderSource
 {
@@ -46,7 +45,6 @@ public class BrotliDecoderSource extends DecoderSource
     @Override
     protected Content.Chunk transform(Content.Chunk inputChunk)
     {
-        ByteBuffer compressed = inputChunk.getByteBuffer();
         if (inputChunk.isLast() && !inputChunk.hasRemaining())
             return Content.Chunk.EOF;
 
@@ -64,14 +62,17 @@ public class BrotliDecoderSource extends DecoderSource
                 case NEEDS_MORE_INPUT ->
                 {
                     ByteBuffer input = decoder.getInputBuffer();
-                    BufferUtil.clearToFill(input);
-                    int len = BufferUtil.put(compressed, input);
-                    decoder.push(len);
-
-                    if (len == 0)
+                    input.clear();
+                    try (RetainableByteBuffer compressed = inputChunk.acquire())
                     {
-                        // rely on status.OK to go to EOF.
-                        return Content.Chunk.EMPTY;
+                        int len = compressed.appendTo(input);
+                        input.flip();
+                        decoder.push(len);
+                        if (len == 0)
+                        {
+                            // Rely on status.OK to go to EOF.
+                            return Content.Chunk.EMPTY;
+                        }
                     }
                 }
                 case NEEDS_MORE_OUTPUT ->
@@ -81,9 +82,11 @@ public class BrotliDecoderSource extends DecoderSource
                     int remaining = output.remaining();
                     if (remaining == 0)
                         return Content.Chunk.EMPTY;
-                    RetainableByteBuffer.Mutable copy = compression.acquireByteBuffer(remaining);
-                    copy.append(output);
-                    return Content.Chunk.asChunk(copy.getByteBuffer(), false, copy);
+                    try (RetainableByteBuffer.Mutable copy = compression.acquireBuffer(remaining))
+                    {
+                        copy.put(output);
+                        return Content.Chunk.from(copy, false);
+                    }
                 }
                 default ->
                 {

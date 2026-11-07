@@ -35,9 +35,9 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.ReHandlingErrorHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -774,7 +774,7 @@ public class ErrorHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toBuffer("Context Error"), callback);
+                response.write(true, RetainableByteBuffer.wrap("Context Error", StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         });
@@ -793,27 +793,29 @@ public class ErrorHandlerTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toBuffer("Server Error"), callback);
+                response.write(true, RetainableByteBuffer.wrap("Server Error", StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         });
 
         server.start();
 
-        LocalConnector.LocalEndPoint connection = connector.connect();
-        connection.addInputAndExecute(BufferUtil.toBuffer(
-            "GET /foo/test HTTP/1.1\r\n" +
-                "Host: Localhost\r\n" +
-                "\r\n"));
+        LocalConnector.LocalEndPoint connection = connector.connectToServer();
+        connection.writeRequestString("""
+            GET /foo/test HTTP/1.1\r
+            Host: Localhost\r
+            \r
+            """);
         String response = connection.getResponse();
 
         assertThat(response, containsString("HTTP/1.1 444 444"));
         assertThat(response, containsString("Context Error"));
 
-        connection.addInputAndExecute(BufferUtil.toBuffer(
-            "GET /test HTTP/1.1\r\n" +
-                "Host: Localhost\r\n" +
-                "\r\n"));
+        connection.writeRequestString("""
+            GET /test HTTP/1.1\r
+            Host: Localhost\r
+            \r
+            """);
         response = connection.getResponse();
         assertThat(response, containsString("HTTP/1.1 404 Not Found"));
         assertThat(response, containsString("Server Error"));

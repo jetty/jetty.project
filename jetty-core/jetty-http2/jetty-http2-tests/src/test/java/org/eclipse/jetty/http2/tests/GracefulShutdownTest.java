@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -31,16 +30,17 @@ import org.eclipse.jetty.http2.SessionContainer;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
@@ -133,17 +133,18 @@ public class GracefulShutdownTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        data.release();
-                        if (data.frame().isEndStream())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                        }
-                        else
-                        {
-                            serverLatch.countDown();
-                            stream.demand();
+                            if (chunk.isLast())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            }
+                            else
+                            {
+                                serverLatch.countDown();
+                                stream.demand();
+                            }
                         }
                     }
                 };
@@ -180,7 +181,7 @@ public class GracefulShutdownTest extends AbstractTest
                     clientRequestLatch.countDown();
             }
         }).get(5, TimeUnit.SECONDS);
-        stream.data(new DataFrame(stream.getId(), BufferUtil.toBuffer("hello"), false));
+        stream.data(RetainableByteBuffer.wrap(BufferUtil.toBuffer("hello")), false);
         // Make sure the server has seen the stream.
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
 
@@ -192,7 +193,7 @@ public class GracefulShutdownTest extends AbstractTest
         assertFalse(completable.isDone());
 
         // Complete the stream.
-        stream.data(new DataFrame(stream.getId(), BufferUtil.toBuffer("world"), true));
+        stream.data(RetainableByteBuffer.wrap(BufferUtil.toBuffer("world")), true);
 
         assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientCloseLatch.await(5, TimeUnit.SECONDS));
@@ -282,7 +283,7 @@ public class GracefulShutdownTest extends AbstractTest
 
                 byte[] bytes = new byte[1024];
                 Arrays.fill(bytes, (byte)'X');
-                response.write(true, ByteBuffer.wrap(bytes), Callback.NOOP);
+                response.write(true, RetainableByteBuffer.wrap(bytes), Callback.NOOP);
                 return true;
             }
         });

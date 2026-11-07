@@ -14,8 +14,9 @@
 package org.eclipse.jetty.ee9.nested;
 
 import java.io.IOException;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -26,12 +27,14 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
+import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -201,6 +204,8 @@ public class BufferedResponseHandler extends HandlerWrapper
 
     class ArrayBufferedInterceptor implements BufferedInterceptor
     {
+        private final List<RetainableByteBuffer> _accumulator = new ArrayList<>();
+        private final ByteBufferPool.Sized _pool;
         private final Interceptor _next;
         private final HttpChannel _channel;
         private Boolean _aggregating;
@@ -208,6 +213,7 @@ public class BufferedResponseHandler extends HandlerWrapper
 
         public ArrayBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
         {
+            _pool = new ByteBufferPool.Sized(httpChannel.getByteBufferPool(), false, httpChannel.getHttpConfiguration().getOutputBufferSize());
             _next = interceptor;
             _channel = httpChannel;
         }
@@ -223,6 +229,8 @@ public class BufferedResponseHandler extends HandlerWrapper
         {
             _aggregating = null;
             _aggregate = null;
+            _accumulator.forEach(RetainableByteBuffer::release);
+            _accumulator.clear();
             BufferedInterceptor.super.resetBuffer();
         }
 
@@ -245,21 +253,20 @@ public class BufferedResponseHandler extends HandlerWrapper
 
             if (last)
             {
-                // Add the current content to the buffer list without a copy.
-                if (BufferUtil.length(content) > 0)
+                // Add the current content to the accumulator without a copy,
+                // as the callback is only completed after the commit.
+                if (content != null && content.hasRemaining())
                 {
-                    if (_aggregate == null)
+                    if (_accumulator.isEmpty())
                     {
                         getNextInterceptor().write(content, true, callback);
                         return;
                     }
-                    RetainableByteBuffer retainable = RetainableByteBuffer.wrap(content, () -> {});
-                    _aggregate.append(retainable);
-                    retainable.release();
+                    _accumulator.add(RetainableByteBuffer.wrap(content, () -> {}));
                 }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} committing {}", this, _aggregate);
+                    LOG.debug("{} committing {}", this, _accumulator);
                 commit(callback);
             }
             else
@@ -267,18 +274,15 @@ public class BufferedResponseHandler extends HandlerWrapper
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} aggregating", this);
 
-                while (BufferUtil.hasContent(content))
+                // Copy the content.
+                while (content != null && content.hasRemaining())
                 {
-                    if (_aggregate == null)
-                        _aggregate = new RetainableByteBuffer.DynamicCapacity(_channel.getByteBufferPool(), false, -1, Math.max(_channel.getHttpConfiguration().getOutputBufferSize(), BufferUtil.length(content)));
-
-                    if (!_aggregate.append(content))
+                    if (_aggregate == null || _aggregate.space() == 0)
                     {
-                        _aggregate.release();
-                        _aggregate = null;
-                        callback.failed(new BufferOverflowException());
-                        return;
+                        _aggregate = _pool.acquire();
+                        _accumulator.add(_aggregate);
                     }
+                    _aggregate.append(content);
                 }
                 callback.succeeded();
             }
@@ -286,17 +290,41 @@ public class BufferedResponseHandler extends HandlerWrapper
 
         private void commit(Callback callback)
         {
-            if (_aggregate == null)
-                getNextInterceptor().write(BufferUtil.EMPTY_BUFFER, true, callback);
-            else
-                _aggregate.writeTo(getNextInterceptor(), true, Callback.from(this::completed, callback));
-        }
-
-        private void completed()
-        {
-            if (_aggregate != null)
-                _aggregate.release();
             _aggregate = null;
+            if (_accumulator.isEmpty())
+            {
+                getNextInterceptor().write(BufferUtil.EMPTY_BUFFER, true, callback);
+                return;
+            }
+
+            new IteratingNestedCallback(callback)
+            {
+                private int _index;
+
+                @Override
+                protected Action process() throws Exception
+                {
+                    if (_index == _accumulator.size())
+                        return Action.SUCCEEDED;
+
+                    RetainableByteBuffer buffer = _accumulator.get(_index++);
+                    buffer.read(b ->
+                    {
+                        int r = b.remaining();
+                        getNextInterceptor().write(b, _index == _accumulator.size(), this);
+                        return r;
+                    });
+                    return Action.SCHEDULED;
+                }
+
+                @Override
+                protected void onCompleted(Throwable causeOrNull)
+                {
+                    _accumulator.forEach(RetainableByteBuffer::release);
+                    _accumulator.clear();
+                    super.onCompleted(causeOrNull);
+                }
+            }.iterate();
         }
     }
 }

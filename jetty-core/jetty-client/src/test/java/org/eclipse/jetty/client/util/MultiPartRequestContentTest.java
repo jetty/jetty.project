@@ -41,15 +41,16 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartFormData;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -293,6 +294,7 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
             .body(multiPart)
+            .timeout(5, TimeUnit.SECONDS)
             .send();
 
         assertEquals(200, response.getStatus());
@@ -446,8 +448,12 @@ public class MultiPartRequestContentTest extends AbstractHttpClientServerTest
 
             try
             {
-                process(formData.parse(request).join()); // May block waiting for multipart form data.
-                response.write(true, BufferUtil.EMPTY_BUFFER, callback);
+                try (Blocker.Promise<MultiPartFormData.Parts> promise = Blocker.promise())
+                {
+                    formData.parse(request, promise);
+                    process(promise.block()); // May block waiting for multipart form data.
+                }
+                response.write(true, RetainableByteBuffer.empty(), callback);
             }
             catch (Exception x)
             {

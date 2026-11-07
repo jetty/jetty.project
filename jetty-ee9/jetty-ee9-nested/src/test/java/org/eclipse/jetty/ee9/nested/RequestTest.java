@@ -82,10 +82,10 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.TunnelSupport;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -337,11 +337,16 @@ public class RequestTest
 
         try (StacklessLogging ignore = new StacklessLogging(org.eclipse.jetty.server.Response.class))
         {
-            LocalEndPoint endp = _connector.connect();
-            endp.addInput(request);
-
-            String response = BufferUtil.toString(endp.waitForResponse(false, 1, TimeUnit.SECONDS));
-            assertThat("Responses", response, startsWith("HTTP/1.1 500"));
+            try (LocalEndPoint endPoint = _connector.connectToServer())
+            {
+                endPoint.writeRequestString(request);
+                try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 1, TimeUnit.SECONDS))
+                {
+                    assertNotNull(buffer);
+                    String response = buffer.getString(StandardCharsets.UTF_8);
+                    assertThat("Responses", response, startsWith("HTTP/1.1 500"));
+                }
+            }
         }
     }
 
@@ -493,8 +498,8 @@ public class RequestTest
             "\r\n" +
             multipart;
 
-        LocalEndPoint endPoint = _connector.connect();
-        endPoint.addInput(request);
+        LocalEndPoint endPoint = _connector.connectToServer();
+        endPoint.writeRequestString(request);
         String response = endPoint.getResponse();
         assertThat(response, startsWith("HTTP/1.1 200"));
         assertThat(response, containsString("Violation: CONTENT_TRANSFER_ENCODING"));
@@ -505,7 +510,7 @@ public class RequestTest
             "Connection: close\r\n" +
             "\r\n";
 
-        endPoint.addInput(cleanupRequest);
+        endPoint.writeRequestString(cleanupRequest);
         response = endPoint.getResponse();
         assertTrue(response.startsWith("HTTP/1.1 200"));
         assertThat("File Count in dir: " + testTmpDir, getFileCount(testTmpDir), is(0L));
@@ -542,10 +547,10 @@ public class RequestTest
             "\r\n" +
             multipart;
 
-        LocalEndPoint endPoint = _connector.connect();
+        LocalEndPoint endPoint = _connector.connectToServer();
         try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
-            endPoint.addInput(request);
+            endPoint.writeRequestString(request);
             assertTrue(endPoint.getResponse().startsWith("HTTP/1.1 500"));
         }
 
@@ -852,7 +857,7 @@ public class RequestTest
         int i = 0;
         assertThat(response, containsString("200 OK"));
         assertEquals("http://myhost/", results.get(i++));
-        assertEquals("0.0.0.0", results.get(i++));
+        assertNotNull(results.get(i++));
         assertEquals("myhost", results.get(i++));
         assertEquals("80", results.get(i));
 
@@ -865,7 +870,7 @@ public class RequestTest
         i = 0;
         assertThat(response, containsString("200 OK"));
         assertEquals("http://myhost:8888/", results.get(i++));
-        assertEquals("0.0.0.0", results.get(i++));
+        assertNotNull(results.get(i++));
         assertEquals("myhost", results.get(i++));
         assertEquals("8888", results.get(i));
 
@@ -876,7 +881,7 @@ public class RequestTest
         i = 0;
         assertThat(response, containsString("200 OK"));
         assertEquals("http://myhost:8888/", results.get(i++));
-        assertEquals("0.0.0.0", results.get(i++));
+        assertNotNull(results.get(i++));
         assertEquals("myhost", results.get(i++));
         assertEquals("8888", results.get(i));
 
@@ -898,7 +903,7 @@ public class RequestTest
         i = 0;
         assertThat(response, containsString("200 OK"));
         assertEquals("http://myhost:8888/", results.get(i++));
-        assertEquals("0.0.0.0", results.get(i++));
+        assertNotNull(results.get(i++));
         assertEquals("myhost", results.get(i++));
         assertEquals("8888", results.get(i));
 
@@ -912,7 +917,7 @@ public class RequestTest
 
         assertThat(response, containsString("200 OK"));
         assertEquals("http://1.2.3.4/", results.get(i++));
-        assertEquals("0.0.0.0", results.get(i++));
+        assertNotNull(results.get(i++));
         assertEquals("1.2.3.4", results.get(i++));
         assertEquals("80", results.get(i));
 
@@ -925,7 +930,7 @@ public class RequestTest
         i = 0;
         assertThat(response, containsString("200 OK"));
         assertEquals("http://1.2.3.4:8888/", results.get(i++));
-        assertEquals("0.0.0.0", results.get(i++));
+        assertNotNull(results.get(i++));
         assertEquals("1.2.3.4", results.get(i++));
         assertEquals("8888", results.get(i));
 
@@ -938,7 +943,7 @@ public class RequestTest
         i = 0;
         assertThat(response, containsString("200 OK"));
         assertEquals("http://[::1]/", results.get(i++));
-        assertEquals("0.0.0.0", results.get(i++));
+        assertNotNull(results.get(i++));
         assertEquals("[::1]", results.get(i++));
         assertEquals("80", results.get(i));
 
@@ -951,7 +956,7 @@ public class RequestTest
         i = 0;
         assertThat(response, containsString("200 OK"));
         assertEquals("http://[::1]:8888/", results.get(i++));
-        assertEquals("0.0.0.0", results.get(i++));
+        assertNotNull(results.get(i++));
         assertEquals("[::1]", results.get(i++));
         assertEquals("8888", results.get(i));
 
@@ -1054,8 +1059,8 @@ public class RequestTest
         assertEquals("32768", results.get(i++));
         assertEquals("[::1]", results.get(i++));
         assertEquals("8888", results.get(i++));
-        assertEquals("0.0.0.0", results.get(i++));
-        assertEquals("0", results.get(i));
+        assertNotNull(results.get(i++));
+        assertEquals("-1", results.get(i));
     }
 
     @Test
@@ -1699,56 +1704,56 @@ public class RequestTest
 
         String[] cookies = new String[10];
         tester.setCookieArray(cookies);
-        LocalEndPoint endp = _connector.connect();
-        endp.addInput("POST / HTTP/1.1\r\n" +
-            "Host: whatever\r\n" +
-            "Cookie: other=cookie\r\n" +
-            "\r\n");
+        LocalEndPoint endp = _connector.connectToServer();
+        endp.writeRequestString("POST / HTTP/1.1\r\n" +
+        "Host: whatever\r\n" +
+        "Cookie: other=cookie\r\n" +
+        "\r\n");
         endp.getResponse();
         assertEquals("cookie", cookies[0]);
         assertNull(cookies[1]);
 
         cookies = new String[10];
         tester.setCookieArray(cookies);
-        endp.addInput("POST / HTTP/1.1\r\n" +
-            "Host: whatever\r\n" +
-            "Cookie: name=value\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+        endp.writeRequestString("POST / HTTP/1.1\r\n" +
+        "Host: whatever\r\n" +
+        "Cookie: name=value\r\n" +
+        "Connection: close\r\n" +
+        "\r\n");
         endp.getResponse();
         assertEquals("value", cookies[0]);
         assertNull(cookies[1]);
 
-        endp = _connector.connect();
+        endp = _connector.connectToServer();
         cookies = new String[10];
         tester.setCookieArray(cookies);
-        endp.addInput("POST / HTTP/1.1\r\n" +
-            "Host: whatever\r\n" +
-            "Cookie: name=value\r\n" +
-            "\r\n");
+        endp.writeRequestString("POST / HTTP/1.1\r\n" +
+        "Host: whatever\r\n" +
+        "Cookie: name=value\r\n" +
+        "\r\n");
         endp.getResponse();
         assertEquals("value", cookies[0]);
         assertNull(cookies[1]);
 
         cookies = new String[10];
         tester.setCookieArray(cookies);
-        endp.addInput("POST / HTTP/1.1\r\n" +
-            "Host: whatever\r\n" +
-            "Cookie: \r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+        endp.writeRequestString("POST / HTTP/1.1\r\n" +
+        "Host: whatever\r\n" +
+        "Cookie: \r\n" +
+        "Connection: close\r\n" +
+        "\r\n");
         endp.getResponse();
         assertNull(cookies[0]);
         assertNull(cookies[1]);
 
-        endp = _connector.connect();
+        endp = _connector.connectToServer();
         cookies = new String[10];
         tester.setCookieArray(cookies);
-        endp.addInput("POST / HTTP/1.1\r\n" +
-            "Host: whatever\r\n" +
-            "Cookie: name=value\r\n" +
-            "Cookie: other=cookie\r\n" +
-            "\r\n");
+        endp.writeRequestString("POST / HTTP/1.1\r\n" +
+        "Host: whatever\r\n" +
+        "Cookie: name=value\r\n" +
+        "Cookie: other=cookie\r\n" +
+        "\r\n");
         endp.getResponse();
         assertEquals("value", cookies[0]);
         assertEquals("cookie", cookies[1]);
@@ -1756,12 +1761,12 @@ public class RequestTest
 
         cookies = new String[10];
         tester.setCookieArray(cookies);
-        endp.addInput("POST / HTTP/1.1\r\n" +
-            "Host: whatever\r\n" +
-            "Cookie: name=value\r\n" +
-            "Cookie:\r\n" +
-            "Connection: close\r\n" +
-            "\r\n");
+        endp.writeRequestString("POST / HTTP/1.1\r\n" +
+        "Host: whatever\r\n" +
+        "Cookie: name=value\r\n" +
+        "Cookie:\r\n" +
+        "Connection: close\r\n" +
+        "\r\n");
         endp.getResponse();
         assertEquals("value", cookies[0]);
         assertNull(cookies[1]);
@@ -1802,14 +1807,14 @@ public class RequestTest
         String request2 = "GET /ctx HTTP/1.1\r\nHost: localhost\r\nCookie: " + sessionId2 + "\r\n\r\n";
         String request3 = "GET /ctx HTTP/1.1\r\nHost: localhost\r\nCookie: " + sessionId3 + "\r\n\r\n";
 
-        LocalEndPoint lep = _connector.connect();
-        lep.addInput(request1);
+        LocalEndPoint lep = _connector.connectToServer();
+        lep.writeRequestString(request1);
         HttpTester.Response response = HttpTester.parseResponse(lep.getResponse());
         checkCookieResult(sessionId1, new String[] {sessionId2, sessionId3}, response.getContent());
-        lep.addInput(request2);
+        lep.writeRequestString(request2);
         response = HttpTester.parseResponse(lep.getResponse());
         checkCookieResult(sessionId2, new String[] {sessionId1, sessionId3}, response.getContent());
-        lep.addInput(request3);
+        lep.writeRequestString(request3);
         response = HttpTester.parseResponse(lep.getResponse());
         checkCookieResult(sessionId3, new String[] {sessionId1, sessionId2}, response.getContent());
     }

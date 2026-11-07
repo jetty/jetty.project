@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,7 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.content.AsyncContent;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
@@ -40,6 +38,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1003,7 +1002,7 @@ public class MultiPartFormDataTest
             Content-Type: text/plain\r
             \r
             """;
-        ByteBuffer isoCedilla = ISO_8859_1.encode("ç");
+        RetainableByteBuffer isoCedilla = RetainableByteBuffer.wrap(ISO_8859_1.encode("ç"));
         String body2 = """
             \r
             --AaB03x\r
@@ -1011,7 +1010,7 @@ public class MultiPartFormDataTest
             Content-Type: text/plain; charset="UTF-8"\r
             \r
             """;
-        ByteBuffer utfCedilla = UTF_8.encode("ç");
+        RetainableByteBuffer utfCedilla = RetainableByteBuffer.wrap(UTF_8.encode("ç"));
         String terminator = """
             \r
             --AaB03x--\r
@@ -1281,12 +1280,12 @@ public class MultiPartFormDataTest
 
         new Thread(() ->
         {
-            ByteBuffer buf = UTF_8.encode(form);
+            RetainableByteBuffer buf = RetainableByteBuffer.wrap(form, UTF_8);
             while (buf.hasRemaining())
             {
-                source.write(false, ByteBuffer.wrap(new byte[]{buf.get()}), Callback.NOOP);
+                source.write(false, RetainableByteBuffer.wrap(new byte[]{buf.get()}), Callback.NOOP);
             }
-            source.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+            source.write(true, RetainableByteBuffer.empty(), Callback.NOOP);
         }).start();
 
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
@@ -1507,22 +1506,22 @@ public class MultiPartFormDataTest
     {
         MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
         source.addPart(new MultiPart.ChunksPart("part1", "file1", HttpFields.EMPTY, List.of(
-            Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
+            Content.Chunk.from(RetainableByteBuffer.wrap("the answer", US_ASCII), false),
             Content.Chunk.from(new NumberFormatException(), false),
-            Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), true)
+            Content.Chunk.from(RetainableByteBuffer.wrap(" is 42", US_ASCII), true)
         )));
         source.close();
 
         Content.Chunk chunk;
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("--boundary\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("--boundary\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("the answer"));
+        assertThat(chunk.acquire().getString(UTF_8), is("the answer"));
 
         chunk = source.read();
         assertThat(Content.Chunk.isFailure(chunk, false), is(true));
@@ -1539,22 +1538,22 @@ public class MultiPartFormDataTest
     {
         MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
         source.addPart(new MultiPart.ChunksPart("part1", "file1", HttpFields.EMPTY, List.of(
-            Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
+            Content.Chunk.from(RetainableByteBuffer.wrap("the answer", US_ASCII), false),
             Content.Chunk.from(new NumberFormatException(), false),
-            Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), true)
+            Content.Chunk.from(RetainableByteBuffer.wrap(" is 42", US_ASCII), true)
         )));
         source.close();
 
         Content.Chunk chunk;
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("--boundary\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("--boundary\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("the answer"));
+        assertThat(chunk.acquire().getString(UTF_8), is("the answer"));
 
         chunk = source.read();
         assertThat(Content.Chunk.isFailure(chunk, false), is(true));
@@ -1562,10 +1561,10 @@ public class MultiPartFormDataTest
 
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is(" is 42"));
+        assertThat(chunk.acquire().getString(UTF_8), is(" is 42"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(true));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("\r\n--boundary--\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("\r\n--boundary--\r\n"));
 
         chunk = source.read();
         assertThat(chunk.isLast(), is(true));
@@ -1578,8 +1577,8 @@ public class MultiPartFormDataTest
     {
         MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
         source.addPart(new MultiPart.ChunksPart("part1", "file1", HttpFields.EMPTY, List.of(
-            Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
-            Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), false),
+            Content.Chunk.from(RetainableByteBuffer.wrap("the answer", US_ASCII), false),
+            Content.Chunk.from(RetainableByteBuffer.wrap(" is 42", US_ASCII), false),
             Content.Chunk.from(new NumberFormatException(), true)
         )));
         source.close();
@@ -1587,16 +1586,16 @@ public class MultiPartFormDataTest
         Content.Chunk chunk;
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("--boundary\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("--boundary\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("the answer"));
+        assertThat(chunk.acquire().getString(UTF_8), is("the answer"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is(" is 42"));
+        assertThat(chunk.acquire().getString(UTF_8), is(" is 42"));
 
         chunk = source.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
@@ -1650,8 +1649,13 @@ public class MultiPartFormDataTest
             @Override
             public Content.Chunk read()
             {
-                Content.Chunk chunk = super.read();
-                return new NonRetainableChunk(chunk);
+                try (Content.Chunk chunk = super.read())
+                {
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        return Content.Chunk.from(buffer, chunk.isLast());
+                    }
+                }
             }
         };
 
@@ -1687,42 +1691,15 @@ public class MultiPartFormDataTest
         @Override
         public Content.Chunk read()
         {
-            Content.Chunk chunk = super.read();
-            if (chunk != null && chunk.canRetain())
-                _allocatedChunks.add(chunk);
-            return chunk;
-        }
-    }
-
-    private static class NonRetainableChunk extends RetainableByteBuffer.NonRetainableByteBuffer implements Content.Chunk
-    {
-        private final boolean _isLast;
-        private final Throwable _failure;
-
-        public NonRetainableChunk(Content.Chunk chunk)
-        {
-            super(BufferUtil.copy(chunk.getByteBuffer()));
-            _isLast = chunk.isLast();
-            _failure = chunk.getFailure();
-            chunk.release();
-        }
-
-        @Override
-        public boolean isLast()
-        {
-            return _isLast;
-        }
-
-        @Override
-        public Throwable getFailure()
-        {
-            return _failure;
-        }
-
-        @Override
-        public void retain()
-        {
-            throw new UnsupportedOperationException();
+            try (Content.Chunk chunk = super.read())
+            {
+                if (chunk != null)
+                {
+                    chunk.retain();
+                    _allocatedChunks.add(chunk);
+                }
+                return chunk;
+            }
         }
     }
 

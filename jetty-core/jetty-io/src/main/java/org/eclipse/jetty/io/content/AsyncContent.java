@@ -16,18 +16,16 @@ package org.eclipse.jetty.io.content;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.Retainable;
-import org.eclipse.jetty.io.internal.ByteBufferChunk;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.internal.BufferChunk;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
 
@@ -41,7 +39,7 @@ import org.eclipse.jetty.util.thread.SerializedInvoker;
 public class AsyncContent implements Content.Sink, Content.Source, Closeable
 {
     private static final int UNDETERMINED_LENGTH = -2;
-    private static final AsyncChunk ASYNC_EOF = new AsyncChunk(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP)
+    private static final AsyncChunk ASYNC_EOF = new AsyncChunk(true, RetainableByteBuffer.empty(), Callback.NOOP, Retainable.NON_RETAINABLE)
     {
         @Override
         public String toString()
@@ -52,7 +50,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
 
     private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final SerializedInvoker invoker = new SerializedInvoker(AsyncContent.class);
-    private final Queue<Content.Chunk> chunks = new ArrayDeque<>();
+    private final Queue<AsyncChunk> chunks = new ArrayDeque<>();
     private Content.Chunk persistentFailure;
     private boolean readClosed;
     private boolean writeClosed;
@@ -70,11 +68,12 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
      * </ul>
      */
     @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
-        ByteBuffer slice = byteBuffer.slice();
-        BufferUtil.clear(byteBuffer);
-        offer(new AsyncChunk(last, slice, callback));
+        try (AsyncChunk chunk = new AsyncChunk(last, buffer, callback))
+        {
+            offer(chunk);
+        }
     }
 
     /**
@@ -82,7 +81,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
      * or succeeded if and only if the chunk is terminal, as non-terminal
      * chunks have to bind the succeeding of the callback to their release.
      */
-    private void offer(Content.Chunk chunk)
+    private void offer(AsyncChunk chunk)
     {
         Throwable failure = null;
         boolean wasEmpty = false;
@@ -99,9 +98,10 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
             else
             {
                 wasEmpty = chunks.isEmpty();
-                // No need to retain the chunk, because it's created internally
-                // from a ByteBuffer and it will be released by the caller of read().
+
+                chunk.retain();
                 chunks.offer(chunk);
+
                 if (chunk.isLast())
                 {
                     writeClosed = true;
@@ -114,8 +114,8 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
                 }
             }
         }
-        if (failure != null && chunk instanceof AsyncChunk asyncChunk)
-            asyncChunk.failed(failure);
+        if (failure != null)
+            chunk.fail(failure);
         if (wasEmpty)
             invoker.run(this::invokeDemandCallback);
     }
@@ -191,19 +191,14 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
             readClosed = current.isLast();
             if (chunks.isEmpty())
                 condition.signal();
+            if (current == ASYNC_EOF)
+                return Content.Chunk.EOF;
+            if (current.hasRemaining() || Content.Chunk.isFailure(current))
+                return current;
         }
-
-        // If the chunk is reference counted, the callback is succeeded when it is released.
-        if (current.canRetain())
-            return current;
-
-        // If the chunk is not reference counted, we can succeed it now and return a chunk with a noop release.
-        if (current instanceof AsyncChunk asyncChunk)
-            asyncChunk.succeeded();
-
-        if (Content.Chunk.isFailure(current))
-            return current;
-
+        // Readers may skip empty chunks without releasing them,
+        // so release them here to succeed the write callback.
+        current.release();
         return current.isLast() ? Content.Chunk.EOF : Content.Chunk.EMPTY;
     }
 
@@ -249,7 +244,7 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     @Override
     public void fail(Throwable failure)
     {
-        List<Content.Chunk> drained;
+        List<AsyncChunk> drained;
         try (AutoLock.WithCondition condition = lock.lock())
         {
             if (readClosed)
@@ -263,8 +258,11 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         }
         drained.forEach(c ->
         {
-            if (c instanceof AsyncChunk ac)
-                ac.failed(failure);
+            if (c != ASYNC_EOF)
+            {
+                c.fail(failure);
+                c.release();
+            }
         });
         invoker.run(this::invokeDemandCallback);
     }
@@ -273,9 +271,20 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
     public void fail(Throwable failure, boolean last)
     {
         if (last)
+        {
             fail(failure);
+        }
         else
-            offer(Content.Chunk.from(failure, false));
+        {
+            offer(new AsyncChunk(false, RetainableByteBuffer.empty(), Callback.NOOP, Retainable.NON_RETAINABLE)
+            {
+                @Override
+                public Throwable getFailure()
+                {
+                    return failure;
+                }
+            });
+        }
     }
 
     public int count()
@@ -286,76 +295,83 @@ public class AsyncContent implements Content.Sink, Content.Source, Closeable
         }
     }
 
-    private static class AsyncChunk extends ByteBufferChunk implements Callback
+    private static class AsyncChunk extends BufferChunk
     {
+        private final AutoLock lock = new AutoLock();
+        // The RC of this chunk is tied to the Callback,
+        // so should be separated from that of the buffer.
         private final Callback callback;
-        private final Retainable.ReferenceCounter referenceCounter;
+        private final Retainable retainable;
+        private Throwable failure;
 
-        public AsyncChunk(boolean last, ByteBuffer byteBuffer, Callback callback)
+        private AsyncChunk(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
-            super(byteBuffer.hasRemaining() ? byteBuffer : BufferUtil.EMPTY_BUFFER, last);
+            this(last, buffer, callback, new ReferenceCounter());
+        }
+
+        private AsyncChunk(boolean last, RetainableByteBuffer buffer, Callback callback, Retainable retainable)
+        {
+            // Retains the buffer which is released when refCount goes to zero.
+            super(buffer, last);
             this.callback = callback;
-            referenceCounter = getByteBuffer() == BufferUtil.EMPTY_BUFFER ? null : new ReferenceCounter();
+            this.retainable = retainable;
         }
 
-        @Override
-        public boolean canRetain()
-        {
-            return referenceCounter != null;
-        }
+        // Retainable methods overridden to delegate to the refCount, not to the buffer, to link
+        // the reference count of this instance to the completion of the Callback.
+        // The buffer is retained only once by this instance, and released when refCount goes to zero.
 
         @Override
         public boolean isRetained()
         {
-            return canRetain() && referenceCounter.isRetained();
-        }
-
-        @Override
-        public int getRetained()
-        {
-            return referenceCounter.getRetained();
+            return retainable.isRetained();
         }
 
         @Override
         public void retain()
         {
-            if (canRetain())
-                referenceCounter.retain();
+            retainable.retain();
         }
 
         @Override
         public boolean release()
         {
-            if (!canRetain())
-                return true;
-            boolean released = referenceCounter.release();
-            if (released)
-                succeeded();
-            return released;
+            boolean released = retainable.release();
+            if (!released)
+                return false;
+
+            // Releases the buffer retained by the super() constructor.
+            super.release();
+
+            Throwable cause;
+            try (AutoLock _ = lock.lock())
+            {
+                cause = failure;
+            }
+
+            if (cause == null)
+                callback.succeeded();
+
+            return true;
         }
 
-        @Override
-        public void succeeded()
+        private void fail(Throwable x)
         {
-            callback.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
+            try (AutoLock _ = lock.lock())
+            {
+                if (failure != null)
+                    return;
+                failure = x;
+            }
             callback.failed(x);
         }
 
         @Override
-        public String toString()
+        public void close()
         {
-            return "%s@%x[rc=%s,l=%b,b=%s]".formatted(
-                TypeUtil.toShortName(getClass()),
-                hashCode(),
-                referenceCounter == null ? "-" : referenceCounter.get(),
-                isLast(),
-                BufferUtil.toDetailString(getByteBuffer())
-            );
+            // Call release() instead of forwarding close(), so
+            // that the release() code can succeed the callback.
+            release();
         }
     }
 }

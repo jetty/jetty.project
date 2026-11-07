@@ -44,7 +44,7 @@ public class LatencyRecordingHandlerTest
     public void setUp() throws Exception
     {
         _server = new Server();
-        _local = new LocalConnector(_server, new HttpConnectionFactory());
+        _local = new LocalConnector(_server);
         _server.addConnector(_local);
 
         Handler handler = new Handler.Abstract()

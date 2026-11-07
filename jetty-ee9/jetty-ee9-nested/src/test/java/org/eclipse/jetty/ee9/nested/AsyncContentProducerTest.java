@@ -32,6 +32,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -40,7 +41,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -90,11 +90,11 @@ public class AsyncContentProducerTest
     @Test
     public void testAsyncContentProducerNoInterceptor() throws Exception
     {
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(buffers);
+        RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
+        buffers[0] = RetainableByteBuffer.wrap("1 hello 1", StandardCharsets.ISO_8859_1);
+        buffers[1] = RetainableByteBuffer.wrap("2 howdy 2", StandardCharsets.ISO_8859_1);
+        buffers[2] = RetainableByteBuffer.wrap("3 hey ya 3", StandardCharsets.ISO_8859_1);
+        final long totalContentBytesCount = countRemaining(buffers);
         final String originalContentString = asString(buffers);
 
         CyclicBarrier barrier = new CyclicBarrier(2);
@@ -111,11 +111,11 @@ public class AsyncContentProducerTest
     @Test
     public void testAsyncContentProducerNoInterceptorWithError() throws Exception
     {
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(buffers);
+        RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
+        buffers[0] = RetainableByteBuffer.wrap("1 hello 1", StandardCharsets.ISO_8859_1);
+        buffers[1] = RetainableByteBuffer.wrap("2 howdy 2", StandardCharsets.ISO_8859_1);
+        buffers[2] = RetainableByteBuffer.wrap("3 hey ya 3", StandardCharsets.ISO_8859_1);
+        final long totalContentBytesCount = countRemaining(buffers);
         final String originalContentString = asString(buffers);
         final Throwable expectedError = new EofException("Early EOF");
 
@@ -133,11 +133,11 @@ public class AsyncContentProducerTest
     @Test
     public void testAsyncContentProducerEofContentIsPassedToInterceptor() throws Exception
     {
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(buffers);
+        RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
+        buffers[0] = RetainableByteBuffer.wrap("1 hello 1", StandardCharsets.ISO_8859_1);
+        buffers[1] = RetainableByteBuffer.wrap("2 howdy 2", StandardCharsets.ISO_8859_1);
+        buffers[2] = RetainableByteBuffer.wrap("3 hey ya 3", StandardCharsets.ISO_8859_1);
+        final long totalContentBytesCount = countRemaining(buffers);
         final String originalContentString = asString(buffers);
 
         CyclicBarrier barrier = new CyclicBarrier(2);
@@ -167,11 +167,11 @@ public class AsyncContentProducerTest
     @Test
     public void testAsyncContentProducerErrorContentIsPassedToInterceptor() throws Exception
     {
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(buffers);
+        RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
+        buffers[0] = RetainableByteBuffer.wrap("1 hello 1", StandardCharsets.ISO_8859_1);
+        buffers[1] = RetainableByteBuffer.wrap("2 howdy 2", StandardCharsets.ISO_8859_1);
+        buffers[2] = RetainableByteBuffer.wrap("3 hey ya 3", StandardCharsets.ISO_8859_1);
+        final long totalContentBytesCount = countRemaining(buffers);
         final String originalContentString = asString(buffers);
 
         CyclicBarrier barrier = new CyclicBarrier(2);
@@ -202,7 +202,7 @@ public class AsyncContentProducerTest
     public void testAsyncContentProducerInterceptorGeneratesError()
     {
         AtomicInteger contentSucceededCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(ByteBuffer.allocate(1))
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(RetainableByteBuffer.allocate(1, false))
         {
             @Override
             public void succeeded()
@@ -232,7 +232,7 @@ public class AsyncContentProducerTest
     public void testAsyncContentProducerInterceptorGeneratesEof()
     {
         AtomicInteger contentSucceededCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(ByteBuffer.allocate(1))
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(RetainableByteBuffer.allocate(1, false))
         {
             @Override
             public void succeeded()
@@ -262,7 +262,7 @@ public class AsyncContentProducerTest
     public void testAsyncContentProducerInterceptorThrows()
     {
         AtomicInteger contentFailedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(ByteBuffer.allocate(1))
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(RetainableByteBuffer.allocate(1, false))
         {
             @Override
             public void failed(Throwable x)
@@ -297,7 +297,7 @@ public class AsyncContentProducerTest
         AtomicInteger contentSucceededCount = new AtomicInteger();
         AtomicInteger specialContentInterceptedCount = new AtomicInteger();
         AtomicInteger nullContentInterceptedCount = new AtomicInteger();
-        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(ByteBuffer.allocate(0))
+        ContentProducer contentProducer = new AsyncContentProducer(new ContentListHttpChannel(List.of(new HttpInput.Content(RetainableByteBuffer.allocate(0, false))
         {
             @Override
             public void succeeded()
@@ -331,9 +331,9 @@ public class AsyncContentProducerTest
         assertThat(nullContentInterceptedCount.get(), is(1));
     }
 
-    private Throwable readAndAssertContent(int totalContentBytesCount, String originalContentString, ContentProducer contentProducer, int totalContentCount, int readyCount, int notReadyCount, CyclicBarrier barrier) throws InterruptedException, BrokenBarrierException, TimeoutException
+    private Throwable readAndAssertContent(long totalContentBytesCount, String originalContentString, ContentProducer contentProducer, int totalContentCount, int readyCount, int notReadyCount, CyclicBarrier barrier) throws InterruptedException, BrokenBarrierException, TimeoutException
     {
-        int readBytes = 0;
+        long readBytes = 0;
         String consumedString = "";
         int nextContentCount = 0;
         int isReadyFalseCount = 0;
@@ -365,11 +365,11 @@ public class AsyncContentProducerTest
                 break;
             }
 
-            byte[] b = new byte[content.remaining()];
-            readBytes += b.length;
-            content.getByteBuffer().get(b);
-            consumedString += new String(b, StandardCharsets.ISO_8859_1);
-            content.skip(content.remaining());
+            try (RetainableByteBuffer buffer = content.acquire())
+            {
+                readBytes += buffer.remaining();
+                consumedString += buffer.getString(StandardCharsets.ISO_8859_1);
+            }
         }
 
         assertThat(nextContentCount, is(totalContentCount));
@@ -380,24 +380,23 @@ public class AsyncContentProducerTest
         return error;
     }
 
-    private static int countRemaining(ByteBuffer[] byteBuffers)
+    private static long countRemaining(RetainableByteBuffer[] buffers)
     {
-        int total = 0;
-        for (ByteBuffer byteBuffer : byteBuffers)
+        long total = 0;
+        for (RetainableByteBuffer buffer : buffers)
         {
-            total += byteBuffer.remaining();
+            total += buffer.remaining();
         }
         return total;
     }
 
-    private static String asString(ByteBuffer[] buffers)
+    private static String asString(RetainableByteBuffer[] buffers)
     {
         StringBuilder sb = new StringBuilder();
-        for (ByteBuffer buffer : buffers)
+        for (RetainableByteBuffer buffer : buffers)
         {
-            byte[] b = new byte[buffer.remaining()];
-            buffer.duplicate().get(b);
-            sb.append(new String(b, StandardCharsets.ISO_8859_1));
+            // Do not consume the buffer.
+            sb.append(buffer.getString(0, StandardCharsets.ISO_8859_1));
         }
         return sb.toString();
     }
@@ -473,25 +472,25 @@ public class AsyncContentProducerTest
 
     private class ArrayDelayedHttpChannel extends HttpChannel
     {
-        private final ByteBuffer[] byteBuffers;
+        private final RetainableByteBuffer[] buffers;
         private final HttpInput.Content finalContent;
         private final Scheduler scheduler;
         private final CyclicBarrier barrier;
         private int counter;
         private volatile HttpInput.Content nextContent;
 
-        public ArrayDelayedHttpChannel(ByteBuffer[] byteBuffers, HttpInput.Content finalContent, Scheduler scheduler, CyclicBarrier barrier)
+        public ArrayDelayedHttpChannel(RetainableByteBuffer[] buffers, HttpInput.Content finalContent, Scheduler scheduler, CyclicBarrier barrier)
         {
             super(_contextHandler, new MockConnectionMetaData(_connector));
             getContextHandler().setServer(getConnectionMetaData().getConnector().getServer());
 
-            this.byteBuffers = new ByteBuffer[byteBuffers.length];
+            this.buffers = new RetainableByteBuffer[buffers.length];
             this.finalContent = finalContent;
             this.scheduler = scheduler;
             this.barrier = barrier;
-            for (int i = 0; i < byteBuffers.length; i++)
+            for (int i = 0; i < buffers.length; i++)
             {
-                this.byteBuffers[i] = byteBuffers[i].duplicate();
+                this.buffers[i] = buffers[i].slice();
             }
         }
 
@@ -502,8 +501,8 @@ public class AsyncContentProducerTest
                 return true;
             scheduler.schedule(() ->
             {
-                if (byteBuffers.length > counter)
-                    nextContent = new HttpInput.Content(byteBuffers[counter++]);
+                if (buffers.length > counter)
+                    nextContent = new HttpInput.Content(buffers[counter++]);
                 else
                     nextContent = finalContent;
                 try
@@ -530,7 +529,7 @@ public class AsyncContentProducerTest
         public boolean failAllContent(Throwable failure)
         {
             nextContent = null;
-            counter = byteBuffers.length;
+            counter = buffers.length;
             return false;
         }
 

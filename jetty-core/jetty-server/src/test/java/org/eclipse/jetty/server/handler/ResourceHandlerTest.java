@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +30,8 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,8 +45,10 @@ import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.EtagUtils;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.CachingHttpContentFactory;
 import org.eclipse.jetty.http.content.FileMappingHttpContentFactory;
@@ -52,7 +57,6 @@ import org.eclipse.jetty.http.content.PreCompressedHttpContentFactory;
 import org.eclipse.jetty.http.content.ResourceHttpContentFactory;
 import org.eclipse.jetty.http.content.ValidatingCachingHttpContentFactory;
 import org.eclipse.jetty.http.content.VirtualHttpContentFactory;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Handler;
@@ -66,8 +70,11 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
@@ -767,20 +774,102 @@ public class ResourceHandlerTest
     public void testOver2GBFile() throws Exception
     {
         long hugeLength = (long)Integer.MAX_VALUE + 10L;
-
         generateFile(docRoot.resolve("huge.mkv"), hugeLength);
 
-        HttpTester.Response response = HttpTester.parseResponse(
-            _local.getResponse("""
+        try (LocalConnector.LocalEndPoint endPoint = _local.executeRequest("""
                 GET /context/huge.mkv HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
-                """));
+                """))
+        {
+            var handler = new HttpParser.ResponseHandler()
+            {
+                private int status;
+                private long contentLength;
+                private long length;
 
-        assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        long responseContentLength = response.getLongField(CONTENT_LENGTH);
-        assertThat(responseContentLength, is(hugeLength));
+                @Override
+                public void startResponse(HttpVersion version, int status, String reason)
+                {
+                    this.status = status;
+                }
+
+                @Override
+                public void parsedHeader(HttpField field)
+                {
+                    if (field.getHeader() == HttpHeader.CONTENT_LENGTH)
+                        contentLength = field.getLongValue();
+                }
+
+                @Override
+                public boolean headerComplete()
+                {
+                    return false;
+                }
+
+                @Override
+                public boolean content(RetainableByteBuffer item)
+                {
+                    length += item.remaining();
+                    return false;
+                }
+
+                @Override
+                public boolean contentComplete()
+                {
+                    return false;
+                }
+
+                @Override
+                public boolean messageComplete()
+                {
+                    return true;
+                }
+
+                @Override
+                public void earlyEOF()
+                {
+                }
+            };
+            HttpParser parser = new HttpParser(handler);
+
+            boolean complete = false;
+            RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(IO.DEFAULT_BUFFER_SIZE, false);
+            while (true)
+            {
+                buffer.compact();
+                int filled = endPoint.fill(buffer);
+                if (filled > 0)
+                {
+                    complete = parser.parseNext(buffer);
+                }
+                else if (filled == 0)
+                {
+                    try (Blocker.Callback callback = Blocker.callback())
+                    {
+                        endPoint.fillInterested(callback);
+                        callback.block(5, TimeUnit.SECONDS);
+                    }
+                    catch (TimeoutException x)
+                    {
+                        buffer.release();
+                        throw x;
+                    }
+                }
+                else
+                {
+                    if (complete)
+                        break;
+                    else
+                        throw new EOFException();
+                }
+            }
+
+            assertEquals(HttpStatus.OK_200, handler.status);
+            assertEquals(hugeLength, handler.contentLength);
+            assertEquals(hugeLength, handler.length);
+        }
     }
 
     @Test

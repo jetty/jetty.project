@@ -190,8 +190,8 @@ public class CompressionHandler extends Handler.Wrapper
         }
         supportedEncodings.values().forEach(compression ->
         {
-            if (compression.getByteBufferPool() == null)
-                compression.setByteBufferPool(getServer().getByteBufferPool());
+            if (compression.getBufferPool() == null)
+                compression.setBufferPool(getServer().getByteBufferPool());
         });
 
         if (pathConfigs.isEmpty())
@@ -393,22 +393,20 @@ public class CompressionHandler extends Handler.Wrapper
         StripEtagRequest(Request request, String ifMatch, String ifNoneMatch)
         {
             super(request);
+            HttpFields.Mutable fields = HttpFields.build(request.getHeaders());
+            if (ifMatch != null)
             {
-                HttpFields.Mutable fields = HttpFields.build(request.getHeaders());
-                if (ifMatch != null)
-                {
-                    for (Compression known : supportedEncodings.values())
-                        ifMatch = known.stripSuffixes(ifMatch);
-                    fields.put(HttpHeader.IF_MATCH, ifMatch);
-                }
-                if (ifNoneMatch != null)
-                {
-                    for (Compression known : supportedEncodings.values())
-                        ifNoneMatch = known.stripSuffixes(ifNoneMatch);
-                    fields.put(HttpHeader.IF_NONE_MATCH, ifNoneMatch);
-                }
-                _strippedHttpFields = fields.asImmutable();
+                for (Compression known : supportedEncodings.values())
+                    ifMatch = known.stripSuffixes(ifMatch);
+                fields.put(HttpHeader.IF_MATCH, ifMatch);
             }
+            if (ifNoneMatch != null)
+            {
+                for (Compression known : supportedEncodings.values())
+                    ifNoneMatch = known.stripSuffixes(ifNoneMatch);
+                fields.put(HttpHeader.IF_NONE_MATCH, ifNoneMatch);
+            }
+            _strippedHttpFields = fields.asImmutable();
         }
 
         @Override

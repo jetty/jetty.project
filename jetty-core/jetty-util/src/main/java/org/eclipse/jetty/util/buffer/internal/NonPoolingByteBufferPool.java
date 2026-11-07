@@ -11,31 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.io;
+package org.eclipse.jetty.util.buffer.internal;
 
 import java.nio.ByteBuffer;
 
-/**
- * <p>Abstract implementation of {@link RetainableByteBuffer} with
- * reference counting.</p>
- * @deprecated
- */
-@Deprecated(forRemoval = true)
-public abstract class AbstractRetainableByteBuffer extends RetainableByteBuffer.FixedCapacity
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+
+/// A [ByteBufferPool] that does not pool its [RetainableByteBuffer]s.
+///
+/// @see RetainableByteBuffer#wrap(ByteBuffer)
+public class NonPoolingByteBufferPool implements ByteBufferPool
 {
-    private final ReferenceCounter _refCount;
-
-    public AbstractRetainableByteBuffer(ByteBuffer byteBuffer)
+    @Override
+    public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
     {
-        super(byteBuffer, new ReferenceCounter(0));
-        _refCount = (ReferenceCounter)getWrapped();
-    }
-
-    /**
-     * @see ReferenceCounter#acquire()
-     */
-    protected void acquire()
-    {
-        _refCount.acquire();
+        ByteBuffer byteBuffer = direct ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+        return RetainableByteBuffer.Mutable.wrap(byteBuffer);
     }
 }

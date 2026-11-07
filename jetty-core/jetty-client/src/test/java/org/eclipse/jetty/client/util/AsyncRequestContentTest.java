@@ -84,9 +84,10 @@ public class AsyncRequestContentTest
         // Flush should block until a read() is performed.
         assertFalse(await(task, 500));
 
-        Content.Chunk chunk = content.read();
-        assertNotNull(chunk);
-        chunk.release();
+        try (Content.Chunk chunk = content.read())
+        {
+            assertNotNull(chunk);
+        }
 
         // Flush should return.
         assertTrue(await(task, 5000));

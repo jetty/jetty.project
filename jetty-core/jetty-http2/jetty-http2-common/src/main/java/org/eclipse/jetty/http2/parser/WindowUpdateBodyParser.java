@@ -13,10 +13,9 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class WindowUpdateBodyParser extends BodyParser
 {
@@ -37,7 +36,7 @@ public class WindowUpdateBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -86,7 +85,7 @@ public class WindowUpdateBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onWindowUpdate(ByteBuffer buffer, int windowDelta)
+    private boolean onWindowUpdate(RetainableByteBuffer buffer, int windowDelta)
     {
         int streamId = getStreamId();
         WindowUpdateFrame frame = new WindowUpdateFrame(streamId, windowDelta);

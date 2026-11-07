@@ -15,32 +15,33 @@ package org.eclipse.jetty.test.client.transport;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.ReadOnlyBufferException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -57,60 +58,65 @@ public class EventsHandlerTest extends AbstractTest
 {
     @ParameterizedTest
     @MethodSource("transports")
-    public void testEventsBufferAndChunkAreReadOnly(TransportType transportType) throws Exception
+    public void testEventsBufferAndChunkAreIndependentSlices(TransportType transportType) throws Exception
     {
-        try (StacklessLogging ignored = new StacklessLogging(EventsHandler.class))
+        AtomicLong onRequestReadBytes = new AtomicLong();
+        AtomicLong onResponseWriteBytes = new AtomicLong();
+        AtomicLong onResponseWriteCompleteBytes = new AtomicLong();
+        EventsHandler eventsHandler = new EventsHandler(new EchoHandler())
         {
-            List<Throwable> onRequestReadExceptions = new CopyOnWriteArrayList<>();
-            List<Throwable> onResponseWriteExceptions = new CopyOnWriteArrayList<>();
-            EventsHandler eventsHandler = new EventsHandler(new EchoHandler())
+            @Override
+            protected void onRequestRead(Request request, Content.Chunk chunk)
             {
-                @Override
-                protected void onRequestRead(Request request, Content.Chunk chunk)
+                if (chunk != null)
                 {
-                    try
+                    // Consuming the chunk content must not affect the application.
+                    try (RetainableByteBuffer buffer = chunk.acquire())
                     {
-                        if (chunk != null)
-                        {
-                            chunk.getByteBuffer().put((byte)0);
-                        }
-                    }
-                    catch (ReadOnlyBufferException e)
-                    {
-                        onRequestReadExceptions.add(e);
-                        throw e;
-                    }
-                    if (chunk != null)
-                        chunk.skip(chunk.remaining());
-                }
-
-                @Override
-                protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
-                {
-                    try
-                    {
-                        if (content != null)
-                            content.put((byte)0);
-                    }
-                    catch (ReadOnlyBufferException e)
-                    {
-                        onResponseWriteExceptions.add(e);
-                        throw e;
+                        long remaining = buffer.remaining();
+                        onRequestReadBytes.addAndGet(remaining);
+                        buffer.consume(remaining);
                     }
                 }
-            };
-            startServer(transportType, eventsHandler);
-            startClient(transportType);
+            }
 
-            ContentResponse response = client.POST(newURI(transportType))
-                .body(new StringRequestContent("ABCDEF"))
-                .send();
+            @Override
+            protected void onResponseWrite(Request request, boolean last, RetainableByteBuffer content)
+            {
+                if (content != null)
+                {
+                    // Consuming the content must not affect the response.
+                    long remaining = content.remaining();
+                    onResponseWriteBytes.addAndGet(remaining);
+                    content.consume(remaining);
+                }
+            }
 
-            assertThat(response.getStatus(), is(200));
-            assertThat(response.getContentAsString(), is("ABCDEF"));
-            assertThat(onRequestReadExceptions.size(), greaterThan(0));
-            assertThat(onResponseWriteExceptions.size(), greaterThan(0));
-        }
+            @Override
+            protected void onResponseWriteComplete(Request request, boolean last, RetainableByteBuffer content, Throwable failure)
+            {
+                if (content != null)
+                {
+                    // Consuming the content must not affect the response.
+                    long remaining = content.remaining();
+                    onResponseWriteCompleteBytes.addAndGet(remaining);
+                    content.consume(remaining);
+                }
+            }
+        };
+        startServer(transportType, eventsHandler);
+        startClient(transportType);
+
+        String content = "ABCDEF";
+        ContentResponse response = client.POST(newURI(transportType))
+            .body(new StringRequestContent(content))
+            .send();
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContentAsString(), is(content));
+        assertThat(onRequestReadBytes.get(), is((long)content.length()));
+        assertThat(onResponseWriteBytes.get(), is((long)content.length()));
+        assertThat(onResponseWriteCompleteBytes.get(), is((long)content.length()));
     }
 
     @ParameterizedTest
@@ -125,25 +131,25 @@ public class EventsHandlerTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(longString.getBytes(StandardCharsets.US_ASCII)), callback);
+                response.write(true, RetainableByteBuffer.wrap(longString.getBytes(StandardCharsets.US_ASCII)), callback);
                 return true;
             }
         })
         {
             @Override
-            protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+            protected void onResponseWrite(Request request, boolean last, RetainableByteBuffer content)
             {
                 if (content != null)
-                    innerStringBuffer.append(BufferUtil.toString(content));
+                    innerStringBuffer.append(StringUtil.toString(content, ISO_8859_1));
             }
         };
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setHandler(innerEventsHandler);
-        AtomicInteger outerBytesCounter = new AtomicInteger();
+        AtomicLong outerBytesCounter = new AtomicLong();
         EventsHandler outerEventsHandler = new EventsHandler(gzipHandler)
         {
             @Override
-            protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+            protected void onResponseWrite(Request request, boolean last, RetainableByteBuffer content)
             {
                 if (content != null)
                     outerBytesCounter.addAndGet(content.remaining());
@@ -156,7 +162,7 @@ public class EventsHandlerTest extends AbstractTest
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContentAsString(), is(longString));
         assertThat(innerStringBuffer.toString(), is(longString));
-        assertThat(outerBytesCounter.get(), both(greaterThan(0)).and(lessThan(longString.length())));
+        assertThat(outerBytesCounter.get(), both(greaterThan(0L)).and(lessThan((long)longString.length())));
     }
 
     @ParameterizedTest
@@ -170,7 +176,7 @@ public class EventsHandlerTest extends AbstractTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(false, ByteBuffer.wrap("ABCDEF".getBytes(StandardCharsets.US_ASCII)),
+                response.write(false, RetainableByteBuffer.wrap("ABCDEF".getBytes(StandardCharsets.US_ASCII)),
                     Callback.from(() -> response.write(false, null,
                         Callback.from(() -> response.write(true, null, callback), callback::failed))));
                 return true;
@@ -178,14 +184,14 @@ public class EventsHandlerTest extends AbstractTest
         })
         {
             @Override
-            protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+            protected void onResponseWrite(Request request, boolean last, RetainableByteBuffer content)
             {
                 if (content != null)
-                    stringBuffer.append(BufferUtil.toString(content));
+                    stringBuffer.append(StringUtil.toString(content, ISO_8859_1));
             }
 
             @Override
-            protected void onResponseWriteComplete(Request request, boolean last, ByteBuffer content, Throwable failure)
+            protected void onResponseWriteComplete(Request request, boolean last, RetainableByteBuffer content, Throwable failure)
             {
                 if (failure != null)
                     failures.add(failure);
@@ -362,13 +368,13 @@ public class EventsHandlerTest extends AbstractTest
         }
 
         @Override
-        protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+        protected void onResponseWrite(Request request, boolean last, RetainableByteBuffer content)
         {
             addEvent("onResponseWrite");
         }
 
         @Override
-        protected void onResponseWriteComplete(Request request, boolean last, ByteBuffer content, Throwable failure)
+        protected void onResponseWriteComplete(Request request, boolean last, RetainableByteBuffer content, Throwable failure)
         {
             addEvent("onResponseWriteComplete");
         }
@@ -418,13 +424,13 @@ public class EventsHandlerTest extends AbstractTest
         }
 
         @Override
-        protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+        protected void onResponseWrite(Request request, boolean last, RetainableByteBuffer content)
         {
             useForbiddenMethods(request, exceptions);
         }
 
         @Override
-        protected void onResponseWriteComplete(Request request, boolean last, ByteBuffer content, Throwable failure)
+        protected void onResponseWriteComplete(Request request, boolean last, RetainableByteBuffer content, Throwable failure)
         {
             useForbiddenMethods(request, exceptions);
         }

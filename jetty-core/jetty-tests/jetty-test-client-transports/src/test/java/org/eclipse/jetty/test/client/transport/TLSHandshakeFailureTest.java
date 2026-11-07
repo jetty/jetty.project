@@ -103,11 +103,17 @@ public class TLSHandshakeFailureTest extends AbstractTest
                             private final AtomicInteger wraps = new AtomicInteger();
 
                             @Override
-                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, ByteBuffer output) throws SSLException
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] input, int offset, int length, ByteBuffer output) throws SSLException
                             {
                                 if (wraps.incrementAndGet() == wrapCount)
                                     action.accept(sslEngine);
-                                return super.wrap(sslEngine, input, output);
+                                return super.wrap(sslEngine, input, offset, length, output);
+                            }
+
+                            @Override
+                            protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                            {
+                                return wrap(sslEngine, new ByteBuffer[]{input}, 0, 1, output);
                             }
                         };
                     }

@@ -367,9 +367,9 @@ public class RequestTest
             }
         });
 
-        try (LocalConnector.LocalEndPoint connection = _connector.connect())
+        try (LocalConnector.LocalEndPoint connection = _connector.connectToServer())
         {
-            connection.addInput("""
+            connection.writeRequestString("""
                 GET /one HTTP/1.1\r
                 Host: myhost\r
                 Cookie: name1=value1; name2=value2\r

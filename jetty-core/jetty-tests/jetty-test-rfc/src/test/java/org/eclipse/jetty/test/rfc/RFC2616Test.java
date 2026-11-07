@@ -85,6 +85,7 @@ public class RFC2616Test
         ConditionalHandler options = new ConditionalHandler.ElseNext()
         {
             final DefaultHandler optionsHandler = new DefaultHandler();
+
             {
                 installBean(optionsHandler);
             }
@@ -706,7 +707,7 @@ public class RFC2616Test
         String response = endp.getResponse();
         assertThat(response, startsWith("HTTP/1.1 100 Continue"));
 
-        endp.addInput("6543210");
+        endp.writeRequestString("6543210");
 
         response = endp.getResponse();
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
@@ -746,7 +747,7 @@ public class RFC2616Test
         String infomational = endp.getResponse();
         offset = checkContains(infomational, offset, "HTTP/1.1 100 ", "8.2.3 expect 100") + 1;
         checkNotContained(infomational, offset, "HTTP/1.1 200", "8.2.3 expect 100");
-        endp.addInput("654321\r\n");
+        endp.writeRequestString("654321\r\n");
         String response = endp.getResponse();
         offset = 0;
         offset = checkContains(response, offset, "HTTP/1.1 200", "8.2.3 expect 100") + 1;

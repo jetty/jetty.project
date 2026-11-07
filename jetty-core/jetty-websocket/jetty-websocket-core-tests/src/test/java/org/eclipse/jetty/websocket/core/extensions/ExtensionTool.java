@@ -18,11 +18,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -89,8 +89,8 @@ public class ExtensionTool
                 String hex = rawhex[i].replaceAll("\\s*(0x)?", "");
                 net = StringUtil.fromHexString(hex);
 
-                ByteBuffer buffer = ByteBuffer.wrap(net);
-                while (BufferUtil.hasContent(buffer))
+                RetainableByteBuffer buffer = RetainableByteBuffer.wrap(net);
+                while (buffer.hasRemaining())
                 {
                     Frame frame = parser.parse(buffer);
                     if (frame == null)

@@ -26,9 +26,9 @@ import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.server.internal.HttpConnection;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -147,7 +147,7 @@ public class ExtendedServerTest extends HttpServerTestBase
         public boolean handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            response.write(true, BufferUtil.toBuffer("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n"), callback);
+            response.write(true, RetainableByteBuffer.wrap("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n", StandardCharsets.ISO_8859_1), callback);
             return true;
         }
     }

@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +56,7 @@ public class OptionalSslConnectionFactory extends DetectorConnectionFactory
      * @param endPoint The connection EndPoint object
      * @param buffer The buffer with the first bytes of the connection
      */
-    protected void nextProtocol(Connector connector, EndPoint endPoint, ByteBuffer buffer)
+    protected void nextProtocol(Connector connector, EndPoint endPoint, RetainableByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("OptionalSSL TLS detection unsuccessful, attempting to upgrade to {}", _nextProtocol);
@@ -69,51 +69,38 @@ public class OptionalSslConnectionFactory extends DetectorConnectionFactory
         }
         else
         {
-            otherProtocol(buffer, endPoint);
+            otherProtocol(endPoint, buffer);
         }
     }
 
-    /**
-     * <p>Legacy callback method invoked when {@code nextProtocol} is {@code null}
-     * and the first bytes are not TLS.</p>
-     * <p>This typically happens when a client is trying to connect to a TLS
-     * port using the {@code http} scheme (and not the {@code https} scheme).</p>
-     * <p>This method is kept around for backward compatibility.</p>
-     *
-     * @param buffer The buffer with the first bytes of the connection
-     * @param endPoint The connection EndPoint object
-     * @deprecated Override {@link #nextProtocol(Connector, EndPoint, ByteBuffer)} instead.
-     */
-    @Deprecated
-    protected void otherProtocol(ByteBuffer buffer, EndPoint endPoint)
+    private void otherProtocol(EndPoint endPoint, RetainableByteBuffer buffer)
     {
         LOG.warn("Detected non-TLS bytes, but no other protocol to upgrade to for {}", endPoint);
 
         // There are always at least 2 bytes.
-        int byte1 = buffer.get(0) & 0xFF;
-        int byte2 = buffer.get(1) & 0xFF;
+        int byte1 = buffer.get() & 0xFF;
+        int byte2 = buffer.get() & 0xFF;
         if (byte1 == 'G' && byte2 == 'E')
         {
             // Plain text HTTP to an HTTPS port,
             // write a minimal response.
-            String body =
-                "<!DOCTYPE html>\r\n" +
-                    "<html>\r\n" +
-                    "<head><title>Bad Request</title></head>\r\n" +
-                    "<body>" +
-                    "<h1>Bad Request</h1>" +
-                    "<p>HTTP request to HTTPS port</p>" +
-                    "</body>\r\n" +
-                    "</html>";
-            String response =
-                "HTTP/1.1 400 Bad Request\r\n" +
-                    "Content-Type: text/html\r\n" +
-                    "Content-Length: " + body.length() + "\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n" +
-                    body;
-            Callback.Completable.with(c -> endPoint.write(c, ByteBuffer.wrap(response.getBytes(StandardCharsets.US_ASCII))))
-                .whenComplete((r, x) -> endPoint.close());
+            String body = """
+                <!DOCTYPE html>\r
+                <html>\r
+                <head><title>Bad Request</title></head>\r
+                <body>\r
+                <h1>Bad Request</h1>\r
+                <p>HTTP request to HTTPS port</p>\r
+                </body>\r
+                </html>""";
+            String response = """
+                HTTP/1.1 400 Bad Request\r
+                Content-Type: text/html\r
+                Content-Length: %d\r
+                Connection: close\r
+                \r
+                %s""".formatted(body.length(), body);
+            endPoint.write(RetainableByteBuffer.wrap(response, StandardCharsets.US_ASCII), Callback.from(endPoint::close));
         }
         else
         {

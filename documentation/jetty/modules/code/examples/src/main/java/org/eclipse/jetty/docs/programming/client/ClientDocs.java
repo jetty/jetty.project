@@ -49,27 +49,27 @@ public class ClientDocs
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = contentSource.read();
-
-                            if (chunk == null)
+                            try (Content.Chunk chunk = contentSource.read())
                             {
-                                contentSource.demand(this); // <2>
-                                return;
+
+                                if (chunk == null)
+                                {
+                                    contentSource.demand(this); // <2>
+                                    return;
+                                }
+
+                                if (Content.Chunk.isFailure(chunk))
+                                {
+                                    response.abort(chunk.getFailure());
+                                    return;
+                                }
+
+                                // Process the Chunk in non-blocking way.
+                                processNonBlocking(chunk);
+
+                                if (chunk.isLast())
+                                    return;
                             }
-
-                            if (Content.Chunk.isFailure(chunk))
-                            {
-                                response.abort(chunk.getFailure());
-                                return;
-                            }
-
-                            // Process the Chunk in non-blocking way.
-                            processNonBlocking(chunk);
-
-                            chunk.release();
-
-                            if (chunk.isLast())
-                                return;
                         }
                     }
                 });

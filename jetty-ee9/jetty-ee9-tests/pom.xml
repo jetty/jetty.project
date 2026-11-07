@@ -39,6 +39,7 @@
 
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>
+    <maven.test.skip>${skipTests}</maven.test.skip>
     <sonar.skip>true</sonar.skip>
   </properties>
 

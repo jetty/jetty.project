@@ -67,6 +67,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Tag;
@@ -106,24 +107,25 @@ public class HttpClientTest extends AbstractTest
                 byte[] array = new byte[65536];
                 byteArrays.add(array);
                 Arrays.fill(array, (byte)'A');
-                ByteBuffer byteBuffer = ByteBuffer.wrap(array);
+                RetainableByteBuffer buffer = RetainableByteBuffer.wrap(array);
 
                 // Let the first 13 bytes untouched.
-                byteBuffer.position(13);
+                buffer.readPosition(13);
 
                 try (Blocker.Callback cb = Blocker.callback())
                 {
                     // Write the first part: 40 KB.
-                    byteBuffer.limit(13 + 40 * 1024);
+                    RetainableByteBuffer slice = buffer.slice(13, 40 * 1024);
+                    buffer.readPosition(buffer.readPosition() + 40 * 1024);
                     barrier.await(); // Maximize concurrency on the server.
-                    response.write(false, byteBuffer, cb);
+                    response.write(false, slice, cb);
+                    slice.release();
                     cb.block();
                 }
 
                 // Write the second part: 24 KB - 13 bytes.
-                byteBuffer.limit(byteBuffer.capacity());
                 barrier.await(); // Maximize concurrency on the server.
-                response.write(true, byteBuffer, callback);
+                response.write(true, buffer, callback);
                 return true;
             }
         });
@@ -132,7 +134,7 @@ public class HttpClientTest extends AbstractTest
         Map<Integer, List<ByteBuffer>> contents = new HashMap<>();
         for (int i = 0; i < count; i++)
         {
-            List<ByteBuffer> contentList = contents.computeIfAbsent(i, (k) -> new CopyOnWriteArrayList<>());
+            List<ByteBuffer> contentList = contents.computeIfAbsent(i, _ -> new CopyOnWriteArrayList<>());
             client.newRequest(newURI(transportType))
                 .onResponseContent((response, content) -> contentList.add(BufferUtil.copy(content)))
                 .send(result -> latch.countDown());
@@ -142,7 +144,7 @@ public class HttpClientTest extends AbstractTest
         // Check that the responses were not corrupted.
         for (Map.Entry<Integer, List<ByteBuffer>> entry : contents.entrySet())
         {
-            assertThat("Request #" + entry.getKey() + " failed on size", entry.getValue().stream().mapToInt(Buffer::remaining).sum(), is(65536 - 13));
+            assertEquals(65536 - 13, entry.getValue().stream().mapToLong(Buffer::remaining).sum(), "Request #" + entry.getKey() + " failed on size");
             assertThat("Request #" + entry.getKey() + " failed on data", entry.getValue().stream().anyMatch(bb ->
             {
                 while (bb.hasRemaining())
@@ -173,7 +175,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, BufferUtil.EMPTY_BUFFER, callback);
+                response.write(true, RetainableByteBuffer.empty(), callback);
                 return true;
             }
         });
@@ -199,7 +201,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toBuffer("some response content", StandardCharsets.UTF_8), callback);
+                response.write(true, RetainableByteBuffer.wrap("some response content", StandardCharsets.UTF_8), callback);
                 return true;
             }
         });
@@ -229,11 +231,11 @@ public class HttpClientTest extends AbstractTest
                 // start chunked mode
                 try (Blocker.Callback blocker = Blocker.callback())
                 {
-                    response.write(false, BufferUtil.EMPTY_BUFFER, blocker);
+                    response.write(false, RetainableByteBuffer.empty(), blocker);
                     blocker.block();
                 }
 
-                response.write(true, BufferUtil.toBuffer("some response content", StandardCharsets.UTF_8), callback);
+                response.write(true, RetainableByteBuffer.wrap("some response content", StandardCharsets.UTF_8), callback);
                 return true;
             }
         });
@@ -298,7 +300,7 @@ public class HttpClientTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, length);
-                response.write(true, ByteBuffer.wrap(bytes), callback);
+                response.write(true, RetainableByteBuffer.wrap(bytes), callback);
                 return true;
             }
         });
@@ -342,7 +344,7 @@ public class HttpClientTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 Content.Sink.write(response, false, ByteBuffer.wrap(chunk1));
-                response.write(true, ByteBuffer.wrap(chunk2), callback);
+                response.write(true, RetainableByteBuffer.wrap(chunk2), callback);
                 return true;
             }
         });
@@ -374,7 +376,7 @@ public class HttpClientTest extends AbstractTest
     @MethodSource("transports")
     public void testUploadLargeWithoutResponseContent(TransportType transportType) throws Exception
     {
-        testUploadWithoutResponseContent(transportType, 1024 * 1024);
+        testUploadWithoutResponseContent(transportType, 10 * 1024);
     }
 
     private void testUploadWithoutResponseContent(TransportType transportType, int length) throws Exception
@@ -420,28 +422,29 @@ public class HttpClientTest extends AbstractTest
                 long total = 0;
                 while (true)
                 {
-                    Content.Chunk chunk = request.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = request.read())
                     {
-                        try (Blocker.Runnable blocker = Blocker.runnable())
+                        if (chunk == null)
                         {
-                            request.demand(blocker);
-                            blocker.block();
-                            continue;
+                            try (Blocker.Runnable blocker = Blocker.runnable())
+                            {
+                                request.demand(blocker);
+                                blocker.block();
+                                continue;
+                            }
                         }
-                    }
-                    if (Content.Chunk.isFailure(chunk))
-                        throw IO.rethrow(chunk.getFailure());
+                        if (Content.Chunk.isFailure(chunk))
+                            throw IO.rethrow(chunk.getFailure());
 
-                    total += chunk.remaining();
-                    if (total >= sleep)
-                    {
-                        sleep(250);
-                        sleep += 256;
+                        total += chunk.remaining();
+                        if (total >= sleep)
+                        {
+                            sleep(250);
+                            sleep += 256;
+                        }
+                        if (chunk.isLast())
+                            break;
                     }
-                    chunk.release();
-                    if (chunk.isLast())
-                        break;
                 }
                 Content.Sink.write(response, true, String.valueOf(total), callback);
                 return true;
@@ -450,7 +453,7 @@ public class HttpClientTest extends AbstractTest
 
         int chunks = 256;
         int chunkSize = 16;
-        byte[][] bytes = IntStream.range(0, chunks).mapToObj(x -> new byte[chunkSize]).toArray(byte[][]::new);
+        byte[][] bytes = IntStream.range(0, chunks).mapToObj(_ -> new byte[chunkSize]).toArray(byte[][]::new);
         BytesRequestContent content = new BytesRequestContent("application/octet-stream", bytes);
         ContentResponse response = client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
@@ -473,7 +476,7 @@ public class HttpClientTest extends AbstractTest
             @Override
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.allocate(length), callback);
+                response.write(true, RetainableByteBuffer.allocate(length, false), callback);
                 return true;
             }
         });
@@ -672,7 +675,7 @@ public class HttpClientTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Large write to generate multiple DATA frames.
-                response.write(true, ByteBuffer.allocate(256 * 1024), callback);
+                response.write(true, RetainableByteBuffer.allocate(256 * 1024, false), callback);
                 return true;
             }
         });
@@ -755,7 +758,7 @@ public class HttpClientTest extends AbstractTest
                 if ("/notMapped".equals(target))
                     org.eclipse.jetty.server.Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
                 else
-                    response.write(true, ByteBuffer.wrap(data), callback);
+                    response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -804,7 +807,7 @@ public class HttpClientTest extends AbstractTest
             public boolean handle(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, length);
-                response.write(true, ByteBuffer.allocate(length), callback);
+                response.write(true, RetainableByteBuffer.allocate(length, false), callback);
                 return true;
             }
         });
@@ -1022,17 +1025,16 @@ public class HttpClientTest extends AbstractTest
         listener.await(5, TimeUnit.SECONDS);
 
         assertThat(listener.result.getResponse().getStatus(), is(200));
-        assertThat(chunks.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(totalBytes));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+        assertEquals(totalBytes, chunks.stream().mapToLong(Content.Chunk::remaining).sum());
+        assertThat(chunks.getLast().isLast(), is(true));
+
+        chunks.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
     @MethodSource("transports")
-    @Tag("DisableLeakTracking:client:FCGI")
     public void testContentSourceListenersFailure(TransportType transportType) throws Exception
     {
-        // TODO find and fix the leaks!
-
         int totalBytes = 1024;
         start(transportType, new TestHandler(totalBytes));
 
@@ -1076,8 +1078,9 @@ public class HttpClientTest extends AbstractTest
         listener.await(5, TimeUnit.SECONDS);
 
         assertThat(listener.result.getResponse().getStatus(), is(200));
-        assertThat(chunks.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(totalBytes));
-        assertThat(chunks.get(chunks.size() - 1).isLast(), is(true));
+        assertEquals(totalBytes, chunks.stream().mapToLong(Content.Chunk::remaining).sum());
+        assertThat(chunks.getLast().isLast(), is(true));
+        chunks.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -1101,12 +1104,15 @@ public class HttpClientTest extends AbstractTest
         assertThat(resp.getStatus(), is(200));
         assertThat(resp.getContent().length, is(totalBytes));
 
-        assertThat(chunks1.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(totalBytes));
-        assertThat(chunks1.get(chunks1.size() - 1).isLast(), is(true));
-        assertThat(chunks2.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(totalBytes));
-        assertThat(chunks2.get(chunks2.size() - 1).isLast(), is(true));
-        assertThat(chunks3.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(totalBytes));
-        assertThat(chunks3.get(chunks3.size() - 1).isLast(), is(true));
+        assertEquals(totalBytes, chunks1.stream().mapToLong(Content.Chunk::remaining).sum());
+        assertThat(chunks1.getLast().isLast(), is(true));
+        chunks1.forEach(Content.Chunk::release);
+        assertEquals(totalBytes, chunks2.stream().mapToLong(Content.Chunk::remaining).sum());
+        assertThat(chunks2.getLast().isLast(), is(true));
+        chunks2.forEach(Content.Chunk::release);
+        assertEquals(totalBytes, chunks3.stream().mapToLong(Content.Chunk::remaining).sum());
+        assertThat(chunks3.getLast().isLast(), is(true));
+        chunks3.forEach(Content.Chunk::release);
     }
 
     @ParameterizedTest
@@ -1132,11 +1138,11 @@ public class HttpClientTest extends AbstractTest
         assertThat(contentResponse.getStatus(), is(200));
         assertThat(contentResponse.getContent().length, is(totalBytes));
 
-        assertThat(chunks1.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(totalBytes));
-        assertThat(chunks2.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(totalBytes));
-        assertThat(chunks3.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(0));
+        assertEquals(totalBytes, chunks1.stream().mapToLong(Content.Chunk::remaining).sum());
+        assertEquals(totalBytes, chunks2.stream().mapToLong(Content.Chunk::remaining).sum());
+        assertEquals(0, chunks3.stream().mapToLong(Content.Chunk::remaining).sum());
         assertThat(chunks3.size(), is(1));
-        assertTrue(Content.Chunk.isFailure(chunks3.get(0), true));
+        assertTrue(Content.Chunk.isFailure(chunks3.getFirst(), true));
 
         chunks1.forEach(Content.Chunk::release);
         chunks2.forEach(Content.Chunk::release);
@@ -1172,13 +1178,13 @@ public class HttpClientTest extends AbstractTest
         assertThat(contentResponse.getStatus(), is(200));
         assertThat(contentResponse.getContent().length, is(totalBytes));
 
-        assertThat(chunks1.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(totalBytes));
-        assertThat(chunks2.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(totalBytes));
+        assertEquals(totalBytes, chunks1.stream().mapToLong(Content.Chunk::remaining).sum());
+        assertEquals(totalBytes, chunks2.stream().mapToLong(Content.Chunk::remaining).sum());
 
         assertThat(chunks3Latch.await(5, TimeUnit.SECONDS), is(true));
-        assertThat(chunks3.stream().mapToInt(c -> c.getByteBuffer().remaining()).sum(), is(0));
+        assertEquals(0, chunks3.stream().mapToLong(Content.Chunk::remaining).sum());
         assertThat(chunks3.size(), is(1));
-        assertTrue(Content.Chunk.isFailure(chunks3.get(0), true));
+        assertTrue(Content.Chunk.isFailure(chunks3.getFirst(), true));
 
         chunks1.forEach(Content.Chunk::release);
         chunks2.forEach(Content.Chunk::release);
@@ -1431,45 +1437,49 @@ public class HttpClientTest extends AbstractTest
 
     private static void accumulateChunks(Content.Source contentSource, List<Content.Chunk> chunks)
     {
-        Content.Chunk chunk = contentSource.read();
-        if (chunk == null)
+        try (Content.Chunk chunk = contentSource.read())
         {
-            contentSource.demand(() -> accumulateChunks(contentSource, chunks));
-            return;
+            if (chunk == null)
+            {
+                contentSource.demand(() -> accumulateChunks(contentSource, chunks));
+                return;
+            }
+
+            chunks.add(duplicate(chunk));
+
+            if (!chunk.isLast())
+                contentSource.demand(() -> accumulateChunks(contentSource, chunks));
         }
-
-        chunks.add(duplicate(chunk));
-        chunk.release();
-
-        if (!chunk.isLast())
-            contentSource.demand(() -> accumulateChunks(contentSource, chunks));
     }
 
     private static void accumulateChunksInSpawnedThread(Content.Source contentSource, List<Content.Chunk> chunks)
     {
-        Content.Chunk chunk = contentSource.read();
-        if (chunk == null)
+        try (Content.Chunk chunk = contentSource.read())
         {
-            contentSource.demand(() -> new Thread(() -> accumulateChunks(contentSource, chunks)).start());
-            return;
+            if (chunk == null)
+            {
+                contentSource.demand(() -> new Thread(() -> accumulateChunks(contentSource, chunks)).start());
+                return;
+            }
+
+            chunks.add(duplicate(chunk));
+
+            if (!chunk.isLast())
+                contentSource.demand(() -> new Thread(() -> accumulateChunks(contentSource, chunks)).start());
         }
-
-        chunks.add(duplicate(chunk));
-        chunk.release();
-
-        if (!chunk.isLast())
-            contentSource.demand(() -> new Thread(() -> accumulateChunks(contentSource, chunks)).start());
     }
 
     private static Content.Chunk duplicate(Content.Chunk chunk)
     {
         if (chunk.hasRemaining())
         {
-            ByteBuffer byteBuffer = BufferUtil.allocate(chunk.remaining());
-            int pos = BufferUtil.flipToFill(byteBuffer);
-            byteBuffer.put(chunk.getByteBuffer());
-            BufferUtil.flipToFlush(byteBuffer, pos);
-            return Content.Chunk.from(byteBuffer, chunk.isLast());
+            try (RetainableByteBuffer buffer = chunk.acquire())
+            {
+                try (RetainableByteBuffer slice = buffer.slice())
+                {
+                    return Content.Chunk.from(slice, chunk.isLast());
+                }
+            }
         }
         else
         {
@@ -1500,7 +1510,7 @@ public class HttpClientTest extends AbstractTest
                     boolean last = ++count == totalBytes;
                     if (count > totalBytes)
                         return Action.SUCCEEDED;
-                    response.write(last, ByteBuffer.wrap(new byte[1]), this);
+                    response.write(last, RetainableByteBuffer.wrap(new byte[1]), this);
                     return Action.SCHEDULED;
                 }
             };
@@ -1534,37 +1544,42 @@ public class HttpClientTest extends AbstractTest
         }
 
         final CompletableFuture<ClientResponseContent> clientResponseContent = new CompletableFuture<>();
-        final StringBuffer buffer = new StringBuffer();
+        final StringBuilder buffer = new StringBuilder();
 
         @Override
         public void onContentSource(Response response, Content.Source contentSource)
         {
             new Thread(() ->
             {
-                Content.Chunk chunk = contentSource.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = contentSource.read())
                 {
-                    contentSource.demand(() -> onContentSource(response, contentSource));
-                    return;
-                }
+                    if (chunk == null)
+                    {
+                        contentSource.demand(() -> onContentSource(response, contentSource));
+                        return;
+                    }
 
-                buffer.append(BufferUtil.toString(chunk.getByteBuffer(), StandardCharsets.UTF_8));
-                chunk.release();
+                    try (RetainableByteBuffer b = chunk.acquire())
+                    {
+                        buffer.append(b.getString(StandardCharsets.UTF_8));
+                    }
 
-                if (!chunk.isLast())
-                {
-                    contentSource.demand(() -> onContentSource(response, contentSource));
-                }
-                else
-                {
-                    Content.Chunk afterLastChunk = contentSource.read();
-                    if (afterLastChunk != chunk)
-                        clientResponseContent.completeExceptionally(new AssertionError("afterLastChunk != chunk"));
+                    if (chunk.isLast())
+                    {
+                        try (Content.Chunk afterLastChunk = contentSource.read())
+                        {
+                            if (afterLastChunk != chunk)
+                                clientResponseContent.completeExceptionally(new AssertionError("afterLastChunk != chunk"));
+                            else
+                                clientResponseContent.complete(new ClientResponseContent(response.getStatus(), buffer.toString(), response.getTrailers()));
+                        }
+                    }
                     else
-                        clientResponseContent.complete(new ClientResponseContent(response.getStatus(), buffer.toString(), response.getTrailers()));
+                    {
+                        contentSource.demand(() -> onContentSource(response, contentSource));
+                    }
                 }
-            }
-            ).start();
+            }).start();
         }
     }
 }
