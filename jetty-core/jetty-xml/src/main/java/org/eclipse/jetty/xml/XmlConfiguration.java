@@ -34,13 +34,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -187,6 +190,70 @@ public class XmlConfiguration
         // Return normalized to -1, 0, 1
         return Integer.compare(compare, 0);
     };
+
+    /**
+     * <p>Returns the given method, followed by the methods with the same
+     * signature declared by accessible supertypes of its declaring class.</p>
+     * <p>A public method declared by an inaccessible class, such as a private
+     * JDK implementation class, cannot be invoked reflectively, but the same
+     * method declared by a public superclass or interface can be.</p>
+     *
+     * @param method the method to find accessible alternatives for
+     * @return the method and its accessible alternatives
+     */
+    private static Stream<Method> withAccessibleAlternatives(Method method)
+    {
+        if (isAccessible(method.getDeclaringClass()))
+            return Stream.of(method);
+
+        List<Method> methods = new ArrayList<>();
+        methods.add(method);
+        for (Class<?> type : supertypesOf(method.getDeclaringClass()))
+        {
+            if (!isAccessible(type))
+                continue;
+            try
+            {
+                Method alternative = type.getMethod(method.getName(), method.getParameterTypes());
+                if (isAccessible(alternative.getDeclaringClass()))
+                    methods.add(alternative);
+            }
+            catch (NoSuchMethodException x)
+            {
+                // The supertype does not declare this method.
+            }
+        }
+        return methods.stream();
+    }
+
+    private static boolean isAccessible(Class<?> type)
+    {
+        return Modifier.isPublic(type.getModifiers()) && type.getModule().isExported(type.getPackageName());
+    }
+
+    /**
+     * @param type the class to find the supertypes of
+     * @return the superclasses and the interfaces of the given class, transitively, nearest first
+     */
+    private static Set<Class<?>> supertypesOf(Class<?> type)
+    {
+        Set<Class<?>> supertypes = new LinkedHashSet<>();
+        Deque<Class<?>> queue = new ArrayDeque<>();
+        queue.add(type);
+        while (!queue.isEmpty())
+        {
+            Class<?> current = queue.poll();
+            Class<?> superclass = current.getSuperclass();
+            if (superclass != null && supertypes.add(superclass))
+                queue.add(superclass);
+            for (Class<?> iface : current.getInterfaces())
+            {
+                if (supertypes.add(iface))
+                    queue.add(iface);
+            }
+        }
+        return supertypes;
+    }
 
     private static int calculateDepth(Class<?> c)
     {
@@ -1097,6 +1164,8 @@ public class XmlConfiguration
             // Lets just try all methods for now
             Method[] methods = Arrays.stream(oClass.getMethods())
                 .filter(m -> m.getName().equals(methodName))
+                .flatMap(XmlConfiguration::withAccessibleAlternatives)
+                .distinct()
                 .sorted(EXECUTABLE_COMPARATOR)
                 .toArray(Method[]::new);
 

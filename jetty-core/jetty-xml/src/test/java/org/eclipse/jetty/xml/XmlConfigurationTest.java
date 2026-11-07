@@ -2109,6 +2109,30 @@ public class XmlConfigurationTest
         assertThat(tc.testObject, instanceOf(ScheduledExecutorService.class));
     }
 
+    @Test
+    public void testVirtualCallWithoutClassAttribute() throws Exception
+    {
+        // Executors.newSingleThreadScheduledExecutor() returns an
+        // internal class that cannot be accessed; without a class
+        // attribute, <Call> must find the accessible 'shutdown' method
+        // in the class or interface hierarchy (see #8917).
+        XmlConfiguration configuration = asXmlConfiguration("""
+            <Configure class="org.eclipse.jetty.xml.ExampleConfiguration">
+              <Set name="Test">
+                <Call class="java.util.concurrent.Executors" name="newSingleThreadScheduledExecutor">
+                  <Call name="shutdown" />
+                </Call>
+              </Set>
+            </Configure>"""
+        );
+
+        ExampleConfiguration tc = new ExampleConfiguration();
+        configuration.configure(tc);
+
+        assertThat(tc.testObject, instanceOf(ScheduledExecutorService.class));
+        assertTrue(((ScheduledExecutorService)tc.testObject).isShutdown());
+    }
+
     private static List<String> systemIdVariants()
     {
         List<String> ids = new ArrayList<>();
