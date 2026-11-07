@@ -21,10 +21,13 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Flow;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.websocket.api.Callback;
@@ -46,6 +49,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.core.messages.PartialStringMessageSink;
+import org.eclipse.jetty.websocket.core.messages.PublisherMessageSink;
 import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
 import org.eclipse.jetty.websocket.core.util.InvokerUtils;
@@ -79,6 +83,11 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     private static final InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
         new InvokerUtils.Arg(Session.class),
         new InvokerUtils.Arg(InputStream.class).required()
+    };
+
+    private static final InvokerUtils.Arg[] publisherCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(Flow.Publisher.class).required()
     };
 
     private static final InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
@@ -448,6 +457,19 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     continue;
                 }
 
+                methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, publisherCallingArgs);
+                if (methodHandle != null)
+                {
+                    if (!metadata.isAutoDemand())
+                        throw new InvalidWebSocketException("Flow.Publisher methods require auto-demanding WebSocket endpoints");
+                    assertPublisherOfByteBuffer(endpointClass, onMsg);
+
+                    // Flow.Publisher Binary Message
+                    assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
+                    metadata.setBinaryHandle(PublisherMessageSink.class, MethodHolder.from(methodHandle), onMsg);
+                    continue;
+                }
+
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, readerCallingArgs);
                 if (methodHandle != null)
                 {
@@ -577,5 +599,22 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpObjects(out, indent, metadataMap);
+    }
+
+    private static void assertPublisherOfByteBuffer(Class<?> endpointClass, Method method)
+    {
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        Type[] genericParameterTypes = method.getGenericParameterTypes();
+        for (int i = 0; i < parameterTypes.length; i++)
+        {
+            if (!Flow.Publisher.class.isAssignableFrom(parameterTypes[i]))
+                continue;
+            boolean valid = parameterTypes[i] == Flow.Publisher.class;
+            if (valid && genericParameterTypes[i] instanceof ParameterizedType parameterizedType)
+                valid = parameterizedType.getActualTypeArguments()[0] == ByteBuffer.class;
+            if (!valid)
+                throw new InvalidWebSocketException(String.format("Invalid parameter %s in method %s.%s(): a Flow.Publisher parameter must be declared as Flow.Publisher<ByteBuffer>",
+                    genericParameterTypes[i].getTypeName(), endpointClass.getName(), method.getName()));
+        }
     }
 }
