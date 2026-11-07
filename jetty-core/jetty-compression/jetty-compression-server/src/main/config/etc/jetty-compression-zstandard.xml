@@ -7,6 +7,7 @@
       <Arg>
         <New id="zstandardCompression" class="org.eclipse.jetty.compression.zstandard.ZstandardCompression">
           <Set name="minCompressSize" property="jetty.compression.zstandard.minCompressSize"/>
+          <Set name="compressCtxPoolCapacity" property="jetty.compression.zstandard.compressCtxPool.capacity"/>
           <Set name="defaultDecoderConfig">
             <New id="zstandardDefaultDecoderConfig" class="org.eclipse.jetty.compression.zstandard.ZstandardDecoderConfig">
               <Set name="bufferSize" property="jetty.compression.zstandard.decoder.bufferSize"/>

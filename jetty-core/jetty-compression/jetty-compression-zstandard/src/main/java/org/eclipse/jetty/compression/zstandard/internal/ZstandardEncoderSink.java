@@ -27,6 +27,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,13 +53,15 @@ public class ZstandardEncoderSink extends EncoderSink
     private final AtomicReference<State> state = new AtomicReference<>(State.CONTINUE);
     private final Cleaner.Cleanable cleanable;
 
-    public ZstandardEncoderSink(ZstandardCompression compression, Content.Sink sink, ZstandardEncoderConfig config)
+    public ZstandardEncoderSink(ZstandardCompression compression, ZstandardCompressCtxPool compressCtxPool, Content.Sink sink, ZstandardEncoderConfig config)
     {
         super(sink);
         this.compression = compression;
         this.bufferSize = config.getBufferSize();
-        this.compressCtx = new ZstdCompressCtx();
-        this.cleanable = compression.getCleaner().register(this, compressCtx::close);
+        CompressionPool<ZstdCompressCtx>.Entry compressCtxEntry = compressCtxPool.acquire();
+        this.compressCtx = compressCtxEntry.get();
+        // Return the context to the pool also if this sink is never released.
+        this.cleanable = compression.getCleaner().register(this, compressCtxEntry::release);
         this.compressCtx.setLevel(config.getCompressionLevel());
         if (config.getStrategy() >= 0)
             this.compressCtx.setStrategy(config.getStrategy());
@@ -69,6 +72,8 @@ public class ZstandardEncoderSink extends EncoderSink
     @Override
     protected void release()
     {
+        // The context must not be used once returned to the pool.
+        state.set(State.FINISHED);
         cleanable.clean();
     }
 
