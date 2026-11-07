@@ -221,12 +221,12 @@
     <flatten.maven.plugin.version>1.8.0</flatten.maven.plugin.version>
     <groovy.version>4.0.33</groovy.version>
     <grpc.version>1.85.1</grpc.version>
-    <gson.version>2.14.0</gson.version>
-    <guava.version>33.7.2-jre</guava.version>
+    <gson.version>2.15.0</gson.version>
+    <guava.version>33.8.0-jre</guava.version>
     <guice.version>7.0.0</guice.version>
     <hamcrest.version>3.0</hamcrest.version>
     <hazelcast.version>5.7.0</hazelcast.version>
-    <hibernate.search.version>8.4.0.Final</hibernate.search.version>
+    <hibernate.search.version>8.4.1.Final</hibernate.search.version>
     <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
     <infinispan.docker.image.version>15.2.1.Final</infinispan.docker.image.version>
     <infinispan.protostream.version>6.0.12</infinispan.protostream.version>
@@ -256,12 +256,12 @@
     <jetty.xhtml.schemas-version>1.4</jetty.xhtml.schemas-version>
     <jettyHomeZip>${project.build.directory}/${jettyHomeZipFileName}</jettyHomeZip>
     <jettyHomeZipFileName>jetty-home.zip</jettyHomeZipFileName>
-    <jffi.version>1.4.3</jffi.version>
+    <jffi.version>1.4.7</jffi.version>
     <jmh.version>1.37</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <jna.version>5.19.1</jna.version>
     <json-simple.version>1.1.1</json-simple.version>
-    <json-smart.version>2.6.0</json-smart.version>
+    <json-smart.version>2.6.1</json-smart.version>
     <junit.jupiter.execution.parallel.config.dynamic.factor>0.8</junit.jupiter.execution.parallel.config.dynamic.factor>
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
     <junit.jupiter.execution.parallel.config.strategy>dynamic</junit.jupiter.execution.parallel.config.strategy>
@@ -276,7 +276,7 @@
     <keytool.maven.plugin.version>1.7</keytool.maven.plugin.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <log4j2.version>2.26.1</log4j2.version>
-    <logback.version>1.6.5</logback.version>
+    <logback.version>1.6.6</logback.version>
     <lucene.version>9.12.3</lucene.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <mariadb.version>3.5.11</mariadb.version>
@@ -314,8 +314,8 @@
     <modify-sources-plugin.version>1.0.15</modify-sources-plugin.version>
     <mongo.docker.version>5.0.26</mongo.docker.version>
     <mongodb.version>5.14.0</mongodb.version>
-    <netty.version>4.2.19.Final</netty.version>
-    <njord.version>0.9.10</njord.version>
+    <netty.version>4.2.20.Final</netty.version>
+    <njord.version>0.10.0</njord.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>8.0.0</org.osgi.core.version>
@@ -346,7 +346,7 @@
     <reactive-streams.version>1.0.4</reactive-streams.version>
     <settings.path/>
     <settingsPath>src/it/settings.xml</settingsPath>
-    <shrinkwrap.resolver.version>3.3.4</shrinkwrap.resolver.version>
+    <shrinkwrap.resolver.version>3.3.7</shrinkwrap.resolver.version>
     <sisu.plexus.version>0.9.0.M4</sisu.plexus.version>
     <slf4j.version>2.0.17</slf4j.version>
     <spifly.version>1.3.8</spifly.version>
