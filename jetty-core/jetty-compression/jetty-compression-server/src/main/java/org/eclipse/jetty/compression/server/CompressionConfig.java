@@ -628,9 +628,11 @@ public class CompressionConfig extends AbstractLifeCycle
             });
 
             decompressIncludeMethod(HttpMethod.POST.asString());
+            decompressIncludeMethod(HttpMethod.QUERY.asString());
 
             compressIncludeMethod(HttpMethod.GET.asString());
             compressIncludeMethod(HttpMethod.POST.asString());
+            compressIncludeMethod(HttpMethod.QUERY.asString());
 
             return this;
         }
