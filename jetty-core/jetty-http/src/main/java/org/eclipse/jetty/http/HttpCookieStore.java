@@ -143,6 +143,13 @@ public interface HttpCookieStore
         {
             // TODO: reject if cookie size is too big?
 
+            boolean secure = HttpScheme.isSecure(uri.getScheme());
+
+            // RFC 6265bis, section 5.7, a cookie with the Secure
+            // attribute must be received over a secure connection.
+            if (cookie.isSecure() && !secure)
+                return false;
+
             // Validate cookie name prefixes (RFC 6265bis).
             if (!validateCookiePrefix(uri, cookie))
                 return false;
@@ -162,6 +169,11 @@ public interface HttpCookieStore
             lock.writeLock().lock();
             try
             {
+                // RFC 6265bis, section 5.7, a cookie received over a
+                // non-secure connection must not overlay a Secure cookie.
+                if (!secure && overlaysSecureCookie(storedCookie))
+                    return false;
+
                 String key = resolvedDomain.toLowerCase(Locale.ENGLISH);
                 cookies.compute(key, (k, v) ->
                 {
@@ -239,6 +251,39 @@ public interface HttpCookieStore
                 }
             }
             return resolvedPath;
+        }
+
+        /**
+         * <p>Returns whether the given cookie, received over a non-secure
+         * connection, would overlay an existing cookie with the {@code Secure}
+         * attribute, as defined in RFC 6265bis, section 5.7.</p>
+         * <p>The existing cookie must have the same name, its domain must
+         * domain-match the domain of the given cookie or vice-versa, and the
+         * path of the given cookie must path-match the path of the existing
+         * cookie; the path comparison is not symmetric, so a non-secure cookie
+         * for a parent path does not overlay a secure cookie for a sub-path.</p>
+         *
+         * @param cookie the cookie received over a non-secure connection
+         * @return whether the cookie would overlay an existing secure cookie
+         */
+        private boolean overlaysSecureCookie(StoredHttpCookie cookie)
+        {
+            String name = cookie.getName();
+            for (List<StoredHttpCookie> stored : cookies.values())
+            {
+                for (StoredHttpCookie existing : stored)
+                {
+                    if (!existing.isSecure() || existing.isExpired())
+                        continue;
+                    if (!existing.getName().equals(name))
+                        continue;
+                    if (!isSameOrSubDomain(existing.domain, cookie.domain) && !isSameOrSubDomain(cookie.domain, existing.domain))
+                        continue;
+                    if (pathMatches(cookie.path, existing.path))
+                        return true;
+                }
+            }
+            return false;
         }
 
         /**
