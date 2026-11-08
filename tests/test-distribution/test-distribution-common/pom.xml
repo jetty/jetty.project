@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-distribution</artifactId>
-    <version>12.1.10-SNAPSHOT</version>
+    <version>12.1.15-SNAPSHOT</version>
   </parent>
   <artifactId>test-distribution-common</artifactId>
   <packaging>jar</packaging>
@@ -17,6 +17,8 @@
     <!--    <junit.jupiter.execution.parallel.enabled>false</junit.jupiter.execution.parallel.enabled>-->
     <junit.jupiter.execution.parallel.config.dynamic.factor>0.4</junit.jupiter.execution.parallel.config.dynamic.factor>
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
+    <!-- Keep in step with log4j.version in jetty-core-home logging-log4j1.mod -->
+    <log4j1.version>1.2.17</log4j1.version>
     <!--    <junit.jupiter.execution.parallel.config.strategy>fixed</junit.jupiter.execution.parallel.config.strategy>-->
     <testcontainers-keycloak.version>3.9.1</testcontainers-keycloak.version>
   </properties>
@@ -63,11 +65,11 @@
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-transport-file</artifactId>
+      <artifactId>maven-resolver-transport-apache</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-transport-http</artifactId>
+      <artifactId>maven-resolver-transport-file</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
@@ -356,13 +358,19 @@
 
   <build>
     <plugins>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <!-- we want to be sure all dependencies are available in the local repo -->
+            <!--
+              Prime the local repository with the third-party artifacts referenced by the
+              bundled modules' [files] sections, so DistributionTests.testValidateModules can
+              resolve every maven:// reference via a HEAD/local-repo check without downloading.
+              IMPORTANT: when a bundled module adds a new maven:// [files] coordinate (or bumps
+              a version), mirror it here (keeping the version property in step), otherwise
+              testValidateModules fails - especially offline - with "[files] Does not exist".
+            -->
             <id>copy-fake-deps</id>
             <goals>
               <goal>copy</goal>
@@ -420,6 +428,21 @@
                   <artifactId>native-windows-x86_64</artifactId>
                   <version>${brotli4j.version}</version>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>org.slf4j</groupId>
+                  <artifactId>slf4j-reload4j</artifactId>
+                  <version>${slf4j.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.slf4j</groupId>
+                  <artifactId>log4j-over-slf4j</artifactId>
+                  <version>${slf4j.version}</version>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>log4j</groupId>
+                  <artifactId>log4j</artifactId>
+                  <version>${log4j1.version}</version>
+                </artifactItem>
               </artifactItems>
               <outputDirectory>${project.build.directory}/fake-deps</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
@@ -458,8 +481,48 @@
           </systemPropertyVariables>
         </configuration>
       </plugin>
-
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>enable-jna</id>
+      <activation>
+        <jdk>[17,22)</jdk>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.eclipse.jetty.quic</groupId>
+          <artifactId>jetty-quic-quiche-jna</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>enable-foreign</id>
+      <activation>
+        <jdk>[22,)</jdk>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.eclipse.jetty.quic</groupId>
+          <artifactId>jetty-quic-quiche-foreign</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <argLine>@{argLine}
+                ${jetty.surefire.argLine}
+                --enable-native-access=org.eclipse.jetty.quic.quiche.foreign</argLine>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

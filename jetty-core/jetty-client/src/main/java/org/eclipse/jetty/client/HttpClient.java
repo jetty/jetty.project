@@ -129,6 +129,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     private boolean followRedirects = true;
     private int maxConnectionsPerDestination = 64;
     private int maxRequestsQueuedPerDestination = 1024;
+    private int maxDestinations = -1;
     private int requestBufferSize = 4096;
     private int maxRequestHeadersSize = 8192;
     private int responseBufferSize = 16384;
@@ -500,6 +501,13 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         return new HttpRequest(this, conversation, uri);
     }
 
+    /**
+     * Returns the destination, creating it if absent, for the given request
+     *
+     * @param request the request
+     * @return the destination for the request
+     * @throws IllegalStateException if maxDestinations is exceeded
+     */
     public Destination resolveDestination(Request request)
     {
         HttpClientTransport transport = getHttpClientTransport();
@@ -525,10 +533,11 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     }
 
     /**
-     * <p>Returns, creating it if absent, the destination with the given origin.</p>
+     * Returns the destination, creating it if absent, with the given origin.
      *
      * @param origin the origin that identifies the destination
      * @return the destination for the given origin
+     * @throws IllegalStateException if maxDestinations is exceeded
      */
     public Destination resolveDestination(Origin origin)
     {
@@ -536,6 +545,9 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         {
             if (v == null || v.stale())
             {
+                if (maxDestinations > 0 && destinations.size() == maxDestinations)
+                    throw new IllegalStateException("Max destinations exceeded");
+
                 HttpDestination newDestination = (HttpDestination)getHttpClientTransport().newDestination(k);
                 // Start the destination before it's published to other threads.
                 addManaged(newDestination);
@@ -935,6 +947,27 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
     public void setMaxConnectionsPerDestination(int maxConnectionsPerDestination)
     {
         this.maxConnectionsPerDestination = maxConnectionsPerDestination;
+    }
+
+    /**
+     * @return the max number of destinations that this HttpClient manages
+     */
+    @ManagedAttribute("The max number of destinations for this client")
+    public int getMaxDestinations()
+    {
+        return maxDestinations;
+    }
+
+    /**
+     * Sets the max number of destinations for this client.
+     * <p>
+     * When the max is reached and a new destination is added, IllegalStateException is thrown.
+     *
+     * @param maxDestinations the max number of destinations that this HttpClient manages
+     */
+    public void setMaxDestinations(int maxDestinations)
+    {
+        this.maxDestinations = maxDestinations;
     }
 
     /**

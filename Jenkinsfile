@@ -13,15 +13,16 @@ pipeline {
   stages {
     stage("Parallel Stage") {
       parallel {
-        stage("Build / Test - JDK21") {
-          agent { node { label 'linux' } }
+        stage("Build / Test - JDK21 (LTS)") {
+          agent { node { label 'linux-dind' } }
+          when { beforeAgent true; expression { isReleaseLine() } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               script{
                 properties([buildDiscarder(logRotator(artifactNumToKeepStr: '5', numToKeepStr: env.BRANCH_NAME=='jetty-12.1.x'?'60':'5'))])
               }
               checkout scm
-              mavenBuild( "jdk21", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              mavenBuild( "jdk21", "clean install -Ptck -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
               recordIssues id: "jdk21", name: "Static Analysis jdk21", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
@@ -29,30 +30,38 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK25") {
-          agent { node { label 'linux' } }
+        stage("Build / Test - JDK25 (LTS)") {
+          agent { node { label 'linux-dind' } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk25", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk25", name: "Static Analysis jdk25", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
+              mavenBuild( "jdk25", "clean install -Ptck -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              script {
+                // Skip publishing static-analysis warnings on PRs (and other non-release
+                // branches); the full matrix on release lines records them instead.
+                if (isReleaseLine()) {
+                  recordIssues id: "jdk25", name: "Static Analysis jdk25", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
+                }
+              }
             }
           }
         }
 
-        stage("Build / Test - JDK26") {
-          agent { node { label 'linux' } }
+        stage("Build / Test - JDK27") {
+          agent { node { label 'linux-dind' } }
+          when { beforeAgent true; expression { isReleaseLine() } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk26", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-              recordIssues id: "jdk26", name: "Static Analysis jdk26", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
+              mavenBuild( "jdk27", "clean install -Ptck -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+              recordIssues id: "jdk27", name: "Static Analysis jdk27", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), javaDoc()]
             }
           }
         }
 
         stage("Build / Test - JDK22 Javadoc") {
           agent { node { label 'linux-light' } }
+          when { beforeAgent true; expression { isReleaseLine() } }
           steps {
             timeout( time: 180, unit: 'MINUTES' ) {
               checkout scm
@@ -70,12 +79,13 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK17") {
-          agent { node { label 'linux' } }
+        stage("Build / Test - JDK17 (LTS)") {
+          agent { node { label 'linux-dind' } }
+          when { beforeAgent true; expression { isReleaseLine() } }
           steps {
             timeout( time: 210, unit: 'MINUTES' ) {
               checkout scm
-              mavenBuild( "jdk17", "clean install -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
+              mavenBuild( "jdk17", "clean install -Ptck -Dspotbugs.skip=true", "maven3") // javadoc:javadoc
               recordIssues id: "analysis-jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true,
                             tools: [mavenConsole(), java(), javaDoc()],
                             skipPublishingChecks: true, skipBlames: true
@@ -148,11 +158,11 @@ def mavenBuild(jdk, cmdline, mvnName) {
           def buildCache = useBuildCache()
           if (buildCache) {
             echo "Using build cache"
-            extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred  "
+            extraArgs = " -Dmaven.build.cache.restoreGeneratedSources=false -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred -Dmaven.repository.credentialScope=id"
           } else {
             // when not using cache
             echo "Not using build cache"
-            extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.skipCache=true -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred "
+            extraArgs = " -Dmaven.test.failure.ignore=true -Dmaven.build.cache.skipCache=true -Dmaven.build.cache.remote.url=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-build-cache -Dmaven.build.cache.remote.enabled=true -Dmaven.build.cache.remote.save.enabled=true -Dmaven.build.cache.remote.server.id=nexus-cred -Dmaven.repository.credentialScope=id"
           }
           if (env.BRANCH_NAME ==~ /PR-\d+/) {
             if (pullRequest.labels.contains("build-all-tests")) {
@@ -163,9 +173,11 @@ def mavenBuild(jdk, cmdline, mvnName) {
           if(useEclipseDash()) {
             dashProfile = " -Peclipse-dash "
           }
-          sh "mkdir ~/.mimir"
-          sh "cp jenkins-mimir-daemon.properties ~/.mimir/daemon.properties"
-          sh "mvn $extraArgs $dashProfile -s $GLOBAL_MVN_SETTINGS -Dsettings.path=$GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
+          // Pull the gcloud emulator image through the local Nexus proxy instead of gcr.io. A
+          // registry mirror cannot do this: dockerd only consults a mirror for Docker Hub.
+          def gcloudImage = " -Dgcloud.docker.image.name=nexus-service.nexus.svc.cluster.local:8082/google.com/cloudsdktool/cloud-sdk "
+          // fork PRs run this Jenkinsfile from the base branch, so the file may already be gone
+          sh "mvn $extraArgs $dashProfile $gcloudImage -s $GLOBAL_MVN_SETTINGS -Dsettings.path=$GLOBAL_MVN_SETTINGS -DsettingsPath=$GLOBAL_MVN_SETTINGS -Dmaven.repo.uri=http://nexus-service.nexus.svc.cluster.local:8081/repository/maven-public/ -ntp -Dmaven.repo.local=.repository -Pci -V -B -e -U $cmdline"
           if(saveHome()) {
             archiveArtifacts artifacts: ".repository/org/eclipse/jetty/jetty-home/**/jetty-home-*", allowEmptyArchive: true, onlyIfSuccessful: false
           }
@@ -175,6 +187,8 @@ def mavenBuild(jdk, cmdline, mvnName) {
     finally
     {
       junit testResults: '**/target/surefire-reports/TEST**.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
+      // thread dumps written by Surefire when a forked JVM had to be killed on timeout
+      archiveArtifacts artifacts: '**/target/jstacks/*.txt', allowEmptyArchive: true, onlyIfSuccessful: false, fingerprint: false
     }
   }
 }
@@ -209,6 +223,16 @@ def saveHome() {
 
 def isMainBranch() {
   return (env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x' || env.BRANCH_NAME == 'jetty-12.0.x' || env.BRANCH_NAME == 'jetty-12.1.x')
+}
+
+/**
+ * The release lines that build the full JDK matrix. Every other build (PRs and all
+ * other branches) runs only the latest-LTS stage (JDK25), which has no `when` guard.
+ */
+def isReleaseLine() {
+  return (env.BRANCH_NAME == 'jetty-12.0.x' ||
+          env.BRANCH_NAME == 'jetty-12.1.x' ||
+          env.BRANCH_NAME == 'jetty-13.0.x')
 }
 
 def websiteBuild() {

@@ -395,9 +395,9 @@ public class ServletApiResponse implements HttpServletResponse
         if (isCommitted())
             return;
 
+        getServletChannel().getHttpOutput().setApplicationContentLength(len);
         if (len >= 0)
         {
-            getServletChannel().getHttpOutput().setApplicationContentLength(len);
             if (len > 0)
                 getResponse().getHeaders().put(HttpHeader.CONTENT_LENGTH, len);
             else
@@ -647,8 +647,7 @@ public class ServletApiResponse implements HttpServletResponse
         @Override
         public boolean isPartitioned()
         {
-            String value = getAttributes().get(HttpCookie.PARTITIONED_ATTRIBUTE);
-            return value != null && !StringUtil.asciiEqualsIgnoreCase("false", value);
+            return HttpCookie.isAttributeTrue(getAttributes().get(HttpCookie.PARTITIONED_ATTRIBUTE));
         }
 
         @Override

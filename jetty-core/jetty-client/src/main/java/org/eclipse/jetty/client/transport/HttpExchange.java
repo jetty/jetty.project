@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client.transport;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.io.CyclicTimeouts;
@@ -245,6 +247,27 @@ public class HttpExchange implements CyclicTimeouts.Expirable
 
     public void abort(Throwable failure, Promise<Boolean> promise)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Failing {}", this, failure);
+        abort(failure, failure, promise);
+    }
+
+    void abortRequest(Throwable failure, Promise<Boolean> promise)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Failing {}", getRequest(), failure);
+        abort(failure, null, promise);
+    }
+
+    void abortResponse(Throwable failure, Promise<Boolean> promise)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Failing {}", getResponse(), failure);
+        abort(null, failure, promise);
+    }
+
+    private void abort(Throwable requestFailure, Throwable responseFailure, Promise<Boolean> promise)
+    {
         // Atomically change the state of this exchange to be completed.
         // This will avoid that this exchange can be associated to a channel.
         HttpChannel channel;
@@ -253,8 +276,8 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         try (AutoLock ignored = lock.lock())
         {
             channel = _channel;
-            abortRequest = lockedCompleteRequest(failure);
-            abortResponse = lockedCompleteResponse(failure);
+            abortRequest = requestFailure != null && lockedCompleteRequest(requestFailure);
+            abortResponse = responseFailure != null && lockedCompleteResponse(responseFailure);
         }
 
         if (!abortRequest && !abortResponse)
@@ -264,7 +287,7 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Failed {}: req={}/rsp={}", this, abortRequest, abortResponse, failure);
+            LOG.debug("Failing {}: req={}/rsp={}", this, abortRequest, abortResponse);
 
         // We failed this exchange, deal with it.
 
@@ -276,15 +299,15 @@ public class HttpExchange implements CyclicTimeouts.Expirable
             // This may eventually complete the request,
             // and if the response is already completed
             // also invoke the Response.CompleteListeners.
-            body.fail(failure);
+            body.fail(requestFailure);
         }
 
         // Case #1: exchange was in the destination queue.
         if (destination.remove(this))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Aborting while queued {}", this, failure);
-            notifyFailureComplete(failure);
+                LOG.debug("Aborting while queued {}", this);
+            notifyFailureComplete(Objects.requireNonNullElse(requestFailure, responseFailure));
             promise.succeeded(true);
             return;
         }
@@ -293,16 +316,16 @@ public class HttpExchange implements CyclicTimeouts.Expirable
         {
             // Case #2: exchange was not yet associated.
             if (LOG.isDebugEnabled())
-                LOG.debug("Aborting before association {}", this, failure);
-            notifyFailureComplete(failure);
+                LOG.debug("Aborting before association {}", this);
+            notifyFailureComplete(requestFailure);
             promise.succeeded(true);
             return;
         }
 
         // Case #3: exchange was already associated.
         if (LOG.isDebugEnabled())
-            LOG.debug("Aborting while active {}", this, failure);
-        channel.abort(this, abortRequest ? failure : null, abortResponse ? failure : null, promise);
+            LOG.debug("Aborting while active {}", this);
+        channel.abort(this, abortRequest ? requestFailure : null, abortResponse ? responseFailure : null, promise);
     }
 
     private void notifyFailureComplete(Throwable failure)

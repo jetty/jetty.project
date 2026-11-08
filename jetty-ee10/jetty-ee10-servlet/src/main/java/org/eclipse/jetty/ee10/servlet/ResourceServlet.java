@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.InvalidPathException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -62,6 +61,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +78,7 @@ import org.slf4j.LoggerFactory;
  *   <dd>
  *     The root directory to look for static resources. Defaults to the context's baseResource. Relative URI
  *     are {@link Resource#resolve(String) resolved} against the context's {@link ServletContextHandler#getBaseResource()}
- *     base resource, all other values are resolved using {@link ServletContextHandler#newResource(String)}.
+ *     base resource.
  *   </dd>
  *   <dt>cacheControl</dt>
  *   <dd>
@@ -233,9 +233,10 @@ public class ResourceServlet extends HttpServlet
         {
             try
             {
-                baseResource = URIUtil.isRelative(rb) ? baseResource.resolve(rb) :  contextHandler.newResource(rb);
+                ResourceFactory resourceFactory = ResourceFactory.of(contextHandler);
+                baseResource = URIUtil.isRelative(rb) ? baseResource.resolve(rb) : resourceFactory.newResource(rb);
                 if (baseResource.isAlias())
-                    baseResource = contextHandler.newResource(baseResource.getRealURI());
+                    baseResource = resourceFactory.newResource(baseResource.getRealURI());
             }
             catch (Exception e)
             {
@@ -556,23 +557,8 @@ public class ResourceServlet extends HttpServlet
                     ? servletChannel.getRequest()
                     : ServletCoreRequest.wrap(httpServletRequest);
 
-                // If the servlet response has been wrapped and has been written to,
-                // then the servlet response must be wrapped as a core response
-                // otherwise we can use the core response directly.
-                boolean writingOrStreaming = servletContextResponse.isWritingOrStreaming();
-                boolean useServletResponse = !(httpServletResponse instanceof ServletApiResponse) || writingOrStreaming;
-                Response r = useServletResponse
-                    ? new ServletCoreResponse(coreRequest, httpServletResponse, included)
-                    : servletChannel.getResponse();
-                // Ignore last writes done via the Core API as the ServletChannel will perform the last write upon completion.
-                Response coreResponse = new Response.Wrapper(coreRequest, r)
-                {
-                    @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-                    {
-                        super.write(false, byteBuffer, callback);
-                    }
-                };
+                // Always wrap the response so that we can re-use bypass logic there.
+                Response coreResponse = new ServletCoreResponse(coreRequest, httpServletResponse, included);
 
                 // If the core response is already committed then do nothing more
                 if (coreResponse.isCommitted())
@@ -586,7 +572,7 @@ public class ResourceServlet extends HttpServlet
                 long contentLength = content.getContentLengthValue();
 
                 // If the response is already written, then don't set the content-length.
-                if (writingOrStreaming)
+                if (servletContextResponse.isWritingOrStreaming())
                     content = new UnknownLengthHttpContent(content);
 
                 // The character encoding may be forced
@@ -600,16 +586,28 @@ public class ResourceServlet extends HttpServlet
                 {
                     // send the content asynchronously
                     AsyncContext asyncContext;
+                    boolean startedHere;
                     if (httpServletRequest.isAsyncStarted())
                     {
                         asyncContext = httpServletRequest.getAsyncContext();
+                        startedHere = false;
                     }
                     else
                     {
                         asyncContext = httpServletRequest.startAsync();
                         asyncContext.setTimeout(0);
+                        startedHere = true;
                     }
-                    Callback callback = new AsyncContextCallback(asyncContext, httpServletResponse);
+                    Callback callback = new AsyncContextCallback(httpServletResponse)
+                    {
+                        @Override
+                        protected void complete()
+                        {
+                            if (startedHere)
+                                asyncContext.complete();
+                        }
+                    };
+
                     _resourceService.doGet(coreRequest, coreResponse, callback, content);
                 }
                 else
@@ -997,21 +995,19 @@ public class ResourceServlet extends HttpServlet
         EXACT
     }
 
-    private static class AsyncContextCallback implements Callback
+    private abstract static class AsyncContextCallback implements Callback
     {
-        private final AsyncContext _asyncContext;
         private final HttpServletResponse _response;
 
-        private AsyncContextCallback(AsyncContext asyncContext, HttpServletResponse response)
+        private AsyncContextCallback(HttpServletResponse response)
         {
-            _asyncContext = asyncContext;
             _response = response;
         }
 
         @Override
         public void succeeded()
         {
-            _asyncContext.complete();
+            complete();
         }
 
         @Override
@@ -1020,7 +1016,7 @@ public class ResourceServlet extends HttpServlet
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("AsyncContextCallback failed {}", _asyncContext, x);
+                    LOG.debug("AsyncContextCallback failed for response {}", _response, x);
                 // It is known that this callback is only failed if the response is already committed,
                 // thus we can only abort the response here.
                 _response.sendError(-1);
@@ -1031,10 +1027,12 @@ public class ResourceServlet extends HttpServlet
             }
             finally
             {
-                _asyncContext.complete();
+                complete();
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("Async get failed", x);
         }
+
+        protected abstract void complete();
     }
 }

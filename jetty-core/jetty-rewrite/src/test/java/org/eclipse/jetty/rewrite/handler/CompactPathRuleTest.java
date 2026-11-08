@@ -16,6 +16,8 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Properties;
@@ -30,12 +32,15 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -200,5 +205,50 @@ public class CompactPathRuleTest extends AbstractRuleTest
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus());
+    }
+
+    @Test
+    public void testCompactPathPreservesViolations() throws Exception
+    {
+        _httpConfig.setUriCompliance(UriCompliance.UNSAFE);
+        CompactPathRule rule = new CompactPathRule();
+        rule.setPreserveViolations(true);
+        _rewriteHandler.addRule(rule);
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                try (StringWriter writer = new StringWriter();
+                     PrintWriter out = new PrintWriter(writer))
+                {
+                    java.util.Collection<UriCompliance.Violation> violations = request.getHttpURI().getViolations();
+                    out.printf("UriCompliance.Violations.size=%d%n", violations.size());
+                    for (UriCompliance.Violation violation: violations)
+                    {
+                        out.printf("Violation: %s: %s%n", violation.getName(), violation.getDescription());
+                    }
+                    Content.Sink.write(response, true, writer.getBuffer().toString(), callback);
+                }
+                catch (IOException e)
+                {
+                    callback.failed(e);
+                }
+                return true;
+            }
+        });
+
+        String request = """
+            GET /bar/%2e%2e/foo HTTP/1.1
+            Host: localhost
+            
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertThat(response.getContent(),
+            allOf(containsString("UriCompliance.Violations.size=1"),
+                containsString("Violation: AMBIGUOUS_PATH_SEGMENT: Ambiguous URI path segment"))
+        );
     }
 }

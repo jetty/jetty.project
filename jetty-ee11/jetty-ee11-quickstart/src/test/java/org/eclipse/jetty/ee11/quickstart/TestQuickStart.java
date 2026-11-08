@@ -14,8 +14,12 @@
 package org.eclipse.jetty.ee11.quickstart;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Locale;
 
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee11.servlet.FilterHolder;
 import org.eclipse.jetty.ee11.servlet.ListenerHolder;
 import org.eclipse.jetty.ee11.servlet.ServletHolder;
@@ -23,12 +27,17 @@ import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.CombinedResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * TestQuickStart
  */
+@Isolated
 public class TestQuickStart
 {
     Server server;
@@ -47,6 +57,8 @@ public class TestQuickStart
     public void setUp()
     {
         server = new Server();
+        FooContextListener.___initialized = 0;
+        FooContextListener.__destroyed = 0;
     }
     
     @AfterEach
@@ -151,6 +163,44 @@ public class TestQuickStart
         assertTrue(webapp.isContextPathDefault());
     }
     
+    @ParameterizedTest
+    @ValueSource(strings = {"en-US", "ar-EG-u-nu-arab"})
+    public void testSchemaLocationDoesNotDependOnDefaultLocale(String languageTag) throws Exception
+    {
+        File testDir = MavenTestingUtils.getTargetTestingDir("schemaLocation-" + languageTag);
+        FS.ensureEmpty(testDir);
+        File webInf = new File(testDir, "WEB-INF");
+        FS.ensureDirExists(webInf);
+
+        File quickstartXml = new File(webInf, "quickstart-web.xml");
+        assertFalse(quickstartXml.exists());
+
+        // generate a quickstart-web.xml
+        WebAppContext quickstart = new WebAppContext();
+        quickstart.setBaseResourceAsPath(testDir.toPath());
+        quickstart.addConfiguration(new QuickStartConfiguration());
+        quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
+        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        server.setHandler(quickstart);
+        server.setDryRun(true);
+
+        // The Arabic-Egyptian locale with Arabic digits does not format numbers using the ascii characters 0-9,
+        // if it was used the schema location would contain web-app_٦_١.xsd for instance.
+        Locale defaultLocale = Locale.getDefault();
+        try
+        {
+            Locale.setDefault(Locale.forLanguageTag(languageTag));
+            server.start();
+        }
+        finally
+        {
+            Locale.setDefault(defaultLocale);
+        }
+
+        assertTrue(quickstartXml.exists());
+        assertThat(Files.readString(quickstartXml.toPath()), Matchers.containsString("xsi:schemaLocation=\"https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd\""));
+    }
+
     @Test
     public void testDefaultRequestAndResponseEncodings() throws Exception
     {
@@ -285,5 +335,59 @@ public class TestQuickStart
         assertNotNull(listeners);
         assertEquals(1,
             Arrays.stream(listeners).filter(l -> "org.eclipse.jetty.ee11.quickstart.FooContextListener".equals(l.getClassName())).count());
+    }
+
+    @Test
+    public void testQuickStartWithCombinedBaseResource() throws Exception
+    {
+        // Split the web content across two directories, presented to the webapp
+        // as a single combined base resource:
+        //   contentDir - holds the generated WEB-INF/quickstart-web.xml
+        //   overlayDir - holds an extra static resource
+        Path testDir = MavenTestingUtils.getTargetTestingPath("combinedbase");
+        FS.ensureEmpty(testDir);
+        Path contentDir = testDir.resolve("content");
+        Path overlayDir = testDir.resolve("overlay");
+        FS.ensureDirExists(contentDir.resolve("WEB-INF"));
+        FS.ensureDirExists(overlayDir);
+        Files.writeString(overlayDir.resolve("hello.txt"), "Hello");
+
+        // One combined resource used as the base resource for both generation and quickstart.
+        Resource base = ResourceFactory.combine(
+            ResourceFactory.root().newResource(contentDir),
+            ResourceFactory.root().newResource(overlayDir));
+
+        Path quickstartXml = contentDir.resolve("WEB-INF/quickstart-web.xml");
+        assertFalse(Files.exists(quickstartXml));
+
+        // Generate quickstart-web.xml from web.xml; it is written into contentDir/WEB-INF.
+        WebAppContext quickstart = new WebAppContext();
+        quickstart.setBaseResource(base);
+        quickstart.addConfiguration(new QuickStartConfiguration());
+        quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
+        quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
+        quickstart.setDescriptor(MavenTestingUtils.getTestResourceFile("web.xml").getAbsolutePath());
+        server.setHandler(quickstart);
+        server.setDryRun(true);
+        server.start();
+        assertTrue(Files.exists(quickstartXml));
+
+        // Run in QUICKSTART mode using the same combined base resource.
+        WebAppContext webapp = new WebAppContext();
+        webapp.setBaseResource(base);
+        webapp.addConfiguration(new QuickStartConfiguration());
+        webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
+        server.setHandler(webapp);
+        server.setDryRun(false);
+        server.start();
+
+        // The base resource is a combined resource.
+        assertThat(webapp.getBaseResource(), Matchers.instanceOf(CombinedResource.class));
+        // The quickstart-web.xml was applied (default-context-path comes from web.xml).
+        assertEquals("/thisIsTheDefault", webapp.getContextPath());
+        // Content from both overlayed directories is visible through the combined base.
+        ServletContext servletContext = webapp.getServletContext();
+        assertNotNull(servletContext.getResource("/WEB-INF/quickstart-web.xml"));
+        assertNotNull(servletContext.getResource("/hello.txt"));
     }
 }

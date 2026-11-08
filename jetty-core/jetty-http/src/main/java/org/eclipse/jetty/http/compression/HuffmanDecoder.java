@@ -61,6 +61,21 @@ public class HuffmanDecoder
             while (_bits >= 8)
             {
                 int i = (_current >>> (_bits - 8)) & 0xFF;
+
+                // Fast path: at the root, most symbols of real header text have
+                // a code of 8 bits or fewer, so the next 8 bits decode one with
+                // a single load.
+                if (_node == 0)
+                {
+                    int fast = Huffman.FAST_ROOT[i];
+                    if (fast != 0)
+                    {
+                        _builder.append((byte)fast);
+                        _bits -= fast >>> 8;
+                        continue;
+                    }
+                }
+
                 _node = Huffman.tree[_node * 256 + i];
                 if (rowbits[_node] != 0)
                 {

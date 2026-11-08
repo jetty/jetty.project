@@ -31,6 +31,7 @@ public class RewritePatternRule extends PatternRule
 
     private String _path;
     private String _query;
+    private boolean _preserveViolations = false;
 
     public RewritePatternRule()
     {
@@ -40,6 +41,26 @@ public class RewritePatternRule extends PatternRule
     {
         super(pattern);
         setReplacement(replacement);
+    }
+
+    /**
+     * Flag to preserve original HTTP UriCompliance Violations on any rewritten HTTP URI from this rule.
+     *
+     * @return true to preserve, false to not.
+     */
+    public boolean isPreserveViolations()
+    {
+        return _preserveViolations;
+    }
+
+    /**
+     * Flag to preserve original HTTP UriCompliance Violations on any rewritten HTTP URI from this rule.
+     *
+     * @param preserveViolations true to preserve, false to not.
+     */
+    public void setPreserveViolations(boolean preserveViolations)
+    {
+        this._preserveViolations = preserveViolations;
     }
 
     /**
@@ -68,10 +89,12 @@ public class RewritePatternRule extends PatternRule
         HttpURI httpURI = input.getHttpURI();
         String newQuery = URIUtil.addQueries(httpURI.getQuery(), _query);
         String newPath = URIUtil.addPaths(_path, ServletPathSpec.pathInfo(getPattern(), httpURI.getPath()));
-        HttpURI newURI = HttpURI.build(httpURI, newPath, httpURI.getParam(), newQuery);
+        HttpURI.Mutable uriBuilder = HttpURI.build(httpURI, newPath, httpURI.getParam(), newQuery);
+        if (isPreserveViolations())
+            uriBuilder.addViolations(input.getHttpURI().getViolations());
         if (LOG.isDebugEnabled())
-            LOG.debug("rewriting {} to {}", httpURI, newURI);
-        return new HttpURIHandler(input, newURI);
+            LOG.debug("rewriting {} to {}", httpURI, uriBuilder);
+        return new HttpURIHandler(input, uriBuilder.asImmutable());
     }
 
     @Override

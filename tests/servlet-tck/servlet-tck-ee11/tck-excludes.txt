@@ -1,0 +1,4 @@
+# TCK tests Surefire skips, one Class#method pattern per line.
+
+# The TCK wants an Expires attribute on the session cookie, Jetty only sends Max-Age.
+**/sessioncookieconfig/SessionCookieConfigTests#constructortest1

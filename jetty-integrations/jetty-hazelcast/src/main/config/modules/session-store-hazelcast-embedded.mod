@@ -13,14 +13,14 @@ session-store
 sessions
 
 [files]
-maven://com.hazelcast/hazelcast/${hazelcast.version}|lib/hazelcast/hazelcast-${hazelcast.version}.jar
+maven://com.hazelcast/hazelcast/${hazelcast.version}|lib/support/hazelcast-${hazelcast.version}.jar
 
 [xml]
 etc/sessions/hazelcast/default.xml
 
 [lib]
 lib/jetty-hazelcast-${jetty.version}.jar
-lib/hazelcast/hazelcast-${hazelcast.version}.jar
+lib/support/hazelcast-${hazelcast.version}.jar
 
 [ini]
 hazelcast.version?=@hazelcast.version@

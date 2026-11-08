@@ -30,8 +30,8 @@ public class ProxyServer
 
         // Setup proxy handler to handle CONNECT methods
         ConnectHandler proxy = new ConnectHandler();
-//        proxy.setWhite(new String[]{"mail.google.com"});
-//        proxy.addWhitelistHost("www.google.com");
+        // proxy.getHostIncludeExclude().include("mail.google.com");
+        // proxy.getHostIncludeExclude().include("www.google.com");
         server.setHandler(proxy);
 
         // Setup proxy servlet

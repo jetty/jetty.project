@@ -86,7 +86,12 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
         data.release();
 
-        if (stream.isReset())
+        if (getHttpChannel().isLastDataReceived())
+        {
+            responseSuccess(null);
+            return Content.Chunk.EOF;
+        }
+        else if (stream.isReset())
         {
             Throwable failure = new EOFException("Stream has been reset");
             responseFailure(failure, Promise.noop());
@@ -94,8 +99,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         }
         else
         {
-            responseSuccess(null);
-            return Content.Chunk.EOF;
+            return Content.Chunk.from(new IllegalStateException("Last data mismatch"));
         }
     }
 
@@ -256,7 +260,13 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
         int error = frame.getError();
         IOException failure = new IOException(ErrorCode.toString(error, "reset_code_" + error));
-        Runnable task = () -> callback.completeWith(exchange.getRequest().abort(failure));
+
+        boolean lastDataReceived = getHttpChannel().isLastDataReceived();
+        Runnable task = () ->
+        {
+            var completable = lastDataReceived ? exchange.getRequest().fail(failure) : exchange.getRequest().abort(failure);
+            callback.completeWith(completable);
+        };
         return Invocable.from(getHttpConnection().getInvocationType(), task);
     }
 

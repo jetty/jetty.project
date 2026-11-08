@@ -35,7 +35,7 @@ etc/jetty-ee8-deploy.xml
 # jetty.deploy.configurationClasses=
 
 ## Pattern to select jars from the container classloader to be scanned (or null to scan no jars)
-# jetty.deploy.containerScanJarPattern=.*/jetty-servlet-api-[^/]*\.jar$|.*/javax.servlet.jsp.jstl-.*\.jar$
+# jetty.deploy.containerScanJarPattern=.*/jetty-servlet-api-[^/]*\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\.jar$|.*jsp.jstl-[^/]*\.jar$
 
 ## Pattern to select jars from the container classloader to be scanned (or null to scan all jars).
 # jetty.deploy.webInfScanJarPattern=

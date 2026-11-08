@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
@@ -106,6 +107,23 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
         _compliance = compliance;
         _listener = listener;
         _secondaryOrdering = secondaryOrdering == null ? s -> 0 : secondaryOrdering;
+    }
+
+    /**
+     * Orders values with equal quality with the given function.
+     *
+     * @param httpFields the {@link HttpFields} instance to extract the {@link ComplianceViolation.Mode} and {@link ComplianceViolation.Listener}.
+     * @param secondaryOrdering Function to apply an ordering other than specified by quality, highest values are sorted first.
+     */
+    public QuotedQualityCSV(HttpFields httpFields, ToIntFunction<String> secondaryOrdering)
+    {
+        this(MutableHttpFields.copyHttpCompliance(httpFields), extractComplianceViolationListener(httpFields), secondaryOrdering);
+    }
+
+    private static ComplianceViolation.Listener extractComplianceViolationListener(HttpFields httpFields)
+    {
+        Supplier<ComplianceViolation.Listener> supplier = MutableHttpFields.copyComplianceListener(httpFields);
+        return (supplier != null) ? supplier.get() : null;
     }
 
     private QuotedQualityCSV(ComplianceViolation.Mode compliance, ComplianceViolation.Listener listener, List<String> preferredOrder)

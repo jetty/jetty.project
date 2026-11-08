@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New class="org.eclipse.jetty.server.handler.MinimumDataRateHandler">
+        <Arg type="long">
+          <Property name="jetty.minDataRate.minReadRate" default="0" />
+        </Arg>
+        <Arg type="long">
+          <Property name="jetty.minDataRate.minWriteRate" default="0" />
+        </Arg>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

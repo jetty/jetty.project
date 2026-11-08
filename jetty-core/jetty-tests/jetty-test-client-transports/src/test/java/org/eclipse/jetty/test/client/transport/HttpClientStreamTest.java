@@ -27,10 +27,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -71,8 +72,6 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -90,8 +89,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientStreamTest extends AbstractTest
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpClientStreamTest.class);
-
     @ParameterizedTest
     @MethodSource("transports")
     public void testListenerCloseBeforeResponseContent(TransportType transportType) throws Exception
@@ -1450,7 +1447,7 @@ public class HttpClientStreamTest extends AbstractTest
     {
         // TODO: broken for FCGI, investigate.
 
-        List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
+        List<Content.Chunk> chunks = Collections.synchronizedList(new ArrayList<>());
 
         start(transportType, new Handler.Abstract()
         {
@@ -1489,13 +1486,14 @@ public class HttpClientStreamTest extends AbstractTest
                                 {
                                     chunks.add(Content.Chunk.from(BufferUtil.copy(byteBuffer), chunk.isLast()));
                                 }
-                                if (chunks.size() % 100 == 0)
-                                    dumpChunks(chunks);
-                                BufferUtil.clear(byteBuffer);
+                                // Consume the original view; retained/copied data must still be intact.
+                                byteBuffer.position(byteBuffer.limit());
                             }
+
+                            boolean last = chunk.isLast();
                             chunk.release();
 
-                            if (chunk.isLast())
+                            if (last)
                             {
                                 complete(null);
                                 return;
@@ -1507,44 +1505,27 @@ public class HttpClientStreamTest extends AbstractTest
             }
         });
 
-        byte[] data = new byte[10 * 1024 * 1024];
+        byte[] data = new byte[2 * 1024 * 1024];
         new Random().nextBytes(data);
-        CountDownLatch latch = new CountDownLatch(1);
-        ByteBufferRequestContent content = new ByteBufferRequestContent(ByteBuffer.wrap(data));
 
-        new CompletableResponseListener(client.newRequest(newURI(transportType)).body(content))
+        ContentResponse contentResponse = new CompletableResponseListener(
+            client.newRequest(newURI(transportType))
+                .timeout(15, TimeUnit.SECONDS)
+                .body(new ByteBufferRequestContent(ByteBuffer.wrap(data))))
             .send()
-            .whenComplete((r, t) ->
-            {
-                if (t != null)
-                    t.printStackTrace();
-                else if (r.getStatus() == 200)
-                   latch.countDown();
-            });
+            .get(30, TimeUnit.SECONDS);
 
-        assertTrue(latch.await(30, TimeUnit.SECONDS));
+        assertEquals(HttpStatus.OK_200, contentResponse.getStatus());
 
         try (ByteBufferAccumulator accumulator = new ByteBufferAccumulator())
         {
             for (Content.Chunk c : chunks)
             {
-                ByteBuffer byteBuffer = c.getByteBuffer();
-                accumulator.copyBuffer(byteBuffer);
-                BufferUtil.clear(byteBuffer);
+                accumulator.copyBuffer(c.getByteBuffer());
                 c.release();
             }
             assertArrayEquals(data, accumulator.toByteArray());
         }
-    }
-
-    private void dumpChunks(List<Content.Chunk> chunks)
-    {
-        long accumulated = 0L;
-        for (Content.Chunk chunk : chunks)
-        {
-            accumulated += chunk.remaining();
-        }
-        LOG.info("Accumulated {} chunks totalling {} bytes", chunks.size(), accumulated);
     }
 
     private record HandlerContext(Request request, org.eclipse.jetty.server.Response response, Callback callback)

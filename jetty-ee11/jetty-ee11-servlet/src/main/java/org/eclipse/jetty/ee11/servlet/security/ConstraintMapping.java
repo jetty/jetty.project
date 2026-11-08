@@ -15,7 +15,9 @@ package org.eclipse.jetty.ee11.servlet.security;
 
 import java.util.Arrays;
 
+import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.security.Constraint;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
 public class ConstraintMapping
@@ -54,6 +56,9 @@ public class ConstraintMapping
      */
     public void setMethod(String method)
     {
+        if (method != null)
+            checkHttpMethodName(method, "Servlet Constraint HTTP Method");
+
         this._method = method;
     }
 
@@ -78,6 +83,12 @@ public class ConstraintMapping
      */
     public void setMethodOmissions(String[] omissions)
     {
+        if (omissions != null)
+        {
+            for (String omission: omissions)
+                checkHttpMethodName(omission, "Servlet Constraint HTTP Method Omission");
+        }
+
         _methodOmissions = omissions;
     }
 
@@ -86,10 +97,24 @@ public class ConstraintMapping
         return _methodOmissions;
     }
 
+    public boolean hasMethodOmissions()
+    {
+        return _methodOmissions != null && _methodOmissions.length > 0;
+    }
+
+    private void checkHttpMethodName(String methodName, String msg)
+    {
+        if (StringUtil.isBlank(methodName))
+            throw new IllegalArgumentException("Blank HTTP Method Name: " + msg);
+        if ("*".equals(methodName))
+            throw new IllegalArgumentException("Invalid HTTP Method Name '*': " + msg);
+        Syntax.requireValidRFC2616Token(methodName, msg);
+    }
+
     @Override
     public String toString()
     {
-        return "%s@%x{%s,%s %s -> %s}".formatted(
+        return "%s@%x{method=%s,omissions=%s,pathSpec=%s -> %s}".formatted(
             TypeUtil.toShortName(getClass()),
             hashCode(),
             _method,

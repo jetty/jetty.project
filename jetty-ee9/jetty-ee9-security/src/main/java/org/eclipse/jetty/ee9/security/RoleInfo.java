@@ -149,12 +149,12 @@ public class RoleInfo
     @Override
     public String toString()
     {
-        return String.format("RoleInfo@%x{%s%s%s%s,%s}",
+        return String.format("RoleInfo@%x{f=%b,c=%b,aa=%b,ar=%b,udc=%s}",
             hashCode(),
-            (_forbidden ? "Forbidden," : ""),
-            (_checked ? "Checked," : ""),
-            (_isAnyAuth ? "AnyAuth," : ""),
-            (_isAnyRole ? "*" : _roles),
+            _forbidden,
+            _checked,
+            _isAnyAuth,
+            _isAnyRole,
             _userDataConstraint);
     }
 }

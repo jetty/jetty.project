@@ -15,11 +15,11 @@ package org.eclipse.jetty.http3.client.transport.internal;
 
 import java.net.SocketAddress;
 import java.nio.channels.AsynchronousCloseException;
+import java.nio.channels.ClosedChannelException;
 import java.security.cert.X509Certificate;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.Destination;
@@ -34,6 +34,7 @@ import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,10 +43,11 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP3.class);
 
-    private final Set<HttpChannel> activeChannels = ConcurrentHashMap.newKeySet();
-    private final AtomicBoolean closed = new AtomicBoolean();
+    private final AutoLock lock = new AutoLock();
+    private final Set<HttpChannelOverHTTP3> activeChannels = new HashSet<>();
     private final HTTP3SessionClient session;
     private final InvocationType invocationType;
+    private boolean closed;
 
     public HttpConnectionOverHTTP3(Destination destination, HTTP3SessionClient session)
     {
@@ -115,7 +117,12 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     @Override
     protected Iterator<HttpChannel> getHttpChannels()
     {
-        return activeChannels.iterator();
+        Set<HttpChannel> channels;
+        try (var ignored = lock.lock())
+        {
+            channels = Set.copyOf(activeChannels);
+        }
+        return channels.iterator();
     }
 
     @Override
@@ -127,12 +134,20 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
 
         // One connection maps to N channels, so one channel for each exchange.
         HttpChannelOverHTTP3 channel = newHttpChannel();
-        activeChannels.add(channel);
+        try (var ignored = lock.lock())
+        {
+            if (closed)
+                return new SendFailure(new ClosedChannelException(), true);
+            activeChannels.add(channel);
+        }
 
         SendFailure result = send(channel, exchange);
         if (result != null)
         {
-            activeChannels.remove(channel);
+            try (var ignored = lock.lock())
+            {
+                activeChannels.remove(channel);
+            }
             channel.destroy();
         }
         return result;
@@ -145,7 +160,11 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
 
     public void release(HttpChannelOverHTTP3 channel)
     {
-        boolean removed = activeChannels.remove(channel);
+        boolean removed;
+        try (var ignored = lock.lock())
+        {
+            removed = activeChannels.remove(channel);
+        }
         if (LOG.isDebugEnabled())
             LOG.debug("released {} {}", removed, channel);
         if (removed)
@@ -157,7 +176,10 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
     @Override
     public boolean isClosed()
     {
-        return closed.get();
+        try (var ignored = lock.lock())
+        {
+            return closed;
+        }
     }
 
     @Override
@@ -168,24 +190,31 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
 
     public void close(Throwable failure)
     {
-        if (closed.compareAndSet(false, true))
-        {
-            getHttpDestination().remove(this);
-            abort(failure);
-            destroy();
-            session.goAway(false, Promise.Invocable.noop());
-        }
+        if (abort(failure))
+            return;
+        getHttpDestination().remove(this);
+        session.goAway(false, Promise.Invocable.noop());
+        destroy();
     }
 
-    private void abort(Throwable failure)
+    private boolean abort(Throwable failure)
     {
-        for (HttpChannel channel : activeChannels)
+        Set<HttpChannelOverHTTP3> channels;
+        try (var ignored = lock.lock())
+        {
+            if (closed)
+                return true;
+            closed = true;
+            channels = Set.copyOf(activeChannels);
+            activeChannels.clear();
+        }
+        for (HttpChannel channel : channels)
         {
             HttpExchange exchange = channel.getHttpExchange();
             if (exchange != null)
                 exchange.getRequest().abort(failure);
         }
-        activeChannels.clear();
+        return false;
     }
 
     @Override

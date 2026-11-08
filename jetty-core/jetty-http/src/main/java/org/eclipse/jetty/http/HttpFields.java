@@ -978,9 +978,9 @@ public interface HttpFields extends Iterable<HttpField>, Supplier<HttpFields>
         return StreamSupport.stream(spliterator(), false);
     }
 
-    default QuotedCSV newQuotedCSV(boolean b)
+    default QuotedCSV newQuotedCSV(boolean keepQuotes)
     {
-        return new QuotedCSV(b);
+        return new QuotedCSV(keepQuotes);
     }
 
     default QuotedQualityCSV newQuotedQualityCSV(ToIntFunction<String> secondaryOrdering)

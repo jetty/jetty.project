@@ -377,6 +377,32 @@ public class ForwardedRequestCustomizerTest
                     .requestURL("https://myhost/")
             ),
 
+            // Forwarded host without port, with a Host header that has a port.
+            // The port is implied by the (forwarded) scheme, and must not be
+            // taken from the Host header of the incoming request.
+            Arguments.of(new TestRequest("RFC7239: Forwarded host without port (https)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: localhost:8080",
+                        "Forwarded: host=example.com;proto=https"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("example.com").serverPort(443)
+                    .secure(true)
+                    .requestURL("https://example.com/")
+            ),
+            Arguments.of(new TestRequest("RFC7239: Forwarded host without port (http)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: localhost:8080",
+                        "Forwarded: host=example.com;proto=http"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("example.com").serverPort(80)
+                    .secure(false)
+                    .requestURL("http://example.com/")
+            ),
+
             // =================================================================
             // ProxyPass usages
             Arguments.of(new TestRequest("ProxyPass (example.com:80 to localhost:8080)")
@@ -1136,6 +1162,22 @@ public class ForwardedRequestCustomizerTest
                 new Expectations()
                     .scheme("https").serverName("new.example.net").serverPort(7443)
                     .requestURL("https://new.example.net:7443/test/forwarded.jsp")
+                    .remoteAddr("192.168.2.6").remotePort(0)
+            ),
+            // RFC7239 Tests with https, port in Host, no port in Forwarded host.
+            // The port is implied by the forwarded proto, and must not be taken
+            // from the Host header (or connector) of the incoming request.
+            Arguments.of(new TestRequest("RFC7239 with port in Host and no port in Forwarded host on https and h2")
+                    .headers(
+                        "GET /test/forwarded.jsp HTTP/1.1",
+                        "Host: web.example.net:9443",
+                        "Forwarded: for=192.168.2.6;host=new.example.net;proto=https;proto-version=h2"
+                        // Client: https://new.example.net/test/forwarded.jsp
+                        // Proxy Requests: https://web.example.net:9443/test/forwarded.jsp
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("new.example.net").serverPort(443)
+                    .requestURL("https://new.example.net/test/forwarded.jsp")
                     .remoteAddr("192.168.2.6").remotePort(0)
             )
         );

@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.ExtendedSSLSession;
@@ -191,7 +192,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         if (stsMaxAge < 0)
             _stsField = null;
         else
-            _stsField = new PreEncodedHttpField(HttpHeader.STRICT_TRANSPORT_SECURITY, String.format("max-age=%d%s", stsMaxAge, isStsIncludeSubDomains() ? "; includeSubDomains" : ""));
+            _stsField = new PreEncodedHttpField(HttpHeader.STRICT_TRANSPORT_SECURITY, String.format(Locale.ROOT, "max-age=%d%s", stsMaxAge, isStsIncludeSubDomains() ? "; includeSubDomains" : ""));
     }
 
     @Override

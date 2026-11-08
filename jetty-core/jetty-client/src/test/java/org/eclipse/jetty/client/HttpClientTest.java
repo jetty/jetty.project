@@ -81,6 +81,7 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -432,6 +433,59 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         assertNotNull(response);
         assertEquals(200, response.getStatus());
         assertEquals(5, progress.get());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testMaxDestinations(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        client.setMaxDestinations(1);
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+
+        assertThrows(ExecutionException.class, () ->
+        {
+            client.newRequest("127.0.0.1", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .send();
+        });
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testMaxDestinationsOnRedirect(Scenario scenario) throws Exception
+    {
+        start(scenario, new Handler.Abstract()
+            {
+                @Override
+                public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+                {
+                    if (org.eclipse.jetty.server.Request.getPathInContext(request).equals("/redirected"))
+                    {
+                        callback.succeeded();
+                    }
+                    else
+                    {
+                        org.eclipse.jetty.server.Response.sendRedirect(request, response, callback, "%s://127.0.0.1:%s/redirected".formatted(request.getHttpURI().getScheme(), request.getHttpURI().getPort()));
+                    }
+                    return true;
+                }
+            }
+        );
+
+        client.setMaxDestinations(1);
+
+        assertThrows(ExecutionException.class, () ->
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .send();
+        });
     }
 
     @ParameterizedTest
@@ -2020,7 +2074,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         }
         catch (IOException e)
         {
-            Assumptions.assumeTrue(false, 
+            Assumptions.assumeTrue(false,
                 "Cannot bind to " + bindAddress + " address on this system");
         }
 

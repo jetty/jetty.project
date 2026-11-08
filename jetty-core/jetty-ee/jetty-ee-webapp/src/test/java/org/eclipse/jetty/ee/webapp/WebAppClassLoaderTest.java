@@ -424,4 +424,14 @@ public class WebAppClassLoaderTest
         }
         assertFalse(resources.hasMoreElements());
     }
+
+    @Test
+    public void testCachingWebAppClassLoaderIsParallelCapable() throws Exception
+    {
+        try (CachingWebAppClassLoader cl = new CachingWebAppClassLoader(_context))
+        {
+            // The whole class hierarchy must be parallel capable.
+            assertTrue(cl.isRegisteredAsParallelCapable());
+        }
+    }
 }

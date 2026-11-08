@@ -15,9 +15,16 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,6 +43,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -75,6 +84,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.security.Constraint;
 import org.eclipse.jetty.security.SecurityHandler;
@@ -88,27 +98,35 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -124,6 +142,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.condition.OS.LINUX;
 import static org.junit.jupiter.api.condition.OS.MAC;
 
+@ExtendWith(WorkDirExtension.class)
 public class ServletContextHandlerTest
 {
     private Server _server;
@@ -2670,5 +2689,92 @@ public class ServletContextHandlerTest
         assertThrows(MalformedURLException.class, () -> context.getResource("badpath"));
         assertThat(context.getServletContext().getResource("/../down/"), nullValue());
         assertThat(context.getServletContext().getResource("/down/.././../"), nullValue());
+    }
+
+    @Test
+    public void testGetResourceAsStream(WorkDir workDir) throws Exception
+    {
+        Path baseDir = workDir.getEmptyPathDir();
+        FS.ensureDirExists(baseDir.resolve("WEB-INF"));
+        FS.ensureDirExists(baseDir.resolve("WEB-INF/classes"));
+        Files.writeString(baseDir.resolve("index.html"), "This is the root index file", UTF_8);
+
+        FS.ensureDirExists(baseDir.resolve("WEB-INF/lib"));
+        Path jarFile = baseDir.resolve("WEB-INF/lib/foo.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+        URI jarFileUri = URIUtil.toJarFileUri(jarFile.toUri());
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarFileUri, env))
+        {
+            Path jarroot = zipfs.getPath("/");
+            FS.ensureDirExists(jarroot.resolve("deep"));
+            Files.writeString(jarroot.resolve("deep/example.dat"), "Contents of JAR Example Data", UTF_8);
+        }
+
+        ServletContextHandler context = new ServletContextHandler("/context");
+        ResourceFactory resourceFactory = ResourceFactory.of(context);
+        Resource jarResource = resourceFactory.newResource(jarFileUri);
+        List<Resource> resources = List.of(
+            resourceFactory.newResource(baseDir),
+            jarResource
+        );
+        Resource baseResource = ResourceFactory.combine(resources);
+        context.setBaseResource(baseResource);
+        context.addServlet(new HelloServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            {
+                InputStream in = req.getServletContext().getResourceAsStream("/deep/example.dat");
+                assertNotNull(in, "Resource must be found in ServletContext");
+
+                byte[] data = IO.readBytes(in);
+                String value = new String(data, UTF_8);
+                resp.setCharacterEncoding("utf-8");
+                resp.setContentType("text/plain");
+                resp.getWriter().print(value);
+            }
+        }, "/servlet/*");
+        _server.setHandler(context);
+
+        _server.setName("Test"); // Set server name to make JMX lookup predictable
+        // Enable JMX
+        MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+        MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
+        _server.addBean(mbeanContainer);
+        _server.start();
+
+        String rawRequest = """
+            GET /context/servlet/ HTTP/1.1
+            Host: local
+            Connection: close
+            
+            """;
+        String rawResponse = _connector.getResponse(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+
+        // Use JMX to confirm status of ResourceFactory
+        String jmxName = "org.eclipse.jetty.util.resource:type=resourcefactoryinternals$lifecycle,context=Test/_context,id=0";
+        Set<ObjectName> mbeanNames = mbeanServer.queryNames(ObjectName.getInstance(jmxName), null);
+        assertEquals(1, mbeanNames.size());
+        ObjectName objectName = mbeanNames.iterator().next();
+
+        Object trackedCount = mbeanServer.getAttribute(objectName, "trackedCount");
+        assertNotNull(trackedCount);
+        assertThat(trackedCount, instanceOf(Integer.class));
+        assertThat((Integer)trackedCount, is(1));
+
+        Object trackedResources = mbeanServer.getAttribute(objectName, "trackedResources");
+        assertNotNull(trackedResources);
+        assertThat(trackedResources, instanceOf(List.class));
+        if (trackedResources instanceof List<?> trackedList)
+        {
+            assertThat(trackedList.size(), is(1));
+            Resource tracked = (Resource)trackedList.get(0);
+            FileSystem originalJarFileSystem = jarResource.getPath().getFileSystem();
+            assertThat("Tracked Resource: " + tracked, tracked.getPath().getFileSystem(), sameInstance(originalJarFileSystem));
+        }
     }
 }

@@ -22,9 +22,13 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
+import org.eclipse.jetty.start.StartArgs;
 import org.eclipse.jetty.start.StartLog;
 import org.eclipse.jetty.start.Utils;
+import org.eclipse.jetty.util.ExceptionUtil;
 import org.xml.sax.SAXException;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Attempt to download a <code>maven://</code> URI, by first attempting to find
@@ -113,30 +117,66 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
         }
     }
 
-    private final Path localRepositoryDir;
-
     private static final String DEFAULT_REMOTE_REPO = "https://repo1.maven.org/maven2/";
+
+    private final Path localRepositoryDir;
 
     private final boolean readonly;
     private final String mavenRepoUri;
     private boolean offline;
 
+    /**
+     * @deprecated use {@link MavenLocalRepoFileInitializer(BaseHome, StartArgs)} instead
+     */
+    @Deprecated(forRemoval = true, since = "12.1.14")
     public MavenLocalRepoFileInitializer(BaseHome baseHome)
     {
         this(baseHome, null, true);
     }
 
+    /**
+     * @deprecated use {@link MavenLocalRepoFileInitializer(BaseHome, StartArgs, Path)} instead
+     */
+    @Deprecated(forRemoval = true, since = "12.1.14")
     public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly)
     {
         this(baseHome, localRepoDir, readonly, null);
     }
 
+    /**
+     * @deprecated use {@link MavenLocalRepoFileInitializer(BaseHome, StartArgs, Path, String)} instead
+     */
+    @Deprecated(forRemoval = true, since = "12.1.14")
     public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir, boolean readonly, String mavenRepoUri)
     {
         super(baseHome, "maven");
         this.localRepositoryDir = localRepoDir != null ? localRepoDir : newTempRepo();
         this.readonly = readonly;
-        this.mavenRepoUri = mavenRepoUri;
+        this.mavenRepoUri = Utils.isNotBlank(mavenRepoUri) ? mavenRepoUri : DEFAULT_REMOTE_REPO;
+    }
+
+    public MavenLocalRepoFileInitializer(BaseHome baseHome, StartArgs startArgs)
+    {
+        this(baseHome, startArgs, null);
+    }
+
+    public MavenLocalRepoFileInitializer(BaseHome baseHome, StartArgs startArgs, Path localRepoDir)
+    {
+        this(baseHome, startArgs, localRepoDir, null);
+    }
+
+    public MavenLocalRepoFileInitializer(BaseHome baseHome, StartArgs startArgs, Path localRepoDir, String mavenRepoUri)
+    {
+        super(baseHome, "maven");
+        this.localRepositoryDir = localRepoDir != null ? localRepoDir : newTempRepo();
+        // An explicitly configured local repo is writable by default (it gets
+        // populated); an auto-discovered repo (e.g. the user's ~/.m2) is read-only
+        // by default, so downloads go into the ${jetty.base} instead. The
+        // maven.local.repo.readonly property/env var overrides this default.
+        boolean readonlyByDefault = startArgs.getMavenLocalRepoDir() == null;
+        this.readonly = startArgs.readonlyMavenLocalRepo(readonlyByDefault);
+        this.offline = startArgs.useMavenOffline();
+        this.mavenRepoUri = Utils.isNotBlank(mavenRepoUri) ? mavenRepoUri : startArgs.getMavenBaseUri();
     }
 
     @Override
@@ -157,6 +197,34 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
         Path javaTempDir = Paths.get(System.getProperty("java.io.tmpdir"));
         // Simple return here, don't create the directory, unless it's being used.
         return javaTempDir.resolve("jetty-start-downloads");
+    }
+
+    @Override
+    public boolean exists(URI uri) throws IOException
+    {
+        Coordinates coords = getCoordinates(uri);
+        if (coords == null)
+        {
+            // Skip, not a maven:// URI
+            return false;
+        }
+
+        if (coords.version.endsWith("-SNAPSHOT"))
+            return true; // assume valid on SNAPSHOT versions
+
+        // Check local repo first
+        Path localFile = localRepositoryDir.resolve(coords.toPath());
+        if (Files.isRegularFile(localFile))
+            return true;
+
+        if (offline)
+        {
+            StartLog.warn("Maven is offline, but Local Maven Repo does not contain: %s%n", coords);
+            return false;
+        }
+
+        // Don't write into the local repo (e.g. the user's ~/.m2); verify remotely instead.
+        return existsOnCentralRepo(coords);
     }
 
     @Override
@@ -225,6 +293,12 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
             if (isFilePresent(destination))
                 return false;
 
+            if (isProvidedByHome(location))
+            {
+                StartLog.debug("skipping download of %s : ${jetty.home} provides %s", uri, location);
+                return false;
+            }
+
             // Grab copy from local repository (download if needed to local repository)
             Path localRepoFile = getLocalRepoFile(coords);
 
@@ -275,14 +349,7 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
 
     public String getRemoteUri()
     {
-        if (this.mavenRepoUri != null)
-        {
-            return this.mavenRepoUri;
-        }
-        else
-        {
-            return System.getProperty("maven.repo.uri", DEFAULT_REMOTE_REPO);
-        }
+        return this.mavenRepoUri;
     }
 
     public Coordinates getCoordinates(URI uri)
@@ -340,6 +407,21 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
         return coords;
     }
 
+    /**
+     * Remotely validate that the artifact exists on the central repository.
+     *
+     * @param coords the coordinates to check.
+     * @return true if the artifact exists remotely (or is a SNAPSHOT, which is not remotely validated)
+     * @throws IOException if unable to check for I/O reasons
+     */
+    protected boolean existsOnCentralRepo(Coordinates coords)
+        throws IOException
+    {
+        // Verify remotely with a HEAD request (shared with DownloadFileInitializer), so the
+        // local repository is never written to.
+        return existsViaHead(coords.toCentralURI());
+    }
+
     protected void download(Coordinates coords, Path destination)
         throws IOException
     {
@@ -349,26 +431,85 @@ public class MavenLocalRepoFileInitializer extends DownloadFileInitializer
             return;
         }
 
-        if (coords.version.endsWith("-SNAPSHOT"))
+        // Track what this call writes so a failure can restore the local repository to the
+        // state we found it in, rather than deleting valid cached content: the artifact never
+        // pre-exists here (callers only download when it is absent), but the SNAPSHOT metadata
+        // may already be present - and must not be deleted when this call did not touch it, or
+        // when overwriting it fails part way through.
+        Path metadataFile = null;
+        String metadataOriginal = null;  // existing metadata contents, held in memory before overwrite (UTF-8); null if none
+        boolean metadataWritten = false; // this call (re)downloaded the metadata
+        try
         {
-            Path localRepoMetadataPath = localRepositoryDir.resolve(coords.toMetadataPath());
-            if (isMetadataStale(localRepoMetadataPath))
+            if (coords.version.endsWith("-SNAPSHOT"))
             {
-                // Grab a fresh copy of the metadata xml
-                URI mavenMetadataURI = coords.toSnapshotMetadataXmlURI();
-                super.download(mavenMetadataURI, localRepoMetadataPath);
-            }
+                metadataFile = localRepositoryDir.resolve(coords.toMetadataPath());
+                if (isMetadataStale(metadataFile))
+                {
+                    // Hold any existing metadata in memory before overwriting it, so it can be
+                    // restored if a later step fails. Metadata files are small (well under 100k).
+                    if (Files.exists(metadataFile))
+                        metadataOriginal = Files.readString(metadataFile, UTF_8);
+                    metadataWritten = true;
 
-            if (Files.exists(localRepoMetadataPath))
+                    // Grab a fresh copy of the metadata xml
+                    URI mavenMetadataURI = coords.toSnapshotMetadataXmlURI();
+                    download(mavenMetadataURI, metadataFile);
+                }
+
+                if (Files.exists(metadataFile))
+                {
+                    // parse metadata to get actual SNAPSHOT version
+                    String actualVersion = getMetadataVersion(metadataFile, coords);
+                    download(coords.toCentralURI(actualVersion), destination);
+                }
+            }
+            else
             {
-                // parse metadata to get actual SNAPSHOT version
-                String actualVersion = getMetadataVersion(localRepoMetadataPath, coords);
-                super.download(coords.toCentralURI(actualVersion), destination);
+                download(coords.toCentralURI(), destination);
             }
         }
-        else
+        catch (Throwable t)
         {
-            super.download(coords.toCentralURI(), destination);
+            // Restore the prior on-disk state without masking the original failure.
+            // Remove the partial artifact we created.
+            deleteFileWhileSuppressingErrors(destination, t);
+            // Only touch the metadata if this call wrote it: rewrite the contents we held in
+            // memory, or remove the file we created where none existed. Untouched (fresh)
+            // metadata is left exactly as we found it.
+            if (metadataWritten)
+            {
+                if (metadataOriginal != null)
+                    writeFileWhileSuppressingErrors(metadataFile, metadataOriginal, t);
+                else
+                    deleteFileWhileSuppressingErrors(metadataFile, t);
+            }
+            throw (t instanceof IOException io) ? io : new IOException("Failed to download " + coords, t);
+        }
+    }
+
+    private static void deleteFileWhileSuppressingErrors(Path file, Throwable primary)
+    {
+        try
+        {
+            if (file != null)
+                Files.deleteIfExists(file);
+        }
+        catch (IOException e)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(primary, e);
+        }
+    }
+
+    private static void writeFileWhileSuppressingErrors(Path file, String originalContents, Throwable primary)
+    {
+        try
+        {
+            Files.writeString(file, originalContents, UTF_8);
+        }
+        catch (IOException e)
+        {
+            ExceptionUtil.addSuppressedIfNotAssociated(primary, e);
         }
     }
 

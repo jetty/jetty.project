@@ -19,11 +19,60 @@ The high-level HTTP library supports cookies, authentication, redirection, conne
 
 The low-level HTTP/3 client library has been designed for those applications that need low-level access to HTTP/3 features such as _sessions_, _streams_ and _frames_, and this is quite a rare use case.
 
-Support for the QUIC protocol underlying HTTP/3 is provided by default via Jetty classes that wrap the link:https://github.com/cloudflare/quiche[Quiche] native library.
+See also the correspondent xref:server/http3.adoc[HTTP/3 server library].
+
+[[intro]]
+== Introducing HTTP3Client
+
+The Maven artifact coordinates for the HTTP/3 client library are the following:
+
+[,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.http3</groupId>
+  <artifactId>jetty-http3-client</artifactId>
+  <version>{jetty-version}</version>
+</dependency>
+----
+
+The HTTP/3 protocol is layered on top of the underlying QUIC protocol.
+
+The QUIC protocol implementation underlying HTTP/3 is provided by Jetty classes that wrap the link:https://github.com/cloudflare/quiche[Quiche] native library, so you need also the following artifact:
+
+[,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.quic</groupId>
+  <artifactId>jetty-quic-quiche-client</artifactId>
+  <version>{jetty-version}</version>
+</dependency>
+----
+
+Furthermore, the binding to the Quiche native library has two implementations: one based on link:https://github.com/java-native-access/jna[JNA] that works with Java 17 or later, and one based on JDK's https://openjdk.org/jeps/454[Foreign Function & Memory (FFM)] APIs that works with Java 22 or later.
+
+You must choose the binding you want to use (depending on the Java version you are using), with either of the following artifacts:
+
+[,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.quic</groupId>
+  <artifactId>jetty-quic-quiche-jna</artifactId>
+  <version>{jetty-version}</version>
+</dependency>
+----
+
+[,xml,subs=attributes+]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.quic</groupId>
+  <artifactId>jetty-quic-quiche-foreign</artifactId>
+  <version>{jetty-version}</version>
+</dependency>
+----
 
 [NOTE]
 ====
-Since Java 22, the JVM emits a warning message when Java code tries to access native code.
+Since Java 22, the JVM emits a warning message when Java code tries to access code in native libraries.
 For example with Java 25:
 
 ----
@@ -41,22 +90,6 @@ To grant Jetty access to the Quiche native library, use `--enable-native-access=
 This grants only to the Jetty JPMS module `org.eclipse.jetty.quic.quiche.foreign` in the module-path access to any native library.
 ====
 
-See also the correspondent xref:server/http3.adoc[HTTP/3 server library].
-
-[[intro]]
-== Introducing HTTP3Client
-
-The Maven artifact coordinates for the HTTP/3 client library are the following:
-
-[,xml,subs=attributes+]
-----
-<dependency>
-  <groupId>org.eclipse.jetty.http3</groupId>
-  <artifactId>jetty-http3-client</artifactId>
-  <version>{jetty-version}</version>
-</dependency>
-----
-
 The main class is named `org.eclipse.jetty.http3.client.HTTP3Client`, and must be created, configured and started before use:
 
 [,java,indent=0]
@@ -73,18 +106,16 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/client/ht
 
 `HTTP3Client` allows client applications to connect to an HTTP/3 server.
 
-The HTTP/3 protocol is layered on top of the underlying QUIC protocol.
-
 When a client wants to establish a connection with a server, the QUIC protocol establishes the connection with the server, represented by a QUIC _session_.
 
 A QUIC _session_ typically has a long life -- once the connection is established, it remains active until it is not used anymore (and therefore it is closed by the idle timeout mechanism), until a fatal error occurs (for example, a network failure), or if one of the peers decides unilaterally to close the connection.
 
-There is a 1-to-1 relationship between a QUIC _session_ and an HTTP/3 _session_, defined by class `org.eclipse.jetty.http3.api.Session`.
+There is a 1-to-1 relationship between a QUIC _session_ and an HTTP/3 _session_, defined by class `org.eclipse.jetty.http3.api.Session.Client`.
 
 The QUIC protocol is multiplexed, that is it allows multiple, independent, QUIC _streams_ to exchange data to and from the server, over a single connection.
 Therefore, a single QUIC _session_ manages multiple concurrent QUIC _streams_.
 
-There is a 1-to-1 relationship between a QUIC _stream_ and an HTTP/3 _stream_, defined by class `org.eclipse.jetty.http3.api.Stream`.
+There is a 1-to-1 relationship between a QUIC _stream_ and an HTTP/3 _stream_, defined by class `org.eclipse.jetty.http3.api.Stream.Client`.
 
 Each HTTP/3 request/response cycle is carried by an HTTP/3 _stream_, and has typically a very short life compared to the _session_: a _stream_ only exists for the duration of the request/response cycle and then disappears.
 

@@ -1698,4 +1698,44 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @Test
+    public void testValidateModules() throws Exception
+    {
+        // --validate-modules resolves every maven:// reference in the bundled modules' [files]
+        // sections. Those third-party artifacts must already be in the local repository; the
+        // pom's "copy-fake-deps" execution primes them. If this test fails with a
+        // "[files] Does not exist" for a maven:// coordinate, add that artifact there.
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        List<String> args = new ArrayList<>();
+        args.add("--validate-modules");
+
+        String remoteRepoUri = System.getProperty("maven.repo.uri");
+        if (remoteRepoUri != null)
+        {
+            args.add("maven.repo.uri=" + remoteRepoUri);
+        }
+
+        try (JettyHomeTester.Run run1 = distribution.start(args))
+        {
+            assertTrue(run1.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue(), run1.logs());
+
+            // Exit 0 alone is not enough: validation must actually have run over the bundled
+            // modules. Assert it reported success and validated a non-zero number of modules,
+            // so a regression that silently validates nothing (e.g. "Validated 0 module(s)")
+            // is caught rather than passing.
+            Collection<String> logs = run1.getLogs();
+            assertThat("validation reported success", logs.stream()
+                .anyMatch(log -> log.contains("No failure detected.")), is(true));
+            assertThat("modules were actually validated", logs.stream()
+                .noneMatch(log -> log.contains("Validated 0 module(s)")), is(true));
+        }
+    }
 }

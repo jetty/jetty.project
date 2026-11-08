@@ -15,9 +15,11 @@ package org.eclipse.jetty.http.compression;
 
 import java.nio.ByteBuffer;
 
-import static org.eclipse.jetty.http.compression.Huffman.CODES;
+import static org.eclipse.jetty.http.compression.Huffman.BITS_MASK;
+import static org.eclipse.jetty.http.compression.Huffman.CODE_SHIFT;
 import static org.eclipse.jetty.http.compression.Huffman.EOS;
-import static org.eclipse.jetty.http.compression.Huffman.LCCODES;
+import static org.eclipse.jetty.http.compression.Huffman.PACKED_CODES;
+import static org.eclipse.jetty.http.compression.Huffman.PACKED_LCCODES;
 
 /**
  * <p>Used to encode strings Huffman encoding.</p>
@@ -37,7 +39,7 @@ public class HuffmanEncoder
      */
     public static int octetsNeeded(String s)
     {
-        return octetsNeeded(CODES, s);
+        return octetsNeeded(PACKED_CODES, s);
     }
 
     /**
@@ -50,7 +52,7 @@ public class HuffmanEncoder
         for (byte value : b)
         {
             int c = 0xFF & value;
-            needed += CODES[c][1];
+            needed += (int)(PACKED_CODES[c] & BITS_MASK);
         }
         return (needed + 7) / 8;
     }
@@ -61,7 +63,7 @@ public class HuffmanEncoder
      */
     public static void encode(ByteBuffer buffer, String s)
     {
-        encode(CODES, buffer, s);
+        encode(PACKED_CODES, buffer, s);
     }
 
     /**
@@ -70,7 +72,7 @@ public class HuffmanEncoder
      */
     public static int octetsNeededLowerCase(String s)
     {
-        return octetsNeeded(LCCODES, s);
+        return octetsNeeded(PACKED_LCCODES, s);
     }
 
     /**
@@ -79,10 +81,10 @@ public class HuffmanEncoder
      */
     public static void encodeLowerCase(ByteBuffer buffer, String s)
     {
-        encode(LCCODES, buffer, s);
+        encode(PACKED_LCCODES, buffer, s);
     }
 
-    private static int octetsNeeded(final int[][] table, String s)
+    private static int octetsNeeded(final long[] table, String s)
     {
         int needed = 0;
         int len = s.length();
@@ -91,10 +93,68 @@ public class HuffmanEncoder
             char c = s.charAt(i);
             if (isIllegalHuffmanChar(c))
                 return -1;
-            needed += table[c][1];
+            needed += (int)(table[c] & BITS_MASK);
         }
 
         return (needed + 7) / 8;
+    }
+
+    /**
+     * <p>Encode {@code s}, preceded by the number of octets it encodes to,
+     * written as an n-bit integer with the given {@code prefix}.</p>
+     * <p>The length precedes the content but is not known until the content has
+     * been encoded, which would need a separate pass over {@code s} to compute.
+     * Instead the content is encoded first, into the space after the octet that
+     * holds the length, and the length is then filled in. That octet only has
+     * room for a length below the prefix maximum, which every string of fewer
+     * than {@code (1 << prefix) - 1} encoded octets satisfies; for the rare
+     * longer string the buffer is rewound and both are written the direct way.</p>
+     *
+     * @param buffer the buffer to encode into
+     * @param prefix the prefix used to encode the length, in bits
+     * @param s the string to encode
+     */
+    public static void encodeWithLength(ByteBuffer buffer, int prefix, String s)
+    {
+        encodeWithLength(PACKED_CODES, buffer, prefix, s);
+    }
+
+    /**
+     * As {@link #encodeWithLength(ByteBuffer, int, String)}, encoding {@code s}
+     * in lowercase.
+     *
+     * @param buffer the buffer to encode into
+     * @param prefix the prefix used to encode the length, in bits
+     * @param s the string to encode
+     */
+    public static void encodeLowerCaseWithLength(ByteBuffer buffer, int prefix, String s)
+    {
+        encodeWithLength(PACKED_LCCODES, buffer, prefix, s);
+    }
+
+    private static void encodeWithLength(final long[] table, ByteBuffer buffer, int prefix, String s)
+    {
+        // A prefix of 8 means the length starts a fresh octet, as NBitIntegerEncoder does.
+        if (prefix == 8)
+            buffer.put((byte)0x00);
+
+        int lengthPosition = buffer.position() - 1;
+        int contentPosition = buffer.position();
+        encode(table, buffer, s);
+        int encodedValueSize = buffer.position() - contentPosition;
+
+        int max = 0xFF >>> (8 - prefix);
+        if (encodedValueSize < max)
+        {
+            buffer.put(lengthPosition, (byte)((buffer.get(lengthPosition) & ~max) | encodedValueSize));
+            return;
+        }
+
+        // The length needs continuation octets, which would displace the content
+        // already written, so rewind and write the length and the content in order.
+        buffer.position(prefix == 8 ? lengthPosition : contentPosition);
+        NBitIntegerEncoder.encode(buffer, prefix, encodedValueSize);
+        encode(table, buffer, s);
     }
 
     /**
@@ -102,7 +162,7 @@ public class HuffmanEncoder
      * @param buffer The buffer to encode to
      * @param s The string to encode
      */
-    private static void encode(final int[][] table, ByteBuffer buffer, String s)
+    private static void encode(final long[] table, ByteBuffer buffer, String s)
     {
         long current = 0;
         int n = 0;
@@ -112,18 +172,27 @@ public class HuffmanEncoder
             char c = s.charAt(i);
             if (isIllegalHuffmanChar(c))
                  throw new IllegalArgumentException();
-            int code = table[c][0];
-            int bits = table[c][1];
+            long packed = table[c];
+            int bits = (int)(packed & BITS_MASK);
 
             current <<= bits;
-            current |= code;
+            current |= packed >>> CODE_SHIFT;
             n += bits;
 
-            while (n >= 8)
+            // Codes are at most 30 bits, so letting up to 31 bits accumulate
+            // keeps the accumulator within 64 bits, and lets 4 octets at a
+            // time be written with a single put rather than one put each.
+            if (n >= 32)
             {
-                n -= 8;
-                buffer.put((byte)(current >> n));
+                n -= 32;
+                buffer.putInt((int)(current >>> n));
             }
+        }
+
+        while (n >= 8)
+        {
+            n -= 8;
+            buffer.put((byte)(current >> n));
         }
 
         if (n > 0)

@@ -35,6 +35,7 @@ import java.util.StringTokenizer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.jar.Manifest;
 
+import org.eclipse.jetty.io.IOResources;
 import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.eclipse.jetty.util.FileID;
@@ -96,7 +97,11 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          * @param urlOrPath The URL or path to convert
          * @return The Resource for the URL/path
          * @throws IOException The Resource could not be created.
+         * @deprecated use {@code ResourceFactory.of(component).newResource(String)} properly
+         *             at webapp initialization time only.  The use of this method during
+         *             context started phase can result in excessive memory consumption.
          */
+        @Deprecated(since = "12.1.11", forRemoval = true)
         Resource newResource(String urlOrPath) throws IOException;
 
         /**
@@ -637,14 +642,17 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 if (externalForm.startsWith("jar:file:") && externalForm.contains("!/"))
                 {
                     URI jarURI = URIUtil.unwrapContainer(new URI(externalForm));
-                    Resource manifestResource = getContext().newResource(URIUtil.uriJarPrefix(jarURI, "!/META-INF/MANIFEST.MF").toASCIIString());
-                    if (manifestResource.exists())
+                    try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
                     {
-                        try (InputStream is = manifestResource.newInputStream())
+                        Resource manifestResource = resourceFactory.newResource(URIUtil.uriJarPrefix(jarURI, "!/META-INF/MANIFEST.MF").toASCIIString());
+                        if (Resources.isReadableFile(manifestResource))
                         {
-                            Manifest manifest = new Manifest(is);
-                            definePackage(packageName, manifest, jarURI.toURL());
-                            return;
+                            try (InputStream is = IOResources.asInputStream(manifestResource))
+                            {
+                                Manifest manifest = new Manifest(is);
+                                definePackage(packageName, manifest, jarURI.toURL());
+                                return;
+                            }
                         }
                     }
                 }

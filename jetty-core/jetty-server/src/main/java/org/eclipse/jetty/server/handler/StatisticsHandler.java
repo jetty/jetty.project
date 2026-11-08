@@ -16,16 +16,13 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -90,11 +87,14 @@ public class StatisticsHandler extends EventsHandler
     }
 
     @Override
-    protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
+    protected void onResponseWriteComplete(Request request, boolean last, ByteBuffer content, Throwable failure)
     {
-        int length = BufferUtil.length(content);
-        if (length > 0)
-            _bytesWritten.add(length);
+        if (failure == null)
+        {
+            int length = BufferUtil.length(content);
+            if (length > 0)
+                _bytesWritten.add(length);
+        }
     }
 
     @Override
@@ -308,123 +308,19 @@ public class StatisticsHandler extends EventsHandler
     }
 
     /**
-     * Checks that the wrapped handler can read/write at a minimal rate of N bytes per second.
-     * When reading or writing does not conform to the specified rates, this handler prevents
-     * further reads or writes by making them immediately fail.
+     * @deprecated use {@link org.eclipse.jetty.server.handler.MinimumDataRateHandler} instead.
      */
-    public static class MinimumDataRateHandler extends StatisticsHandler
+    @Deprecated(since = "12.1.11", forRemoval = true)
+    public static class MinimumDataRateHandler extends org.eclipse.jetty.server.handler.MinimumDataRateHandler
     {
-        private final long _minimumReadRate;
-        private final long _minimumWriteRate;
-
-        /**
-         * Creates a {@code MinimumDataRateHandler} with the specified read and write rates.
-         * @param minimumReadRate the minimum number of bytes to be read per second, or 0 for not checking the read rate.
-         * @param minimumWriteRate the minimum number of bytes to be written per second, or 0 for not checking the write rate.
-         */
         public MinimumDataRateHandler(long minimumReadRate, long minimumWriteRate)
         {
             this(null, minimumReadRate, minimumWriteRate);
         }
 
-        /**
-         * Creates a {@code MinimumDataRateHandler} with the specified read and write rates.
-         *
-         * @param handler the handler to wrap.
-         * @param minimumReadRate the minimum number of bytes to be read per second, or 0 for not checking the read rate.
-         * @param minimumWriteRate the minimum number of bytes to be written per second, or 0 for not checking the write rate.
-         */
         public MinimumDataRateHandler(Handler handler, long minimumReadRate, long minimumWriteRate)
         {
-            super(handler);
-            _minimumReadRate = minimumReadRate;
-            _minimumWriteRate = minimumWriteRate;
-        }
-
-        @Override
-        public boolean handle(Request request, Response response, Callback callback) throws Exception
-        {
-            MinimumDataRateRequest wrappedRequest = new MinimumDataRateRequest(request);
-            MinimumDataRateResponse wrappedResponse = new MinimumDataRateResponse(wrappedRequest, response);
-            return super.handle(wrappedRequest, wrappedResponse, callback);
-        }
-
-        protected class MinimumDataRateRequest extends Request.Wrapper
-        {
-            private Content.Chunk _errorContent;
-
-            private MinimumDataRateRequest(Request request)
-            {
-                super(request);
-            }
-
-            private long dataRatePerSecond(long dataCount)
-            {
-                if (dataCount == 0L)
-                    return 0L;
-                long delayInNs = NanoTime.since(getHeadersNanoTime());
-                // If you read 1 byte or more in 0ns or less, you have infinite bandwidth.
-                if (delayInNs <= 0L)
-                    return Long.MAX_VALUE;
-                return dataCount * 1_000_000_000 / delayInNs;
-            }
-
-            @Override
-            public void demand(Runnable demandCallback)
-            {
-                if (_minimumReadRate > 0)
-                {
-                    long rr = dataRatePerSecond(getBytesRead());
-                    if (rr < _minimumReadRate)
-                    {
-                        _errorContent = Content.Chunk.from(new TimeoutException("read rate is too low: " + rr));
-                        demandCallback.run();
-                        return;
-                    }
-                }
-                super.demand(demandCallback);
-            }
-
-            @Override
-            public Content.Chunk read()
-            {
-                return _errorContent != null ? _errorContent : super.read();
-            }
-        }
-
-        protected class MinimumDataRateResponse extends Response.Wrapper
-        {
-            public MinimumDataRateResponse(MinimumDataRateRequest request, Response wrapped)
-            {
-                super(request, wrapped);
-            }
-
-            @Override
-            public MinimumDataRateRequest getRequest()
-            {
-                return (MinimumDataRateRequest)super.getRequest();
-            }
-
-            @Override
-            public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-            {
-                if (_minimumWriteRate > 0)
-                {
-                    long bytesWritten = getBytesWritten();
-                    if (bytesWritten > 0L)
-                    {
-                        long wr = getRequest().dataRatePerSecond(bytesWritten);
-                        if (wr < _minimumWriteRate)
-                        {
-                            TimeoutException cause = new TimeoutException("write rate is too low: " + wr);
-                            getRequest()._errorContent = Content.Chunk.from(cause);
-                            callback.failed(cause);
-                            return;
-                        }
-                    }
-                }
-                super.write(last, byteBuffer, callback);
-            }
+            super(handler, minimumReadRate, minimumWriteRate);
         }
     }
 }

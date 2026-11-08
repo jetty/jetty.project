@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -124,6 +125,9 @@ public class MessageOutputStream extends OutputStream
     {
         try (AutoLock ignored = lock.lock())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Flushing {} bytes (fin={})", buffer.remaining(), fin);
+
             if (closed)
                 throw new IOException("Stream is closed");
 
@@ -149,6 +153,9 @@ public class MessageOutputStream extends OutputStream
         {
             if (closed)
                 throw new IOException("Stream is closed");
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("send() data={}, buffer={}", BufferUtil.toDetailString(data), BufferUtil.toDetailString(buffer.getByteBuffer()));
 
             while (!buffer.asMutable().append(data))
                 flush(false);

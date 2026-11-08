@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.cloud.NoCredentials;
 import com.google.cloud.datastore.Blob;
 import com.google.cloud.datastore.BlobValue;
 import com.google.cloud.datastore.Datastore;
@@ -488,8 +489,9 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             boolean blankCustomnamespace = StringUtil.isBlank(getNamespace());
             boolean blankCustomHost = StringUtil.isBlank(getHost());
             boolean blankCustomProjectId = StringUtil.isBlank(getProjectId());
+            DatastoreOptions options;
             if (blankCustomnamespace && blankCustomHost && blankCustomProjectId)
-                 _datastore = DatastoreOptions.getDefaultInstance().getService();
+                options = DatastoreOptions.getDefaultInstance();
             else
             {
                 DatastoreOptions.Builder builder = DatastoreOptions.newBuilder();
@@ -499,8 +501,14 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
                     builder.setHost(getHost());
                 if (!blankCustomProjectId)
                     builder.setProjectId(getProjectId());
-                _datastore = builder.build().getService();
+                options = builder.build();
             }
+
+            // The datastore client insists on credentials to set up its metrics, so give it empty ones when we have none.
+            if (options.getCredentials() == null)
+                options = options.toBuilder().setCredentials(NoCredentials.getInstance()).build();
+
+            _datastore = options.getService();
         }
 
         if (_model == null)

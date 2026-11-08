@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -34,13 +35,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 public class IOResourcesTest
 {
@@ -141,32 +145,126 @@ public class IOResourcesTest
         }
     }
 
-    public static Stream<Resource> all() throws Exception
+    // This Resource impl has getPath() return null so newInputStream() is the only way to read its contents,
+    // plus the returned input stream can only read 1 byte at a time.
+    private static class TestInputStreamResource extends Resource
+    {
+        private final URI uri;
+        private final byte[] buffer;
+
+        public TestInputStreamResource(URI uri, byte[] buffer)
+        {
+            this.uri = uri;
+            this.buffer = buffer;
+        }
+
+        @Override
+        public boolean exists()
+        {
+            return true;
+        }
+
+        @Override
+        public long length()
+        {
+            return buffer.length;
+        }
+
+        @Override
+        public Path getPath()
+        {
+            return null;
+        }
+
+        @Override
+        public InputStream newInputStream()
+        {
+            return new ByteArrayInputStream(buffer)
+            {
+                @Override
+                public synchronized int read(byte[] b, int off, int len)
+                {
+                    int read = read();
+                    if (read == -1)
+                        return -1;
+                    b[off] = (byte)read;
+                    return 1;
+                }
+            };
+        }
+
+        @Override
+        public boolean isDirectory()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isReadable()
+        {
+            return true;
+        }
+
+        @Override
+        public URI getURI()
+        {
+            return uri;
+        }
+
+        @Override
+        public String getName()
+        {
+            return uri.getPath();
+        }
+
+        @Override
+        public String getFileName()
+        {
+            return uri.getPath();
+        }
+
+        @Override
+        public Resource resolve(String subUriPath)
+        {
+            return null;
+        }
+    }
+
+    public static Stream<Arguments> resourcesWithBytes() throws Exception
     {
         Path testResourcePath = MavenTestingUtils.getTestResourcePath("keystore.p12");
-
-        URI resourceUri = testResourcePath.toUri();
+        URI testResourceUri = testResourcePath.toUri();
+        byte[] testResourceBytes = Files.readAllBytes(testResourcePath);
         return Stream.of(
-            ResourceFactory.root().newResource(resourceUri),
-            ResourceFactory.root().newMemoryResource(resourceUri.toURL()),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("zero")),
-            ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("one")),
-            new URLResourceFactory().newResource(resourceUri),
-            new TestContentSourceFactoryResource(resourceUri, Files.readAllBytes(testResourcePath))
+            arguments(ResourceFactory.root().newResource(testResourceUri), testResourceBytes),
+            arguments(ResourceFactory.root().newResource(testResourceUri), testResourceBytes),
+            arguments(ResourceFactory.root().newMemoryResource(testResourceUri.toURL()), testResourceBytes),
+            arguments(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("zero")), BufferUtil.EMPTY_BYTES),
+            arguments(ResourceFactory.root().newResource(MavenTestingUtils.getTestResourcePath("one")), Files.readAllBytes(MavenTestingUtils.getTestResourcePath("one"))),
+            arguments(new URLResourceFactory().newResource(testResourceUri), testResourceBytes),
+            arguments(new TestInputStreamResource(testResourceUri, testResourceBytes), testResourceBytes),
+            arguments(new TestContentSourceFactoryResource(testResourceUri, testResourceBytes), testResourceBytes)
         );
     }
 
+    public static Stream<Resource> resources() throws Exception
+    {
+        return resourcesWithBytes().map(arguments -> (Resource)arguments.get()[0]);
+    }
+
     @ParameterizedTest
-    @MethodSource("all")
-    public void testToRetainableByteBuffer(Resource resource)
+    @MethodSource("resourcesWithBytes")
+    public void testToRetainableByteBuffer(Resource resource, byte[] resourceBytes)
     {
         RetainableByteBuffer retainableByteBuffer = IOResources.toRetainableByteBuffer(resource, bufferPool);
         assertThat(retainableByteBuffer.remaining(), is((int)resource.length()));
+        assertThat(retainableByteBuffer.size(), is(resource.length()));
+        assertArrayEquals(resourceBytes, BufferUtil.toArray(retainableByteBuffer.getByteBuffer()));
         retainableByteBuffer.release();
     }
 
     @ParameterizedTest
-    @MethodSource("all")
+    @MethodSource("resources")
     public void testAsContentSource(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();
@@ -181,7 +279,7 @@ public class IOResourcesTest
     }
 
     @ParameterizedTest
-    @MethodSource("all")
+    @MethodSource("resources")
     public void testAsContentSourceWithOffset(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();
@@ -202,7 +300,7 @@ public class IOResourcesTest
     }
 
     @ParameterizedTest
-    @MethodSource("all")
+    @MethodSource("resources")
     public void testAsContentSourceWithLength(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();
@@ -217,7 +315,7 @@ public class IOResourcesTest
     }
 
     @ParameterizedTest
-    @MethodSource("all")
+    @MethodSource("resources")
     public void testAsContentSourceWithOffsetAndLength(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();
@@ -235,7 +333,7 @@ public class IOResourcesTest
     }
 
     @ParameterizedTest
-    @MethodSource("all")
+    @MethodSource("resources")
     public void testCopy(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();
@@ -249,7 +347,7 @@ public class IOResourcesTest
     }
 
     @ParameterizedTest
-    @MethodSource("all")
+    @MethodSource("resources")
     public void testCopyWithOffset(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();
@@ -264,7 +362,7 @@ public class IOResourcesTest
     }
 
     @ParameterizedTest
-    @MethodSource("all")
+    @MethodSource("resources")
     public void testCopyWithLength(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();
@@ -279,7 +377,7 @@ public class IOResourcesTest
     }
 
     @ParameterizedTest
-    @MethodSource("all")
+    @MethodSource("resources")
     public void testCopyWithOffsetAndLength(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();
@@ -295,7 +393,7 @@ public class IOResourcesTest
     }
 
     @ParameterizedTest
-    @MethodSource("all")
+    @MethodSource("resources")
     public void testOutOfRangeOffset(Resource resource)
     {
         TestSink sink = new TestSink();
@@ -305,7 +403,7 @@ public class IOResourcesTest
     }
 
     @ParameterizedTest
-    @MethodSource("all")
+    @MethodSource("resources")
     public void testOutOfRangeOffsetWithZeroLength(Resource resource) throws Exception
     {
         TestSink sink = new TestSink();

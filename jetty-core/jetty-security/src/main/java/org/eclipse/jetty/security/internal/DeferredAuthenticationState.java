@@ -49,22 +49,22 @@ public class DeferredAuthenticationState implements AuthenticationState.Deferred
     {
         try
         {
-            AuthenticationState authenticationState = _authenticator.validateRequest(request, __deferredResponse, Callback.NOT_CALLED);
-            if (authenticationState != null)
+            // Any writes or modifications to the deferred response are ignored.
+            AuthenticationState authenticationState = _authenticator.validateRequest(request, __deferredResponse, Callback.NOOP);
+            if (authenticationState instanceof Succeeded succeeded)
             {
+                // Only cache the AuthenticationState for successful authentication, as no response can be sent.
                 AuthenticationState.setAuthenticationState(request, authenticationState);
-                if (authenticationState instanceof Succeeded succeeded)
-                {
-                    LoginService loginService = _authenticator.getLoginService();
-                    IdentityService identityService = loginService == null ? null : loginService.getIdentityService();
-                    if (identityService != null)
-                    {
-                        UserIdentity user = succeeded.getUserIdentity();
-                        _association = identityService.associate(user, null);
-                    }
 
-                    return succeeded;
+                LoginService loginService = _authenticator.getLoginService();
+                IdentityService identityService = loginService == null ? null : loginService.getIdentityService();
+                if (identityService != null)
+                {
+                    UserIdentity user = succeeded.getUserIdentity();
+                    _association = identityService.associate(user, null);
                 }
+
+                return succeeded;
             }
         }
         catch (ServerAuthException e)

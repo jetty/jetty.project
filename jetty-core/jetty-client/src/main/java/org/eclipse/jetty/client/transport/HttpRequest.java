@@ -44,6 +44,7 @@ import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.HttpRedirector;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.PathRequestContent;
@@ -75,6 +76,7 @@ public class HttpRequest implements Request
     private final Fields params = new Fields(true);
     private final ResponseListeners responseListeners = new ResponseListeners();
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
+    private final AtomicReference<Throwable> failed = new AtomicReference<>();
     private final HttpClient client;
     private final HttpConversation conversation;
     private Connection connection;
@@ -102,6 +104,7 @@ public class HttpRequest implements Request
     private Object tag;
     private boolean normalized;
     private boolean queued;
+    private HttpProxy httpProxy;
 
     public HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -133,7 +136,10 @@ public class HttpRequest implements Request
             newURI = HttpURI.from(getScheme(), getHost(), getPort(), null).toURI();
 
         HttpRequest newRequest = copyInstance(newURI);
-        newRequest.useVersion(getVersion());
+        if (isVersionExplicit())
+            newRequest.version(getVersion());
+        else
+            newRequest.useVersion(getVersion());
         newRequest.method(getMethod())
             .body(getBody())
             .idleTimeout(getIdleTimeout(), TimeUnit.MILLISECONDS)
@@ -871,6 +877,18 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public CompletableFuture<Boolean> fail(Throwable cause)
+    {
+        if (failed.compareAndSet(null, Objects.requireNonNull(cause)))
+        {
+            Promise.Completable<Boolean> promise = new Promise.Completable<>();
+            conversation.abortRequest(cause, promise);
+            return promise;
+        }
+        return CompletableFuture.completedFuture(false);
+    }
+
+    @Override
     public Throwable getAbortCause()
     {
         return aborted.get();
@@ -905,6 +923,16 @@ public class HttpRequest implements Request
         boolean result = queued;
         queued = true;
         return result;
+    }
+
+    public HttpProxy getHttpProxy()
+    {
+        return httpProxy;
+    }
+
+    void httpProxy(HttpProxy httpProxy)
+    {
+        this.httpProxy = httpProxy;
     }
 
     private String buildQuery()

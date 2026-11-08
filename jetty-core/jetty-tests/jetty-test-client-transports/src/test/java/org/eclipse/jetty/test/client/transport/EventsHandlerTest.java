@@ -185,7 +185,7 @@ public class EventsHandlerTest extends AbstractTest
             }
 
             @Override
-            protected void onResponseWriteComplete(Request request, Throwable failure)
+            protected void onResponseWriteComplete(Request request, boolean last, ByteBuffer content, Throwable failure)
             {
                 if (failure != null)
                     failures.add(failure);
@@ -368,7 +368,7 @@ public class EventsHandlerTest extends AbstractTest
         }
 
         @Override
-        protected void onResponseWriteComplete(Request request, Throwable failure)
+        protected void onResponseWriteComplete(Request request, boolean last, ByteBuffer content, Throwable failure)
         {
             addEvent("onResponseWriteComplete");
         }
@@ -424,7 +424,7 @@ public class EventsHandlerTest extends AbstractTest
         }
 
         @Override
-        protected void onResponseWriteComplete(Request request, Throwable failure)
+        protected void onResponseWriteComplete(Request request, boolean last, ByteBuffer content, Throwable failure)
         {
             useForbiddenMethods(request, exceptions);
         }

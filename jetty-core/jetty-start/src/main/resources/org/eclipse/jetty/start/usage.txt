@@ -52,6 +52,16 @@ Report Commands:
                    Shows the detail of the listed modules, including
                    dependencies, tags, libraries and XMLs.
 
+  --validate-modules
+                   Validates all module definitions found in
+                   ${jetty.base}/modules/*.mod and ${jetty.home}/modules/*.mod,
+                   reporting problems such as unexpandable properties and
+                   missing dependencies. Reports every problem found, then exits.
+
+  --validate-modules=<module>(,<module>)*
+                   Validates only the listed modules. Reports an error for any
+                   unknown module name.
+
   --stop
                    Sends a stop signal to the running Jetty instance.
                    The running Jetty instance must have been started with a

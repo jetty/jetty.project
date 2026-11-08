@@ -15,8 +15,10 @@ package org.eclipse.jetty.client;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -145,7 +147,7 @@ public interface ContentDecoder
                 header.append(encoding);
                 float weight = value.getWeight();
                 if (weight != Factory.NO_WEIGHT)
-                    header.append(";q=").append(new DecimalFormat("#.###").format(weight));
+                    header.append(";q=").append(new DecimalFormat("#.###", DecimalFormatSymbols.getInstance(Locale.ROOT)).format(weight));
             });
             acceptEncodingField = new HttpField(HttpHeader.ACCEPT_ENCODING, header.toString());
 

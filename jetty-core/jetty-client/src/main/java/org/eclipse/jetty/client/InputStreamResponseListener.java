@@ -109,7 +109,7 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
                 if (LOG.isDebugEnabled())
                     LOG.debug("Queueing chunk {}", chunk);
                 chunk.retain();
-                chunkCallbacks.add(new ChunkCallback(chunk, demander, response::abort));
+                chunkCallbacks.add(new ChunkCallback(chunk, demander, response::fail));
                 l.signalAll();
                 return;
             }

@@ -34,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -45,6 +46,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
@@ -90,6 +92,7 @@ import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsH
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.endsWith;
@@ -285,6 +288,64 @@ public class DefaultServletTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.get(HttpHeader.ALLOW), is("GET, HEAD, OPTIONS"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testPostMethodNotAllowedHasAllowHeader(boolean fileExists) throws Exception
+    {
+        Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
+        context.addServlet(DefaultServlet.class, "/");
+
+        String rawResponse = connector.getResponse("""
+            POST /context/file%s.txt HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """.formatted(fileExists ? "" : "-does-not-exist"));
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.METHOD_NOT_ALLOWED_405));
+        // RFC 9110 15.5.6: the origin server MUST generate an Allow header field in a 405 response.
+        String allowHeaderValue = response.get(HttpHeader.ALLOW);
+        assertNotNull(response.toString(), allowHeaderValue);
+        List<String> allowHeaderValues = Stream.of(allowHeaderValue.split(",")).map(String::trim).toList();
+        assertThat(response.toString(), allowHeaderValues, containsInAnyOrder("GET", "HEAD", "OPTIONS"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"FORWARD", "INCLUDE"})
+    public void testPostDispatchedToDefaultServlet(String dispatch) throws Exception
+    {
+        Files.writeString(docRoot.resolve("file.txt"), "How now brown cow", UTF_8);
+        context.addServlet(DefaultServlet.class, "/");
+        context.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                RequestDispatcher dispatcher = req.getRequestDispatcher("/file.txt");
+                switch (DispatcherType.valueOf(dispatch))
+                {
+                    case FORWARD -> dispatcher.forward(req, resp);
+                    case INCLUDE -> dispatcher.include(req, resp);
+                    default -> throw new AssertionError();
+                }
+            }
+        }), "/dispatch");
+
+        String rawResponse = connector.getResponse("""
+            POST /context/dispatch HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            Content-Length: 5\r
+            \r
+            abcde
+            """);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.toString(), response.getContent(), is("How now brown cow"));
     }
 
     @Test
@@ -1086,6 +1147,80 @@ public class DefaultServletTest
             HttpStatus.OK_200,
             (response) -> assertThat(response.getContent(), containsString("<h1>Three Index</h1>"))
         );
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testConditionalGetOfLargeWelcomeFileInCombinedDirectory(boolean wrapResponse) throws Exception
+    {
+        // A directory present in two base resources has an unknown length,
+        // so the request for it is handled asynchronously.
+        Path dirA = workDir.getEmptyPathDir().resolve("a");
+        Path dirB = workDir.getPath().resolve("b");
+        FS.ensureDirExists(dirA.resolve("dir"));
+        FS.ensureDirExists(dirB.resolve("dir"));
+        // The welcome file is larger than the output buffer, so it is also served asynchronously.
+        String welcome = "x".repeat(64 * 1024);
+        Files.writeString(dirB.resolve("dir/index.html"), welcome, UTF_8);
+
+        server.stop();
+        context.setBaseResource(ResourceFactory.combine(
+            ResourceFactory.root().newResource(dirA),
+            ResourceFactory.root().newResource(dirB)));
+        if (wrapResponse)
+        {
+            FilterHolder filterHolder = new FilterHolder((request, response, chain) ->
+            {
+                boolean started;
+                AsyncContext asyncContext;
+                if (request.isAsyncStarted())
+                {
+                    asyncContext = request.getAsyncContext();
+                    started = false;
+                }
+                else
+                {
+                    asyncContext = request.startAsync();
+                    started = true;
+                }
+                try
+                {
+                    chain.doFilter(request, new HttpServletResponseWrapper((HttpServletResponse)response));
+                }
+                finally
+                {
+                    if (started)
+                        asyncContext.complete();
+                }
+            });
+            filterHolder.setAsyncSupported(true);
+            context.addFilter(filterHolder, "/*", EnumSet.allOf(DispatcherType.class));
+        }
+        ServletHolder defHolder = context.addServlet(DefaultServlet.class, "/");
+        defHolder.setAsyncSupported(true);
+        defHolder.setInitParameter("dirAllowed", "false");
+        server.start();
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse("""
+            GET /context/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            \r
+            """));
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), is(welcome));
+        String lastModified = response.get(HttpHeader.LAST_MODIFIED);
+        assertNotNull(lastModified);
+
+        response = HttpTester.parseResponse(connector.getResponse("""
+            GET /context/dir/ HTTP/1.1\r
+            Host: local\r
+            Connection: close\r
+            If-Modified-Since: %s\r
+            \r
+            """.formatted(lastModified)));
+        assertNotNull(response, "connection aborted");
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
     }
 
     public static Stream<Arguments> welcomeScenarios()

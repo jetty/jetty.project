@@ -1,4 +1,60 @@
-jetty-12.1.10-SNAPSHOT
+jetty-12.1.15-SNAPSHOT
+
+12.1.14 - 01 October 2026
+ + 15368 HTTP/2 client aborts exchange and loses response completed during server graceful shutdown (regression in 12.1.10 / 12.0.36 from #15134 / #14692)
+ + 15432 BrotliEncoderSink drops all but the last pulled buffer, silently truncating large Brotli responses
+ + 15678 CompressionHandler randomly truncates output
+ + 15733 ee11 servlet: ServletRequest.getServletContext() returns the source context, not the target, after a cross-context RequestDispatcher.include()
+ + 15807 ArrayByteBufferPool.clear() leaves the bucket's secondary QueuedPool poisoned: NPE on the next acquire()
+ + 15822 Introduce flag in Rewrite Rules to preserve UriCompliance Violations when rewriting URIs
+ + 15840 HTTP/1 response header overflow retry loses previously determined connection persistence
+ + 15869 `PathResource` incorrectly treats a classpath resource inside a JAR under a non-ASCII path as an alias
+ + 15871 SessionHandler uses ConnectionMetaData.isSecure() instead of Request.isSecure(), breaking secure session cookies behind ForwardedRequestCustomizer (@adityaanikam)
+
+12.1.13 - 04 September 2026
+ + 14403 `RoundRobinConnectionPoolTest.testMultiplexWithMaxUsage()` on FCGI is flaky (@DragonFSKY)
+ + 14906 Flaky test: RedispatchTests.testEe8FilterWithAwkwardRequestURI() — fails in 45% of CI builds (@DragonFSKY)
+ + 14930 `SymlinkAllowedResourceAliasChecker.check()` fails with NPE (@kamilkrzywanski)
+ + 15385 Streamline dependencies for HTTP/3 Server with Quiche
+ + 15504 BouncyCastleClientALPNProcessor does not have a fallback for empty protocol string. (@DragonFSKY)
+ + 15548 AbstractProxyServlet.filterServerResponseHeader returns existing value
+
+12.1.12 - 04 August 2026
+ + 577   AbstractProxyServlet onServerResponseHeaders addHeader rather than setHeader
+ + 13970 ForwardedRequestCustomizer uses connection port instead of proto default when host lacks port (@zenios)
+ + 15453 HttpServletResponse: setHeader("Content-Length", N) should be treated like setContentLengthLong(N)
+ + 15456 Fragments in redirects not supported by default in standalone Jetty installation
+ + 15496 mime-type filtering by IncludeExclude should always be case-insensitive
+
+12.1.11 - 02 July 2026
+ + 15156 Injecting authentication headers using request filters?
+ + 15217 jetty-quic-quiche-foreign fails on Windows due to eager resolution of Unix-only quiche_conn_set_keylog_fd
+ + 15226 Jetty 12.0.28 server becomes inaccessible with thousands of qtp threads blocked in HttpChannelState.onIdleTimeout ReentrantLock
+ + 15228 Massive increase in memory usage between 12.1.8 and 12.1.10 caused by ZipFileSystems
+ + 15232 Jetty 12.1.x EE11 doesn't handle Session attributes properly
+ + 15234 Review error response codes from EagerContentHandler
+ + 15267 Introduce module for MinimumDataRateHandler
+ + 15308 CachingWebAppClassLoader is not registering as parallel capable
+ + 15333 Upgrade to Quiche version 0.29.2
+ + 15345 Move RateControl to jetty-io
+
+12.1.10 - 29 May 2026
+ + 9799 Declare EncodingException for HPACK/QPACK encoders and decoders
+ + 14006 How to handle "Warning Logs in org.eclipse.jetty.ee8.nested.HttpChannelState and org.eclipse.jetty.server.internal.HttpChannelState"?
+ + 14522 Bundle org.eclipse.jetty.websocket.server OSGI metadata exports internal instead of public package
+ + 14528 `BinaryStreamTest.testMoreThanLargestMessageOneByteAtATime()` is flaky
+ + 14745 NPE in HttpChannelState.completeStream() when _request is null during multipart cleanup
+ + 14984 XmlConfiguration emits "Deprecated method ... setMaxThreads" WARN from shipped jetty-threadpool-virtual.xml
+ + 15009 Make processing of RST_STREAM more lenient
+ + 15011 `PathResource.resolve()` fails on Microsoft Windows due to `Illegal char <:>`
+ + 15021 Resource handling regression in 12.1.9
+ + 15031 IOResources#toRetainableByteBuffer data loss when using resources without path
+ + 15074 HTTP/2 extended connect responses contain Content-Length: 0
+ + 15094 Jetty 12.1 Regression: Deferred Authentication provides Callback.NOT_CALLED leading to errors
+ + 15118 Upgrade to Quiche version 0.29.0
+ + 15136 Refresh Digest authentication implementation
+ + 15161 Reduce memory footprint for persistent HttpConnections
+ + 15180 Upgrade to Quiche version 0.29.1
 
 12.1.9 - 30 April 2026
  + 8876 Jetty 12 - JMX-ify HttpContent.Factory implementations

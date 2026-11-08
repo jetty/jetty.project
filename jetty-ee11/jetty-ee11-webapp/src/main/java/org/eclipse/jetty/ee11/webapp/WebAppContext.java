@@ -1518,7 +1518,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 throw new IllegalStateException("No resourceBase or war set for context");
 
             // Use name of given resource in the temporary dirname
-            resource = newResource(getWar());
+            resource = ResourceFactory.of(this).newResource(getWar());
         }
         return resource;
     }

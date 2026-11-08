@@ -142,6 +142,11 @@ public interface Authenticator
          *         session never timeout after authentication.
          */
         int getSessionMaxInactiveIntervalOnAuthentication();
+
+        default boolean isPersistAuthenticationCredentials()
+        {
+            return false;
+        }
     }
 
     /**

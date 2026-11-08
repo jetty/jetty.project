@@ -791,6 +791,36 @@ public class PathResourceTest
             // This is the heart of the test, we should support this
             Resource fileRes = dirRes.resolve("swedish-å.txt");
             assertTrue(fileRes.exists());
+            assertFalse(fileRes.isAlias());
+        }
+    }
+
+    @Test
+    public void testJarUnderUnicodeDirectoryIsNotAlias(WorkDir workDir) throws Exception
+    {
+        Path dir = workDir.getEmptyPathDir().resolve("中文路径"); // "Chinese-character path"
+        Files.createDirectory(dir);
+        Path jar = dir.resolve("resources.jar");
+
+        Map<String, String> env = new HashMap<>();
+        env.put("create", "true");
+        URI jarUri = URIUtil.uriJarPrefix(jar.toUri(), "!/");
+        try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, env))
+        {
+            Path web = zipfs.getPath("/web");
+            Files.createDirectory(web);
+            Files.writeString(web.resolve("index.html"), "<html>ok</html>", UTF_8);
+        }
+
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource base = resourceFactory.newResource(URIUtil.uriJarPrefix(jar.toUri(), "!/web/"));
+            assertTrue(base.isDirectory());
+            assertFalse(base.isAlias());
+
+            Resource child = base.resolve("/index.html");
+            assertTrue(child.exists());
+            assertFalse(child.isAlias());
         }
     }
 

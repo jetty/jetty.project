@@ -107,6 +107,7 @@ public class Parser
                         // peek at byte
                         firstByte = buffer.get();
                         state = State.PAYLOAD_LEN;
+                        checkFirstByte(firstByte);
                         break;
                     }
 
@@ -257,25 +258,7 @@ public class Parser
         return null;
     }
 
-    protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
-    {
-        if (payloadLength < 0)
-            throw new IllegalArgumentException("Invalid payloadLength");
-
-        if (OpCode.isControlFrame(opcode))
-        {
-            if (payloadLength > Frame.MAX_CONTROL_PAYLOAD)
-                throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
-        }
-        else
-        {
-            long maxFrameSize = configuration.getMaxFrameSize();
-            if (!configuration.isAutoFragment() && maxFrameSize > 0 && payloadLength > maxFrameSize)
-                throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
-        }
-    }
-
-    protected Frame.Parsed newFrame(byte firstByte, byte[] mask, ByteBuffer payload, Runnable releaser)
+    protected void checkFirstByte(byte firstByte)
     {
         // Validate OpCode
         byte opcode = OpCode.getOpCode(firstByte);
@@ -286,7 +269,32 @@ public class Parser
         boolean fin = ((firstByte & 0x80) != 0);
         if (OpCode.isControlFrame(opcode) && !fin)
             throw new ProtocolException("Fragmented Control Frame [" + OpCode.name(opcode) + "]");
+    }
 
+    protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
+    {
+        if (payloadLength < 0)
+            throw new IllegalArgumentException("Invalid payloadLength");
+
+        if (OpCode.isControlFrame(opcode))
+        {
+            if (payloadLength > Frame.MAX_CONTROL_PAYLOAD)
+                throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
+        }
+        else if (OpCode.isDataFrame(opcode))
+        {
+            long maxFrameSize = configuration.getMaxFrameSize();
+            if (!configuration.isAutoFragment() && maxFrameSize > 0 && payloadLength > maxFrameSize)
+                throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
+        }
+        else
+        {
+            throw new ProtocolException("Unknown opcode: " + opcode);
+        }
+    }
+
+    protected Frame.Parsed newFrame(byte firstByte, byte[] mask, ByteBuffer payload, Runnable releaser)
+    {
         return new Frame.Parsed(firstByte, mask, payload, releaser);
     }
 

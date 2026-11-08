@@ -13,10 +13,23 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Collection;
 
 public final class Utils
 {
+    public static String asString(Throwable t) throws IOException
+    {
+        try (StringWriter stringWriter = new StringWriter();
+             PrintWriter out = new PrintWriter(stringWriter))
+        {
+            t.printStackTrace(out);
+            return stringWriter.toString();
+        }
+    }
+
     public static String join(Object[] arr, String delim)
     {
         if (arr == null)

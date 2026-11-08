@@ -80,7 +80,7 @@ public class HostPort
 
         if (authority.isEmpty())
         {
-            _host = authority;
+            _host = "";
             _port = URIUtil.UNDEFINED_PORT;
             return;
         }
@@ -299,8 +299,11 @@ public class HostPort
      */
     public static String normalizeHost(String host)
     {
+        if (host == null)
+            return null;
+
         // if it is normalized IPv6 or could not be IPv6, return
-        if (host == null || host.isEmpty() || host.charAt(0) == '[' || host.indexOf(':') < 0)
+        if (host.isEmpty() || host.charAt(0) == '[' || host.indexOf(':') < 0)
             return host;
 
         // normalize with [ ]

@@ -174,7 +174,7 @@ public class FormAuthenticator extends LoginAuthenticator
         {
 
             HttpSession session = ((HttpServletRequest)request).getSession(true);
-            Authentication cached = new SessionAuthentication(getAuthMethod(), user, password);
+            Authentication cached = newSessionAuthentication(getAuthMethod(), user, password);
             session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
         }
         return user;

@@ -195,7 +195,7 @@ public class EventsHandlerTest
             }
 
             @Override
-            protected void onResponseWriteComplete(Request request, Throwable failure)
+            protected void onResponseWriteComplete(Request request, boolean last, ByteBuffer content, Throwable failure)
             {
                 events.add("onResponseWriteComplete");
             }

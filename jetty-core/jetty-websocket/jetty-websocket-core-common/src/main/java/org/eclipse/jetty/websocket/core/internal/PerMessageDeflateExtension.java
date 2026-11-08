@@ -284,8 +284,8 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             }
 
             boolean finished = deflate(entry, first);
-            if (finished)
-                getDeflater().setInput(BufferUtil.EMPTY_BUFFER);
+            if (finished && deflaterHolder != null)
+                deflaterHolder.get().setInput(BufferUtil.EMPTY_BUFFER);
             return finished;
         }
 

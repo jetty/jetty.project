@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,6 +54,11 @@ public final class HttpCookieUtils
         .build();
     // RFC 1123 format of epoch for the Expires attribute.
     private static final String EPOCH_EXPIRES = "Thu, 01 Jan 1970 00:00:00 GMT";
+    // Far-future, RFC 1123 valid (4-digit year) upper bound for a synthetic Expires derived from a
+    // positive Max-Age. Clamping to this keeps an extreme Max-Age (e.g. the overflow-clamped
+    // Long.MAX_VALUE that RFC6265SetCookieParser now retains off the wire) from overflowing
+    // Instant.plusSeconds and throwing ArithmeticException.
+    private static final Instant MAX_EXPIRES = LocalDateTime.of(9999, 12, 31, 23, 59, 59).toInstant(ZoneOffset.UTC);
 
     /**
      * Check that samesite is set on the cookie. If not, use a
@@ -168,17 +175,26 @@ public final class HttpCookieUtils
                 builder.append(path);
         }
 
+        // Append Expires attribute (optional attribute in original Netscape spec, and RFC 2109, and RFC 2965)
+        String declaredExpires = httpCookie.getAttributes().get("Expires");
+        if (declaredExpires != null)
+            builder.append(";Expires=").append(declaredExpires);
+
         // Handle max-age and/or expires
         long maxAge = httpCookie.getMaxAge();
         if (maxAge >= 0)
         {
-            // Always add the Expires attribute too, as some
-            // browsers do not handle max-age even with v1 cookies.
-            builder.append(";Expires=");
-            if (maxAge == 0)
-                builder.append(EPOCH_EXPIRES);
-            else
-                builder.append(HttpCookie.formatExpires(Instant.now().plusSeconds(maxAge)));
+            // Always include expires (if not declared)
+            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
+            if (declaredExpires == null)
+            {
+                // Generate a valid Expires header based on the value of maxAge.
+                builder.append(";Expires=");
+                if (maxAge == 0)
+                    builder.append(EPOCH_EXPIRES);
+                else
+                    builder.append(HttpCookie.formatExpires(expiresFromMaxAge(maxAge)));
+            }
 
             builder.append(";Max-Age=");
             builder.append(maxAge);
@@ -242,22 +258,45 @@ public final class HttpCookieUtils
         if (domain != null && !domain.isEmpty())
             builder.append("; Domain=").append(domain);
 
-        // Handle max-age and/or expires
+        // Handle Expires and/or Max-Age
+        String declaredExpires = httpCookie.getAttributes().get("Expires");
         long maxAge = httpCookie.getMaxAge();
-        if (maxAge >= 0)
+        if (maxAge == 0)
         {
-            // Always use expires
-            // This is required as some browser (M$ this means you!) don't handle max-age even with v1 cookies
-            builder.append("; Expires=");
-            if (maxAge == 0)
-                builder.append(EPOCH_EXPIRES);
-            else
-                builder.append(HttpCookie.formatExpires(Instant.now().plusSeconds(maxAge)));
-
-            if (maxAge > 0)
+            // Deletion cookie: Max-Age=0 means "delete now" and takes precedence over any declared
+            // Expires (RFC 6265 §5.3). As Max-Age=0 is not valid to emit (RFC 6265 §4.1.1), and the
+            // Servlet TCK requires no Max-Age here, the deletion is expressed as a past Expires.
+            builder.append("; Expires=").append(EPOCH_EXPIRES);
+        }
+        else if (maxAge > 0)
+        {
+            // Expiring cookie: emit Expires (declared, else synthetic from Max-Age), then Max-Age.
+            if (declaredExpires != null)
             {
-                builder.append("; Max-Age=");
-                builder.append(maxAge);
+                builder.append("; Expires=").append(declaredExpires);
+            }
+            else
+            {
+                // Although RFC 6265 §4.1.2.2 makes Max-Age sufficient on its own (and gives it precedence
+                // over Expires), the Servlet TCK requires that a synthetic Expires attribute also be emitted
+                // when only a positive max-age was configured. See the Jakarta Servlet TCK test
+                // servlet.tck.api.jakarta_servlet_http.sessioncookieconfig.SessionCookieConfigTests#constructortest1,
+                // whose SetCookieHandler asserts the response Set-Cookie header contains an "Expires=" attribute.
+                // The Expires value is derived from maxAge so the two attributes stay consistent.
+                // See TCK challenges on the need for this synthetic "Expires" attribute at
+                //  - https://github.com/jakartaee/servlet/issues/493
+                //  - https://github.com/jakartaee/servlet/issues/1120
+                builder.append("; Expires=").append(HttpCookie.formatExpires(expiresFromMaxAge(maxAge)));
+            }
+
+            builder.append("; Max-Age=").append(maxAge);
+        }
+        else
+        {
+            // Session cookie (negative Max-Age): no Max-Age is emitted; keep a declared Expires if present.
+            if (declaredExpires != null)
+            {
+                builder.append("; Expires=").append(declaredExpires);
             }
         }
 
@@ -298,6 +337,24 @@ public final class HttpCookieUtils
         }
 
         return builder.toString();
+    }
+
+    /**
+     * <p>Computes the {@link Instant} for a synthetic {@code Expires} attribute derived from a
+     * positive {@code Max-Age}, clamped to {@link #MAX_EXPIRES} so that an extreme {@code Max-Age}
+     * (for example the overflow-clamped {@link Long#MAX_VALUE} that {@code RFC6265SetCookieParser}
+     * retains) cannot overflow {@link Instant#plusSeconds(long)} and throw {@link ArithmeticException}.</p>
+     *
+     * @param maxAge a positive max-age in seconds
+     * @return {@code now + maxAge}, or {@link #MAX_EXPIRES} if that would be later than it
+     */
+    private static Instant expiresFromMaxAge(long maxAge)
+    {
+        Instant now = Instant.now();
+        // The subtraction cannot overflow (both epoch seconds are positive and MAX_EXPIRES is the larger).
+        if (maxAge > MAX_EXPIRES.getEpochSecond() - now.getEpochSecond())
+            return MAX_EXPIRES;
+        return now.plusSeconds(maxAge);
     }
 
     /**

@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.security.KeyStore;
 import java.security.Security;
 import java.time.Duration;
 import java.util.List;
@@ -41,6 +42,7 @@ import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.compression.server.CompressionConfig;
 import org.eclipse.jetty.compression.server.CompressionHandler;
+import org.eclipse.jetty.ee.webapp.CachingWebAppClassLoader;
 import org.eclipse.jetty.ee11.servlet.DefaultServlet;
 import org.eclipse.jetty.ee11.servlet.ResourceServlet;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
@@ -101,6 +103,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.DoSHandler;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.GracefulHandler;
+import org.eclipse.jetty.server.handler.MinimumDataRateHandler;
 import org.eclipse.jetty.server.handler.MovedContextHandler;
 import org.eclipse.jetty.server.handler.PathMappingsHandler;
 import org.eclipse.jetty.server.handler.QoSHandler;
@@ -692,6 +695,38 @@ public class HTTPServerDocs
 
         server.start();
         // end::keyStoreScanner[]
+    }
+
+    public void dynamicKeyStore() throws Exception
+    {
+        // tag::dynamicKeyStore[]
+        // A dynamic KeyStore created in memory.
+        KeyStore dynamicKeyStore = KeyStore.getInstance("PKCS12");
+        char[] password = "secret".toCharArray();
+        dynamicKeyStore.load(null, password);
+
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        // Set the dynamic KeyStore directly.
+        sslContextFactory.setKeyStore(dynamicKeyStore);
+        // Configure the PKIX algorithm to support dynamic KeyStores.
+        sslContextFactory.setKeyManagerFactoryAlgorithm("PKIX");
+        // Configure the alias mapper function that works with PKIX.
+        sslContextFactory.setAliasMapper(SslContextFactory.ALIAS_MAPPER_OPENJDK_PKIX);
+        sslContextFactory.start();
+
+        // -------- //
+        // In another part of the code, when a certificate is updated.
+        KeyStore.PasswordProtection protection = new KeyStore.PasswordProtection(password);
+        KeyStore.Entry entry = createEntryForRenewedCertificate(protection);
+        // Update the KeyStore dynamically.
+        dynamicKeyStore.setEntry("alias", entry, protection);
+        // From now on, new connections may use the new KeyStore entry.
+        // end::dynamicKeyStore[]
+    }
+
+    private static KeyStore.Entry createEntryForRenewedCertificate(KeyStore.PasswordProtection protection)
+    {
+        return null;
     }
 
     public void handlerTree()
@@ -1341,6 +1376,22 @@ public class HTTPServerDocs
         server.start();
     }
 
+    public void cachingWebAppClassLoader() throws Exception
+    {
+        // tag::cachingWebAppClassLoader[]
+        // Create a WebAppContext.
+        WebAppContext context = new WebAppContext();
+
+        // Configure a CachingWebAppClassLoader.
+        context.setClassLoader(new CachingWebAppClassLoader(context));
+
+        // Configure the path of the packaged web application (file or directory).
+        context.setWar("/path/to/webapp.war");
+        // Configure the contextPath.
+        context.setContextPath("/app");
+        // end::cachingWebAppClassLoader[]
+    }
+
     public void protectAndExpose()
     {
         // tag::protectAndExpose[]
@@ -1646,7 +1697,7 @@ public class HTTPServerDocs
 
         // Create and link the MinimumDataRateHandler to the Server.
         // Create the MinimumDataRateHandler with a minimum read rate of 1KB per second and no minimum write rate.
-        StatisticsHandler.MinimumDataRateHandler dataRateHandler = new StatisticsHandler.MinimumDataRateHandler(1024L, 0L);
+        MinimumDataRateHandler dataRateHandler = new MinimumDataRateHandler(1024L, 0L);
         server.setHandler(dataRateHandler);
 
         // Create a ContextHandlerCollection to hold contexts.

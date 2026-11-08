@@ -28,14 +28,23 @@ public class ImageFromDSL extends ImageFromDockerfile
 
     public ImageFromDSL(ImageFromDSL baseImage, String suffix, Consumer<DockerfileBuilder> builderConsumer)
     {
-        this(baseImage.getDockerImageName() + "-" + suffix, builderConsumer);
+        // These contain jetty-home, so remove them when the tests are done
+        this(baseImage.getDockerImageName() + "-" + suffix, true, builderConsumer);
         this.parentImage = baseImage;
     }
 
     public ImageFromDSL(String name, Consumer<DockerfileBuilder> builderConsumer)
     {
-        super(name, false);
+        // OS images never change, keep them around so docker can reuse them
+        this(name, false, builderConsumer);
+    }
+
+    private ImageFromDSL(String name, boolean deleteOnExit, Consumer<DockerfileBuilder> builderConsumer)
+    {
+        super(name, deleteOnExit);
         withDockerfileFromBuilder(builderConsumer);
+        // clean up build containers even if the build fails
+        withBuildImageCmdModifier(cmd -> cmd.withForcerm(true));
     }
 
     public ImageFromDSL getParentImage()

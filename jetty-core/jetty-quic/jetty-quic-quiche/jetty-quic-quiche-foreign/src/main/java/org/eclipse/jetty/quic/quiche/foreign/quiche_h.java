@@ -30,7 +30,7 @@ import static org.eclipse.jetty.quic.quiche.foreign.NativeHelper.C_POINTER;
 
 public class quiche_h
 {
-    private static final String EXPECTED_QUICHE_VERSION = "0.28.0";
+    private static final String EXPECTED_QUICHE_VERSION = "0.30.0";
     private static final Logger LOG = LoggerFactory.getLogger(quiche_h.class);
 
     static void initialize()
@@ -106,6 +106,13 @@ public class quiche_h
             ));
         private static final MethodHandle quiche_config_load_verify_locations_from_directory = NativeHelper.downcallHandle(
             "quiche_config_load_verify_locations_from_directory",
+            FunctionDescriptor.of(
+                C_INT,
+                C_POINTER,
+                C_POINTER
+            ));
+        private static final MethodHandle quiche_config_set_curves_list = NativeHelper.downcallHandle(
+            "quiche_config_set_curves_list",
             FunctionDescriptor.of(
                 C_INT,
                 C_POINTER,
@@ -400,26 +407,12 @@ public class quiche_h
                 C_POINTER,
                 C_POINTER
             ));
-        private static final MethodHandle quiche_conn_set_keylog_fd = NativeHelper.downcallHandle(
-            "quiche_conn_set_keylog_fd",
-            FunctionDescriptor.ofVoid(
-                C_POINTER,
-                C_INT
-            ));
         private static final MethodHandle quiche_conn_set_qlog_path = NativeHelper.downcallHandle(
             "quiche_conn_set_qlog_path",
             FunctionDescriptor.of(
                 C_BOOL,
                 C_POINTER,
                 C_POINTER,
-                C_POINTER,
-                C_POINTER
-            ));
-        private static final MethodHandle quiche_conn_set_qlog_fd = NativeHelper.downcallHandle(
-            "quiche_conn_set_qlog_fd",
-            FunctionDescriptor.ofVoid(
-                C_POINTER,
-                C_INT,
                 C_POINTER,
                 C_POINTER
             ));
@@ -794,14 +787,6 @@ public class quiche_h
                 C_POINTER,
                 C_INT
             ));
-        private static final MethodHandle quiche_conn_retired_scid_next = NativeHelper.downcallHandle(
-            "quiche_conn_retired_scid_next",
-            FunctionDescriptor.of(
-                C_BOOL,
-                C_POINTER,
-                C_POINTER,
-                C_POINTER
-            ));
         private static final MethodHandle quiche_conn_retired_scids = NativeHelper.downcallHandle(
             "quiche_conn_retired_scids",
             FunctionDescriptor.of(
@@ -1082,6 +1067,18 @@ public class quiche_h
         try
         {
             return (int)DowncallHandles.quiche_config_load_verify_locations_from_directory.invokeExact(config, path);
+        }
+        catch (Throwable x)
+        {
+            throw new AssertionError("should not reach here", x);
+        }
+    }
+
+    public static int quiche_config_set_curves_list(MemorySegment config, MemorySegment curves)
+    {
+        try
+        {
+            return (int)DowncallHandles.quiche_config_set_curves_list.invokeExact(config, curves);
         }
         catch (Throwable x)
         {
@@ -1557,35 +1554,11 @@ public class quiche_h
         }
     }
 
-    public static void quiche_conn_set_keylog_fd(MemorySegment conn, int fd)
-    {
-        try
-        {
-            DowncallHandles.quiche_conn_set_keylog_fd.invokeExact(conn, fd);
-        }
-        catch (Throwable x)
-        {
-            throw new AssertionError("should not reach here", x);
-        }
-    }
-
     public static boolean quiche_conn_set_qlog_path(MemorySegment conn, MemorySegment path, MemorySegment log_title, MemorySegment log_desc)
     {
         try
         {
             return (byte)DowncallHandles.quiche_conn_set_qlog_path.invokeExact(conn, path, log_title, log_desc) != 0;
-        }
-        catch (Throwable x)
-        {
-            throw new AssertionError("should not reach here", x);
-        }
-    }
-
-    public static void quiche_conn_set_qlog_fd(MemorySegment conn, int fd, MemorySegment log_title, MemorySegment log_desc)
-    {
-        try
-        {
-            DowncallHandles.quiche_conn_set_qlog_fd.invokeExact(conn, fd, log_title, log_desc);
         }
         catch (Throwable x)
         {
@@ -2204,18 +2177,6 @@ public class quiche_h
         try
         {
             return (long)DowncallHandles.quiche_conn_send_ack_eliciting_on_path.invokeExact(conn, local, local_len, peer, peer_len);
-        }
-        catch (Throwable x)
-        {
-            throw new AssertionError("should not reach here", x);
-        }
-    }
-
-    public static boolean quiche_conn_retired_scid_next(MemorySegment conn, MemorySegment out, MemorySegment out_len)
-    {
-        try
-        {
-            return (byte)DowncallHandles.quiche_conn_retired_scid_next.invokeExact(conn, out, out_len) != 0;
         }
         catch (Throwable x)
         {

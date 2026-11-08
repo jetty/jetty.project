@@ -19,6 +19,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.Calendar;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.concurrent.TimeUnit;
@@ -233,6 +234,14 @@ public class HttpDateTime
     }
 
     /**
+     * The preferred RFC 1123 / RFC 9110 IMF-fixdate format. Unlike {@link DateTimeFormatter#RFC_1123_DATE_TIME},
+     * this always uses a two-digit day-of-month (e.g. {@code Sun, 06 Nov 1994 08:49:37 GMT}), as required by
+     * the IMF-fixdate grammar ({@code day = 2DIGIT}).
+     */
+    private static final DateTimeFormatter IMF_FIXDATE =
+        DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US).withZone(UTC);
+
+    /**
      * Formats provided Date/Time to a String following preferred RFC 1123 syntax from
      * both HTTP and Cookie specs.
      *
@@ -241,8 +250,6 @@ public class HttpDateTime
      */
     public static String format(TemporalAccessor datetime)
     {
-        return DateTimeFormatter.RFC_1123_DATE_TIME
-            .withZone(UTC)
-            .format(datetime);
+        return IMF_FIXDATE.format(datetime);
     }
 }

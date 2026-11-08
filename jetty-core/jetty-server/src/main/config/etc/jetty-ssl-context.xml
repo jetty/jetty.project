@@ -61,6 +61,11 @@
         <Set name="keyManagerFactoryAlgorithm" property="jetty.sslContext.keyManagerFactoryAlgorithm" />
         <Set name="trustManagerFactoryAlgorithm" property="jetty.sslContext.trustManagerFactoryAlgorithm" />
         <Set name="sessionCachingEnabled" property="jetty.sslContext.sessionCachingEnabled" />
+        <Set name="aliasMapper">
+          <Get class="org.eclipse.jetty.util.ssl.SslContextFactory">
+            <Name><Property name="jetty.sslContext.aliasMapper" default="ALIAS_MAPPER_IDENTITY" /></Name>
+          </Get>
+        </Set>
       </New>
     </Arg>
   </Call>

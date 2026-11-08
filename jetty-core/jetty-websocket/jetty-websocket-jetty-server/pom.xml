@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>jetty-websocket</artifactId>
-    <version>12.1.10-SNAPSHOT</version>
+    <version>12.1.15-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-websocket-jetty-server</artifactId>
   <name>Core :: Websocket :: Jetty Server</name>
@@ -38,7 +38,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>org.eclipse.jetty.websocket.server.internal;version=${project.version}</Export-Package>
+            <Export-Package>org.eclipse.jetty.websocket.server.*;version=${project.version}</Export-Package>
           </instructions>
         </configuration>
       </plugin>

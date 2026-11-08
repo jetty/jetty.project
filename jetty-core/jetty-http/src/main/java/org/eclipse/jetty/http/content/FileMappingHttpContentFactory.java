@@ -212,7 +212,9 @@ public class FileMappingHttpContentFactory extends ContainerLifeCycle implements
 
                         ByteBuffer currentBuffer = _buffers[index];
                         int offset = index == beginIndex ? firstOffset : 0;
-                        int len = index == endIndex ? lastLen : -1;
+                        // lastLen is the end position within the last buffer, so the
+                        // length to write from offset is the distance between the two.
+                        int len = index == endIndex && lastLen >= 0 ? lastLen - offset : -1;
                         boolean last = index == endIndex;
                         index++;
                         sink.write(last, BufferUtil.slice(currentBuffer, offset, len), this);
@@ -229,7 +231,7 @@ public class FileMappingHttpContentFactory extends ContainerLifeCycle implements
         private int calculateLastLen(long offset, long length)
         {
             if (length == 0)
-                return 0;
+                return Math.toIntExact(offset % maxBufferSize);
             int lastLen = length < 0 ? -1 : Math.toIntExact((length + offset) % maxBufferSize);
             if (Math.toIntExact((length + offset) / maxBufferSize) == _buffers.length)
                 lastLen = -1;

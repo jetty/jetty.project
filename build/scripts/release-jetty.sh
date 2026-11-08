@@ -18,6 +18,7 @@ requiredExecutable "sed"
 requiredExecutable "gpg"
 requiredExecutable "egrep"
 requiredExecutable "mvn"
+requiredExecutable "dot"
 
 proceedyn() {
     while true; do
@@ -89,7 +90,7 @@ if [ ! -d "$ALT_DEPLOY_DIR" ] ; then
 fi
 
 # DEPLOY_OPTS="-Dmaven.test.failure.ignore=true"
-DEPLOY_OPTS="-DskipTests -Dasciidoctor.skip=false -Dmaven.build.cache.enabled=false"
+DEPLOY_OPTS="-DskipTests -DskipITs -Dasciidoctor.skip=false -Dmaven.build.cache.enabled=false"
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
 rm -rf .release-repository/
@@ -198,6 +199,7 @@ if proceedyn "Are you sure you want to release using above? (y/N)" n; then
 
     if proceedyn "Do you want to build changelog.md in target/changelog.md? (Y/n)" y; then
         mvn -N net.webtide.tools:webtide-release-tools-plugin:gh-release \
+            -Dmaven.build.cache.enabled=false \
             -Dwebtide.release.tools.refVersionCurrent=$TAG_NAME \
             -Dwebtide.release.tools.tagVersionPrior=$PREV_TAG -e
     fi

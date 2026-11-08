@@ -63,35 +63,42 @@ public class ProtocolHttpUpgrader implements HttpUpgrader
     @Override
     public void upgrade(Response response, EndPoint endPoint, Callback callback)
     {
-        if (response.getHeaders().contains(HttpHeader.UPGRADE, protocol))
+        try
         {
-            HttpClient httpClient = destination.getHttpClient();
-            HttpClientTransport transport = httpClient.getHttpClientTransport();
-            if (transport instanceof HttpClientTransportDynamic dynamicTransport)
+            if (response.getHeaders().contains(HttpHeader.UPGRADE, protocol))
             {
-                Origin origin = destination.getOrigin();
-                Origin newOrigin = new Origin(origin.getScheme(), origin.getAddress(), origin.getTag(), new Origin.Protocol(List.of(protocol), false), origin.getTransport());
-                Destination newDestination = httpClient.resolveDestination(newOrigin);
+                HttpClient httpClient = destination.getHttpClient();
+                HttpClientTransport transport = httpClient.getHttpClientTransport();
+                if (transport instanceof HttpClientTransportDynamic dynamicTransport)
+                {
+                    Origin origin = destination.getOrigin();
+                    Origin newOrigin = new Origin(origin.getScheme(), origin.getAddress(), origin.getTag(), new Origin.Protocol(List.of(protocol), false), origin.getTransport());
+                    Destination newDestination = httpClient.resolveDestination(newOrigin);
 
-                // Multiple threads may access the map, especially with DEBUG logging enabled.
-                Map<String, Object> context = new ConcurrentHashMap<>();
-                context.put(Destination.CONTEXT_KEY, newDestination);
-                context.put(HttpResponse.class.getName(), response);
-                context.put(Connection.PROMISE_CONTEXT_KEY, Promise.from(y -> callback.succeeded(), callback::failed));
+                    // Multiple threads may access the map, especially with DEBUG logging enabled.
+                    Map<String, Object> context = new ConcurrentHashMap<>();
+                    context.put(Destination.CONTEXT_KEY, newDestination);
+                    context.put(HttpResponse.class.getName(), response);
+                    context.put(Connection.PROMISE_CONTEXT_KEY, Promise.from(y -> callback.succeeded(), callback::failed));
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Upgrading {} on {}", response.getRequest(), endPoint);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Upgrading {} on {}", response.getRequest(), endPoint);
 
-                dynamicTransport.upgrade(endPoint, context);
+                    dynamicTransport.upgrade(endPoint, context);
+                }
+                else
+                {
+                    throw new HttpResponseException(HttpClientTransportDynamic.class.getName() + " required to upgrade to: " + protocol, response);
+                }
             }
             else
             {
-                callback.failed(new HttpResponseException(HttpClientTransportDynamic.class.getName() + " required to upgrade to: " + protocol, response));
+                throw new HttpResponseException("Not an upgrade to: " + protocol, response);
             }
         }
-        else
+        catch (Throwable t)
         {
-            callback.failed(new HttpResponseException("Not an upgrade to: " + protocol, response));
+            callback.failed(t);
         }
     }
 }

@@ -35,9 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.IsRunningStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.ShellStrategy;
-import org.testcontainers.images.PullPolicy;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -113,12 +113,12 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
         try (GenericContainer<?> genericContainer = new GenericContainer<>(jettyImage))
         {
-            genericContainer.withImagePullPolicy(PullPolicy.defaultPolicy());
             genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
 
             genericContainer.withExposedPorts(80, 8080) // jetty
                 .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
                 .withStartupAttempts(2)
+                .withLogConsumer(new Slf4jLogConsumer(LOG))
                 .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
                 .start();
 
@@ -126,7 +126,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
             // System.err.println("== jetty.sh start ==");
             Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
-            assertThat(result.getExitCode(), is(0));
+            assertThat(asReason(result, "jetty.sh start"), result.getExitCode(), is(0));
             /*
              * Example successful output
              * ----
@@ -154,13 +154,13 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
             // System.err.println("== jetty.sh status (should be running) ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
-            assertThat(result.getExitCode(), is(0));
+            assertThat(asReason(result, "jetty.sh status"), result.getExitCode(), is(0));
             Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
                 containsString("Jetty running pid"));
 
             // System.err.println("== jetty.sh stop ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "stop");
-            assertThat(result.getExitCode(), is(0));
+            assertThat(asReason(result, "jetty.sh stop"), result.getExitCode(), is(0));
             /* Looking for output from jetty.sh indicating a stopped jetty.
              * STDOUT Example 1
              * ----
@@ -177,7 +177,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
             // System.err.println("== jetty.sh status (should be stopped) ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
-            assertThat(result.getExitCode(), is(1));
+            assertThat(asReason(result, "jetty.sh status"), result.getExitCode(), is(1));
             Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
                 containsString("Jetty NOT running"));
 
@@ -200,7 +200,6 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
         try (GenericContainer<?> genericContainer = new GenericContainer<>(jettyImage))
         {
-            genericContainer.withImagePullPolicy(PullPolicy.defaultPolicy());
             genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
 
             genericContainer.withExposedPorts(80, 8080) // jetty
@@ -213,7 +212,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
             // System.err.println("== jetty.sh start ==");
             Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
-            assertThat(result.getExitCode(), is(0));
+            assertThat(asReason(result, "jetty.sh start"), result.getExitCode(), is(0));
             /*
              * Example successful output
              * ----
@@ -241,13 +240,13 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
             // System.err.println("== jetty.sh status (should be running) ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
-            assertThat(result.getExitCode(), is(0));
+            assertThat(asReason(result, "jetty.sh status"), result.getExitCode(), is(0));
             Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
                 containsString("Jetty running pid"));
 
             // System.err.println("== jetty.sh restart ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "restart");
-            assertThat(result.getExitCode(), is(0));
+            assertThat(asReason(result, "jetty.sh restart"), result.getExitCode(), is(0));
             Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
                 allOf(
                     containsString("Starting Jetty:"),
@@ -261,13 +260,13 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
             // System.err.println("== jetty.sh status (should be running) ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
-            assertThat(result.getExitCode(), is(0));
+            assertThat(asReason(result, "jetty.sh status"), result.getExitCode(), is(0));
             Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
                 containsString("Jetty running pid"));
 
             // System.err.println("== jetty.sh stop ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "stop");
-            assertThat(result.getExitCode(), is(0));
+            assertThat(asReason(result, "jetty.sh stop"), result.getExitCode(), is(0));
             /* Looking for output from jetty.sh indicating a stopped jetty.
              * STDOUT Example 1
              * ----
@@ -284,7 +283,7 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
             // System.err.println("== jetty.sh status (should be stopped) ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
-            assertThat(result.getExitCode(), is(1));
+            assertThat(asReason(result, "jetty.sh status"), result.getExitCode(), is(1));
             Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
                 containsString("Jetty NOT running"));
 
@@ -326,5 +325,10 @@ public class JettyShStartTest extends AbstractJettyHomeTest
         {
             container.start();
         }
+    }
+
+    private String asReason(Container.ExecResult result, String reason)
+    {
+        return String.format("%s%n--STDERR-%n%s--STDOUT--%s", reason, result.getStderr(), result.getStdout());
     }
 }

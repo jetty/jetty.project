@@ -822,4 +822,52 @@ public class HttpClientTransportDynamicTest
             assertThrows(TimeoutException.class, () -> client.GET(scheme + "://localhost:" + port));
         }
     }
+
+    @ParameterizedTest
+    @CsvSource(useHeadersInDisplayName = true, textBlock = """
+        secure , serverPreferH2 , clientPreferH2
+         false ,      false     ,      false
+         false ,      false     ,      true
+         false ,      true      ,      false
+         false ,      true      ,      true
+         true  ,      false     ,      false
+         true  ,      false     ,      true
+         true  ,      true      ,      false
+         true  ,      true      ,      true
+        """)
+    public void testClientForcesOlderProtocolServerRedirects(boolean secure, boolean serverPreferH2, boolean clientPreferH2) throws Exception
+    {
+        startServer(secure ? (serverPreferH2 ? this::sslAlpnH2H1 : this::sslAlpnH1H2) : this::h1H2C, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                String pathInContext = Request.getPathInContext(request);
+                if ("/first".equals(pathInContext))
+                    Response.sendRedirect(request, response, callback, "/second");
+                else
+                    Content.Sink.write(response, true, request.getConnectionMetaData().getProtocol(), callback);
+                return true;
+            }
+        });
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        ClientConnectionFactory.Info http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+        if (clientPreferH2)
+            startClient(clientConnector, http2, HttpClientConnectionFactory.HTTP11);
+        else
+            startClient(clientConnector, HttpClientConnectionFactory.HTTP11, http2);
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(secure ? HttpScheme.HTTPS.asString() : HttpScheme.HTTP.asString())
+            // Use an "older" protocol version.
+            .version(HttpVersion.HTTP_1_1)
+            .path("/first")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        HttpVersion serverVersion = HttpVersion.fromString(response.getContentAsString());
+        assertEquals(HttpVersion.HTTP_1_1, serverVersion);
+    }
 }

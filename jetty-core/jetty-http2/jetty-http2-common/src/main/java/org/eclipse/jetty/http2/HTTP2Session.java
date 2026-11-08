@@ -26,6 +26,7 @@ import java.util.EventListener;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -667,12 +668,18 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
     public void onStreamFailure(int streamId, int error, String reason)
     {
         HTTP2Stream stream = getStream(streamId);
-        Callback callback = Callback.from(() -> reset(stream, new ResetFrame(streamId, error), Callback.NOOP));
-        Throwable failure = toFailure(error, reason);
-        if (stream != null)
-            onStreamFailure(stream, error, reason, failure, callback);
-        else
-            callback.succeeded();
+        ResetFrame resetFrame = new ResetFrame(streamId, error);
+        if (stream == null)
+        {
+            reset(null, resetFrame, Callback.NOOP);
+            return;
+        }
+        // Reset the stream before notifying the application, so that
+        // the RST_STREAM frame carries this error code, rather than the
+        // one of any reset that the application may trigger in reaction
+        // to the failure (e.g. failing to write an error response).
+        stream.reset(resetFrame, Callback.NOOP);
+        onStreamFailure(stream, error, reason, toFailure(error, reason), Callback.NOOP);
     }
 
     protected void onStreamFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
@@ -863,6 +870,11 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
         return getParser().rateControlOnEvent(event);
     }
 
+    /**
+     * @param callback the callback to notify when the flush is complete
+     * @deprecated no replacement
+     */
+    @Deprecated(since = "12.1.10", forRemoval = true)
     public void flush(Callback callback)
     {
         Entry entry = new Entry(new FlushFrame(), null, callback)
@@ -2177,13 +2189,14 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                         closed = CloseState.CLOSING;
                         GoAwayFrame goAwayFrame = newGoAwayFrame(ErrorCode.NO_ERROR.code, reason);
                         zeroStreamsAction = () -> terminate(goAwayFrame);
-                        failure = new ClosedChannelException();
+                        failure = cause = new ClosedChannelException();
                         failStreams = true;
                     }
                     case CLOSING ->
                     {
                         if (failure == null)
                             failure = new ClosedChannelException();
+                        cause = failure;
                         failStreams = true;
                     }
                     default ->
@@ -2201,7 +2214,7 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                 {
                     // Since nothing else will arrive from the other peer, reset
                     // the streams for which the other peer did not send all frames.
-                    Predicate<Stream> failIf = stream -> !stream.isRemotelyClosed();
+                    Predicate<Stream> failIf = stream -> !((HTTP2Stream)stream).isLastDataReceived();
                     failStreams(failIf, reason, false, Callback.from(this::tryRunZeroStreamsAction));
                 }));
             }
@@ -2449,14 +2462,16 @@ public abstract class HTTP2Session extends AbstractLifeCycle implements Session,
                 LOG.debug("Terminating {}", HTTP2Session.this);
 
             CompletableFuture<Void> completable;
+            Throwable cause;
             try (AutoLock ignored = lock.lock())
             {
                 completable = shutdownCallback;
+                cause = failure;
             }
             if (completable != null)
                 completable.complete(null);
 
-            HTTP2Session.this.terminate(failure);
+            HTTP2Session.this.terminate(Objects.requireNonNullElseGet(cause, ClosedChannelException::new));
             notifyClose(HTTP2Session.this, frame, callback);
             notifyLifeCycleClose();
         }

@@ -30,12 +30,15 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Java NIO Path Resource.
  */
+@ManagedObject("A Path Resource")
 public class PathResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
@@ -172,6 +175,12 @@ public class PathResource extends Resource
             String uriString = uri.toASCIIString();
             if (!uriString.endsWith("/"))
                 uri = URIUtil.correctURI(URI.create(uriString + "/"));
+            else
+                uri = URIUtil.correctURI(uri);
+        }
+        else
+        {
+            uri = URIUtil.correctURI(uri);
         }
 
         this.path = path;
@@ -194,6 +203,7 @@ public class PathResource extends Resource
         }
     }
 
+    @ManagedAttribute("The Path")
     @Override
     public Path getPath()
     {
@@ -273,6 +283,7 @@ public class PathResource extends Resource
         return fn.toString();
     }
 
+    @ManagedAttribute("The URI")
     @Override
     public URI getURI()
     {
@@ -551,10 +562,11 @@ public class PathResource extends Resource
         String rawUri = pathUri.toASCIIString();
 
         if (Files.isDirectory(path) && !rawUri.endsWith("/"))
-        {
-            return URI.create(rawUri + '/');
-        }
-        return pathUri;
+            rawUri += '/';
+        // Always use the ASCII form, as some FileSystems (eg: zipfs) return
+        // URIs with raw non-ASCII characters, which are not equal to their
+        // percent-encoded equivalents used by the as-requested URI.
+        return URI.create(rawUri);
     }
 
     @Override

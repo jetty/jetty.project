@@ -13,15 +13,18 @@
 
 package org.eclipse.jetty.security.siwe.internal;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.security.ServerAuthException;
 import org.eclipse.jetty.security.siwe.EthereumAuthenticator;
-import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -104,13 +107,14 @@ public record SignInWithEthereumToken(String scheme,
     /**
      * @param signedMessage the {@link EthereumAuthenticator.SignedMessage}.
      * @param validateNonce a {@link Predicate} used to validate the nonce.
-     * @param domains the {@link IncludeExcludeSet} used to validate the domain.
-     * @param chainIds the {@link IncludeExcludeSet} used to validate the chainId.
+     * @param validateDomain a {@link Predicate} used to validate the domain.
+     * @param validateChainId a {@link Predicate} used to validate the chainId.
      * @throws ServerAuthException if the {@link EthereumAuthenticator.SignedMessage} fails validation.
      */
-    public void validate(EthereumAuthenticator.SignedMessage signedMessage, Predicate<String> validateNonce,
-                         IncludeExcludeSet<String, String> domains,
-                         IncludeExcludeSet<String, String> chainIds) throws ServerAuthException
+    public void validate(EthereumAuthenticator.SignedMessage signedMessage,
+                         Predicate<String> validateNonce,
+                         Predicate<String> validateDomain,
+                         Predicate<String> validateChainId) throws ServerAuthException
     {
         if (validateNonce != null && !validateNonce.test(nonce()))
             throw new ServerAuthException("invalid nonce " + nonce);
@@ -121,24 +125,33 @@ public record SignInWithEthereumToken(String scheme,
         if (!"1".equals(version()))
             throw new ServerAuthException("unsupported version " + version);
 
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
         if (StringUtil.isNotBlank(expirationTime()))
         {
-            LocalDateTime expirationTime = LocalDateTime.parse(expirationTime(), DateTimeFormatter.ISO_DATE_TIME);
+            Instant expirationTime = toInstant(expirationTime());
             if (now.isAfter(expirationTime))
                 throw new ServerAuthException("expired SIWE message");
         }
 
         if (StringUtil.isNotBlank(notBefore()))
         {
-            LocalDateTime notBefore = LocalDateTime.parse(notBefore(), DateTimeFormatter.ISO_DATE_TIME);
+            Instant notBefore = toInstant(notBefore());
             if (now.isBefore(notBefore))
                 throw new ServerAuthException("SIWE message not yet valid");
         }
 
-        if (domains != null && !domains.test(domain()))
+        if (validateDomain != null && !validateDomain.test(domain()))
             throw new ServerAuthException("unregistered domain: " + domain());
-        if (chainIds != null && !chainIds.test(chainId()))
+        if (validateChainId != null && !validateChainId.test(chainId()))
             throw new ServerAuthException("unregistered chainId: " + chainId());
+    }
+
+    private static Instant toInstant(String dateTime)
+    {
+        // The offset of the date-time must be honored, if there is no offset it is taken as local time.
+        TemporalAccessor parsed = DateTimeFormatter.ISO_DATE_TIME.parseBest(dateTime, OffsetDateTime::from, LocalDateTime::from);
+        if (parsed instanceof OffsetDateTime offsetDateTime)
+            return offsetDateTime.toInstant();
+        return LocalDateTime.from(parsed).atZone(ZoneId.systemDefault()).toInstant();
     }
 }

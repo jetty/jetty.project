@@ -170,6 +170,37 @@ public class HttpConnectionTest
         assertThat(response, containsString("<th>MESSAGE:</th><td>Unsupported Version</td>"));
     }
 
+    public static Stream<Arguments> http10ComplianceMethods()
+    {
+        List<Arguments> cases = new ArrayList<>();
+        for (String method : List.of("GET", "POST", "HEAD", "PUT", "DELETE"))
+        {
+            for (String compliance : List.of("LEGACY", "RFC2616_LEGACY", "RFC7230_LEGACY", "RFC2616", "RFC7230"))
+            {
+                cases.add(Arguments.of(method, compliance));
+            }
+        }
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("http10ComplianceMethods")
+    public void testHttp10WithCompliance(String method, String complianceName) throws Exception
+    {
+        _server.start();
+        HttpCompliance compliance = HttpCompliance.valueOf(complianceName);
+        _connector.getConnectionFactory(HttpConnectionFactory.class)
+            .getHttpConfiguration()
+            .setHttpCompliance(compliance);
+
+        String request = method + " /hello HTTP/1.0\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n";
+
+        String response = _connector.getResponse(request);
+        assertThat(response, startsWith("HTTP/1.1 "));
+    }
+
     /**
      * HTTP/0.9 does not support headers
      */
@@ -1255,6 +1286,78 @@ public class HttpConnectionTest
         checkContains(response, 0, "LongStr: thisisastringthatshouldreachover12kbytes");
         checkContains(response, 0, "XXX_Z_");
         assertThat(checkError.getCount(), is(1L));
+    }
+
+    public static Stream<Arguments> persistenceWithLargeResponseHeaders()
+    {
+        String expect100 = """
+            POST / HTTP/1.1\r
+            Host: localhost\r
+            Expect: 100-continue\r
+            Content-Length: 1\r
+            \r
+            """;
+        String requestClose = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """;
+        String keepAlive = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            \r
+            """;
+        // The padding sizes exercise the paths without and with response header overflow.
+        return Stream.of(10, 9000).flatMap(padding -> Stream.of(
+            Arguments.of(expect100, padding, false),
+            Arguments.of(requestClose, padding, false),
+            Arguments.of(keepAlive, padding, true)
+        ));
+    }
+
+    @ParameterizedTest
+    @MethodSource("persistenceWithLargeResponseHeaders")
+    public void testPersistenceWithLargeResponseHeaders(String rawRequest, int padding, boolean persistent) throws Exception
+    {
+        httpConfig.setResponseHeaderSize(8 * 1024);
+        httpConfig.setMaxResponseHeaderSize(1024 * 1024);
+        String paddingValue = "X".repeat(padding);
+        _server.setHandler(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Respond without reading the request content, if any.
+                response.getHeaders().put("X-Padding", paddingValue);
+                response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
+                response.write(true, BufferUtil.toBuffer("hello"), callback);
+                return true;
+            }
+        });
+        _server.start();
+
+        LocalConnector.LocalEndPoint endPoint = _connector.connect();
+        endPoint.addInput(rawRequest);
+        HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get("X-Padding"), is(paddingValue));
+        assertThat(response.getContent(), is("hello"));
+        if (persistent)
+        {
+            assertFalse(response.contains(HttpHeader.CONNECTION, "close"));
+            // The connection must still be usable.
+            endPoint.addInput(rawRequest);
+            response = HttpTester.parseResponse(endPoint.getResponse());
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.get("X-Padding"), is(paddingValue));
+        }
+        else
+        {
+            assertTrue(response.contains(HttpHeader.CONNECTION, "close"));
+            endPoint.waitUntilClosed();
+        }
     }
 
     @Test

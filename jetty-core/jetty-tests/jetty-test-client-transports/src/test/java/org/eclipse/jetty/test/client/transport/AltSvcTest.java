@@ -14,6 +14,7 @@
 package org.eclipse.jetty.test.client.transport;
 
 import java.time.Duration;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -47,11 +48,16 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(WorkDirExtension.class)
+// Isolated because the default Locale is changed.
+@Isolated
 public class AltSvcTest
 {
     public WorkDir workDir;
@@ -142,8 +148,9 @@ public class AltSvcTest
             "Alt-Svc header should contain HTTP/3 port without ma attribute by default");
     }
 
-    @Test
-    public void testAltSvcHeaderWithCustomMaxAge() throws Exception
+    @ParameterizedTest
+    @ValueSource(strings = {"en-US", "ar-EG-u-nu-arab"})
+    public void testAltSvcHeaderWithCustomMaxAge(String languageTag) throws Exception
     {
         // Setup server with HTTP/2 (TLS) and HTTP/3 on different ports
         server = new Server();
@@ -211,11 +218,23 @@ public class AltSvcTest
         client = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
         client.start();
 
-        // Make HTTP/2 request
-        ContentResponse response = client.newRequest("localhost", h2Port)
-            .scheme("https")
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+        // Make HTTP/2 request, the Alt-Svc header must not depend on the default Locale
+        // as the Arabic-Egyptian locale with Arabic digits does not format numbers using the ascii
+        // characters 0-9 but with other UTF characters instead.
+        ContentResponse response;
+        Locale defaultLocale = Locale.getDefault();
+        try
+        {
+            Locale.setDefault(Locale.forLanguageTag(languageTag));
+            response = client.newRequest("localhost", h2Port)
+                .scheme("https")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        }
+        finally
+        {
+            Locale.setDefault(defaultLocale);
+        }
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
 

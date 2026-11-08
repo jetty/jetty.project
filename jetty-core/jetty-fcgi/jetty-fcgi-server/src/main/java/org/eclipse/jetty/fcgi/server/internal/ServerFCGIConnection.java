@@ -59,6 +59,7 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
     private boolean useOutputDirectByteBuffers;
     private RetainableByteBuffer inputBuffer;
     private HttpStreamOverFCGI stream;
+    private Runnable onRequest;
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
@@ -191,6 +192,10 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                     {
                         if (stream == null && inputBuffer.isEmpty())
                             releaseInputBuffer();
+                        Runnable task = onRequest;
+                        onRequest = null;
+                        if (task != null)
+                            getExecutor().execute(task);
                         return;
                     }
                 }
@@ -359,9 +364,8 @@ public class ServerFCGIConnection extends AbstractMetaDataConnection implements 
                 LOG.debug("Request {} headers on {}", request, stream);
             if (stream != null)
             {
-                stream.onHeaders();
-                // We have dispatched to the application,
-                // so we must stop the fill & parse loop.
+                onRequest = stream.onHeaders();
+                // Return to onFillable() before dispatching to the application.
                 return true;
             }
             return false;

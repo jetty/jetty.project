@@ -21,9 +21,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
-import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.io.RateControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

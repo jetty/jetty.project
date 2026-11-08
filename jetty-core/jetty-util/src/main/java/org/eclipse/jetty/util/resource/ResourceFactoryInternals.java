@@ -20,12 +20,28 @@ import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import javax.management.Attribute;
+import javax.management.AttributeList;
+import javax.management.AttributeNotFoundException;
+import javax.management.DynamicMBean;
+import javax.management.InvalidAttributeValueException;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanConstructorInfo;
+import javax.management.MBeanException;
+import javax.management.MBeanInfo;
+import javax.management.MBeanNotificationInfo;
+import javax.management.MBeanOperationInfo;
+import javax.management.ReflectionException;
 
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -55,7 +71,7 @@ class ResourceFactoryInternals
 
         /* Best-effort attempt to support an alternate FileSystem type that is in use for classpath
          * resources.
-         * 
+         *
          * The build.properties is present in the jetty-util jar, and explicitly included for reflection
          * with native-image (unlike classes, which are not accessible by default), so we use that
          * resource as a reference.
@@ -100,7 +116,7 @@ class ResourceFactoryInternals
      * @see ResourceFactory#unregisterResourceFactory(String)
      * @see #isSupported(String)
      */
-    static boolean isSupported(URI uri) // TODO: boolean isSupported
+    static boolean isSupported(URI uri)
     {
         if (uri == null || uri.getScheme() == null)
             return false;
@@ -127,6 +143,8 @@ class ResourceFactoryInternals
     interface Tracking
     {
         int getTrackingCount();
+
+        List<Resource> getTrackedResources();
     }
 
     static class Closeable implements ResourceFactory.Closeable, Tracking
@@ -149,15 +167,24 @@ class ResourceFactoryInternals
             _compositeResourceFactory.closeFileSystems();
         }
 
+        @ManagedAttribute("Count of Tracked Resources")
         public int getTrackingCount()
         {
             return _compositeResourceFactory.mounted.size();
         }
+
+        @Override
+        @ManagedAttribute("Tracked Resources")
+        public List<Resource> getTrackedResources()
+        {
+            return Collections.unmodifiableList(_compositeResourceFactory.mounted);
+        }
     }
 
-    static class LifeCycle extends AbstractLifeCycle implements ResourceFactory.LifeCycle
+    static class LifeCycle extends AbstractLifeCycle implements ResourceFactory.LifeCycle, Tracking, DynamicMBean
     {
         private final CompositeResourceFactory _compositeResourceFactory = new CompositeResourceFactory();
+        private MBeanInfo mBeanInfo;
 
         @Override
         public Resource newResource(URI uri)
@@ -181,8 +208,112 @@ class ResourceFactoryInternals
                 .toList();
             Dumpable.dumpObjects(out, indent, this, new DumpableCollection("newResourceReferences", referencedUris));
         }
+
+        public int getTrackingCount()
+        {
+            return _compositeResourceFactory.mounted.size();
+        }
+
+        @Override
+        public List<Resource> getTrackedResources()
+        {
+            return Collections.unmodifiableList(_compositeResourceFactory.mounted);
+        }
+
+        @Override
+        public Object getAttribute(String name) throws AttributeNotFoundException, MBeanException, ReflectionException
+        {
+            Objects.requireNonNull(name, "Attribute Name");
+
+            return switch (name)
+            {
+                case "trackedCount" -> getTrackingCount();
+                case "trackedResources" -> getTrackedResources();
+                default ->
+                    throw new AttributeNotFoundException("Cannot find " + name + " attribute in " + this.getClass().getName());
+            };
+        }
+
+        @Override
+        public void setAttribute(Attribute attribute) throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException
+        {
+            Objects.requireNonNull(attribute, "attribute");
+            String name = attribute.getName();
+            // No attributes are writable
+            throw new AttributeNotFoundException("Cannot set attribute " + name + " because it is read-only");
+        }
+
+        @Override
+        public AttributeList getAttributes(String[] attributeNames)
+        {
+            Objects.requireNonNull(attributeNames, "attributeNames[]");
+
+            AttributeList ret = new AttributeList();
+
+            for (String name : attributeNames)
+            {
+                try
+                {
+                    Object value = getAttribute(name);
+                    ret.add(new Attribute(name, value));
+                }
+                catch (Exception e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unable to get JMX Attribute [{}]", name, e);
+                }
+            }
+            return ret;
+        }
+
+        @Override
+        public AttributeList setAttributes(AttributeList attributes)
+        {
+            return new AttributeList();
+        }
+
+        @Override
+        public Object invoke(String actionName, Object[] params, String[] signature) throws MBeanException, ReflectionException
+        {
+            throw new ReflectionException(
+                new NoSuchMethodException(actionName),
+                "Cannot find the operation " + actionName + " in " + this.getClass().getName());
+        }
+
+        @Override
+        public MBeanInfo getMBeanInfo()
+        {
+            if (mBeanInfo != null)
+                return mBeanInfo;
+
+            MBeanAttributeInfo[] attrs = new MBeanAttributeInfo[2];
+            attrs[0] = new MBeanAttributeInfo(
+                "trackedCount",
+                "java.lang.Integer",
+                "Count of Tracked Resources",
+                true,
+                false,
+                false);
+            attrs[1] = new MBeanAttributeInfo(
+                "trackedResources",
+                "org.eclipse.jetty.util.resource.Resource",
+                "Tracked Resources",
+                true,
+                false,
+                false);
+
+            mBeanInfo = new MBeanInfo(this.getClass().getName(),
+                "Factory for Resources",
+                attrs,
+                new MBeanConstructorInfo[0],
+                new MBeanOperationInfo[0],
+                new MBeanNotificationInfo[0]);
+
+            return mBeanInfo;
+        }
     }
 
+    @ManagedObject("Composite Factory for Resources")
     static class CompositeResourceFactory implements ResourceFactory
     {
         private final List<MountedPathResource> mounted = new CopyOnWriteArrayList<>();

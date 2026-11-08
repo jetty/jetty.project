@@ -21,6 +21,7 @@ import java.net.URL;
 import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +62,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
                     }
                 }
                 if (Resources.missing(dftResource))
-                    dftResource = context.newResource(defaultsDescriptor);
+                    dftResource = ResourceFactory.of(context).newResource(defaultsDescriptor);
             }
             if (Resources.isReadableFile(dftResource))
                 context.getMetaData().setDefaultsDescriptor(new DefaultsDescriptor(dftResource));
@@ -83,7 +84,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
             {
                 Resource orideResource = context.getResourceFactory().newClassLoaderResource(overrideDescriptor);
                 if (Resources.missing(orideResource))
-                    orideResource = context.newResource(overrideDescriptor);
+                    orideResource = ResourceFactory.of(context).newResource(overrideDescriptor);
                 if (Resources.isReadableFile(orideResource))
                     context.getMetaData().addOverrideDescriptor(new OverrideDescriptor(orideResource));
             }
@@ -104,7 +105,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
         String descriptor = context.getDescriptor();
         if (descriptor != null)
         {
-            Resource web = context.newResource(descriptor);
+            Resource web = ResourceFactory.of(context).newResource(descriptor);
             if (web != null && !web.isDirectory())
                 return web;
         }

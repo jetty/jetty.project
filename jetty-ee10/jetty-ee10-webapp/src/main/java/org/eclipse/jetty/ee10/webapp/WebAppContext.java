@@ -1620,11 +1620,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         if (resource == null)
         {
-            if (getWar() == null || getWar().length() == 0)
+            if (getWar() == null || getWar().isEmpty())
                 throw new IllegalStateException("No resourceBase or war set for context");
 
             // Use name of given resource in the temporary dirname
-            resource = newResource(getWar());
+            resource = ResourceFactory.of(this).newResource(getWar());
         }
         return resource;
     }

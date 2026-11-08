@@ -202,7 +202,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     {
         int port = serverConnector.getLocalPort();
         String hostPort = "127.0.0.1:" + port;
-        connectHandler.getWhiteListHosts().add(hostPort);
+        connectHandler.getHostIncludeExclude().include(hostPort);
 
         // Try with the wrong host
         String request =
@@ -265,7 +265,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
     {
         int port = serverConnector.getLocalPort();
         String hostPort = "localhost:" + port;
-        connectHandler.getBlackListHosts().add(hostPort);
+        connectHandler.getHostIncludeExclude().exclude(hostPort);
 
         // Try with the wrong host
         String request =

@@ -27,6 +27,7 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -211,14 +212,15 @@ public class BalancerServlet extends ProxyServlet
     }
 
     @Override
-    protected String filterServerResponseHeader(HttpServletRequest request, Response serverResponse, String headerName, String headerValue)
+    protected HttpField filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, HttpField httpField)
     {
+        String headerName = httpField.getName();
         if (_proxyPassReverse && REVERSE_PROXY_HEADERS.contains(headerName))
         {
-            URI locationURI = URI.create(headerValue).normalize();
+            URI locationURI = URI.create(httpField.getValue()).normalize();
             if (locationURI.isAbsolute() && isBackendLocation(locationURI))
             {
-                StringBuilder newURI = URIUtil.newURIBuilder(request.getScheme(), request.getServerName(), request.getServerPort());
+                StringBuilder newURI = URIUtil.newURIBuilder(clientRequest.getScheme(), clientRequest.getServerName(), clientRequest.getServerPort());
                 String component = locationURI.getRawPath();
                 if (component != null)
                     newURI.append(component);
@@ -228,10 +230,10 @@ public class BalancerServlet extends ProxyServlet
                 component = locationURI.getRawFragment();
                 if (component != null)
                     newURI.append('#').append(component);
-                return URI.create(newURI.toString()).normalize().toString();
+                return new HttpField(headerName, URI.create(newURI.toString()).normalize().toString());
             }
         }
-        return headerValue;
+        return httpField;
     }
 
     private boolean isBackendLocation(URI locationURI)

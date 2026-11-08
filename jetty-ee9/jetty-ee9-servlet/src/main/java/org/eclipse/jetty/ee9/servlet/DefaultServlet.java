@@ -222,7 +222,7 @@ public class DefaultServlet extends HttpServlet implements WelcomeFactory
                 throw new UnavailableException("baseResource & relativeBaseResource");
             try
             {
-                _baseResource = _contextHandler.newResource(br);
+                _baseResource = ResourceFactory.of(_contextHandler).newResource(br);
             }
             catch (Exception e)
             {

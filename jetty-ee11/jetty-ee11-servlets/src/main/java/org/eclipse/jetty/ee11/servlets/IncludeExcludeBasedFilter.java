@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
+import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.StringUtil;
@@ -65,7 +66,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class IncludeExcludeBasedFilter implements Filter
 {
-    private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
+    private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>(AsciiLowerCaseSet.class);
     private final IncludeExclude<String> _httpMethods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private static final Logger LOG = LoggerFactory.getLogger(IncludeExcludeBasedFilter.class);

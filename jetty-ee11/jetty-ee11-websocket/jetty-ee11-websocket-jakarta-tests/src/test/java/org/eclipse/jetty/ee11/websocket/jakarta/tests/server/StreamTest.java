@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
-import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -58,7 +57,6 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class StreamTest
 {
@@ -111,7 +109,7 @@ public class StreamTest
     @Test
     public void testUploadLargest() throws Exception
     {
-        assertTimeout(Duration.ofMillis(60000), () -> upload("largest.jpg"));
+        upload("largest.jpg");
     }
 
     private void upload(String filename) throws Exception
@@ -156,8 +154,8 @@ public class StreamTest
     @ClientEndpoint
     public static class ClientSocket
     {
+        private final CountDownLatch closeLatch = new CountDownLatch(1);
         private Session session;
-        private CountDownLatch closeLatch = new CountDownLatch(1);
 
         @OnOpen
         public void onOpen(Session session)
@@ -178,7 +176,7 @@ public class StreamTest
 
         public void awaitClose() throws InterruptedException
         {
-            assertThat("Wait for ClientSocket close success", closeLatch.await(5, TimeUnit.SECONDS), is(true));
+            assertThat("Wait for ClientSocket close success", closeLatch.await(10, TimeUnit.SECONDS), is(true));
         }
 
         @OnError

@@ -74,6 +74,7 @@ public class CompactPathRule extends Rule
     private List<Listener> listeners = new ArrayList<>();
     private boolean decoding = false;
     private boolean canonicalizing = false;
+    private boolean preserveViolations = false;
 
     public void addListener(Listener listener)
     {
@@ -105,12 +106,31 @@ public class CompactPathRule extends Rule
         this.decoding = decoding;
     }
 
+    /**
+     * Flag to preserve original HTTP UriCompliance Violations on any rewritten HTTP URI from this rule.
+     *
+     * @return true to preserve, false to not.
+     */
+    public boolean isPreserveViolations()
+    {
+        return preserveViolations;
+    }
+
+    /**
+     * Flag to preserve original HTTP UriCompliance Violations on any rewritten HTTP URI from this rule.
+     *
+     * @param preserveViolations true to preserve, false to not.
+     */
+    public void setPreserveViolations(boolean preserveViolations)
+    {
+        this.preserveViolations = preserveViolations;
+    }
+
     @Override
     public Handler matchAndApply(Handler input) throws IOException
     {
         // Get the path without extra things like path parameters
-        String path = input.getHttpURI().getCanonicalPath();
-        String cleanedPath = path;
+        String cleanedPath = input.getHttpURI().getCanonicalPath();
 
         if (isDecoding())
             cleanedPath = URIUtil.decodePath(cleanedPath);
@@ -122,9 +142,11 @@ public class CompactPathRule extends Rule
                 notifyPathCompaction(input, cleanedPath, "Navigate above root URL");
 
                 // Attempted to navigate to above root URL
-                HttpURI uri = HttpURI.build(input.getHttpURI())
-                    .path("/")
-                    .asImmutable();
+                HttpURI.Mutable uriBuilder = HttpURI.build(input.getHttpURI())
+                    .path("/");
+                if (isPreserveViolations())
+                    uriBuilder.addViolations(input.getHttpURI().getViolations());
+                HttpURI uri = uriBuilder.asImmutable();
 
                 return new HttpURIHandler(input, uri);
             }
@@ -139,10 +161,11 @@ public class CompactPathRule extends Rule
 
         try
         {
-            HttpURI uri = HttpURI.build(input.getHttpURI())
-                .path(cleanedPath)
-                .asImmutable();
-
+            HttpURI.Mutable uriBuilder = HttpURI.build(input.getHttpURI())
+                .path(cleanedPath);
+            if (isPreserveViolations())
+                uriBuilder.addViolations(input.getHttpURI().getViolations());
+            HttpURI uri = uriBuilder.asImmutable();
             return new HttpURIHandler(input, uri);
         }
         catch (IllegalArgumentException e)

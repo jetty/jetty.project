@@ -18,6 +18,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.security.SecureRandom;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,10 +41,12 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.RoleDelegateUserIdentity;
 import org.eclipse.jetty.security.UserIdentity;
 import org.eclipse.jetty.security.openid.OpenIdConfiguration;
 import org.eclipse.jetty.security.openid.OpenIdCredentials;
 import org.eclipse.jetty.security.openid.OpenIdLoginService;
+import org.eclipse.jetty.security.openid.OpenIdUserPrincipal;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -235,7 +238,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         if (user != null)
         {
             HttpSession session = ((HttpServletRequest)request).getSession();
-            Authentication cached = new SessionAuthentication(getAuthMethod(), user, credentials);
+            Authentication cached = newSessionAuthentication(getAuthMethod(), user, credentials);
             synchronized (session)
             {
                 session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
@@ -516,9 +519,32 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             Authentication authentication = (Authentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
             if (authentication != null)
             {
+                boolean isUserIdentityValid = false;
+                if (authentication instanceof Authentication.User userAuthentication && _loginService != null)
+                {
+                    UserIdentity userIdentity = userAuthentication.getUserIdentity();
+                    Principal principal = userIdentity.getUserPrincipal();
+                    if (principal instanceof OpenIdUserPrincipal)
+                    {
+                        isUserIdentityValid = _loginService.validate(userIdentity);
+                    }
+                    else
+                    {
+                        // We need to reconstruct the OpenIdUserPrincipal.
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> claims = (Map<String, Object>)session.getAttribute(CLAIMS);
+                        if (claims != null)
+                        {
+                            OpenIdCredentials openIdCredentials = new OpenIdCredentials(claims);
+                            OpenIdUserPrincipal openIdUserPrincipal = new OpenIdUserPrincipal(openIdCredentials);
+                            userIdentity = new RoleDelegateUserIdentity(userIdentity.getSubject(), openIdUserPrincipal, userIdentity);
+                            isUserIdentityValid = _loginService.validate(userIdentity);
+                        }
+                    }
+                }
+
                 // Has authentication been revoked?
-                if (authentication instanceof Authentication.User && _loginService != null &&
-                    !_loginService.validate(((Authentication.User)authentication).getUserIdentity()))
+                if (!isUserIdentityValid)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("auth revoked {}", authentication);
@@ -568,7 +594,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 return Authentication.UNAUTHENTICATED;
             }
 
-            // Send the the challenge.
+            // Send the challenge.
             String challengeUri = getChallengeUri(baseRequest);
             if (LOG.isDebugEnabled())
                 LOG.debug("challenge {}->{}", session.getId(), challengeUri);

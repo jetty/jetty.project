@@ -302,6 +302,7 @@ public class SelectorManagerDocs
                     // The iteration completed.
                     getEndPoint().close(cause);
                     buffer = Retainable.release(buffer);
+                    super.onCompleted(cause);
                 }
 
                 @Override

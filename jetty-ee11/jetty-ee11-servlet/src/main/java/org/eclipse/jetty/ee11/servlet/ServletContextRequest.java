@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import jakarta.servlet.AsyncListener;
@@ -25,6 +26,8 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestWrapper;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
@@ -114,6 +117,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     private HttpFields _trailers;
     private ManagedSession _managedSession;
     AbstractSessionManager.RequestedSession _requestedSession;
+    private ServletRequest _servletRequest;
+    private ServletResponse _servletResponse;
 
     protected ServletContextRequest(
         ServletContextHandler.ServletContextApi servletContextApi,
@@ -142,8 +147,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
                     case SSL_SESSION_ID -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.sslSessionId() : null;
                     case PEER_CERTIFICATES -> super.getAttribute(EndPoint.SslSessionData.ATTRIBUTE) instanceof EndPoint.SslSessionData data ? data.peerCertificates() : null;
                     case ServletContextRequest.MULTIPART_CONFIG_ELEMENT -> _matchedResource.getResource().getServletHolder().getMultipartConfigElement();
-                    case FormFields.MAX_FIELDS_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormKeys();
-                    case FormFields.MAX_LENGTH_ATTRIBUTE -> getServletContext().getServletContextHandler().getMaxFormContentSize();
+                    case FormFields.MAX_FIELDS_ATTRIBUTE -> Objects.requireNonNullElseGet(getWrapped().getAttribute(name), () -> getServletContext().getServletContextHandler().getMaxFormKeys());
+                    case FormFields.MAX_LENGTH_ATTRIBUTE -> Objects.requireNonNullElseGet(getWrapped().getAttribute(name), () -> getServletContext().getServletContextHandler().getMaxFormContentSize());
                     default -> null;
                 };
             }
@@ -339,8 +344,8 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
     @Override
     public Object getAttribute(String name)
     {
-        if (AbstractSessionManager.RequestedSession.class.getName().equals(name))
-            return _requestedSession;
+        if (AbstractSessionManager.RequestedSession.isApplicableAttribute(name))
+            return _requestedSession.getAttribute(name);
         return _attributes.getAttribute(name);
     }
 
@@ -390,9 +395,49 @@ public class ServletContextRequest extends ContextRequest implements ServletCont
         return _servletApiRequest;
     }
 
-    public HttpServletResponse getHttpServletResponse()
+    public ServletApiResponse getServletApiResponse()
     {
         return _response.getServletApiResponse();
+    }
+
+    public HttpServletRequest getHttpServletRequest()
+    {
+        ServletRequest servletRequest = getServletRequest();
+        if (servletRequest == null)
+            return getServletApiRequest();
+        if (!(servletRequest instanceof HttpServletRequest httpServletRequest))
+            throw new IllegalStateException("Not an HTTP request");
+        return httpServletRequest;
+    }
+
+    public HttpServletResponse getHttpServletResponse()
+    {
+        ServletResponse servletResponse = getServletResponse();
+        if (servletResponse == null)
+            return getServletApiResponse();
+        if  (!(servletResponse instanceof HttpServletResponse httpServletResponse))
+            throw new IllegalStateException("Not an HTTP response");
+        return httpServletResponse;
+    }
+
+    public ServletRequest getServletRequest()
+    {
+        return _servletRequest;
+    }
+
+    public ServletResponse getServletResponse()
+    {
+        return _servletResponse;
+    }
+
+    public void setServletRequest(ServletRequest servletRequest)
+    {
+        _servletRequest = servletRequest;
+    }
+
+    public void setServletResponse(ServletResponse servletResponse)
+    {
+        _servletResponse = servletResponse;
     }
 
     public String getServletName()

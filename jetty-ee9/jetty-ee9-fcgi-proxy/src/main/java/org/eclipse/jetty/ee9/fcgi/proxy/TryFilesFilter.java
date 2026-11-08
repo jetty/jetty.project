@@ -29,7 +29,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 
 /**
  * Inspired by nginx's try_files functionality.
@@ -128,7 +128,14 @@ public class TryFilesFilter implements Filter
             path += info;
         if (!path.startsWith("/"))
             path = "/" + path;
-        return StringUtil.replace(value, "$path", path);
+        int p = value.indexOf("$path");
+        if (p < 0)
+            return value;
+        int q = value.indexOf('?');
+        if (q < 0)
+            return value.replace("$path", path);
+        return value.substring(0, q).replace("$path", path) +
+            value.substring(q).replace("$path", URIUtil.encodePathForQuery(path));
     }
 
     @Override

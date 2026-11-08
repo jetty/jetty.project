@@ -52,6 +52,10 @@ import static org.hamcrest.core.Is.is;
 @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Fails on Windows")
 public class LowLevelQuicheClientCertTest
 {
+    // Post-quantum key shares make the ClientHello span multiple Initial packets,
+    // disable them to keep the handshake packet sizes deterministic.
+    private static final String NO_PQ_CURVES = "X25519:P-256:P-384";
+
     public WorkDir workDir;
 
     private final Collection<ForeignQuicheConnection> connectionsToDisposeOf = new ArrayList<>();
@@ -81,6 +85,7 @@ public class LowLevelQuicheClientCertTest
 
         clientQuicheConfig = new QuicheConfig();
         clientQuicheConfig.setApplicationProtos("http/0.9");
+        clientQuicheConfig.setCurvesList(NO_PQ_CURVES);
         clientQuicheConfig.setDisableActiveMigration(true);
         clientQuicheConfig.setPrivKeyPemPath(keyPair[0].toString());
         clientQuicheConfig.setCertChainPemPath(keyPair[1].toString());
@@ -100,6 +105,7 @@ public class LowLevelQuicheClientCertTest
         serverQuicheConfig.setPrivKeyPemPath(keyPair[0].toString());
         serverQuicheConfig.setCertChainPemPath(keyPair[1].toString());
         serverQuicheConfig.setApplicationProtos("http/0.9");
+        serverQuicheConfig.setCurvesList(NO_PQ_CURVES);
         serverQuicheConfig.setVerifyPeer(true);
         serverQuicheConfig.setTrustedCertsPemPath(trustStorePath.toString());
         serverQuicheConfig.setMaxIdleTimeout(1_000L);

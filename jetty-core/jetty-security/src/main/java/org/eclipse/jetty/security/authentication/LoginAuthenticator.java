@@ -42,6 +42,7 @@ public abstract class LoginAuthenticator implements Authenticator
     private boolean _sessionRenewedOnAuthentication;
     private int _sessionMaxInactiveIntervalOnAuthentication;
     private boolean _proxy;
+    private boolean _persistAuthenticationCredentials;
 
     protected LoginAuthenticator()
     {
@@ -160,6 +161,12 @@ public abstract class LoginAuthenticator implements Authenticator
             throw new IllegalStateException("No IdentityService for " + this + " in " + configuration);
         _sessionRenewedOnAuthentication = configuration.isSessionRenewedOnAuthentication();
         _sessionMaxInactiveIntervalOnAuthentication = configuration.getSessionMaxInactiveIntervalOnAuthentication();
+        _persistAuthenticationCredentials = configuration.isPersistAuthenticationCredentials();
+    }
+
+    public boolean isPersistAuthenticationCredentials()
+    {
+        return _persistAuthenticationCredentials;
     }
 
     public LoginService getLoginService()
@@ -170,6 +177,11 @@ public abstract class LoginAuthenticator implements Authenticator
     public void setLoginService(LoginService loginService)
     {
         _loginService = loginService;
+    }
+
+    public SessionAuthentication newSessionAuthentication(String method, UserIdentity userIdentity, Object credentials)
+    {
+        return new SessionAuthentication(method, userIdentity, credentials, isPersistAuthenticationCredentials());
     }
 
     /**
@@ -251,17 +263,17 @@ public abstract class LoginAuthenticator implements Authenticator
             {
                 LoginService loginService = security.getLoginService();
                 if (loginService != null)
-                    loginService.logout(((Succeeded)this).getUserIdentity());
+                    loginService.logout(getUserIdentity());
                 IdentityService identityService = security.getIdentityService();
                 if (identityService != null)
-                    identityService.onLogout(((Succeeded)this).getUserIdentity());
+                    identityService.onLogout(getUserIdentity());
 
                 Authenticator authenticator = security.getAuthenticator();
 
                 AuthenticationState authenticationState = null;
                 if (authenticator instanceof LoginAuthenticator loginAuthenticator)
                 {
-                    ((LoginAuthenticator)authenticator).logout(request, response);
+                    loginAuthenticator.logout(request, response);
                     authenticationState = new LoginAuthenticator.LoggedOutAuthentication(loginAuthenticator);
                 }
                 AuthenticationState.setAuthenticationState(request, authenticationState);

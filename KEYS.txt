@@ -6,5 +6,6 @@ Joakim Erdfelt  <joakime@apache.org>          B59B 67FD 7904 9843 67F9  3180 081
 Joakim Erdfelt  <joakim@erdfelt.com>          BFBB 21C2 46D7 7768 3628  7A48 A04E 0C74 ABB3 5FEA
 Simone Bordet   <simone.bordet@gmail.com>     8B09 6546 B1A8 F026 56B1  5D3B 1677 D141 BCF3 584D
 Olivier Lamy    <olamy@apache.org>            F254 B356 17DC 255D 9344  BCFA 873A 8E86 B437 2146
+Olivier Lamy    <olamy@apache.org>            716E E302 674C DBB2 E660  E1B4 4DB5 EA09 F2E3 C800
 Ludovic Orban   <lorban@bitronix.be>          CD38 A1DA DA34 13BE 96DF  547F 3D14 6A4A 1C58 367E
 Lachlan Roberts <lachlan.p.roberts@gmail.com> 75DE 085F 73C1 2232 6066  3C24 5663 FB7A 8FF7 E348

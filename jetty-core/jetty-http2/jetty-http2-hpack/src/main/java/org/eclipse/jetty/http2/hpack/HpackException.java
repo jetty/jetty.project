@@ -73,6 +73,11 @@ public abstract class HpackException extends Exception
         {
             super(messageFormat, args);
         }
+
+        public SessionException(Throwable cause, String messageFormat, Object... args)
+        {
+            super(cause, messageFormat, args);
+        }
     }
 
     public static class CompressionException extends SessionException
@@ -80,6 +85,11 @@ public abstract class HpackException extends Exception
         public CompressionException(String messageFormat, Object... args)
         {
             super(messageFormat, args);
+        }
+
+        public CompressionException(Throwable cause, String messageFormat, Object... args)
+        {
+            super(cause, messageFormat, args);
         }
     }
 }

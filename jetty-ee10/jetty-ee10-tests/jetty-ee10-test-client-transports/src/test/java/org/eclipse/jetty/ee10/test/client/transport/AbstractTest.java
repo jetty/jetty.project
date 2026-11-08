@@ -281,11 +281,10 @@ public class AbstractTest
             {
                 ClientConnector clientConnector = new ClientConnector();
                 clientConnector.setSelectors(1);
-                SslContextFactory.Client sslContextFactory = newSslContextFactoryClient();
-                clientConnector.setSslContextFactory(sslContextFactory);
+                clientConnector.setSslContextFactory(newSslContextFactoryClient());
                 Path clientPemDirectory = Files.createDirectories(pemDir.resolve("client"));
                 QuicheClientQuicConfiguration clientQuicConfig = HTTP3ClientQuicConfiguration.configure(new QuicheClientQuicConfiguration(clientPemDirectory));
-                HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
+                HTTP3Client http3Client = new HTTP3Client(clientQuicConfig, clientConnector);
                 yield new HttpClientTransportOverHTTP3(http3Client, new QuicheTransport(clientQuicConfig));
             }
             case FCGI -> new HttpClientTransportOverFCGI(1, "");

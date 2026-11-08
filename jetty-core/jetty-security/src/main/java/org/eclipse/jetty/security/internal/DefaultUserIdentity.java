@@ -14,6 +14,7 @@
 package org.eclipse.jetty.security.internal;
 
 import java.security.Principal;
+import java.util.Objects;
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.security.DefaultIdentityService;
@@ -32,7 +33,7 @@ public class DefaultUserIdentity implements UserIdentity
     {
         _subject = subject;
         _userPrincipal = userPrincipal;
-        _roles = roles;
+        _roles = Objects.requireNonNull(roles);
     }
 
     @Override
@@ -62,6 +63,12 @@ public class DefaultUserIdentity implements UserIdentity
                 return true;
         }
         return false;
+    }
+
+    @Override
+    public String[] getRoles()
+    {
+        return _roles.clone();
     }
 
     @Override

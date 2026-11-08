@@ -199,7 +199,7 @@ public class HttpDateTimeTest
         // When "Back to the Future" released
         ZonedDateTime zonedDateTime = ZonedDateTime.of(1984, 7, 3, 8, 10, 30, 0, ZoneId.of("US/Pacific"));
         String actual = HttpDateTime.format(zonedDateTime);
-        assertThat(actual, is("Tue, 3 Jul 1984 15:10:30 GMT"));
+        assertThat(actual, is("Tue, 03 Jul 1984 15:10:30 GMT"));
     }
 
     @Test
@@ -209,6 +209,6 @@ public class HttpDateTimeTest
         long epochMillis = 395054120000L;
         Instant instant = Instant.ofEpochMilli(epochMillis);
         String actual = HttpDateTime.format(instant);
-        assertThat(actual, is("Fri, 9 Jul 1982 09:15:20 GMT"));
+        assertThat(actual, is("Fri, 09 Jul 1982 09:15:20 GMT"));
     }
 }

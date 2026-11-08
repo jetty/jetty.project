@@ -1340,7 +1340,7 @@ public class HttpParser
             if (t == null)
                 break;
             if (t == EOL_LF)
-                checkViolation(LF_HEADER_TERMINATION);
+                checkViolation(_state == State.HEADER ? LF_HEADER_TERMINATION : LF_CHUNK_TERMINATION);
 
             switch (_fieldState)
             {

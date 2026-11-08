@@ -56,9 +56,7 @@ public class NBitStringEncoder
 
         if (huffman)
         {
-            int encodedValueSize = HuffmanEncoder.octetsNeeded(value);
-            NBitIntegerEncoder.encode(buffer, prefix, encodedValueSize);
-            HuffmanEncoder.encode(buffer, value);
+            HuffmanEncoder.encodeWithLength(buffer, prefix, value);
         }
         else
         {

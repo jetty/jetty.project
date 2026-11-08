@@ -167,7 +167,14 @@ public class TryPathsHandler extends Handler.Wrapper
     private String interpolate(Request request, String value)
     {
         String path = Request.getPathInContext(request);
-        return value.replace("$path", path);
+        int p = value.indexOf("$path");
+        if (p < 0)
+            return value;
+        int q = value.indexOf('?');
+        if (q < 0)
+            return value.replace("$path", path);
+        return value.substring(0, q).replace("$path", path) +
+            value.substring(q).replace("$path", URIUtil.encodePathForQuery(path));
     }
 
     private Request tryPath(Request wrapped, String newPathQuery)

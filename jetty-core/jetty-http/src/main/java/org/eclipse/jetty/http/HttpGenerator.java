@@ -210,6 +210,8 @@ public class HttpGenerator
                 if (header == null)
                     return Result.NEED_HEADER;
 
+                Boolean persistent = _persistent;
+
                 // prepare the header
                 int pos = BufferUtil.flipToFill(header);
                 try
@@ -249,6 +251,10 @@ public class HttpGenerator
                 {
                     if (LOG.isTraceEnabled())
                         LOG.trace("IGNORED", e);
+                    // Reset the partial generation, so that it can be retried
+                    // with a larger header buffer, but preserve the persistence.
+                    reset();
+                    _persistent = persistent;
                     return Result.HEADER_OVERFLOW;
                 }
                 catch (Exception e)
@@ -387,6 +393,8 @@ public class HttpGenerator
                 if (header == null)
                     return Result.NEED_HEADER;
 
+                Boolean persistent = _persistent;
+
                 // prepare the header
                 int pos = BufferUtil.flipToFill(header);
                 try
@@ -436,6 +444,10 @@ public class HttpGenerator
                 {
                     if (LOG.isTraceEnabled())
                         LOG.trace("IGNORED", e);
+                    // Reset the partial generation, so that it can be retried
+                    // with a larger header buffer, but preserve the persistence.
+                    reset();
+                    _persistent = persistent;
                     return Result.HEADER_OVERFLOW;
                 }
                 catch (Exception e)

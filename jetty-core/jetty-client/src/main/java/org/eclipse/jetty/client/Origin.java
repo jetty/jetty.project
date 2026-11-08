@@ -16,6 +16,7 @@ package org.eclipse.jetty.client;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -234,7 +235,7 @@ public class Origin
          */
         public String asString()
         {
-            return String.format("%s:%d", host, port);
+            return String.format(Locale.ROOT, "%s:%d", host, port);
         }
 
         /**

@@ -32,6 +32,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -85,5 +86,41 @@ public class BrotliEncoderSinkTest extends AbstractBrotliTest
             ExecutionException thrown = assertThrows(ExecutionException.class, callback2::get);
             assertInstanceOf(IllegalStateException.class, thrown.getCause());
         }
+    }
+
+    /**
+     * Regression test for large-response truncation: a single Brotli operation can emit more than one
+     * output buffer, and every one of them must be written downstream. Incompressible (random) data and
+     * a large encoder buffer force a single {@code PROCESS}/{@code FINISH} to produce multiple
+     * {@code pull()} results; if any but the last were dropped the round-trip would not match.
+     */
+    @Test
+    public void testLargeContentIsNotTruncated() throws Exception
+    {
+        startBrotli();
+
+        int dataSize = 4 * 1024 * 1024;
+        byte[] original = new byte[dataSize];
+        new java.util.Random(42).nextBytes(original);
+
+        BrotliEncoderConfig config = new BrotliEncoderConfig();
+        config.setBufferSize(1024 * 1024);
+        config.setCompressionLevel(5);
+
+        byte[] compressed;
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink fileSink = Content.Sink.from(baos);
+            Content.Sink encoderSink = brotli.newEncoderSink(fileSink, config);
+
+            Callback.Completable callback = new Callback.Completable();
+            encoderSink.write(true, ByteBuffer.wrap(original), callback);
+            callback.get();
+            compressed = baos.toByteArray();
+        }
+
+        byte[] decompressed = decompress(compressed);
+        assertEquals(original.length, decompressed.length, "decompressed length (a shorter value means the response was truncated)");
+        assertArrayEquals(original, decompressed);
     }
 }

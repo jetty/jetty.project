@@ -435,7 +435,7 @@ This is the name of the column that stores the serialized attributes of a sessio
 Enabling the `session-store-mongo` module configures Jetty to store session data in MongoDB.
 
 Because MongoDB is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case) during the install.
-Jars needed by MongoDB are downloaded and stored into a directory named `$JETTY_BASE/lib/nosql/`.
+Jars needed by MongoDB are downloaded and stored into a directory named `$JETTY_BASE/lib/support/`.
 
 IMPORTANT: If you want to use updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-create-files=<module name>` command line option to prevent errors when starting your server.
 
@@ -654,7 +654,7 @@ Enabling the `session-store-hazelcast-remote` module allows jetty to communicate
 
 Because Hazelcast is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case).
 
-Hazelcast-specific jar files will be downloaded and saved to a directory named `$JETTY_BASE/lib/hazelcast/`.
+Hazelcast-specific jar files will be downloaded and saved to a directory named `$JETTY_BASE/lib/support/`.
 
 NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-create-files=<module name>` command line option to prevent errors when starting your server.
 
@@ -713,7 +713,7 @@ To enable this you enable the `session-store-hazelcast-embedded` module.
 
 Because Hazelcast is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case).
 
-Hazelcast-specific jar files will be downloaded to a directory named `$JETTY_BASE/lib/hazelcast/`.
+Hazelcast-specific jar files will be downloaded to a directory named `$JETTY_BASE/lib/support/`.
 
 ==== Configuration
 

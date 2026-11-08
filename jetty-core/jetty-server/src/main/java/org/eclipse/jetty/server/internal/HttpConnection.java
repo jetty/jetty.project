@@ -51,6 +51,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.server.AbstractMetaDataConnection;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -882,7 +883,6 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                     {
                         if (maxResponseHeadersSize > 0 && maxResponseHeadersSize > responseHeadersSize)
                         {
-                            _generator.reset();
                             _header.release();
                             _header = _bufferPool.acquire(maxResponseHeadersSize, useDirectByteBuffers);
                             responseHeadersSize = maxResponseHeadersSize;
@@ -1102,6 +1102,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (!_stream.compareAndSet(null, stream))
                 throw new IllegalStateException("Stream pending");
             _headerBuilder.clear();
+            if (_trailers != null)
+                _trailers.clear();
             _httpChannel.setHttpStream(stream);
         }
 
@@ -1168,9 +1170,15 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (stream._chunk != null)
                 throw new IllegalStateException();
             if (_trailers != null)
-                stream._chunk = new Trailers(_trailers.asImmutable());
+            {
+                if (_trailers.size() > 0)
+                    stream._chunk = new Trailers(_trailers.asImmutable());
+                _trailers = null;
+            }
             else
+            {
                 stream._chunk = Content.Chunk.EOF;
+            }
 
             return false;
         }
@@ -1358,7 +1366,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             if (_uri.getPath() == null)
                 _uri.path("/");
 
-            _request = new MetaData.Request(_parser.getBeginNanoTime(), _method, _uri.asImmutable(), _version, _headerBuilder, _contentLength)
+            _request = new MetaData.Request(_parser.getBeginNanoTime(), _method, _uri.asImmutable(), _version, _headerBuilder.asImmutable(), _contentLength)
             {
                 @Override
                 public boolean is100ContinueExpected()
@@ -1434,6 +1442,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
                 }
             }
 
+            _headerBuilder.clear();
             if (!persistent)
                 _generator.setPersistent(false);
 
@@ -1637,7 +1646,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("abort due to pending read {} {} ", this, getEndPoint());
-                abort(new IOException("Pending read in onCompleted"));
+                abort(new QuietException.Exception("Pending read in onCompleted"));
                 _httpChannel.recycle();
                 _parser.reset();
                 _generator.reset();

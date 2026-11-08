@@ -838,6 +838,13 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=ssl-reload
 
 For more information about the configuration of the `ssl-reload` Jetty module, see xref:modules/standard.adoc#ssl-reload[this section].
 
+[[ssl-dynamic]]
+=== Dynamic Keystores
+
+The JDK `KeyStore` API allow applications to dynamically update the `KeyStore` object, for example in case of certificate renewal.
+
+Refer to xref:programming-guide:server/http.adoc#connector-protocol-tls-dynamic-keystore[this section] for more information about the configuration necessary to support dynamic KeyStores.
+
 [[ssl-conscrypt]]
 === Using Conscrypt as SSL/TLS Provider
 

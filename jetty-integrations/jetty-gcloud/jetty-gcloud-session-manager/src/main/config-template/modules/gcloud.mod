@@ -8,7 +8,7 @@ Controls GCloud API classpath.
 gcloud
 
 [lib]
-lib/gcloud/*.jar
+lib/gcloud/**.jar
 
 [license]
 GCloudDatastore is an open source project hosted on Github and released under the Apache 2.0 license.

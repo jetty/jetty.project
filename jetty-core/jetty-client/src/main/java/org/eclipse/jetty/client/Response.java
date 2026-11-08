@@ -78,12 +78,24 @@ public interface Response
     HttpFields getTrailers();
 
     /**
-     * Attempts to abort the receive of this response.
+     * Attempts to fail both the request and the response.
      *
      * @param cause the abort cause, must not be null
      * @return whether the abort succeeded
+     * @see Request#abort(Throwable)
      */
     CompletableFuture<Boolean> abort(Throwable cause);
+
+    /**
+     * Attempts to fail only the response side of the request/response exchange.
+     *
+     * @param cause the fail cause, must not be null
+     * @return whether the fail succeeded
+     */
+    default CompletableFuture<Boolean> fail(Throwable cause)
+    {
+        return CompletableFuture.completedFuture(false);
+    }
 
     /**
      * Common, empty, super-interface for response listeners

@@ -136,6 +136,11 @@ public abstract class HttpChannel implements CyclicTimeouts.Expirable
 
     protected abstract HttpReceiver getHttpReceiver();
 
+    public boolean isLastDataReceived()
+    {
+        return false;
+    }
+
     public void send()
     {
         HttpExchange exchange = getHttpExchange();

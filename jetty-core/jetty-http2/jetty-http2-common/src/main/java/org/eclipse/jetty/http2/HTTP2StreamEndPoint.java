@@ -349,12 +349,10 @@ public abstract class HTTP2StreamEndPoint implements EndPoint, Invocable
                     if (writeState.compareAndSet(current, new WriteState(WriteState.State.FAILED, cause)))
                     {
                         WriteState.Pending pending = (WriteState.Pending)current;
-                        // Initiate a reset() and a flush().
-                        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code));
-
+                        // Initiate a reset() which eventually will complete the pending callback.
                         try (Callback.Combination callbacks = new Callback.Combination(pending.callback, cause))
                         {
-                            stream.getSession().flush(callbacks.newCallback());
+                            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), callbacks.newCallback());
                             return callbacks.newCallback();
                         }
                     }

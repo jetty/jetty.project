@@ -8,18 +8,18 @@ compression
 brotli
 
 [files]
-maven://com.aayushatharva.brotli4j/brotli4j/${brotli4j.version}|lib/compression/brotli4j-${brotli4j.version}.jar
-maven://com.aayushatharva.brotli4j/service/${brotli4j.version}|lib/compression/brotli4j-service-${brotli4j.version}.jar
-maven://com.aayushatharva.brotli4j/native-windows-x86_64/${brotli4j.version}|lib/compression/brotli4j-native-windows-x86_64-${brotli4j.version}.jar
-maven://com.aayushatharva.brotli4j/native-linux-x86_64/${brotli4j.version}|lib/compression/brotli4j-native-linux-x86_64-${brotli4j.version}.jar
+maven://com.aayushatharva.brotli4j/brotli4j/${brotli4j.version}|lib/support/brotli4j-${brotli4j.version}.jar
+maven://com.aayushatharva.brotli4j/service/${brotli4j.version}|lib/support/brotli4j-service-${brotli4j.version}.jar
+maven://com.aayushatharva.brotli4j/native-windows-x86_64/${brotli4j.version}|lib/support/brotli4j-native-windows-x86_64-${brotli4j.version}.jar
+maven://com.aayushatharva.brotli4j/native-linux-x86_64/${brotli4j.version}|lib/support/brotli4j-native-linux-x86_64-${brotli4j.version}.jar
 
 [lib]
-lib/compression/jetty-compression-common-${jetty.version}.jar
-lib/compression/jetty-compression-brotli-${jetty.version}.jar
-lib/compression/brotli4j-${brotli4j.version}.jar
-lib/compression/brotli4j-service-${brotli4j.version}.jar
-lib/compression/brotli4j-native-windows-x86_64-${brotli4j.version}.jar
-lib/compression/brotli4j-native-linux-x86_64-${brotli4j.version}.jar
+lib/jetty-compression-common-${jetty.version}.jar
+lib/jetty-compression-brotli-${jetty.version}.jar
+lib/support/brotli4j-${brotli4j.version}.jar
+lib/support/brotli4j-service-${brotli4j.version}.jar
+lib/support/brotli4j-native-windows-x86_64-${brotli4j.version}.jar
+lib/support/brotli4j-native-linux-x86_64-${brotli4j.version}.jar
 
 [ini]
 brotli4j.version?=@brotli4j.version@

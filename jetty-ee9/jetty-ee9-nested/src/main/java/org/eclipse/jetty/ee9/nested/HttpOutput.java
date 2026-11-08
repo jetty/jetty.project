@@ -42,7 +42,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.TypeUtil;
@@ -197,7 +196,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private boolean _softClose = false;
     private Interceptor _interceptor;
     private long _written;
-    private long _firstByteNanoTime = -1;
+    private boolean _bypassed;
     private ByteBufferPool.Sized _pool;
     private RetainableByteBuffer _aggregate;
     private int _bufferSize;
@@ -251,9 +250,19 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      * Used by ServletCoreResponse when it bypasses HttpOutput to update bytes written.
      * @param written The bytes written
      */
-    void addBytesWritten(int written)
+    void addBytesWrittenViaBypass(long written)
     {
+        _bypassed = true;
         _written += written;
+    }
+
+    /**
+     * Used by Response to figure out if HttpOutput should be completed or if it has been bypassed.
+     * @return true when HttpOutput has been bypassed
+     */
+    boolean isBypassed()
+    {
+        return _bypassed;
     }
 
     public void reopen()
@@ -280,15 +289,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private void channelWrite(ByteBuffer content, boolean last, Callback callback)
     {
-        if (_firstByteNanoTime == -1)
-        {
-            long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
-            if (minDataRate > 0)
-                _firstByteNanoTime = NanoTime.now();
-            else
-                _firstByteNanoTime = Long.MAX_VALUE;
-        }
-
         _interceptor.write(content, last, callback);
     }
 
@@ -536,7 +536,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public void close() throws IOException
     {
         ByteBuffer content = null;
-        Blocker blocker = null;
+        boolean acquireBlocker = false;
+        boolean combineClosedCallback = false;
         try (AutoLock l = _channelState.lock())
         {
             if (_onError != null)
@@ -562,8 +563,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         case BLOCKING:
                         case BLOCKED:
                             // block until CLOSED state reached.
-                            blocker = _writeBlocker.acquire();
-                            _closedCallback = Callback.combine(_closedCallback, blocker);
+                            acquireBlocker = true;
+                            combineClosedCallback = true;
                             break;
 
                         default:
@@ -579,7 +580,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             // Output is idle blocking state, but we still do an async close
                             _apiState = ApiState.BLOCKED;
                             _state = State.CLOSING;
-                            blocker = _writeBlocker.acquire();
+                            acquireBlocker = true;
                             content = _aggregate != null && _aggregate.hasRemaining() ? _aggregate.getByteBuffer() : BufferUtil.EMPTY_BUFFER;
                             break;
 
@@ -589,8 +590,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                             // then trigger a close from onWriteComplete
                             _state = State.CLOSE;
                             // and block until it is complete
-                            blocker = _writeBlocker.acquire();
-                            _closedCallback = Callback.combine(_closedCallback, blocker);
+                            acquireBlocker = true;
+                            combineClosedCallback = true;
                             break;
 
                         case ASYNC:
@@ -613,8 +614,32 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("close() {} c={} b={}", stateString(), BufferUtil.toDetailString(content), blocker);
+        // Do not call _writeBlocker.acquire() from within a lock as it itself also takes a lock.
+        Blocker blocker = acquireBlocker ? _writeBlocker.acquire() : null;
+
+        boolean releaseBlocker = false;
+        try (AutoLock l = _channelState.lock())
+        {
+            if (combineClosedCallback)
+            {
+                // Check if onWriteComplete() fired while the lock was not held; if it did, it nulled the
+                // _closedCallback field so blocking is not necessary anymore, and the blocker can be released.
+                if (_closedCallback != null)
+                    _closedCallback = Callback.combine(_closedCallback, blocker);
+                else
+                    releaseBlocker = true;
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("close() {} c={} b={}", stateString(), BufferUtil.toDetailString(content), blocker);
+        }
+
+        if (releaseBlocker)
+        {
+            blocker.succeeded();
+            blocker.close();
+            blocker = null;
+        }
 
         if (content == null)
         {
@@ -622,7 +647,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 // nothing to do or block for.
                 return;
 
-            // Just wait for some other close to finish.
+            // Just wait for some other close()/complete(Callback) to finish,
+            // as the blocker has been combined into the _closedCallback field.
             try (Blocker b = blocker)
             {
                 b.block();
@@ -632,12 +658,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (blocker == null)
             {
-                // Do an async close
+                // Do an async close.
                 channelWrite(content, true, new WriteCompleteCB());
             }
             else
             {
-                // Do a blocking close
+                // Do a blocking close.
                 try (Blocker b = blocker)
                 {
                     channelWrite(content, true, blocker);
@@ -1469,9 +1495,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             if (_commitSize > _bufferSize)
                 _commitSize = _bufferSize;
             _written = 0;
+            _bypassed = false;
             _writeListener = null;
             _onError = null;
-            _firstByteNanoTime = -1;
             _closedCallback = null;
         }
     }

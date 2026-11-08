@@ -144,7 +144,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
             HttpSession session = ((HttpServletRequest)request).getSession(true);
             if (session != null)
             {
-                SessionAuthentication sessionAuth = new SessionAuthentication(getAuthenticationType(), user, password);
+                SessionAuthentication sessionAuth = newSessionAuthentication(getAuthenticationType(), user, password);
                 session.setAttribute(SessionAuthentication.AUTHENTICATED_ATTRIBUTE, sessionAuth);
             }
         }

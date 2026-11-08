@@ -122,8 +122,16 @@ public class IOResources
                 retainableByteBuffer.append(buffer);
                 if (buffer.isRetained())
                 {
+                    // buffer has been retained by DynamicCapacity, fetch
+                    // a new one on the next loop iteration.
                     buffer.release();
                     buffer = null;
+                }
+                else
+                {
+                    // buffer has been copied by DynamicCapacity, clear it
+                    // before reusing it for the next loop iteration.
+                    buffer.clear();
                 }
             }
             return retainableByteBuffer;

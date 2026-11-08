@@ -112,6 +112,15 @@ public class FileMappingHttpContentFactoryTest
         assertThat(writeToString(content, 15, 10), is("fghijABCDE"));
         assertThat(writeToString(content, 25, 5), is("FGHIJ"));
 
+        // Ranges that start and end within the same buffer (see #14536).
+        assertThat(writeToString(content, 2, 3), is("234"));
+        assertThat(writeToString(content, 11, 5), is("bcdef"));
+        assertThat(writeToString(content, 21, 3), is("BCD"));
+        assertThat(writeToString(content, 1, 9), is("123456789"));
+        assertThat(writeToString(content, 21, 9), is("BCDEFGHIJ"));
+        assertThat(writeToString(content, 2, 0), is(""));
+        assertThat(writeToString(content, 12, 0), is(""));
+
         assertThat(writeToString(content, 0, -1), is("0123456789abcdefghijABCDEFGHIJ"));
         assertThat(writeToString(content, 5, -1), is("56789abcdefghijABCDEFGHIJ"));
         assertThat(writeToString(content, 10, -1), is("abcdefghijABCDEFGHIJ"));

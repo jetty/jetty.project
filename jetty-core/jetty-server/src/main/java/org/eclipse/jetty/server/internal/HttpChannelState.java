@@ -47,6 +47,7 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
@@ -695,6 +696,16 @@ public class HttpChannelState implements HttpChannel, Components
      */
     private void completeStream(HttpStream stream, Throwable failure)
     {
+        ChannelRequest request;
+        ChannelResponse response;
+        long oldIdleTimeout;
+        try (AutoLock ignored = _lock.lock())
+        {
+            request = _request;
+            response = _response;
+            oldIdleTimeout = _oldIdleTimeout;
+        }
+
         try
         {
             RequestLog requestLog = getServer().getRequestLog();
@@ -703,22 +714,22 @@ public class HttpChannelState implements HttpChannel, Components
                 if (LOG.isDebugEnabled())
                     LOG.debug("logging {}", HttpChannelState.this);
 
-                requestLog.log(_request.getLoggedRequest(), _response);
+                requestLog.log(request.getLoggedRequest(), response);
             }
 
             // Clean up any multipart tmp files and release any associated resources.
-            MultiPartFormData.Parts parts = MultiPartFormData.getParts(_request);
+            MultiPartFormData.Parts parts = MultiPartFormData.getParts(request);
             if (parts != null)
                 parts.close();
 
             long idleTO = getHttpConfiguration().getIdleTimeout();
-            if (idleTO > 0 && _oldIdleTimeout != idleTO)
-                stream.setIdleTimeout(_oldIdleTimeout);
+            if (idleTO > 0 && oldIdleTimeout != idleTO)
+                stream.setIdleTimeout(oldIdleTimeout);
         }
         finally
         {
             ComplianceViolation.Listener listener = getComplianceViolationListener();
-            listener.onRequestEnd(_request);
+            listener.onRequestEnd(request);
 
             // This is THE ONLY PLACE the stream is succeeded or failed.
             if (LOG.isDebugEnabled())
@@ -1438,7 +1449,8 @@ public class HttpChannelState implements HttpChannel, Components
                 callback = _writeCallback;
                 _writeCallback = null;
                 httpChannel = _request.lockedGetHttpChannelState();
-                httpChannel.lockedStreamSendCompleted(true);
+                if (!(callback instanceof LastWriteCallback))
+                    httpChannel.lockedStreamSendCompleted(true);
             }
             if (callback != null)
                 httpChannel._writeInvoker.run(Invocable.from(callback.getInvocationType(), callback::succeeded));
@@ -1466,7 +1478,8 @@ public class HttpChannelState implements HttpChannel, Components
                 callback = _writeCallback;
                 _writeCallback = null;
                 httpChannel = _request.lockedGetHttpChannelState();
-                httpChannel.lockedStreamSendCompleted(false);
+                if (!(callback instanceof LastWriteCallback))
+                    httpChannel.lockedStreamSendCompleted(false);
             }
             if (callback != null)
                 httpChannel._writeInvoker.run(() -> HttpChannelState.failed(callback, x));
@@ -1646,7 +1659,7 @@ public class HttpChannelState implements HttpChannel, Components
                 // Turn pending demand into failure.
                 if (httpChannelState._onContentAvailable != null)
                 {
-                    failure = ExceptionUtil.combine(failure, new IllegalStateException("demand pending"));
+                    failure = ExceptionUtil.combine(failure, new QuietException.Exception("demand pending"));
                 }
                 else
                 {
@@ -1657,6 +1670,8 @@ public class HttpChannelState implements HttpChannel, Components
                     // persistent otherwise RequestLog.log() would be able to read
                     // x-www-form-urlencoded parameters in one case and not the other.
                     Throwable unconsumed = stream.consumeAvailable();
+                    if (unconsumed != null)
+                        unconsumed = new QuietException.RuntimeException(unconsumed);
                     httpChannelState._consumeAvailableFailure = unconsumed;
                     if (httpChannelState.getConnectionMetaData().isPersistent() && !httpChannelState._expects100Continue)
                         failure = ExceptionUtil.combine(failure, unconsumed);

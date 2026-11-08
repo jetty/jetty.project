@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.tests.distribution;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +21,9 @@ import java.util.stream.Stream;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
 import org.eclipse.jetty.tests.testers.Tester;
@@ -164,7 +168,12 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 assertTrue(run2.awaitConsoleLogsFor("Started oejs.Server@", START_TIMEOUT, TimeUnit.SECONDS));
                 String uri = "http://localhost:" + port + "/test";
                 // Initially not authenticated
-                startHttpClient();
+                startHttpClient(() ->
+                {
+                    HttpClient httpClient = new HttpClient();
+                    httpClient.setHttpCookieStore(new LocalhostSecureCookieStore());
+                    return httpClient;
+                });
                 ContentResponse contentResponse = client.GET(uri + "/");
                 assertThat(contentResponse.getStatus(), is(HttpStatus.OK_200));
                 assertThat(contentResponse.getContentAsString(), containsString("not authenticated"));
@@ -199,6 +208,27 @@ public class OpenIdTests extends AbstractJettyHomeTest
                 content = contentResponse.getContentAsString();
                 assertThat(content, containsString("not authenticated"));
             }
+        }
+    }
+
+    /**
+     * Keycloak treats localhost as a secure context, like browsers do, so it marks
+     * its login cookies as Secure even over plain http. This store sends them back
+     * to localhost over http the same way a browser would.
+     */
+    private static class LocalhostSecureCookieStore extends HttpCookieStore.Default
+    {
+        @Override
+        public List<HttpCookie> match(URI uri)
+        {
+            if ("http".equalsIgnoreCase(uri.getScheme()) && isLocalhost(uri.getHost()))
+                uri = URI.create("https:" + uri.getRawSchemeSpecificPart());
+            return super.match(uri);
+        }
+
+        private static boolean isLocalhost(String host)
+        {
+            return "localhost".equalsIgnoreCase(host) || (host != null && host.startsWith("127.")) || "[::1]".equals(host);
         }
     }
 }

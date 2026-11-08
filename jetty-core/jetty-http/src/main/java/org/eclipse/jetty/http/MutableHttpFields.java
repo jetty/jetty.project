@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -152,7 +151,7 @@ class MutableHttpFields implements HttpFields.Mutable
         _fields = new HttpField[INITIAL_SIZE];
     }
 
-    private static HttpCompliance copyHttpCompliance(HttpFields httpFields)
+    static HttpCompliance copyHttpCompliance(HttpFields httpFields)
     {
         while (true)
         {
@@ -160,14 +159,14 @@ class MutableHttpFields implements HttpFields.Mutable
                 return immutable._httpCompliance;
             if (httpFields instanceof org.eclipse.jetty.http.MutableHttpFields mutable)
                 return mutable._httpCompliance;
-            if (httpFields instanceof Wrapper wrapper)
+            if (httpFields instanceof Mutable.Wrapper wrapper)
                 httpFields = wrapper.getWrapped();
             else
                 return null;
         }
     }
 
-    private static Supplier<ComplianceViolation.Listener> copyComplianceListener(HttpFields httpFields)
+    static Supplier<ComplianceViolation.Listener> copyComplianceListener(HttpFields httpFields)
     {
         while (true)
         {
@@ -175,7 +174,7 @@ class MutableHttpFields implements HttpFields.Mutable
                 return immutable._listenerSupplier;
             if (httpFields instanceof org.eclipse.jetty.http.MutableHttpFields mutable)
                 return mutable._listenerSupplier;
-            if (httpFields instanceof Wrapper wrapper)
+            if (httpFields instanceof Mutable.Wrapper wrapper)
                 httpFields = wrapper.getWrapped();
             else
                 return null;
