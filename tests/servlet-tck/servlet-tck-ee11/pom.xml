@@ -32,9 +32,14 @@
     <!-- The TCK builds its web applications through ShrinkWrap, which embeds the Maven 3.9 /
          resolver 1.9 stack. The rest of the build is pinned to Maven 3.10 / resolver 2.0, and
          mixing the two gives a NoClassDefFoundError on org.eclipse.aether.util.PathUtils, so
-         move this module back onto the line ShrinkWrap expects. -->
+         move this module back onto the line ShrinkWrap expects.
+         The root pom only manages maven-resolver-api, while shrinkwrap-resolver-impl-maven
+         drags in the matching resolver impl/spi/util transitively. Keep this version in sync
+         with the resolver that ${shrinkwrap.resolver.version} depends on, otherwise the api
+         and the impl disagree and the TCK deployments fail with a NoClassDefFoundError on
+         org.eclipse.aether.SyncContext$FailedToAcquireLockException. -->
     <maven.deps.version>${maven.version}</maven.deps.version>
-    <maven.resolver.version>1.9.22</maven.resolver.version>
+    <maven.resolver.version>1.9.27</maven.resolver.version>
     <!-- Also copied to target/servlet-api.jar for the TCK signature tests. -->
     <servlet.tck.servlet.api.version>6.1.0</servlet.tck.servlet.api.version>
     <!-- Settings file handed to the ShrinkWrap resolver, set by the jenkins profile below. -->
