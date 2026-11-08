@@ -583,9 +583,16 @@ public class ResourceService extends ContainerLifeCycle
      */
     protected void serveWelcome(Request request, Response response, Callback callback, String welcomeTarget) throws Exception
     {
-        HttpContent httpContent = _contentFactory.getContent(welcomeTarget);
+        HttpContent httpContent = getContent(welcomeTarget, request);
+        if (httpContent == null)
+        {
+            writeHttpError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            return;
+        }
         if (handleConditionalHeaders(request, response, httpContent, callback))
             return;
+        if (httpContent.getPreCompressedContentFormats() == null || !httpContent.getPreCompressedContentFormats().isEmpty())
+            response.getHeaders().put(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
         sendData(request, response, callback, httpContent, List.of());
     }
 
