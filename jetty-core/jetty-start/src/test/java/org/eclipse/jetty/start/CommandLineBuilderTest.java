@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -100,6 +103,67 @@ public class CommandLineBuilderTest
     public void testShellQuoting(String string, String expected)
     {
         assertThat(CommandLineBuilder.shellQuoteIfNeeded(string), is(expected));
+    }
+
+    public static Stream<Arguments> argFileQuoting()
+    {
+        return Stream.of(
+            // null and empty
+            Arguments.of(null, null),
+            Arguments.of("", "\"\""),
+            // nothing special -> left as-is
+            Arguments.of("Hello", "Hello"),
+            Arguments.of("H-llo_world", "H-llo_world"),
+            Arguments.of("/opt/jetty", "/opt/jetty"),
+            Arguments.of("monetary.symbol=€", "monetary.symbol=€"),
+            // a backslash with no whitespace is literal outside quotes, so no quoting needed
+            Arguments.of("C:\\jetty\\home", "C:\\jetty\\home"),
+            // whitespace -> quoted
+            Arguments.of("Hello World", "\"Hello World\""),
+            Arguments.of("-Djetty.home=/opt/jetty 12/home", "\"-Djetty.home=/opt/jetty 12/home\""),
+            // tab is a separator -> quoted (literal tab preserved inside quotes)
+            Arguments.of("foo\tbar", "\"foo\tbar\""),
+            // '#' would start a comment outside quotes -> quoted
+            Arguments.of("a#b", "\"a#b\""),
+            // a single quote would open a quote outside quotes -> quoted, literal inside double quotes
+            Arguments.of("O'Brien", "\"O'Brien\""),
+            // a double quote must be quoted and escaped
+            Arguments.of("say \"hi\"", "\"say \\\"hi\\\"\""),
+            // Windows path with a space: quoted, and backslashes doubled inside quotes
+            Arguments.of("C:\\Program Files\\jetty", "\"C:\\\\Program Files\\\\jetty\""),
+            // raw newline/carriage-return must be escaped (a raw newline ends a token even inside quotes)
+            Arguments.of("a\nb", "\"a\\nb\""),
+            Arguments.of("a\rb", "\"a\\rb\"")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("argFileQuoting")
+    public void testArgFileQuoting(String string, String expected)
+    {
+        assertThat(CommandLineBuilder.argFileQuoteIfNeeded(string), is(expected));
+    }
+
+    @Test
+    public void testWriteArgLines()
+    {
+        CommandLineBuilder cmd = new CommandLineBuilder();
+        cmd.addArg("-Djetty.home", "/opt/jetty 12/home");
+        cmd.addOption("--module");
+        cmd.addArg("org.eclipse.jetty.xml.XmlConfiguration");
+
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        try (PrintStream out = new PrintStream(bout, true, UTF_8))
+        {
+            cmd.writeArgLines(out);
+        }
+
+        String[] lines = bout.toString(UTF_8).split("\\R");
+        assertThat(lines.length, is(3));
+        // one token per line; the token with a space is quoted
+        assertThat(lines[0], is("\"-Djetty.home=/opt/jetty 12/home\""));
+        assertThat(lines[1], is("--module"));
+        assertThat(lines[2], is("org.eclipse.jetty.xml.XmlConfiguration"));
     }
 
     @Test

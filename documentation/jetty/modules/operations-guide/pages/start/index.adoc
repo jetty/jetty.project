@@ -422,11 +422,12 @@ replace=( ),$1\\\n
 
 Note how the environments configuration specifies additional class-path and Jetty XML files for every environment.
 
-The various parts of the full JVM command line can be combined to leverage the JVM arguments file feature (that is, specify the JVM options in a file rather than on the command line) that is built-in in the `java` executable:
+The various parts of the full JVM command line can be combined to leverage the JVM arguments file feature (that is, specify the JVM options in a file rather than on the command line) that is built-in in the `java` executable.
+The `--dry-run` output is formatted for a POSIX compliant shell, which is not the format expected by the `java` arguments file feature, so to generate an arguments file use the `--arglines` option instead (see <<configure-arglines,this section>>):
 
 [source,bash,subs=+quotes]
 ----
-$ java -jar $JETTY_HOME/start.jar --dry-run=##opts,path,main,args,envs## > /tmp/jvm_cmd_line.txt
+$ java -jar $JETTY_HOME/start.jar --arglines=##opts,path,main,args,envs## > /tmp/jvm_cmd_line.txt
 $ /some/other/java @/tmp/jvm_cmd_line.txt
 ----
 
@@ -449,6 +450,28 @@ $ ARGS=$(java -jar start.jar --dry-run=##args##)
 $ ENVS=$(java -jar start.jar --dry-run=##envs##)
 $ echo $OPTS -Dextra=opt $MAIN $ARGS $ENVS extraProp=value extra.xml | xargs java
 ----
+
+[[configure-arglines]]
+=== Generating a Java Arguments File
+
+The `--dry-run` option formats its output for a POSIX compliant shell, which is not the format expected by the `java` _arguments file_ feature (the `java @file` syntax, see the output of `java --help`).
+Use the `--arglines` option to generate a valid `java` arguments file: it prints one argument per line, quoted as required by the `java` launcher.
+
+[source,bash]
+----
+$ java -jar $JETTY_HOME/start.jar --arglines > /tmp/jetty.args
+$ java @/tmp/jetty.args
+----
+
+As with `--dry-run`, the output can be limited to specific parts; the `java` part is not applicable to an arguments file and cannot be requested:
+
+[source,bash]
+----
+$ java -jar $JETTY_HOME/start.jar --arglines=opts,path,main,args,envs > /tmp/jetty.args
+$ java -Xmx4g @/tmp/jetty.args
+----
+
+TIP: Because the configuration values are written to a file rather than expanded onto the command line, using an arguments file keeps values such as passwords configured in `+start.d/*.ini+` files out of the publicly visible process arguments.
 
 [[start]]
 == Starting Jetty

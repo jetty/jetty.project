@@ -1129,8 +1129,8 @@ public class StartArgs
             {
                 if (!ALL_PARTS.contains(part))
                     throw new UsageException(UsageException.ERR_BAD_ARG, "Unrecognized --arglines=\"%s\" in %s", part, source);
-                if ("java".contains(part))
-                    throw new UsageException(UsageException.ERR_BAD_ARG, "Invalid --arglines=java (not compatible with java @arglines)", part, source);
+                if ("java".equals(part))
+                    throw new UsageException(UsageException.ERR_BAD_ARG, "Invalid --arglines=\"java\" (not compatible with java @arglines) in %s", source);
 
                 dryRunParts.add(part);
             }

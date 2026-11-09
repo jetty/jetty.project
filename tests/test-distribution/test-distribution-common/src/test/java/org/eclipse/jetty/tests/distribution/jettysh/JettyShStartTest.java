@@ -46,6 +46,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesRegex;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -158,6 +159,11 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
                 containsString("Jetty running pid"));
 
+            // Issue #14005: while Jetty runs, the fully-expanded configuration (which can
+            // include secrets such as start.d/ssl.ini passwords) lives in a 0600 java
+            // @argument-file and must NOT appear on the process command line (ps / /proc).
+            assertArgFileHidesConfiguration(genericContainer);
+
             // System.err.println("== jetty.sh stop ==");
             result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "stop");
             assertThat(asReason(result, "jetty.sh stop"), result.getExitCode(), is(0));
@@ -180,6 +186,10 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             assertThat(asReason(result, "jetty.sh status"), result.getExitCode(), is(1));
             Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
                 containsString("Jetty NOT running"));
+
+            // Issue #14005: the argfile (which may contain secrets) is removed on stop.
+            Container.ExecResult argFileAfterStop = genericContainer.execInContainer("test", "-f", JETTY_ARGFILE);
+            assertThat("argfile should be removed on stop: " + JETTY_ARGFILE, argFileAfterStop.getExitCode(), is(1));
 
             // System.err.println("== Attempt GET request to non-existent service ==");
             client.setConnectTimeout(1000);
@@ -330,5 +340,42 @@ public class JettyShStartTest extends AbstractJettyHomeTest
     private String asReason(Container.ExecResult result, String reason)
     {
         return String.format("%s%n--STDERR-%n%s--STDOUT--%s", reason, result.getStderr(), result.getStdout());
+    }
+
+    /**
+     * Default location of the generated java @argument-file for these test images:
+     * {@code NAME} defaults to {@code jetty} (the basename of {@code jetty.sh}), and
+     * {@code /etc/default/jetty} sets {@code JETTY_RUN=${JETTY_BASE}=/var/test/jetty-base}.
+     */
+    private static final String JETTY_ARGFILE = "/var/test/jetty-base/jetty.argfile";
+
+    /**
+     * Assert the issue #14005 behavior: while Jetty is running the fully-expanded
+     * configuration lives in a {@code 0600} java @argument-file and does NOT appear on the
+     * process command line, so values such as keystore passwords do not leak into
+     * {@code ps} / {@code /proc} output.
+     */
+    private void assertArgFileHidesConfiguration(GenericContainer<?> container) throws Exception
+    {
+        // 1. the argfile exists with restrictive 0600 permissions
+        Container.ExecResult perms = container.execInContainer("stat", "-c", "%a", JETTY_ARGFILE);
+        assertThat(asReason(perms, "stat " + JETTY_ARGFILE), perms.getExitCode(), is(0));
+        assertThat("argfile permissions of " + JETTY_ARGFILE, perms.getStdout().trim(), is("600"));
+
+        // 2. the expanded configuration really is in the argfile (XmlConfiguration is the main class)
+        Container.ExecResult inFile = container.execInContainer("grep", "-q", "XmlConfiguration", JETTY_ARGFILE);
+        assertThat(asReason(inFile, "argfile should contain the expanded configuration"), inFile.getExitCode(), is(0));
+
+        // 3. gather every readable process command line (NUL-separated -> space-separated)
+        Container.ExecResult cmdlines = container.execInContainer("/bin/sh", "-c",
+            "cat /proc/[0-9]*/cmdline 2>/dev/null | tr '\\0' ' '");
+        String allCmdLines = cmdlines.getStdout();
+
+        // 3a. a java process was launched via @argfile ...
+        assertThat("a process should be launched via @argfile, cmdlines=" + allCmdLines, allCmdLines,
+            containsString("@" + JETTY_ARGFILE));
+        // 3b. ... and the expanded configuration is NOT on any command line (the #14005 fix)
+        assertThat("expanded configuration must not appear on a command line, cmdlines=" + allCmdLines, allCmdLines,
+            not(containsString("XmlConfiguration")));
     }
 }

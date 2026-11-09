@@ -244,13 +244,71 @@ public class CommandLineBuilder
     }
 
     /**
-     * Write the command line following {@code java @arglines} format.
+     * Applies quoting suitable for a Java <em>argument file</em> (the {@code java @file}
+     * feature, see {@code java --help}) if necessary.
+     * <p>
+     * The {@code java} launcher tokenizes an argument file on whitespace (space, tab,
+     * {@code \n}, {@code \r}, {@code \f}); a token may be wrapped in single or double
+     * quotes to preserve whitespace, a {@code #} outside quotes starts a comment, and a
+     * backslash is literal outside quotes but an escape character inside quotes. A token
+     * is therefore quoted here when it is empty or contains whitespace, {@code #},
+     * {@code '} or {@code "}; when quoted (with double quotes) the backslash and double
+     * quote are escaped, and raw newlines and carriage returns are escaped as
+     * {@code \n}/{@code \r} since a raw newline ends a token even inside quotes.
+     * </p>
+     *
+     * @param input the string to quote if needed
+     * @return the quoted string, or the original string if quoting is not necessary
+     */
+    public static String argFileQuoteIfNeeded(String input)
+    {
+        if (input == null)
+            return null;
+        if (input.isEmpty())
+            return "\"\"";
+
+        boolean needsQuoting = false;
+        for (int i = 0; i < input.length(); i++)
+        {
+            char c = input.charAt(i);
+            if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' ||
+                c == '#' || c == '\'' || c == '"')
+            {
+                needsQuoting = true;
+                break;
+            }
+        }
+
+        if (!needsQuoting)
+            return input;
+
+        StringBuilder builder = new StringBuilder(input.length() + 8);
+        builder.append('"');
+        for (int i = 0; i < input.length(); i++)
+        {
+            char c = input.charAt(i);
+            switch (c)
+            {
+                case '\\' -> builder.append("\\\\");
+                case '"' -> builder.append("\\\"");
+                case '\n' -> builder.append("\\n");
+                case '\r' -> builder.append("\\r");
+                default -> builder.append(c);
+            }
+        }
+        builder.append('"');
+        return builder.toString();
+    }
+
+    /**
+     * Write the command line following {@code java @arglines} format, one quoted
+     * argument per line (see {@link #argFileQuoteIfNeeded(String)}).
      */
     public void writeArgLines(PrintStream writer)
     {
         for (String arg: args)
         {
-            writer.println(arg);
+            writer.println(argFileQuoteIfNeeded(arg));
         }
     }
 

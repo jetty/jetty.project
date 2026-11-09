@@ -279,7 +279,7 @@ dumpEnv()
   echo "JETTY_STATE           =  $JETTY_STATE"
   echo "JETTY_START_TIMEOUT   =  $JETTY_START_TIMEOUT"
   echo "JETTY_SYS_PROPS       =  $JETTY_SYS_PROPS"
-  echo "RUN_ARGS              =  ${RUN_ARGS[*]}"
+  echo "JETTY_ARGFILE         =  $JETTY_ARGFILE"
   echo "ID                    =  $(id)"
   echo "JETTY_USER            =  $JETTY_USER"
   echo "USE_START_STOP_DAEMON =  $USE_START_STOP_DAEMON"
@@ -567,13 +567,37 @@ then
   fi
 fi
 
-# Collect the dry-run (of opts,path,main,args,envs) from the jetty.base configuration
-JETTY_DRY_RUN=$(echo "${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]}" | xargs "$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args,envs)
-RUN_ARGS=($JETTY_SYS_PROPS ${JETTY_DRY_RUN[@]})
+# Generate a Java @argument-file (of opts,path,main,args,envs) from the jetty.base
+# configuration.  Launching via "java @argfile" instead of expanding every argument onto
+# the command line keeps configuration values - such as passwords in start.d/ssl.ini -
+# out of the publicly visible process arguments (see issue #14005).  The file is created
+# with restrictive permissions because it may contain such secrets.
+JETTY_ARGFILE="$JETTY_RUN/${NAME}.argfile"
+
+# Only (re)generate the argfile for actions that actually launch the JVM.  "stop" removes
+# it, and "status"/"check"/"restart" must not recreate it ("restart" re-invokes "start",
+# which regenerates it).  Regenerating on every invocation would needlessly fork a JVM and
+# would recreate the (possibly secret-bearing) file right after "stop" cleaned it up.
+case "$ACTION" in
+  start | run | demo | supervise)
+    (
+      umask 077
+      echo "${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]}" | xargs "$JAVA" -jar "$JETTY_START" --arglines=opts,path,main,args,envs > "$JETTY_ARGFILE"
+    )
+
+    # If we will drop privileges to JETTY_USER at launch (start-stop-daemon --chuid, or the
+    # "su - $JETTY_USER" shell), that user must be able to read the argfile we just generated
+    # as the current (root) user.  Keep it mode 0600, but hand ownership to JETTY_USER.
+    if [ -n "$JETTY_USER" ] && [ "`whoami`" != "$JETTY_USER" ]
+    then
+      chown "$JETTY_USER" "$JETTY_ARGFILE"
+    fi
+    ;;
+esac
 
 if (( DEBUG ))
 then
-  if expr -- "${RUN_ARGS[*]}" : '.*/etc/console-capture.xml.*' > /dev/null
+  if grep -q '/etc/console-capture.xml' "$JETTY_ARGFILE" 2>/dev/null
   then
     echo "WARNING: Disable console-capture module for best DEBUG results"
   fi
@@ -618,14 +642,14 @@ case "$ACTION" in
 
       # use of --pidfile /dev/null disables internal pidfile
       # management of the start-stop-daemon (see man page)
-      echo ${RUN_ARGS[@]} | xargs start-stop-daemon \
+      start-stop-daemon \
        --start $CH_USER \
        --pidfile /dev/null \
        --chdir "$JETTY_BASE" \
        --background \
        --output "${JETTY_RUN}/start-stop.log" \
        --startas "$JAVA" \
-       --
+       -- $JETTY_SYS_PROPS @"$JETTY_ARGFILE"
       (( DEBUG )) && echo "Starting: start-stop-daemon"
     else
       # Startup if switching users (not as a service, or from root)
@@ -640,13 +664,13 @@ case "$ACTION" in
         chown "$JETTY_USER" "$JETTY_PID"
         su - "$JETTY_USER" $SU_SHELL -c "
           cd \"$JETTY_BASE\"
-          echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
+          ${JAVA} $JETTY_SYS_PROPS @\"$JETTY_ARGFILE\" > /dev/null &
           PID=\$!
           disown \$PID"
         (( DEBUG )) && echo "Starting: su shell (w/user $JETTY_USER) on PID $PID"
       else
         # Startup if not switching users
-        echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
+        ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE" > /dev/null &
         PID=$!
         disown $PID
         (( DEBUG )) && echo "Starting: java command on PID $PID"
@@ -711,6 +735,8 @@ case "$ACTION" in
 
     rm -f "$JETTY_PID"
     rm -f "$JETTY_STATE"
+    # Remove the argument-file: it may contain secrets and must not linger.
+    rm -f "$JETTY_ARGFILE"
     echo OK
 
     ;;
@@ -736,7 +762,7 @@ case "$ACTION" in
     # Under control of daemontools supervise monitor which
     # handles restarts and shutdowns via the svc program.
     #
-    echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
+    ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE" > /dev/null &
 
     ;;
 
@@ -749,7 +775,7 @@ case "$ACTION" in
       exit 1
     fi
 
-    echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
+    ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE" > /dev/null &
     ;;
 
   check|status)
