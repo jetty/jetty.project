@@ -66,7 +66,7 @@ public class ZstandardCompression extends Compression
     private ZstandardEncoderConfig defaultEncoderConfig = new ZstandardEncoderConfig();
     private ZstandardDecoderConfig defaultDecoderConfig = new ZstandardDecoderConfig();
     private ZstandardCompressCtxPool compressCtxPool;
-    private int compressCtxPoolCapacity = -1;
+    private int compressPoolCapacity = ZstandardCompressCtxPool.DEFAULT_CAPACITY;
 
     public ZstandardCompression()
     {
@@ -78,12 +78,12 @@ public class ZstandardCompression extends Compression
     }
 
     /**
-     * @return the capacity of the {@link ZstdCompressCtx} pool, or a negative value for the default capacity
-     * @see #setCompressCtxPoolCapacity(int)
+     * @return the capacity of the {@link ZstdCompressCtx} pool, or {@code 0} if pooling is disabled
+     * @see #setCompressPoolCapacity(int)
      */
-    public int getCompressCtxPoolCapacity()
+    public int getCompressPoolCapacity()
     {
-        return compressCtxPoolCapacity;
+        return compressPoolCapacity;
     }
 
     /**
@@ -93,14 +93,18 @@ public class ZstandardCompression extends Compression
      * idle contexts retain; when the pool is full, the contexts in excess are created and freed for each
      * response.</p>
      *
-     * @param compressCtxPoolCapacity the capacity of the pool, {@code 0} to disable pooling, or a negative
-     * value for the default capacity of {@value ZstandardCompressCtxPool#DEFAULT_CAPACITY}
+     * <p>The default capacity is {@value ZstandardCompressCtxPool#DEFAULT_CAPACITY}.</p>
+     *
+     * @param compressPoolCapacity the capacity of the pool, or {@code 0} to disable pooling
+     * @throws IllegalArgumentException if the capacity is negative
      */
-    public void setCompressCtxPoolCapacity(int compressCtxPoolCapacity)
+    public void setCompressPoolCapacity(int compressPoolCapacity)
     {
+        if (compressPoolCapacity < 0)
+            throw new IllegalArgumentException("Invalid compression context pool capacity: " + compressPoolCapacity);
         if (isRunning())
             throw new IllegalStateException("Cannot set the compression context pool capacity on a running component");
-        this.compressCtxPoolCapacity = compressCtxPoolCapacity;
+        this.compressPoolCapacity = compressPoolCapacity;
     }
 
     @Override
@@ -122,6 +126,11 @@ public class ZstandardCompression extends Compression
     ZstandardCompressCtxPool getCompressCtxPool()
     {
         return compressCtxPool;
+    }
+
+    ZstandardCompressCtxPool newCompressCtxPool(int capacity)
+    {
+        return new ZstandardCompressCtxPool(capacity);
     }
 
     @Override
@@ -218,8 +227,7 @@ public class ZstandardCompression extends Compression
     {
         super.doStart();
 
-        int capacity = compressCtxPoolCapacity < 0 ? ZstandardCompressCtxPool.DEFAULT_CAPACITY : compressCtxPoolCapacity;
-        compressCtxPool = new ZstandardCompressCtxPool(capacity);
+        compressCtxPool = newCompressCtxPool(compressPoolCapacity);
         addBean(compressCtxPool);
     }
 
