@@ -85,7 +85,7 @@ Report Commands:
                      o  "args" - the arguments passed to the main class
                      o  "envs" - the generated XML files to create the environments
                    Example:
-                     $ java -jar start.jar --arglines=path,main,args,envs > jetty.args
+                     $ java -jar start.jar --arglines=opts,path,main,args,envs > jetty.args
                      $ java -Xmx4g @jetty.args
 
   --dry-run

@@ -851,6 +851,24 @@ public class StartArgs
         return dryRunParts;
     }
 
+    /**
+     * Select the dry-run mode, rejecting an attempt to combine the two families of
+     * option. {@code --dry-run*} (LEGACY) emits a shell command line, while
+     * {@code --arglines*} (ARGLINES) emits a Java {@code @argument-file}; the two share
+     * the {@link #dryRunParts} set and a single output pass, so mixing them (whether on
+     * one command line or via an ini file) would silently produce one mode's output with
+     * the other's parts. They are mutually exclusive.
+     *
+     * @param mode the requested dry-run mode
+     * @param source where the option came from (for the error message)
+     */
+    private void setDryRun(DryRun mode, String source)
+    {
+        if (dryRun != null && dryRun != mode)
+            throw new UsageException(UsageException.ERR_BAD_ARG, "Cannot combine --dry-run and --arglines in %s", source);
+        dryRun = mode;
+    }
+
     public boolean isExec()
     {
         return exec;
@@ -1085,15 +1103,15 @@ public class StartArgs
 
         if ("--dry-run".equals(arg) || "--exec-print".equals(arg))
         {
-            dryRun = DryRun.LEGACY;
-            dryRunParts.addAll(ALL_PARTS);
+            // Leave dryRunParts empty: getMainArgs() treats an empty set as ALL_PARTS.
+            setDryRun(DryRun.LEGACY, source);
             run = false;
             return environment;
         }
 
         if (arg.startsWith("--dry-run="))
         {
-            dryRun = DryRun.LEGACY;
+            setDryRun(DryRun.LEGACY, source);
             int colon = arg.indexOf('=');
             for (String part : arg.substring(colon + 1).split(","))
             {
@@ -1114,16 +1132,18 @@ public class StartArgs
 
         if ("--arglines".equals(arg))
         {
-            dryRun = DryRun.ARGLINES;
+            setDryRun(DryRun.ARGLINES, source);
+            // "java" is the only part not compatible with @arglines (the java binary must
+            // not be a token in the argfile), so default to all parts except "java".
             dryRunParts.addAll(ALL_PARTS);
-            dryRunParts.remove("java"); // not compatible with @arglines
+            dryRunParts.remove("java");
             run = false;
             return environment;
         }
 
         if (arg.startsWith("--arglines="))
         {
-            dryRun = DryRun.ARGLINES;
+            setDryRun(DryRun.ARGLINES, source);
             int colon = arg.indexOf('=');
             for (String part : arg.substring(colon + 1).split(","))
             {

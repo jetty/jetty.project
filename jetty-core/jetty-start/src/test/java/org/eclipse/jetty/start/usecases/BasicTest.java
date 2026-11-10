@@ -324,7 +324,7 @@ public class BasicTest extends AbstractUseCase
         // === Execute Main
         List<String> runArgs = new ArrayList<>();
         runArgs.add("--create-files");
-        runArgs.add("java.version=21.0.1");
+        runArgs.add("java.version=1.8.0_31");
 
         // Modules
         runArgs.add("--modules=optional,extra");
@@ -437,6 +437,41 @@ public class BasicTest extends AbstractUseCase
 
         ExecResults results = exec(runArgs, false);
         assertThat("UsageException expected", results.exception, instanceOf(UsageException.class));
+    }
+
+    @Test
+    public void testArgLinesCombinedWithDryRunRejected() throws Exception
+    {
+        setupDistHome();
+
+        // --dry-run (shell format) and --arglines (java @argfile format) share the dry-run
+        // state, so combining them must be rejected rather than silently producing one mode's
+        // output with the other's parts.
+        List<String> runArgs = new ArrayList<>();
+        runArgs.add("--dry-run");
+        runArgs.add("--arglines");
+
+        ExecResults results = exec(runArgs, false);
+        assertThat("UsageException expected", results.exception, instanceOf(UsageException.class));
+        assertThat(results.exception.getMessage(), containsString("Cannot combine"));
+    }
+
+    @Test
+    public void testArgLinesBannedInIniFile() throws Exception
+    {
+        setupDistHome();
+
+        // --arglines is a command-line-only option; it must not be accepted from a start.ini.
+        Files.writeString(baseDir.resolve("start.ini"),
+            """
+            --modules=main
+            --arglines
+            """, UTF_8);
+
+        ExecResults results = exec(List.of(), false);
+        assertThat("UsageException expected", results.exception, instanceOf(UsageException.class));
+        assertThat(results.exception.getMessage(), containsString("--arglines"));
+        assertThat(results.exception.getMessage(), containsString("not allowed"));
     }
 
     /**

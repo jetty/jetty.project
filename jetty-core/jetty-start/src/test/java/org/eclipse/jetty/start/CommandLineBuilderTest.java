@@ -133,7 +133,13 @@ public class CommandLineBuilderTest
             Arguments.of("C:\\Program Files\\jetty", "\"C:\\\\Program Files\\\\jetty\""),
             // raw newline/carriage-return must be escaped (a raw newline ends a token even inside quotes)
             Arguments.of("a\nb", "\"a\\nb\""),
-            Arguments.of("a\rb", "\"a\\rb\"")
+            Arguments.of("a\rb", "\"a\\rb\""),
+            // form-feed is a separator -> quoted; it is preserved literally inside double quotes
+            // (verified against the JDK launcher, which keeps a literal 0x0C as part of the token)
+            Arguments.of("a\fb", "\"a\fb\""),
+            // a value mixing space, '#', both quote kinds and a backslash: everything in one token
+            // (round-trips through the real java launcher back to the original value)
+            Arguments.of("a b#'\"\\", "\"a b#'\\\"\\\\\"")
         );
     }
 

@@ -240,7 +240,7 @@ public class CommandLineBuilder
      */
     public void writeCommandLine(PrintStream writer)
     {
-        writer.print(commandLine);
+        writer.println(commandLine);
     }
 
     /**

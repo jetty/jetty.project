@@ -427,8 +427,8 @@ The `--dry-run` output is formatted for a POSIX compliant shell, which is not th
 
 [source,bash,subs=+quotes]
 ----
-$ java -jar $JETTY_HOME/start.jar --arglines=##opts,path,main,args,envs## > /tmp/jvm_cmd_line.txt
-$ /some/other/java @/tmp/jvm_cmd_line.txt
+$ (umask 077; java -jar $JETTY_HOME/start.jar --arglines=##opts,path,main,args,envs## > "$JETTY_BASE/jvm_cmd_line.txt")
+$ /some/other/java @"$JETTY_BASE/jvm_cmd_line.txt"
 ----
 
 Using `--dry-run=opts,path,main,args,envs` can be used to avoid that the Jetty start mechanism forks a second JVM when using modules that require forking.
@@ -457,21 +457,24 @@ $ echo $OPTS -Dextra=opt $MAIN $ARGS $ENVS extraProp=value extra.xml | xargs jav
 The `--dry-run` option formats its output for a POSIX compliant shell, which is not the format expected by the `java` _arguments file_ feature (the `java @file` syntax, see the output of `java --help`).
 Use the `--arglines` option to generate a valid `java` arguments file: it prints one argument per line, quoted as required by the `java` launcher.
 
+Because the arguments file can contain the configuration values themselves (including secrets such as passwords), create it with a restrictive `umask` and write it to a directory that is not world-readable, rather than to a shared location such as `/tmp`:
+
 [source,bash]
 ----
-$ java -jar $JETTY_HOME/start.jar --arglines > /tmp/jetty.args
-$ java @/tmp/jetty.args
+$ (umask 077; java -jar $JETTY_HOME/start.jar --arglines > "$JETTY_BASE/jetty.args")
+$ java @"$JETTY_BASE/jetty.args"
 ----
 
 As with `--dry-run`, the output can be limited to specific parts; the `java` part is not applicable to an arguments file and cannot be requested:
 
 [source,bash]
 ----
-$ java -jar $JETTY_HOME/start.jar --arglines=opts,path,main,args,envs > /tmp/jetty.args
-$ java -Xmx4g @/tmp/jetty.args
+$ (umask 077; java -jar $JETTY_HOME/start.jar --arglines=opts,path,main,args,envs > "$JETTY_BASE/jetty.args")
+$ java -Xmx4g @"$JETTY_BASE/jetty.args"
 ----
 
 TIP: Because the configuration values are written to a file rather than expanded onto the command line, using an arguments file keeps values such as passwords configured in `+start.d/*.ini+` files out of the publicly visible process arguments.
+The file itself holds those values, so protect it with file permissions (as shown above with `umask 077`) and keep it out of world-readable directories.
 
 [[start]]
 == Starting Jetty

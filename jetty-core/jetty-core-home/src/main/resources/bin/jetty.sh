@@ -574,33 +574,52 @@ fi
 # with restrictive permissions because it may contain such secrets.
 JETTY_ARGFILE="$JETTY_RUN/${NAME}.argfile"
 
-# Only (re)generate the argfile for actions that actually launch the JVM.  "stop" removes
-# it, and "status"/"check"/"restart" must not recreate it ("restart" re-invokes "start",
-# which regenerates it).  Regenerating on every invocation would needlessly fork a JVM and
-# would recreate the (possibly secret-bearing) file right after "stop" cleaned it up.
-case "$ACTION" in
-  start | run | demo | supervise)
-    (
-      umask 077
-      echo "${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]}" | xargs "$JAVA" -jar "$JETTY_START" --arglines=opts,path,main,args,envs > "$JETTY_ARGFILE"
-    )
-
-    # If we will drop privileges to JETTY_USER at launch (start-stop-daemon --chuid, or the
-    # "su - $JETTY_USER" shell), that user must be able to read the argfile we just generated
-    # as the current (root) user.  Keep it mode 0600, but hand ownership to JETTY_USER.
-    if [ -n "$JETTY_USER" ] && [ "`whoami`" != "$JETTY_USER" ]
-    then
-      chown "$JETTY_USER" "$JETTY_ARGFILE"
-    fi
-    ;;
+# The java launcher opens an @argfile with native file APIs, so on Cygwin it must be handed
+# a Windows path; bash still writes, greps, and removes the file through the POSIX path.
+JETTY_ARGFILE_ARG="$JETTY_ARGFILE"
+case "`uname`" in
+CYGWIN*) JETTY_ARGFILE_ARG="`cygpath -w $JETTY_ARGFILE`";;
 esac
 
-if (( DEBUG ))
-then
-  if grep -q '/etc/console-capture.xml' "$JETTY_ARGFILE" 2>/dev/null
+# Generate the Java @argument-file (opts,path,main,args,envs) that the JVM is launched with.
+# Launching via "java @argfile" instead of expanding every argument onto the command line
+# keeps configuration values - such as passwords in start.d/ssl.ini - out of the publicly
+# visible process arguments.  The file may therefore hold secrets, so it
+# is (re)created fresh with a restrictive umask and O_EXCL ("set -C", which also refuses to
+# follow a pre-existing symlink), and handed to JETTY_USER when we will drop privileges at
+# launch.  Call this only after the per-action checks (NO_START, already running) have
+# passed, so a disabled or already-running service never (re)writes the file.
+generateArgFile()
+{
+  if ! (
+    umask 077
+    rm -f "$JETTY_ARGFILE"
+    set -C
+    echo "${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]}" | xargs "$JAVA" -jar "$JETTY_START" --arglines=opts,path,main,args,envs > "$JETTY_ARGFILE"
+  )
+  then
+    echo "** ERROR: unable to generate $JETTY_ARGFILE" >&2
+    rm -f "$JETTY_ARGFILE"
+    exit 1
+  fi
+
+  # If we will drop privileges to JETTY_USER at launch (start-stop-daemon --chuid, or the
+  # "su - $JETTY_USER" shell), that user must be able to read the argfile we just generated
+  # as the current (root) user.  Keep it mode 0600, but hand ownership to JETTY_USER; use -h
+  # so a symlink is never chowned through.
+  if [ -n "$JETTY_USER" ] && [ "`whoami`" != "$JETTY_USER" ]
+  then
+    chown -h "$JETTY_USER" "$JETTY_ARGFILE"
+  fi
+
+  if (( DEBUG )) && grep -q '/etc/console-capture.xml' "$JETTY_ARGFILE" 2>/dev/null
   then
     echo "WARNING: Disable console-capture module for best DEBUG results"
   fi
+}
+
+if (( DEBUG ))
+then
   echo "IDs are $(id)"
   dumpEnv
 fi
@@ -629,6 +648,9 @@ case "$ACTION" in
       rm $JETTY_STATE
     fi
 
+    # Generate the argfile only now that NO_START and the already-running check have passed.
+    generateArgFile
+
     echo -n "Starting Jetty: "
 
     # Startup from a service file
@@ -649,7 +671,7 @@ case "$ACTION" in
        --background \
        --output "${JETTY_RUN}/start-stop.log" \
        --startas "$JAVA" \
-       -- $JETTY_SYS_PROPS @"$JETTY_ARGFILE"
+       -- $JETTY_SYS_PROPS @"$JETTY_ARGFILE_ARG"
       (( DEBUG )) && echo "Starting: start-stop-daemon"
     else
       # Startup if switching users (not as a service, or from root)
@@ -664,13 +686,13 @@ case "$ACTION" in
         chown "$JETTY_USER" "$JETTY_PID"
         su - "$JETTY_USER" $SU_SHELL -c "
           cd \"$JETTY_BASE\"
-          ${JAVA} $JETTY_SYS_PROPS @\"$JETTY_ARGFILE\" > /dev/null &
+          ${JAVA} $JETTY_SYS_PROPS @\"$JETTY_ARGFILE_ARG\" > /dev/null &
           PID=\$!
           disown \$PID"
         (( DEBUG )) && echo "Starting: su shell (w/user $JETTY_USER) on PID $PID"
       else
         # Startup if not switching users
-        ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE" > /dev/null &
+        ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE_ARG" > /dev/null &
         PID=$!
         disown $PID
         (( DEBUG )) && echo "Starting: java command on PID $PID"
@@ -685,6 +707,9 @@ case "$ACTION" in
       else
         echo "FAILED `date`"
         pidKill $JETTY_PID 30
+        # Start failed and the JVM (if any) has already read the @argfile, so remove the
+        # secret-bearing file rather than leave it behind.
+        rm -f "$JETTY_ARGFILE"
         exit 1
       fi
     else
@@ -695,6 +720,9 @@ case "$ACTION" in
 
   stop)
     echo -n "Stopping Jetty: "
+    # Remove the argument-file first: it may contain secrets and must go even when there is
+    # no pid file to stop.
+    rm -f "$JETTY_ARGFILE"
     if [ ! -r "$JETTY_PID" ] ; then
       echo "** ERROR: no pid found at $JETTY_PID"
       exit 1
@@ -735,8 +763,6 @@ case "$ACTION" in
 
     rm -f "$JETTY_PID"
     rm -f "$JETTY_STATE"
-    # Remove the argument-file: it may contain secrets and must not linger.
-    rm -f "$JETTY_ARGFILE"
     echo OK
 
     ;;
@@ -762,7 +788,8 @@ case "$ACTION" in
     # Under control of daemontools supervise monitor which
     # handles restarts and shutdowns via the svc program.
     #
-    ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE" > /dev/null &
+    generateArgFile
+    ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE_ARG" > /dev/null &
 
     ;;
 
@@ -775,7 +802,8 @@ case "$ACTION" in
       exit 1
     fi
 
-    ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE" > /dev/null &
+    generateArgFile
+    ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE_ARG" > /dev/null &
     ;;
 
   check|status)
