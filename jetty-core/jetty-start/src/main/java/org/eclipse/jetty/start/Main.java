@@ -26,10 +26,14 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -267,6 +271,89 @@ public class Main
         }
 
         return "";
+    }
+
+    /**
+     * Write the forked-JVM command to a restricted-permission {@code java @argument-file}
+     * so the child's configuration stays out of the visible process arguments (issue
+     * #14005). The file is created {@code 0600} where the filesystem supports it, in the
+     * directory from {@link #resolveExecArgFileDir(StartArgs)}, and removed on JVM exit.
+     *
+     * @param args the start arguments (used to resolve the target directory)
+     * @param cmd the child command, built without the {@code "java"} part
+     * @return the argument file to hand the child as {@code @<path>}
+     * @throws IOException if the file cannot be created or written
+     */
+    Path writeExecArgFile(StartArgs args, CommandLineBuilder cmd) throws IOException
+    {
+        Path dir = resolveExecArgFileDir(args);
+        Path argFile;
+        try
+        {
+            argFile = Files.createTempFile(dir, "jetty-exec-", ".argfile",
+                PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+        }
+        catch (UnsupportedOperationException e)
+        {
+            // Non-POSIX filesystem (e.g. Windows): the temp/base directory is user-private.
+            argFile = Files.createTempFile(dir, "jetty-exec-", ".argfile");
+        }
+        argFile.toFile().deleteOnExit();
+
+        // The java launcher expands @argument-file bytes into the child's native argv, which
+        // the JVM then decodes with the platform native encoding - exposed as the
+        // "sun.jnu.encoding" system property (NOT file.encoding/Charset.defaultCharset()).
+        // Write with that encoding so non-ASCII values (passwords, paths, etc.) round-trip;
+        // hardcoding UTF-8 would corrupt them where the native encoding is a legacy codepage
+        // (e.g. Windows). The forked child shares this JVM's native encoding.
+        Charset encoding = Charset.defaultCharset();
+        String nativeEncoding = System.getProperty("sun.jnu.encoding");
+        if (nativeEncoding != null)
+        {
+            try
+            {
+                encoding = Charset.forName(nativeEncoding);
+            }
+            catch (Exception ignore)
+            {
+                // keep the default charset
+            }
+        }
+
+        try (PrintStream out = new PrintStream(Files.newOutputStream(argFile), false, encoding))
+        {
+            cmd.writeArgLines(out);
+        }
+        StartLog.debug("Generated exec @argument-file: %s", argFile);
+        return argFile;
+    }
+
+    /**
+     * Resolve the directory for the forked-JVM {@code @argument-file}: the
+     * {@code jetty.server.tempDirectory} property if set, otherwise {@code ${jetty.base}},
+     * falling back to {@code java.io.tmpdir} when that directory is not writable (for
+     * example a read-only base).
+     *
+     * @param args the start arguments
+     * @return an existing, writable directory for the argument file
+     */
+    Path resolveExecArgFileDir(StartArgs args)
+    {
+        Path base = getBaseHome().getBasePath();
+        Path dir = base;
+
+        Props properties = args.getJettyEnvironment().getProperties();
+        String configured = properties.getString("jetty.server.tempDirectory");
+        if (configured != null && !configured.isBlank())
+            dir = base.resolve(properties.expand(configured)).normalize();
+
+        if (!Files.isDirectory(dir) || !Files.isWritable(dir))
+        {
+            Path fallback = Paths.get(System.getProperty("java.io.tmpdir"));
+            StartLog.debug("Exec @argument-file directory %s is not writable; using %s", dir, fallback);
+            dir = fallback;
+        }
+        return dir;
     }
 
     public void invokeMain(ClassLoader classloader, StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException
@@ -579,7 +666,15 @@ public class Main
         // execute Jetty in another JVM
         if (args.isExec())
         {
-            CommandLineBuilder cmd = args.getMainArgs(StartArgs.ALL_PARTS);
+            // Build the child command with the core properties inlined (unless
+            // --exec-properties pins a file) and without the "java" part, so the whole
+            // command can be written to a java @argument-file. Launching the child as
+            // "java @argfile" keeps its configuration - STOP.KEY, secondary-environment
+            // properties, -D system properties, etc. - off the publicly visible process
+            // arguments (issue #14005), and sidesteps the OS command-line length limit.
+            Set<String> parts = new LinkedHashSet<>(StartArgs.ALL_PARTS);
+            parts.remove("java");
+            CommandLineBuilder cmd = args.getMainArgs(parts, args.getExecProperties() == null);
             cmd.debug();
 
             List<String> execModules = args.getAllModules().getEnabled().stream()
@@ -589,7 +684,8 @@ public class Main
                 .collect(Collectors.toList());
             StartLog.warn("Forking second JVM due to forking module(s): %s. Use --dry-run to generate the command line to avoid forking.", execModules);
 
-            ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
+            Path argFile = writeExecArgFile(args, cmd);
+            ProcessBuilder pbuilder = new ProcessBuilder(CommandLineBuilder.findJavaBin(), "@" + argFile.toAbsolutePath());
             StartLog.endStartLog();
             final Process process = pbuilder.start();
             Runtime.getRuntime().addShutdownHook(new Thread(() ->

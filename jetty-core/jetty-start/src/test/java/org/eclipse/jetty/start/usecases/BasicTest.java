@@ -474,6 +474,39 @@ public class BasicTest extends AbstractUseCase
         assertThat(results.exception.getMessage(), containsString("not allowed"));
     }
 
+    @Test
+    public void testGetMainArgsPropertyInliningForExecArgFile() throws Exception
+    {
+        setupDistHome();
+
+        Files.writeString(baseDir.resolve("start.ini"),
+            """
+            --modules=main
+            my.secret.marker=TOPSECRET_abc
+            """, UTF_8);
+
+        List<String> runArgs = new ArrayList<>();
+        runArgs.add("--create-files");
+        runArgs.add("java.version=21.0.1");
+        runArgs.add("--modules=main");
+
+        ExecResults results = exec(runArgs, true);
+        assertThat("No exception", results.exception, is(nullValue()));
+
+        Set<String> parts = new HashSet<>(StartArgs.ALL_PARTS);
+        parts.remove("java");
+
+        // The forked JVM inlines properties into the @argument-file: the value is a token.
+        CommandLineBuilder inlined = results.startArgs.getMainArgs(parts, true);
+        assertThat("inlined property", inlined.getArgs(), hasItem("my.secret.marker=TOPSECRET_abc"));
+
+        // The in-process path keeps the properties file: the value is not a token; a
+        // .properties file path is passed instead.
+        CommandLineBuilder viaFile = results.startArgs.getMainArgs(parts, false);
+        assertThat("value not inlined", viaFile.getArgs(), not(hasItem(containsString("TOPSECRET_abc"))));
+        assertThat("properties file path", viaFile.getArgs(), hasItem(endsWith(".properties")));
+    }
+
     /**
      * Render the {@code java @arglines} output using the same code path that
      * {@link org.eclipse.jetty.start.Main} uses.

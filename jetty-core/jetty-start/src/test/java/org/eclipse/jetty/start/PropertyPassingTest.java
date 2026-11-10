@@ -32,6 +32,8 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -291,6 +293,118 @@ public class PropertyPassingTest
         // The property is defined as `test.config=${jetty.base}/etc/config.ini`
         // so we must maintain the slashes for the `/etc/config.ini` portion (even if it is running on windows)
         assertThat(output, containsString("test.config=%s/etc/config.ini".formatted(base)));
+    }
+
+    // café-€-naïve : a value with non-ASCII code points whose encoding matters.
+    private static final String MARKER_VALUE = "café-€-naïve";
+
+    /**
+     * When the JVM that generates the arguments file and the JVM that runs {@code java @file}
+     * share a native encoding (both UTF-8 here), a non-ASCII property value round-trips.
+     */
+    @Test
+    @EnabledOnOs(OS.LINUX)
+    public void testArgFileSurvivesMatchingNativeEncoding() throws Exception
+    {
+        Path argFile = workDir.getEmptyPathDir().resolve("same.args");
+        generateArgFile(argFile, "C.UTF-8", "test.marker=" + MARKER_VALUE);
+        byte[] output = runPropertyDump(argFile, "C.UTF-8");
+
+        byte[] needle = ("test.marker=" + MARKER_VALUE).getBytes(UTF_8);
+        assertThat("value preserved under matching native encoding", containsSequence(output, needle), is(true));
+    }
+
+    /**
+     * Pins the documented portability caveat: generating under UTF-8 and then running
+     * {@code java @file} under an ASCII native encoding (LANG=C) misreads the non-ASCII bytes,
+     * so the original value no longer appears.
+     */
+    @Test
+    @EnabledOnOs(OS.LINUX)
+    public void testArgFileCorruptedByMismatchedNativeEncoding() throws Exception
+    {
+        Path argFile = workDir.getEmptyPathDir().resolve("mismatch.args");
+        generateArgFile(argFile, "C.UTF-8", "test.marker=" + MARKER_VALUE);
+        byte[] output = runPropertyDump(argFile, "C");
+
+        byte[] needle = ("test.marker=" + MARKER_VALUE).getBytes(UTF_8);
+        assertThat("value corrupted under mismatched native encoding", containsSequence(output, needle), is(false));
+    }
+
+    private void generateArgFile(Path argFile, String lang, String... properties) throws Exception
+    {
+        List<String> commands = new ArrayList<>();
+        commands.add(getJavaBin());
+        commands.add("-Dmain.class=" + PropertyDump.class.getName());
+        commands.add("-cp");
+        commands.add(getClassPath());
+        commands.add(getStartJarBin());
+        // Include the "main" part so the file itself names the main class: the launcher only
+        // expands @file in launcher position (before the main class), not as an application arg.
+        commands.add("--arglines=main,args");
+        commands.addAll(List.of(properties));
+
+        ProcessBuilder builder = new ProcessBuilder(commands);
+        builder.directory(MavenPaths.findTestResourceDir("empty.home").toFile());
+        builder.environment().put("LANG", lang);
+        builder.environment().put("LC_ALL", lang);
+        // Capture the raw native-encoded bytes on disk (not a String-decoded copy).
+        builder.redirectOutput(argFile.toFile());
+        builder.redirectError(ProcessBuilder.Redirect.INHERIT);
+        int exit = builder.start().waitFor();
+        assertThat("generate (--arglines) exit code", exit, is(0));
+    }
+
+    private byte[] runPropertyDump(Path argFile, String lang) throws Exception
+    {
+        // "java -cp <cp> @file": the @file is in launcher position, so it expands to the main
+        // class (PropertyDump, from the "main" part) plus the inlined property args. The test
+        // classpath is supplied explicitly, avoiding reliance on a start.jar-computed classpath.
+        List<String> commands = new ArrayList<>();
+        commands.add(getJavaBin());
+        commands.add("-cp");
+        commands.add(getClassPath());
+        commands.add("@" + argFile.toAbsolutePath());
+
+        ProcessBuilder builder = new ProcessBuilder(commands);
+        builder.directory(MavenPaths.findTestResourceDir("empty.home").toFile());
+        builder.environment().put("LANG", lang);
+        builder.environment().put("LC_ALL", lang);
+        builder.redirectError(ProcessBuilder.Redirect.INHERIT);
+        Process pid = builder.start();
+        byte[] out = pid.getInputStream().readAllBytes();
+        pid.waitFor();
+        return out;
+    }
+
+    /**
+     * @return whether the byte sequence {@code needle} occurs anywhere within {@code haystack}.
+     * <p>
+     * The encoding tests compare the child's raw stdout <em>bytes</em> against the UTF-8 bytes
+     * of the expected value on purpose. Decoding the child's output into a {@code String} first
+     * (and using {@link String#contains}) would introduce yet another charset step -- the one
+     * used to read the child's stdout -- which is the very variable under test, so a mismatch
+     * there could mask or fake a result. Working at the byte level keeps the assertion about the
+     * exact bytes the child emitted and nothing else.
+     * <p>
+     * jetty-util's {@code SearchPattern} is deliberately not used: its documented contract is
+     * that the pattern is {@link java.nio.charset.StandardCharsets#US_ASCII} encoded, but the
+     * needle here is non-ASCII UTF-8 bytes - precisely what this test exercises - so relying on
+     * it would be leaning on an off-contract behavior for the one thing under test.
+     */
+    private static boolean containsSequence(byte[] haystack, byte[] needle)
+    {
+        outer:
+        for (int i = 0; i <= haystack.length - needle.length; i++)
+        {
+            for (int j = 0; j < needle.length; j++)
+            {
+                if (haystack[i + j] != needle[j])
+                    continue outer;
+            }
+            return true;
+        }
+        return false;
     }
 
     private String getClassPath()

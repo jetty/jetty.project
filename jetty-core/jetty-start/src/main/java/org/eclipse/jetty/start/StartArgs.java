@@ -498,6 +498,26 @@ public class StartArgs
 
     public CommandLineBuilder getMainArgs(Set<String> parts) throws IOException
     {
+        // By default, properties are inlined as args only when generating dry-run/arglines
+        // output; otherwise they are written to a (temp) properties file.
+        return getMainArgs(parts, dryRun != null);
+    }
+
+    /**
+     * Build the command line for the main invocation.
+     *
+     * @param parts the parts of the command line to include (see {@link #ALL_PARTS})
+     * @param inlineProperties when {@code true}, the core-environment properties are added
+     * directly as {@code key=value} args rather than written to a {@code .properties} file
+     * and referenced by path. The forked-JVM launch uses {@code true} so the properties end
+     * up inside the {@code java @argument-file} (and thus off the child's visible command
+     * line). A {@code --exec-properties=<file>} override still forces the properties-file
+     * form. Not used when {@code parts} excludes {@code "args"}.
+     * @return the assembled command line
+     * @throws IOException if a properties file is written and the write fails
+     */
+    public CommandLineBuilder getMainArgs(Set<String> parts, boolean inlineProperties) throws IOException
+    {
         if (parts.isEmpty())
             parts = ALL_PARTS;
 
@@ -598,7 +618,7 @@ public class StartArgs
         if (parts.contains("args"))
         {
             Props properties = jettyEnvironment.getProperties();
-            if (dryRun != null && execProperties == null)
+            if (inlineProperties && execProperties == null)
             {
                 // pass properties as args
                 for (Prop p : properties)
@@ -872,6 +892,15 @@ public class StartArgs
     public boolean isExec()
     {
         return exec;
+    }
+
+    /**
+     * @return the {@code --exec-properties=<file>} path, or {@code null} if not set. When
+     * set, the generated properties are written to this file instead of being inlined.
+     */
+    public String getExecProperties()
+    {
+        return execProperties;
     }
 
     public boolean isLicenseCheckRequired()

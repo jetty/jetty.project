@@ -377,6 +377,65 @@ public class JettyShStartTest extends AbstractJettyHomeTest
         }
     }
 
+    /**
+     * Issue #14005 (encoding round-trip): a non-ASCII configuration value survives jetty.sh's
+     * generate -> {@code @argfile} -> launch cycle when the JVM runs under a UTF-8 locale.
+     * <p>
+     * jetty.sh generates and launches within one environment, so this covers the same-host case
+     * only (a cross-encoding move to another machine is a documented portability caveat). Ubuntu
+     * only, and {@code C.UTF-8} is built into glibc so no locale needs generating.
+     */
+    @Test
+    public void testArgFilePreservesNonAsciiConfig() throws Exception
+    {
+        // café-€-naïve
+        String marker = "café-€-naïve";
+
+        ImageOS osImage = new ImageOSUbuntuJammyJDK17();
+        ImageFromDSL userImage = new ImageUserRoot(osImage);
+        ImageFromDSL jettyImage = new ImageFromDSL(userImage, "base-basic-nonascii", builder ->
+            builder
+                .from(userImage.getDockerImageName())
+                .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,ee10-deploy")
+                .build());
+        ensureParentImagesExist(jettyImage);
+
+        try (GenericContainer<?> genericContainer = new GenericContainer<>(jettyImage))
+        {
+            genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
+
+            genericContainer.withExposedPorts(80, 8080) // jetty
+                .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
+                .withStartupAttempts(2)
+                .withLogConsumer(new Slf4jLogConsumer(LOG))
+                .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
+                .start();
+
+            // Put a non-ASCII property value into start.d.
+            Container.ExecResult inject = genericContainer.execInContainer("/bin/sh", "-c",
+                "mkdir -p /var/test/jetty-base/start.d && " +
+                    "printf 'test.marker=%s\\n' '" + marker + "' > /var/test/jetty-base/start.d/zzz-nonascii.ini");
+            assertThat(asReason(inject, "inject non-ASCII marker"), inject.getExitCode(), is(0));
+
+            // Start under a UTF-8 locale so the generate+launch native encoding is UTF-8.
+            Container.ExecResult result = genericContainer.execInContainer("env", "LANG=C.UTF-8", "LC_ALL=C.UTF-8",
+                "/var/test/jetty-home/bin/jetty.sh", "start");
+            assertThat(asReason(result, "jetty.sh start"), result.getExitCode(), is(0));
+            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
+                allOf(
+                    containsString("Starting Jetty:"),
+                    containsString("\nOK ")
+                ));
+
+            // The non-ASCII value is correctly encoded in the generated argfile.
+            Container.ExecResult content = genericContainer.execInContainer("cat", JETTY_ARGFILE);
+            assertThat(asReason(content, "cat " + JETTY_ARGFILE), content.getExitCode(), is(0));
+            assertThat("argfile preserves the non-ASCII value", content.getStdout(), containsString("test.marker=" + marker));
+
+            genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "stop");
+        }
+    }
+
     private void ensureParentImagesExist(ImageFromDSL jettyImage)
     {
         // The build stack for images
