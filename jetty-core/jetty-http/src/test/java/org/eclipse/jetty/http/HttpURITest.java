@@ -37,6 +37,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -48,6 +49,25 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpURITest
 {
+    @Test
+    public void testAddViolationsEmptyDoesNotThrow()
+    {
+        // addViolations with an empty collection must not leave _violations as a non-EnumSet that
+        // EnumSet.copyOf later rejects with IllegalArgumentException("Collection is empty").
+        HttpURI uri = assertDoesNotThrow(() ->
+            HttpURI.build("/a/b;x=1").addViolations(EnumSet.noneOf(Violation.class)).asImmutable());
+        assertThat(uri.getViolations(), is(empty()));
+    }
+
+    @Test
+    public void testAddViolationsPreservesViolations()
+    {
+        HttpURI uri = HttpURI.build("/a/b")
+            .addViolations(EnumSet.of(Violation.AMBIGUOUS_PATH_SEGMENT))
+            .asImmutable();
+        assertTrue(uri.hasViolation(Violation.AMBIGUOUS_PATH_SEGMENT));
+    }
+
     @Test
     public void testBuilder()
     {
