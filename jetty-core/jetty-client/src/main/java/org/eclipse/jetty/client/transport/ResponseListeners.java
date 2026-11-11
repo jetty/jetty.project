@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -231,11 +232,11 @@ public class ResponseListeners
         // otherwise if reads are always satisfied with content, and a large amount of data
         // is being sent, it won't be possible to abort this loop as the demand callback needs
         // to return before abort() can have any effect.
-        Content.Chunk chunk = contentSource.read();
-        if (chunk != null)
-            chunk.release();
-        if (chunk == null || !chunk.isLast())
-            contentSource.demand(Invocable.from(Invocable.InvocationType.NON_BLOCKING, () -> consume(contentSource)));
+        try (Content.Chunk chunk = contentSource.read())
+        {
+            if (chunk == null || !chunk.isLast())
+                contentSource.demand(Invocable.from(Invocable.InvocationType.NON_BLOCKING, () -> consume(contentSource)));
+        }
     }
 
     private static void notifyContentSource(Response.ContentSourceListener listener, Response response, Content.Source contentSource)
@@ -486,23 +487,24 @@ public class ResponseListeners
             if (LOG.isDebugEnabled())
                 LOG.debug("Original content source's demand calling back");
 
-            Content.Chunk chunk = originalContentSource.read();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Read from original content source {}", chunk);
-            if (chunk == null)
+            try (Content.Chunk chunk = originalContentSource.read())
             {
-                // Retry the demand on spurious wakeup to avoid passing
-                // a null chunk to the demultiplexer's ContentSources.
-                originalContentSource.demand(Invocable.from(getInvocationType(), this::onDemandCallback));
-                return;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Read from original content source {}", chunk);
+                if (chunk == null)
+                {
+                    // Retry the demand on spurious wakeup to avoid passing
+                    // a null chunk to the demultiplexer's ContentSources.
+                    originalContentSource.demand(Invocable.from(getInvocationType(), this::onDemandCallback));
+                    return;
+                }
+                // Demultiplexer content sources are invoked sequentially to be consistent with other listeners,
+                // applications can parallelize from the listeners they register if needed.
+                for (ContentSource demultiplexerContentSource : contentSources)
+                {
+                    demultiplexerContentSource.onChunk(chunk);
+                }
             }
-            // Demultiplexer content sources are invoked sequentially to be consistent with other listeners,
-            // applications can parallelize from the listeners they register if needed.
-            for (ContentSource demultiplexerContentSource : contentSources)
-            {
-                demultiplexerContentSource.onChunk(chunk);
-            }
-            chunk.release();
         }
 
         private Invocable.InvocationType getInvocationType()
@@ -571,19 +573,13 @@ public class ResponseListeners
             private static final Content.Chunk ALREADY_READ_CHUNK = new Content.Chunk.Empty()
             {
                 @Override
-                public ByteBuffer getByteBuffer()
+                public RetainableByteBuffer acquire()
                 {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public boolean isLast()
-                {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public boolean canRetain()
                 {
                     throw new UnsupportedOperationException();
                 }
@@ -616,18 +612,30 @@ public class ResponseListeners
                 this.index = index;
             }
 
-            private void onChunk(Content.Chunk chunk)
+            private void onChunk(Content.Chunk newChunk)
             {
-                Content.Chunk currentChunk = this.chunk;
+                Content.Chunk currentChunk = chunk;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Registering content in multiplexed content source #{} that contains {}", index, currentChunk);
                 if (currentChunk == null || currentChunk == ALREADY_READ_CHUNK)
                 {
-                    if (chunk.hasRemaining())
-                        chunk = Content.Chunk.asChunk(chunk.getByteBuffer().slice(), chunk.isLast(), chunk);
-                    // Retain the slice because it is stored for later reads.
-                    chunk.retain();
-                    this.chunk = chunk;
+                    if (newChunk.hasRemaining())
+                    {
+                        try (RetainableByteBuffer buffer = newChunk.acquire())
+                        {
+                            try (RetainableByteBuffer slice = buffer.slice())
+                            {
+                                // The newChunk is already implicitly retained.
+                                newChunk = Content.Chunk.from(slice, newChunk.isLast());
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Retain the slice because it is stored for later reads.
+                        newChunk.retain();
+                    }
+                    this.chunk = newChunk;
                 }
                 else if (!currentChunk.isLast())
                 {

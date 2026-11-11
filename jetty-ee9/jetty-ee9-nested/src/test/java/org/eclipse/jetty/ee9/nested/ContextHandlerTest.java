@@ -313,9 +313,9 @@ public class ContextHandlerTest
         });
         _server.start();
 
-        try (LocalConnector.LocalEndPoint endPoint = _connector.connect())
+        try (LocalConnector.LocalEndPoint endPoint = _connector.connectToServer())
         {
-            endPoint.addInput("""
+            endPoint.writeRequestString("""
                 GET /one HTTP/1.1
                 Host: localhost
                             
@@ -739,9 +739,9 @@ public class ContextHandlerTest
         _server.setHandler(contexts);
         _server.start();
 
-        try (LocalConnector.LocalEndPoint endp = _connector.connect())
+        try (LocalConnector.LocalEndPoint endp = _connector.connectToServer())
         {
-            endp.addInput("""
+            endp.writeRequestString("""
                 GET /ctxA/ HTTP/1.1
                 Host: localhost
                             
@@ -752,7 +752,7 @@ public class ContextHandlerTest
             assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
             assertThat(response.getContent(), containsString("Hello /ctxA"));
 
-            endp.addInput("""
+            endp.writeRequestString("""
                 GET /ctxB/ HTTP/1.1
                 Host: localhost
                             
@@ -829,11 +829,12 @@ public class ContextHandlerTest
 
         assertThat(history, contains(
             // Enter for handle(request, response, callback)
-            "Core enter http://0.0.0.0/",
+            "Core enter http://%s/".formatted(_connector.getLocalSocketAddress()),
             "EE9 enter /",
             "Handling",
             "EE9 exit /",
-            "Core exit http://0.0.0.0/"));
+            "Core exit http://%s/".formatted(_connector.getLocalSocketAddress())
+        ));
     }
 
     @Test

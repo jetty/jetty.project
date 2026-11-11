@@ -14,18 +14,18 @@
 package org.eclipse.jetty.fcgi.generator;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,9 +69,9 @@ public class Flusher
         return cancelSendException.join();
     }
 
-    public void flush(ByteBufferPool.Accumulator accumulator, Callback callback)
+    public void flush(RetainableByteBuffer buffer, Callback callback)
     {
-        offer(new Entry(accumulator, callback));
+        offer(new Entry(buffer, callback));
         flushCallback.iterate();
     }
 
@@ -93,7 +93,7 @@ public class Flusher
 
     public void shutdown()
     {
-        flush(null, Callback.from(() ->
+        flush(RetainableByteBuffer.empty(), Callback.from(() ->
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Shutting down {}", endPoint);
@@ -157,9 +157,24 @@ public class Flusher
             }
 
             active = entry;
-            List<ByteBuffer> buffers = entry.accumulator.getByteBuffers();
-            endPoint.write(this, buffers.toArray(ByteBuffer[]::new));
-            return Action.SCHEDULED;
+
+            try (RetainableByteBuffer buffer = entry.acquire())
+            {
+                endPoint.write(buffer, this);
+                return Action.SCHEDULED;
+            }
+        }
+
+        @Override
+        protected void onSuccess()
+        {
+            Entry entry = active;
+            active = null;
+            if (entry != null)
+            {
+                entry.close();
+                entry.callback().succeeded();
+            }
         }
 
         @Override
@@ -171,9 +186,9 @@ public class Flusher
 
         private Callback resetCallback()
         {
-            Flusher.Entry entry = active;
+            Entry entry = active;
             active = null;
-            return Callback.from(entry.callback, entry::release);
+            return Callback.from(entry::close, entry.callback);
         }
 
         @Override
@@ -192,44 +207,26 @@ public class Flusher
         }
 
         @Override
-        protected void onSuccess()
-        {
-            if (active != null)
-            {
-                active.release();
-                active.succeeded();
-                active = null;
-            }
-        }
-
-        @Override
-        public void onFailure(Throwable cause)
-        {
-            if (active != null)
-                active.failed(cause);
-            List<Entry> entries;
-            try (AutoLock ignored = lock.lock())
-            {
-                entries = new ArrayList<>(queue);
-            }
-            entries.forEach(entry -> entry.failed(cause));
-        }
-
-        @Override
         protected void onCompleteFailure(Throwable cause)
         {
-            if (active != null)
+            Entry entry = active;
+            active = null;
+            if (entry != null)
             {
-                active.release();
-                active = null;
+                entry.close();
+                entry.callback().failed(cause);
             }
             List<Entry> entries;
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock _ = lock.lock())
             {
                 entries = new ArrayList<>(queue);
                 queue.clear();
             }
-            entries.forEach(Entry::release);
+            entries.forEach(e ->
+            {
+                e.close();
+                e.callback().failed(cause);
+            });
         }
 
         @Override
@@ -241,22 +238,33 @@ public class Flusher
         }
     }
 
-    private record Entry(ByteBufferPool.Accumulator accumulator, Callback callback)
+    private static final class Entry implements AutoCloseable
     {
-        public void succeeded()
+        private final RetainableByteBuffer buffer;
+        private final Callback callback;
+
+        private Entry(RetainableByteBuffer buffer, Callback callback)
         {
-            callback.succeeded();
+            this.buffer = Objects.requireNonNull(buffer);
+            this.callback = Objects.requireNonNull(callback);
+            buffer.retain();
         }
 
-        public void failed(Throwable x)
+        public RetainableByteBuffer acquire()
         {
-            callback.failed(x);
+            buffer.retain();
+            return buffer;
         }
 
-        private void release()
+        public Callback callback()
         {
-            if (accumulator != null)
-                accumulator.release();
+            return callback;
+        }
+
+        @Override
+        public void close()
+        {
+            buffer.release();
         }
     }
 }

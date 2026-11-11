@@ -104,7 +104,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     @Parameter (defaultValue = "false")
     protected boolean useProvidedScope;
     
-
     /**
      * List of goals that are NOT to be used
      * 
@@ -129,7 +128,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     @Parameter (property  = "jetty.skip", defaultValue = "false")
     protected boolean skip;
     
-    
     /**
      * Location of a context xml configuration file whose contents
      * will be applied to the webapp AFTER anything in &lt;webApp&gt;.Optional.
@@ -137,14 +135,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     @Parameter
     protected String contextXml;
 
-
     /**
      * The maven project.
      */
     @Parameter(defaultValue = "${project}", readonly = true)
     protected MavenProject project;
 
-    
     /**
      * The artifacts for the project.
      */
@@ -157,14 +153,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     @Parameter (defaultValue = "${mojoExecution}", readonly = true)
     protected org.apache.maven.plugin.MojoExecution execution;
     
-
     /**
      * The artifacts for the plugin itself.
      */    
     @Parameter (defaultValue = "${plugin.artifacts}", readonly = true)
     protected List<Artifact> pluginArtifacts;
     
-
     /**
      * If true, the &lt;testOutputDirectory&gt;
      * and the dependencies of &lt;scope&gt;test&lt;scope&gt;
@@ -189,7 +183,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     @Parameter (defaultValue = "${project.build.directory}", required = true, readonly = true)
     protected File target;
     
-    
     /**
      * List of jetty xml configuration files whose contents 
      * will be applied (in order declared) before any plugin configuration. Optional.
@@ -197,14 +190,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     @Parameter
     protected List<File> jettyXmls;
     
-    
     /**
      * Optional jetty properties to put on the command line
      */
     @Parameter
     protected Map<String, String> jettyProperties;
 
-    
     /**
      * File containing system properties to be set before execution
      * 
@@ -217,7 +208,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     @Parameter (property = "jetty.systemPropertiesFile")
     protected File systemPropertiesFile;
 
-    
     /**
      * System properties to set before execution. 
      * Note that these properties will NOT override System properties 
@@ -233,7 +223,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter (property = "jetty.deployMode", defaultValue = "EMBED") 
     protected DeploymentMode deployMode;
-    
     
     /**
      * List of other contexts to set up. Consider using instead
@@ -264,7 +253,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected MavenServerConnector httpConnector;
-    
     
     /**
      * A wrapper for the Server object

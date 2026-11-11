@@ -120,13 +120,13 @@ public class PartialEchoTest
         String requestPath = "/echo/partial/text";
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false));
-        send.add(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false));
-        send.add(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true));
+        send.add(new Frame(OpCode.TEXT, false, "Hello"));
+        send.add(new Frame(OpCode.CONTINUATION, false, ", "));
+        send.add(new Frame(OpCode.CONTINUATION, true, "World"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.TEXT).setPayload("('Hello',false)(', ',false)('World',true)"));
+        expect.add(new Frame(OpCode.TEXT, "('Hello',false)(', ',false)('World',true)"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         try (WebSocketTester session = server.newWebSocketTester(requestPath))
@@ -142,13 +142,13 @@ public class PartialEchoTest
         String requestPath = "/echo/partial/text-session";
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload("Hello").setFin(false));
-        send.add(new Frame(OpCode.CONTINUATION).setPayload(", ").setFin(false));
-        send.add(new Frame(OpCode.CONTINUATION).setPayload("World").setFin(true));
+        send.add(new Frame(OpCode.TEXT, false, "Hello"));
+        send.add(new Frame(OpCode.CONTINUATION, false, ", "));
+        send.add(new Frame(OpCode.CONTINUATION, true, "World"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.TEXT).setPayload("('Hello',false)(', ',false)('World',true)"));
+        expect.add(new Frame(OpCode.TEXT, "('Hello',false)(', ',false)('World',true)"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         try (WebSocketTester session = server.newWebSocketTester(requestPath))

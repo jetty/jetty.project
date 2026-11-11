@@ -27,9 +27,9 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.compression.brotli.BrotliCompression;
 import org.eclipse.jetty.compression.gzip.GzipCompression;
 import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -189,7 +189,7 @@ public abstract class AbstractCompressionTest
     {
         compression = compressionClass.getDeclaredConstructor().newInstance();
         pool = new ArrayByteBufferPool.Tracking();
-        compression.setByteBufferPool(pool);
+        compression.setBufferPool(pool);
     }
 
     protected void startCompression(Class<? extends Compression> compressionClass) throws Exception

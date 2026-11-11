@@ -48,6 +48,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 
     protected AuthenticationProtocolHandler(HttpClient client, int maxContentLength)
     {
+        if (maxContentLength <= 0)
+            throw new IllegalArgumentException("Invalid max content length " + maxContentLength);
         this.client = client;
         this.maxContentLength = maxContentLength;
     }

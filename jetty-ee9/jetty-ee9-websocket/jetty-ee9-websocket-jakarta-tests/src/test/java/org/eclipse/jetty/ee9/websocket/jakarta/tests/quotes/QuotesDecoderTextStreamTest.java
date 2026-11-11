@@ -82,12 +82,14 @@ public class QuotesDecoderTextStreamTest
             session.sendBulk(send);
 
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
-            Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
-            assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
-            assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
-                containsString("Author: Benjamin Franklin"),
-                containsString("Quote: Our new Constitution is now established")
-            ));
+            try (Frame frame = framesQueue.poll(1, TimeUnit.SECONDS))
+            {
+                assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
+                assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
+                    containsString("Author: Benjamin Franklin"),
+                    containsString("Quote: Our new Constitution is now established")
+                ));
+            }
         }
     }
 
@@ -102,12 +104,14 @@ public class QuotesDecoderTextStreamTest
             session.sendSegmented(send, 3);
 
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
-            Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
-            assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
-            assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
-                containsString("Author: Benjamin Franklin"),
-                containsString("Quote: Our new Constitution is now established")
-            ));
+            try (Frame frame = framesQueue.poll(1, TimeUnit.SECONDS))
+            {
+                assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
+                assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
+                    containsString("Author: Benjamin Franklin"),
+                    containsString("Quote: Our new Constitution is now established")
+                ));
+            }
         }
     }
 
@@ -122,12 +126,14 @@ public class QuotesDecoderTextStreamTest
             session.sendFrames(send);
 
             BlockingQueue<Frame> framesQueue = session.getOutputFrames();
-            Frame frame = framesQueue.poll(1, TimeUnit.SECONDS);
-            assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
-            assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
-                containsString("Author: Benjamin Franklin"),
-                containsString("Quote: Our new Constitution is now established")
-            ));
+            try (Frame frame = framesQueue.poll(1, TimeUnit.SECONDS))
+            {
+                assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.TEXT));
+                assertThat("Frame.text-payload", frame.getPayloadAsUTF8(), allOf(
+                    containsString("Author: Benjamin Franklin"),
+                    containsString("Quote: Our new Constitution is now established")
+                ));
+            }
         }
     }
 }

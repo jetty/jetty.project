@@ -27,9 +27,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -85,10 +86,10 @@ public class WebSocketTester implements AutoCloseable
         this.frameCapture = futureFrameCapture.get(10, TimeUnit.SECONDS);
     }
 
-    public ByteBuffer asNetworkBuffer(List<Frame> frames)
+    public RetainableByteBuffer asNetworkBuffer(List<Frame> frames)
     {
-        int bufferLength = frames.stream().mapToInt((f) -> f.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
-        ByteBuffer buffer = BufferUtil.allocate(bufferLength);
+        int bufferLength = Math.toIntExact(frames.stream().mapToLong((f) -> f.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum());
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(bufferLength, false);
         for (Frame f : frames)
         {
             generator.generate(buffer, f);
@@ -123,7 +124,7 @@ public class WebSocketTester implements AutoCloseable
      *
      * @param buffer the buffer
      */
-    public void send(ByteBuffer buffer) throws IOException
+    public void send(RetainableByteBuffer buffer) throws IOException
     {
         frameCapture.writeRaw(buffer);
     }
@@ -134,13 +135,12 @@ public class WebSocketTester implements AutoCloseable
      * @param buffer the buffer
      * @param length the number of bytes to send from buffer
      */
-    public void send(ByteBuffer buffer, int length) throws IOException
+    public void send(RetainableByteBuffer buffer, int length) throws IOException
     {
-        int limit = Math.min(length, buffer.remaining());
-        ByteBuffer sliced = buffer.slice();
-        sliced.limit(limit);
+        long limit = Math.min(length, buffer.remaining());
+        RetainableByteBuffer sliced = buffer.sliceAndConsume(limit);
         frameCapture.writeRaw(sliced);
-        buffer.position(buffer.position() + limit);
+        sliced.release();
     }
 
     /**
@@ -192,9 +192,9 @@ public class WebSocketTester implements AutoCloseable
      */
     public void sendSegmented(List<Frame> frames, int segmentSize) throws IOException
     {
-        ByteBuffer buffer = asNetworkBuffer(frames);
+        RetainableByteBuffer buffer = asNetworkBuffer(frames);
 
-        while (buffer.remaining() > 0)
+        while (buffer.hasRemaining())
         {
             send(buffer, segmentSize);
         }
@@ -211,20 +211,34 @@ public class WebSocketTester implements AutoCloseable
     {
         ByteBuffer actualPayload = ByteBuffer.allocate(expectedMessage.remaining());
 
-        Frame frame = framesQueue.poll(10, TimeUnit.SECONDS);
-        assertNotNull(frame);
-        assertThat("Initial Frame.opCode", frame.getOpCode(), is(expectedDataOp));
-
-        actualPayload.put(frame.getPayload());
-        while (!frame.isFin())
+        try (Frame frame = framesQueue.poll(10, TimeUnit.SECONDS))
         {
-            frame = framesQueue.poll(10, TimeUnit.SECONDS);
             assertNotNull(frame);
-            assertThat("Frame.opCode", frame.getOpCode(), is(OpCode.CONTINUATION));
-            actualPayload.put(frame.getPayload());
+            assertThat("Initial Frame.opCode", frame.getOpCode(), is(expectedDataOp));
+
+            try (RetainableByteBuffer buffer = frame.acquire())
+            {
+                buffer.putTo(actualPayload);
+            }
+
+            Frame current = frame;
+            while (!current.isFin())
+            {
+                try (Frame next = framesQueue.poll(10, TimeUnit.SECONDS))
+                {
+                    assertNotNull(next);
+                    assertThat("Frame.opCode", next.getOpCode(), is(OpCode.CONTINUATION));
+                    try (RetainableByteBuffer buffer = next.acquire())
+                    {
+                        buffer.putTo(actualPayload);
+                    }
+                    current = next;
+                }
+            }
+
+            actualPayload.flip();
+            ByteBufferAssert.assertEquals("Actual Message Payload", actualPayload, expectedMessage);
         }
-        actualPayload.flip();
-        ByteBufferAssert.assertEquals("Actual Message Payload", actualPayload, expectedMessage);
     }
 
     public void assertExpected(BlockingQueue<Frame> framesQueue, List<Frame> expect) throws InterruptedException
@@ -235,43 +249,59 @@ public class WebSocketTester implements AutoCloseable
         for (int i = 0; i < expectedCount; i++)
         {
             prefix = "Frame[" + i + "]";
-
             Frame expected = expect.get(i);
-            Frame actual = framesQueue.poll(10, TimeUnit.SECONDS);
-            assertThat(prefix + ".poll", actual, notNullValue());
 
-            if (LOG.isDebugEnabled())
+            try (Frame actual = framesQueue.poll(10, TimeUnit.SECONDS))
             {
-                if (actual.getOpCode() == OpCode.CLOSE)
-                    LOG.debug("{} CloseFrame: {}", prefix, new CloseStatus(actual.getPayload()));
-                else
-                    LOG.debug("{} {}", prefix, actual);
-            }
+                assertThat(prefix + ".poll", actual, notNullValue());
 
-            assertThat(prefix + ".opcode", OpCode.name(actual.getOpCode()), is(OpCode.name(expected.getOpCode())));
-            prefix += "(op=" + actual.getOpCode() + "," + (actual.isFin() ? "" : "!") + "fin)";
-            if (expected.getOpCode() == OpCode.CLOSE)
-            {
-                CloseStatus expectedClose = new CloseStatus(expected.getPayload());
-                CloseStatus actualClose = new CloseStatus(actual.getPayload());
-                assertThat(prefix + ".code", actualClose.getCode(), is(expectedClose.getCode()));
-            }
-            else if (expected.hasPayload())
-            {
-                if (expected.getOpCode() == OpCode.TEXT)
+                if (LOG.isDebugEnabled())
                 {
-                    String expectedText = expected.getPayloadAsUTF8();
-                    String actualText = actual.getPayloadAsUTF8();
-                    assertThat(prefix + ".text-payload", actualText, is(expectedText));
+                    if (actual.getOpCode() == OpCode.CLOSE)
+                    {
+                        try (RetainableByteBuffer buffer = actual.acquire())
+                        {
+                            LOG.debug("{} CloseFrame: {}", prefix, CloseStatus.from(buffer));
+                        }
+                    }
+                    else
+                    {
+                        LOG.debug("{} {}", prefix, actual);
+                    }
                 }
-                else
+
+                assertThat(prefix + ".opcode", OpCode.name(actual.getOpCode()), is(OpCode.name(expected.getOpCode())));
+                prefix += "(op=" + actual.getOpCode() + "," + (actual.isFin() ? "" : "!") + "fin)";
+
+                try (RetainableByteBuffer expectedBuffer = expected.acquire())
                 {
-                    ByteBufferAssert.assertEquals(prefix + ".payload", expected.getPayload(), actual.getPayload());
+                    try (RetainableByteBuffer actualBuffer = actual.acquire())
+                    {
+                        if (expected.getOpCode() == OpCode.CLOSE)
+                        {
+                            CloseStatus expectedClose = CloseStatus.from(expectedBuffer);
+                            CloseStatus actualClose = CloseStatus.from(actualBuffer);
+                            assertThat(prefix + ".code", actualClose.getCode(), is(expectedClose.getCode()));
+                        }
+                        else if (expected.hasPayload())
+                        {
+                            if (expected.getOpCode() == OpCode.TEXT)
+                            {
+                                String expectedText = expected.getPayloadAsUTF8();
+                                String actualText = actual.getPayloadAsUTF8();
+                                assertThat(prefix + ".text-payload", actualText, is(expectedText));
+                            }
+                            else
+                            {
+                                assertArrayEquals(expectedBuffer.getArray(), actualBuffer.getArray(), prefix + ".payload");
+                            }
+                        }
+                        else
+                        {
+                            assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(0L));
+                        }
+                    }
                 }
-            }
-            else
-            {
-                assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(0));
             }
         }
     }
@@ -340,7 +370,9 @@ public class WebSocketTester implements AutoCloseable
         {
             try (AutoLock ignored = lock.lock())
             {
-                receivedFrames.add(Frame.copy(frame));
+                // The frame is stored, so it must be retained.
+                frame.retain();
+                receivedFrames.add(frame);
                 callback.succeeded();
             }
             coreSession.demand();
@@ -358,7 +390,7 @@ public class WebSocketTester implements AutoCloseable
             callback.succeeded();
         }
 
-        public void writeRaw(ByteBuffer buffer) throws IOException
+        public void writeRaw(RetainableByteBuffer buffer) throws IOException
         {
             try
             {
@@ -372,7 +404,7 @@ public class WebSocketTester implements AutoCloseable
             try (AutoLock ignored = lock.lock())
             {
                 FutureCallback callback = new FutureCallback();
-                endPoint.write(callback, buffer);
+                endPoint.write(buffer, callback);
                 callback.block();
             }
         }

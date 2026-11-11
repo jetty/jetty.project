@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
 import java.util.Arrays;
@@ -26,10 +25,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
@@ -82,21 +82,23 @@ public class FrameFlusherTest
         int maxGather = 1;
         FrameFlusher frameFlusher = new FrameFlusher(bufferPool, scheduler, generator, endPoint, bufferSize, maxGather, Behavior.SERVER);
 
-        Frame closeFrame = new Frame(OpCode.CLOSE).setPayload(CloseStatus.asPayloadBuffer(CloseStatus.MESSAGE_TOO_LARGE, "Message be to big"));
-        Frame textFrame = new Frame(OpCode.TEXT).setPayload("Hello").setFin(true);
+        try (RetainableByteBuffer closePayload = CloseStatus.asPayloadBuffer(CloseStatus.MESSAGE_TOO_LARGE, "Message be to big");
+             Frame closeFrame = new Frame(OpCode.CLOSE, closePayload);
+             Frame textFrame = new Frame(OpCode.TEXT, "Hello"))
+        {
+            FutureCallback closeCallback = new FutureCallback();
+            FutureCallback textFrameCallback = new FutureCallback();
 
-        FutureCallback closeCallback = new FutureCallback();
-        FutureCallback textFrameCallback = new FutureCallback();
+            assertTrue(frameFlusher.enqueue(new OutgoingEntry.Builder(closeFrame, closeCallback).build()));
+            assertFalse(frameFlusher.enqueue(new OutgoingEntry.Builder(textFrame, textFrameCallback).build()));
+            frameFlusher.iterate();
 
-        assertTrue(frameFlusher.enqueue(new OutgoingEntry.Builder(closeFrame, closeCallback).build()));
-        assertFalse(frameFlusher.enqueue(new OutgoingEntry.Builder(textFrame, textFrameCallback).build()));
-        frameFlusher.iterate();
-
-        closeCallback.get(5, TimeUnit.SECONDS);
-        // If this throws a TimeoutException then the callback wasn't called.
-        ExecutionException x = assertThrows(ExecutionException.class,
-            () -> textFrameCallback.get(5, TimeUnit.SECONDS));
-        assertThat(x.getCause(), instanceOf(ClosedChannelException.class));
+            closeCallback.get(5, TimeUnit.SECONDS);
+            // If this throws a TimeoutException then the callback wasn't called.
+            ExecutionException x = assertThrows(ExecutionException.class,
+                () -> textFrameCallback.get(5, TimeUnit.SECONDS));
+            assertThat(x.getCause(), instanceOf(ClosedChannelException.class));
+        }
     }
 
     /**
@@ -130,19 +132,13 @@ public class FrameFlusherTest
                 for (int i = 0; i < messageCount; i++)
                 {
                     FutureCallback callback = new FutureCallback();
-                    Frame frame;
-
-                    if (i % 2 == 0)
+                    String message = (i % 2 == 0) ? largeMessage : "Short Message: " + i;
+                    try (Frame frame = new Frame(OpCode.TEXT, message))
                     {
-                        frame = new Frame(OpCode.TEXT).setPayload(largeMessage).setFin(true);
+                        frameFlusher.enqueue(new OutgoingEntry.Builder(frame, callback).build());
+                        frameFlusher.iterate();
+                        callback.get();
                     }
-                    else
-                    {
-                        frame = new Frame(OpCode.TEXT).setPayload("Short Message: " + i).setFin(true);
-                    }
-                    frameFlusher.enqueue(new OutgoingEntry.Builder(frame, callback).build());
-                    frameFlusher.iterate();
-                    callback.get();
                 }
             }
             catch (Throwable t)
@@ -178,12 +174,14 @@ public class FrameFlusherTest
 
         endPoint.setBlockTime(200);
 
-        Frame frame = new Frame(OpCode.TEXT).setPayload("message").setFin(true);
-        frameFlusher.enqueue(new OutgoingEntry.Builder(frame, Callback.NOOP).frameTimeout(100).build());
-        frameFlusher.iterate();
+        try (Frame frame = new Frame(OpCode.TEXT, "message"))
+        {
+            frameFlusher.enqueue(new OutgoingEntry.Builder(frame, Callback.NOOP).frameTimeout(100).build());
+            frameFlusher.iterate();
 
-        assertTrue(flusherFailure.await(2, TimeUnit.SECONDS));
-        assertThat(error.get(), instanceOf(WebSocketWriteTimeoutException.class));
+            assertTrue(flusherFailure.await(2, TimeUnit.SECONDS));
+            assertThat(error.get(), instanceOf(WebSocketWriteTimeoutException.class));
+        }
     }
 
     @Test
@@ -196,35 +194,37 @@ public class FrameFlusherTest
         int maxGather = 8;
         FrameFlusher frameFlusher = new FrameFlusher(bufferPool, scheduler, generator, endPoint, bufferSize, maxGather, Behavior.SERVER);
 
-        // Enqueue message before the error close.
-        Frame frame1 = new Frame(OpCode.TEXT).setPayload("message before close").setFin(true);
-        CountDownLatch failedFrame1 = new CountDownLatch(1);
-        Callback callbackFrame1 = Callback.from(() ->
+        try (Frame frame1 = new Frame(OpCode.TEXT, "message before close");
+             Frame closeFrame = new CloseStatus(CloseStatus.MESSAGE_TOO_LARGE).toFrame();
+             Frame frame2 = new Frame(OpCode.TEXT, "message after close"))
         {
-        }, t -> failedFrame1.countDown());
-        assertTrue(frameFlusher.enqueue(new OutgoingEntry.Builder(frame1, callbackFrame1).build()));
+            // Enqueue message before the error close.
+            CountDownLatch failedFrame1 = new CountDownLatch(1);
+            Callback callbackFrame1 = Callback.from(() ->
+            {
+            }, t -> failedFrame1.countDown());
+            assertTrue(frameFlusher.enqueue(new OutgoingEntry.Builder(frame1, callbackFrame1).build()));
 
-        // Enqueue the close frame which should fail the previous frame as it is still in the queue.
-        Frame closeFrame = new CloseStatus(CloseStatus.MESSAGE_TOO_LARGE).toFrame();
-        CountDownLatch succeededCloseFrame = new CountDownLatch(1);
-        Callback closeFrameCallback = Callback.from(succeededCloseFrame::countDown, t ->
-        {
-        });
-        assertTrue(frameFlusher.enqueue(new OutgoingEntry.Builder(closeFrame, closeFrameCallback).build()));
-        assertTrue(failedFrame1.await(1, TimeUnit.SECONDS));
+            // Enqueue the close frame which should fail the previous frame as it is still in the queue.
+            CountDownLatch succeededCloseFrame = new CountDownLatch(1);
+            Callback closeFrameCallback = Callback.from(succeededCloseFrame::countDown, t ->
+            {
+            });
+            assertTrue(frameFlusher.enqueue(new OutgoingEntry.Builder(closeFrame, closeFrameCallback).build()));
+            assertTrue(failedFrame1.await(1, TimeUnit.SECONDS));
 
-        // Any frames enqueued after this should fail.
-        Frame frame2 = new Frame(OpCode.TEXT).setPayload("message after close").setFin(true);
-        CountDownLatch failedFrame2 = new CountDownLatch(1);
-        Callback callbackFrame2 = Callback.from(() ->
-        {
-        }, t -> failedFrame2.countDown());
-        assertFalse(frameFlusher.enqueue(new OutgoingEntry.Builder(frame2, callbackFrame2).build()));
-        assertTrue(failedFrame2.await(1, TimeUnit.SECONDS));
+            // Any frames enqueued after this should fail.
+            CountDownLatch failedFrame2 = new CountDownLatch(1);
+            Callback callbackFrame2 = Callback.from(() ->
+            {
+            }, t -> failedFrame2.countDown());
+            assertFalse(frameFlusher.enqueue(new OutgoingEntry.Builder(frame2, callbackFrame2).build()));
+            assertTrue(failedFrame2.await(1, TimeUnit.SECONDS));
 
-        // Iterating should succeed the close callback.
-        frameFlusher.iterate();
-        assertTrue(succeededCloseFrame.await(1, TimeUnit.SECONDS));
+            // Iterating should succeed the close callback.
+            frameFlusher.iterate();
+            assertTrue(succeededCloseFrame.await(1, TimeUnit.SECONDS));
+        }
     }
 
     public static class CapturingEndPoint extends MockEndPoint
@@ -244,19 +244,14 @@ public class FrameFlusherTest
         }
 
         @Override
-        public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+        public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
         {
             Objects.requireNonNull(callback);
             try
             {
-                for (ByteBuffer buffer : buffers)
-                {
-                    Frame.Parsed frame = parser.parse(buffer);
-                    if (frame != null)
-                    {
-                        incomingFrames.offer(frame);
-                    }
-                }
+                ParsedFrame frame = parser.parse(buffer);
+                if (frame != null)
+                    incomingFrames.offer(frame);
                 callback.succeeded();
             }
             catch (WritePendingException e)
@@ -289,12 +284,12 @@ public class FrameFlusherTest
         }
 
         @Override
-        public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+        public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
         {
             try
             {
                 Thread.sleep(blockTime);
-                super.write(callback, buffers);
+                super.write(buffer, callback);
             }
             catch (InterruptedException e)
             {

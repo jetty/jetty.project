@@ -53,8 +53,10 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -151,9 +153,11 @@ public class HttpClientContinueTest extends AbstractTest
                                 return false;
                             return thread.getState() == Thread.State.WAITING;
                         });
-                        Callback.Completable callback = new Callback.Completable();
-                        content.write(b == contents[contents.length - 1], ByteBuffer.wrap(b), callback);
-                        callback.get();
+                        try (Blocker.Callback callback = Blocker.callback())
+                        {
+                            content.offer(b == contents[contents.length - 1], RetainableByteBuffer.wrap(b), callback);
+                            callback.block();
+                        }
                     }
                     catch (Throwable t)
                     {
@@ -585,7 +589,7 @@ public class HttpClientContinueTest extends AbstractTest
             return thread != null && thread.getState() == Thread.State.WAITING;
         });
 
-        content.write(ByteBuffer.wrap(chunk1), Callback.NOOP);
+        content.offer(false, RetainableByteBuffer.wrap(chunk1), Callback.NOOP);
 
         // Wait for the handler thread to be blocked in the 2nd IO.
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
@@ -595,8 +599,7 @@ public class HttpClientContinueTest extends AbstractTest
             return thread != null && thread.getState() == Thread.State.WAITING;
         });
 
-        content.write(ByteBuffer.wrap(chunk2), Callback.NOOP);
-        content.close();
+        content.offer(true, RetainableByteBuffer.wrap(chunk2), Callback.NOOP);
 
         assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
     }
@@ -645,8 +648,7 @@ public class HttpClientContinueTest extends AbstractTest
             return thread != null && thread.getState() == Thread.State.WAITING;
         });
 
-        content.write(ByteBuffer.wrap(chunk2), Callback.NOOP);
-        content.close();
+        content.offer(true, RetainableByteBuffer.wrap(chunk2), Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -671,11 +673,7 @@ public class HttpClientContinueTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE))
-            .onRequestHeaders(request ->
-            {
-                content.write(ByteBuffer.wrap(data), Callback.NOOP);
-                content.close();
-            })
+            .onRequestHeaders(_ -> content.offer(true, RetainableByteBuffer.wrap(data), Callback.NOOP))
             .body(content)
             .send(new RetainingResponseListener()
             {
@@ -723,8 +721,7 @@ public class HttpClientContinueTest extends AbstractTest
                     public void onHeaders(Response response)
                     {
                         super.onHeaders(response);
-                        content.write(ByteBuffer.wrap(chunk2), Callback.NOOP);
-                        content.close();
+                        content.offer(true, RetainableByteBuffer.wrap(chunk2), Callback.NOOP);
                     }
                 };
             }
@@ -778,7 +775,7 @@ public class HttpClientContinueTest extends AbstractTest
         startClient(transportType, httpClient -> httpClient.setIdleTimeout(idleTimeout));
 
         AsyncRequestContent requestContent = new AsyncRequestContent();
-        requestContent.write(ByteBuffer.wrap(new byte[512]), Callback.NOOP);
+        requestContent.offer(false, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
             .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))

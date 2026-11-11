@@ -67,6 +67,7 @@ public class RFC7230Test
         ConditionalHandler options = new ConditionalHandler.ElseNext()
         {
             final DefaultHandler optionsHandler = new DefaultHandler();
+
             {
                 installBean(optionsHandler);
             }

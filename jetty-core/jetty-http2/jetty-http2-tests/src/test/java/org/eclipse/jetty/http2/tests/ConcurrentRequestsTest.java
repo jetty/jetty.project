@@ -32,6 +32,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.RateControl;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -156,17 +157,18 @@ public class ConcurrentRequestsTest extends AbstractTest
             {
                 while (true)
                 {
-                    Stream.Data data = stream.readData();
-                    if (data == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
-                    }
-                    data.release();
-                    if (data.frame().isEndStream())
-                    {
-                        requestLatch.countDown();
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        if (chunk.isLast())
+                        {
+                            requestLatch.countDown();
+                            return;
+                        }
                     }
                 }
             }
@@ -240,17 +242,18 @@ public class ConcurrentRequestsTest extends AbstractTest
             {
                 while (true)
                 {
-                    Stream.Data data = stream.readData();
-                    if (data == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
-                    }
-                    data.release();
-                    if (data.frame().isEndStream())
-                    {
-                        requestLatch.countDown();
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        if (chunk.isLast())
+                        {
+                            requestLatch.countDown();
+                            return;
+                        }
                     }
                 }
             }

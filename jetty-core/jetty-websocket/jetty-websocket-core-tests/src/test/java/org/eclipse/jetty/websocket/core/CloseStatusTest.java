@@ -14,21 +14,20 @@
 package org.eclipse.jetty.websocket.core;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CloseStatusTest
 {
@@ -46,7 +45,7 @@ public class CloseStatusTest
         assertThat("close frame op code", frame.getOpCode(), Matchers.is(OpCode.CLOSE));
         // should result in no payload
         assertThat("close frame has payload", frame.hasPayload(), is(false));
-        assertThat("close frame payload length", frame.getPayloadLength(), is(0));
+        assertThat("close frame payload length", frame.getPayloadLength(), is(0L));
     }
 
     /**
@@ -63,7 +62,7 @@ public class CloseStatusTest
         assertThat("close frame op code", frame.getOpCode(), is(OpCode.CLOSE));
         // should result in no payload
         assertThat("close frame has payload", frame.hasPayload(), is(false));
-        assertThat("close frame payload length", frame.getPayloadLength(), is(0));
+        assertThat("close frame payload length", frame.getPayloadLength(), is(0L));
     }
 
     /**
@@ -80,7 +79,7 @@ public class CloseStatusTest
         assertThat("close frame op code", frame.getOpCode(), is(OpCode.CLOSE));
         // should result in no payload
         assertThat("close frame has payload", frame.hasPayload(), is(false));
-        assertThat("close frame payload length", frame.getPayloadLength(), is(0));
+        assertThat("close frame payload length", frame.getPayloadLength(), is(0L));
     }
 
     /**
@@ -97,7 +96,7 @@ public class CloseStatusTest
         assertThat("close frame op code", frame.getOpCode(), is(OpCode.CLOSE));
         // should result in no payload
         assertThat("close frame has payload", frame.hasPayload(), is(false));
-        assertThat("close frame payload length", frame.getPayloadLength(), is(0));
+        assertThat("close frame payload length", frame.getPayloadLength(), is(0L));
     }
 
     /**
@@ -112,7 +111,7 @@ public class CloseStatusTest
 
         Frame frame = close.toFrame();
         assertThat("close frame op code", frame.getOpCode(), is(OpCode.CLOSE));
-        assertThat("close frame payload length", frame.getPayloadLength(), is(2));
+        assertThat("close frame payload length", frame.getPayloadLength(), is(2L));
     }
 
     private ByteBuffer asByteBuffer(int statusCode, String reason)
@@ -144,18 +143,22 @@ public class CloseStatusTest
     {
         ByteBuffer payload = asByteBuffer(CloseStatus.NORMAL, null);
         assertThat("payload length", payload.remaining(), is(2));
-        Frame frame = new Frame(OpCode.CLOSE);
-        frame.setPayload(payload);
-
-        // create from frame
-        CloseStatus close = new CloseStatus(frame.getPayload());
-        assertThat("close.code", close.getCode(), Matchers.is(CloseStatus.NORMAL));
-        assertThat("close.reason", close.getReason(), nullValue());
+        CloseStatus close;
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(payload);
+             Frame frame = new Frame(OpCode.CLOSE, buffer))
+        {
+            // create from frame
+            close = CloseStatus.from(frame);
+            assertThat("close.code", close.getCode(), Matchers.is(CloseStatus.NORMAL));
+            assertThat("close.reason", close.getReason(), nullValue());
+        }
 
         // and back again
-        frame = close.toFrame();
-        assertThat("close frame op code", frame.getOpCode(), is(OpCode.CLOSE));
-        assertThat("close frame payload length", frame.getPayloadLength(), is(2));
+        try (Frame frame = close.toFrame())
+        {
+            assertThat("close frame op code", frame.getOpCode(), is(OpCode.CLOSE));
+            assertThat("close frame payload length", frame.getPayloadLength(), is(2L));
+        }
     }
 
     @Test
@@ -171,11 +174,14 @@ public class CloseStatusTest
         assertThat(reason.getBytes().length, lessThan(CloseStatus.MAX_REASON_PHRASE));
         assertThat((reason + utf4Bytes).getBytes().length, greaterThan(CloseStatus.MAX_REASON_PHRASE));
 
-        ByteBuffer bb = CloseStatus.asPayloadBuffer(code, reason + utf4Bytes);
-        assertThat(bb.limit(), lessThanOrEqualTo(Frame.MAX_CONTROL_PAYLOAD));
+        try (RetainableByteBuffer buffer = CloseStatus.asPayloadBuffer(code, reason + utf4Bytes))
+        {
+            assertThat((int)buffer.remaining(), lessThanOrEqualTo(Frame.MAX_CONTROL_PAYLOAD));
 
-        byte[] output = Arrays.copyOfRange(bb.array(), 2, bb.limit());
-        assertThat(output, equalTo(reason.getBytes(StandardCharsets.UTF_8)));
+            CloseStatus close = CloseStatus.from(buffer);
+            assertEquals(code, close.getCode());
+            assertEquals(reason, close.getReason());
+        }
     }
 
     @Test
@@ -190,13 +196,15 @@ public class CloseStatusTest
             reason = reason + reason;
         }
 
-        ByteBuffer bb = CloseStatus.asPayloadBuffer(code, reason);
-        assertThat(bb.limit(), lessThanOrEqualTo(Frame.MAX_CONTROL_PAYLOAD));
+        try (RetainableByteBuffer buffer = CloseStatus.asPayloadBuffer(code, reason))
+        {
+            assertThat((int)buffer.remaining(), lessThanOrEqualTo(Frame.MAX_CONTROL_PAYLOAD));
 
-        CloseStatus cs = new CloseStatus(bb);
-        reason = cs.getReason();
-
-        byte[] output = Arrays.copyOfRange(bb.array(), 2, bb.limit());
-        assertThat(output, equalTo(reason.getBytes(StandardCharsets.UTF_8)));
+            CloseStatus cs = CloseStatus.from(buffer);
+            assertEquals(code, cs.getCode());
+            // The reason is truncated to fit, without splitting 4-byte UTF-8 characters.
+            int maxChars = CloseStatus.MAX_REASON_PHRASE / 4;
+            assertEquals(utf4Bytes.repeat(maxChars), cs.getReason());
+        }
     }
 }

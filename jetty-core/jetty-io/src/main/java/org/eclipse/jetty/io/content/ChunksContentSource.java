@@ -51,12 +51,11 @@ public class ChunksContentSource implements Content.Source
             {
                 if (it.hasNext() && chunk.isLast())
                     throw new IllegalArgumentException("Collection cannot contain a last Content.Chunk that is not at the last position: " + chunk);
-                sum += chunk.getByteBuffer().remaining();
+                sum += chunk.remaining();
             }
         }
         // Only retain after the previous loop checked the collection is valid.
         chunks.stream().filter(Objects::nonNull).forEach(Content.Chunk::retain);
-
         this.chunks = chunks;
         this.length = sum;
     }

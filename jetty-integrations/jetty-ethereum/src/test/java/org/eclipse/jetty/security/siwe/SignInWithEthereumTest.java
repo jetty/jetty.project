@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security.siwe;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,12 +76,12 @@ public class SignInWithEthereumTest
                 {
                     response.setStatus(HttpStatus.FORBIDDEN_403);
                     String error = Request.getParameters(request).get(EthereumAuthenticator.ERROR_PARAMETER).getValue();
-                    response.write(true, BufferUtil.toBuffer(error), callback);
+                    response.write(true, RetainableByteBuffer.wrap(error, StandardCharsets.ISO_8859_1), callback);
                     return true;
                 }
                 if ("/login".equals(pathInContext))
                 {
-                    response.write(true, BufferUtil.toBuffer("Please Login"), callback);
+                    response.write(true, RetainableByteBuffer.wrap("Please Login", StandardCharsets.ISO_8859_1), callback);
                     return true;
                 }
                 else if ("/logout".equals(pathInContext))
@@ -90,7 +92,7 @@ public class SignInWithEthereumTest
                 }
 
                 AuthenticationState authState = Objects.requireNonNull(AuthenticationState.getAuthenticationState(request));
-                response.write(true, BufferUtil.toBuffer("UserPrincipal: " + authState.getUserPrincipal()), callback);
+                response.write(true, RetainableByteBuffer.wrap("UserPrincipal: " + authState.getUserPrincipal(), StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         };
@@ -182,7 +184,7 @@ public class SignInWithEthereumTest
             .send();
 
         assertThat(response.getStatus(), equalTo(HttpStatus.FORBIDDEN_403));
-        assertThat(response.getContentAsString(), containsString("SIWE Message Too Large"));
+        assertThat(response.getContentAsString(), containsString("Failed to read SIWE message"));
     }
 
     @Test

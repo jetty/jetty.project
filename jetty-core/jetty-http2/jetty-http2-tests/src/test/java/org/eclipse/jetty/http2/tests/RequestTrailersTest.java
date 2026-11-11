@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -29,9 +27,11 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,13 +69,13 @@ public class RequestTrailersTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Stream.Data data = stream.readData();
-                            if (data != null)
-                                data.release();
-                            if (data == null || !data.frame().isEndStream())
-                                stream.demand();
-                            if (data == null || data.frame().isEndStream())
-                                break;
+                            try (Content.Chunk chunk = stream.read())
+                            {
+                                if (chunk == null || !chunk.isLast())
+                                    stream.demand();
+                                if (chunk == null || chunk.isLast())
+                                    break;
+                            }
                         }
                     }
 
@@ -115,19 +115,20 @@ public class RequestTrailersTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        data.release();
-                        // We should not receive an empty HEADERS frame for the
-                        // trailers, but instead a DATA frame with endStream=true.
-                        if (data.frame().isEndStream())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
-                            stream.headers(responseFrame, Callback.NOOP);
-                        }
-                        else
-                        {
-                            stream.demand();
+                            // We should not receive an empty HEADERS frame for the
+                            // trailers, but instead a DATA frame with endStream=true.
+                            if (chunk.isLast())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
+                                stream.headers(responseFrame, Callback.NOOP);
+                            }
+                            else
+                            {
+                                stream.demand();
+                            }
                         }
                     }
                 };
@@ -150,8 +151,7 @@ public class RequestTrailersTest extends AbstractTest
 
         // Send async content after a while.
         Thread.sleep(1000);
-        content.write(ByteBuffer.wrap("async_content".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
-        content.close();
+        content.offer(true, "async_content", UTF_8, Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -170,15 +170,16 @@ public class RequestTrailersTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Stream.Data data = stream.readData();
-                        data.release();
-                        // We should not receive an empty HEADERS frame for the
-                        // trailers, but instead a DATA frame with endStream=true.
-                        if (data.frame().isEndStream())
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
-                            HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
-                            stream.headers(responseFrame, Callback.NOOP);
+                            // We should not receive an empty HEADERS frame for the
+                            // trailers, but instead a DATA frame with endStream=true.
+                            if (chunk.isLast())
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
+                                stream.headers(responseFrame, Callback.NOOP);
+                            }
                         }
                     }
                 };

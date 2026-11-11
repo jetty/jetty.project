@@ -18,46 +18,71 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DemandTest
 {
+    ArrayByteBufferPool.Tracking _serverBufferPool;
     Server _server;
     ServerConnector _connector;
+    ArrayByteBufferPool.Tracking _clientBufferPool;
+    EchoFrameHandler _serverFrameHandler;
     WebSocketCoreClient _client;
 
     @BeforeEach
     public void before() throws Exception
     {
-        _server = new Server();
+        _serverBufferPool = new ArrayByteBufferPool.Tracking();
+        _server = new Server(null, null, _serverBufferPool);
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
 
-        WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler();
+        WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(new WebSocketComponents(null, null, _serverBufferPool, null, null));
         _server.setHandler(upgradeHandler);
-        upgradeHandler.addMapping("/", (req, resp, cb) -> new EchoFrameHandler());
+        upgradeHandler.addMapping("/", (req, resp, cb) -> _serverFrameHandler = new EchoFrameHandler());
         _server.start();
 
-        _client = new WebSocketCoreClient();
+        _clientBufferPool = new ArrayByteBufferPool.Tracking();
+        HttpClient httpClient = new HttpClient();
+        httpClient.setByteBufferPool(_clientBufferPool);
+        _client = new WebSocketCoreClient(httpClient, new WebSocketComponents(null, null, _clientBufferPool, null, null));
         _client.start();
     }
 
     @AfterEach
     public void after() throws Exception
     {
-        _client.stop();
-        _server.stop();
+        try
+        {
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
+            {
+                assertThat("Detected server leaks: " + _serverBufferPool.dumpLeaks(), _serverBufferPool.getLeaks().size(), is(0));
+                assertThat("Detected client leaks: " + _clientBufferPool.dumpLeaks(), _clientBufferPool.getLeaks().size(), is(0));
+            });
+        }
+        finally
+        {
+            LifeCycle.stop(_client);
+            LifeCycle.stop(_server);
+        }
     }
 
     public static class AbstractFrameHandler implements FrameHandler
@@ -136,5 +161,18 @@ public class DemandTest
         // There should be no error from the frame handler.
         Throwable error = errorFuture.get(5, TimeUnit.SECONDS);
         assertNull(error);
+
+        // Release the frames stored by the server.
+        try (Frame frame = _serverFrameHandler.receivedFrames.poll(5, TimeUnit.SECONDS))
+        {
+            assertNotNull(frame);
+            assertThat(frame.getPayloadAsUTF8(), is("hello world"));
+        }
+        try (Frame frame = _serverFrameHandler.receivedFrames.poll(5, TimeUnit.SECONDS))
+        {
+            assertNotNull(frame);
+            assertThat(CloseStatus.getCloseStatus(frame).getReason(), is("bad data"));
+        }
+        assertNull(_serverFrameHandler.receivedFrames.poll());
     }
 }

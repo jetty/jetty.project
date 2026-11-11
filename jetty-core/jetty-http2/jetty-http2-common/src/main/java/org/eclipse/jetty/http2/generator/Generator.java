@@ -18,12 +18,11 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 
 public class Generator
 {
-    private final ByteBufferPool bufferPool;
     private final HeaderGenerator headerGenerator;
     private final HpackEncoder hpackEncoder;
     private final FrameGenerator[] generators;
@@ -42,8 +41,6 @@ public class Generator
 
     public Generator(ByteBufferPool bufferPool, boolean useDirectByteBuffers, int maxHeaderBlockFragment)
     {
-        this.bufferPool = bufferPool;
-
         headerGenerator = new HeaderGenerator(bufferPool, useDirectByteBuffers);
         hpackEncoder = new HpackEncoder();
 
@@ -61,11 +58,6 @@ public class Generator
         this.dataGenerator = new DataGenerator(headerGenerator);
     }
 
-    public ByteBufferPool getByteBufferPool()
-    {
-        return bufferPool;
-    }
-
     public HpackEncoder getHpackEncoder()
     {
         return hpackEncoder;
@@ -81,7 +73,7 @@ public class Generator
         headerGenerator.setMaxFrameSize(maxFrameSize);
     }
 
-    public int control(RetainableByteBuffer.Mutable accumulator, Frame frame) throws HpackException
+    public int control(BufferAccumulator accumulator, Frame frame) throws HpackException
     {
         int type = frame.getType().getType();
         if (type == FrameType.PREFACE.getType())
@@ -89,7 +81,7 @@ public class Generator
         return generators[type].generate(accumulator, frame);
     }
 
-    public int data(RetainableByteBuffer.Mutable accumulator, DataFrame frame, int maxLength)
+    public int data(BufferAccumulator accumulator, DataFrame frame, int maxLength)
     {
         return dataGenerator.generate(accumulator, frame, maxLength);
     }

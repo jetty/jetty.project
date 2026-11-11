@@ -14,7 +14,6 @@
 package org.eclipse.jetty.client;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -44,6 +43,7 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
@@ -159,7 +159,7 @@ public class ConnectionPoolTest
                             response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
                             try (Blocker.Callback callback = _blocking.callback())
                             {
-                                response.write(true, ByteBuffer.allocate((int)contentLength), callback);
+                                response.write(true, RetainableByteBuffer.allocate((int)contentLength, false), callback);
                                 callback.block();
                             }
                         }
@@ -171,30 +171,34 @@ public class ConnectionPoolTest
                             response.getHeaders().put(HttpHeader.CONTENT_LENGTH, contentLength);
                         while (true)
                         {
-                            Content.Chunk chunk = request.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = request.read())
                             {
-                                try (Blocker.Runnable block = _blocking.runnable())
+                                if (chunk == null)
                                 {
-                                    request.demand(block);
-                                    block.block();
-                                    continue;
+                                    try (Blocker.Runnable block = _blocking.runnable())
+                                    {
+                                        request.demand(block);
+                                        block.block();
+                                        continue;
+                                    }
                                 }
-                            }
-                            if (Content.Chunk.isFailure(chunk))
-                                throw chunk.getFailure();
+                                if (Content.Chunk.isFailure(chunk))
+                                    throw chunk.getFailure();
 
-                            if (chunk.hasRemaining())
-                            {
-                                try (Blocker.Callback callback = _blocking.callback())
+                                if (chunk.hasRemaining())
                                 {
-                                    response.write(chunk.isLast(), chunk.getByteBuffer(), callback);
-                                    callback.block();
+                                    try (Blocker.Callback callback = _blocking.callback())
+                                    {
+                                        try (RetainableByteBuffer buffer = chunk.acquire())
+                                        {
+                                            response.write(chunk.isLast(), buffer, callback);
+                                        }
+                                        callback.block();
+                                    }
                                 }
+                                if (chunk.isLast())
+                                    break;
                             }
-                            chunk.release();
-                            if (chunk.isLast())
-                                break;
                         }
                     }
                     default -> throw new IllegalStateException();

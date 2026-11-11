@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3.tests;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,6 +48,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -120,7 +120,7 @@ public class IdleTimeoutTest
                         return new ServerQuicheSession(getConnector(), getServerQuicConfiguration(), quiche, this, getEndPoint().getLocalSocketAddress(), remoteAddress, getSessionListenerFactory().newListener())
                         {
                             @Override
-                            protected int data(QuicheStream stream, boolean last, ByteBuffer buffer) throws IOException
+                            protected long data(QuicheStream stream, boolean last, RetainableByteBuffer buffer) throws IOException
                             {
                                 if (stream.isBidirectional() && established.get())
                                     return 0;

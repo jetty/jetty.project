@@ -297,7 +297,7 @@ public class StringUtilTest
     @Test
     public void testToHexStringNull()
     {
-        assertThrows(NullPointerException.class, () -> StringUtil.toHexString(null));
+        assertThrows(NullPointerException.class, () -> StringUtil.toHexString((byte[])null));
     }
 
     @Test

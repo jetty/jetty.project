@@ -61,7 +61,6 @@ public class EchoServlet extends HttpServlet
                 ServletInputStream input = request.getInputStream();
                 while (input.read(buffer) >= 0)
                 {
-                    buffer.flip();
                     output.write(buffer);
                     buffer.clear();
                 }

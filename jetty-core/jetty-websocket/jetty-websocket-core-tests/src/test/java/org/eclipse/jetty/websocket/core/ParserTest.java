@@ -20,13 +20,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.Generator;
+import org.eclipse.jetty.websocket.core.internal.ParsedFrame;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -37,8 +39,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -50,23 +51,25 @@ public class ParserTest
     private static final int MAX_ALLOWED_FRAME_SIZE = 4 * 1024 * 1024;
     private static final byte[] mask = {0x00, (byte)0xF0, 0x0F, (byte)0xFF};
 
-    public static void putPayload(ByteBuffer buffer, byte[] payload)
+    public static byte[] maskPayload(byte[] payload)
     {
         int len = payload.length;
+        byte[] masked = new byte[len];
         for (int i = 0; i < len; i++)
         {
-            buffer.put((byte)(payload[i] ^ mask[i % 4]));
+            masked[i] = (byte)(payload[i] ^ mask[i % 4]);
         }
+        return masked;
     }
 
-    private ParserCapture parse(Behavior behavior, int maxAllowedFrameSize, ByteBuffer buffer)
+    public static void putPayload(RetainableByteBuffer.Mutable buffer, byte[] payload)
     {
-        return parse(behavior, maxAllowedFrameSize, buffer, true);
+        buffer.put(maskPayload(payload));
     }
 
-    private ParserCapture parse(Behavior behavior, int maxAllowedFrameSize, ByteBuffer buffer, boolean copy)
+    private ParserCapture parse(Behavior behavior, int maxAllowedFrameSize, RetainableByteBuffer buffer)
     {
-        ParserCapture capture = new ParserCapture(copy, behavior);
+        ParserCapture capture = new ParserCapture(behavior);
         capture.getCoreSession().setMaxFrameSize(maxAllowedFrameSize);
         capture.parse(buffer);
         return capture;
@@ -92,7 +95,7 @@ public class ParserTest
         if (masked)
         {
             buffer.put(mask);
-            putPayload(buffer, messageBytes);
+            buffer.put(maskPayload(messageBytes));
         }
         else
         {
@@ -110,26 +113,25 @@ public class ParserTest
     {
         int length = 125;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
-        expected.put(new byte[]
-            {(byte)0x82});
+        expected.put(new byte[]{(byte)0x82});
         byte b = 0x00; // no masking
         b |= length & 0x7F;
         expected.put(b);
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
-
-        expected.flip();
 
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame", pActual.getOpCode(), is(OpCode.BINARY));
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame", pActual.getOpCode(), is(OpCode.BINARY));
+            assertEquals(length, pActual.getPayloadLength(), "Frame.payloadLength");
+        }
     }
 
     /**
@@ -140,7 +142,7 @@ public class ParserTest
     {
         int length = 126;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x82});
@@ -151,17 +153,17 @@ public class ParserTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
-
-        expected.flip();
 
         ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.BINARY, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(length, pActual.getPayloadLength(), "Frame.payloadLength");
+        }
         // assertEquals("Frame.payload",length,pActual.getPayloadData().length);
     }
 
@@ -173,7 +175,7 @@ public class ParserTest
     {
         int length = 127;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x82});
@@ -184,16 +186,16 @@ public class ParserTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
-        expected.flip();
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
-
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame", pActual.getOpCode(), is(OpCode.BINARY));
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame", pActual.getOpCode(), is(OpCode.BINARY));
+            assertEquals(length, pActual.getPayloadLength(), "Frame.payloadLength");
+        }
         // .assertEquals("Frame.payload",length,pActual.getPayloadData().length);
     }
 
@@ -205,7 +207,7 @@ public class ParserTest
     {
         int length = 128;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x82});
@@ -216,17 +218,17 @@ public class ParserTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.BINARY, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(length, pActual.getPayloadLength(), "Frame.payloadLength");
+        }
     }
 
     private ByteBuffer toBuffer(long l)
@@ -241,29 +243,27 @@ public class ParserTest
     @Test
     public void testLargeFrame()
     {
-        ByteBuffer expected = ByteBuffer.allocate(65);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(65, false);
 
         expected.put(new byte[]{(byte)0x82});
         byte b = 0x7F; // no masking
         expected.put(b);
         expected.put(toBuffer(Integer.MAX_VALUE));
-        expected.flip();
 
         Parser parser = new Parser(ByteBufferPool.NON_POOLING);
         assertNull(parser.parse(expected));
-        assertThat(parser.getPayloadLength(), equalTo(Integer.MAX_VALUE));
+        assertThat(parser.getPayloadLength(), equalTo((long)Integer.MAX_VALUE));
     }
 
     @Test
     public void testFrameTooLarge()
     {
-        ByteBuffer expected = ByteBuffer.allocate(65);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(65, false);
 
         expected.put(new byte[]{(byte)0x82});
         byte b = 0x7F; // no masking
         expected.put(b);
         expected.put(toBuffer(Integer.MAX_VALUE + 1L));
-        expected.flip();
 
         Parser parser = new Parser(ByteBufferPool.NON_POOLING);
         assertThrows(MessageTooLargeException.class, () -> parser.parse(expected));
@@ -272,13 +272,12 @@ public class ParserTest
     @Test
     public void testLargestFrame()
     {
-        ByteBuffer expected = ByteBuffer.allocate(65);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(65, false);
 
         expected.put(new byte[]{(byte)0x82});
         byte b = 0x7F; // no masking
         expected.put(b);
         expected.put(new byte[]{(byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF, (byte)0xFF});
-        expected.flip();
 
         Parser parser = new Parser(ByteBufferPool.NON_POOLING);
         assertThrows(MessageTooLargeException.class, () -> parser.parse(expected));
@@ -292,7 +291,7 @@ public class ParserTest
     {
         int length = 65535;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x82});
@@ -303,17 +302,17 @@ public class ParserTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.BINARY, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(length, pActual.getPayloadLength(), "Frame.payloadLength");
+        }
     }
 
     /**
@@ -324,7 +323,7 @@ public class ParserTest
     {
         int length = 65536;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 11);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 11, false);
 
         expected.put(new byte[]
             {(byte)0x82});
@@ -335,17 +334,17 @@ public class ParserTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.BINARY, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(length, pActual.getPayloadLength(), "Frame.payloadLength");
+        }
     }
 
     /**
@@ -354,18 +353,18 @@ public class ParserTest
     @Test
     public void testParseBinaryEmpty() throws InterruptedException
     {
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(5, false);
 
         expected.put(new byte[]{(byte)0x82, (byte)0x00});
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.BINARY, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(0));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(0L));
+        }
     }
 
     /**
@@ -374,9 +373,9 @@ public class ParserTest
     @Test
     public void testParseClose1BytePayload()
     {
-        ByteBuffer expected = Hex.asByteBuffer("880100");
+        RetainableByteBuffer expected = RetainableByteBuffer.wrap(Hex.asByteBuffer("880100"));
 
-        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true));
+        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected));
         assertThat(e.getMessage(), Matchers.containsString("Invalid CLOSE payload"));
     }
 
@@ -386,19 +385,19 @@ public class ParserTest
     @Test
     public void testParseCloseEmpty() throws InterruptedException
     {
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(5, false);
 
         expected.put(new byte[]
             {(byte)0x88, (byte)0x00});
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.CLOSE, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("CloseFrame.payloadLength", pActual.getPayloadLength(), is(0));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("CloseFrame.payloadLength", pActual.getPayloadLength(), is(0L));
+        }
     }
 
     /**
@@ -410,7 +409,7 @@ public class ParserTest
         byte[] messageBytes = new byte[124];
         Arrays.fill(messageBytes, (byte)'*');
 
-        ByteBuffer expected = ByteBuffer.allocate(256);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(256, false);
 
         byte b;
 
@@ -427,15 +426,13 @@ public class ParserTest
         expected.put(b);
 
         // 2 byte len
-        expected.putChar((char)(messageBytes.length + 2));
+        expected.putShort((short)(messageBytes.length + 2));
 
         // payload
         expected.putShort((short)1000); // status code
         expected.put(messageBytes); // reason
 
-        expected.flip();
-
-        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true));
+        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected));
         assertThat(e.getMessage(), Matchers.containsString("Invalid control frame payload length"));
     }
 
@@ -445,19 +442,19 @@ public class ParserTest
     @Test
     public void testParseCloseWithStatus() throws InterruptedException
     {
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(5, false);
 
         expected.put(new byte[]
             {(byte)0x88, (byte)0x02, 0x03, (byte)0xe8});
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.CLOSE, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("CloseFrame.payloadLength", pActual.getPayloadLength(), is(2));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("CloseFrame.payloadLength", pActual.getPayloadLength(), is(2L));
+        }
     }
 
     /**
@@ -474,7 +471,7 @@ public class ParserTest
 
         byte[] messageBytes = message.toString().getBytes(StandardCharsets.UTF_8);
 
-        ByteBuffer expected = ByteBuffer.allocate(132);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(132, false);
 
         expected.put(new byte[]
             {(byte)0x88});
@@ -485,14 +482,15 @@ public class ParserTest
         expected.putShort((short)1000);
 
         expected.put(messageBytes);
-        expected.flip();
 
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.CLOSE, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("CloseFrame.payloadLength", pActual.getPayloadLength(), is(125));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("CloseFrame.payloadLength", pActual.getPayloadLength(), is(125L));
+        }
     }
 
     /**
@@ -504,7 +502,7 @@ public class ParserTest
         String message = "bad cough";
         byte[] messageBytes = message.getBytes();
 
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(32, false);
 
         expected.put(new byte[]
             {(byte)0x88});
@@ -513,14 +511,15 @@ public class ParserTest
         expected.put(b);
         expected.putShort((short)1000); // status code
         expected.put(messageBytes); // status reason
-        expected.flip();
 
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.CLOSE, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("CloseFrame.payloadLength", pActual.getPayloadLength(), is(messageBytes.length + 2));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(messageBytes.length + 2, pActual.getPayloadLength(), "CloseFrame.payloadLength");
+        }
     }
 
     /**
@@ -544,28 +543,28 @@ public class ParserTest
         for (int i = 0; i < len; i++)
         {
             Frame frame;
+            byte opCode;
             if (i > 0)
             {
-                frame = new Frame(OpCode.CONTINUATION);
+                opCode = OpCode.CONTINUATION;
                 continuationCount++;
             }
             else
             {
-                frame = new Frame(OpCode.TEXT);
+                opCode = OpCode.TEXT;
                 textCount++;
             }
             mini = new byte[1];
             mini[0] = msg[i];
-            frame.setPayload(ByteBuffer.wrap(mini));
             boolean isLast = (i >= (len - 1));
-            frame.setFin(isLast);
+            frame = new Frame(opCode, isLast, RetainableByteBuffer.wrap(mini));
             send.add(frame);
         }
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        ByteBuffer completeBuf = generate(Behavior.SERVER, send);
+        RetainableByteBuffer completeBuf = generate(Behavior.SERVER, send);
 
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, completeBuf, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, completeBuf);
 
         capture.assertHasFrame(OpCode.TEXT, textCount);
         capture.assertHasFrame(OpCode.CONTINUATION, continuationCount);
@@ -582,18 +581,18 @@ public class ParserTest
     public void testParseInterleavedPingFrames()
     {
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload("f1").setFin(false));
-        send.add(new Frame(OpCode.CONTINUATION).setPayload(",f2").setFin(false));
-        send.add(new Frame(OpCode.PING).setPayload("ping-1"));
-        send.add(new Frame(OpCode.CONTINUATION).setPayload(",f3").setFin(false));
-        send.add(new Frame(OpCode.CONTINUATION).setPayload(",f4").setFin(false));
-        send.add(new Frame(OpCode.PING).setPayload("ping-2"));
-        send.add(new Frame(OpCode.CONTINUATION).setPayload(",f5").setFin(true));
+        send.add(new Frame(OpCode.TEXT, false, "f1"));
+        send.add(new Frame(OpCode.CONTINUATION, false, ",f2"));
+        send.add(new Frame(OpCode.PING, "ping-1"));
+        send.add(new Frame(OpCode.CONTINUATION, false, ",f3"));
+        send.add(new Frame(OpCode.CONTINUATION, false, ",f4"));
+        send.add(new Frame(OpCode.PING, "ping-2"));
+        send.add(new Frame(OpCode.CONTINUATION, true, ",f5"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        ByteBuffer completeBuf = generate(Behavior.SERVER, send);
+        RetainableByteBuffer completeBuf = generate(Behavior.SERVER, send);
 
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, completeBuf, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, completeBuf);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
         capture.assertHasFrame(OpCode.CONTINUATION, 4);
@@ -604,11 +603,10 @@ public class ParserTest
     @Test
     public void testParseNothing()
     {
-        ByteBuffer buf = ByteBuffer.allocate(16);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(16, false);
         // Put nothing in the buffer.
-        buf.flip();
 
-        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
+        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf);
 
         assertThat("Frame Count", capture.framesQueue.size(), is(0));
     }
@@ -619,13 +617,11 @@ public class ParserTest
     @Test
     public void testParseOpCode11() throws Exception
     {
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(32, false);
 
         expected.put(new byte[]{(byte)0x8b, 0x00});
 
-        expected.flip();
-
-        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true));
+        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected));
         assertThat(e.getMessage(), Matchers.containsString("Unknown opcode: 11"));
     }
 
@@ -635,13 +631,11 @@ public class ParserTest
     @Test
     public void testParseOpCode12() throws Exception
     {
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(32, false);
 
         expected.put(new byte[]{(byte)0x8c, 0x01, 0x00});
 
-        expected.flip();
-
-        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true));
+        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected));
         assertThat(e.getMessage(), Matchers.containsString("Unknown opcode: 12"));
     }
 
@@ -651,13 +645,11 @@ public class ParserTest
     @Test
     public void testParseOpCode3() throws Exception
     {
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(32, false);
 
         expected.put(new byte[]{(byte)0x83, 0x00});
 
-        expected.flip();
-
-        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true));
+        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected));
         assertThat(e.getMessage(), Matchers.containsString("Unknown opcode: 3"));
     }
 
@@ -667,13 +659,11 @@ public class ParserTest
     @Test
     public void testParseOpCode4() throws Exception
     {
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(32, false);
 
         expected.put(new byte[]{(byte)0x84, 0x01, 0x00});
 
-        expected.flip();
-
-        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true));
+        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected));
         assertThat(e.getMessage(), Matchers.containsString("Unknown opcode: 4"));
     }
 
@@ -690,7 +680,7 @@ public class ParserTest
             bytes[i] = (byte)(i & 0xff);
         }
 
-        ByteBuffer expected = ByteBuffer.allocate(bytes.length + 32);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(bytes.length + 32, false);
 
         expected.put(new byte[]
             {(byte)0x89});
@@ -700,33 +690,33 @@ public class ParserTest
         expected.put(b);
         expected.put(bytes);
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.PING, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("PingFrame.payloadLength", pActual.getPayloadLength(), is(bytes.length));
-        assertEquals(bytes.length, pActual.getPayloadLength(), "PingFrame.payload");
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(bytes.length, pActual.getPayloadLength(), "PingFrame.payloadLength");
+            assertEquals(bytes.length, pActual.getPayloadLength(), "PingFrame.payload");
+        }
     }
 
     @Test
     public void testParsePingBasic() throws InterruptedException
     {
-        ByteBuffer buf = ByteBuffer.allocate(16);
-        BufferUtil.clearToFill(buf);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(16, false);
         buf.put(new byte[]
             {(byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
-        BufferUtil.flipToFlush(buf, 0);
 
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf);
 
         capture.assertHasFrame(OpCode.PING, 1);
-        Frame ping = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("PingFrame", ping.getOpCode(), is(OpCode.PING));
-        String actual = BufferUtil.toUTF8String(ping.getPayload());
-        assertThat("PingFrame.payload", actual, is("Hello"));
+        try (Frame ping = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("PingFrame", ping.getOpCode(), is(OpCode.PING));
+            String actual = ping.getPayloadAsUTF8();
+            assertThat("PingFrame.payload", actual, is("Hello"));
+        }
     }
 
     /**
@@ -737,7 +727,7 @@ public class ParserTest
     {
         byte[] bytes = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(32, false);
 
         expected.put(new byte[]
             {(byte)0x89});
@@ -747,15 +737,15 @@ public class ParserTest
         expected.put(b);
         expected.put(bytes);
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.PING, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("PingFrame.payloadLength", pActual.getPayloadLength(), is(bytes.length));
-        assertEquals(bytes.length, pActual.getPayloadLength(), "PingFrame.payload");
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(bytes.length, pActual.getPayloadLength(), "PingFrame.payloadLength");
+            assertEquals(bytes.length, pActual.getPayloadLength(), "PingFrame.payload");
+        }
     }
 
     /**
@@ -764,20 +754,20 @@ public class ParserTest
     @Test
     public void testParsePingEmpty() throws InterruptedException
     {
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(5, false);
 
         expected.put(new byte[]
             {(byte)0x89, (byte)0x00});
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.PING, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("PingFrame.payloadLength", pActual.getPayloadLength(), is(0));
-        assertEquals(0, pActual.getPayloadLength(), "PingFrame.payload");
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("PingFrame.payloadLength", pActual.getPayloadLength(), is(0L));
+            assertEquals(0, pActual.getPayloadLength(), "PingFrame.payload");
+        }
     }
 
     /**
@@ -789,7 +779,7 @@ public class ParserTest
         String message = "Hello, world!";
         byte[] messageBytes = message.getBytes();
 
-        ByteBuffer expected = ByteBuffer.allocate(32);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(32, false);
 
         expected.put(new byte[]
             {(byte)0x89});
@@ -799,15 +789,15 @@ public class ParserTest
         expected.put(b);
         expected.put(messageBytes);
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.PING, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("PingFrame.payloadLength", pActual.getPayloadLength(), is(message.length()));
-        assertEquals(message.length(), pActual.getPayloadLength(), "PingFrame.payload");
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(message.length(), pActual.getPayloadLength(), "PingFrame.payloadLength");
+            assertEquals(message.length(), pActual.getPayloadLength(), "PingFrame.payload");
+        }
     }
 
     /**
@@ -819,7 +809,7 @@ public class ParserTest
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte)0x00);
 
-        ByteBuffer expected = ByteBuffer.allocate(bytes.length + Generator.MAX_HEADER_LENGTH);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(bytes.length + Generator.MAX_HEADER_LENGTH, false);
 
         byte b;
 
@@ -836,14 +826,12 @@ public class ParserTest
         expected.put(b);
 
         // 2 byte len
-        expected.putChar((char)bytes.length);
+        expected.putShort((short)bytes.length);
 
         // payload
         expected.put(bytes);
 
-        expected.flip();
-
-        assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true));
+        assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected));
     }
 
     /**
@@ -856,13 +844,13 @@ public class ParserTest
     public void testParsePongTextClose()
     {
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.PONG).setPayload("ping"));
-        send.add(new Frame(OpCode.TEXT).setPayload("hello, world"));
+        send.add(new Frame(OpCode.PONG, "ping"));
+        send.add(new Frame(OpCode.TEXT, "hello, world"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
-        ByteBuffer completeBuf = generate(Behavior.SERVER, send);
+        RetainableByteBuffer completeBuf = generate(Behavior.SERVER, send);
 
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, completeBuf, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, completeBuf);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
         capture.assertHasFrame(OpCode.CLOSE, 1);
@@ -878,7 +866,7 @@ public class ParserTest
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte)0x00);
 
-        ByteBuffer expected = ByteBuffer.allocate(bytes.length + Generator.MAX_HEADER_LENGTH);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(bytes.length + Generator.MAX_HEADER_LENGTH, false);
 
         byte b;
 
@@ -895,14 +883,12 @@ public class ParserTest
         expected.put(b);
 
         // 2 byte len
-        expected.putChar((char)bytes.length);
+        expected.putShort((short)bytes.length);
 
         // payload
         expected.put(bytes);
 
-        expected.flip();
-
-        assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true));
+        assertThrows(ProtocolException.class, () -> parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected));
     }
 
     /**
@@ -916,8 +902,7 @@ public class ParserTest
     {
         ParserCapture capture = new ParserCapture();
 
-        ByteBuffer buf = ByteBuffer.allocate(16);
-        BufferUtil.clearToFill(buf);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(16, false);
 
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A fragmented unmasked text message (part 1 of 2 "Hel")
@@ -925,27 +910,29 @@ public class ParserTest
             {(byte)0x01, (byte)0x03, 0x48, (byte)0x65, 0x6c});
 
         // Parse #1
-        BufferUtil.flipToFlush(buf, 0);
         capture.parse(buf);
 
         // part 2 of 2 "lo" (A continuation frame of the prior text message)
-        BufferUtil.flipToFill(buf);
+        // The already parsed bytes are behind the read position, so this appends to the buffer.
         buf.put(new byte[]
             {(byte)0x80, 0x02, 0x6c, 0x6f});
 
         // Parse #2
-        BufferUtil.flipToFlush(buf, 0);
         capture.parse(buf);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
         capture.assertHasFrame(OpCode.CONTINUATION, 1);
 
-        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        String actual = BufferUtil.toUTF8String(txt.getPayload());
-        assertThat("Frame[0].payload", actual, is("Hel"));
-        txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        actual = BufferUtil.toUTF8String(txt.getPayload());
-        assertThat("Frame[1].payload", actual, is("lo"));
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            String actual = txt.getPayloadAsUTF8();
+            assertThat("Frame[0].payload", actual, is("Hel"));
+        }
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            String actual = txt.getPayloadAsUTF8();
+            assertThat("Frame[1].payload", actual, is("lo"));
+        }
     }
 
     /**
@@ -957,20 +944,21 @@ public class ParserTest
     @Test
     public void testParseRFC6455SingleMaskedPongRequest() throws InterruptedException
     {
-        ByteBuffer buf = ByteBuffer.allocate(16);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(16, false);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // Unmasked Pong request
         buf.put(new byte[]
             {(byte)0x8a, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
-        buf.flip();
 
-        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
+        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf);
 
         capture.assertHasFrame(OpCode.PONG, 1);
 
-        Frame pong = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        String actual = BufferUtil.toUTF8String(pong.getPayload());
-        assertThat("PongFrame.payload", actual, is("Hello"));
+        try (Frame pong = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            String actual = pong.getPayloadAsUTF8();
+            assertThat("PongFrame.payload", actual, is("Hello"));
+        }
     }
 
     /**
@@ -982,20 +970,21 @@ public class ParserTest
     @Test
     public void testParseRFC6455SingleMaskedTextMessage() throws InterruptedException
     {
-        ByteBuffer buf = ByteBuffer.allocate(16);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(16, false);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A single-frame masked text message
         buf.put(new byte[]
             {(byte)0x81, (byte)0x85, 0x37, (byte)0xfa, 0x21, 0x3d, 0x7f, (byte)0x9f, 0x4d, 0x51, 0x58});
-        buf.flip();
 
-        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
+        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
 
-        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        String actual = BufferUtil.toUTF8String(txt.getPayload());
-        assertThat("Frame.payload", actual, is("Hello"));
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            String actual = txt.getPayloadAsUTF8();
+            assertThat("Frame.payload", actual, is("Hello"));
+        }
     }
 
     /**
@@ -1009,7 +998,7 @@ public class ParserTest
     {
         int dataSize = 256;
 
-        ByteBuffer buf = ByteBuffer.allocate(dataSize + 10);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(dataSize + 10, false);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 256 bytes binary message in a single unmasked frame
         buf.put(new byte[]
@@ -1019,22 +1008,21 @@ public class ParserTest
         {
             buf.put((byte)0x44);
         }
-        buf.flip();
 
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf);
 
         capture.assertHasFrame(OpCode.BINARY, 1);
 
-        Frame bin = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-
-        assertThat("Frame.payloadLength", bin.getPayloadLength(), is(dataSize));
-
-        ByteBuffer data = bin.getPayload();
-        assertThat("Frame.payload.length", data.remaining(), is(dataSize));
-
-        for (int i = 0; i < dataSize; i++)
+        try (Frame bin = capture.framesQueue.poll(1, TimeUnit.SECONDS))
         {
-            assertThat("Frame.payload[" + i + "]", data.get(i), is((byte)0x44));
+            assertEquals(dataSize, bin.getPayloadLength(), "Frame.payloadLength");
+
+            byte[] expected = new byte[dataSize];
+            Arrays.fill(expected, (byte)0x44);
+            try (RetainableByteBuffer data = bin.acquire())
+            {
+                assertArrayEquals(expected, data.getArray());
+            }
         }
     }
 
@@ -1049,7 +1037,7 @@ public class ParserTest
     {
         int dataSize = 1024 * 64;
 
-        ByteBuffer buf = ByteBuffer.allocate((dataSize + 10));
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(dataSize + 10, false);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // 64 KiloByte binary message in a single unmasked frame
         buf.put(new byte[]
@@ -1059,22 +1047,21 @@ public class ParserTest
         {
             buf.put((byte)0x77);
         }
-        buf.flip();
 
         ParserCapture capture = new ParserCapture();
         capture.parse(buf);
 
         capture.assertHasFrame(OpCode.BINARY, 1);
 
-        Frame bin = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-
-        assertThat("Frame.payloadLength", bin.getPayloadLength(), is(dataSize));
-        ByteBuffer data = bin.getPayload();
-        assertThat("Frame.payload.length", data.remaining(), is(dataSize));
-
-        for (int i = 0; i < dataSize; i++)
+        try (Frame bin = capture.framesQueue.poll(1, TimeUnit.SECONDS))
         {
-            assertThat("Frame.payload[" + i + "]", data.get(i), is((byte)0x77));
+            assertEquals(dataSize, bin.getPayloadLength(), "Frame.payloadLength");
+            byte[] expected = new byte[dataSize];
+            Arrays.fill(expected, (byte)0x77);
+            try (RetainableByteBuffer data = bin.acquire())
+            {
+                assertArrayEquals(expected, data.getArray());
+            }
         }
     }
 
@@ -1087,20 +1074,21 @@ public class ParserTest
     @Test
     public void testParseRFC6455SingleUnmaskedPingRequest() throws InterruptedException
     {
-        ByteBuffer buf = ByteBuffer.allocate(16);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(16, false);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // Unmasked Ping request
         buf.put(new byte[]
             {(byte)0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
-        buf.flip();
 
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf);
 
         capture.assertHasFrame(OpCode.PING, 1);
 
-        Frame ping = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        String actual = BufferUtil.toUTF8String(ping.getPayload());
-        assertThat("PingFrame.payload", actual, is("Hello"));
+        try (Frame ping = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            String actual = ping.getPayloadAsUTF8();
+            assertThat("PingFrame.payload", actual, is("Hello"));
+        }
     }
 
     /**
@@ -1112,20 +1100,21 @@ public class ParserTest
     @Test
     public void testParseRFC6455SingleUnmaskedTextMessage() throws InterruptedException
     {
-        ByteBuffer buf = ByteBuffer.allocate(16);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(16, false);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
         // A single-frame unmasked text message
         buf.put(new byte[]
             {(byte)0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f});
-        buf.flip();
 
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buf);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
 
-        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        String actual = BufferUtil.toUTF8String(txt.getPayload());
-        assertThat("Frame.payload", actual, is("Hello"));
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            String actual = txt.getPayloadAsUTF8();
+            assertThat("Frame.payload", actual, is("Hello"));
+        }
     }
 
     /**
@@ -1136,7 +1125,7 @@ public class ParserTest
     {
         int length = 125;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x81});
@@ -1146,17 +1135,17 @@ public class ParserTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(length, pActual.getPayloadLength(), "Frame.payloadLength");
+        }
         // assertEquals("Frame.payload",length,pActual.getPayloadData().length);
     }
 
@@ -1168,7 +1157,7 @@ public class ParserTest
     {
         int length = 126;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x81});
@@ -1179,17 +1168,17 @@ public class ParserTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(length, pActual.getPayloadLength(), "Frame.payloadLength");
+        }
         // assertEquals("Frame.payload",length,pActual.getPayloadData().length);
     }
 
@@ -1201,7 +1190,7 @@ public class ParserTest
     {
         int length = 127;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x81});
@@ -1212,17 +1201,17 @@ public class ParserTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(length, pActual.getPayloadLength(), "Frame.payloadLength");
+        }
         // assertEquals("Frame.payload",length,pActual.getPayloadData().length);
     }
 
@@ -1234,7 +1223,7 @@ public class ParserTest
     {
         int length = 128;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x81});
@@ -1245,17 +1234,17 @@ public class ParserTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(length, pActual.getPayloadLength(), "Frame.payloadLength");
+        }
         // .assertEquals("Frame.payload",length,pActual.getPayloadData().length);
     }
 
@@ -1267,7 +1256,7 @@ public class ParserTest
     {
         int length = 65535;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 5, false);
 
         expected.put(new byte[]
             {(byte)0x81});
@@ -1279,16 +1268,17 @@ public class ParserTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
-        expected.flip();
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(length, pActual.getPayloadLength(), "Frame.payloadLength");
+        }
     }
 
     /**
@@ -1299,7 +1289,7 @@ public class ParserTest
     {
         int length = 65536;
 
-        ByteBuffer expected = ByteBuffer.allocate(length + 11);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(length + 11, false);
 
         expected.put(new byte[]
             {(byte)0x81});
@@ -1311,17 +1301,17 @@ public class ParserTest
 
         for (int i = 0; i < length; ++i)
         {
-            expected.put("*".getBytes());
+            expected.put((byte)'*');
         }
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(length));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertEquals(length, pActual.getPayloadLength(), "Frame.payloadLength");
+        }
     }
 
     /**
@@ -1330,19 +1320,19 @@ public class ParserTest
     @Test
     public void testParseTextEmpty() throws InterruptedException
     {
-        ByteBuffer expected = ByteBuffer.allocate(5);
+        RetainableByteBuffer.Mutable expected = RetainableByteBuffer.Mutable.allocate(5, false);
 
         expected.put(new byte[]
             {(byte)0x81, (byte)0x00});
 
-        expected.flip();
-
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected, true);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, expected);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
 
-        Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(0));
+        try (Frame pActual = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame.payloadLength", pActual.getPayloadLength(), is(0L));
+        }
     }
 
     @Test
@@ -1356,15 +1346,14 @@ public class ParserTest
 
         assertThat("Must be a medium length payload", utf.length, allOf(greaterThan(0x7E), lessThan(0xFFFF)));
 
-        ByteBuffer buf = ByteBuffer.allocate(utf.length + 8);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(utf.length + 8, false);
         buf.put((byte)0x81); // text frame, fin = true
         buf.put((byte)(0x80 | 0x7E)); // 0x7E == 126 (a 2 byte payload length)
         buf.putShort((short)utf.length);
         buf.put(mask);
         putPayload(buf, utf);
-        buf.flip();
 
-        ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
+        ParserCapture capture = new ParserCapture(Behavior.SERVER);
         capture.getCoreSession().setMaxFrameSize(maxAllowedFrameSize);
         capture.getCoreSession().setAutoFragment(false);
         assertThrows(MessageTooLargeException.class, () -> capture.parse(buf));
@@ -1386,19 +1375,20 @@ public class ParserTest
 
         assertThat("Must be a long length payload", utf.length, greaterThan(0xFFFF));
 
-        ByteBuffer buf = ByteBuffer.allocate(utf.length + 32);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(utf.length + 32, false);
         buf.put((byte)0x81); // text frame, fin = true
         buf.put((byte)(0x80 | 0x7F)); // 0x7F == 127 (a 8 byte payload length)
         buf.putLong(utf.length);
         buf.put(mask);
         putPayload(buf, utf);
-        buf.flip();
 
-        ParserCapture capture = parse(Behavior.SERVER, 100000, buf, true);
+        ParserCapture capture = parse(Behavior.SERVER, 100000, buf);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
-        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payload", txt.getPayloadAsUTF8(), is(expectedText));
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame.payload", txt.getPayloadAsUTF8(), is(expectedText));
+        }
     }
 
     @Test
@@ -1409,37 +1399,33 @@ public class ParserTest
         Arrays.fill(payload, (byte)'*');
 
         List<Frame> frames = new ArrayList<>();
-        Frame text = new Frame(OpCode.TEXT);
-        text.setPayload(ByteBuffer.wrap(payload));
-        text.setMask(Hex.asByteArray("11223344"));
-        frames.add(text);
+        frames.add(new Frame(OpCode.TEXT, RetainableByteBuffer.wrap(payload)).withMask(Hex.asByteArray("11223344")));
         frames.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         // Build up raw (network bytes) buffer
-        ByteBuffer networkBytes = generate(Behavior.CLIENT, frames);
+        RetainableByteBuffer networkBytes = generate(Behavior.CLIENT, frames);
 
         // Parse, in 4096 sized windows
-        ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
+        ParserCapture capture = new ParserCapture(Behavior.SERVER);
         capture.getCoreSession().setAutoFragment(false);
 
-        while (networkBytes.remaining() > 0)
+        while (networkBytes.hasRemaining())
         {
-            ByteBuffer window = networkBytes.slice();
-            int windowSize = Math.min(window.remaining(), 4096);
-            window.limit(windowSize);
+            int windowSize = (int)Math.min(networkBytes.remaining(), 4096);
+            RetainableByteBuffer window = networkBytes.sliceAndConsume(windowSize);
             capture.parse(window);
-            networkBytes.position(networkBytes.position() + windowSize);
+            window.release();
         }
 
         assertThat("Frame Count", capture.framesQueue.size(), is(2));
-        Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame[0].opcode", frame.getOpCode(), is(OpCode.TEXT));
-        ByteBuffer actualPayload = frame.getPayload();
-        assertThat("Frame[0].payload.length", actualPayload.remaining(), is(payload.length));
-        // Should be all '*' characters (if masking is correct)
-        for (int i = actualPayload.position(); i < actualPayload.remaining(); i++)
+        try (Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS))
         {
-            assertThat("Frame[0].payload[i]", actualPayload.get(i), is((byte)'*'));
+            assertThat("Frame[0].opcode", frame.getOpCode(), is(OpCode.TEXT));
+            // Should be all '*' characters (if masking is correct)
+            try (RetainableByteBuffer actualPayload = frame.acquire())
+            {
+                assertArrayEquals(payload, actualPayload.getArray());
+            }
         }
     }
 
@@ -1459,19 +1445,20 @@ public class ParserTest
 
         assertThat("Must be a medium length payload", utf.length, allOf(greaterThan(0x7E), lessThan(0xFFFF)));
 
-        ByteBuffer buf = ByteBuffer.allocate(utf.length + 10);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(utf.length + 10, false);
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | 0x7E)); // 0x7E == 126 (a 2 byte payload length)
         buf.putShort((short)utf.length);
         buf.put(mask);
         putPayload(buf, utf);
-        buf.flip();
 
-        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
+        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
-        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payload", txt.getPayloadAsUTF8(), is(expectedText));
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame.payload", txt.getPayloadAsUTF8(), is(expectedText));
+        }
     }
 
     @Test
@@ -1480,18 +1467,19 @@ public class ParserTest
         String expectedText = "Hello World";
         byte[] utf = expectedText.getBytes(StandardCharsets.UTF_8);
 
-        ByteBuffer buf = ByteBuffer.allocate(24);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(24, false);
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | utf.length));
         buf.put(mask);
         putPayload(buf, utf);
-        buf.flip();
 
-        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
+        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
-        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payload", txt.getPayloadAsUTF8(), is(expectedText));
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame.payload", txt.getPayloadAsUTF8(), is(expectedText));
+        }
     }
 
     @Test
@@ -1503,7 +1491,7 @@ public class ParserTest
         byte[] b1 = part1.getBytes(StandardCharsets.UTF_8);
         byte[] b2 = part2.getBytes(StandardCharsets.UTF_8);
 
-        ByteBuffer buf = ByteBuffer.allocate(32);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(32, false);
 
         // part 1
         buf.put((byte)0x01); // no fin + text
@@ -1517,16 +1505,18 @@ public class ParserTest
         buf.put(mask);
         putPayload(buf, b2);
 
-        buf.flip();
-
-        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
+        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
         capture.assertHasFrame(OpCode.CONTINUATION, 1);
-        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame[0].payload", txt.getPayloadAsUTF8(), is(part1));
-        txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame[1].payload", txt.getPayloadAsUTF8(), is(part2));
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame[0].payload", txt.getPayloadAsUTF8(), is(part1));
+        }
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame[1].payload", txt.getPayloadAsUTF8(), is(part2));
+        }
     }
 
     @Test
@@ -1537,68 +1527,70 @@ public class ParserTest
 
         byte[] utf = expectedText.getBytes(StandardCharsets.UTF_8);
 
-        ByteBuffer buf = ByteBuffer.allocate(24);
+        RetainableByteBuffer.Mutable buf = RetainableByteBuffer.Mutable.allocate(24, false);
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | utf.length));
         buf.put(mask);
         putPayload(buf, utf);
-        buf.flip();
 
-        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
+        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
-        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.payload", txt.getPayloadAsUTF8(), is(expectedText));
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame.payload", txt.getPayloadAsUTF8(), is(expectedText));
+        }
     }
 
     @Test
     public void testParseAutobahn793() throws Exception
     {
-        ByteBuffer buf = BufferUtil.toBuffer(StringUtil.fromHexString("8882c2887e61c164"));
-        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true));
+        RetainableByteBuffer buf = RetainableByteBuffer.wrap(StringUtil.fromHexString("8882c2887e61c164"));
+        Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf));
         assertThat(e.getMessage(), Matchers.containsString("Invalid CLOSE Code: "));
     }
 
     @Test
     public void testParseAutobahn796() throws Exception
     {
-        ByteBuffer buf = BufferUtil.toBuffer(StringUtil.fromHexString("88824c49cb474fbf"));
-        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
+        RetainableByteBuffer buf = RetainableByteBuffer.wrap(StringUtil.fromHexString("88824c49cb474fbf"));
+        ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf);
 
         capture.assertHasFrame(OpCode.CLOSE, 1);
         Frame frame = capture.framesQueue.peek();
         assertThat("CloseFrame", frame.getOpCode(), is(OpCode.CLOSE));
-        assertThat(new CloseStatus(frame.getPayload()).getCode(), is(1014));
+        assertThat(CloseStatus.from(frame).getCode(), is(1014));
     }
 
     @Test
     public void testCompleteDirect() throws Exception
     {
         ByteBuffer data = generate(OpCode.TEXT, "Hello World");
-        ByteBuffer buffer = BufferUtil.allocateDirect(32);
-        BufferUtil.append(buffer, data);
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buffer, false);
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(32, true);
+        buffer.put(data);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buffer);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
-        Frame.Parsed text = (Frame.Parsed)capture.framesQueue.take();
-        assertEquals("Hello World", text.getPayloadAsUTF8());
-        assertTrue(text.getPayload().isDirect());
-        assertFalse(text.isReleaseable());
+        try (ParsedFrame text = (ParsedFrame)capture.framesQueue.take())
+        {
+            assertEquals("Hello World", text.getPayloadAsUTF8());
+        }
     }
 
     @Test
     public void testComplete() throws Exception
     {
         ByteBuffer data = generate(OpCode.TEXT, "Hello World");
-        ByteBuffer buffer = BufferUtil.allocate(32);
-        BufferUtil.append(buffer, data);
-        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buffer, false);
+        byte[] array = new byte[32];
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.wrap(array);
+        buffer.put(data);
+        ParserCapture capture = parse(Behavior.CLIENT, MAX_ALLOWED_FRAME_SIZE, buffer);
 
         capture.assertHasFrame(OpCode.TEXT, 1);
-        Frame.Parsed text = (Frame.Parsed)capture.framesQueue.take();
-        assertEquals("Hello World", text.getPayloadAsUTF8());
-        assertThat(text.getPayload().array(), sameInstance(buffer.array()));
-        assertFalse(text.isReleaseable());
+        try (ParsedFrame text = (ParsedFrame)capture.framesQueue.take())
+        {
+            assertEquals("Hello World", text.getPayloadAsUTF8());
+        }
     }
 
     @Test
@@ -1606,44 +1598,45 @@ public class ParserTest
     {
         ByteBuffer data = generate(OpCode.TEXT, "Hello World", true);
         int limit = data.limit();
-        ByteBuffer buffer = BufferUtil.allocate(32);
+        byte[] array = new byte[32];
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.wrap(array);
 
-        ParserCapture capture = new ParserCapture(false, Behavior.SERVER);
+        ParserCapture capture = new ParserCapture(Behavior.SERVER);
         capture.getCoreSession().setAutoFragment(true);
 
         data.limit(6 + 5);
-        BufferUtil.append(buffer, data);
+        buffer.put(data);
         capture.parse(buffer);
         assertEquals(1, capture.framesQueue.size());
         assertEquals(0, buffer.remaining());
-        Frame.Parsed text = (Frame.Parsed)capture.framesQueue.take();
-        assertFalse(text.isFin());
-        assertEquals("Hello", text.getPayloadAsUTF8());
-        assertThat(text.getPayload().array(), sameInstance(buffer.array()));
-        assertFalse(text.isReleaseable());
+        try (ParsedFrame text = (ParsedFrame)capture.framesQueue.take())
+        {
+            assertFalse(text.isFin());
+            assertEquals("Hello", text.getPayloadAsUTF8());
+        }
 
         data.limit(6 + 6);
-        BufferUtil.append(buffer, data);
+        buffer.put(data);
         capture.parse(buffer);
         assertEquals(1, capture.framesQueue.size());
         assertEquals(0, buffer.remaining());
-        text = (Frame.Parsed)capture.framesQueue.take();
-        assertFalse(text.isFin());
-        assertEquals(" ", text.getPayloadAsUTF8());
-        assertThat(text.getPayload().array(), sameInstance(buffer.array()));
-        assertFalse(text.isReleaseable());
+        try (ParsedFrame text = (ParsedFrame)capture.framesQueue.take())
+        {
+            assertFalse(text.isFin());
+            assertEquals(" ", text.getPayloadAsUTF8());
+        }
 
         data.limit(limit);
-        BufferUtil.append(buffer, data);
+        buffer.put(data);
         capture.parse(buffer);
         assertEquals(1, capture.framesQueue.size());
         assertEquals(0, buffer.remaining());
         capture.assertHasFrame(OpCode.CONTINUATION, 1);
-        text = (Frame.Parsed)capture.framesQueue.take();
-        assertTrue(text.isFin());
-        assertEquals("World", text.getPayloadAsUTF8());
-        assertThat(text.getPayload().array(), sameInstance(buffer.array()));
-        assertFalse(text.isReleaseable());
+        try (ParsedFrame text = (ParsedFrame)capture.framesQueue.take())
+        {
+            assertTrue(text.isFin());
+            assertEquals("World", text.getPayloadAsUTF8());
+        }
     }
 
     @Test
@@ -1651,34 +1644,35 @@ public class ParserTest
     {
         ByteBuffer data = generate(OpCode.TEXT, "Hello World");
         int limit = data.limit();
-        ByteBuffer buffer = BufferUtil.allocate(32);
+        byte[] array = new byte[32];
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.wrap(array);
 
-        ParserCapture capture = new ParserCapture(false);
+        ParserCapture capture = new ParserCapture();
         capture.getCoreSession().setAutoFragment(false);
 
         data.limit(5);
-        BufferUtil.append(buffer, data);
+        buffer.put(data);
         capture.parse(buffer);
         assertEquals(0, capture.framesQueue.size());
         assertEquals(0, buffer.remaining());
 
         data.limit(6);
-        BufferUtil.append(buffer, data);
+        buffer.put(data);
         capture.parse(buffer);
         assertEquals(0, capture.framesQueue.size());
         assertEquals(0, buffer.remaining());
 
         data.limit(limit);
-        BufferUtil.append(buffer, data);
+        buffer.put(data);
         capture.parse(buffer);
         assertEquals(1, capture.framesQueue.size());
         assertEquals(0, buffer.remaining());
 
         capture.assertHasFrame(OpCode.TEXT, 1);
-        Frame.Parsed text = (Frame.Parsed)capture.framesQueue.take();
-        assertEquals("Hello World", text.getPayloadAsUTF8());
-        assertThat(text.getPayload().array(), not(sameInstance(buffer.array())));
-        assertTrue(text.isReleaseable());
+        try (ParsedFrame text = (ParsedFrame)capture.framesQueue.take())
+        {
+            assertEquals("Hello World", text.getPayloadAsUTF8());
+        }
     }
 
     @Test
@@ -1686,49 +1680,51 @@ public class ParserTest
     {
         ByteBuffer data = generate(OpCode.PING, "Hello World");
         int limit = data.limit();
-        ByteBuffer buffer = BufferUtil.allocate(32);
+        byte[] array = new byte[32];
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.wrap(array);
 
-        ParserCapture capture = new ParserCapture(false);
+        ParserCapture capture = new ParserCapture();
 
         data.limit(5);
-        BufferUtil.append(buffer, data);
+        buffer.put(data);
         capture.parse(buffer);
         assertEquals(0, capture.framesQueue.size());
         assertEquals(0, buffer.remaining());
 
         data.limit(6);
-        BufferUtil.append(buffer, data);
+        buffer.put(data);
         capture.parse(buffer);
         assertEquals(0, capture.framesQueue.size());
         assertEquals(0, buffer.remaining());
 
         data.limit(limit);
-        BufferUtil.append(buffer, data);
+        buffer.put(data);
         capture.parse(buffer);
         assertEquals(1, capture.framesQueue.size());
         assertEquals(0, buffer.remaining());
 
         capture.assertHasFrame(OpCode.PING, 1);
-        Frame.Parsed text = (Frame.Parsed)capture.framesQueue.take();
-        assertEquals("Hello World", text.getPayloadAsUTF8());
-        assertThat(text.getPayload().array(), not(sameInstance(buffer.array())));
-        assertTrue(text.isReleaseable());
+        try (ParsedFrame text = (ParsedFrame)capture.framesQueue.take())
+        {
+            assertEquals("Hello World", text.getPayloadAsUTF8());
+        }
     }
 
-    private ByteBuffer generate(Behavior behavior, List<Frame> frames)
+    private RetainableByteBuffer.Mutable generate(Behavior behavior, List<Frame> frames)
     {
         Generator generator = new Generator();
-        int length = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
-        ByteBuffer buffer = BufferUtil.allocate(length);
+        int length = Math.toIntExact(frames.stream().mapToLong(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum());
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(length, false);
         frames.stream()
-            .peek(frame -> maskIfClient(behavior, frame))
+            .map(frame -> maskIfClient(behavior, frame))
             .forEach(frame -> generator.generateWholeFrame(frame, buffer));
         return buffer;
     }
 
-    private void maskIfClient(Behavior behavior, Frame frame)
+    private Frame maskIfClient(Behavior behavior, Frame frame)
     {
         if (behavior == Behavior.CLIENT)
-            frame.setMask(new byte[]{0x11, 0x22, 0x33, 0x44});
+            return frame.withMask(new byte[]{0x11, 0x22, 0x33, 0x44});
+        return frame;
     }
 }

@@ -14,17 +14,14 @@
 package org.eclipse.jetty.websocket.core.extensions;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Configuration.ConfigurationCustomizer;
 import org.eclipse.jetty.websocket.core.DemandingIncomingFramesCapture;
@@ -60,7 +57,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     private void assertEndsWithTail(String hexStr, boolean expectedResult)
     {
-        ByteBuffer buf = ByteBuffer.wrap(StringUtil.fromHexString(hexStr));
+        RetainableByteBuffer buf = RetainableByteBuffer.wrap(StringUtil.fromHexString(hexStr));
         assertThat("endsWithTail([" + hexStr + "])", PerMessageDeflateExtension.endsWithTail(buf), is(expectedResult));
     }
 
@@ -115,8 +112,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
             "0x80 0x04 0xc9 0xc9 0x07 0x00");
 
         tester.assertHasFrames(
-            new Frame(OpCode.TEXT).setPayload("He").setFin(false),
-            new Frame(OpCode.CONTINUATION).setPayload("llo").setFin(true));
+            new Frame(OpCode.TEXT, false, "He"),
+            new Frame(OpCode.CONTINUATION, true, "llo"));
     }
 
     /**
@@ -298,22 +295,25 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         coreSession.demand();
 
         String payload = "Are you there?";
-        Frame ping = new Frame(OpCode.PING).setPayload(payload);
-        ext.onFrame(ping, Callback.NOOP);
+        try (Frame ping = new Frame(OpCode.PING, payload))
+        {
+            ext.onFrame(ping, Callback.NOOP);
+        }
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);
-        Frame actual = capture.frames.poll();
+        try (Frame actual = capture.frames.poll())
+        {
+            assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+            assertThat("Frame.fin", actual.isFin(), is(true));
+            assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+            assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+            assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
-        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
-        assertThat("Frame.fin", actual.isFin(), is(true));
-        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
-
-        ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
-        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+            String expected = payload;
+            assertThat("Frame.payloadLength", actual.getPayloadLength(), is((long)expected.length()));
+            assertThat("Frame.payload", actual.getPayloadAsUTF8(), is(expected));
+        }
     }
 
     /**
@@ -344,9 +344,11 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         // leave frames as-is, no compression, and pass into extension
         for (String q : quote)
         {
-            Frame frame = new Frame(OpCode.TEXT).setPayload(q);
-            frame.setRsv1(false); // indication to extension that frame is not compressed (ie: a normal frame)
-            ext.onFrame(frame, Callback.NOOP);
+            // RSV1 not set: indication to extension that frame is not compressed (ie: a normal frame).
+            try (Frame frame = new Frame(OpCode.TEXT, q))
+            {
+                ext.onFrame(frame, Callback.NOOP);
+            }
         }
 
         int len = quote.size();
@@ -355,19 +357,22 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         String prefix;
         int i = 0;
-        for (Frame actual : capture.frames)
+        for (Frame captured : capture.frames)
         {
-            prefix = "Frame[" + i + "]";
+            try (Frame actual = captured)
+            {
+                prefix = "Frame[" + i + "]";
 
-            assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
-            assertThat(prefix + ".fin", actual.isFin(), is(true));
-            assertThat(prefix + ".rsv1", actual.isRsv1(), is(false));
-            assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
-            assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
+                assertThat(prefix + ".opcode", actual.getOpCode(), is(OpCode.TEXT));
+                assertThat(prefix + ".fin", actual.isFin(), is(true));
+                assertThat(prefix + ".rsv1", actual.isRsv1(), is(false));
+                assertThat(prefix + ".rsv2", actual.isRsv2(), is(false));
+                assertThat(prefix + ".rsv3", actual.isRsv3(), is(false));
 
-            ByteBuffer expected = BufferUtil.toBuffer(quote.get(i), StandardCharsets.UTF_8);
-            assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-            ByteBufferAssert.assertEquals(prefix + ".payload", expected, actual.getPayload().slice());
+                String expected = quote.get(i);
+                assertThat(prefix + ".payloadLength", actual.getPayloadLength(), is((long)expected.length()));
+                assertThat(prefix + ".payload", actual.getPayloadAsUTF8(), is(expected));
+            }
             i++;
         }
     }
@@ -388,21 +393,23 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         // Simulate initial demand from onOpen().
         coreSession.demand();
 
-        Frame ping = new Frame(OpCode.TEXT);
-        ping.setRsv1(true);
-        ext.onFrame(ping, Callback.NOOP);
+        try (Frame frame = new Frame(OpCode.TEXT, true, true, RetainableByteBuffer.empty()))
+        {
+            ext.onFrame(frame, Callback.NOOP);
+        }
 
         capture.assertFrameCount(1);
-        Frame actual = capture.frames.poll();
+        try (Frame actual = capture.frames.poll())
+        {
+            assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
+            assertThat("Frame.fin", actual.isFin(), is(true));
+            assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+            assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+            assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
-        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
-        assertThat("Frame.fin", actual.isFin(), is(true));
-        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
-
-        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(0));
-        assertThat("Frame.payload", actual.getPayload(), is(BufferUtil.EMPTY_BUFFER));
+            assertThat("Frame.payloadLength", actual.getPayloadLength(), is(0L));
+            assertThat("Frame.hasPayload", actual.hasPayload(), is(false));
+        }
     }
 
     /**
@@ -424,24 +431,26 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = new Frame(OpCode.PING).setPayload(payload);
-
-        ext.sendFrame(ping, Callback.NOOP, false);
+        try (Frame ping = new Frame(OpCode.PING, payload))
+        {
+            ext.sendFrame(ping, Callback.NOOP, false);
+        }
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);
 
-        Frame actual = capture.frames.poll();
+        try (Frame actual = capture.frames.poll())
+        {
+            assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+            assertThat("Frame.fin", actual.isFin(), is(true));
+            assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+            assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+            assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
-        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
-        assertThat("Frame.fin", actual.isFin(), is(true));
-        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
-
-        ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
-        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+            String expected = payload;
+            assertThat("Frame.payloadLength", actual.getPayloadLength(), is((long)expected.length()));
+            assertThat("Frame.payload", actual.getPayloadAsUTF8(), is(expected));
+        }
     }
 
     /**
@@ -471,28 +480,32 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
         capture.assertFrameCount(3);
 
-        Frame capturedFrame;
+        try (Frame capturedFrame = capture.frames.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame.opcode", capturedFrame.getOpCode(), is(OpCode.TEXT));
+            assertThat("Frame.fin", capturedFrame.isFin(), is(false));
+            assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(true));
+            assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
+            assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
+        }
 
-        capturedFrame = capture.frames.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.opcode", capturedFrame.getOpCode(), is(OpCode.TEXT));
-        assertThat("Frame.fin", capturedFrame.isFin(), is(false));
-        assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(true));
-        assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
-        assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
+        try (Frame capturedFrame = capture.frames.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame.opcode", capturedFrame.getOpCode(), is(OpCode.CONTINUATION));
+            assertThat("Frame.fin", capturedFrame.isFin(), is(false));
+            assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(false));
+            assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
+            assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
+        }
 
-        capturedFrame = capture.frames.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.opcode", capturedFrame.getOpCode(), is(OpCode.CONTINUATION));
-        assertThat("Frame.fin", capturedFrame.isFin(), is(false));
-        assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(false));
-        assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
-        assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
-
-        capturedFrame = capture.frames.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame.opcode", capturedFrame.getOpCode(), is(OpCode.CONTINUATION));
-        assertThat("Frame.fin", capturedFrame.isFin(), is(true));
-        assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(false));
-        assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
-        assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
+        try (Frame capturedFrame = capture.frames.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame.opcode", capturedFrame.getOpCode(), is(OpCode.CONTINUATION));
+            assertThat("Frame.fin", capturedFrame.isFin(), is(true));
+            assertThat("Frame.rsv1", capturedFrame.isRsv1(), is(false));
+            assertThat("Frame.rsv2", capturedFrame.isRsv2(), is(false));
+            assertThat("Frame.rsv3", capturedFrame.isRsv3(), is(false));
+        }
     }
 
     @Test
@@ -509,20 +522,23 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         // Wire up stack
         ext.setNextOutgoingFrames(capture);
 
-        Frame frame = new Frame(OpCode.TEXT);
-        ext.sendFrame(frame, Callback.NOOP, false);
+        try (Frame frame = new Frame(OpCode.TEXT))
+        {
+            ext.sendFrame(frame, Callback.NOOP, false);
+        }
 
         capture.assertFrameCount(1);
-        Frame actual = capture.frames.poll();
+        try (Frame actual = capture.frames.poll())
+        {
+            assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
+            assertThat("Frame.fin", actual.isFin(), is(true));
+            assertThat("Frame.rsv1", actual.isRsv1(), is(true));
+            assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+            assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
-        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.TEXT));
-        assertThat("Frame.fin", actual.isFin(), is(true));
-        assertThat("Frame.rsv1", actual.isRsv1(), is(true));
-        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
-
-        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(1));
-        //assertThat("Frame.payload", actual.getPayload(), is(BufferUtil.EMPTY_BUFFER));
+            assertThat("Frame.payloadLength", actual.getPayloadLength(), is(1L));
+            //assertThat("Frame.payload", actual.getPayload(), is(BufferUtil.EMPTY_BUFFER));
+        }
     }
 
     @Test

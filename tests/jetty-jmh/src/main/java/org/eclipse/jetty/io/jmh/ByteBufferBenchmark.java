@@ -62,7 +62,7 @@ public class ByteBufferBenchmark
     {
         buffer.clear();
         byte[] array = buffer.array();
-        int offset = buffer.arrayOffset();
+        int offset = buffer.arrayOffset() + buffer.position();
         int end = offset + buffer.remaining();
         while (offset < end)
         {
@@ -77,7 +77,7 @@ public class ByteBufferBenchmark
 
         long sum = 0;
         array = buffer.array();
-        offset = buffer.arrayOffset();
+        offset = buffer.arrayOffset() + buffer.position();
         end = offset + buffer.remaining();
 
         while (offset < end)

@@ -23,6 +23,7 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -61,7 +62,17 @@ public class WebSocketServerTest extends WebSocketTester
         {
             public void onFrame(Frame frame, Callback callback)
             {
-                getCoreSession().sendFrame(Frame.copy(frame), Callback.NOOP, false);
+                // Echo a slice of the payload, so that the stored frame is not consumed.
+                try (RetainableByteBuffer payload = frame.acquire())
+                {
+                    try (RetainableByteBuffer slice = payload.slice())
+                    {
+                        try (Frame echo = new Frame(frame.getOpCode(), frame.isFin(), slice))
+                        {
+                            getCoreSession().sendFrame(echo, Callback.NOOP, false);
+                        }
+                    }
+                }
                 super.onFrame(frame, callback);
             }
         };
@@ -73,19 +84,25 @@ public class WebSocketServerTest extends WebSocketTester
         {
             client.getOutputStream().write(RawFrameBuilder.buildText("Hello!", true));
 
-            Frame frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS);
-            assertNotNull(frame);
+            try (Frame frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS))
+            {
+                assertNotNull(frame);
+            }
 
-            frame = receiveFrame(client.getInputStream());
-            assertNotNull(frame);
-            assertThat(frame.getPayloadAsUTF8(), is("Hello!"));
+            try (Frame frame = receiveFrame(client.getInputStream()))
+            {
+                assertNotNull(frame);
+                assertThat(frame.getPayloadAsUTF8(), is("Hello!"));
+            }
 
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
             assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
-            frame = receiveFrame(client.getInputStream());
-            assertNotNull(frame);
-            MatcherAssert.assertThat(frame.getOpCode(), Matchers.is(OpCode.CLOSE));
-            assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.NORMAL));
+            try (Frame frame = receiveFrame(client.getInputStream()))
+            {
+                assertNotNull(frame);
+                MatcherAssert.assertThat(frame.getOpCode(), Matchers.is(OpCode.CLOSE));
+                assertThat(CloseStatus.from(frame).getCode(), is(CloseStatus.NORMAL));
+            }
         }
     }
 
@@ -108,33 +125,43 @@ public class WebSocketServerTest extends WebSocketTester
         {
             client.getOutputStream().write(RawFrameBuilder.buildText("Hello", true));
 
-            Frame frame = serverHandler.receivedFrames.poll(250, TimeUnit.MILLISECONDS);
-            assertNull(frame);
+            try (Frame frame = serverHandler.receivedFrames.poll(250, TimeUnit.MILLISECONDS))
+            {
+                assertNull(frame);
+            }
 
             serverHandler.getCoreSession().demand();
-            frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS);
-            assertNotNull(frame);
-            assertThat(frame.getPayloadAsUTF8(), is("Hello"));
+            try (Frame frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS))
+            {
+                assertNotNull(frame);
+                assertThat(frame.getPayloadAsUTF8(), is("Hello"));
+            }
 
             client.getOutputStream().write(RawFrameBuilder.buildText("World", true));
             serverHandler.getCoreSession().demand();
-            frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS);
-            assertNotNull(frame);
-            assertThat(frame.getPayloadAsUTF8(), is("World"));
+            try (Frame frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS))
+            {
+                assertNotNull(frame);
+                assertThat(frame.getPayloadAsUTF8(), is("World"));
+            }
 
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
             assertFalse(serverHandler.closed.await(250, TimeUnit.MILLISECONDS));
 
             serverHandler.getCoreSession().demand();
             assertTrue(serverHandler.closed.await(10, TimeUnit.SECONDS));
-            frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS);
-            assertNotNull(frame);
-            assertThat(frame.getOpCode(), is(OpCode.CLOSE));
+            try (Frame frame = serverHandler.receivedFrames.poll(10, TimeUnit.SECONDS))
+            {
+                assertNotNull(frame);
+                assertThat(frame.getOpCode(), is(OpCode.CLOSE));
+            }
 
-            frame = receiveFrame(client.getInputStream());
-            assertNotNull(frame);
-            assertThat(frame.getOpCode(), is(OpCode.CLOSE));
-            assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.NORMAL));
+            try (Frame frame = receiveFrame(client.getInputStream()))
+            {
+                assertNotNull(frame);
+                assertThat(frame.getOpCode(), is(OpCode.CLOSE));
+                assertThat(CloseStatus.from(frame).getCode(), is(CloseStatus.NORMAL));
+            }
         }
     }
 
@@ -148,7 +175,9 @@ public class WebSocketServerTest extends WebSocketTester
             @Override
             public void onFrame(Frame frame, Callback callback)
             {
-                LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+                LOG.info("onFrame: {}", frame);
+                // The frame is stored, so it must be retained.
+                frame.retain();
                 receivedFrames.offer(frame);
                 receivedCallbacks.offer(callback);
                 demand();
@@ -207,7 +236,7 @@ public class WebSocketServerTest extends WebSocketTester
             Frame frame = receiveFrame(client.getInputStream());
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.CLOSE));
-            assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.PROTOCOL));
+            assertThat(CloseStatus.from(frame).getCode(), is(CloseStatus.PROTOCOL));
         }
     }
 
@@ -227,7 +256,7 @@ public class WebSocketServerTest extends WebSocketTester
             Frame frame = receiveFrame(client.getInputStream());
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.CLOSE));
-            assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.PROTOCOL));
+            assertThat(CloseStatus.from(frame).getCode(), is(CloseStatus.PROTOCOL));
         }
     }
 
@@ -247,9 +276,11 @@ public class WebSocketServerTest extends WebSocketTester
             @Override
             public void onFrame(Frame frame, Callback callback)
             {
-                LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+                LOG.info("onFrame: {}", frame);
                 // Update receivedCallbacks first as its size is asserted right after receivedFrames is polled.
                 receivedCallbacks.offer(callback);
+                // The frame is stored, so it must be retained.
+                frame.retain();
                 receivedFrames.offer(frame);
             }
 
@@ -277,8 +308,10 @@ public class WebSocketServerTest extends WebSocketTester
             for (int i = 0; i < 3; i++)
             {
                 serverHandler.getCoreSession().demand();
-                Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
-                assertNotNull(frame);
+                try (Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS))
+                {
+                    assertNotNull(frame);
+                }
             }
             assertThat(receivedCallbacks.size(), is(3));
 
@@ -315,7 +348,9 @@ public class WebSocketServerTest extends WebSocketTester
             @Override
             public void onFrame(Frame frame, Callback callback)
             {
-                LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+                LOG.info("onFrame: {}", frame);
+                // The frame is stored, so it must be retained.
+                frame.retain();
                 receivedFrames.offer(frame);
                 receivedCallbacks.offer(callback);
                 demand();
@@ -341,7 +376,10 @@ public class WebSocketServerTest extends WebSocketTester
             assertThat(serverHandler.receivedFrames.size(), is(2));
             assertThat(receivedCallbacks.size(), is(2));
 
-            assertThat(serverHandler.receivedFrames.poll().getPayloadAsUTF8(), is("Hello"));
+            try (Frame received = serverHandler.receivedFrames.poll())
+            {
+                assertThat(received.getPayloadAsUTF8(), is("Hello"));
+            }
             receivedCallbacks.poll().succeeded();
 
             serverHandler.getCoreSession().sendFrame(CloseStatus.toFrame(CloseStatus.SHUTDOWN, "Test Close"), Callback.NOOP, false);
@@ -349,12 +387,15 @@ public class WebSocketServerTest extends WebSocketTester
             Frame frame = receiveFrame(client.getInputStream());
             assertNotNull(frame);
             assertThat(frame.getOpCode(), is(OpCode.CLOSE));
-            assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.SHUTDOWN));
+            assertThat(CloseStatus.from(frame).getCode(), is(CloseStatus.SHUTDOWN));
 
             assertTrue(serverHandler.closed.await(10, TimeUnit.SECONDS));
             assertThat(closedStatus.get().getCode(), is(CloseStatus.SHUTDOWN));
 
-            assertThat(serverHandler.receivedFrames.poll().getOpCode(), is(OpCode.CLOSE));
+            try (Frame received = serverHandler.receivedFrames.poll())
+            {
+                assertThat(received.getOpCode(), is(OpCode.CLOSE));
+            }
             receivedCallbacks.poll().succeeded();
         }
     }
@@ -376,7 +417,9 @@ public class WebSocketServerTest extends WebSocketTester
             @Override
             public void onFrame(Frame frame, Callback callback)
             {
-                LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
+                LOG.info("onFrame: {}", frame);
+                // The frame is stored, so it must be retained.
+                frame.retain();
                 receivedFrames.offer(frame);
                 receivedCallbacks.offer(callback);
                 demand();
@@ -402,7 +445,10 @@ public class WebSocketServerTest extends WebSocketTester
             assertThat(serverHandler.receivedFrames.size(), is(2));
             assertThat(receivedCallbacks.size(), is(2));
 
-            assertThat(serverHandler.receivedFrames.poll().getPayloadAsUTF8(), is("Hello"));
+            try (Frame received = serverHandler.receivedFrames.poll())
+            {
+                assertThat(received.getPayloadAsUTF8(), is("Hello"));
+            }
             receivedCallbacks.poll().succeeded();
 
             serverHandler.getCoreSession().sendFrame(new Frame(OpCode.TEXT, "Ciao"), Callback.NOOP, false);
@@ -411,7 +457,10 @@ public class WebSocketServerTest extends WebSocketTester
             assertNotNull(frame);
             assertThat(frame.getPayloadAsUTF8(), is("Ciao"));
 
-            assertThat(serverHandler.receivedFrames.poll().getOpCode(), is(OpCode.CLOSE));
+            try (Frame received = serverHandler.receivedFrames.poll())
+            {
+                assertThat(received.getOpCode(), is(OpCode.CLOSE));
+            }
             receivedCallbacks.poll().succeeded();
 
             frame = receiveFrame(client.getInputStream());

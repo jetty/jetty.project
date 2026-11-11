@@ -19,11 +19,14 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -33,7 +36,6 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.HTTP3SessionClient;
 import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
@@ -41,8 +43,13 @@ import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.util.ErrorCode;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Blocker;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -52,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientServerTest extends AbstractClientServerTest
@@ -235,19 +243,19 @@ public class ClientServerTest extends AbstractClientServerTest
                     public void onDataAvailable(Stream.Server stream)
                     {
                         // FlowControl acknowledged already.
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            // Call me again when you have data.
-                            stream.demand();
-                            return;
+                            if (chunk == null)
+                            {
+                                // Call me again when you have data.
+                                stream.demand();
+                                return;
+                            }
+                            if (chunk.isLast())
+                                serverLatch.get().countDown();
+                            else
+                                stream.demand();
                         }
-                        // Recycle the ByteBuffer in the chunk.
-                        chunk.release();
-                        if (chunk.isLast())
-                            serverLatch.get().countDown();
-                        else
-                            stream.demand();
                     }
                 };
             }
@@ -266,7 +274,7 @@ public class ClientServerTest extends AbstractClientServerTest
             }
         };
         Stream stream1 = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, streamListener, p));
-        stream1.data(new DataFrame(ByteBuffer.allocate(8192), true), Promise.Invocable.noop());
+        stream1.data(RetainableByteBuffer.allocate(8192, false), true, Promise.Invocable.noop());
 
         assertTrue(clientLatch.get().await(5, TimeUnit.SECONDS));
         assertTrue(serverLatch.get().await(5, TimeUnit.SECONDS));
@@ -275,10 +283,10 @@ public class ClientServerTest extends AbstractClientServerTest
         serverLatch.set(new CountDownLatch(1));
         clientLatch.set(new CountDownLatch(1));
         Stream stream2 = Blocker.blockWithPromise(5, TimeUnit.SECONDS, p -> session.newRequest(frame, streamListener, p));
-        stream2.data(new DataFrame(ByteBuffer.allocate(3 * 1024), false), Promise.Invocable.noop());
+        stream2.data(RetainableByteBuffer.allocate(3 * 1024, false), false, Promise.Invocable.noop());
         // Wait some time before sending the second chunk.
         Thread.sleep(500);
-        stream2.data(new DataFrame(ByteBuffer.allocate(5 * 1024), true), Promise.Invocable.noop());
+        stream2.data(RetainableByteBuffer.allocate(5 * 1024, false), true, Promise.Invocable.noop());
 
         assertTrue(clientLatch.get().await(5, TimeUnit.SECONDS));
         assertTrue(serverLatch.get().await(5, TimeUnit.SECONDS));
@@ -316,23 +324,28 @@ public class ClientServerTest extends AbstractClientServerTest
                     public void onDataAvailable(Stream.Server stream)
                     {
                         // Read data.
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            stream.demand();
-                            return;
-                        }
-                        // Echo it back, then release, then demand only when the write is finished.
-                        stream.data(new DataFrame(chunk.getByteBuffer(), chunk.isLast()), Promise.Invocable.from(chunk::release, new Promise.Invocable.NonBlocking<>()
-                        {
-                            @Override
-                            public void succeeded(Stream result)
+                            if (chunk == null)
                             {
-                                // Demand only if successful and not last.
-                                if (!chunk.isLast())
-                                    stream.demand();
+                                stream.demand();
+                                return;
                             }
-                        }));
+                            try (RetainableByteBuffer buffer = chunk.acquire())
+                            {
+                                // Echo it back, then release, then demand only when the write is finished.
+                                stream.data(buffer, chunk.isLast(), new Promise.Invocable.NonBlocking<>()
+                                {
+                                    @Override
+                                    public void succeeded(Stream result)
+                                    {
+                                        // Demand only if successful and not last.
+                                        if (!chunk.isLast())
+                                            stream.demand();
+                                    }
+                                });
+                            }
+                        }
                     }
                 };
             }
@@ -360,22 +373,26 @@ public class ClientServerTest extends AbstractClientServerTest
             public void onDataAvailable(Stream.Client stream)
             {
                 // Read data.
-                Content.Chunk chunk = stream.read();
-                if (chunk == null)
+                try (Content.Chunk chunk = stream.read())
                 {
-                    stream.demand();
-                    return;
+                    if (chunk == null)
+                    {
+                        stream.demand();
+                        return;
+                    }
+                    // Consume data.
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        buffer.putTo(byteBuffer);
+                        if (chunk.isLast())
+                            clientDataLatch.countDown();
+                        else
+                            stream.demand();
+                    }
                 }
-                // Consume data.
-                byteBuffer.put(chunk.getByteBuffer());
-                chunk.release();
-                if (chunk.isLast())
-                    clientDataLatch.countDown();
-                else
-                    stream.demand();
             }
         }, p));
-        stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true), Promise.Invocable.noop());
+        stream.data(RetainableByteBuffer.wrap(bytesSent), true, Promise.Invocable.noop());
 
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientDataLatch.await(15, TimeUnit.SECONDS));
@@ -581,14 +598,16 @@ public class ClientServerTest extends AbstractClientServerTest
                     {
                         // Calling read() triggers the read+parse
                         // of the trailer, and returns EOF.
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            stream.demand();
-                            return;
+                            if (chunk == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
+                            assertTrue(chunk.isLast());
+                            assertFalse(chunk.hasRemaining());
                         }
-                        assertTrue(chunk.isLast());
-                        assertFalse(chunk.getByteBuffer().hasRemaining());
                     }
 
                     @Override
@@ -652,17 +671,18 @@ public class ClientServerTest extends AbstractClientServerTest
                         {
                             while (true)
                             {
-                                Content.Chunk chunk = stream.read();
-                                if (chunk == null)
+                                try (Content.Chunk chunk = stream.read())
                                 {
-                                    Thread.sleep(100);
-                                    continue;
-                                }
-                                chunk.release();
-                                if (chunk.isLast())
-                                {
-                                    stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
-                                    break;
+                                    if (chunk == null)
+                                    {
+                                        Thread.sleep(100);
+                                        continue;
+                                    }
+                                    if (chunk.isLast())
+                                    {
+                                        stream.respond(new HeadersFrame(new MetaData.Response(HttpStatus.OK_200, null, HttpVersion.HTTP_3, HttpFields.EMPTY), true), Promise.Invocable.noop());
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -688,10 +708,10 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(requestLatch.await(5, TimeUnit.SECONDS));
 
         Thread.sleep(500);
-        clientStream.data(new DataFrame(ByteBuffer.allocate(1024), false), Promise.Invocable.noop());
+        clientStream.data(RetainableByteBuffer.allocate(1024, false), false, Promise.Invocable.noop());
 
         Thread.sleep(500);
-        clientStream.data(new DataFrame(ByteBuffer.allocate(512), true), Promise.Invocable.noop());
+        clientStream.data(RetainableByteBuffer.allocate(512, false), true, Promise.Invocable.noop());
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
@@ -715,5 +735,262 @@ public class ClientServerTest extends AbstractClientServerTest
             }
         });
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testEmptyLastWriteDoesNotSendDataAfterEndOfStream(TransportType transportType) throws Exception
+    {
+        AtomicReference<Throwable> serverWriteFailure = new AtomicReference<>();
+        CountDownLatch serverWriteLatch = new CountDownLatch(1);
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // A last write of an empty, non-null buffer, as done for example by servlet close().
+                response.write(true, RetainableByteBuffer.empty(), Callback.from(() ->
+                {
+                    serverWriteLatch.countDown();
+                    callback.succeeded();
+                }, x ->
+                {
+                    serverWriteFailure.set(x);
+                    serverWriteLatch.countDown();
+                    callback.failed(x);
+                }));
+                return true;
+            }
+        });
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+
+        AtomicReference<Throwable> clientFailure = new AtomicReference<>();
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                // There is no content, so the HEADERS frame must end the stream.
+                assertTrue(frame.isLast());
+                responseLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
+            {
+                clientFailure.set(failure);
+            }
+        }, p));
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverWriteLatch.await(5, TimeUnit.SECONDS));
+        // Writing a DATA frame after the end of the stream fails the server write.
+        assertNull(serverWriteFailure.get());
+        assertNull(clientFailure.get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testHEADWithLastWriteDoesNotSendContent(TransportType transportType) throws Exception
+    {
+        byte[] bytes = new byte[512];
+        new Random().nextBytes(bytes);
+        AtomicReference<Throwable> serverWriteFailure = new AtomicReference<>();
+        CountDownLatch serverWriteLatch = new CountDownLatch(1);
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                response.write(true, RetainableByteBuffer.wrap(bytes), Callback.from(() ->
+                {
+                    serverWriteLatch.countDown();
+                    callback.succeeded();
+                }, x ->
+                {
+                    serverWriteFailure.set(x);
+                    serverWriteLatch.countDown();
+                    callback.failed(x);
+                }));
+                return true;
+            }
+        });
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+
+        AtomicLong contentBytes = new AtomicLong();
+        AtomicReference<Throwable> clientFailure = new AtomicReference<>();
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(new HeadersFrame(newRequest(HttpMethod.HEAD, "/"), true), new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertEquals(bytes.length, response.getContentLength());
+                assertTrue(frame.isLast());
+                responseLatch.countDown();
+            }
+
+            @Override
+            public void onDataAvailable(Stream.Client stream)
+            {
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk != null)
+                        contentBytes.addAndGet(chunk.remaining());
+                    if (chunk == null || !chunk.isLast())
+                        stream.demand();
+                }
+            }
+
+            @Override
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
+            {
+                clientFailure.set(failure);
+            }
+        }, p));
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverWriteLatch.await(5, TimeUnit.SECONDS));
+        assertNull(serverWriteFailure.get());
+        assertNull(clientFailure.get());
+        assertEquals(0L, contentBytes.get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testHEADWithMultipleWritesDoesNotSendContent(TransportType transportType) throws Exception
+    {
+        byte[] bytes = new byte[512];
+        new Random().nextBytes(bytes);
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // The first write sends the headers, the second write sends the content.
+                response.write(false, RetainableByteBuffer.wrap(bytes), Callback.from(() ->
+                    response.write(true, RetainableByteBuffer.wrap(bytes), callback), callback::failed));
+                return true;
+            }
+        });
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+
+        AtomicLong contentBytes = new AtomicLong();
+        AtomicReference<Throwable> clientFailure = new AtomicReference<>();
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        CountDownLatch lastLatch = new CountDownLatch(1);
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(new HeadersFrame(newRequest(HttpMethod.HEAD, "/"), true), new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                responseLatch.countDown();
+                if (frame.isLast())
+                    lastLatch.countDown();
+                else
+                    stream.demand();
+            }
+
+            @Override
+            public void onDataAvailable(Stream.Client stream)
+            {
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk != null)
+                        contentBytes.addAndGet(chunk.remaining());
+                    if (chunk != null && chunk.isLast())
+                        lastLatch.countDown();
+                    else
+                        stream.demand();
+                }
+            }
+
+            @Override
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
+            {
+                clientFailure.set(failure);
+            }
+        }, p));
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(lastLatch.await(5, TimeUnit.SECONDS));
+        assertNull(clientFailure.get());
+        assertEquals(0L, contentBytes.get());
+    }
+
+    @ParameterizedTest
+    @MethodSource("transports")
+    public void testTunnelEmptyLastWriteDoesNotEndStream(TransportType transportType) throws Exception
+    {
+        AtomicReference<Throwable> serverWriteFailure = new AtomicReference<>();
+        CountDownLatch serverWriteLatch = new CountDownLatch(1);
+        start(transportType, new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // For a tunnel, the last write must send the 2xx
+                // response headers without ending the stream.
+                response.write(true, RetainableByteBuffer.empty(), Callback.from(() ->
+                {
+                    serverWriteLatch.countDown();
+                    callback.succeeded();
+                }, x ->
+                {
+                    serverWriteFailure.set(x);
+                    serverWriteLatch.countDown();
+                    callback.failed(x);
+                }));
+                return true;
+            }
+        });
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+
+        HostPortHttpField authority = new HostPortHttpField("localhost:" + connector.getLocalPort());
+        MetaData.Request request = new MetaData.ConnectRequest(HttpScheme.HTTPS, authority, null, HttpFields.EMPTY, null);
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        CountDownLatch endLatch = new CountDownLatch(1);
+        Blocker.<Stream>blockWithPromise(5, TimeUnit.SECONDS, p -> clientSession.newRequest(new HeadersFrame(request, false), new Stream.Client.Listener()
+        {
+            @Override
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
+            {
+                MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                if (frame.isLast())
+                    endLatch.countDown();
+                responseLatch.countDown();
+                stream.demand();
+            }
+
+            @Override
+            public void onDataAvailable(Stream.Client stream)
+            {
+                try (Content.Chunk chunk = stream.read())
+                {
+                    if (chunk != null && chunk.isLast())
+                        endLatch.countDown();
+                    else
+                        stream.demand();
+                }
+            }
+        }, p));
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverWriteLatch.await(5, TimeUnit.SECONDS));
+        assertNull(serverWriteFailure.get());
+        // The tunnel must stay open after the response headers.
+        assertFalse(endLatch.await(1, TimeUnit.SECONDS));
     }
 }

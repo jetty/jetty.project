@@ -34,32 +34,33 @@ public class ContentSourceStringTest
     public void testTransientErrorsBecomeTerminalErrors() throws Exception
     {
         TimeoutException originalFailure = new TimeoutException("timeout");
-        TestSource originalSource = new TestSource(
+        try (TestSource originalSource = new TestSource(
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{'1'}), false),
             null,
             Content.Chunk.from(originalFailure, false),
             null,
             Content.Chunk.from(ByteBuffer.wrap(new byte[]{'2'}), true)
-        );
-
-        Promise.Completable<String> promise = new Promise.Completable<>();
-        ContentSourceString contentSourceString = new ContentSourceString(originalSource, StandardCharsets.US_ASCII, promise);
-        contentSourceString.convert();
-        try
+        ))
         {
-            promise.get();
-            fail();
-        }
-        catch (ExecutionException e)
-        {
-            assertThat(e.getCause(), sameInstance(originalFailure));
-        }
+            Promise.Completable<String> promise = new Promise.Completable<>();
+            ContentSourceString contentSourceString = new ContentSourceString(originalSource, StandardCharsets.US_ASCII, promise);
+            contentSourceString.convert();
+            try
+            {
+                promise.get();
+                fail();
+            }
+            catch (ExecutionException e)
+            {
+                assertThat(e.getCause(), sameInstance(originalFailure));
+            }
 
-        Content.Chunk chunk = originalSource.read();
-        assertThat(chunk.isLast(), is(true));
-        assertThat(chunk.getFailure(), sameInstance(originalFailure));
-
-        originalSource.close();
+            try (Content.Chunk chunk = originalSource.read())
+            {
+                assertThat(chunk.isLast(), is(true));
+                assertThat(chunk.getFailure(), sameInstance(originalFailure));
+            }
+        }
     }
 }

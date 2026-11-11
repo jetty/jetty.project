@@ -61,11 +61,11 @@ public class AltFilterTest
             assertThat(filterWebXml.getInitParameter("customParam"), equalTo("true"));
 
             List<Frame> send = new ArrayList<>();
-            send.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
+            send.add(new Frame(OpCode.TEXT, "Hello Echo"));
             send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
             List<Frame> expect = new ArrayList<>();
-            expect.add(new Frame(OpCode.TEXT).setPayload("Hello Echo"));
+            expect.add(new Frame(OpCode.TEXT, "Hello Echo"));
             expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
             try (WebSocketTester session = wsb.newWebSocketTester("/app/echo;jsession=xyz"))

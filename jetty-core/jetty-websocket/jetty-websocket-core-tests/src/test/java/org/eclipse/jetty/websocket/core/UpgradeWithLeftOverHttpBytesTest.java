@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
@@ -28,9 +26,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.util.WebSocketUtils;
@@ -110,8 +108,10 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         int numFrames = 1000;
         for (int i = 0; i < numFrames; i++)
         {
-            Frame frame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(Integer.toString(i)));
-            serverSocket.getOutputStream().write(toByteArray(frame));
+            try (Frame frame = new Frame(OpCode.TEXT, Integer.toString(i)))
+            {
+                serverSocket.getOutputStream().write(toByteArray(frame));
+            }
         }
         Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
         serverSocket.getOutputStream().write(toByteArray(closeFrame));
@@ -147,15 +147,17 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
             "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
             "\n";
         Frame firstFrame = new Frame(OpCode.TEXT, "first message payload");
-        byte[] bytes = combineToByteArray(BufferUtil.toBuffer(upgradeResponse), generateFrame(firstFrame));
+        byte[] bytes = combineToByteArray(RetainableByteBuffer.wrap(upgradeResponse, StandardCharsets.UTF_8), generateFrame(firstFrame));
         serverSocket.getOutputStream().write(bytes);
 
         // Now we send the rest of the data.
         int numFrames = 1000;
         for (int i = 0; i < numFrames; i++)
         {
-            Frame frame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(Integer.toString(i)));
-            serverSocket.getOutputStream().write(toByteArray(frame));
+            try (Frame frame = new Frame(OpCode.TEXT, Integer.toString(i)))
+            {
+                serverSocket.getOutputStream().write(toByteArray(frame));
+            }
         }
         Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
         serverSocket.getOutputStream().write(toByteArray(closeFrame));
@@ -218,8 +220,10 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         int numFrames = 1000;
         for (int i = 0; i < numFrames; i++)
         {
-            Frame frame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(Integer.toString(i)));
-            serverSocket.getOutputStream().write(toByteArray(frame));
+            try (Frame frame = new Frame(OpCode.TEXT, Integer.toString(i)))
+            {
+                serverSocket.getOutputStream().write(toByteArray(frame));
+            }
         }
         Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
         serverSocket.getOutputStream().write(toByteArray(closeFrame));
@@ -265,15 +269,17 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
             "Sec-WebSocket-Accept: " + getAcceptKey(upgradeRequest) + "\n" +
             "\n";
         Frame firstFrame = new Frame(OpCode.TEXT, "first message payload");
-        byte[] bytes = combineToByteArray(BufferUtil.toBuffer(upgradeResponse), generateFrame(firstFrame));
+        byte[] bytes = combineToByteArray(RetainableByteBuffer.wrap(upgradeResponse, StandardCharsets.UTF_8), generateFrame(firstFrame));
         serverSocket.getOutputStream().write(bytes);
 
         // Now we send the rest of the data.
         int numFrames = 1000;
         for (int i = 0; i < numFrames; i++)
         {
-            Frame frame = new Frame(OpCode.TEXT, BufferUtil.toBuffer(Integer.toString(i)));
-            serverSocket.getOutputStream().write(toByteArray(frame));
+            try (Frame frame = new Frame(OpCode.TEXT, Integer.toString(i)))
+            {
+                serverSocket.getOutputStream().write(toByteArray(frame));
+            }
         }
         Frame closeFrame = new CloseStatus(CloseStatus.NORMAL, "closed by test").toFrame();
         serverSocket.getOutputStream().write(toByteArray(closeFrame));
@@ -298,10 +304,10 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         assertThat(clientEndpoint.closeStatus.getReason(), is("closed by test"));
     }
 
-    public ByteBuffer generateFrame(Frame frame)
+    public RetainableByteBuffer generateFrame(Frame frame)
     {
-        int size = Generator.MAX_HEADER_LENGTH + frame.getPayloadLength();
-        ByteBuffer buffer = BufferUtil.allocate(size);
+        int size = Generator.MAX_HEADER_LENGTH + Math.toIntExact(frame.getPayloadLength());
+        RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(size, false);
         generator.generateWholeFrame(frame, buffer);
         return buffer;
     }
@@ -322,19 +328,19 @@ public class UpgradeWithLeftOverHttpBytesTest extends WebSocketTester
         return s.hasNext() ? s.next() : "";
     }
 
-    byte[] combineToByteArray(ByteBuffer... buffers) throws IOException
+    byte[] combineToByteArray(RetainableByteBuffer... buffers) throws IOException
     {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        for (ByteBuffer bb : buffers)
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.merge(buffers))
         {
-            BufferUtil.writeTo(bb, baos);
+            return buffer.getArray();
         }
-
-        return baos.toByteArray();
     }
 
     byte[] toByteArray(Frame frame)
     {
-        return BufferUtil.toArray(generateFrame(frame));
+        try (RetainableByteBuffer buffer = generateFrame(frame))
+        {
+            return buffer.getArray();
+        }
     }
 }

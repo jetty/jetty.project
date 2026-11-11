@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.junit.jupiter.api.AfterEach;
@@ -63,15 +63,19 @@ public class FrameBufferTest extends WebSocketTester
         CompletableFuture<CoreSession> connect = client.connect(clientHandler, server.getUri());
         connect.get(5, TimeUnit.SECONDS);
 
-        ByteBuffer message = BufferUtil.toBuffer("hello world");
-        ByteBuffer sendPayload = BufferUtil.copy(message);
-        clientHandler.sendFrame(new Frame(OpCode.BINARY, sendPayload), Callback.NOOP, false);
+        String message = "hello world";
+        try (RetainableByteBuffer sendPayload = RetainableByteBuffer.wrap(message, StandardCharsets.UTF_8);
+             Frame sendFrame = new Frame(OpCode.BINARY, sendPayload))
+        {
+            clientHandler.sendFrame(sendFrame, Callback.NOOP, false);
 
-        Frame frame = Objects.requireNonNull(serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS));
-
-        assertThat(frame.getOpCode(), is(OpCode.BINARY));
-        assertThat(frame.getPayload(), is(message));
-        assertThat(sendPayload.remaining(), is(0));
+            try (Frame frame = Objects.requireNonNull(serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS)))
+            {
+                assertThat(frame.getOpCode(), is(OpCode.BINARY));
+                assertThat(frame.getPayloadAsUTF8(), is(message));
+            }
+            assertThat(sendPayload.remaining(), is(0L));
+        }
 
         clientHandler.sendClose();
         assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));

@@ -13,13 +13,10 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
@@ -30,6 +27,8 @@ import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -180,7 +179,7 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
             if (_firstWrite)
             {
@@ -190,20 +189,20 @@ public class BufferedResponseHandler extends ConditionalHandler.Abstract
             }
             _lastWritten |= last;
             Content.Sink destSink = _bufferedContentSink != null ? _bufferedContentSink : getWrapped();
-            destSink.write(last, byteBuffer, callback);
+            destSink.write(last, buffer, callback);
         }
 
         private Content.Sink createBufferedSink()
         {
             Request request = getRequest();
             ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
-            ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
             HttpConfiguration httpConfiguration = connectionMetaData.getHttpConfiguration();
-            Object attribute = request.getAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME);
-            int bufferSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputBufferSize();
-            attribute = request.getAttribute(BufferedResponseHandler.MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME);
-            int maxAggregationSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputAggregationSize();
+            ByteBufferPool bufferPool = connectionMetaData.getConnector().getByteBufferPool();
             boolean direct = httpConfiguration.isUseOutputDirectByteBuffers();
+            Object attribute = request.getAttribute(BufferedResponseHandler.MAX_AGGREGATION_SIZE_ATTRIBUTE_NAME);
+            int maxAggregationSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputAggregationSize();
+            attribute = request.getAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME);
+            int bufferSize = attribute instanceof Integer ? (int)attribute : httpConfiguration.getOutputBufferSize();
             return Content.Sink.asBuffered(getWrapped(), bufferPool, direct, maxAggregationSize, bufferSize);
         }
 

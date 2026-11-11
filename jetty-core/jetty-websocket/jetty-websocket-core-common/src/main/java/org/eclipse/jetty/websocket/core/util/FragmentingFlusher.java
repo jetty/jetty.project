@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.websocket.core.util;
 
-import java.nio.ByteBuffer;
-
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -53,29 +52,35 @@ public abstract class FragmentingFlusher extends WebSocketFlusher
             }
         }
 
-        ByteBuffer payload = frame.getPayload();
-        int remaining = payload.remaining();
-        int fragmentSize = (int)Math.min(remaining, maxFrameSize);
-        byte opCode = (frame.getOpCode() == OpCode.CONTINUATION || !first) ? OpCode.CONTINUATION : frame.getOpCode();
-        Frame fragment = new Frame(opCode);
-        boolean finished = (maxFrameSize <= 0 || remaining <= maxFrameSize);
-        fragment.setFin(frame.isFin() && finished);
-
-        // If we don't need to fragment just forward with original payload.
-        if (finished)
+        try (RetainableByteBuffer payload = frame.acquire())
         {
-            fragment.setPayload(payload);
-        }
-        else
-        {
-            // Slice the fragmented payload from the buffer.
-            fragment.setPayload(payload.slice(payload.position(), fragmentSize));
-            payload.position(payload.position() + fragmentSize);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Fragmented {}->{}", frame, fragment);
-        }
+            long remaining = payload.remaining();
+            long fragmentSize = Math.min(remaining, maxFrameSize);
+            byte opCode = (frame.getOpCode() == OpCode.CONTINUATION || !first) ? OpCode.CONTINUATION : frame.getOpCode();
+            boolean finished = (maxFrameSize <= 0 || remaining <= maxFrameSize);
 
-        forwardFrame(new OutgoingEntry.Builder(entry).frame(fragment).build());
-        return finished;
+            // If we don't need to fragment just forward with original payload.
+            Frame fragment;
+            if (finished)
+            {
+                fragment = new Frame(opCode, frame.isFin(), payload);
+            }
+            else
+            {
+                // Slice the fragmented payload from the buffer.
+                try (RetainableByteBuffer slice = payload.sliceAndConsume(fragmentSize))
+                {
+                    fragment = new Frame(opCode, false, slice);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Fragmented {}->{}", frame, fragment);
+                }
+            }
+
+            try (fragment)
+            {
+                forwardFrame(new OutgoingEntry.Builder(entry).frame(fragment).build());
+                return finished;
+            }
+        }
     }
 }

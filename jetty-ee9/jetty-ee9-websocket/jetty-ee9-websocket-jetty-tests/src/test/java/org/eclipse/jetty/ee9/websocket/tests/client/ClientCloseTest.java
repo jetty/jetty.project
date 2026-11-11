@@ -483,7 +483,7 @@ public class ClientCloseTest
         {
             if (frame.getOpCode() == OpCode.CLOSE)
             {
-                CloseStatus closeInfo = new CloseStatus(frame.getPayload());
+                CloseStatus closeInfo = CloseStatus.from(frame.getPayload());
                 String reason = closeInfo.getReason();
 
                 if (reason.equals("send-more-frames"))

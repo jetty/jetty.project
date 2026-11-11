@@ -18,20 +18,23 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * Interface for dealing with frames outgoing to (eventually) the network layer.
+ * Interface for dealing with outgoing WebSocket frames,
+ * from the application to lower layers and eventually to the network.
  */
 public interface OutgoingFrames
 {
     /**
-     * A frame, callback, intended for the network layer.
-     * <p>
-     * Note: the frame can undergo many transformations in the various
-     * layers and extensions present in the implementation.
-     * <p>
-     * If you are implementing a mutation, you are obliged to handle
-     * the incoming Callback appropriately.
-     * <p>
-     * The {@link Frame}'s payload {@link ByteBuffer} is consumed by this call.
+     * <p>Processes the outgoing frame.</p>
+     * <p>Implementations are free to transform the frame, for example
+     * by splitting it or compressing its payload.</p>
+     * <p>Transforming the frame may require to handle the {@link Callback}
+     * accordingly: splitting may require to forward different callback
+     * for each split frame, failing the original one as soon as a split
+     * callback fails, but succeeding the original one only when the last
+     * split callback succeeds.</p>
+     * <p>The {@link Frame}'s payload {@link ByteBuffer} is consumed by this call.</p>
+     * <p>Failure of the callback will propagate the failure back to the {@link CoreSession}
+     * to fail the connection and attempt to send a close {@link Frame} if one has not been sent.</p>
      *
      * @param frame the frame to eventually write to the network layer.
      * @param callback the callback to notify when the frame is written.
@@ -43,11 +46,10 @@ public interface OutgoingFrames
     }
 
     /**
-     * Send an {@link OutgoingEntry} containing a {@link Frame} and {@link Callback}.
-     * <p>
-     * The {@link Frame}'s payload {@link ByteBuffer} is consumed by this call.
+     * <p>Sends an {@link OutgoingEntry} containing a {@link Frame} and {@link Callback}.</p>
+     * <p>The {@link Frame}'s payload is consumed by this call.</p>
      *
-     * @param entry the frame to eventually write to the network layer.
+     * @param entry the entry to eventually write to the network layer.
      */
     void sendFrame(OutgoingEntry entry);
 }

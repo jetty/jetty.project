@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,9 +35,9 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -60,14 +58,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class ResponseTest
 {
-    private final HttpConfiguration _httpConfiguration = new HttpConfiguration();
     private Server _server;
     private LocalConnector _connector;
 
     public void startServer(ServletContextHandler contextHandler) throws Exception
     {
         _server = new Server();
-        _connector = new LocalConnector(_server, new HttpConnectionFactory(_httpConfiguration));
+        _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
         _server.setHandler(contextHandler);
@@ -88,7 +85,7 @@ public class ResponseTest
         HttpServlet servlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.setContentType("text/plain; charset=US-ASCII");
                 response.getWriter().println("Hello");
@@ -105,7 +102,7 @@ public class ResponseTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = _connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = _connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat(response.getStatus(), is(200));
@@ -122,7 +119,7 @@ public class ResponseTest
         HttpServlet servlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 PrintWriter pw = response.getWriter();
                 pw.println("THIS TEXT SHOULD NOT APPEAR");
@@ -142,7 +139,7 @@ public class ResponseTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = _connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = _connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat(response.getStatus(), is(410));
@@ -175,8 +172,6 @@ public class ResponseTest
     @MethodSource("redirectsOld")
     public void testRedirectOld(String location, boolean relative) throws Exception
     {
-        _httpConfiguration.setRelativeRedirectAllowed(relative);
-
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/ctx");
         HttpServlet servlet = new HttpServlet()
@@ -190,6 +185,7 @@ public class ResponseTest
 
         contextHandler.addServlet(servlet, "/servlet/*");
         startServer(contextHandler);
+        _connector.getHttpConnectionFactory().getHttpConfiguration().setRelativeRedirectAllowed(relative);
 
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
@@ -198,7 +194,7 @@ public class ResponseTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = _connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = _connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
@@ -250,9 +246,6 @@ public class ResponseTest
     @MethodSource("redirects")
     public void testRedirect(int code, String location, boolean relative, boolean generate, String content) throws Exception
     {
-        _httpConfiguration.setRelativeRedirectAllowed(relative);
-        _httpConfiguration.setGenerateRedirectBody(generate);
-
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/ctx");
         HttpServlet servlet = new HttpServlet()
@@ -303,6 +296,9 @@ public class ResponseTest
 
         contextHandler.addServlet(servlet, "/servlet/*");
         startServer(contextHandler);
+        HttpConfiguration httpConfig = _connector.getHttpConnectionFactory().getHttpConfiguration();
+        httpConfig.setRelativeRedirectAllowed(relative);
+        httpConfig.setGenerateRedirectBody(generate);
 
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
@@ -311,7 +307,7 @@ public class ResponseTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = _connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = _connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat(response.getStatus(), is(code == 0 ? HttpStatus.FOUND_302 : code));
@@ -432,7 +428,7 @@ public class ResponseTest
         HttpServlet servlet = new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.setContentType("text/plain; charset=US-ASCII");
                 response.getWriter().println("Hello");
@@ -465,7 +461,7 @@ public class ResponseTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = _connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = _connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat(response.getStatus(), is(200));

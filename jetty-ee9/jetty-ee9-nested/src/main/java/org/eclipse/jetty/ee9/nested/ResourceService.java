@@ -51,7 +51,6 @@ import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.ResourceListing;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
@@ -876,11 +875,11 @@ public class ResourceService
             // this happens because Content.copy() and IOResources.copy() assume that when they
             // read a last Chunk from a Content.Source, it should be written as a last Chunk
             // to the Content.Sink.
-            Content.Sink sink = (last, byteBuffer, callback) ->
+            Content.Sink sink = (last, buffer, callback) ->
             {
                 try
                 {
-                    BufferUtil.writeTo(byteBuffer, out);
+                    buffer.putTo(out);
                     callback.succeeded();
                 }
                 catch (Throwable x)

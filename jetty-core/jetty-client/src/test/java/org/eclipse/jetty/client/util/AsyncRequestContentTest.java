@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client.util;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,6 +23,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.jetty.client.AsyncRequestContent;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +66,7 @@ public class AsyncRequestContentTest
     public void testWriteFlushDemandFlushBlocksUntilRead() throws Exception
     {
         AsyncRequestContent content = new AsyncRequestContent();
-        content.write(ByteBuffer.allocate(1), Callback.NOOP);
+        content.offer(false, RetainableByteBuffer.allocate(1, false), Callback.NOOP);
 
         Future<?> task = executor.submit(() ->
         {
@@ -84,9 +84,10 @@ public class AsyncRequestContentTest
         // Flush should block until a read() is performed.
         assertFalse(await(task, 500));
 
-        Content.Chunk chunk = content.read();
-        assertNotNull(chunk);
-        chunk.release();
+        try (Content.Chunk chunk = content.read())
+        {
+            assertNotNull(chunk);
+        }
 
         // Flush should return.
         assertTrue(await(task, 5000));

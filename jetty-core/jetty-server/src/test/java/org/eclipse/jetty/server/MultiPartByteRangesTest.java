@@ -28,12 +28,12 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartByteRanges;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -109,7 +109,7 @@ public class MultiPartByteRangesTest
             request.put(HttpHeader.HOST, "localhost");
             request.put(HttpHeader.ACCEPT_RANGES, "bytes");
             request.put(HttpHeader.RANGE, "bytes=1-2,4-6,-4");
-            socket.write(request.generate());
+            request.generate().read(socket::write);
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);

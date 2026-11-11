@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -109,8 +107,8 @@ public class QpackDecoderTest
         assertThat(metaData.getHttpFields().get("sec-fetch-dest"), equalTo("script"));
     }
     
-    private ByteBuffer fromHex(String hex)
+    private RetainableByteBuffer fromHex(String hex)
     {
-        return BufferUtil.toBuffer(StringUtil.fromHexString(hex));
+        return RetainableByteBuffer.wrap(StringUtil.fromHexString(hex));
     }
 }

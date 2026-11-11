@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -314,10 +314,12 @@ public class RequestListenersTest
             assertNotNull(callback);
             Content.Sink.write(responseRef.get(), true, "OK", callback);
 
-            HttpTester.Response response = HttpTester.parseResponse(endPoint.waitForResponse(false, 3 * idleTimeout, TimeUnit.MILLISECONDS));
-
-            assertThat(response.getStatus(), is(HttpStatus.OK_200));
-            assertThat(response.getContent(), is("OK"));
+            try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, 3 * idleTimeout, TimeUnit.MILLISECONDS))
+            {
+                HttpTester.Response response = HttpTester.parseResponse(buffer);
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                assertThat(response.getContent(), is("OK"));
+            }
         }
     }
 
@@ -411,17 +413,24 @@ public class RequestListenersTest
             Callback callback = callbackCompletable.get(5 * idleTimeout, TimeUnit.MILLISECONDS);
             Request request = requestRef.get();
 
-            Content.Chunk chunk = request.read();
-            assertNotNull(chunk);
-            assertTrue(Content.Chunk.isFailure(chunk, false));
-            chunk = request.read();
-            assertNull(chunk);
+            try (Content.Chunk chunk = request.read())
+            {
+                assertNotNull(chunk);
+                assertTrue(Content.Chunk.isFailure(chunk, false));
+            }
+
+            try (Content.Chunk chunk = request.read())
+            {
+                assertNull(chunk);
+            }
 
             callback.succeeded();
 
-            HttpTester.Response response = HttpTester.parseResponse(endPoint.waitForResponse(false, idleTimeout, TimeUnit.MILLISECONDS));
-
-            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            try (RetainableByteBuffer buffer = endPoint.awaitResponseBuffer(false, idleTimeout, TimeUnit.MILLISECONDS))
+            {
+                HttpTester.Response response = HttpTester.parseResponse(buffer);
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            }
         }
     }
 
@@ -441,8 +450,8 @@ public class RequestListenersTest
 
                 // Issue a large write that will be congested.
                 // The idle timeout should fail the write callback.
-                ByteBuffer byteBuffer = ByteBuffer.allocate(128 * 1024 * 1024);
-                response.write(false, byteBuffer, Callback.from(() -> {}, x -> writeFailed.complete(callback)));
+                RetainableByteBuffer buffer = RetainableByteBuffer.allocate(128 * 1024 * 1024, false);
+                response.write(false, buffer, Callback.from(() -> {}, x -> writeFailed.complete(callback)));
 
                 return true;
             }
@@ -450,10 +459,11 @@ public class RequestListenersTest
         long idleTimeout = 1000;
         connector.setIdleTimeout(idleTimeout);
 
-        // Do not grow the output so the response will be congested.
-        try (LocalConnector.LocalEndPoint endPoint = connector.connect(1024))
+        try (LocalConnector.LocalEndPoint endPoint = connector.connectToServer())
         {
-            endPoint.addInputAndExecute("""
+            // Limit what the server can write so the response will be congested.
+            endPoint.setRemoteEndPointMaxCapacity(1024);
+            endPoint.writeRequestString("""
                 POST / HTTP/1.1
                 Host: localhost
                 Content-Length: 1
@@ -467,19 +477,21 @@ public class RequestListenersTest
             Response response = responseRef.get();
             CountDownLatch writeFailedLatch = new CountDownLatch(1);
             // Use a non-empty buffer to avoid short-circuit the write.
-            response.write(false, ByteBuffer.allocate(16), Callback.from(() -> {}, x -> writeFailedLatch.countDown()));
+            response.write(false, RetainableByteBuffer.allocate(16, false), Callback.from(() -> {}, x -> writeFailedLatch.countDown()));
             assertTrue(writeFailedLatch.await(5, TimeUnit.SECONDS));
 
             // The write side has failed, but the read side has not.
             Request request = response.getRequest();
-            Content.Chunk chunk = request.read();
-            assertNull(chunk);
+            try (Content.Chunk chunk = request.read())
+            {
+                assertNull(chunk);
+            }
 
             // Since we cannot write, only choice is to fail the Handler callback.
             callback.failed(new IOException());
 
             // Should throw.
-            endPoint.waitForResponse(false, idleTimeout, TimeUnit.MILLISECONDS);
+            endPoint.awaitResponseBuffer(false, idleTimeout, TimeUnit.MILLISECONDS);
         }
     }
 }

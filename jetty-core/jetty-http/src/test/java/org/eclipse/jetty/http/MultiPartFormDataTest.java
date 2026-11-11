@@ -16,7 +16,6 @@ package org.eclipse.jetty.http;
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,8 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.AsyncContentSource;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.content.InputStreamContentSource;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -40,6 +38,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -115,13 +114,13 @@ public class MultiPartFormDataTest
             "Content-Disposition: form-data; name=\"fileup\"; filename=\"test.upload\"\r\n" +
             "\r\n";
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        Content.Sink.write(source, true, str, Callback.NOOP);
+        source.offer(true, str, UTF_8, Callback.NOOP);
         formData.parse(source).handle((parts, failure) ->
         {
             assertNull(parts);
@@ -145,13 +144,13 @@ public class MultiPartFormDataTest
             eol +
             "--" + boundary + "--" + eol;
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        Content.Sink.write(source, true, str, Callback.NOOP);
+        source.offer(true, str, UTF_8, Callback.NOOP);
         formData.parse(source).whenComplete((parts, failure) ->
         {
             // No errors and no parts.
@@ -171,13 +170,13 @@ public class MultiPartFormDataTest
         String str = eol +
             "--" + boundary + "--" + eol;
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        Content.Sink.write(source, true, str, Callback.NOOP);
+        source.offer(true, str, UTF_8, Callback.NOOP);
         formData.parse(source).whenComplete((parts, failure) ->
         {
             // No errors and no parts.
@@ -219,13 +218,13 @@ public class MultiPartFormDataTest
             ----\r
             """;
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        Content.Sink.write(source, true, str, Callback.NOOP);
+        source.offer(true, str, UTF_8, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
             assertThat(parts.size(), is(4));
@@ -270,12 +269,12 @@ public class MultiPartFormDataTest
             --$B--\r
             """.replace("$B", boundary);
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
-        Content.Sink.write(source, true, str, Callback.NOOP);
+        source.offer(true, str, UTF_8, Callback.NOOP);
 
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -308,13 +307,13 @@ public class MultiPartFormDataTest
             \n--BEEF--\r
             """;
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("BEEF", MultiPartCompliance.RFC7578, violations);
         formData.setMaxMemoryFileSize(-1);
-        Content.Sink.write(source, false, str1, Callback.NOOP);
-        Content.Sink.write(source, false, str2, Callback.NOOP);
-        Content.Sink.write(source, true, str3, Callback.NOOP);
+        source.offer(false, str1, UTF_8, Callback.NOOP);
+        source.offer(false, str2, UTF_8, Callback.NOOP);
+        source.offer(true, str3, UTF_8, Callback.NOOP);
 
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -347,12 +346,12 @@ public class MultiPartFormDataTest
             Hello World\n--BEEF--\r
             """;
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("BEEF", MultiPartCompliance.RFC7578, violations);
         formData.setMaxMemoryFileSize(-1);
-        Content.Sink.write(source, false, str1, Callback.NOOP);
-        Content.Sink.write(source, true, str2, Callback.NOOP);
+        source.offer(false, str1, UTF_8, Callback.NOOP);
+        source.offer(true, str2, UTF_8, Callback.NOOP);
 
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -386,11 +385,11 @@ public class MultiPartFormDataTest
 
         assertThat("multipart str cannot contain CR for this test", str, not(containsString(CR)));
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setMaxMemoryFileSize(-1);
-        Content.Sink.write(source, true, str, Callback.NOOP);
+        source.offer(true, str, UTF_8, Callback.NOOP);
 
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -424,11 +423,11 @@ public class MultiPartFormDataTest
 
         assertThat("multipart str cannot contain CR for this test", str, not(containsString(CR)));
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578_STRICT, violations);
         formData.setMaxMemoryFileSize(-1);
-        Content.Sink.write(source, true, str, Callback.NOOP);
+        source.offer(true, str, UTF_8, Callback.NOOP);
 
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
         assertThat(ee.getCause(), instanceOf(HttpException.class));
@@ -508,12 +507,12 @@ public class MultiPartFormDataTest
              --$B--\r
             """.replace("$B", boundary);
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
-        Content.Sink.write(source, true, str, Callback.NOOP);
+        source.offer(true, str, UTF_8, Callback.NOOP);
 
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get());
         assertThat(ee.getCause(), instanceOf(EOFException.class));
@@ -539,12 +538,12 @@ public class MultiPartFormDataTest
 
         assertThat("multipart str cannot contain LF for this test", str, not(containsString(LF)));
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
-        Content.Sink.write(source, true, str, Callback.NOOP);
+        source.offer(true, str, UTF_8, Callback.NOOP);
 
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS));
         assertThat(ee.getCause(), instanceOf(HttpException.class));
@@ -567,12 +566,12 @@ public class MultiPartFormDataTest
         // change every '\n' LF to a multiple CR then a LF.
         str = str.replace("\n", "\r\r\r\r\r\r\r\n");
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
-        Content.Sink.write(source, true, str, Callback.NOOP);
+        source.offer(true, str, UTF_8, Callback.NOOP);
 
         ExecutionException ee = assertThrows(ExecutionException.class, () -> formData.parse(source).get());
         assertThat(ee.getCause(), instanceOf(HttpException.class));
@@ -593,12 +592,12 @@ public class MultiPartFormDataTest
             --$B--\r
             """.replace("$B", boundary);
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         CaptureMultiPartViolations violations = new CaptureMultiPartViolations();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary, MultiPartCompliance.RFC7578, violations);
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
-        Content.Sink.write(source, true, str, Callback.NOOP);
+        source.offer(true, str, UTF_8, Callback.NOOP);
 
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -620,7 +619,7 @@ public class MultiPartFormDataTest
     @Test
     public void testNoBody() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("boundary");
         source.close();
         formData.parse(source).handle((parts, failure) ->
@@ -635,10 +634,10 @@ public class MultiPartFormDataTest
     @Test
     public void testBodyWithOnlyCRLF() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("boundary");
         String body = "              \n\n\n\r\n\r\n\r\n\r\n";
-        Content.Sink.write(source, true, body, Callback.NOOP);
+        source.offer(true, body, UTF_8, Callback.NOOP);
         formData.parse(source).handle((parts, failure) ->
         {
             assertNull(parts);
@@ -670,13 +669,13 @@ public class MultiPartFormDataTest
             --AaB03x--\r
             """;
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        Content.Sink.write(source, true, body, Callback.NOOP);
+        source.offer(true, body, UTF_8, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
             assertThat(parts.size(), is(2));
@@ -707,13 +706,13 @@ public class MultiPartFormDataTest
             --AaB03x--\r
             """;
 
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(1024);
         formData.setMaxLength(3072);
         formData.setMaxMemoryFileSize(50);
-        Content.Sink.write(source, true, body, Callback.NOOP);
+        source.offer(true, body, UTF_8, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
             // The first boundary must be on a new line, so the first "part" is not recognized as such.
@@ -728,7 +727,7 @@ public class MultiPartFormDataTest
     @Test
     public void testDefaultLimits() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         String body = """
@@ -739,7 +738,7 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, true, body, Callback.NOOP);
+        source.offer(true, body, UTF_8, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
             assertThat(parts.size(), is(1));
@@ -757,7 +756,7 @@ public class MultiPartFormDataTest
     @Test
     public void testRequestContentTooBig() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxLength(16);
@@ -770,7 +769,7 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, true, body, Callback.NOOP);
+        source.offer(true, body, UTF_8, Callback.NOOP);
         formData.parse(source).handle((parts, failure) ->
         {
             assertNull(parts);
@@ -783,7 +782,7 @@ public class MultiPartFormDataTest
     @Test
     public void testFileTooBig() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxFileSize(16);
@@ -796,7 +795,7 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, true, body, Callback.NOOP);
+        source.offer(true, body, UTF_8, Callback.NOOP);
         formData.parse(source).handle((parts, failure) ->
         {
             assertNull(parts);
@@ -809,7 +808,7 @@ public class MultiPartFormDataTest
     @Test
     public void testTwoFilesOneInMemoryOneOnDisk() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         String chunk = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -828,7 +827,7 @@ public class MultiPartFormDataTest
             $C$C$C$C\r
             --AaB03x--\r
             """.replace("$C", chunk);
-        Content.Sink.write(source, true, body, Callback.NOOP);
+        source.offer(true, body, UTF_8, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
             assertNotNull(parts);
@@ -849,7 +848,7 @@ public class MultiPartFormDataTest
     @Test
     public void testPartWrite() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         String chunk = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -868,7 +867,7 @@ public class MultiPartFormDataTest
             $C$C$C$C\r
             --AaB03x--\r
             """.replace("$C", chunk);
-        Content.Sink.write(source, true, body, Callback.NOOP);
+        source.offer(true, body, UTF_8, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
             assertNotNull(parts);
@@ -895,7 +894,7 @@ public class MultiPartFormDataTest
     @Test
     public void testPathPartDelete() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
 
@@ -907,7 +906,7 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, true, body, Callback.NOOP);
+        source.offer(true, body, UTF_8, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
             assertNotNull(parts);
@@ -926,7 +925,7 @@ public class MultiPartFormDataTest
     @Test
     public void testAbort()
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(32);
@@ -943,7 +942,7 @@ public class MultiPartFormDataTest
             --AaB03x--\r
             """;
         // Parse only part of the content.
-        Content.Sink.write(source, false, body, Callback.NOOP);
+        source.offer(false, body, UTF_8, Callback.NOOP);
 
         CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
         assertEquals(1, formData.getPartsSize());
@@ -952,7 +951,7 @@ public class MultiPartFormDataTest
         futureParts.completeExceptionally(new IOException());
 
         // Parse the rest of the content.
-        Content.Sink.write(source, true, terminator, Callback.NOOP);
+        source.offer(true, terminator, UTF_8, Callback.NOOP);
 
         // Try to get the parts, it should fail.
         assertThrows(ExecutionException.class, () -> futureParts.get(5, TimeUnit.SECONDS));
@@ -962,7 +961,7 @@ public class MultiPartFormDataTest
     @Test
     public void testMaxHeaderLength() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setPartHeadersMaxLength(32);
@@ -975,7 +974,7 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, true, body, Callback.NOOP);
+        source.offer(true, body, UTF_8, Callback.NOOP);
         formData.parse(source).handle((parts, failure) ->
         {
             assertNull(parts);
@@ -988,7 +987,7 @@ public class MultiPartFormDataTest
     @Test
     public void testDefaultCharset() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
@@ -1003,7 +1002,6 @@ public class MultiPartFormDataTest
             Content-Type: text/plain\r
             \r
             """;
-        ByteBuffer isoCedilla = ISO_8859_1.encode("ç");
         String body2 = """
             \r
             --AaB03x\r
@@ -1011,17 +1009,16 @@ public class MultiPartFormDataTest
             Content-Type: text/plain; charset="UTF-8"\r
             \r
             """;
-        ByteBuffer utfCedilla = UTF_8.encode("ç");
         String terminator = """
             \r
             --AaB03x--\r
             """;
         CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
-        Content.Sink.write(source, false, body1, Callback.NOOP);
-        source.write(false, isoCedilla, Callback.NOOP);
-        Content.Sink.write(source, false, body2, Callback.NOOP);
-        source.write(false, utfCedilla, Callback.NOOP);
-        Content.Sink.write(source, true, terminator, Callback.NOOP);
+        source.offer(false, body1, UTF_8, Callback.NOOP);
+        source.offer(false, "ç", ISO_8859_1, Callback.NOOP);
+        source.offer(false, body2, UTF_8, Callback.NOOP);
+        source.offer(false, "ç", UTF_8, Callback.NOOP);
+        source.offer(true, terminator, UTF_8, Callback.NOOP);
 
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
         {
@@ -1041,7 +1038,7 @@ public class MultiPartFormDataTest
     @Test
     public void testChunkEndsWithCRNextChunkEndsWithLF() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setMaxMemoryFileSize(-1);
 
@@ -1061,9 +1058,9 @@ public class MultiPartFormDataTest
             \r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, false, chunk1, Callback.NOOP);
-        Content.Sink.write(source, false, chunk2, Callback.NOOP);
-        Content.Sink.write(source, true, terminator, Callback.NOOP);
+        source.offer(false, chunk1, UTF_8, Callback.NOOP);
+        source.offer(false, chunk2, UTF_8, Callback.NOOP);
+        source.offer(true, terminator, UTF_8, Callback.NOOP);
 
         CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
@@ -1080,7 +1077,7 @@ public class MultiPartFormDataTest
     @Test
     public void testChunkEndsWithCRNextChunkHasPartialBoundaryMatch() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setMaxMemoryFileSize(-1);
 
@@ -1098,9 +1095,9 @@ public class MultiPartFormDataTest
             \r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, false, chunk1, Callback.NOOP);
-        Content.Sink.write(source, false, chunk2, Callback.NOOP);
-        Content.Sink.write(source, true, terminator, Callback.NOOP);
+        source.offer(false, chunk1, UTF_8, Callback.NOOP);
+        source.offer(false, chunk2, UTF_8, Callback.NOOP);
+        source.offer(true, terminator, UTF_8, Callback.NOOP);
 
         CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
@@ -1117,7 +1114,7 @@ public class MultiPartFormDataTest
     @Test
     public void testChunkEndsWithCRNextChunkHasPartialBoundaryMatchNextChunkHasRemainingBoundary() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setMaxMemoryFileSize(-1);
 
@@ -1132,9 +1129,9 @@ public class MultiPartFormDataTest
         // Second chunk must have a partial boundary that is actually content.
         String chunk2 = "\n--AaB0";
         String chunk3 = "3x--\r\n";
-        Content.Sink.write(source, false, chunk1, Callback.NOOP);
-        Content.Sink.write(source, false, chunk2, Callback.NOOP);
-        Content.Sink.write(source, true, chunk3, Callback.NOOP);
+        source.offer(false, chunk1, UTF_8, Callback.NOOP);
+        source.offer(false, chunk2, UTF_8, Callback.NOOP);
+        source.offer(true, chunk3, UTF_8, Callback.NOOP);
 
         CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
@@ -1151,7 +1148,7 @@ public class MultiPartFormDataTest
     @Test
     public void testChunkEndsWithCRNextChunkHasPartialBoundaryMatchNextChunksHaveRemainingBoundary() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setMaxMemoryFileSize(-1);
 
@@ -1167,10 +1164,10 @@ public class MultiPartFormDataTest
         String chunk2 = "\n--AaB0";
         String chunk3 = "3x";
         String chunk4 = "--\r\n";
-        Content.Sink.write(source, false, chunk1, Callback.NOOP);
-        Content.Sink.write(source, false, chunk2, Callback.NOOP);
-        Content.Sink.write(source, false, chunk3, Callback.NOOP);
-        Content.Sink.write(source, true, chunk4, Callback.NOOP);
+        source.offer(false, chunk1, UTF_8, Callback.NOOP);
+        source.offer(false, chunk2, UTF_8, Callback.NOOP);
+        source.offer(false, chunk3, UTF_8, Callback.NOOP);
+        source.offer(true, chunk4, UTF_8, Callback.NOOP);
 
         CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
@@ -1187,7 +1184,7 @@ public class MultiPartFormDataTest
     @Test
     public void testChunkEndsWithCRNextChunkHasPartialBoundaryMatchNextChunkHasContent() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setMaxMemoryFileSize(-1);
 
@@ -1205,9 +1202,9 @@ public class MultiPartFormDataTest
             -CONTENT\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, false, chunk1, Callback.NOOP);
-        Content.Sink.write(source, false, chunk2, Callback.NOOP);
-        Content.Sink.write(source, true, chunk3, Callback.NOOP);
+        source.offer(false, chunk1, UTF_8, Callback.NOOP);
+        source.offer(false, chunk2, UTF_8, Callback.NOOP);
+        source.offer(true, chunk3, UTF_8, Callback.NOOP);
 
         CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
@@ -1224,7 +1221,7 @@ public class MultiPartFormDataTest
     @Test
     public void testChunkEndsWithCRNextChunkHasPartialBoundaryMatchNextChunksHaveContent() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setMaxMemoryFileSize(-1);
 
@@ -1243,10 +1240,10 @@ public class MultiPartFormDataTest
             -CONTENT\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, false, chunk1, Callback.NOOP);
-        Content.Sink.write(source, false, chunk2, Callback.NOOP);
-        Content.Sink.write(source, false, chunk3, Callback.NOOP);
-        Content.Sink.write(source, true, chunk4, Callback.NOOP);
+        source.offer(false, chunk1, UTF_8, Callback.NOOP);
+        source.offer(false, chunk2, UTF_8, Callback.NOOP);
+        source.offer(false, chunk3, UTF_8, Callback.NOOP);
+        source.offer(true, chunk4, UTF_8, Callback.NOOP);
 
         CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
@@ -1264,7 +1261,7 @@ public class MultiPartFormDataTest
     public void testOneByteChunks() throws Exception
     {
         String boundary = "AaB03x";
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser(boundary);
         formData.setMaxMemoryFileSize(-1);
 
@@ -1281,12 +1278,12 @@ public class MultiPartFormDataTest
 
         new Thread(() ->
         {
-            ByteBuffer buf = UTF_8.encode(form);
+            RetainableByteBuffer buf = RetainableByteBuffer.wrap(form, UTF_8);
             while (buf.hasRemaining())
             {
-                source.write(false, ByteBuffer.wrap(new byte[]{buf.get()}), Callback.NOOP);
+                source.offer(false, RetainableByteBuffer.wrap(new byte[]{buf.get()}), Callback.NOOP);
             }
-            source.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+            source.offer(true, RetainableByteBuffer.empty(), Callback.NOOP);
         }).start();
 
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
@@ -1303,7 +1300,7 @@ public class MultiPartFormDataTest
     @Test
     public void testSecondChunkIsTerminator() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setMaxMemoryFileSize(-1);
 
@@ -1319,8 +1316,8 @@ public class MultiPartFormDataTest
         String terminator = """
             \n--AaB03x--\r
             """;
-        Content.Sink.write(source, false, chunk1, Callback.NOOP);
-        Content.Sink.write(source, true, terminator, Callback.NOOP);
+        source.offer(false, chunk1, UTF_8, Callback.NOOP);
+        source.offer(true, terminator, UTF_8, Callback.NOOP);
 
         CompletableFuture<MultiPartFormData.Parts> futureParts = formData.parse(source);
         try (MultiPartFormData.Parts parts = futureParts.get(5, TimeUnit.SECONDS))
@@ -1337,7 +1334,7 @@ public class MultiPartFormDataTest
     @Test
     public void testPartWithBackSlashInFileName() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
@@ -1350,7 +1347,7 @@ public class MultiPartFormDataTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, true, contents, Callback.NOOP);
+        source.offer(true, contents, UTF_8, Callback.NOOP);
 
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
@@ -1363,7 +1360,7 @@ public class MultiPartFormDataTest
     @Test
     public void testPartWithWindowsFileName() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
@@ -1376,7 +1373,7 @@ public class MultiPartFormDataTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, true, contents, Callback.NOOP);
+        source.offer(true, contents, UTF_8, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
             assertThat(parts.size(), is(1));
@@ -1388,7 +1385,7 @@ public class MultiPartFormDataTest
     @Test
     public void testCorrectlyEncodedFilename() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
@@ -1401,7 +1398,7 @@ public class MultiPartFormDataTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, true, contents, Callback.NOOP);
+        source.offer(true, contents, UTF_8, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
             assertThat(parts.size(), is(1));
@@ -1413,7 +1410,7 @@ public class MultiPartFormDataTest
     @Test
     public void testCorrectlyEncodedMSFilename() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setMaxMemoryFileSize(-1);
@@ -1426,7 +1423,7 @@ public class MultiPartFormDataTest
             stuffaaa\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, true, contents, Callback.NOOP);
+        source.offer(true, contents, UTF_8, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
             assertThat(parts.size(), is(1));
@@ -1438,7 +1435,7 @@ public class MultiPartFormDataTest
     @Test
     public void testWriteFilesForPartWithoutFileName() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
         formData.setUseFilesForPartsWithoutFileName(true);
@@ -1451,7 +1448,7 @@ public class MultiPartFormDataTest
             sssaaa\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, true, body, Callback.NOOP);
+        source.offer(true, body, UTF_8, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
             assertThat(parts.size(), is(1));
@@ -1466,7 +1463,7 @@ public class MultiPartFormDataTest
     @Test
     public void testPartsWithSameName() throws Exception
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         formData.setFilesDirectory(_tmpDir);
 
@@ -1483,7 +1480,7 @@ public class MultiPartFormDataTest
             AAAAA\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, true, sameNames, Callback.NOOP);
+        source.offer(true, sameNames, UTF_8, Callback.NOOP);
         try (MultiPartFormData.Parts parts = formData.parse(source).get(5, TimeUnit.SECONDS))
         {
             assertEquals(2, parts.size());
@@ -1507,22 +1504,22 @@ public class MultiPartFormDataTest
     {
         MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
         source.addPart(new MultiPart.ChunksPart("part1", "file1", HttpFields.EMPTY, List.of(
-            Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
+            Content.Chunk.from(RetainableByteBuffer.wrap("the answer", US_ASCII), false),
             Content.Chunk.from(new NumberFormatException(), false),
-            Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), true)
+            Content.Chunk.from(RetainableByteBuffer.wrap(" is 42", US_ASCII), true)
         )));
         source.close();
 
         Content.Chunk chunk;
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("--boundary\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("--boundary\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("the answer"));
+        assertThat(chunk.acquire().getString(UTF_8), is("the answer"));
 
         chunk = source.read();
         assertThat(Content.Chunk.isFailure(chunk, false), is(true));
@@ -1539,22 +1536,22 @@ public class MultiPartFormDataTest
     {
         MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
         source.addPart(new MultiPart.ChunksPart("part1", "file1", HttpFields.EMPTY, List.of(
-            Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
+            Content.Chunk.from(RetainableByteBuffer.wrap("the answer", US_ASCII), false),
             Content.Chunk.from(new NumberFormatException(), false),
-            Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), true)
+            Content.Chunk.from(RetainableByteBuffer.wrap(" is 42", US_ASCII), true)
         )));
         source.close();
 
         Content.Chunk chunk;
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("--boundary\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("--boundary\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("the answer"));
+        assertThat(chunk.acquire().getString(UTF_8), is("the answer"));
 
         chunk = source.read();
         assertThat(Content.Chunk.isFailure(chunk, false), is(true));
@@ -1562,10 +1559,10 @@ public class MultiPartFormDataTest
 
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is(" is 42"));
+        assertThat(chunk.acquire().getString(UTF_8), is(" is 42"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(true));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("\r\n--boundary--\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("\r\n--boundary--\r\n"));
 
         chunk = source.read();
         assertThat(chunk.isLast(), is(true));
@@ -1578,8 +1575,8 @@ public class MultiPartFormDataTest
     {
         MultiPartFormData.ContentSource source = new MultiPartFormData.ContentSource("boundary");
         source.addPart(new MultiPart.ChunksPart("part1", "file1", HttpFields.EMPTY, List.of(
-            Content.Chunk.from(ByteBuffer.wrap("the answer".getBytes(US_ASCII)), false),
-            Content.Chunk.from(ByteBuffer.wrap(" is 42".getBytes(US_ASCII)), false),
+            Content.Chunk.from(RetainableByteBuffer.wrap("the answer", US_ASCII), false),
+            Content.Chunk.from(RetainableByteBuffer.wrap(" is 42", US_ASCII), false),
             Content.Chunk.from(new NumberFormatException(), true)
         )));
         source.close();
@@ -1587,16 +1584,16 @@ public class MultiPartFormDataTest
         Content.Chunk chunk;
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("--boundary\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("--boundary\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
+        assertThat(chunk.acquire().getString(UTF_8), is("Content-Disposition: form-data; name=\"part1\"; filename=\"file1\"\r\n\r\n"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is("the answer"));
+        assertThat(chunk.acquire().getString(UTF_8), is("the answer"));
         chunk = source.read();
         assertThat(chunk.isLast(), is(false));
-        assertThat(BufferUtil.toString(chunk.getByteBuffer(), UTF_8), is(" is 42"));
+        assertThat(chunk.acquire().getString(UTF_8), is(" is 42"));
 
         chunk = source.read();
         assertThat(Content.Chunk.isFailure(chunk, true), is(true));
@@ -1610,7 +1607,7 @@ public class MultiPartFormDataTest
     @Test
     public void testMissingFilesDirectory()
     {
-        AsyncContent source = new TestContent();
+        AsyncContentSource source = new TestContent();
         MultiPartFormData.Parser formData = new MultiPartFormData.Parser("AaB03x");
         // Always save to disk.
         formData.setMaxMemoryFileSize(0);
@@ -1623,7 +1620,7 @@ public class MultiPartFormDataTest
             ABCDEFGHIJKLMNOPQRSTUVWXYZ\r
             --AaB03x--\r
             """;
-        Content.Sink.write(source, true, body, Callback.NOOP);
+        source.offer(true, body, UTF_8, Callback.NOOP);
 
         Throwable cause = assertThrows(ExecutionException.class, () -> formData.parse(source).get(5, TimeUnit.SECONDS)).getCause();
         assertInstanceOf(IllegalArgumentException.class, cause);
@@ -1650,8 +1647,13 @@ public class MultiPartFormDataTest
             @Override
             public Content.Chunk read()
             {
-                Content.Chunk chunk = super.read();
-                return new NonRetainableChunk(chunk);
+                try (Content.Chunk chunk = super.read())
+                {
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        return Content.Chunk.from(buffer, chunk.isLast());
+                    }
+                }
             }
         };
 
@@ -1682,47 +1684,20 @@ public class MultiPartFormDataTest
             actualViolations, containsInAnyOrder(expectedViolations));
     }
 
-    private class TestContent extends AsyncContent
+    private class TestContent extends AsyncContentSource
     {
         @Override
         public Content.Chunk read()
         {
-            Content.Chunk chunk = super.read();
-            if (chunk != null && chunk.canRetain())
-                _allocatedChunks.add(chunk);
-            return chunk;
-        }
-    }
-
-    private static class NonRetainableChunk extends RetainableByteBuffer.NonRetainableByteBuffer implements Content.Chunk
-    {
-        private final boolean _isLast;
-        private final Throwable _failure;
-
-        public NonRetainableChunk(Content.Chunk chunk)
-        {
-            super(BufferUtil.copy(chunk.getByteBuffer()));
-            _isLast = chunk.isLast();
-            _failure = chunk.getFailure();
-            chunk.release();
-        }
-
-        @Override
-        public boolean isLast()
-        {
-            return _isLast;
-        }
-
-        @Override
-        public Throwable getFailure()
-        {
-            return _failure;
-        }
-
-        @Override
-        public void retain()
-        {
-            throw new UnsupportedOperationException();
+            try (Content.Chunk chunk = super.read())
+            {
+                if (chunk != null)
+                {
+                    chunk.retain();
+                    _allocatedChunks.add(chunk);
+                }
+                return chunk;
+            }
         }
     }
 

@@ -16,7 +16,6 @@ package org.eclipse.jetty.server.handler;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -32,12 +31,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.Retainable;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.Handler;
@@ -51,7 +47,10 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -421,7 +420,7 @@ public class ConnectHandler extends Handler.Wrapper
      * or -1 if the channel has been closed remotely
      * @throws IOException if the endPoint cannot be read
      */
-    protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
+    protected int read(EndPoint endPoint, RetainableByteBuffer.Mutable buffer, ConcurrentMap<String, Object> context) throws IOException
     {
         return endPoint.fill(buffer);
     }
@@ -434,9 +433,9 @@ public class ConnectHandler extends Handler.Wrapper
      * @param callback the completion callback to invoke
      * @param context the context information related to the connection
      */
-    protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
+    protected void write(EndPoint endPoint, RetainableByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
     {
-        endPoint.write(callback, buffer);
+        endPoint.write(buffer, callback);
     }
 
     /**
@@ -593,7 +592,7 @@ public class ConnectHandler extends Handler.Wrapper
         }
 
         @Override
-        protected int read(EndPoint endPoint, ByteBuffer buffer) throws IOException
+        protected int read(EndPoint endPoint, RetainableByteBuffer.Mutable buffer) throws IOException
         {
             int read = ConnectHandler.this.read(endPoint, buffer, getContext());
             if (LOG.isDebugEnabled())
@@ -602,7 +601,7 @@ public class ConnectHandler extends Handler.Wrapper
         }
 
         @Override
-        protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback)
+        protected void write(EndPoint endPoint, RetainableByteBuffer buffer, Callback callback)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Writing {} bytes to client {}", buffer.remaining(), this);
@@ -612,7 +611,7 @@ public class ConnectHandler extends Handler.Wrapper
 
     public class DownstreamConnection extends TunnelConnection implements Connection.UpgradeTo
     {
-        private ByteBuffer buffer;
+        private RetainableByteBuffer buffer;
 
         public DownstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
         {
@@ -620,8 +619,9 @@ public class ConnectHandler extends Handler.Wrapper
         }
 
         @Override
-        public void onUpgradeTo(ByteBuffer buffer)
+        public void onUpgradeTo(RetainableByteBuffer.Mutable buffer)
         {
+            buffer.retain();
             this.buffer = buffer;
         }
 
@@ -636,13 +636,13 @@ public class ConnectHandler extends Handler.Wrapper
                 return;
             }
 
-            int remaining = buffer.remaining();
+            long remaining = buffer.remaining();
             write(getConnection().getEndPoint(), buffer, new Callback()
             {
                 @Override
                 public void succeeded()
                 {
-                    buffer = null;
+                    buffer = Retainable.dispose(buffer);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Wrote initial {} bytes to server {}", remaining, DownstreamConnection.this);
                     fillInterested();
@@ -651,7 +651,7 @@ public class ConnectHandler extends Handler.Wrapper
                 @Override
                 public void failed(Throwable x)
                 {
-                    buffer = null;
+                    buffer = Retainable.dispose(buffer);
                     if (LOG.isDebugEnabled())
                         LOG.debug("Failed to write initial {} bytes to server {}", remaining, DownstreamConnection.this, x);
                     close();
@@ -661,7 +661,7 @@ public class ConnectHandler extends Handler.Wrapper
         }
 
         @Override
-        protected int read(EndPoint endPoint, ByteBuffer buffer) throws IOException
+        protected int read(EndPoint endPoint, RetainableByteBuffer.Mutable buffer) throws IOException
         {
             int read = ConnectHandler.this.read(endPoint, buffer, getContext());
             if (LOG.isDebugEnabled())
@@ -670,7 +670,7 @@ public class ConnectHandler extends Handler.Wrapper
         }
 
         @Override
-        protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback)
+        protected void write(EndPoint endPoint, RetainableByteBuffer buffer, Callback callback)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Writing {} bytes to server {}", buffer.remaining(), this);
@@ -690,11 +690,6 @@ public class ConnectHandler extends Handler.Wrapper
             super(endPoint, executor);
             this.bufferPool = bufferPool;
             this.context = context;
-        }
-
-        public ByteBufferPool getByteBufferPool()
-        {
-            return bufferPool;
         }
 
         public ConcurrentMap<String, Object> getContext()
@@ -718,9 +713,9 @@ public class ConnectHandler extends Handler.Wrapper
             pipe.iterate();
         }
 
-        protected abstract int read(EndPoint endPoint, ByteBuffer buffer) throws IOException;
+        protected abstract int read(EndPoint endPoint, RetainableByteBuffer.Mutable buffer) throws IOException;
 
-        protected abstract void write(EndPoint endPoint, ByteBuffer buffer, Callback callback);
+        protected abstract void write(EndPoint endPoint, RetainableByteBuffer buffer, Callback callback);
 
         protected void close(Throwable failure)
         {
@@ -740,7 +735,7 @@ public class ConnectHandler extends Handler.Wrapper
 
         private class ProxyIteratingCallback extends IteratingCallback
         {
-            private RetainableByteBuffer buffer;
+            private RetainableByteBuffer.Mutable buffer;
             private int filled;
 
             @Override
@@ -749,15 +744,14 @@ public class ConnectHandler extends Handler.Wrapper
                 buffer = bufferPool.acquire(getInputBufferSize(), true);
                 try
                 {
-                    ByteBuffer byteBuffer = buffer.getByteBuffer();
-                    int filled = this.filled = read(getEndPoint(), byteBuffer);
+                    int filled = this.filled = read(getEndPoint(), buffer);
                     if (filled > 0)
                     {
-                        write(connection.getEndPoint(), byteBuffer, this);
+                        write(connection.getEndPoint(), buffer, this);
                         return Action.SCHEDULED;
                     }
 
-                    buffer = Retainable.release(buffer);
+                    buffer = Retainable.dispose(buffer);
 
                     if (filled == 0)
                     {
@@ -783,7 +777,7 @@ public class ConnectHandler extends Handler.Wrapper
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Wrote {} bytes {}", filled, TunnelConnection.this);
-                buffer = Retainable.release(buffer);
+                buffer = Retainable.dispose(buffer);
             }
 
             @Override
@@ -797,7 +791,7 @@ public class ConnectHandler extends Handler.Wrapper
             @Override
             protected void onCompleteFailure(Throwable cause)
             {
-                buffer = Retainable.release(buffer);
+                buffer = Retainable.dispose(buffer);
             }
 
             private void disconnect(Throwable x)

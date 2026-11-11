@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
@@ -57,11 +58,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -79,9 +78,11 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.NanoTime;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -185,7 +186,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -357,7 +358,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 if (paramValue.equals(value))
                 {
                     response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8");
-                    response.write(true, ByteBuffer.wrap(content), callback);
+                    response.write(true, RetainableByteBuffer.wrap(content), callback);
                 }
                 return true;
             }
@@ -698,8 +699,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         AsyncRequestContent body = new AsyncRequestContent();
-        body.write(false, ByteBuffer.allocate(512), Callback.NOOP);
-        body.write(false, ByteBuffer.allocate(512), Callback.from(() -> body.fail(new IOException("explicitly_thrown_by_test"))));
+        body.offer(false, RetainableByteBuffer.allocate(512, false), Callback.NOOP);
+        body.offer(false, RetainableByteBuffer.allocate(512, false), Callback.from(() -> body.fail(new IOException("explicitly_thrown_by_test"))));
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -828,7 +829,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(new byte[length]), callback);
+                response.write(true, RetainableByteBuffer.allocate(length, false), callback);
                 return true;
             }
         });
@@ -1259,7 +1260,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, RetainableByteBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -1326,7 +1327,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 byte[] content = "TEST".getBytes(UTF_8);
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, content.length);
                 Content.Sink.write(response, false, null);
-                response.write(true, ByteBuffer.wrap(content), callback);
+                response.write(true, RetainableByteBuffer.wrap(content), callback);
                 return true;
             }
         });
@@ -1488,7 +1489,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 // Send Connection: close to avoid that the server chunks the content with HTTP 1.1.
                 if (version.compareTo(HttpVersion.HTTP_1_0) > 0)
                     response.getHeaders().put("Connection", "close");
-                response.write(true, ByteBuffer.wrap(data), callback);
+                response.write(true, RetainableByteBuffer.wrap(data), callback);
                 return true;
             }
         });
@@ -1553,7 +1554,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.allocate(1024), callback);
+                response.write(true, RetainableByteBuffer.allocate(1024, false), callback);
                 return true;
             }
         });
@@ -1699,6 +1700,62 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 output.flush();
 
                 completable.get(5, TimeUnit.SECONDS);
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(NonSslScenarioProvider.class)
+    public void testUnexpectedBytesAfterResponseContentAreDiscarded(Scenario scenario) throws Exception
+    {
+        try (ServerSocket server = new ServerSocket(0))
+        {
+            startClient(scenario);
+
+            Request request = client.newRequest("localhost", server.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS);
+            // CompletableResponseListener retains the content chunks, and therefore
+            // the network buffer, until the response is complete.
+            CompletableFuture<ContentResponse> completable = new CompletableResponseListener(request).send();
+
+            try (Socket socket = server.accept())
+            {
+                // Fail if the client does not reuse this connection.
+                socket.setSoTimeout(5000);
+                consume(socket.getInputStream(), false);
+
+                // Send unexpected bytes after the response content, in the same write.
+                String httpResponse = """
+                    HTTP/1.1 200 OK\r
+                    Content-Length: 5\r
+                    \r
+                    helloUNEXPECTED""";
+                OutputStream output = socket.getOutputStream();
+                output.write(httpResponse.getBytes(UTF_8));
+                output.flush();
+
+                ContentResponse response = completable.get(5, TimeUnit.SECONDS);
+                assertEquals(200, response.getStatus());
+                assertEquals("hello", response.getContentAsString());
+
+                // The connection must still be valid, send another request on the same socket.
+                request = client.newRequest("localhost", server.getLocalPort())
+                    .timeout(5, TimeUnit.SECONDS);
+                completable = new CompletableResponseListener(request).send();
+
+                consume(socket.getInputStream(), false);
+
+                httpResponse = """
+                    HTTP/1.1 200 OK\r
+                    Content-Length: 5\r
+                    \r
+                    world""";
+                output.write(httpResponse.getBytes(UTF_8));
+                output.flush();
+
+                response = completable.get(5, TimeUnit.SECONDS);
+                assertEquals(200, response.getStatus());
+                assertEquals("world", response.getContentAsString());
             }
         }
     }
@@ -1883,7 +1940,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public boolean handle(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                response.write(true, ByteBuffer.wrap(bytes), callback);
+                response.write(true, RetainableByteBuffer.wrap(bytes), callback);
                 return true;
             }
         });
@@ -1941,6 +1998,91 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         String response = "ABCDEF";
         testUnsolicitedBytesFromServer(scenario, response);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(NonSslScenarioProvider.class)
+    public void testUnsolicitedResponseBytesFromServerWhileContentIsRetained(Scenario scenario) throws Exception
+    {
+        try (ServerSocket server = new ServerSocket(0))
+        {
+            startClient(scenario);
+
+            // Retain the content chunks, and therefore
+            // the network buffer, after the response is complete.
+            List<Content.Chunk> chunks = new CopyOnWriteArrayList<>();
+            CompletableFuture<Result> completable = new CompletableFuture<>();
+            client.newRequest("localhost", server.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .onResponseContentSource((response, source) -> new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        while (true)
+                        {
+                            Content.Chunk chunk = source.read();
+                            if (chunk == null)
+                            {
+                                source.demand(this);
+                                return;
+                            }
+                            chunks.add(chunk);
+                            if (chunk.isLast())
+                                return;
+                        }
+                    }
+                }.run())
+                .send(completable::complete);
+
+            try (Socket socket = server.accept())
+            {
+                socket.setSoTimeout(5000);
+                InputStream input = socket.getInputStream();
+                consume(input, false);
+
+                String httpResponse = """
+                    HTTP/1.1 200 OK\r
+                    Content-Length: 5\r
+                    \r
+                    hello""";
+                OutputStream output = socket.getOutputStream();
+                output.write(httpResponse.getBytes(UTF_8));
+                output.flush();
+
+                Result result = completable.get(5, TimeUnit.SECONDS);
+                assertTrue(result.isSucceeded());
+
+                // Send an unsolicited response in a separate write.
+                httpResponse = """
+                    HTTP/1.1 408 Request Timeout\r
+                    Content-Length: 0\r
+                    Connection: close\r
+                    \r
+                    """;
+                output.write(httpResponse.getBytes(UTF_8));
+                output.flush();
+
+                // The client must close the connection.
+                assertEquals(-1, input.read());
+            }
+
+            Destination destination = client.getDestinations().get(0);
+            AbstractConnectionPool pool = (AbstractConnectionPool)destination.getConnectionPool();
+            await().atMost(5, TimeUnit.SECONDS).until(pool::getConnectionCount, is(0));
+
+            // The retained content must be intact.
+            StringBuilder content = new StringBuilder();
+            for (Content.Chunk chunk : chunks)
+            {
+                try (RetainableByteBuffer buffer = chunk.acquire())
+                {
+                    content.append(buffer.getString(UTF_8));
+                }
+                chunk.release();
+            }
+            assertEquals("hello", content.toString());
+        }
     }
 
     private void testUnsolicitedBytesFromServer(Scenario scenario, String bytesFromServer) throws Exception
@@ -2118,9 +2260,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
-        int capacity = buffer.capacity();
-        buffer.release();
+        int capacity = getRequestBufferCapacity();
         client.setMaxRequestHeadersSize(3 * capacity);
         connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setRequestHeaderSize(3 * capacity);
 
@@ -2150,9 +2290,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         HttpConfiguration httpConfig = connector.getBean(HttpConnectionFactory.class).getHttpConfiguration();
-        RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(httpConfig.getResponseHeaderSize(), false);
-        int capacity = buffer.capacity();
-        buffer.release();
+        int capacity = getResponseBufferCapacity();
         httpConfig.setMaxResponseHeaderSize(3 * capacity);
         client.setMaxResponseHeadersSize(3 * capacity);
 
@@ -2171,9 +2309,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
-        int capacity = buffer.capacity();
-        buffer.release();
+        int capacity = getRequestBufferCapacity();
         client.setMaxRequestHeadersSize(2 * capacity);
         connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setRequestHeaderSize(4 * capacity);
 
@@ -2191,9 +2327,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        RetainableByteBuffer.Mutable buffer = client.getByteBufferPool().acquire(client.getRequestBufferSize(), false);
-        int capacity = buffer.capacity();
-        buffer.release();
+        int capacity = getRequestBufferCapacity();
         client.setMaxRequestHeadersSize(capacity / 4);
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
@@ -2228,9 +2362,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         HttpConfiguration httpConfig = connector.getBean(HttpConnectionFactory.class).getHttpConfiguration();
-        RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(httpConfig.getResponseHeaderSize(), false);
-        int capacity = buffer.capacity();
-        buffer.release();
+        int capacity = getResponseBufferCapacity();
         httpConfig.setMaxResponseHeaderSize(2 * capacity);
         client.setMaxResponseHeadersSize(4 * capacity);
 
@@ -2368,6 +2500,25 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 break;
             if (read < 0)
                 break;
+        }
+    }
+
+    private int getRequestBufferCapacity()
+    {
+        ByteBufferPool bufferPool = client.getByteBufferPool();
+        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(client.getRequestBufferSize(), false))
+        {
+            return (int)buffer.capacity();
+        }
+    }
+
+    private int getResponseBufferCapacity()
+    {
+        HttpConfiguration httpConfig = connector.getBean(HttpConnectionFactory.class).getHttpConfiguration();
+        ByteBufferPool bufferPool = server.getByteBufferPool();
+        try (RetainableByteBuffer.Mutable buffer = bufferPool.acquire(httpConfig.getResponseHeaderSize(), false))
+        {
+            return (int)buffer.capacity();
         }
     }
 

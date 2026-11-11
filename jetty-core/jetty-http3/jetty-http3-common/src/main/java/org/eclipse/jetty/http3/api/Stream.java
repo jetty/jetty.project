@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.api;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.MetaData;
@@ -22,6 +21,7 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>A {@link Stream} represents a bidirectional exchange of data within a {@link Session}.</p>
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.Promise;
  * status code and response headers, and zero or more DATA frames containing response content.</p>
  * <p>Both client and server can end their side of the stream by sending a final frame with
  * the {@code last} flag set to {@code true}, see {@link HeadersFrame#HeadersFrame(MetaData, boolean)}
- * and {@link DataFrame#DataFrame(ByteBuffer, boolean)}.</p>
+ * and {@link DataFrame#DataFrame(RetainableByteBuffer, boolean)}.</p>
  */
 public interface Stream
 {
@@ -54,13 +54,13 @@ public interface Stream
     Session getSession();
 
     /**
-     * <p>Sends the given DATA frame containing some or all the bytes
+     * <p>Sends a DATA frame containing some or all the bytes
      * of the request content or of the response content.</p>
      *
-     * @param frame the DATA frame containing some or all the bytes of the request or of the response.
+     * @param data the data to send, containing some or all the bytes of the request or of the response.
      * @param promise the {@link Promise.Invocable} that gets notified when the frame has been sent
      */
-    void data(DataFrame frame, Promise.Invocable<Stream> promise);
+    void data(RetainableByteBuffer data, boolean last, Promise.Invocable<Stream> promise);
 
     /**
      * <p>Reads request content bytes or response content bytes.</p>
@@ -185,15 +185,16 @@ public interface Stream
                 {
                     while (true)
                     {
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            stream.demand();
-                            return;
+                            if (chunk == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
+                            if (chunk.isLast())
+                                return;
                         }
-                        chunk.release();
-                        if (chunk.isLast())
-                            return;
                     }
                 }
                 catch (Throwable x)
@@ -229,24 +230,25 @@ public interface Stream
              *     public void onDataAvailable(Stream.Client stream)
              *     {
              *         // Read a chunk of the content.
-             *         Content.Chunk chunk = stream.read();
-             *         if (chunk == null)
+             *         try (Content.Chunk chunk = stream.read())
              *         {
-             *             // No data available now, demand to be called back.
-             *             stream.demand();
-             *         }
-             *         else
-             *         {
-             *             // Process the content chunk.
-             *             process(chunk);
-             *             // Notify that the content has been consumed.
-             *             chunk.release();
-             *             if (!chunk.isLast())
+             *             if (chunk == null)
              *             {
-             *                 // Demand to be called back.
+             *                 // No data available now, demand to be called back.
              *                 stream.demand();
              *             }
-             *         }
+             *             else
+             *             {
+             *                 // Process the content chunk.
+             *                 process(chunk);
+
+             *                 if (!chunk.isLast())
+             *                 {
+             *                     // Demand to be called back.
+             *                     stream.demand();
+             *                 }
+             *             }
+             *         } // Release the chunk by closing it.
              *     }
              * }
              * }</pre>
@@ -373,15 +375,16 @@ public interface Stream
                 {
                     while (true)
                     {
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            stream.demand();
-                            return;
+                            if (chunk == null)
+                            {
+                                stream.demand();
+                                return;
+                            }
+                            if (chunk.isLast())
+                                return;
                         }
-                        chunk.release();
-                        if (chunk.isLast())
-                            return;
                     }
                 }
                 catch (Throwable x)
@@ -417,24 +420,25 @@ public interface Stream
              *     public void onDataAvailable(Stream.Server stream, boolean immediate)
              *     {
              *         // Read a chunk of the content.
-             *         Content.Chunk chunk = stream.read();
-             *         if (chunk == null)
+             *         try (Content.Chunk chunk = stream.read())
              *         {
-             *             // No data available now, demand to be called back.
-             *             stream.demand();
-             *         }
-             *         else
-             *         {
-             *             // Process the content chunk.
-             *             process(chunk);
-             *             // Notify that the content has been consumed.
-             *             chunk.release();
-             *             if (!chunk.isLast())
+             *             if (chunk == null)
              *             {
-             *                 // Demand to be called back.
+             *                 // No data available now, demand to be called back.
              *                 stream.demand();
              *             }
-             *         }
+             *             else
+             *             {
+             *                 // Process the content chunk.
+             *                 process(chunk);
+             *
+             *                 if (!chunk.isLast())
+             *                 {
+             *                     // Demand to be called back.
+             *                     stream.demand();
+             *                 }
+             *             }
+             *         } // Release the chunk by closing it.
              *     }
              * }
              * }</pre>

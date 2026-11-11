@@ -15,4 +15,11 @@
     <bundle-symbolic-name>${project.groupId}.api</bundle-symbolic-name>
   </properties>
 
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+    </dependency>
+  </dependencies>
+
 </project>

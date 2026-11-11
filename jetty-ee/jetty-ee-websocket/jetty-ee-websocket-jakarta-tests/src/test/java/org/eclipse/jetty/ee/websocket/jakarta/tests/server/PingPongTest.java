@@ -111,7 +111,10 @@ public class PingPongTest
         {
             assertEcho("/app/pong", (session) ->
             {
-                session.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, false);
+                try (Frame frame = new Frame(OpCode.PONG, "hello"))
+                {
+                    session.sendFrame(frame, Callback.NOOP, false);
+                }
             }, "PongMessageEndpoint.onMessage(PongMessage):[/pong]:hello");
         });
     }
@@ -123,7 +126,10 @@ public class PingPongTest
         {
             assertEcho("/app/pong-socket", (session) ->
             {
-                session.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, false);
+                try (Frame frame = new Frame(OpCode.PONG, "hello"))
+                {
+                    session.sendFrame(frame, Callback.NOOP, false);
+                }
             }, "PongSocket.onPong(PongMessage)[/pong-socket]:hello");
         });
     }
@@ -135,7 +141,10 @@ public class PingPongTest
         {
             assertEcho("/app/pong-socket-string-return", (session) ->
             {
-                session.sendFrame(new Frame(OpCode.PONG).setPayload("hello"), Callback.NOOP, false);
+                try (Frame frame = new Frame(OpCode.PONG, "hello"))
+                {
+                    session.sendFrame(frame, Callback.NOOP, false);
+                }
             }, "PongSocket.onPong(PongMessage)[/pong-socket-string-return]:hello");
         });
     }

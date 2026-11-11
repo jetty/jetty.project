@@ -18,17 +18,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.core.internal.ParsedFrame;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,7 +42,7 @@ public class WebSocketTester
     private static final String NON_RANDOM_KEY = Base64.getEncoder().encodeToString("0123456701234567".getBytes());
     private static SslContextFactory.Client sslContextFactory;
     protected ByteBufferPool bufferPool;
-    protected RetainableByteBuffer buffer;
+    protected RetainableByteBuffer.Mutable buffer;
     protected Parser parser;
 
     @BeforeAll
@@ -154,38 +153,43 @@ public class WebSocketTester
         return client;
     }
 
-    protected Frame.Parsed receiveFrame(InputStream in) throws IOException
+    protected ParsedFrame receiveFrame(InputStream in) throws IOException
     {
         if (buffer == null)
             buffer = bufferPool.acquire(4096, false);
 
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            Frame.Parsed frame = parser.parse(byteBuffer);
-            if (!byteBuffer.hasRemaining())
-                BufferUtil.clear(byteBuffer);
+            ParsedFrame frame = parser.parse(buffer);
+            if (!buffer.hasRemaining())
+            {
+                // Parsed frames may retain the buffer, so it cannot be cleared.
+                if (buffer.isRetained())
+                {
+                    buffer.release();
+                    buffer = bufferPool.acquire(4096, false);
+                }
+                else
+                {
+                    buffer.clear();
+                }
+            }
             if (frame != null)
                 return frame;
 
-            int p = BufferUtil.flipToFill(byteBuffer);
-            int len = in.read(byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), byteBuffer.remaining());
+            long len = buffer.write(b -> in.read(b.array(), b.arrayOffset() + b.position(), b.remaining()));
             if (len < 0)
                 return null;
-            byteBuffer.position(byteBuffer.position() + len);
-            BufferUtil.flipToFlush(byteBuffer, p);
+            buffer.writePosition(buffer.writePosition() + len);
         }
     }
 
     protected void receiveEof(InputStream in) throws IOException
     {
-        RetainableByteBuffer buffer = bufferPool.acquire(4096, false);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        BufferUtil.clearToFill(byteBuffer);
-        int len = in.read(byteBuffer.array(), byteBuffer.arrayOffset() + byteBuffer.position(), buffer.remaining());
+        RetainableByteBuffer.Mutable buffer = bufferPool.acquire(4096, false);
+        long len = buffer.write(b -> in.read(b.array(), b.arrayOffset() + b.position(), b.remaining()));
         if (len < 0)
             return;
-
         throw new IllegalStateException("unexpected content");
     }
 }

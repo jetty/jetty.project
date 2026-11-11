@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.servlets;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.Sha1Sum;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -122,7 +122,7 @@ public class GzipHandlerNoReCompressTest extends AbstractGzipTest
         request.setURI("/context/" + fileName);
 
         // Issue request
-        ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
+        RetainableByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
         // Parse response
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);

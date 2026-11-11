@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.http3.generator;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.util.VarLenInt;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class SettingsGenerator extends FrameGenerator
 {
@@ -34,14 +33,13 @@ public class SettingsGenerator extends FrameGenerator
         this.useDirectByteBuffers = useDirectByteBuffers;
     }
 
-    @Override
-    public long generate(RetainableByteBuffer.Mutable accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
+    public long generate(BufferAccumulator accumulator, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(accumulator, settingsFrame);
     }
 
-    private long generateSettings(RetainableByteBuffer.Mutable accumulator, SettingsFrame frame)
+    private long generateSettings(BufferAccumulator accumulator, SettingsFrame frame)
     {
         int length = 0;
         Map<Long, Long> settings = frame.getSettings();
@@ -50,18 +48,15 @@ public class SettingsGenerator extends FrameGenerator
             length += VarLenInt.length(e.getKey()) + VarLenInt.length(e.getValue());
         }
         int capacity = VarLenInt.length(frame.getFrameType().type()) + VarLenInt.length(length) + length;
-        RetainableByteBuffer buffer = getByteBufferPool().acquire(capacity, useDirectByteBuffers);
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        BufferUtil.clearToFill(byteBuffer);
-        VarLenInt.encode(byteBuffer, frame.getFrameType().type());
-        VarLenInt.encode(byteBuffer, length);
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, useDirectByteBuffers);
+        accumulator.addRetained(buffer);
+        VarLenInt.encode(buffer, frame.getFrameType().type());
+        VarLenInt.encode(buffer, length);
         for (Map.Entry<Long, Long> e : settings.entrySet())
         {
-            VarLenInt.encode(byteBuffer, e.getKey());
-            VarLenInt.encode(byteBuffer, e.getValue());
+            VarLenInt.encode(buffer, e.getKey());
+            VarLenInt.encode(buffer, e.getValue());
         }
-        BufferUtil.flipToFlush(byteBuffer, 0);
-        accumulator.add(buffer);
         return capacity;
     }
 }

@@ -291,7 +291,6 @@ public class QoSFilter implements Filter
         return _waitMs;
     }
 
-
     /**
      * Get the amount of time (in milliseconds) that the filter would suspend
      * a request for while waiting for the semaphore to become available.

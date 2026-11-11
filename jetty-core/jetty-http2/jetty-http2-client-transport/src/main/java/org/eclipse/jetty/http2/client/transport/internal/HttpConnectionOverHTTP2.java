@@ -210,6 +210,8 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         Stream stream = ((HTTP2Session)session).newUpgradeStream(frame, http2Channel.getStreamListener(), failure ->
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Upgrade failed for {}", HttpConnectionOverHTTP2.this, failure);
             newExchange.requestComplete(failure);
             newExchange.terminateRequest();
             newExchange.responseComplete(failure);
@@ -228,8 +230,6 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         {
             http2Channel.disassociate(newExchange);
             destroyHttpChannel(http2Channel);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Upgrade failed for {}", HttpConnectionOverHTTP2.this);
             return false;
         }
     }

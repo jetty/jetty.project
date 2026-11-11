@@ -74,11 +74,11 @@ public class UriTemplateParameterTest
         String requestPath = "/echo/params/1234/5678";
 
         List<Frame> send = new ArrayList<>();
-        send.add(new Frame(OpCode.TEXT).setPayload("9999"));
+        send.add(new Frame(OpCode.TEXT, "9999"));
         send.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         List<Frame> expect = new ArrayList<>();
-        expect.add(new Frame(OpCode.TEXT).setPayload("9,999|1,234|5,678"));
+        expect.add(new Frame(OpCode.TEXT, "9,999|1,234|5,678"));
         expect.add(CloseStatus.toFrame(CloseStatus.NORMAL));
 
         try (WebSocketTester session = server.newWebSocketTester(requestPath))

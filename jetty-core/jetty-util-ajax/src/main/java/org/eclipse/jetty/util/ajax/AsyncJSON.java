@@ -23,60 +23,63 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON.Convertible;
 import org.eclipse.jetty.util.ajax.JSON.Convertor;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-/**
- * <p>A non-blocking JSON parser that can parse partial JSON strings.</p>
- * <p>Usage:</p>
- * <pre>{@code
- * AsyncJSON parser = new AsyncJSON.Factory().newAsyncJSON();
- *
- * // Feed the parser with partial JSON string content.
- * parser.parse(chunk1);
- * parser.parse(chunk2);
- *
- * // Tell the parser that the JSON string content
- * // is terminated and get the JSON object back.
- * Map<String, Object> object = parser.complete();
- * }</pre>
- * <p>After the call to {@link #complete()} the parser can be reused to parse
- * another JSON string.</p>
- * <p>Custom objects can be created by specifying a {@code "class"} or
- * {@code "x-class"} field:</p>
- * <pre>{@code
- * String json = """
- * {
- *   "x-class": "com.acme.Person",
- *   "firstName": "John",
- *   "lastName": "Doe",
- *   "age": 42
- * }
- * """
- *
- * parser.parse(json);
- * com.acme.Person person = parser.complete();
- * }</pre>
- * <p>Class {@code com.acme.Person} must either implement {@link Convertible},
- * or be mapped with a {@link Convertor} via {@link Factory#putConvertor(String, Convertor)}.</p>
- * <p>JSON arrays are by default represented with a {@code List<Object>}, but the
- * Java representation can be customized via {@link Factory#setArrayConverter(Function)}.</p>
- */
+/// A non-blocking JSON parser that can parse partial JSON strings.
+///
+/// Usage:
+///
+/// ```
+/// AsyncJSON parser = new AsyncJSON.Factory().newAsyncJSON();
+/// // Feed the parser with partial JSON string content.
+/// parser.parse(chunk1);
+/// parser.parse(chunk2);
+/// // Tell the parser that the JSON string content
+/// // is terminated and get the JSON object back.
+/// Map<String, Object> object = parser.complete();
+/// ```
+///
+/// After the call to [#complete()] the parser can be reused to parse
+/// another JSON string.
+///
+/// Custom objects can be created by specifying a `"class"` or
+/// `"x-class"` field:
+///
+/// ```
+/// String json = """
+/// {
+///   "x-class": "com.acme.Person",
+///   "firstName": "John",
+///   "lastName": "Doe",
+///   "age": 42
+/// }
+/// """
+/// parser.parse(json);
+/// com.acme.Person person = parser.complete();
+/// ```
+///
+/// Class `com.acme.Person` must either (in order)
+/// * Implement [Convertible]
+/// * Be mapped with a [Convertor] via [Factory#putConvertor(String, Convertor)]
+/// * Be a Java `record` class
+///
+/// JSON arrays are by default represented with a `List<Object>`, but the
+/// Java representation can be customized via [Factory#setArrayConverter(Function)].
 public class AsyncJSON
 {
-    /**
-     * <p>The factory that creates AsyncJSON instances.</p>
-     * <p>The factory can be configured with custom {@link Convertor}s,
-     * and with cached strings that will not be allocated if they can
-     * be looked up from the cache.</p>
-     */
+    /// The factory that creates AsyncJSON instances.
+    ///
+    /// The factory can be configured with custom [Convertor]s,
+    /// and with cached strings that will not be allocated if they can
+    /// be looked up from the cache.
     public static class Factory
     {
         private Index.Mutable<CachedString> cache;
@@ -85,39 +88,31 @@ public class AsyncJSON
         private boolean detailedParseException;
         private int nestingMaxDepth = 256;
 
-        /**
-         * @return the function to customize the Java representation of JSON arrays
-         * @see #setArrayConverter(Function)
-         */
+        /// @return the function to customize the Java representation of JSON arrays
+        /// @see #setArrayConverter(Function)
         public Function<List<?>, Object> getArrayConverter()
         {
             return arrayConverter;
         }
 
-        /**
-         * <p>Sets the function to convert JSON arrays from their default Java
-         * representation, a {@code List<Object>}, to another Java data structure
-         * such as an {@code Object[]}.</p>
-         *
-         * @param arrayConverter the function to customize the Java representation of JSON arrays
-         * @see #getArrayConverter()
-         */
+        /// Sets the function to convert JSON arrays from their default Java
+        /// representation, a `List<Object>`, to another Java data structure
+        /// such as an `Object[]`.
+        ///
+        /// @param arrayConverter the function to customize the Java representation of JSON arrays
+        /// @see #getArrayConverter()
         public void setArrayConverter(Function<List<?>, Object> arrayConverter)
         {
             this.arrayConverter = Objects.requireNonNull(arrayConverter);
         }
 
-        /**
-         * @return whether a parse failure should report the whole JSON string or just the last chunk
-         */
+        /// @return whether a parse failure should report the whole JSON string or just the last chunk
         public boolean isDetailedParseException()
         {
             return detailedParseException;
         }
 
-        /**
-         * @param detailedParseException whether a parse failure should report the whole JSON string or just the last chunk
-         */
+        /// @param detailedParseException whether a parse failure should report the whole JSON string or just the last chunk
         public void setDetailedParseException(boolean detailedParseException)
         {
             this.detailedParseException = detailedParseException;
@@ -144,10 +139,8 @@ public class AsyncJSON
             this.nestingMaxDepth = nestingMaxDepth;
         }
 
-        /**
-         * @param value the string to cache
-         * @return whether the value can be cached
-         */
+        /// @param value the string to cache
+        /// @return whether the value can be cached
         public boolean cache(String value)
         {
             if (cache == null)
@@ -165,44 +158,40 @@ public class AsyncJSON
             return false;
         }
 
-        /**
-         * <p>Attempts to return a cached string from the buffer bytes.</p>
-         * <p>In case of a cache hit, the string is returned and the buffer
-         * position updated.</p>
-         * <p>In case of cache miss, {@code null} is returned and the buffer
-         * position is left unaltered.</p>
-         *
-         * @param buffer the buffer to lookup the string from
-         * @return a cached string or {@code null}
-         */
-        protected String cached(ByteBuffer buffer)
+        /// Attempts to return a cached string from the buffer bytes.
+        ///
+        /// In case of a cache hit, the string is returned and the buffer
+        /// position updated.
+        ///
+        /// In case of cache miss, `null` is returned and the buffer
+        /// position is left unaltered.
+        ///
+        /// @param buffer the buffer to look up the string from
+        /// @return a cached string or `null`
+        protected String cached(RetainableByteBuffer buffer)
         {
             if (cache != null)
             {
                 CachedString result = cache.getBest(buffer, 0, buffer.remaining());
                 if (result != null)
                 {
-                    buffer.position(buffer.position() + result.encoded.length());
+                    buffer.consume(result.encoded.length());
                     return result.value;
                 }
             }
             return null;
         }
 
-        /**
-         * @return a new parser instance
-         */
+        /// @return a new parser instance
         public AsyncJSON newAsyncJSON()
         {
             return new AsyncJSON(this);
         }
 
-        /**
-         * <p>Associates the given {@link Convertor} to the given class name.</p>
-         *
-         * @param className the domain class name such as {@code com.acme.Person}
-         * @param convertor the {@link Convertor} that converts {@code Map} to domain objects
-         */
+        /// Associates the given [Convertor] to the given class name.
+        ///
+        /// @param className the domain class name such as `com.acme.Person`
+        /// @param convertor the [Convertor] that converts `Map` to domain objects
         public void putConvertor(String className, Convertor convertor)
         {
             if (convertors == null)
@@ -210,12 +199,10 @@ public class AsyncJSON
             convertors.put(className, convertor);
         }
 
-        /**
-         * <p>Removes the {@link Convertor} associated with the given class name.</p>
-         *
-         * @param className the class name associated with the {@link Convertor}
-         * @return the {@link Convertor} associated with the class name, or {@code null}
-         */
+        /// Removes the [Convertor] associated with the given class name.
+        ///
+        /// @param className the class name associated with the [Convertor]
+        /// @return the [Convertor] associated with the class name, or `null`
         public Convertor removeConvertor(String className)
         {
             if (convertors != null)
@@ -223,12 +210,10 @@ public class AsyncJSON
             return null;
         }
 
-        /**
-         * <p>Returns the {@link Convertor} associated with the given class name, if any.</p>
-         *
-         * @param className the class name associated with the {@link Convertor}
-         * @return the {@link Convertor} associated with the class name, or {@code null}
-         */
+        /// Returns the [Convertor] associated with the given class name, if any.
+        ///
+        /// @param className the class name associated with the [Convertor]
+        /// @return the [Convertor] associated with the class name, or `null`
         public Convertor getConvertor(String className)
         {
             return convertors == null ? null : convertors.get(className);
@@ -264,7 +249,7 @@ public class AsyncJSON
     private final NumberBuilder numberBuilder = new NumberBuilder();
     private final Utf8StringBuilder stringBuilder = new Utf8StringBuilder(32);
     private final Factory factory;
-    private List<ByteBuffer> chunks;
+    private List<RetainableByteBuffer> chunks;
     private int nestingDepth;
 
     public AsyncJSON(Factory factory)
@@ -278,40 +263,44 @@ public class AsyncJSON
         return stack.isEmpty();
     }
 
-    /**
-     * <p>Feeds the parser with the given bytes chunk.</p>
-     *
-     * @param bytes the bytes to parse
-     * @return whether the JSON parsing was complete
-     * @throws IllegalArgumentException if the JSON is malformed
-     */
+    /// Feeds the parser with the given bytes chunk.
+    ///
+    /// @param bytes the bytes to parse
+    /// @return whether the JSON parsing was complete
+    /// @throws IllegalArgumentException if the JSON is malformed
     public boolean parse(byte[] bytes)
     {
         return parse(bytes, 0, bytes.length);
     }
 
-    /**
-     * <p>Feeds the parser with the given bytes chunk.</p>
-     *
-     * @param bytes the bytes to parse
-     * @param offset the offset to start parsing from
-     * @param length the number of bytes to parse
-     * @return whether the JSON parsing was complete
-     * @throws IllegalArgumentException if the JSON is malformed
-     */
+    /// Feeds the parser with the given bytes chunk.
+    ///
+    /// @param bytes the bytes to parse
+    /// @param offset the offset to start parsing from
+    /// @param length the number of bytes to parse
+    /// @return whether the JSON parsing was complete
+    /// @throws IllegalArgumentException if the JSON is malformed
     public boolean parse(byte[] bytes, int offset, int length)
     {
         return parse(ByteBuffer.wrap(bytes, offset, length));
     }
 
-    /**
-     * <p>Feeds the parser with the given buffer chunk.</p>
-     *
-     * @param buffer the buffer to parse
-     * @return whether the JSON parsing was complete
-     * @throws IllegalArgumentException if the JSON is malformed
-     */
+    /// Feeds the parser with the given buffer chunk.
+    ///
+    /// @param buffer the buffer to parse
+    /// @return whether the JSON parsing was complete
+    /// @throws IllegalArgumentException if the JSON is malformed
     public boolean parse(ByteBuffer buffer)
+    {
+        return parse(RetainableByteBuffer.wrap(buffer));
+    }
+
+    /// Feeds the parser with the given buffer chunk.
+    ///
+    /// @param buffer the buffer to parse
+    /// @return whether the JSON parsing was complete
+    /// @throws IllegalArgumentException if the JSON is malformed
+    public boolean parse(RetainableByteBuffer buffer)
     {
         try
         {
@@ -319,12 +308,12 @@ public class AsyncJSON
             {
                 if (chunks == null)
                     chunks = new ArrayList<>();
-                ByteBuffer copy = buffer.isDirect()
-                    ? ByteBuffer.allocateDirect(buffer.remaining())
-                    : ByteBuffer.allocate(buffer.remaining());
-                copy.put(buffer).flip();
+                RetainableByteBuffer.Mutable copy = RetainableByteBuffer.Mutable.allocate(Math.toIntExact(buffer.remaining()), false);
+                try (RetainableByteBuffer slice = buffer.slice())
+                {
+                    copy.put(slice);
+                }
                 chunks.add(copy);
-                buffer.flip();
             }
 
             if (stack.isEmpty())
@@ -441,16 +430,14 @@ public class AsyncJSON
         }
     }
 
-    /**
-     * <p>Signals to the parser that the parse data is complete, and returns
-     * the object parsed from the JSON chunks passed to the {@code parse()}
-     * methods.</p>
-     *
-     * @param <R> the type the result is cast to
-     * @return the result of the JSON parsing
-     * @throws IllegalArgumentException if the JSON is malformed
-     * @throws IllegalStateException if the no JSON was passed to the {@code parse()} methods
-     */
+    /// Signals to the parser that the parse data is complete, and returns
+    /// the object parsed from the JSON chunks passed to the `parse()`
+    /// methods.
+    ///
+    /// @param <R> the type the result is cast to
+    /// @return the result of the JSON parsing
+    /// @throws IllegalArgumentException if the JSON is malformed
+    /// @throws IllegalStateException if the no JSON was passed to the `parse()` methods
     public <R> R complete()
     {
         try
@@ -478,7 +465,7 @@ public class AsyncJSON
                     }
                     default:
                     {
-                        throw newInvalidJSON(BufferUtil.EMPTY_BUFFER, "incomplete JSON");
+                        throw newInvalidJSON(RetainableByteBuffer.empty(), "incomplete JSON");
                     }
                 }
             }
@@ -490,27 +477,25 @@ public class AsyncJSON
         }
     }
 
-    /**
-     * <p>When a JSON <code>{</code> is encountered during parsing,
-     * this method is called to create a new {@code Map} instance.</p>
-     * <p>Subclasses may override to return a custom {@code Map} instance.</p>
-     *
-     * @param context the parsing context
-     * @return a {@code Map} instance
-     */
+    /// When a JSON `{` is encountered during parsing,
+    /// this method is called to create a new `Map` instance.
+    ///
+    /// Subclasses may override to return a custom `Map` instance.
+    ///
+    /// @param context the parsing context
+    /// @return a `Map` instance
     protected Map<String, Object> newObject(Context context)
     {
         return new HashMap<>();
     }
 
-    /**
-     * <p>When a JSON {@code [} is encountered during parsing,
-     * this method is called to create a new {@code List} instance.</p>
-     * <p>Subclasses may override to return a custom {@code List} instance.</p>
-     *
-     * @param context the parsing context
-     * @return a {@code List} instance
-     */
+    /// When a JSON `[` is encountered during parsing,
+    /// this method is called to create a new `List` instance.
+    ///
+    /// Subclasses may override to return a custom `List` instance.
+    ///
+    /// @param context the parsing context
+    /// @return a `List` instance
     protected List<Object> newArray(Context context)
     {
         return new ArrayList<>();
@@ -530,11 +515,11 @@ public class AsyncJSON
         nestingDepth = 0;
     }
 
-    private boolean parseAny(ByteBuffer buffer)
+    private boolean parseAny(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
-            byte peek = buffer.get(buffer.position());
+            byte peek = buffer.get(buffer.readPosition());
             switch (peek)
             {
                 case '[':
@@ -585,7 +570,7 @@ public class AsyncJSON
         return false;
     }
 
-    private boolean parseNull(ByteBuffer buffer)
+    private boolean parseNull(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -623,7 +608,7 @@ public class AsyncJSON
         return false;
     }
 
-    private void parseNullCharacter(ByteBuffer buffer, int index)
+    private void parseNullCharacter(RetainableByteBuffer buffer, int index)
     {
         Frame frame = stack.peek();
         int value = (Integer)frame.value;
@@ -633,7 +618,7 @@ public class AsyncJSON
             throw newInvalidJSON(buffer, "invalid 'null' literal");
     }
 
-    private boolean parseTrue(ByteBuffer buffer)
+    private boolean parseTrue(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -666,7 +651,7 @@ public class AsyncJSON
         return false;
     }
 
-    private void parseTrueCharacter(ByteBuffer buffer, int index)
+    private void parseTrueCharacter(RetainableByteBuffer buffer, int index)
     {
         Frame frame = stack.peek();
         int value = (Integer)frame.value;
@@ -676,7 +661,7 @@ public class AsyncJSON
             throw newInvalidJSON(buffer, "invalid 'true' literal");
     }
 
-    private boolean parseFalse(ByteBuffer buffer)
+    private boolean parseFalse(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -712,7 +697,7 @@ public class AsyncJSON
         return false;
     }
 
-    private void parseFalseCharacter(ByteBuffer buffer, int index)
+    private void parseFalseCharacter(RetainableByteBuffer buffer, int index)
     {
         Frame frame = stack.peek();
         int value = (Integer)frame.value;
@@ -722,7 +707,7 @@ public class AsyncJSON
             throw newInvalidJSON(buffer, "invalid 'false' literal");
     }
 
-    private boolean parseNumber(ByteBuffer buffer)
+    private boolean parseNumber(RetainableByteBuffer buffer)
     {
         if (stack.peek().state != State.NUMBER)
             stack.push(State.NUMBER, numberBuilder);
@@ -756,7 +741,7 @@ public class AsyncJSON
                     numberBuilder.appendDigit(currentByte);
                     break;
                 default:
-                    buffer.position(buffer.position() - 1);
+                    buffer.readPosition(buffer.readPosition() - 1);
                     Number value = numberBuilder.value();
                     stack.pop();
                     stack.peek().value(value);
@@ -766,7 +751,7 @@ public class AsyncJSON
         return false;
     }
 
-    private boolean parseString(ByteBuffer buffer)
+    private boolean parseString(RetainableByteBuffer buffer)
     {
         Frame frame = stack.peek();
         if (buffer.hasRemaining() && frame.state != State.STRING)
@@ -802,7 +787,7 @@ public class AsyncJSON
                 }
                 case '\\':
                 {
-                    buffer.position(buffer.position() - 1);
+                    buffer.readPosition(buffer.readPosition() - 1);
                     if (parseEscape(buffer))
                         break;
                     return false;
@@ -817,7 +802,7 @@ public class AsyncJSON
         return false;
     }
 
-    private boolean parseEscape(ByteBuffer buffer)
+    private boolean parseEscape(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -864,7 +849,7 @@ public class AsyncJSON
         return true;
     }
 
-    private boolean parseUnicode(ByteBuffer buffer)
+    private boolean parseUnicode(RetainableByteBuffer buffer)
     {
         // Expect 4 hex digits.
         while (buffer.hasRemaining())
@@ -888,7 +873,7 @@ public class AsyncJSON
         return false;
     }
 
-    private byte hexToByte(ByteBuffer buffer, byte currentByte)
+    private byte hexToByte(RetainableByteBuffer buffer, byte currentByte)
     {
         try
         {
@@ -900,11 +885,11 @@ public class AsyncJSON
         }
     }
 
-    private boolean parseArray(ByteBuffer buffer)
+    private boolean parseArray(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
-            byte peek = buffer.get(buffer.position());
+            byte peek = buffer.get(buffer.readPosition());
             switch (peek)
             {
                 // Explicit delimiters, handle push and pop in this method.
@@ -951,7 +936,7 @@ public class AsyncJSON
         return false;
     }
 
-    private boolean parseObject(ByteBuffer buffer)
+    private boolean parseObject(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -990,7 +975,7 @@ public class AsyncJSON
                     }
                     else
                     {
-                        buffer.position(buffer.position() - 1);
+                        buffer.readPosition(buffer.readPosition() - 1);
                         if (parseObjectField(buffer))
                             break;
                         return false;
@@ -1001,7 +986,7 @@ public class AsyncJSON
         return false;
     }
 
-    private void enterNesting(ByteBuffer buffer)
+    private void enterNesting(RetainableByteBuffer buffer)
     {
         int nestingMaxDepth = factory.getNestingMaxDepth();
         if (nestingDepth >= nestingMaxDepth)
@@ -1014,11 +999,11 @@ public class AsyncJSON
         --nestingDepth;
     }
 
-    private boolean parseObjectField(ByteBuffer buffer)
+    private boolean parseObjectField(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
-            byte peek = buffer.get(buffer.position());
+            byte peek = buffer.get(buffer.readPosition());
             if (peek == '"')
             {
                 if (stack.peek().state == State.OBJECT)
@@ -1056,11 +1041,11 @@ public class AsyncJSON
         return false;
     }
 
-    private boolean parseObjectFieldName(ByteBuffer buffer)
+    private boolean parseObjectFieldName(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
-            byte peek = buffer.get(buffer.position());
+            byte peek = buffer.get(buffer.readPosition());
             switch (peek)
             {
                 case '"':
@@ -1109,7 +1094,7 @@ public class AsyncJSON
         return false;
     }
 
-    private boolean parseObjectFieldValue(ByteBuffer buffer)
+    private boolean parseObjectFieldValue(RetainableByteBuffer buffer)
     {
         if (stack.peek().value == UNSET)
         {
@@ -1245,79 +1230,74 @@ public class AsyncJSON
         }
     }
 
-    protected RuntimeException newInvalidJSON(ByteBuffer buffer, String message)
+    protected RuntimeException newInvalidJSON(RetainableByteBuffer buffer, String message)
     {
-        ByteBuffer json;
-        int errorPosition;
+        RetainableByteBuffer json;
         boolean elide;
-        if (factory.isDetailedParseException() && chunks != null)
+        long errorPosition;
+        if (factory.isDetailedParseException())
         {
-            // The last chunk is a copy of the buffer being parsed.
-            int length = 0;
-            for (ByteBuffer chunk : chunks)
-            {
-                length += chunk.remaining();
-            }
-            json = ByteBuffer.allocate(length);
-            for (ByteBuffer chunk : chunks)
-            {
-                json.put(chunk.slice());
-            }
-            json.flip();
-            errorPosition = length - buffer.remaining() - 1;
+            json = RetainableByteBuffer.merge(chunks);
+            chunks.forEach(RetainableByteBuffer::release);
+            chunks.clear();
             elide = false;
+            errorPosition = json.remaining() - buffer.remaining() - 1;
         }
         else
         {
             json = buffer;
-            errorPosition = buffer.position() - 1;
+            json.retain();
             elide = true;
+            errorPosition = buffer.readPosition() - 1;
         }
-
-        int limit = json.limit();
         errorPosition = Math.max(0, errorPosition);
-        int from = Math.min(errorPosition, limit);
-        int to = Math.min(errorPosition + 1, limit);
-        StringBuilder builder = new StringBuilder(message);
-        builder.append(System.lineSeparator());
 
-        // Build a string such of this form:
-        // [[begin-bytes]...][before-error-bytes]<x>[after-error-bytes][[...[end-bytes]]
-        // where [] means optional, and <x> surrounds the error byte x,
-        // and the before/after error bytes are up to 32 bytes.
-        appendJSON(builder, json, 0, from, elide, true);
-        builder.append("<");
-        appendJSON(builder, json, from, to, false, false);
-        builder.append(">");
-        appendJSON(builder, json, to, limit, elide, false);
+        try (json)
+        {
+            long end = json.readPosition() + json.remaining();
+            long before = Math.min(errorPosition, end);
+            long after = Math.min(errorPosition + 1, end);
+            StringBuilder builder = new StringBuilder(message);
+            builder.append(System.lineSeparator());
 
-        return new IllegalArgumentException(builder.toString());
+            // Build a string such of this form:
+            // [[begin-bytes]...][before-error-bytes]<x>[after-error-bytes][[...[end-bytes]]
+            // where [] means optional, and <x> surrounds the error byte x,
+            // and the before/after error bytes are up to 32 bytes.
+            appendJSON(builder, json, 0, before, elide, true);
+            builder.append("<");
+            appendJSON(builder, json, before, after, false, false);
+            builder.append(">");
+            appendJSON(builder, json, after, end, elide, false);
+
+            return new IllegalArgumentException(builder.toString());
+        }
     }
 
-    private static void appendJSON(StringBuilder builder, ByteBuffer json, int from, int to, boolean elide, boolean beforeError)
+    private static void appendJSON(StringBuilder builder, RetainableByteBuffer json, long from, long to, boolean elide, boolean beforeError)
     {
-        int length = to - from;
+        long length = to - from;
         // The bytes that exceed the 32 bytes near the error.
-        int rest = length - 32;
+        long rest = length - 32;
         // The ellipsis must replace at least 3 bytes.
         if (!elide || rest <= 3)
         {
-            builder.append(BufferUtil.toString(json, from, length, UTF_8));
+            builder.append(json.getString(from, length, UTF_8));
             return;
         }
         // The bytes far from the error, up to 32.
-        int far = Math.min(32, rest - 3);
+        long far = Math.min(32, rest - 3);
         if (beforeError)
         {
-            builder.append(BufferUtil.toString(json, from, far, UTF_8));
+            builder.append(json.getString(from, far, UTF_8));
             builder.append("...");
-            builder.append(BufferUtil.toString(json, to - 32, 32, UTF_8));
+            builder.append(json.getString(to - 32, 32, UTF_8));
         }
         else
         {
-            builder.append(BufferUtil.toString(json, from, 32, UTF_8));
+            builder.append(json.getString(from, 32, UTF_8));
             builder.append("...");
-            builder.append(BufferUtil.toString(json, to - far, far, UTF_8));
+            builder.append(json.getString(to - far, far, UTF_8));
         }
     }
 
@@ -1330,14 +1310,10 @@ public class AsyncJSON
         };
     }
 
-    /**
-     * <p>The state of JSON parsing.</p>
-     */
+    /// The state of JSON parsing.
     public interface Context
     {
-        /**
-         * @return the depth in the JSON structure
-         */
+        /// @return the depth in the JSON structure
         public int depth();
     }
 
