@@ -224,7 +224,7 @@ public class HttpStreamOverFCGI implements HttpStream
     @Override
     public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer buffer, Callback callback)
     {
-        RetainableByteBuffer content = buffer != null ? buffer : RetainableByteBuffer.Mutable.empty();
+        RetainableByteBuffer content = buffer != null ? buffer : RetainableByteBuffer.empty();
 
         if (LOG.isDebugEnabled())
             LOG.debug("send {} l={} {} {}", request, last, content, this);

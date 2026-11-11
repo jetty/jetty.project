@@ -15,11 +15,9 @@ package org.eclipse.jetty.io.content;
 
 import java.io.IOException;
 import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.buffer.BufferAggregator;
 import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
@@ -39,7 +37,7 @@ public class BufferedContentSink implements Content.Sink
      * An empty {@link RetainableByteBuffer}, which if {@link #write(boolean, RetainableByteBuffer, Callback) written}
      * will invoke a {@link #flush(Callback)} operation.
      */
-    public static final RetainableByteBuffer FLUSH_BUFFER = RetainableByteBuffer.wrap(ByteBuffer.allocate(0), Retainable.NON_RETAINABLE);
+    public static final RetainableByteBuffer FLUSH_BUFFER = new RetainableByteBuffer.Empty();
 
     private static final Logger LOG = LoggerFactory.getLogger(BufferedContentSink.class);
 

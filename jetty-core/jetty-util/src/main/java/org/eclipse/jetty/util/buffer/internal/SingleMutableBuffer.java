@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.buffer.internal;
 
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -91,9 +92,9 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public void readPosition(long newPosition)
+    public void readPosition(long position)
     {
-        flipToRead().position(Math.toIntExact(newPosition));
+        flipToRead().position(Math.toIntExact(position));
     }
 
     @Override
@@ -103,9 +104,11 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public void writePosition(long newPosition)
+    public void writePosition(long position)
     {
-        flipToWrite().position(Math.toIntExact(newPosition));
+        if (position < readPosition() || position > capacity())
+            throw new IllegalArgumentException("invalid position " + position);
+        flipToWrite().position((int)position);
     }
 
     @Override
@@ -298,6 +301,10 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
         }
         else
         {
+            // Enforce all-or-nothing copy in case the
+            // given buffer wraps multiple ByteBuffers.
+            if (buffer.remaining() > space())
+                throw new BufferOverflowException();
             buffer.read(src ->
             {
                 long result = src.remaining();
@@ -417,15 +424,5 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
             flipPosition,
             BufferUtil.toDetailString(byteBuffer, (int)readPosition(), (int)writePosition(), (int)remaining()),
             retainable);
-    }
-
-    public static class Empty extends SingleMutableBuffer
-    {
-        public static final Empty INSTANCE = new Empty();
-
-        private Empty()
-        {
-            super(BufferUtil.EMPTY_BUFFER, Retainable.NON_RETAINABLE, false);
-        }
     }
 }

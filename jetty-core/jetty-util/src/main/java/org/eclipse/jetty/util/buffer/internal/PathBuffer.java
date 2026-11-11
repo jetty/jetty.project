@@ -157,13 +157,13 @@ public class PathBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public void readPosition(long newPosition)
+    public void readPosition(long position)
     {
-        if (newPosition < 0L)
+        if (position < 0L)
             throw new IllegalArgumentException("newPosition < 0");
-        if (newPosition > capacity)
+        if (position > capacity)
             throw new BufferUnderflowException();
-        this.position = newPosition;
+        this.position = position;
     }
 
     @Override

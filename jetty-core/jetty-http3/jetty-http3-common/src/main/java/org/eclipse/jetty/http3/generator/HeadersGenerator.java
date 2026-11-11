@@ -68,14 +68,14 @@ public class HeadersGenerator extends FrameGenerator
             // Write the header before the maxHeaderLength position.
             int headerLength = frameTypeLength + VarLenInt.length(dataLength);
             long headerStartPosition = maxHeaderLength - headerLength;
+            // Start reading from the beginning of the header,
+            // before the maxHeaderLength position.
+            buffer.readPosition(headerStartPosition);
             buffer.writePosition(headerStartPosition);
             VarLenInt.encode(buffer, FrameType.HEADERS.type());
             VarLenInt.encode(buffer, dataLength);
             // Restore the written bytes to include the encoded bytes.
             buffer.writePosition(maxHeaderLength + dataLength);
-            // Start reading from the beginning of the header,
-            // before the maxHeaderLength position.
-            buffer.readPosition(headerStartPosition);
             return headerLength + dataLength;
         }
         catch (QpackException x)

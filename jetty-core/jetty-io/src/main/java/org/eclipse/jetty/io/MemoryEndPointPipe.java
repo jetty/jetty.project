@@ -23,10 +23,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.Retainable;
 import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -92,7 +90,7 @@ public class MemoryEndPointPipe implements EndPoint.Pipe
     private class MemoryEndPoint extends AbstractEndPoint
     {
         private static final Logger LOG = LoggerFactory.getLogger(MemoryEndPoint.class);
-        private static final RetainableByteBuffer EOF = RetainableByteBuffer.wrap(BufferUtil.EMPTY_BUFFER, Retainable.NON_RETAINABLE);
+        private static final RetainableByteBuffer EOF = new RetainableByteBuffer.Empty();
 
         private final Deque<RetainableByteBuffer> buffers = new ArrayDeque<>();
         private final SocketAddress localAddress;

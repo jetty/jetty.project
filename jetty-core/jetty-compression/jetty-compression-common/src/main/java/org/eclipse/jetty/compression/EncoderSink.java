@@ -123,7 +123,7 @@ public abstract class EncoderSink implements Content.Sink
             {
                 this.state.set(State.INITIAL);
                 this.last = last;
-                this.content = content == null ? RetainableByteBuffer.Mutable.empty() : content;
+                this.content = content == null ? RetainableByteBuffer.empty() : content;
                 this.content.retain();
                 this.callback = callback;
                 iterate();

@@ -517,7 +517,7 @@ public class HttpOutput extends ServletOutputStream
     @Override
     public void close() throws IOException
     {
-        RetainableByteBuffer.Mutable content = null;
+        RetainableByteBuffer content = null;
         boolean acquireBlocker = false;
         boolean combineClosedCallback = false;
         try (AutoLock ignored = _channelState.lock())
@@ -575,7 +575,7 @@ public class HttpOutput extends ServletOutputStream
                             }
                             else
                             {
-                                content = RetainableByteBuffer.Mutable.empty();
+                                content = RetainableByteBuffer.empty();
                             }
                             break;
 
@@ -602,7 +602,7 @@ public class HttpOutput extends ServletOutputStream
                             }
                             else
                             {
-                                content = RetainableByteBuffer.Mutable.empty();
+                                content = RetainableByteBuffer.empty();
                             }
                             break;
 

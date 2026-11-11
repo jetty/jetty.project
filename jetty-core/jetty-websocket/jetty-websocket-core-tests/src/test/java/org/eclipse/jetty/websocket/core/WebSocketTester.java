@@ -180,7 +180,7 @@ public class WebSocketTester
             long len = buffer.write(b -> in.read(b.array(), b.arrayOffset() + b.position(), b.remaining()));
             if (len < 0)
                 return null;
-            buffer.writePosition(len);
+            buffer.writePosition(buffer.writePosition() + len);
         }
     }
 

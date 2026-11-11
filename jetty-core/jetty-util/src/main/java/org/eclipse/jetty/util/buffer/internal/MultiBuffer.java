@@ -82,17 +82,17 @@ public class MultiBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public void readPosition(long newPosition)
+    public void readPosition(long position)
     {
-        if (newPosition < 0 || newPosition > capacity())
+        if (position < 0 || position > capacity())
             throw new IllegalArgumentException();
 
         for (int i = 0; i < buffers.size(); ++i)
         {
             RetainableByteBuffer buffer = buffers.get(i);
-            if (newPosition <= buffer.capacity())
+            if (position <= buffer.capacity())
             {
-                buffer.readPosition(newPosition);
+                buffer.readPosition(position);
                 for (int j = i + 1; j < buffers.size(); ++j)
                 {
                     buffers.get(j).readPosition(0);
@@ -100,7 +100,7 @@ public class MultiBuffer implements RetainableByteBuffer
                 break;
             }
             buffer.consume(buffer.remaining());
-            newPosition -= buffer.capacity();
+            position -= buffer.capacity();
         }
     }
 

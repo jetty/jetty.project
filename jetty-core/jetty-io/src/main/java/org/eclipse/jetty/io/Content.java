@@ -1040,6 +1040,9 @@ public class Content
         /// Acquires the [RetainableByteBuffer] with the data bytes of this chunk.
         /// The buffer is retained and must be released or closed.
         ///
+        /// Multiple calls to this method return the same [RetainableByteBuffer],
+        /// not slices or copies of it, retained as many times as the number of calls.
+        ///
         /// @return the [RetainableByteBuffer] with the data bytes of this chunk
         RetainableByteBuffer acquire();
 
