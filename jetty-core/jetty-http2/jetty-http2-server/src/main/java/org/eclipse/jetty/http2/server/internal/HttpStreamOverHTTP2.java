@@ -278,7 +278,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer buffer, Callback callback)
     {
-        RetainableByteBuffer content = buffer != null ? buffer : RetainableByteBuffer.Mutable.empty();
+        RetainableByteBuffer content = buffer != null ? buffer : RetainableByteBuffer.empty();
         if (response != null)
             sendHeaders(request, response, content, last, callback);
         else

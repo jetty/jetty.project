@@ -59,7 +59,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     private static final Logger LOG = LoggerFactory.getLogger(ByteArrayEndPoint.class);
     private static final SocketAddress NO_SOCKET_ADDRESS = noSocketAddress();
-    private static final RetainableByteBuffer EOF = RetainableByteBuffer.wrap(BufferUtil.allocate(0));
+    private static final RetainableByteBuffer EOF = new RetainableByteBuffer.Empty();
 
     private final Runnable _runFillable = () -> getFillInterest().fillable();
     private final AutoLock _lock = new AutoLock();

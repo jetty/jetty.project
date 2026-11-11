@@ -245,6 +245,44 @@ public class SingleMutableBufferTest
     }
 
     @Test
+    public void testWritePositionBounds()
+    {
+        RetainableByteBuffer.Mutable b = RetainableByteBuffer.Mutable.allocate(10, false);
+        b.putInt(1);
+        b.putInt(2);
+        assertEquals(1, b.getInt());
+        assertEquals(4L, b.readPosition());
+
+        // Before the read position, in read mode.
+        assertThrows(IllegalArgumentException.class, () -> b.writePosition(3));
+        assertThrows(IllegalArgumentException.class, () -> b.writePosition(-1));
+        // After the capacity.
+        assertThrows(IllegalArgumentException.class, () -> b.writePosition(11));
+        assertEquals(4L, b.readPosition());
+        assertEquals(8L, b.writePosition());
+        assertEquals(4L, b.remaining());
+
+        // Before the read position, in write mode.
+        b.put((byte)0);
+        assertThrows(IllegalArgumentException.class, () -> b.writePosition(3));
+        assertEquals(4L, b.readPosition());
+        assertEquals(9L, b.writePosition());
+        assertEquals(5L, b.remaining());
+
+        // At the read position.
+        b.writePosition(4);
+        assertEquals(0L, b.remaining());
+        assertFalse(b.hasRemaining());
+        assertThrows(BufferUnderflowException.class, b::get);
+
+        // At the capacity.
+        b.writePosition(10);
+        assertEquals(6L, b.remaining());
+        assertEquals(0L, b.space());
+        assertEquals(2, b.getInt());
+    }
+
+    @Test
     public void testMutableAllocate()
     {
         RetainableByteBuffer.Mutable b = RetainableByteBuffer.Mutable.allocate(10, false);

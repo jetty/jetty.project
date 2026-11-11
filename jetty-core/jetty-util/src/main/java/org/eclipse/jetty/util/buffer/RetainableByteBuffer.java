@@ -55,7 +55,7 @@ public interface RetainableByteBuffer extends Retainable
     /// @return the empty buffer
     static RetainableByteBuffer empty()
     {
-        return RetainableByteBuffer.Mutable.empty();
+        return Empty.INSTANCE;
     }
 
     /// Allocates a ready-to-be-read buffer of the given size and directness.
@@ -129,6 +129,9 @@ public interface RetainableByteBuffer extends Retainable
     }
 
     /// Wraps the given [ByteBuffer], using the provided [Retainable] for retainability.
+    ///
+    /// The given [Retainable] is retained since it is stored in the returned
+    /// [RetainableByteBuffer], that must be released.
     ///
     /// @param byteBuffer the [ByteBuffer] to wrap
     /// @param retainable the [Retainable] used for retainability
@@ -224,8 +227,8 @@ public interface RetainableByteBuffer extends Retainable
     /// Changes the current read position of this buffer.
     /// Must always be between `0` and [#capacity()].
     ///
-    /// @param newPosition the new read position
-    void readPosition(long newPosition);
+    /// @param position the new read position
+    void readPosition(long position);
 
     /// Reads and discards `length` bytes from the current [#readPosition()].
     ///
@@ -324,7 +327,7 @@ public interface RetainableByteBuffer extends Retainable
     /// @throws BufferUnderflowException if there are no bytes to read
     long getLong();
 
-    /// Reads an `int` at the specified absolute read position.
+    /// Reads a `long` at the specified absolute read position.
     /// Does not advance the read position.
     ///
     /// @param position the absolute read position of the `long` to read
@@ -353,7 +356,7 @@ public interface RetainableByteBuffer extends Retainable
 
     /// Reads `len` bytes into the given byte array to offset `offset`
     /// from the specified absolute read position.
-    /// Advances the read position by `len`.
+    /// Does not advance the read position.
     ///
     /// @param position the absolute read position to read
     /// @param b the byte array to read into
@@ -531,12 +534,9 @@ public interface RetainableByteBuffer extends Retainable
     /// @throws IOException if the write fails
     default long putTo(OutputStream stream) throws IOException
     {
-        return read(b ->
-        {
-            int r = b.remaining();
-            stream.write(BufferUtil.toArray(b));
-            return r;
-        });
+        byte[] bytes = getArray();
+        stream.write(bytes);
+        return bytes.length;
     }
 
     /// Copies the content of this buffer to the given [ByteBuffer].
@@ -672,13 +672,125 @@ public interface RetainableByteBuffer extends Retainable
         long readFrom(FileChannel input, long position, long count) throws X;
     }
 
+    /// Stateless empty [RetainableByteBuffer] implementation, typically used
+    /// to create `static final` constants that are used as sentinel values.
+    ///
+    /// A constant instance of this class is returned by [RetainableByteBuffer#empty()].
+    class Empty implements RetainableByteBuffer
+    {
+        private static final RetainableByteBuffer INSTANCE = new Empty();
+
+        @Override
+        public long readPosition()
+        {
+            return 0;
+        }
+
+        @Override
+        public void readPosition(long position)
+        {
+            if (position != 0)
+                throw new IllegalArgumentException("invalid position " + position);
+        }
+
+        @Override
+        public long capacity()
+        {
+            return 0;
+        }
+
+        @Override
+        public long remaining()
+        {
+            return 0;
+        }
+
+        @Override
+        public byte get()
+        {
+            throw new BufferUnderflowException();
+        }
+
+        @Override
+        public byte get(long position)
+        {
+            throw new BufferUnderflowException();
+        }
+
+        @Override
+        public short getShort()
+        {
+            throw new BufferUnderflowException();
+        }
+
+        @Override
+        public short getShort(long position)
+        {
+            throw new BufferUnderflowException();
+        }
+
+        @Override
+        public int getInt()
+        {
+            throw new BufferUnderflowException();
+        }
+
+        @Override
+        public int getInt(long position)
+        {
+            throw new BufferUnderflowException();
+        }
+
+        @Override
+        public long getLong()
+        {
+            throw new BufferUnderflowException();
+        }
+
+        @Override
+        public long getLong(long position)
+        {
+            throw new BufferUnderflowException();
+        }
+
+        @Override
+        public void get(byte[] b, int off, int len)
+        {
+            if (len != 0)
+                throw new BufferUnderflowException();
+        }
+
+        @Override
+        public void get(long position, byte[] b, int off, int len)
+        {
+            if (len != 0)
+                throw new BufferUnderflowException();
+        }
+
+        @Override
+        public RetainableByteBuffer slice(long position, long length)
+        {
+            if (position != 0)
+                throw new IllegalArgumentException("invalid position " + position);
+            if (length != 0)
+                throw new IllegalArgumentException("invalid length " + length);
+            return empty();
+        }
+
+        @Override
+        public <X extends Throwable> long read(Reader<X> reader) throws X
+        {
+            return reader.readFrom(BufferUtil.EMPTY_BUFFER);
+        }
+    }
+
     /// Extends [RetainableByteBuffer] exposing _put_ APIs to write bytes into this instance.
     interface Mutable extends RetainableByteBuffer
     {
         /// @return the empty buffer
         static RetainableByteBuffer.Mutable empty()
         {
-            return SingleMutableBuffer.Empty.INSTANCE;
+            return Empty.INSTANCE;
         }
 
         /// @param bytes the byte array to wrap
@@ -731,9 +843,11 @@ public interface RetainableByteBuffer extends Retainable
         long writePosition();
 
         /// Changes the current write position of this buffer.
-        /// Must always be between `0` and [#capacity()].
+        /// Must always be between [#readPosition()] and [#capacity()].
         ///
         /// @param position the new write position
+        /// @throws IllegalArgumentException if the position is before
+        /// [#readPosition()] or after [#capacity()]
         void writePosition(long position);
 
         /// Fills this buffer with `length` number of the byte `0`, starting at the current write position.
@@ -920,6 +1034,142 @@ public interface RetainableByteBuffer extends Retainable
             /// @return the number of bytes written, or a negative value
             /// @throws X when the write fails
             long writeTo(ByteBuffer output) throws X;
+        }
+
+        /// A [Mutable] version of [RetainableByteBuffer.Empty], typically used
+        /// to perform zero-length network reads
+        class Empty extends RetainableByteBuffer.Empty implements Mutable
+        {
+            private static final Mutable INSTANCE = new Mutable.Empty();
+
+            @Override
+            public long writePosition()
+            {
+                return 0;
+            }
+
+            @Override
+            public void writePosition(long position)
+            {
+                if (position != 0)
+                    throw new IllegalArgumentException("invalid position " + position);
+            }
+
+            @Override
+            public void pad(long length)
+            {
+                if (length != 0)
+                    throw new IllegalArgumentException("invalid length " + length);
+            }
+
+            @Override
+            public long space()
+            {
+                return 0;
+            }
+
+            @Override
+            public void put(byte b)
+            {
+                throw new BufferOverflowException();
+            }
+
+            @Override
+            public void put(long position, byte b)
+            {
+                throw new BufferOverflowException();
+            }
+
+            @Override
+            public void putShort(short s)
+            {
+                throw new BufferOverflowException();
+            }
+
+            @Override
+            public void putShort(long position, short s)
+            {
+                throw new BufferOverflowException();
+            }
+
+            @Override
+            public void putInt(int i)
+            {
+                throw new BufferOverflowException();
+            }
+
+            @Override
+            public void putInt(long position, int i)
+            {
+                throw new BufferOverflowException();
+            }
+
+            @Override
+            public void putLong(long l)
+            {
+                throw new BufferOverflowException();
+            }
+
+            @Override
+            public void putLong(long position, long l)
+            {
+                throw new BufferOverflowException();
+            }
+
+            @Override
+            public void put(byte[] bytes, int offset, int length)
+            {
+                if (length != 0)
+                    throw new BufferOverflowException();
+            }
+
+            @Override
+            public void put(ByteBuffer byteBuffer)
+            {
+                if (byteBuffer.hasRemaining())
+                    throw new BufferOverflowException();
+            }
+
+            @Override
+            public void put(RetainableByteBuffer buffer)
+            {
+                if (buffer.hasRemaining())
+                    throw new BufferOverflowException();
+            }
+
+            @Override
+            public long append(byte[] bytes, int offset, int length)
+            {
+                return 0;
+            }
+
+            @Override
+            public long append(ByteBuffer byteBuffer)
+            {
+                return 0;
+            }
+
+            @Override
+            public long append(RetainableByteBuffer buffer)
+            {
+                return 0;
+            }
+
+            @Override
+            public void compact()
+            {
+            }
+
+            @Override
+            public void clear()
+            {
+            }
+
+            @Override
+            public <X extends Throwable> long write(Writer<X> writer) throws X
+            {
+                return writer.writeTo(BufferUtil.EMPTY_BUFFER);
+            }
         }
     }
 }

@@ -115,10 +115,10 @@ public class ByteArrayEndPointTest
             assertTrue(endPoint.flush(RetainableByteBuffer.wrap(" some more", UTF_8)));
             assertEquals("some output some more", endPoint.getOutputString(UTF_8));
 
-            assertTrue(endPoint.flush(RetainableByteBuffer.Mutable.empty()));
+            assertTrue(endPoint.flush(RetainableByteBuffer.empty()));
             assertEquals("some output some more", endPoint.getOutputString(UTF_8));
 
-            assertTrue(endPoint.flush(RetainableByteBuffer.merge(RetainableByteBuffer.Mutable.empty(), RetainableByteBuffer.wrap(" and", UTF_8), RetainableByteBuffer.wrap(" more", UTF_8))));
+            assertTrue(endPoint.flush(RetainableByteBuffer.merge(RetainableByteBuffer.empty(), RetainableByteBuffer.wrap(" and", UTF_8), RetainableByteBuffer.wrap(" more", UTF_8))));
             assertEquals("some output some more and more", endPoint.getOutputString(UTF_8));
         }
     }
