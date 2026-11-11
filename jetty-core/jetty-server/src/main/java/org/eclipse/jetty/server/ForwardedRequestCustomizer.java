@@ -687,6 +687,21 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         return headerValue.substring(0, commaIndex).trim();
     }
 
+    /**
+     * Removes an obfuscated port (RFC 7239, section 6.3) from a node, as it carries no port number.
+     */
+    private static String withoutObfuscatedPort(String node)
+    {
+        int portSeparator = node.lastIndexOf(':');
+        int ipv6End = node.lastIndexOf(']');
+        // An IPv6 address must be bracketed to carry a port, so an unbracketed one is left alone
+        boolean hasPort = portSeparator > ipv6End && (ipv6End >= 0 || portSeparator == node.indexOf(':'));
+        // An obfuscated port is "_" followed by at least one character
+        if (hasPort && portSeparator + 2 < node.length() && node.charAt(portSeparator + 1) == '_')
+            return node.substring(0, portSeparator);
+        return node;
+    }
+
     @Override
     public String toString()
     {
@@ -1007,17 +1022,19 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
                     {
                         if (!getProxyAsAuthority())
                             break;
-                        if (value.startsWith("_") || "unknown".equals(value))
+                        String node = withoutObfuscatedPort(value);
+                        if (node.startsWith("_") || "unknown".equals(node))
                             break;
-                        HostPort hostField = new HostPort(value);
+                        HostPort hostField = new HostPort(node);
                         getAuthority().setHostPort(hostField.getHost(), hostField.getPort(), Source.FORWARDED);
                         break;
                     }
                     case "for":
                     {
-                        if (value.startsWith("_") || "unknown".equals(value))
+                        String node = withoutObfuscatedPort(value);
+                        if (node.startsWith("_") || "unknown".equals(node))
                             break;
-                        HostPort hostField = new HostPort(value);
+                        HostPort hostField = new HostPort(node);
                         getFor().setHostPort(hostField.getHost(), hostField.getPort(), Source.FORWARDED);
                         break;
                     }
