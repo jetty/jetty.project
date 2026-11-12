@@ -1,4 +1,17 @@
-jetty-12.1.15-SNAPSHOT
+jetty-12.1.16-SNAPSHOT
+
+12.1.15 - 05 November 2026
+ + 14127 Jetty Core webapps not deployed when directory contains dots (@sharanggupta)
+ + 14536 Jetty 12.1.6 ResourceHandler not respecting start of byte range request when setUseFileMapping is true (@sharanggupta)
+ + 15718 `HttpCookieUtils` ignores `expires` attribute
+ + 15760 Positive Max-Age does not take precedence over an expired Expires attribute
+ + 15802 Reparsing cookie loses Max-Age/Expire attributes
+ + 15883 Review EE10+ `DefaultServlet`'s 405 Method Not Allowed response when POST method is used
+ + 15888 EagerContentHandler swallows Callback.failed(), leaving QoSHandler permits occupied (@adityaanikam)
+ + 15941 permessage-deflate keeps a Deflater per session even with server_no_context_takeover (@stefanroex)
+ + 16020 Origin.Address.asString(), Strict-Transport-Security and Alt-Svc are formatted with the default Locale (non-ASCII digits)
+ + 16021 jetty-security declares junit-jupiter-engine / junit-jupiter-params as compile dependencies
+ + 16062 Support dynamic modification of KeyStore entries in SslContextFactory
 
 12.1.14 - 01 October 2026
  + 15368 HTTP/2 client aborts exchange and loses response completed during server graceful shutdown (regression in 12.1.10 / 12.0.36 from #15134 / #14692)
