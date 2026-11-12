@@ -68,13 +68,6 @@
       <artifactId>maven-resolver-transport-apache</artifactId>
     </dependency>
     <dependency>
-      <!-- maven-resolver-transport-apache stopped pulling commons-logging transitively in 2.0.25;
-           supply the SLF4J bridge so the Apache HTTP transport can initialize. -->
-      <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-transport-file</artifactId>
     </dependency>
@@ -155,6 +148,13 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
+    </dependency>
+    <dependency>
+      <!-- maven-resolver-transport-apache stopped pulling commons-logging transitively in 2.0.25;
+           supply the SLF4J bridge so the Apache HTTP transport can initialize. -->
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
