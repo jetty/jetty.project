@@ -189,7 +189,7 @@
     <checkstyle.version>10.26.1</checkstyle.version>
     <commons-codec.version>1.23.0</commons-codec.version>
     <commons-io.version>2.22.0</commons-io.version>
-    <commons-lang3.version>3.21.0</commons-lang3.version>
+    <commons-lang3.version>3.22.0</commons-lang3.version>
     <commons.compress.version>1.28.0</commons.compress.version>
     <commons.io.version>2.16.1</commons.io.version>
     <compiler.release>17</compiler.release>
@@ -223,7 +223,7 @@
     <injection.bundle.version>1.2</injection.bundle.version>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <it.debug>false</it.debug>
-    <jackson.version>2.22.4</jackson.version>
+    <jackson.version>2.23.0</jackson.version>
     <jacoco.maven.plugin.version>0.8.16</jacoco.maven.plugin.version>
     <jakarta.servlet.tck.version>6.1.2</jakarta.servlet.tck.version>
     <javadoc.verbose>false</javadoc.verbose>
@@ -292,7 +292,7 @@
     <maven.plugin-tools.version>3.16.0</maven.plugin-tools.version>
     <maven.release.plugin.version>3.3.1</maven.release.plugin.version>
     <maven.remote-resources-plugin.version>3.3.0</maven.remote-resources-plugin.version>
-    <maven.resolver.version>2.0.24</maven.resolver.version>
+    <maven.resolver.version>2.0.25</maven.resolver.version>
     <maven.resources.plugin.version>3.5.0</maven.resources.plugin.version>
     <maven.retryFailedDeploymentCount>10</maven.retryFailedDeploymentCount>
     <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
