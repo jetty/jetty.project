@@ -312,15 +312,15 @@ public class Main
     }
 
     /**
-     * The platform native encoding, exposed as the {@code sun.jnu.encoding} system property. This
-     * is the charset the {@code java} launcher uses to decode an {@code @argument-file} back into
+     * The platform native encoding, exposed as the {@code native.encoding} system property. This is
+     * the charset the {@code java} launcher uses to decode an {@code @argument-file} back into
      * {@code argv}, and it is locale-driven; it is NOT {@code file.encoding} /
      * {@link Charset#defaultCharset()}, which JEP 400 fixed to UTF-8 on JDK 18+. Falls back to the
      * default charset when the property is missing or names an unknown charset.
      */
     private static Charset nativeEncoding()
     {
-        String nativeEncoding = System.getProperty("sun.jnu.encoding");
+        String nativeEncoding = System.getProperty("native.encoding");
         if (nativeEncoding != null)
         {
             try
@@ -609,7 +609,7 @@ public class Main
                 case ARGLINES ->
                 {
                     // --arglines output is redirected to a file that "java @file" later reads in the
-                    // platform native encoding (sun.jnu.encoding). System.out encodes in
+                    // platform native encoding (the native.encoding property). System.out encodes in
                     // stdout.encoding (JDK 19+) or file.encoding (JDK 17), either of which can differ
                     // from the native encoding under a non-UTF-8 locale, corrupting non-ASCII values
                     // even on the same host. Write straight to stdout's file descriptor in the native
@@ -666,7 +666,7 @@ public class Main
             // The core-environment properties are written to a temp .properties file (not inlined
             // as key=value args): Properties.store uses ISO-8859-1 with \\uXXXX escapes and
             // XmlConfiguration reads it back with Properties.load, so non-ASCII values round-trip
-            // under any locale. Inlining would route them through the argfile in sun.jnu.encoding,
+            // under any locale. Inlining would route them through the argfile in the native encoding,
             // corrupting non-ASCII values under a non-UTF-8 locale (e.g. LANG=C); the file's path
             // is all that reaches the argfile, and the 0600 temp file keeps the values off the
             // visible arguments just the same.

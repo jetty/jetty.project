@@ -481,7 +481,7 @@ The file itself holds those values, so protect it with file permissions (as show
 
 [CAUTION]
 ====
-The arguments file is written using the native character encoding of the JVM that generates it (reported as the `sun.jnu.encoding` system property), and `java @file` reads it using the native encoding of the JVM that runs it.
+The arguments file is written using the native character encoding of the JVM that generates it (reported as the `native.encoding` system property), and `java @file` reads it using the native encoding of the JVM that runs it.
 These match on the same host, so generating and using the file on one machine is always safe.
 If you generate the file on one machine and run it on another whose native encoding differs -- for example moving between a UTF-8 platform and a Windows system using a legacy code page -- then non-ASCII bytes in the file (non-ASCII passwords, property values, or file paths) can be misread.
 ASCII-only configuration is unaffected.

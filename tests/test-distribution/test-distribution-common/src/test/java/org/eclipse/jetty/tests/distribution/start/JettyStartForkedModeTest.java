@@ -53,9 +53,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * properties are passed to the forked child through a temp {@code .properties} file
  * ({@code Properties.store}/{@code load}, ISO-8859-1 + {@code \\uXXXX} escapes), so a value such as
  * {@code café-€-naïve-中文密码} round-trips losslessly under any locale. Were the properties inlined as
- * {@code key=value} lines into the argument file instead, they would be written in
- * {@code sun.jnu.encoding} and corrupted to {@code caf?-?-na?ve-????} under a non-UTF-8 locale
- * ({@code LANG=C}/POSIX); this test guards against that.
+ * {@code key=value} lines into the argument file instead, they would be written in the platform
+ * native encoding (the {@code native.encoding} property) and corrupted to {@code caf?-?-na?ve-????}
+ * under a non-UTF-8 locale ({@code LANG=C}/POSIX); this test guards against that.
  * <p>
  * Observation is end-to-end: a {@link org.eclipse.jetty.server.handler.DumpHandler} is added at
  * {@code /dump} by a top-level {@code etc/deploy-dump.xml}, with its label set from the core-env
@@ -70,8 +70,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * {@code C} case has an ASCII native encoding, which is where inlining would corrupt the value.
  * <p>
  * Both JDK images (straddling JEP 400) are run: the fork path's property delivery is locale-driven
- * ({@code sun.jnu.encoding}), which JEP 400 did <em>not</em> change, so the two JDK columns behave
- * identically; the matrix documents that invariance.
+ * (the native encoding, {@code native.encoding}), which JEP 400 did <em>not</em> change, so the two
+ * JDK columns behave identically; the matrix documents that invariance.
  */
 public class JettyStartForkedModeTest extends AbstractJettyHomeTest
 {
@@ -84,7 +84,7 @@ public class JettyStartForkedModeTest extends AbstractJettyHomeTest
 
     private static final String JETTY_HOME = "/opt/jetty/jetty-home";
     private static final String JETTY_BASE = "/var/test/jetty-base";
-    // A jetty.base under a Chinese-named directory, to exercise sun.jnu.encoding's filename-path
+    // A jetty.base under a Chinese-named directory, to exercise the native encoding's filename-path
     // domain (non-ASCII filesystem paths).
     private static final String CHINESE_BASE = "/var/test/中文/jetty-base";
     // The forked process' console log, always at an ASCII path (even for the Chinese-base case).
@@ -124,7 +124,7 @@ public class JettyStartForkedModeTest extends AbstractJettyHomeTest
 
     /**
      * (image, locale label, LANG value): {@code null} LANG uses the image default, which for these
-     * images is {@code C.UTF-8} (so {@code sun.jnu.encoding} is UTF-8); only the explicit
+     * images is {@code C.UTF-8} (so the native encoding is UTF-8); only the explicit
      * {@code LANG=C} gives an ASCII native encoding.
      */
     public static Stream<Arguments> localeMatrix()
@@ -309,7 +309,7 @@ public class JettyStartForkedModeTest extends AbstractJettyHomeTest
     {
         return "Forked child echoed '" + echoed + "' for " + MARKER_KEY + " under LANG=" + localeLabel + " on " + image +
             ". A corrupted value (e.g. containing '?') means the core properties were inlined into the " +
-            "sun.jnu.encoding @argument-file instead of being passed through a temp .properties file, so a " +
+            "native-encoding @argument-file instead of being passed through a temp .properties file, so a " +
             "non-ASCII value did not survive a non-UTF-8 locale.";
     }
 
