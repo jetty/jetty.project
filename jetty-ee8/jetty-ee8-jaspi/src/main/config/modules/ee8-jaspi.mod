@@ -16,11 +16,14 @@ ee8-auth-config-factory
 [xml]
 etc/jaspi/jetty-ee8-jaspi-authmoduleconfig.xml
 
+[ini]
+ee8.jakarta.security.auth.message.api.version?=@version(jakarta.security.auth.message:jakarta.security.auth.message-api)@
+
 [files]
 basehome:etc/jaspi/jetty-ee8-jaspi-authmoduleconfig.xml|etc/jaspi/jetty-ee8-jaspi-authmoduleconfig.xml
-maven://jakarta.security.auth.message/jakarta.security.auth.message-api/1.1.3/jar|lib/ee8/support/jakarta.security.auth.message.jakarta.security.auth.message-api-1.1.3.jar
+maven://jakarta.security.auth.message/jakarta.security.auth.message-api/${ee8.jakarta.security.auth.message.api.version}/jar|lib/ee8/support/jakarta.security.auth.message.jakarta.security.auth.message-api-${ee8.jakarta.security.auth.message.api.version}.jar
 maven://org.eclipse.jetty.ee8/jetty-ee8-jaspi/${jetty.version}/jar|lib/ee8/jetty-ee8-jaspi-${jetty.version}.jar
 
 [lib]
 lib/ee8/jetty-ee8-jaspi-${jetty.version}.jar
-lib/ee8/support/jakarta.security.auth.message.jakarta.security.auth.message-api-1.1.3.jar
+lib/ee8/support/jakarta.security.auth.message.jakarta.security.auth.message-api-${ee8.jakarta.security.auth.message.api.version}.jar

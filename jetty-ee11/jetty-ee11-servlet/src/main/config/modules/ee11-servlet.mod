@@ -10,10 +10,13 @@ ee11
 server
 sessions
 
+[ini]
+ee11.jakarta.servlet.api.version?=@version(jakarta.servlet:jakarta.servlet-api)@
+
 [files]
-maven://jakarta.servlet/jakarta.servlet-api/6.1.0/jar|lib/ee11/support/jakarta.servlet.jakarta.servlet-api-6.1.0.jar
+maven://jakarta.servlet/jakarta.servlet-api/${ee11.jakarta.servlet.api.version}/jar|lib/ee11/support/jakarta.servlet.jakarta.servlet-api-${ee11.jakarta.servlet.api.version}.jar
 maven://org.eclipse.jetty.ee11/jetty-ee11-servlet/${jetty.version}/jar|lib/ee11/jetty-ee11-servlet-${jetty.version}.jar
 
 [lib]
 lib/ee11/jetty-ee11-servlet-${jetty.version}.jar
-lib/ee11/support/jakarta.servlet.jakarta.servlet-api-6.1.0.jar
+lib/ee11/support/jakarta.servlet.jakarta.servlet-api-${ee11.jakarta.servlet.api.version}.jar

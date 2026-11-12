@@ -276,11 +276,30 @@ See also the <<static-deploy,`static-deploy`>> module and the <<core-deploy,`cor
 [[eeN-ext]]
 == Module `{ee-all}-ext`
 
-The `{ee-all}-ext` modules allow to add libraries to the environment class-path or module-path, for example to provide implementations of Jakarta APIs such as a Jakarta Mail implementation or Jakarta Transaction implementation.
+The `{ee-all}-ext` modules allow to add libraries to the environment class-path or module-path, for example to provide implementations of Jakarta APIs such as a Jakarta Transaction implementation.
 
 The libraries must be in `+*.jar+` format, and must be placed in `$JETTY_BASE/lib/{ee-all}/ext`.
 
+For a Jakarta Mail implementation specifically, prefer the dedicated <<eeN-mail,`{ee-all}-mail`>> module rather than placing jars under `ext`.
+
 Refer also to the server specific <<ext,`ext`>> module.
+
+[[eeN-mail]]
+== Module `{ee-all}-mail`
+
+The `{ee-all}-mail` module provides the Jakarta Mail API and an implementation, so that web applications can use `jakarta.mail`, for example through a `MailSessionReference` JNDI resource as described in the xref:jndi/index.adoc[JNDI section].
+
+The implementation depends on the environment: `ee8` and `ee9` use the legacy `com.sun` JavaMail implementation, while `ee10` and `ee11` use the Eclipse Angus implementation.
+The jars are downloaded when the module is enabled, not bundled with the Jetty distribution.
+
+On `ee9`, `ee10`, and `ee11` this module also enables the <<eeN-activation,`{ee-all}-activation`>> module that Jakarta Mail requires; on `ee8` the Mail implementation already bundles Jakarta Activation.
+
+[[eeN-activation]]
+== Module `{ee-all}-activation`
+
+The `{ee-all}-activation` module provides the Jakarta Activation API and an implementation (`com.sun`/JAF on `ee9`, Eclipse Angus on `ee10` and `ee11`), used by Jakarta Mail.
+It is normally enabled transitively by the <<eeN-mail,`{ee-all}-mail`>> module.
+The jars are downloaded when the module is enabled, not bundled with the Jetty distribution.
 
 [[eeN-proxy]]
 == Module `{ee-all}-proxy`

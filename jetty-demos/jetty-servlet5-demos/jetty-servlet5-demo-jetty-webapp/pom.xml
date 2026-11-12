@@ -41,6 +41,11 @@
           <groupId>jakarta.servlet</groupId>
           <artifactId>jakarta.servlet-api</artifactId>
         </exclusion>
+        <!-- JAXB is not used by jstl-api, it's a bad transitive dependency -->
+        <exclusion>
+          <groupId>jakarta.xml.bind</groupId>
+          <artifactId>jakarta.xml.bind-api</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -65,11 +70,10 @@
             <Export-Package>!org.example*</Export-Package>
             <!-- the test webapp is configured via a jetty xml file
             in order to add the security handler. -->
-            <!-- in fact the '.' must not be there
-            but Felix-BND has a bug:
-            http://www.mail-archive.com/users@felix.apache.org/msg04730.html
-            https://issues.apache.org/jira/browse/FELIX-1571
-            -->
+            <!-- The leading '.' is required so bnd analyzes the compiled classes during
+            the WAR manifest goal; without it no Import-Package is generated and the
+            bundle will not resolve. FELIX-1571 tracks this behavior (listed as fixed
+            in maven-bundle-plugin 2.3.5) but the quirk is still required. -->
             <Bundle-ClassPath>.,WEB-INF/classes</Bundle-ClassPath>
             <Web-ContextPath>/servlet5-demo-jetty</Web-ContextPath>
           </instructions>
