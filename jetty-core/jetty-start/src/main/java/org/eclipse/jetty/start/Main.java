@@ -14,6 +14,8 @@
 package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,7 +31,6 @@ import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -275,52 +276,34 @@ public class Main
 
     /**
      * Write the forked-JVM command to a restricted-permission {@code java @argument-file}
-     * so the child's configuration stays out of the visible process arguments (issue
-     * #14005). The file is created {@code 0600} where the filesystem supports it, in the
-     * directory from {@link #resolveExecArgFileDir(StartArgs)}, and removed on JVM exit.
+     * so the child's configuration stays out of the visible process arguments. The file is
+     * created {@code 0600} where the filesystem supports it, in {@code java.io.tmpdir} (a
+     * per-user temp directory on Windows), and removed on JVM exit.
      *
-     * @param args the start arguments (used to resolve the target directory)
      * @param cmd the child command, built without the {@code "java"} part
      * @return the argument file to hand the child as {@code @<path>}
      * @throws IOException if the file cannot be created or written
      */
-    Path writeExecArgFile(StartArgs args, CommandLineBuilder cmd) throws IOException
+    Path writeExecArgFile(CommandLineBuilder cmd) throws IOException
     {
-        Path dir = resolveExecArgFileDir(args);
         Path argFile;
         try
         {
-            argFile = Files.createTempFile(dir, "jetty-exec-", ".argfile",
+            argFile = Files.createTempFile("jetty-exec-", ".argfile",
                 PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
         }
         catch (UnsupportedOperationException e)
         {
-            // Non-POSIX filesystem (e.g. Windows): the temp/base directory is user-private.
-            argFile = Files.createTempFile(dir, "jetty-exec-", ".argfile");
+            // Non-POSIX filesystem (e.g. Windows): java.io.tmpdir is a per-user temp directory.
+            argFile = Files.createTempFile("jetty-exec-", ".argfile");
         }
         argFile.toFile().deleteOnExit();
 
-        // The java launcher expands @argument-file bytes into the child's native argv, which
-        // the JVM then decodes with the platform native encoding - exposed as the
-        // "sun.jnu.encoding" system property (NOT file.encoding/Charset.defaultCharset()).
-        // Write with that encoding so non-ASCII values (passwords, paths, etc.) round-trip;
-        // hardcoding UTF-8 would corrupt them where the native encoding is a legacy codepage
-        // (e.g. Windows). The forked child shares this JVM's native encoding.
-        Charset encoding = Charset.defaultCharset();
-        String nativeEncoding = System.getProperty("sun.jnu.encoding");
-        if (nativeEncoding != null)
-        {
-            try
-            {
-                encoding = Charset.forName(nativeEncoding);
-            }
-            catch (Exception ignore)
-            {
-                // keep the default charset
-            }
-        }
-
-        try (PrintStream out = new PrintStream(Files.newOutputStream(argFile), false, encoding))
+        // The java launcher expands @argument-file bytes into the child's native argv, which the
+        // JVM then decodes with the platform native encoding (see nativeEncoding()). Write with
+        // that encoding so non-ASCII values (passwords, paths, etc.) round-trip; the forked child
+        // shares this JVM's native encoding.
+        try (PrintStream out = new PrintStream(Files.newOutputStream(argFile), false, nativeEncoding()))
         {
             cmd.writeArgLines(out);
         }
@@ -329,31 +312,27 @@ public class Main
     }
 
     /**
-     * Resolve the directory for the forked-JVM {@code @argument-file}: the
-     * {@code jetty.server.tempDirectory} property if set, otherwise {@code ${jetty.base}},
-     * falling back to {@code java.io.tmpdir} when that directory is not writable (for
-     * example a read-only base).
-     *
-     * @param args the start arguments
-     * @return an existing, writable directory for the argument file
+     * The platform native encoding, exposed as the {@code sun.jnu.encoding} system property. This
+     * is the charset the {@code java} launcher uses to decode an {@code @argument-file} back into
+     * {@code argv}, and it is locale-driven; it is NOT {@code file.encoding} /
+     * {@link Charset#defaultCharset()}, which JEP 400 fixed to UTF-8 on JDK 18+. Falls back to the
+     * default charset when the property is missing or names an unknown charset.
      */
-    Path resolveExecArgFileDir(StartArgs args)
+    private static Charset nativeEncoding()
     {
-        Path base = getBaseHome().getBasePath();
-        Path dir = base;
-
-        Props properties = args.getJettyEnvironment().getProperties();
-        String configured = properties.getString("jetty.server.tempDirectory");
-        if (configured != null && !configured.isBlank())
-            dir = base.resolve(properties.expand(configured)).normalize();
-
-        if (!Files.isDirectory(dir) || !Files.isWritable(dir))
+        String nativeEncoding = System.getProperty("sun.jnu.encoding");
+        if (nativeEncoding != null)
         {
-            Path fallback = Paths.get(System.getProperty("java.io.tmpdir"));
-            StartLog.debug("Exec @argument-file directory %s is not writable; using %s", dir, fallback);
-            dir = fallback;
+            try
+            {
+                return Charset.forName(nativeEncoding);
+            }
+            catch (Exception ignore)
+            {
+                // fall through to the default charset
+            }
         }
-        return dir;
+        return Charset.defaultCharset();
     }
 
     public void invokeMain(ClassLoader classloader, StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException
@@ -627,7 +606,19 @@ public class Main
             switch (args.getDryRun())
             {
                 case LEGACY -> cmd.writeCommandLine(System.out);
-                case ARGLINES -> cmd.writeArgLines(System.out);
+                case ARGLINES ->
+                {
+                    // --arglines output is redirected to a file that "java @file" later reads in the
+                    // platform native encoding (sun.jnu.encoding). System.out encodes in
+                    // stdout.encoding (JDK 19+) or file.encoding (JDK 17), either of which can differ
+                    // from the native encoding under a non-UTF-8 locale, corrupting non-ASCII values
+                    // even on the same host. Write straight to stdout's file descriptor in the native
+                    // encoding so the generated file round-trips wherever it is generated and used.
+                    System.out.flush();
+                    PrintStream argLines = new PrintStream(new FileOutputStream(FileDescriptor.out), true, nativeEncoding());
+                    cmd.writeArgLines(argLines);
+                    argLines.flush();
+                }
             }
         }
 
@@ -666,15 +657,22 @@ public class Main
         // execute Jetty in another JVM
         if (args.isExec())
         {
-            // Build the child command with the core properties inlined (unless
-            // --exec-properties pins a file) and without the "java" part, so the whole
-            // command can be written to a java @argument-file. Launching the child as
-            // "java @argfile" keeps its configuration - STOP.KEY, secondary-environment
-            // properties, -D system properties, etc. - off the publicly visible process
-            // arguments (issue #14005), and sidesteps the OS command-line length limit.
+            // Build the child command without the "java" part, so the whole command can be written
+            // to a java @argument-file. Launching the child as "java @argfile" keeps its
+            // configuration - STOP.KEY, secondary-environment properties, -D system properties,
+            // etc. - off the publicly visible process arguments, and sidesteps the OS
+            // command-line length limit.
+            //
+            // The core-environment properties are written to a temp .properties file (not inlined
+            // as key=value args): Properties.store uses ISO-8859-1 with \\uXXXX escapes and
+            // XmlConfiguration reads it back with Properties.load, so non-ASCII values round-trip
+            // under any locale. Inlining would route them through the argfile in sun.jnu.encoding,
+            // corrupting non-ASCII values under a non-UTF-8 locale (e.g. LANG=C); the file's path
+            // is all that reaches the argfile, and the 0600 temp file keeps the values off the
+            // visible arguments just the same.
             Set<String> parts = new LinkedHashSet<>(StartArgs.ALL_PARTS);
             parts.remove("java");
-            CommandLineBuilder cmd = args.getMainArgs(parts, args.getExecProperties() == null);
+            CommandLineBuilder cmd = args.getMainArgs(parts, false);
             cmd.debug();
 
             List<String> execModules = args.getAllModules().getEnabled().stream()
@@ -684,7 +682,7 @@ public class Main
                 .collect(Collectors.toList());
             StartLog.warn("Forking second JVM due to forking module(s): %s. Use --dry-run to generate the command line to avoid forking.", execModules);
 
-            Path argFile = writeExecArgFile(args, cmd);
+            Path argFile = writeExecArgFile(cmd);
             ProcessBuilder pbuilder = new ProcessBuilder(CommandLineBuilder.findJavaBin(), "@" + argFile.toAbsolutePath());
             StartLog.endStartLog();
             final Process process = pbuilder.start();

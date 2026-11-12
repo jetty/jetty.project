@@ -24,8 +24,9 @@ package org.eclipse.jetty.tests.distribution.jettysh;
  * (issue #14005): root creates the 0600 file and hands ownership to {@code jetty} so the
  * dropped-to user can read it.
  * <p>
- * {@code JETTY_HOME} and {@code JETTY_BASE} are owned by {@code root}; {@code JETTY_BASE} is
- * made world-writable so the {@code jetty} process can write its pid/state files after the drop.
+ * {@code JETTY_HOME} is owned by {@code root}; {@code JETTY_BASE} (also used as {@code JETTY_RUN})
+ * is owned by {@code jetty} so the dropped-to process can write its pid/state files there, and so
+ * jetty.sh's safe-directory check accepts it (it refuses a group/world-writable {@code JETTY_RUN}).
  */
 public class ImageUserRootJettyUser extends ImageFromDSL
 {
@@ -36,13 +37,13 @@ public class ImageUserRootJettyUser extends ImageFromDSL
                 .from(osImage.getDockerImageName())
                 // setup Jetty Home, owned by root
                 .copy("/opt/jetty/", "${JETTY_HOME}/")
-                // create the "jetty" user and a root-owned, world-writable Jetty Base, and
-                // configure JETTY_USER so jetty.sh drops privileges at launch (NOTE: no
-                // .user("jetty") here, so the script itself still runs as root)
+                // create the "jetty" user and a jetty-owned Jetty Base (so the dropped-to process
+                // can write pid/state there), and configure JETTY_USER so jetty.sh drops
+                // privileges at launch (NOTE: no .user("jetty") here, so the script still runs as root)
                 .run("chmod a+x ${JETTY_HOME}/bin/jetty.sh ; " +
                     "mkdir -p ${JETTY_BASE} ; " +
                     "useradd --home-dir=${JETTY_BASE} --shell=/bin/bash jetty ; " +
-                    "chmod a+w ${JETTY_BASE} ; " +
+                    "chown jetty:jetty ${JETTY_BASE} ; " +
                     "echo \"JETTY_USER=jetty\" >> /etc/default/jetty") // drop privileges to jetty
                 // Configure Jetty Base
                 .workDir("${JETTY_BASE}")

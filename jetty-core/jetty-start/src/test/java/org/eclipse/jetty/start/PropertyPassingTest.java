@@ -298,6 +298,10 @@ public class PropertyPassingTest
     // café-€-naïve : a value with non-ASCII code points whose encoding matters.
     private static final String MARKER_VALUE = "café-€-naïve";
 
+    // 中文密码 ("Chinese password") : non-ASCII code points well outside Latin-1 (a keystore password
+    // is a realistic carrier of such a value).
+    private static final String CHINESE_VALUE = "中文密码";
+
     /**
      * When the JVM that generates the arguments file and the JVM that runs {@code java @file}
      * share a native encoding (both UTF-8 here), a non-ASCII property value round-trips.
@@ -329,6 +333,40 @@ public class PropertyPassingTest
 
         byte[] needle = ("test.marker=" + MARKER_VALUE).getBytes(UTF_8);
         assertThat("value corrupted under mismatched native encoding", containsSequence(output, needle), is(false));
+    }
+
+    /**
+     * As {@link #testArgFileSurvivesMatchingNativeEncoding()} but with Chinese characters (well
+     * outside Latin-1): a non-ASCII property value such as a keystore password round-trips when the
+     * generating and running JVMs share a UTF-8 native encoding.
+     */
+    @Test
+    @EnabledOnOs(OS.LINUX)
+    public void testArgFileSurvivesMatchingNativeEncodingChinese() throws Exception
+    {
+        Path argFile = workDir.getEmptyPathDir().resolve("same-cjk.args");
+        generateArgFile(argFile, "C.UTF-8", "test.marker=" + CHINESE_VALUE);
+        byte[] output = runPropertyDump(argFile, "C.UTF-8");
+
+        byte[] needle = ("test.marker=" + CHINESE_VALUE).getBytes(UTF_8);
+        assertThat("Chinese value preserved under matching native encoding", containsSequence(output, needle), is(true));
+    }
+
+    /**
+     * As {@link #testArgFileCorruptedByMismatchedNativeEncoding()} but with Chinese characters:
+     * generating under UTF-8 and running {@code java @file} under an ASCII native encoding
+     * ({@code LANG=C}) misreads the bytes, so the original value no longer appears.
+     */
+    @Test
+    @EnabledOnOs(OS.LINUX)
+    public void testArgFileCorruptedByMismatchedNativeEncodingChinese() throws Exception
+    {
+        Path argFile = workDir.getEmptyPathDir().resolve("mismatch-cjk.args");
+        generateArgFile(argFile, "C.UTF-8", "test.marker=" + CHINESE_VALUE);
+        byte[] output = runPropertyDump(argFile, "C");
+
+        byte[] needle = ("test.marker=" + CHINESE_VALUE).getBytes(UTF_8);
+        assertThat("Chinese value corrupted under mismatched native encoding", containsSequence(output, needle), is(false));
     }
 
     private void generateArgFile(Path argFile, String lang, String... properties) throws Exception

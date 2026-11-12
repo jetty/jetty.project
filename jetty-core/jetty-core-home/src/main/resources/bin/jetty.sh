@@ -118,6 +118,48 @@ findDirectory()
   done
 }
 
+# Refuse a directory that another user could use to tamper with the files we place in it.
+# JETTY_RUN may be a pre-existing, shared directory (findDirectory can land on /tmp/jetty),
+# and the argfile written there can carry secrets from start.d/*.ini and is handed straight
+# to the JVM.  A directory owned or writable by another user therefore lets them swap the
+# argfile and inject JVM options such as -javaagent or -cp that then execute as us.  Reject a
+# directory that is neither ours nor root's, or that is group- or world-writable without the
+# sticky bit.
+checkDirSafe()
+{
+  local DIR=$1 OWNER MODE JETTY_USER_UID=""
+
+  # Owner uid and permission bits of the target (-L follows a symlinked JETTY_RUN, matching the
+  # -O test below), supporting both GNU (-c) and BSD/macOS (-f) stat.
+  OWNER=$(stat -L -c '%u' "$DIR" 2>/dev/null) || OWNER=$(stat -L -f '%u' "$DIR" 2>/dev/null)
+  MODE=$(stat -L -c '%a' "$DIR" 2>/dev/null) || MODE=$(stat -L -f '%Lp' "$DIR" 2>/dev/null)
+
+  # When we run as root and will drop privileges to JETTY_USER, a directory owned by that user
+  # is safe too: the server runs as JETTY_USER anyway, so JETTY_USER owning it grants no extra
+  # privilege.
+  if [ -n "$JETTY_USER" ]
+  then
+    JETTY_USER_UID=$(id -u "$JETTY_USER" 2>/dev/null)
+  fi
+
+  # Owner must be ourselves (-O), root, or JETTY_USER; fall back to -O alone if stat is unavailable.
+  if [ ! -O "$DIR" ] && [ "${OWNER:-}" != "0" ] && [ "${OWNER:-}" != "${JETTY_USER_UID:-x}" ]
+  then
+    echo "** ERROR: \$JETTY_RUN ($DIR) is owned by another user; refusing to use it." >&2
+    echo "          Point JETTY_RUN at a directory owned by you (or root) and try again." >&2
+    exit 1
+  fi
+
+  # Reject group- or world-writable (octal 022) directories unless the sticky bit (01000) is set.
+  if [ -n "$MODE" ] && (( (8#$MODE & 022) != 0 )) && (( (8#$MODE & 01000) == 0 ))
+  then
+    echo "** ERROR: \$JETTY_RUN ($DIR) is group- or world-writable without the sticky bit." >&2
+    echo "          Another user could replace files here; run 'chmod go-w $DIR' (or set the" >&2
+    echo "          sticky bit) and try again." >&2
+    exit 1
+  fi
+}
+
 # test if process specified in PID file is still running
 running()
 {
@@ -284,6 +326,16 @@ dumpEnv()
   echo "JETTY_USER            =  $JETTY_USER"
   echo "USE_START_STOP_DAEMON =  $USE_START_STOP_DAEMON"
   echo "START_STOP_DAEMON     =  $START_STOP_DAEMON_AVAILABLE"
+
+  # The effective command line now lives in the argfile rather than on the process arguments, so
+  # it no longer shows above as RUN_ARGS.  Print the argfile's contents to restore that view, but
+  # only under DEBUG: it can hold secrets (for example start.d/ssl.ini passwords), which is why
+  # they are kept off the command line in the first place.
+  if (( DEBUG )) && [ -r "$JETTY_ARGFILE" ]
+  then
+    echo "JETTY_ARGFILE content =  (effective command line)"
+    sed 's/^/                         /' "$JETTY_ARGFILE"
+  fi
 }
 
 
@@ -422,7 +474,15 @@ if [ ! -d "$JETTY_RUN" ] ; then
     echo "          Correct issues preventing the creation of \$JETTY_RUN and try again."
     exit 1
   fi
+  # Strip group/other write from the directory we just created so it is safe regardless of the
+  # caller's umask; keep r-x so a dropped-privilege JETTY_USER can still traverse it to read
+  # its own 0600 argfile.
+  chmod go-w "$JETTY_RUN"
 fi
+
+# $JETTY_RUN may be a pre-existing, shared directory; make sure no other user can tamper with
+# the (possibly secret-bearing) argfile and other files we place there.
+checkDirSafe "$JETTY_RUN"
 
 #####################################################
 # define start log location

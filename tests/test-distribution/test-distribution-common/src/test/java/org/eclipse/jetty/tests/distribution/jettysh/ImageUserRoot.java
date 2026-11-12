@@ -25,9 +25,10 @@ public class ImageUserRoot extends ImageFromDSL
                 .from(osImage.getDockerImageName())
                 // setup Jetty Home
                 .copy("/opt/jetty/", "${JETTY_HOME}/")
+                // JETTY_BASE is created and owned by root; everything runs as root, so it needs
+                // no extra write grant (jetty.sh refuses a group/world-writable JETTY_RUN).
                 .run("mkdir -p ${JETTY_BASE} ; " +
-                    "chmod a+x ${JETTY_HOME}/bin/jetty.sh ; " +
-                    "chmod a+w ${JETTY_BASE}")
+                    "chmod a+x ${JETTY_HOME}/bin/jetty.sh")
                 // Configure Jetty Base
                 .workDir("${JETTY_BASE}")
                 .build());
