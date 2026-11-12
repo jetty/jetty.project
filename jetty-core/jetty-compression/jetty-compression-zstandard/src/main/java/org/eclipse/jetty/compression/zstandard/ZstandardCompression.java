@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.github.luben.zstd.BufferPool;
+import com.github.luben.zstd.ZstdCompressCtx;
 import com.github.luben.zstd.ZstdInputStream;
 import com.github.luben.zstd.ZstdOutputStream;
 import com.github.luben.zstd.util.Native;
@@ -32,6 +33,7 @@ import org.eclipse.jetty.compression.DecoderConfig;
 import org.eclipse.jetty.compression.DecoderSource;
 import org.eclipse.jetty.compression.EncoderConfig;
 import org.eclipse.jetty.compression.EncoderSink;
+import org.eclipse.jetty.compression.zstandard.internal.ZstandardCompressCtxPool;
 import org.eclipse.jetty.compression.zstandard.internal.ZstandardDecoderSource;
 import org.eclipse.jetty.compression.zstandard.internal.ZstandardEncoderSink;
 import org.eclipse.jetty.http.HttpField;
@@ -59,10 +61,12 @@ public class ZstandardCompression extends Compression
     private static final HttpField CONTENT_ENCODING = new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING, ENCODING_NAME);
     private static final int DEFAULT_MIN_ZSTD_SIZE = 48;
     private static final List<String> EXTENSIONS = List.of("zst");
+    private static final Cleaner CLEANER = Cleaner.create();
 
-    private final Cleaner cleaner = Cleaner.create();
     private ZstandardEncoderConfig defaultEncoderConfig = new ZstandardEncoderConfig();
     private ZstandardDecoderConfig defaultDecoderConfig = new ZstandardDecoderConfig();
+    private ZstandardCompressCtxPool compressCtxPool;
+    private int compressPoolCapacity = ZstandardCompressCtxPool.DEFAULT_CAPACITY;
 
     public ZstandardCompression()
     {
@@ -71,6 +75,36 @@ public class ZstandardCompression extends Compression
         // the native library, so it is thread-safe by definition.
         Native.load();
         setMinCompressSize(DEFAULT_MIN_ZSTD_SIZE);
+    }
+
+    /**
+     * @return the capacity of the {@link ZstdCompressCtx} pool, or {@code 0} if pooling is disabled
+     * @see #setCompressPoolCapacity(int)
+     */
+    public int getCompressPoolCapacity()
+    {
+        return compressPoolCapacity;
+    }
+
+    /**
+     * <p>Sets the capacity of the {@link ZstdCompressCtx} pool.</p>
+     * <p>Each pooled context retains its native workspace (about 3.5 MiB at the default compression level,
+     * more at higher levels) for as long as the pool lives, so the capacity bounds the native memory that
+     * idle contexts retain; when the pool is full, the contexts in excess are created and freed for each
+     * response.</p>
+     *
+     * <p>The default capacity is {@value ZstandardCompressCtxPool#DEFAULT_CAPACITY}.</p>
+     *
+     * @param compressPoolCapacity the capacity of the pool, or {@code 0} to disable pooling
+     * @throws IllegalArgumentException if the capacity is negative
+     */
+    public void setCompressPoolCapacity(int compressPoolCapacity)
+    {
+        if (compressPoolCapacity < 0)
+            throw new IllegalArgumentException("Invalid compression context pool capacity: " + compressPoolCapacity);
+        if (isRunning())
+            throw new IllegalStateException("Cannot set the compression context pool capacity on a running component");
+        this.compressPoolCapacity = compressPoolCapacity;
     }
 
     @Override
@@ -87,6 +121,16 @@ public class ZstandardCompression extends Compression
         // Typically, this is done with a BufferUtil.reset(ByteBuffer) call on.
         buffer.getByteBuffer().order(getByteOrder());
         return buffer;
+    }
+
+    ZstandardCompressCtxPool getCompressCtxPool()
+    {
+        return compressCtxPool;
+    }
+
+    ZstandardCompressCtxPool newCompressCtxPool(int capacity)
+    {
+        return new ZstandardCompressCtxPool(capacity);
     }
 
     @Override
@@ -171,8 +215,29 @@ public class ZstandardCompression extends Compression
     @Override
     public EncoderSink newEncoderSink(Content.Sink sink, EncoderConfig config)
     {
+        ZstandardCompressCtxPool compressCtxPool = this.compressCtxPool;
+        if (compressCtxPool == null)
+            throw new IllegalStateException("Not started: " + this);
         ZstandardEncoderConfig zstandardEncoderConfig = (ZstandardEncoderConfig)config;
-        return new ZstandardEncoderSink(this, sink, zstandardEncoderConfig);
+        return new ZstandardEncoderSink(this, compressCtxPool, sink, zstandardEncoderConfig);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+
+        compressCtxPool = newCompressCtxPool(compressPoolCapacity);
+        addBean(compressCtxPool);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+
+        removeBean(compressCtxPool);
+        compressCtxPool = null;
     }
 
     private ByteOrder getByteOrder()
@@ -184,7 +249,7 @@ public class ZstandardCompression extends Compression
 
     public Cleaner getCleaner()
     {
-        return cleaner;
+        return CLEANER;
     }
 
     private static class BufferPoolAdapter implements BufferPool

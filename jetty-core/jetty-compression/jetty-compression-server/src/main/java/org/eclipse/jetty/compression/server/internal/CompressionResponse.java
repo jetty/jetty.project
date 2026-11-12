@@ -180,6 +180,8 @@ public class CompressionResponse extends Response.Wrapper
                     LOG.debug("compressing {} {}", compression.getEncodingName(), this);
 
                 state.compareAndSet(State.MIGHT_COMPRESS, State.COMPRESSING);
+                // TODO: pass contentLength (when known) as a hint to newEncoderSink(), so that encoders
+                //  can size their resources accordingly (e.g. zstd's ZstdCompressCtx.setPledgedSrcSize()).
                 this.encoderSink = compression.newEncoderSink(getWrapped());
 
                 // Adjust the headers.

@@ -342,6 +342,46 @@
         </executions>
       </plugin>
       <plugin>
+        <!-- Filter this home's own modules (src/main/resources/modules) through the
+             mod-files hint so @version(groupId:artifactId)@ resolves against this
+             environment's dependencyManagement, then stage them into the assembly. -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.jetty.toolchain</groupId>
+            <artifactId>jetty-modify-sources-maven-plugin</artifactId>
+            <version>${modify-sources-plugin.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>filter-modules</id>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <phase>process-resources</phase>
+            <configuration>
+              <encoding>UTF-8</encoding>
+              <useDefaultDelimiters>false</useDefaultDelimiters>
+              <delimiters>
+                <delimiter>@</delimiter>
+              </delimiters>
+              <outputDirectory>${assembly-directory}/modules</outputDirectory>
+              <mavenFilteringHints>
+                <mavenFilteringHint>mod-files</mavenFilteringHint>
+              </mavenFilteringHints>
+              <resources>
+                <resource>
+                  <directory>src/main/resources/modules</directory>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.cyclonedx</groupId>
         <artifactId>cyclonedx-maven-plugin</artifactId>
         <executions>

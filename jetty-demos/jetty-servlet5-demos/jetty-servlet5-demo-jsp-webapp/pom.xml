@@ -39,6 +39,11 @@
           <groupId>jakarta.servlet</groupId>
           <artifactId>jakarta.servlet-api</artifactId>
         </exclusion>
+        <!-- JAXB is not used by jstl-api, it's a bad transitive dependency -->
+        <exclusion>
+          <groupId>jakarta.xml.bind</groupId>
+          <artifactId>jakarta.xml.bind-api</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
   </dependencies>

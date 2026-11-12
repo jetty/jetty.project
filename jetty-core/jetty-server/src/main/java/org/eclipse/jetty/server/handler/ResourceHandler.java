@@ -180,11 +180,10 @@ public class ResourceHandler extends Handler.Wrapper
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception
     {
-        if (!HttpMethod.GET.is(request.getMethod()) && !HttpMethod.HEAD.is(request.getMethod()))
+        boolean getOrHead = HttpMethod.GET.is(request.getMethod()) || HttpMethod.HEAD.is(request.getMethod());
+        boolean options = HttpMethod.OPTIONS.is(request.getMethod());
+        if (!getOrHead && !options)
         {
-            if (Handler.optionsMethodHandled(null, request, response, callback))
-                return true;
-
             // try another handler
             return super.handle(request, response, callback);
         }
@@ -193,6 +192,14 @@ public class ResourceHandler extends Handler.Wrapper
         if (content == null)
         {
             return super.handle(request, response, callback); // no content - try other handlers
+        }
+
+        // Answer OPTIONS only for a resource this handler actually serves.
+        // A missing path must reach the next handler (Jetty 12.0 behavior).
+        if (options)
+        {
+            Handler.optionsMethodHandled(null, request, response, callback);
+            return true;
         }
 
         _resourceService.doGet(request, response, callback, content);

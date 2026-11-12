@@ -358,6 +358,14 @@
       <groupId>org.eclipse.jetty.ee</groupId>
       <artifactId>jetty-ee-apache-jsp</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <!-- The EE-common apache-jsp pulls the Jakarta 11 Jasper; this is an EE10
+             module, so take Jasper from jetty-ee10-apache-jsp (Jakarta 10) instead. -->
+        <exclusion>
+          <groupId>org.mortbay.jasper</groupId>
+          <artifactId>mortbay-apache-jsp</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee.osgi</groupId>

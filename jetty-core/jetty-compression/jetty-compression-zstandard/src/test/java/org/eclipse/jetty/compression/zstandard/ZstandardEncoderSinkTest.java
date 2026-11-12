@@ -18,13 +18,19 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
+import com.github.luben.zstd.ZstdCompressCtx;
+import org.eclipse.jetty.compression.zstandard.internal.ZstandardCompressCtxPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Pool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -32,7 +38,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -193,5 +202,177 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
 
         byte[] decompressed = decompress(compressed);
         assertArrayEquals(originalData, decompressed);
+    }
+
+    @Test
+    public void testCompressCtxIsPooled() throws Exception
+    {
+        startZstd();
+        Pool<?> compressCtxPool = zstd.getCompressCtxPool().getPool();
+
+        String text = "Hello World! ".repeat(1000);
+        for (int i = 0; i < 10; i++)
+        {
+            // Alternate the configuration, to verify that the parameters
+            // of a pooled context do not leak into the next response.
+            boolean checksum = i % 2 == 0;
+            ZstandardEncoderConfig config = new ZstandardEncoderConfig();
+            config.setCompressionLevel(checksum ? 1 : 19);
+            config.setChecksum(checksum);
+
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+            {
+                Content.Sink encoderSink = zstd.newEncoderSink(Content.Sink.from(baos), config);
+                Callback.Completable callback = new Callback.Completable();
+                encoderSink.write(true, ByteBuffer.wrap(text.getBytes(UTF_8)), callback);
+                callback.get();
+                byte[] compressed = baos.toByteArray();
+                assertThat(new String(decompress(compressed), UTF_8), is(text));
+                // The Frame_Header_Descriptor follows the 4 bytes of the magic number,
+                // and its bit 2 is the Content_Checksum_flag (RFC 8878, section 3.1.1.1.1).
+                boolean frameChecksum = (compressed[4] & 0x04) != 0;
+                assertThat(frameChecksum, is(checksum));
+            }
+
+            // The writes are synchronous, so the context has been returned to the pool, to be reused.
+            assertThat(compressCtxPool.getIdleCount(), is(1));
+            assertThat(compressCtxPool.size(), is(1));
+        }
+    }
+
+    @Test
+    public void testNewEncoderSinkWhenNotStarted() throws Exception
+    {
+        zstd = new ZstandardCompression();
+        zstd.setByteBufferPool(pool);
+        Content.Sink sink = Content.Sink.from(new ByteArrayOutputStream());
+        assertThrows(IllegalStateException.class, () -> zstd.newEncoderSink(sink));
+
+        zstd.start();
+        zstd.stop();
+        assertThrows(IllegalStateException.class, () -> zstd.newEncoderSink(sink));
+    }
+
+    @Test
+    public void testCompressCtxIsResetAfterFailedEncoding() throws Exception
+    {
+        startZstd();
+        Pool<?> compressCtxPool = zstd.getCompressCtxPool().getPool();
+
+        byte[] data = new byte[64 * 1024];
+        new Random(42).nextBytes(data);
+
+        // Start encoding a response, but fail it before its end.
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink sink = Content.Sink.from(baos);
+            AtomicBoolean fail = new AtomicBoolean();
+            Content.Sink failingSink = (last, byteBuffer, callback) ->
+            {
+                if (fail.get())
+                    callback.failed(new Exception("test"));
+                else
+                    sink.write(last, byteBuffer, callback);
+            };
+            Content.Sink encoderSink = zstd.newEncoderSink(failingSink);
+            Callback.Completable callback1 = new Callback.Completable();
+            encoderSink.write(false, ByteBuffer.wrap(data), callback1);
+            callback1.get();
+
+            fail.set(true);
+            Callback.Completable callback2 = new Callback.Completable();
+            encoderSink.write(true, ByteBuffer.wrap(data), callback2);
+            assertThrows(ExecutionException.class, callback2::get);
+        }
+        assertThat(compressCtxPool.getIdleCount(), is(1));
+
+        // The next response reuses the same context, and must be a complete and valid frame.
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink encoderSink = zstd.newEncoderSink(Content.Sink.from(baos));
+            Callback.Completable callback = new Callback.Completable();
+            encoderSink.write(true, ByteBuffer.wrap("Hello World!".getBytes(UTF_8)), callback);
+            callback.get();
+            assertThat(new String(decompress(baos.toByteArray()), UTF_8), is("Hello World!"));
+        }
+        assertThat(compressCtxPool.getIdleCount(), is(1));
+        assertThat(compressCtxPool.size(), is(1));
+    }
+
+    @Test
+    public void testCompressPoolCapacity() throws Exception
+    {
+        zstd = new ZstandardCompression();
+        zstd.setByteBufferPool(pool);
+        assertThat(zstd.getCompressPoolCapacity(), is(ZstandardCompressCtxPool.DEFAULT_CAPACITY));
+        zstd.start();
+        ZstandardCompressCtxPool defaultCompressCtxPool = zstd.getCompressCtxPool();
+        assertThat(defaultCompressCtxPool.getCapacity(), is(ZstandardCompressCtxPool.DEFAULT_CAPACITY));
+        assertThat(defaultCompressCtxPool.getPool().getMaxSize(), is(ZstandardCompressCtxPool.DEFAULT_CAPACITY));
+        zstd.stop();
+        // The pool belongs to this instance, so it is stopped with it.
+        assertThat(defaultCompressCtxPool.isStopped(), is(true));
+
+        zstd.setCompressPoolCapacity(7);
+        zstd.start();
+
+        assertThat(zstd.getCompressCtxPool().getCapacity(), is(7));
+        assertThrows(IllegalStateException.class, () -> zstd.setCompressPoolCapacity(8));
+        assertThat(zstd.getCompressPoolCapacity(), is(7));
+        zstd.stop();
+
+        // Negative capacities are rejected.
+        assertThrows(IllegalArgumentException.class, () -> zstd.setCompressPoolCapacity(-1));
+        assertThat(zstd.getCompressPoolCapacity(), is(7));
+    }
+
+    @Test
+    public void testCompressPoolDisabled() throws Exception
+    {
+        List<ZstdCompressCtx> created = new CopyOnWriteArrayList<>();
+        List<ZstdCompressCtx> ended = new CopyOnWriteArrayList<>();
+        zstd = new ZstandardCompression()
+        {
+            @Override
+            ZstandardCompressCtxPool newCompressCtxPool(int capacity)
+            {
+                return new ZstandardCompressCtxPool(capacity)
+                {
+                    @Override
+                    protected ZstdCompressCtx newPooled()
+                    {
+                        ZstdCompressCtx compressCtx = super.newPooled();
+                        created.add(compressCtx);
+                        return compressCtx;
+                    }
+
+                    @Override
+                    protected void end(ZstdCompressCtx compressCtx)
+                    {
+                        ended.add(compressCtx);
+                        super.end(compressCtx);
+                    }
+                };
+            }
+        };
+        zstd.setByteBufferPool(pool);
+        zstd.setCompressPoolCapacity(0);
+        zstd.start();
+        assertThat(zstd.getCompressCtxPool().getPool(), nullValue());
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink encoderSink = zstd.newEncoderSink(Content.Sink.from(baos));
+            Callback.Completable callback = new Callback.Completable();
+            encoderSink.write(true, ByteBuffer.wrap("Hello World!".getBytes(UTF_8)), callback);
+            callback.get();
+            assertThat(new String(decompress(baos.toByteArray()), UTF_8), is("Hello World!"));
+        }
+
+        // No pool, so the context created for the response has been closed rather than pooled.
+        assertThat(created.size(), is(1));
+        assertThat(ended, contains(sameInstance(created.get(0))));
+        // A closed context cannot be used anymore.
+        assertThrows(IllegalStateException.class, () -> created.get(0).setLevel(1));
     }
 }

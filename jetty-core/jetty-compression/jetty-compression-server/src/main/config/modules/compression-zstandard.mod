@@ -21,6 +21,10 @@ etc/jetty-compression-zstandard.xml
 ## Minimum content length after which zstandard is enabled
 # jetty.compression.zstandard.minCompressSize=48
 
+## Compression context pool capacity (0 for no pooling)
+# Each pooled context retains its native memory (about 3.5 MiB at the default compression level).
+# jetty.compression.zstandard.compressPool.capacity=32
+
 ## Buffer Size for Decoder
 # If unspecified, this default comes from zstd-jni's integration with the zstd libs.
 # jetty.compression.zstandard.decoder.bufferSize=128000

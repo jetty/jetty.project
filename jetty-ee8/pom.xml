@@ -41,18 +41,13 @@
     <!-- generated sources cannot follow exactly Jetty code style -->
     <checkstyle.skip>true</checkstyle.skip>
     <ee8.jakarta.activation.api.version>1.2.2</ee8.jakarta.activation.api.version>
-    <ee8.jakarta.annotation.api.version>1.3.5</ee8.jakarta.annotation.api.version>
+    <ee8.jakarta.bom.version>8.0.0</ee8.jakarta.bom.version>
 
-    <ee8.jakarta.servlet.jsp.api.version>2.3.6</ee8.jakarta.servlet.jsp.api.version>
-    <ee8.jakarta.servlet.jsp.jstl.api.version>1.2.7</ee8.jakarta.servlet.jsp.jstl.api.version>
-    <ee8.jakarta.transaction-api.version>1.3.3</ee8.jakarta.transaction-api.version>
-
+    <ee8.javax.mail.glassfish.version>1.4.1.v201005082020</ee8.javax.mail.glassfish.version>
     <ee8.javax.security.auth.message>1.0.0.v201108011116</ee8.javax.security.auth.message>
-    <ee8.javax.servlet.jsp.jstl.impl.version>1.2.5</ee8.javax.servlet.jsp.jstl.impl.version>
     <ee8.javax.websocket.api.version>1.1.2</ee8.javax.websocket.api.version>
     <ee8.jetty.servlet.api.version>4.0.9</ee8.jetty.servlet.api.version>
     <ee8.jsp.impl.version>9.0.119</ee8.jsp.impl.version>
-    <ee8.weld.version>3.1.9.Final</ee8.weld.version>
     <ee9.module/>
     <ee9.module.path>${maven.multiModuleProjectDirectory}/jetty-ee9/${ee9.module}</ee9.module.path>
     <javax.servlet.jsp.api.version>2.3</javax.servlet.jsp.api.version>
@@ -63,30 +58,34 @@
 
     <!-- Jetty EE 8 Dependencies -->
     <dependencies>
+      <!-- The EE 8 platform BOM. It manages the Jakarta 8 (javax.* packaged) API
+           versions, so entries whose version equals the BOM are not restated here.
+           One known, never-fixed defect in 8.0.0 is worked around below: the BOM's
+           jakarta.persistence-api entry references an undefined property
+           (jakarta-persistence-api.version, hyphenated), so it cannot resolve from
+           the BOM; jakarta.persistence-api is declared explicitly.
+           Note: jakarta.activation-api is not managed by this BOM either, so it
+           remains an explicit entry below. -->
+      <dependency>
+        <groupId>jakarta.platform</groupId>
+        <artifactId>jakarta.jakartaee-bom</artifactId>
+        <version>${ee8.jakarta.bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Not managed by jakarta.jakartaee-bom:8.0.0. -->
       <dependency>
         <groupId>jakarta.activation</groupId>
         <artifactId>jakarta.activation-api</artifactId>
         <version>${ee8.jakarta.activation.api.version}</version>
       </dependency>
+      <!-- Workaround for the jakarta.jakartaee-bom:8.0.0 defect above: the BOM's JPA entry
+           references an undefined property and cannot resolve. 2.2.3 is the EE 8
+           version the BOM intended. -->
       <dependency>
-        <groupId>jakarta.annotation</groupId>
-        <artifactId>jakarta.annotation-api</artifactId>
-        <version>${ee8.jakarta.annotation.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.servlet.jsp</groupId>
-        <artifactId>jakarta.servlet.jsp-api</artifactId>
-        <version>${ee8.jakarta.servlet.jsp.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.servlet.jsp.jstl</groupId>
-        <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-        <version>${ee8.jakarta.servlet.jsp.jstl.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.transaction</groupId>
-        <artifactId>jakarta.transaction-api</artifactId>
-        <version>${ee8.jakarta.transaction-api.version}</version>
+        <groupId>jakarta.persistence</groupId>
+        <artifactId>jakarta.persistence-api</artifactId>
+        <version>2.2.3</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.demos</groupId>
@@ -257,7 +256,7 @@
       <dependency>
         <groupId>org.glassfish.web</groupId>
         <artifactId>javax.servlet.jsp.jstl</artifactId>
-        <version>${ee8.javax.servlet.jsp.jstl.impl.version}</version>
+        <version>1.2.5</version>
         <exclusions>
           <exclusion>
             <groupId>javax.servlet</groupId>

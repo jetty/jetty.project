@@ -13,18 +13,21 @@ ee11-servlet
 ee11-annotations
 
 [ini]
-ee11.jsp.impl.version?=@ee11.jsp.impl.version@
+ee11.jakarta.el.api.version?=@version(jakarta.el:jakarta.el-api)@
+ee11.jakarta.servlet.jsp.api.version?=@version(jakarta.servlet.jsp:jakarta.servlet.jsp-api)@
+ee11.jakarta.el.impl.version?=@version(org.mortbay.jasper:mortbay-apache-el)@
+ee11.jakarta.servlet.jsp.impl.version?=@version(org.mortbay.jasper:mortbay-apache-jsp)@
 
 [files]
-maven://jakarta.el/jakarta.el-api/6.0.1/jar|lib/ee11/support/jakarta.el.jakarta.el-api-6.0.1.jar
-maven://jakarta.servlet.jsp/jakarta.servlet.jsp-api/4.0.0/jar|lib/ee11/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-4.0.0.jar
+maven://jakarta.el/jakarta.el-api/${ee11.jakarta.el.api.version}/jar|lib/ee11/support/jakarta.el.jakarta.el-api-${ee11.jakarta.el.api.version}.jar
+maven://jakarta.servlet.jsp/jakarta.servlet.jsp-api/${ee11.jakarta.servlet.jsp.api.version}/jar|lib/ee11/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-${ee11.jakarta.servlet.jsp.api.version}.jar
 maven://org.eclipse.jetty.ee11/jetty-ee11-apache-jsp/${jetty.version}/jar|lib/ee11/jetty-ee11-apache-jsp-${jetty.version}.jar
-maven://org.mortbay.jasper/mortbay-apache-el/${ee11.jsp.impl.version}/jar|lib/ee11/support/org.mortbay.jasper.mortbay-apache-el-${ee11.jsp.impl.version}.jar
-maven://org.mortbay.jasper/mortbay-apache-jsp/${ee11.jsp.impl.version}/jar|lib/ee11/support/org.mortbay.jasper.mortbay-apache-jsp-${ee11.jsp.impl.version}.jar
+maven://org.mortbay.jasper/mortbay-apache-el/${ee11.jakarta.el.impl.version}/jar|lib/ee11/support/org.mortbay.jasper.mortbay-apache-el-${ee11.jakarta.el.impl.version}.jar
+maven://org.mortbay.jasper/mortbay-apache-jsp/${ee11.jakarta.servlet.jsp.impl.version}/jar|lib/ee11/support/org.mortbay.jasper.mortbay-apache-jsp-${ee11.jakarta.servlet.jsp.impl.version}.jar
 
 [lib]
 lib/ee11/jetty-ee11-apache-jsp-${jetty.version}.jar
-lib/ee11/support/jakarta.el.jakarta.el-api-6.0.1.jar
-lib/ee11/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-4.0.0.jar
-lib/ee11/support/org.mortbay.jasper.mortbay-apache-el-${ee11.jsp.impl.version}.jar
-lib/ee11/support/org.mortbay.jasper.mortbay-apache-jsp-${ee11.jsp.impl.version}.jar
+lib/ee11/support/jakarta.el.jakarta.el-api-${ee11.jakarta.el.api.version}.jar
+lib/ee11/support/jakarta.servlet.jsp.jakarta.servlet.jsp-api-${ee11.jakarta.servlet.jsp.api.version}.jar
+lib/ee11/support/org.mortbay.jasper.mortbay-apache-el-${ee11.jakarta.el.impl.version}.jar
+lib/ee11/support/org.mortbay.jasper.mortbay-apache-jsp-${ee11.jakarta.servlet.jsp.impl.version}.jar

@@ -10,14 +10,15 @@ ee10
 ee10-apache-jsp
 
 [ini]
-ee10.jakarta.servlet.jsp.jstl.impl.version?=@ee10.jakarta.servlet.jsp.jstl.impl.version@
+ee10.jakarta.servlet.jsp.jstl.api.version?=@version(jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api)@
+ee10.jakarta.servlet.jsp.jstl.impl.version?=@version(org.glassfish.web:jakarta.servlet.jsp.jstl)@
 
 # The group id prefix on the jar names is necessary because the
 # Glassfish jars have no JPMS metadata, see #9301.
 [files]
-maven://jakarta.servlet.jsp.jstl/jakarta.servlet.jsp.jstl-api/3.0.0/jar|lib/ee10/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-3.0.0.jar
+maven://jakarta.servlet.jsp.jstl/jakarta.servlet.jsp.jstl-api/${ee10.jakarta.servlet.jsp.jstl.api.version}/jar|lib/ee10/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee10.jakarta.servlet.jsp.jstl.api.version}.jar
 maven://org.glassfish.web/jakarta.servlet.jsp.jstl/${ee10.jakarta.servlet.jsp.jstl.impl.version}/jar|lib/ee10/support/org.glassfish.web.jakarta.servlet.jsp.jstl-${ee10.jakarta.servlet.jsp.jstl.impl.version}.jar
 
 [lib]
-lib/ee10/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-3.0.0.jar
+lib/ee10/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee10.jakarta.servlet.jsp.jstl.api.version}.jar
 lib/ee10/support/org.glassfish.web.jakarta.servlet.jsp.jstl-${ee10.jakarta.servlet.jsp.jstl.impl.version}.jar
