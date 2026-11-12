@@ -35,11 +35,9 @@ updates:
           - "org.apache.maven.plugin-tools:*"
           - "org.apache.felix:*-plugin"
           - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
           - "org.codehaus.mojo:*"
           - "org.eclipse.jetty.toolchain:*-maven-plugin"
           - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
           - "org.testcontainers:*"
           - "com.diffplug.spotless:*"
           - "com.github.spotbugs:*"
@@ -51,7 +49,6 @@ updates:
           - "org.wildfly*"
           - "org.eclipse.platform*"
           - "com.google.cloud:*"
-          - "org.hawtio:*"
       spec-deps:
         patterns:
           - "jakarta.*"
@@ -352,11 +349,9 @@ updates:
           - "org.apache.maven.plugin-tools:*"
           - "org.apache.felix:*-plugin"
           - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
           - "org.codehaus.mojo:*"
           - "org.eclipse.jetty.toolchain:*-maven-plugin"
           - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
           - "org.testcontainers:*"
           - "com.diffplug.spotless:*"
           - "com.github.spotbugs:*"
@@ -368,7 +363,6 @@ updates:
           - "org.wildfly*"
           - "org.eclipse.platform*"
           - "com.google.cloud:*"
-          - "org.hawtio:*"
       spec-deps:
         patterns:
           - "jakarta.*"
