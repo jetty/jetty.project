@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
@@ -367,6 +368,37 @@ public class PropertyPassingTest
 
         byte[] needle = ("test.marker=" + CHINESE_VALUE).getBytes(UTF_8);
         assertThat("Chinese value corrupted under mismatched native encoding", containsSequence(output, needle), is(false));
+    }
+
+    /**
+     * An empty argument is written to the arguments file as {@code ""} on its own line; verify that a
+     * real {@code java @file} launch expands it back to an empty {@code argv} element rather than
+     * dropping it or merging it with a neighbor.
+     */
+    @Test
+    public void testEmptyArgTokenRoundTripsThroughLauncher() throws Exception
+    {
+        CommandLineBuilder cmd = new CommandLineBuilder();
+        cmd.addArg(PropertyDump.class.getName()); // main class, in launcher position
+        cmd.addArg("");                           // the empty token under test
+        cmd.addArg("test.marker=present");        // a following non-empty token
+
+        Path argFile = workDir.getEmptyPathDir().resolve("empty-token.args");
+        try (PrintStream out = new PrintStream(Files.newOutputStream(argFile), true, UTF_8))
+        {
+            cmd.writeArgFile(out);
+        }
+
+        List<String> commands = new ArrayList<>();
+        commands.add(getJavaBin());
+        commands.add("-cp");
+        commands.add(getClassPath());
+        commands.add("@" + argFile.toAbsolutePath());
+
+        // PropertyDump prints one "Arg [<value>]" line per argv element.
+        String output = collectRunOutput(commands);
+        assertThat("empty token survives the launcher", output, containsString("Arg []"));
+        assertThat("following token survives", output, containsString("Arg [test.marker=present]"));
     }
 
     private void generateArgFile(Path argFile, String lang, String... properties) throws Exception

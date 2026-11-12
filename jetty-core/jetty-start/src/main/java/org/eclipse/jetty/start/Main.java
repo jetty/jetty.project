@@ -297,6 +297,9 @@ public class Main
             // Non-POSIX filesystem (e.g. Windows): java.io.tmpdir is a per-user temp directory.
             argFile = Files.createTempFile("jetty-exec-", ".argfile");
         }
+        // deleteOnExit removes the file on a normal JVM exit. A SIGKILL of this (parent) process
+        // leaves it behind, but it is created in java.io.tmpdir (not jetty.base), which the OS
+        // reclaims, so a killed parent does not accumulate argfiles in the server's base directory.
         argFile.toFile().deleteOnExit();
 
         // The java launcher expands @argument-file bytes into the child's native argv, which the
@@ -699,8 +702,15 @@ public class Main
                 .collect(Collectors.toList());
             StartLog.warn("Forking second JVM due to forking module(s): %s. Use --dry-run to generate the command line to avoid forking.", execModules);
 
+            // Resolve the java binary before writing the argfile; findJavaBin() returns null when
+            // java.home is unset or missing, and passing null to ProcessBuilder would NPE.
+            String javaBin = CommandLineBuilder.findJavaBin();
+            if (javaBin == null)
+                throw new IOException("Unable to locate the java executable to fork the second JVM (java.home=" +
+                    System.getProperty("java.home") + ")");
+
             Path argFile = writeExecArgFile(cmd);
-            ProcessBuilder pbuilder = new ProcessBuilder(CommandLineBuilder.findJavaBin(), "@" + argFile.toAbsolutePath());
+            ProcessBuilder pbuilder = new ProcessBuilder(javaBin, "@" + argFile.toAbsolutePath());
             StartLog.endStartLog();
             final Process process = pbuilder.start();
             Runtime.getRuntime().addShutdownHook(new Thread(() ->

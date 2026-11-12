@@ -506,7 +506,7 @@ then
 fi
 
 case "`uname`" in
-CYGWIN*) JETTY_STATE="`cygpath -w $JETTY_STATE`";;
+CYGWIN*) JETTY_STATE="`cygpath -w \"$JETTY_STATE\"`";;
 esac
 
 JETTY_ARGS=(${JETTY_ARGS[*]} "jetty.state=$JETTY_STATE" "jetty.pid=$JETTY_PID")
@@ -590,9 +590,9 @@ esac
 
 case "`uname`" in
 CYGWIN*)
-JETTY_HOME="`cygpath -w $JETTY_HOME`"
-JETTY_BASE="`cygpath -w $JETTY_BASE`"
-TMPDIR="`cygpath -w $TMPDIR`"
+JETTY_HOME="`cygpath -w \"$JETTY_HOME\"`"
+JETTY_BASE="`cygpath -w \"$JETTY_BASE\"`"
+TMPDIR="`cygpath -w \"$TMPDIR\"`"
 ;;
 esac
 
@@ -610,7 +610,7 @@ then
 fi
 
 case "`uname`" in
-CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
+CYGWIN*) JETTY_START="`cygpath -w \"$JETTY_START\"`";;
 esac
 
 # Determine if we can use start-stop-daemon or not
@@ -638,7 +638,7 @@ JETTY_ARGFILE="$JETTY_RUN/${NAME}.argfile"
 # a Windows path; bash still writes, greps, and removes the file through the POSIX path.
 JETTY_ARGFILE_ARG="$JETTY_ARGFILE"
 case "`uname`" in
-CYGWIN*) JETTY_ARGFILE_ARG="`cygpath -w $JETTY_ARGFILE`";;
+CYGWIN*) JETTY_ARGFILE_ARG="`cygpath -w \"$JETTY_ARGFILE\"`";;
 esac
 
 # Generate the Java @argument-file (opts,path,main,args,envs) that the JVM is launched with.
