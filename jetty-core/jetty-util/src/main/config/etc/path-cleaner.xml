@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://jetty.org/configure_10_0.dtd">
+
+<Configure>
+  <New class="org.eclipse.jetty.util.PathCleaner">
+    <Set name="mode" property="jetty.path-cleanup.mode" />
+    <Call name="cleanPaths"><Arg><Property name="jetty.path-cleanup.files"/></Arg></Call>
+  </New>
+</Configure>
