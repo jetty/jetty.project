@@ -7,12 +7,13 @@ Enables the glassfish version of JSTL for all webapps.
 ee9
 
 [ini]
-ee9.jakarta.servlet.jsp.jstl.impl.version?=@ee9.jakarta.servlet.jsp.jstl.impl.version@
+ee9.jakarta.servlet.jsp.jstl.api.version?=@version(jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api)@
+ee9.jakarta.servlet.jsp.jstl.impl.version?=@version(org.glassfish.web:jakarta.servlet.jsp.jstl)@
 
 [files]
-maven://jakarta.servlet.jsp.jstl/jakarta.servlet.jsp.jstl-api/2.0.0/jar|lib/ee9/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-2.0.0.jar
+maven://jakarta.servlet.jsp.jstl/jakarta.servlet.jsp.jstl-api/${ee9.jakarta.servlet.jsp.jstl.api.version}/jar|lib/ee9/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee9.jakarta.servlet.jsp.jstl.api.version}.jar
 maven://org.glassfish.web/jakarta.servlet.jsp.jstl/${ee9.jakarta.servlet.jsp.jstl.impl.version}/jar|lib/ee9/support/org.glassfish.web.jakarta.servlet.jsp.jstl-${ee9.jakarta.servlet.jsp.jstl.impl.version}.jar
 
 [lib]
-lib/ee9/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-2.0.0.jar
+lib/ee9/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee9.jakarta.servlet.jsp.jstl.api.version}.jar
 lib/ee9/support/org.glassfish.web.jakarta.servlet.jsp.jstl-${ee9.jakarta.servlet.jsp.jstl.impl.version}.jar

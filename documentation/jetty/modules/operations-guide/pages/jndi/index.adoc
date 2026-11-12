@@ -245,7 +245,7 @@ Note also that the Jakarta specification recommends storing Jakarta Mail connect
 For example, the `MailSessionReference` bound to jetty as `mail/smtp` would be looked up by the web application as `java:comp/env/mail/smtp`.
 ====
 
-IMPORTANT: Jetty does not provide the `jakarta.mail` and `jakarta.activation` libraries.
+IMPORTANT: The `jakarta.mail` and `jakarta.activation` libraries are not bundled with the Jetty distribution, but you can obtain them by enabling the xref:modules/standard.adoc#eeN-mail[`{ee-all}-mail`] module (which also enables xref:modules/standard.adoc#eeN-activation[`{ee-all}-activation`] where required); their jars are downloaded when the module is enabled.
 
 [[tx]]
 === org.eclipse.jetty.plus.jndi.Transaction

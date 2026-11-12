@@ -14,8 +14,8 @@
   </properties>
   <dependencies>
     <dependency>
-      <groupId>com.sun.mail</groupId>
-      <artifactId>jakarta.mail</artifactId>
+      <groupId>jakarta.mail</groupId>
+      <artifactId>jakarta.mail-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

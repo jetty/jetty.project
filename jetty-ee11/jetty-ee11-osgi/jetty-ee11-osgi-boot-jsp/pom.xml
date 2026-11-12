@@ -63,12 +63,12 @@
               com.sun.el.parser;resolution:=optional,
               com.sun.el.util;resolution:=optional,
               jakarta.el;version="[6.0,7.0)",
-              jakarta.servlet;version="[$(version;==;${servletApi.osgiVersion}),$(version;+;${servletApi.osgiVersion}))",
-              jakarta.servlet.resources;version="[$(version;==;${servletApi.osgiVersion}),$(version;+;${servletApi.osgiVersion}))",
-              jakarta.servlet.jsp.resources;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
-              jakarta.servlet.jsp;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
-              jakarta.servlet.jsp.el;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
-              jakarta.servlet.jsp.tagext;version="[$(version;==;${jspApi.osgiVersion}),$(version;+;${jspApi.osgiVersion}))",
+              jakarta.servlet;version="[6.1,7.0)",
+              jakarta.servlet.resources;version="[6.1,7.0)",
+              jakarta.servlet.jsp.resources;version="[4.0,5.0)",
+              jakarta.servlet.jsp;version="[4.0,5.0)",
+              jakarta.servlet.jsp.el;version="[4.0,5.0)",
+              jakarta.servlet.jsp.tagext;version="[4.0,5.0)",
               jakarta.servlet.jsp.jstl.core;version="2.0";resolution:=optional,
               jakarta.servlet.jsp.jstl.fmt;version="2.0";resolution:=optional,
               jakarta.servlet.jsp.jstl.sql;version="2.0";resolution:=optional,
@@ -132,17 +132,6 @@
         <artifactId>build-helper-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>set-jsp-api-version</id>
-            <goals>
-              <goal>parse-version</goal>
-            </goals>
-            <phase>validate</phase>
-            <configuration>
-              <versionString>${ee11.jakarta.servlet.jsp.api.version}</versionString>
-              <propertyPrefix>jspApi</propertyPrefix>
-            </configuration>
-          </execution>
-          <execution>
             <id>set-jsp-impl-version</id>
             <goals>
               <goal>parse-version</goal>
@@ -151,17 +140,6 @@
             <configuration>
               <versionString>${ee11.jsp.impl.version}</versionString>
               <propertyPrefix>jspImpl</propertyPrefix>
-            </configuration>
-          </execution>
-          <execution>
-            <id>set-servlet-api-version</id>
-            <goals>
-              <goal>parse-version</goal>
-            </goals>
-            <phase>validate</phase>
-            <configuration>
-              <versionString>${ee11.jakarta.servlet.api.version}</versionString>
-              <propertyPrefix>servletApi</propertyPrefix>
             </configuration>
           </execution>
         </executions>

@@ -22,8 +22,14 @@
       <artifactId>jetty-test-helper</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.sun.mail</groupId>
-      <artifactId>jakarta.mail</artifactId>
+      <groupId>jakarta.mail</groupId>
+      <artifactId>jakarta.mail-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- This is the IMPL for the jakarta.mail-api above -->
+    <dependency>
+      <groupId>org.eclipse.angus</groupId>
+      <artifactId>angus-mail</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
