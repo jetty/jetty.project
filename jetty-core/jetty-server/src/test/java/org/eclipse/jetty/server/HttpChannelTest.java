@@ -57,6 +57,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -71,7 +72,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpChannelTest
@@ -238,7 +238,12 @@ public class HttpChannelTest
         Runnable todo = channel.onRequest(request);
         new Thread(todo).start(); // handling will block for content
 
-        assertNull(stream.addContent("01234567890", true));
+        // Wait for the handler to block for content, so that adding
+        // content must return the task that wakes up the handler.
+        await().atMost(5, TimeUnit.SECONDS).until(stream::isDemanding);
+        Runnable onContentAvailable = stream.addContent("01234567890", true);
+        assertNotNull(onContentAvailable);
+        onContentAvailable.run();
 
         stream.waitForComplete(10, TimeUnit.SECONDS);
 
