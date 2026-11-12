@@ -82,39 +82,32 @@ updates:
       timezone: "Australia/Brisbane"
     commit-message:
       prefix: "[12.1.x EE8] "
+    # Only scan the Jakarta EE specs and matching impls that this EE tree pins
+    # itself. Every other dependency it builds against (slf4j, the Maven tooling
+    # cluster, testcontainers, logging, session backends, ...) is version-managed
+    # in the root pom and is updated by the "/" entry; without this restriction
+    # the EE entry resolves those root-pom properties too and raises a duplicate
+    # pull request against the same root pom.
+    allow:
+      - dependency-name: "com.google.gwt:*"
+      - dependency-name: "com.sun.activation:*"
+      - dependency-name: "com.sun.mail:*"
+      - dependency-name: "com.sun.xml.ws:*"
+      - dependency-name: "commons-io:*"
+      - dependency-name: "jakarta.*"
+      - dependency-name: "org.apache.felix:org.apache.felix.framework"
+      - dependency-name: "org.apache.lucene:*"
+      - dependency-name: "org.eclipse.angus:*"
+      - dependency-name: "org.eclipse.jetty.orbit:*"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-javax-websocket-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-websocket-api"
+      - dependency-name: "org.glassfish.*"
+      - dependency-name: "org.jboss.weld.*"
+      - dependency-name: "org.mortbay.jasper:*"
     groups:
-      build-deps:
-        patterns:
-          - "org.apache.maven:*"
-          - "org.apache.maven.plugins:*"
-          - "org.apache.maven.plugin-tools:*"
-          - "org.apache.felix:*-plugin"
-          - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
-          - "org.codehaus.mojo:*"
-          - "org.eclipse.jetty.toolchain:*-maven-plugin"
-          - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
-          - "org.testcontainers:*"
-          - "com.diffplug.spotless:*"
-          - "com.github.spotbugs:*"
-          - "com.mycila:*"
-      integration-deps:
-        patterns:
-          - "org.infinispan*"
-          - "org.mongodb*"
-          - "org.wildfly*"
-          - "org.eclipse.platform*"
-          - "com.google.cloud:*"
-          - "org.hawtio:*"
-      spec-deps:
-        patterns:
-          - "jakarta.*"
-          - "org.jboss.weld.*"
-          - "com.sun.xml*"
-          - "org.glassfish.jaxb*"
-          - "org.mortbay.jasper:*"
-      dev-dependencies:
+      ee-dependencies:
         patterns:
           - "*"
     ignore:
@@ -178,39 +171,32 @@ updates:
       timezone: "Australia/Brisbane"
     commit-message:
       prefix: "[12.1.x EE9] "
+    # Only scan the Jakarta EE specs and matching impls that this EE tree pins
+    # itself. Every other dependency it builds against (slf4j, the Maven tooling
+    # cluster, testcontainers, logging, session backends, ...) is version-managed
+    # in the root pom and is updated by the "/" entry; without this restriction
+    # the EE entry resolves those root-pom properties too and raises a duplicate
+    # pull request against the same root pom.
+    allow:
+      - dependency-name: "com.google.gwt:*"
+      - dependency-name: "com.sun.activation:*"
+      - dependency-name: "com.sun.mail:*"
+      - dependency-name: "com.sun.xml.ws:*"
+      - dependency-name: "commons-io:*"
+      - dependency-name: "jakarta.*"
+      - dependency-name: "org.apache.felix:org.apache.felix.framework"
+      - dependency-name: "org.apache.lucene:*"
+      - dependency-name: "org.eclipse.angus:*"
+      - dependency-name: "org.eclipse.jetty.orbit:*"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-javax-websocket-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-websocket-api"
+      - dependency-name: "org.glassfish.*"
+      - dependency-name: "org.jboss.weld.*"
+      - dependency-name: "org.mortbay.jasper:*"
     groups:
-      build-deps:
-        patterns:
-          - "org.apache.maven:*"
-          - "org.apache.maven.plugins:*"
-          - "org.apache.maven.plugin-tools:*"
-          - "org.apache.felix:*-plugin"
-          - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
-          - "org.codehaus.mojo:*"
-          - "org.eclipse.jetty.toolchain:*-maven-plugin"
-          - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
-          - "org.testcontainers:*"
-          - "com.diffplug.spotless:*"
-          - "com.github.spotbugs:*"
-          - "com.mycila:*"
-      integration-deps:
-        patterns:
-          - "org.infinispan*"
-          - "org.mongodb*"
-          - "org.wildfly*"
-          - "org.eclipse.platform*"
-          - "com.google.cloud:*"
-          - "org.hawtio:*"
-      spec-deps:
-        patterns:
-          - "jakarta.*"
-          - "org.jboss.weld.*"
-          - "com.sun.xml*"
-          - "org.glassfish.jaxb*"
-          - "org.mortbay.jasper:*"
-      dev-dependencies:
+      ee-dependencies:
         patterns:
           - "*"
     ignore:
@@ -251,39 +237,32 @@ updates:
       timezone: "Australia/Brisbane"
     commit-message:
       prefix: "[12.1.x EE10] "
+    # Only scan the Jakarta EE specs and matching impls that this EE tree pins
+    # itself. Every other dependency it builds against (slf4j, the Maven tooling
+    # cluster, testcontainers, logging, session backends, ...) is version-managed
+    # in the root pom and is updated by the "/" entry; without this restriction
+    # the EE entry resolves those root-pom properties too and raises a duplicate
+    # pull request against the same root pom.
+    allow:
+      - dependency-name: "com.google.gwt:*"
+      - dependency-name: "com.sun.activation:*"
+      - dependency-name: "com.sun.mail:*"
+      - dependency-name: "com.sun.xml.ws:*"
+      - dependency-name: "commons-io:*"
+      - dependency-name: "jakarta.*"
+      - dependency-name: "org.apache.felix:org.apache.felix.framework"
+      - dependency-name: "org.apache.lucene:*"
+      - dependency-name: "org.eclipse.angus:*"
+      - dependency-name: "org.eclipse.jetty.orbit:*"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-javax-websocket-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-websocket-api"
+      - dependency-name: "org.glassfish.*"
+      - dependency-name: "org.jboss.weld.*"
+      - dependency-name: "org.mortbay.jasper:*"
     groups:
-      build-deps:
-        patterns:
-          - "org.apache.maven:*"
-          - "org.apache.maven.plugins:*"
-          - "org.apache.maven.plugin-tools:*"
-          - "org.apache.felix:*-plugin"
-          - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
-          - "org.codehaus.mojo:*"
-          - "org.eclipse.jetty.toolchain:*-maven-plugin"
-          - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
-          - "org.testcontainers:*"
-          - "com.diffplug.spotless:*"
-          - "com.github.spotbugs:*"
-          - "com.mycila:*"
-      integration-deps:
-        patterns:
-          - "org.infinispan*"
-          - "org.mongodb*"
-          - "org.wildfly*"
-          - "org.eclipse.platform*"
-          - "com.google.cloud:*"
-          - "org.hawtio:*"
-      spec-deps:
-        patterns:
-          - "jakarta.*"
-          - "org.jboss.weld.*"
-          - "com.sun.xml*"
-          - "org.glassfish.jaxb*"
-          - "org.mortbay.jasper:*"
-      dev-dependencies:
+      ee-dependencies:
         patterns:
           - "*"
     ignore:
@@ -314,39 +293,32 @@ updates:
       timezone: "Australia/Brisbane"
     commit-message:
       prefix: "[12.1.x EE11] "
+    # Only scan the Jakarta EE specs and matching impls that this EE tree pins
+    # itself. Every other dependency it builds against (slf4j, the Maven tooling
+    # cluster, testcontainers, logging, session backends, ...) is version-managed
+    # in the root pom and is updated by the "/" entry; without this restriction
+    # the EE entry resolves those root-pom properties too and raises a duplicate
+    # pull request against the same root pom.
+    allow:
+      - dependency-name: "com.google.gwt:*"
+      - dependency-name: "com.sun.activation:*"
+      - dependency-name: "com.sun.mail:*"
+      - dependency-name: "com.sun.xml.ws:*"
+      - dependency-name: "commons-io:*"
+      - dependency-name: "jakarta.*"
+      - dependency-name: "org.apache.felix:org.apache.felix.framework"
+      - dependency-name: "org.apache.lucene:*"
+      - dependency-name: "org.eclipse.angus:*"
+      - dependency-name: "org.eclipse.jetty.orbit:*"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-javax-websocket-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-websocket-api"
+      - dependency-name: "org.glassfish.*"
+      - dependency-name: "org.jboss.weld.*"
+      - dependency-name: "org.mortbay.jasper:*"
     groups:
-      build-deps:
-        patterns:
-          - "org.apache.maven:*"
-          - "org.apache.maven.plugins:*"
-          - "org.apache.maven.plugin-tools:*"
-          - "org.apache.felix:*-plugin"
-          - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
-          - "org.codehaus.mojo:*"
-          - "org.eclipse.jetty.toolchain:*-maven-plugin"
-          - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
-          - "org.testcontainers:*"
-          - "com.diffplug.spotless:*"
-          - "com.github.spotbugs:*"
-          - "com.mycila:*"
-      integration-deps:
-        patterns:
-          - "org.infinispan*"
-          - "org.mongodb*"
-          - "org.wildfly*"
-          - "org.eclipse.platform*"
-          - "com.google.cloud:*"
-          - "org.hawtio:*"
-      spec-deps:
-        patterns:
-          - "jakarta.*"
-          - "org.jboss.weld.*"
-          - "com.sun.xml*"
-          - "org.glassfish.jaxb*"
-          - "org.mortbay.jasper:*"
-      dev-dependencies:
+      ee-dependencies:
         patterns:
           - "*"
     ignore:
@@ -435,39 +407,32 @@ updates:
       timezone: "Australia/Brisbane"
     commit-message:
       prefix: "[12.0.x EE8] "
+    # Only scan the Jakarta EE specs and matching impls that this EE tree pins
+    # itself. Every other dependency it builds against (slf4j, the Maven tooling
+    # cluster, testcontainers, logging, session backends, ...) is version-managed
+    # in the root pom and is updated by the "/" entry; without this restriction
+    # the EE entry resolves those root-pom properties too and raises a duplicate
+    # pull request against the same root pom.
+    allow:
+      - dependency-name: "com.google.gwt:*"
+      - dependency-name: "com.sun.activation:*"
+      - dependency-name: "com.sun.mail:*"
+      - dependency-name: "com.sun.xml.ws:*"
+      - dependency-name: "commons-io:*"
+      - dependency-name: "jakarta.*"
+      - dependency-name: "org.apache.felix:org.apache.felix.framework"
+      - dependency-name: "org.apache.lucene:*"
+      - dependency-name: "org.eclipse.angus:*"
+      - dependency-name: "org.eclipse.jetty.orbit:*"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-javax-websocket-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-websocket-api"
+      - dependency-name: "org.glassfish.*"
+      - dependency-name: "org.jboss.weld.*"
+      - dependency-name: "org.mortbay.jasper:*"
     groups:
-      build-deps:
-        patterns:
-          - "org.apache.maven:*"
-          - "org.apache.maven.plugins:*"
-          - "org.apache.maven.plugin-tools:*"
-          - "org.apache.felix:*-plugin"
-          - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
-          - "org.codehaus.mojo:*"
-          - "org.eclipse.jetty.toolchain:*-maven-plugin"
-          - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
-          - "org.testcontainers:*"
-          - "com.diffplug.spotless:*"
-          - "com.github.spotbugs:*"
-          - "com.mycila:*"
-      integration-deps:
-        patterns:
-          - "org.infinispan*"
-          - "org.mongodb*"
-          - "org.wildfly*"
-          - "org.eclipse.platform*"
-          - "com.google.cloud:*"
-          - "org.hawtio:*"
-      spec-deps:
-        patterns:
-          - "jakarta.*"
-          - "org.jboss.weld.*"
-          - "com.sun.xml*"
-          - "org.glassfish.jaxb*"
-          - "org.mortbay.jasper:*"
-      dev-dependencies:
+      ee-dependencies:
         patterns:
           - "*"
     ignore:
@@ -539,39 +504,32 @@ updates:
       timezone: "Australia/Brisbane"
     commit-message:
       prefix: "[12.0.x EE9] "
+    # Only scan the Jakarta EE specs and matching impls that this EE tree pins
+    # itself. Every other dependency it builds against (slf4j, the Maven tooling
+    # cluster, testcontainers, logging, session backends, ...) is version-managed
+    # in the root pom and is updated by the "/" entry; without this restriction
+    # the EE entry resolves those root-pom properties too and raises a duplicate
+    # pull request against the same root pom.
+    allow:
+      - dependency-name: "com.google.gwt:*"
+      - dependency-name: "com.sun.activation:*"
+      - dependency-name: "com.sun.mail:*"
+      - dependency-name: "com.sun.xml.ws:*"
+      - dependency-name: "commons-io:*"
+      - dependency-name: "jakarta.*"
+      - dependency-name: "org.apache.felix:org.apache.felix.framework"
+      - dependency-name: "org.apache.lucene:*"
+      - dependency-name: "org.eclipse.angus:*"
+      - dependency-name: "org.eclipse.jetty.orbit:*"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-javax-websocket-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-websocket-api"
+      - dependency-name: "org.glassfish.*"
+      - dependency-name: "org.jboss.weld.*"
+      - dependency-name: "org.mortbay.jasper:*"
     groups:
-      build-deps:
-        patterns:
-          - "org.apache.maven:*"
-          - "org.apache.maven.plugins:*"
-          - "org.apache.maven.plugin-tools:*"
-          - "org.apache.felix:*-plugin"
-          - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
-          - "org.codehaus.mojo:*"
-          - "org.eclipse.jetty.toolchain:*-maven-plugin"
-          - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
-          - "org.testcontainers:*"
-          - "com.diffplug.spotless:*"
-          - "com.github.spotbugs:*"
-          - "com.mycila:*"
-      integration-deps:
-        patterns:
-          - "org.infinispan*"
-          - "org.mongodb*"
-          - "org.wildfly*"
-          - "org.eclipse.platform*"
-          - "com.google.cloud:*"
-          - "org.hawtio:*"
-      spec-deps:
-        patterns:
-          - "jakarta.*"
-          - "org.jboss.weld.*"
-          - "com.sun.xml*"
-          - "org.glassfish.jaxb*"
-          - "org.mortbay.jasper:*"
-      dev-dependencies:
+      ee-dependencies:
         patterns:
           - "*"
     ignore:
@@ -614,39 +572,32 @@ updates:
       timezone: "Australia/Brisbane"
     commit-message:
       prefix: "[12.0.x EE10] "
+    # Only scan the Jakarta EE specs and matching impls that this EE tree pins
+    # itself. Every other dependency it builds against (slf4j, the Maven tooling
+    # cluster, testcontainers, logging, session backends, ...) is version-managed
+    # in the root pom and is updated by the "/" entry; without this restriction
+    # the EE entry resolves those root-pom properties too and raises a duplicate
+    # pull request against the same root pom.
+    allow:
+      - dependency-name: "com.google.gwt:*"
+      - dependency-name: "com.sun.activation:*"
+      - dependency-name: "com.sun.mail:*"
+      - dependency-name: "com.sun.xml.ws:*"
+      - dependency-name: "commons-io:*"
+      - dependency-name: "jakarta.*"
+      - dependency-name: "org.apache.felix:org.apache.felix.framework"
+      - dependency-name: "org.apache.lucene:*"
+      - dependency-name: "org.eclipse.angus:*"
+      - dependency-name: "org.eclipse.jetty.orbit:*"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-javax-websocket-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api"
+      - dependency-name: "org.eclipse.jetty.toolchain:jetty-jakarta-websocket-api"
+      - dependency-name: "org.glassfish.*"
+      - dependency-name: "org.jboss.weld.*"
+      - dependency-name: "org.mortbay.jasper:*"
     groups:
-      build-deps:
-        patterns:
-          - "org.apache.maven:*"
-          - "org.apache.maven.plugins:*"
-          - "org.apache.maven.plugin-tools:*"
-          - "org.apache.felix:*-plugin"
-          - "org.apache.servicemix.tooling:*"
-          - "org.asciidoctor:*"
-          - "org.codehaus.mojo:*"
-          - "org.eclipse.jetty.toolchain:*-maven-plugin"
-          - "org.jacoco:*"
-          - "org.mortbay:*-maven-plugin"
-          - "org.testcontainers:*"
-          - "com.diffplug.spotless:*"
-          - "com.github.spotbugs:*"
-          - "com.mycila:*"
-      integration-deps:
-        patterns:
-          - "org.infinispan*"
-          - "org.mongodb*"
-          - "org.wildfly*"
-          - "org.eclipse.platform*"
-          - "com.google.cloud:*"
-          - "org.hawtio:*"
-      spec-deps:
-        patterns:
-          - "jakarta.*"
-          - "org.jboss.weld.*"
-          - "com.sun.xml*"
-          - "org.glassfish.jaxb*"
-          - "org.mortbay.jasper:*"
-      dev-dependencies:
+      ee-dependencies:
         patterns:
           - "*"
     ignore:
