@@ -317,6 +317,12 @@ public class Main
      * {@code argv}, and it is locale-driven; it is NOT {@code file.encoding} /
      * {@link Charset#defaultCharset()}, which JEP 400 fixed to UTF-8 on JDK 18+. Falls back to the
      * default charset when the property is missing or names an unknown charset.
+     * <p>
+     * This is deliberately the native encoding rather than a hardcoded UTF-8: the native encoding is
+     * the ANSI code page on Windows (for example Cp1252 or Cp932), not UTF-8, so the argument file
+     * must be written in it for non-ASCII values and filesystem paths to round-trip. Writing UTF-8
+     * would corrupt them anywhere the native encoding is not UTF-8 (default Windows, or a non-UTF-8
+     * locale). It is not a non-UTF-8-locale workaround; it is the charset the child actually reads.
      */
     private static Charset nativeEncoding()
     {
@@ -614,6 +620,12 @@ public class Main
                     // from the native encoding under a non-UTF-8 locale, corrupting non-ASCII values
                     // even on the same host. Write straight to stdout's file descriptor in the native
                     // encoding so the generated file round-trips wherever it is generated and used.
+                    //
+                    // TODO: (JDK-25 minimum) a redirected System.out already matches the
+                    // native encoding on JDK 17 (file.encoding) and JDK 19+ (stdout.encoding falls back
+                    // to native.encoding when stdout is not a tty), so the explicit file-descriptor
+                    // stream mainly covers JDK 18 and tty output. Once those stop mattering, writing
+                    // cmd.writeArgFile(System.out) directly may be enough for the redirect-to-file use.
                     System.out.flush();
                     PrintStream argFileOut = new PrintStream(new FileOutputStream(FileDescriptor.out), true, nativeEncoding());
                     cmd.writeArgFile(argFileOut);
@@ -670,6 +682,11 @@ public class Main
             // corrupting non-ASCII values under a non-UTF-8 locale (e.g. LANG=C); the file's path
             // is all that reaches the argfile, and the 0600 temp file keeps the values off the
             // visible arguments just the same.
+            //
+            // The false (properties-file) argument here is not extra machinery for the fork: the same
+            // branch of StartArgs.getMainArgs is used by the normal in-process start, so this is
+            // shared code that costs nothing to reuse and gives lossless non-ASCII properties (such as
+            // keystore passwords) regardless of locale or platform native encoding.
             Set<String> parts = new LinkedHashSet<>(StartArgs.ALL_PARTS);
             parts.remove("java");
             CommandLineBuilder cmd = args.getMainArgs(parts, false);

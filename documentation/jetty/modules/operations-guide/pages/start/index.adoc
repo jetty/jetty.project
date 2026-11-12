@@ -504,6 +504,27 @@ This step produces a list of _enabled_ modules; for each enabled module all its 
 . Processes the list of enabled (explicitly and transitively) modules, gathering the list of libraries to add to the class-path or module-path, the JPMS directives to add to the command line if necessary, the properties and XML files to add as program arguments, etc., so that a full JVM command line can be generated.
 . Executes the command line, either in-JVM or by forking a second JVM (if the `--exec` option is present or implied by other options such as `--jpms`), and waits for the JVM, or the forked JVM, to exit.
 
+[[start-character-encoding]]
+=== Character Encoding
+
+The Jetty start mechanism carries your configuration into the server: property values, filesystem paths such as `$JETTY_BASE` and `$JETTY_HOME`, class-path and module-path entries, and any `-D` system properties.
+When a second JVM is forked (see the steps above), that configuration is passed to the forked JVM as well.
+
+Non-ASCII property _values_ configured in `+*.ini+` files (for example a keystore password) are carried losslessly, whatever the operating system's character encoding.
+Filesystem paths and command-line or `-D` values are different: they are carried using the JVM's native character encoding (the `native.encoding` system property), which is UTF-8 on most modern systems, a legacy code page on a Windows system that has not enabled UTF-8, and ASCII under a `LANG=C` or `POSIX` locale.
+
+[CAUTION]
+====
+We try our best to support non-ASCII filesystem paths and configuration even when the operating system's native encoding is not UTF-8, but this is not a recommended setup.
+
+This is easy to hit unintentionally: many minimal Docker base images, and some `systemd` service units, run with `LANG=C`/`POSIX` or set `LC_ALL` to a non-UTF-8 value, so the JVM's native encoding ends up as ASCII even when your paths and configuration are UTF-8.
+
+With a non-UTF-8 native encoding, non-ASCII characters in filesystem paths (including paths given as property values) and in command-line or `-D` values can be corrupted, or cannot be represented at all, because the native encoding, not UTF-8, is what the operating system and the `java` launcher use to pass them between processes.
+
+If you use non-ASCII characters in `$JETTY_BASE`, `$JETTY_HOME`, keystore paths, or `-D` system properties, run Jetty with a UTF-8 native encoding end to end: a UTF-8 locale on Linux or Unix (for example `LANG=C.UTF-8`, or another `*.UTF-8` locale, set the same way for the account that starts Jetty), or the UTF-8 code page on Windows.
+Otherwise, keep those paths and values ASCII.
+====
+
 [[start-class-path]]
 === Server Class-Path
 

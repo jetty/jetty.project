@@ -72,6 +72,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Both JDK images (straddling JEP 400) are run: the fork path's property delivery is locale-driven
  * (the native encoding, {@code native.encoding}), which JEP 400 did <em>not</em> change, so the two
  * JDK columns behave identically; the matrix documents that invariance.
+ * <p>
+ * TODO: (JDK-25 minimum) the JDK-17 image and the JEP-400-invariance framing above can
+ * be retired once 17 is below the supported floor, leaving a single current-JDK column. At that point
+ * a real non-ASCII PKCS12 keystore-password case also becomes feasible as an additional (or
+ * alternative) observable: JDKs before 25 reject non-ASCII PKCS12 passwords, which is why this test
+ * uses an HTTP echo of a core property rather than an actual keystore.
  */
 public class JettyStartForkedModeTest extends AbstractJettyHomeTest
 {
