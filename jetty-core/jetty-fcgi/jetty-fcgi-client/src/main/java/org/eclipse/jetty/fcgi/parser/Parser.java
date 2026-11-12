@@ -129,8 +129,11 @@ public abstract class Parser
                         if (buffer.remaining() >= padding)
                         {
                             buffer.position(buffer.position() + padding);
+                            // Only stop parsing at the end of the request,
+                            // as no event is notified for other frame types.
+                            boolean endRequest = headerParser.getFrameType() == FCGI.FrameType.END_REQUEST;
                             reset();
-                            if (!buffer.hasRemaining())
+                            if (endRequest && !buffer.hasRemaining())
                                 return true;
                         }
                         else
