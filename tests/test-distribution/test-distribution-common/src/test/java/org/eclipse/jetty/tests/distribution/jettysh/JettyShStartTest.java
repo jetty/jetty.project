@@ -496,9 +496,9 @@ public class JettyShStartTest extends AbstractJettyHomeTest
     }
 
     /**
-     * run/demo/supervise background the JVM and return, so jetty.sh cannot remove the argfile
-     * itself; the server JVM removes its own via the cleanup XML appended to the launch. With the
-     * default early policy the argfile is gone shortly after the forked server starts.
+     * {@code run} backgrounds the JVM and returns, so jetty.sh cannot remove the argfile itself; the
+     * server JVM removes its own via the path-cleaner module. With the default early policy the
+     * argfile is gone shortly after the server starts.
      */
     @Test
     public void testRunSelfCleansArgFile() throws Exception

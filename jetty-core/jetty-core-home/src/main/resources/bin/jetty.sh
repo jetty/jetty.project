@@ -104,7 +104,7 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 
 usage()
 {
-    echo "Usage: ${0##*/} [-d] {start|stop|run|restart|check|supervise} [ CONFIGS ... ] "
+    echo "Usage: ${0##*/} [-d] {start|stop|run|restart|check} [ CONFIGS ... ] "
     exit 1
 }
 
@@ -660,8 +660,8 @@ JETTY_ARGFILE_DELETE="${JETTY_ARGFILE_DELETE:-early}"
 
 # The path-cleaner module (enabled by default in etc/jetty.conf) has the server JVM remove its own
 # argfile per the mode below, so the (possibly secret-bearing) file is cleaned up even for the
-# detached run/demo/supervise launches that jetty.sh cannot clean up itself.  Pass the argfile path
-# and mode as properties, exactly like jetty.state/jetty.pid are passed above.
+# detached "run" launch that jetty.sh cannot clean up itself.  Pass the argfile path and mode as
+# properties, exactly like jetty.state/jetty.pid are passed above.
 JETTY_ARGS=(${JETTY_ARGS[*]} "jetty.path-cleanup.files=$JETTY_ARGFILE_ARG" "jetty.path-cleanup.mode=$JETTY_ARGFILE_DELETE")
 
 # Generate the Java @argument-file (opts,path,main,args,envs) that the JVM is launched with.
@@ -869,20 +869,7 @@ case "$ACTION" in
 
     ;;
 
-  supervise)
-    #
-    # Under control of daemontools supervise monitor which
-    # handles restarts and shutdowns via the svc program.
-    #
-    # Detached launch: jetty.sh backgrounds the JVM and returns, so it cannot remove the argfile
-    # itself; instead the path-cleaner module (in the generated argfile) has the server JVM remove
-    # its own argfile per JETTY_ARGFILE_DELETE.
-    generateArgFile
-    ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE_ARG" > /dev/null &
-
-    ;;
-
-  run|demo)
+  run)
     echo "Running Jetty: "
 
     if running "$JETTY_PID"
@@ -891,8 +878,9 @@ case "$ACTION" in
       exit 1
     fi
 
-    # Detached launch (see supervise): the path-cleaner module has the server JVM self-remove the
-    # argfile per JETTY_ARGFILE_DELETE.
+    # Detached launch: jetty.sh backgrounds the JVM and returns, so it cannot remove the argfile
+    # itself; instead the path-cleaner module (in the generated argfile) has the server JVM remove
+    # its own argfile per JETTY_ARGFILE_DELETE.
     generateArgFile
     ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE_ARG" > /dev/null &
     ;;
