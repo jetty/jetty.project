@@ -94,13 +94,6 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 # JETTY_START_TIMEOUT
 #   Time spent waiting to see if startup was successful/failed. Defaults to 60 seconds
 #
-# JETTY_ARGFILE_DELETE
-#   When jetty.sh removes the generated @argument-file (which may contain secrets):
-#     early  - as soon as the server has started (shortest on-disk exposure; the default)
-#     late   - on stop (or server exit), so "check"/"status -d" can show the effective
-#              command line while the server runs
-#     never  - never removed automatically (for debugging; leaves secrets on disk)
-#
 
 usage()
 {
@@ -329,7 +322,6 @@ dumpEnv()
   echo "JETTY_START_TIMEOUT   =  $JETTY_START_TIMEOUT"
   echo "JETTY_SYS_PROPS       =  $JETTY_SYS_PROPS"
   echo "JETTY_ARGFILE         =  $JETTY_ARGFILE"
-  echo "JETTY_ARGFILE_DELETE  =  $JETTY_ARGFILE_DELETE"
   echo "ID                    =  $(id)"
   echo "JETTY_USER            =  $JETTY_USER"
   echo "USE_START_STOP_DAEMON =  $USE_START_STOP_DAEMON"
@@ -339,15 +331,10 @@ dumpEnv()
   # it no longer shows above as RUN_ARGS.  Print the argfile's contents to restore that view, but
   # only under DEBUG: it can hold secrets (for example start.d/ssl.ini passwords), which is why
   # they are kept off the command line in the first place.
-  if (( DEBUG ))
+  if (( DEBUG )) && [ -r "$JETTY_ARGFILE" ]
   then
-    if [ -r "$JETTY_ARGFILE" ]
-    then
-      echo "JETTY_ARGFILE content =  (effective command line)"
-      sed 's/^/                         /' "$JETTY_ARGFILE"
-    else
-      echo "JETTY_ARGFILE content =  (removed per JETTY_ARGFILE_DELETE=$JETTY_ARGFILE_DELETE; set it to 'late' or 'never' to retain it)"
-    fi
+    echo "JETTY_ARGFILE content =  (effective command line)"
+    sed 's/^/                         /' "$JETTY_ARGFILE"
   fi
 }
 
@@ -654,16 +641,6 @@ case "`uname`" in
 CYGWIN*) JETTY_ARGFILE_ARG="`cygpath -w \"$JETTY_ARGFILE\"`";;
 esac
 
-# When the generated @argument-file is removed (see JETTY_ARGFILE_DELETE in the header comment):
-# "early" (default) once the server has started, "late" on stop/exit, "never" not at all.
-JETTY_ARGFILE_DELETE="${JETTY_ARGFILE_DELETE:-early}"
-
-# The path-cleaner module (enabled by default in etc/jetty.conf) has the server JVM remove its own
-# argfile per the mode below, so the (possibly secret-bearing) file is cleaned up even for the
-# detached "run" launch that jetty.sh cannot clean up itself.  Pass the argfile path and mode as
-# properties, exactly like jetty.state/jetty.pid are passed above.
-JETTY_ARGS=(${JETTY_ARGS[*]} "jetty.path-cleanup.files=$JETTY_ARGFILE_ARG" "jetty.path-cleanup.mode=$JETTY_ARGFILE_DELETE")
-
 # Generate the Java @argument-file (opts,path,main,args,envs) that the JVM is launched with.
 # Launching via "java @argfile" instead of expanding every argument onto the command line
 # keeps configuration values - such as passwords in start.d/ssl.ini - out of the publicly
@@ -786,16 +763,13 @@ case "$ACTION" in
     then
       if started "$JETTY_STATE" "$JETTY_PID" "$JETTY_START_TIMEOUT"
       then
-        # The path-cleaner module in the server has already removed the argfile per
-        # JETTY_ARGFILE_DELETE (immediately for "early", on exit for "late"); jetty.sh adds no rm here.
         echo "OK `date`"
       else
         echo "FAILED `date`"
         pidKill $JETTY_PID 30
-        # Start failed: the server may not have reached the path-cleaner stage, so remove the
-        # secret-bearing argfile here as a safety net (unless JETTY_ARGFILE_DELETE=never, which
-        # keeps it for debugging the failure).
-        [ "$JETTY_ARGFILE_DELETE" != "never" ] && rm -f "$JETTY_ARGFILE"
+        # Start failed and the JVM (if any) has already read the @argfile, so remove the
+        # secret-bearing file rather than leave it behind.
+        rm -f "$JETTY_ARGFILE"
         exit 1
       fi
     else
@@ -807,8 +781,8 @@ case "$ACTION" in
   stop)
     echo -n "Stopping Jetty: "
     # Remove the argument-file first: it may contain secrets and must go even when there is
-    # no pid file to stop. (Already gone under JETTY_ARGFILE_DELETE=early; kept under "never".)
-    [ "$JETTY_ARGFILE_DELETE" != "never" ] && rm -f "$JETTY_ARGFILE"
+    # no pid file to stop.
+    rm -f "$JETTY_ARGFILE"
     if [ ! -r "$JETTY_PID" ] ; then
       echo "** ERROR: no pid found at $JETTY_PID"
       exit 1
@@ -878,9 +852,6 @@ case "$ACTION" in
       exit 1
     fi
 
-    # Detached launch: jetty.sh backgrounds the JVM and returns, so it cannot remove the argfile
-    # itself; instead the path-cleaner module (in the generated argfile) has the server JVM remove
-    # its own argfile per JETTY_ARGFILE_DELETE.
     generateArgFile
     ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE_ARG" > /dev/null &
     ;;

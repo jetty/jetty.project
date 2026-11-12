@@ -130,11 +130,8 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             // argfile and absent from every process command line.
             injectSecretMarker(genericContainer);
 
-            // JETTY_ARGFILE_DELETE=late keeps the argfile on disk while the server runs (removed on
-            // stop), so the checks below can inspect its contents; the default "early" would remove
-            // it right after start.
             // System.err.println("== jetty.sh start ==");
-            Container.ExecResult result = genericContainer.execInContainer("env", "JETTY_ARGFILE_DELETE=late", "/var/test/jetty-home/bin/jetty.sh", "start");
+            Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
             assertThat(asReason(result, "jetty.sh start"), result.getExitCode(), is(0));
             /*
              * Example successful output
@@ -352,10 +349,8 @@ public class JettyShStartTest extends AbstractJettyHomeTest
 
             LOG.info("Started: " + jettyImage.getDockerImageName());
 
-            // JETTY_ARGFILE_DELETE=late keeps the argfile present while the server runs so the
-            // owner/mode check below can stat it; the default "early" would remove it after start.
             // System.err.println("== jetty.sh start ==");
-            Container.ExecResult result = genericContainer.execInContainer("env", "JETTY_ARGFILE_DELETE=late", "/var/test/jetty-home/bin/jetty.sh", "start");
+            Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
             assertThat(asReason(result, "jetty.sh start"), result.getExitCode(), is(0));
             Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
                 allOf(
@@ -423,10 +418,8 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             assertThat(asReason(inject, "inject non-ASCII marker"), inject.getExitCode(), is(0));
 
             // Start under a UTF-8 locale so the generate+launch native encoding is UTF-8.
-            // JETTY_ARGFILE_DELETE=late retains the argfile while running so its contents can be
-            // read below; the default "early" would remove it right after start.
             Container.ExecResult result = genericContainer.execInContainer("env", "LANG=C.UTF-8", "LC_ALL=C.UTF-8",
-                "JETTY_ARGFILE_DELETE=late", "/var/test/jetty-home/bin/jetty.sh", "start");
+                "/var/test/jetty-home/bin/jetty.sh", "start");
             assertThat(asReason(result, "jetty.sh start"), result.getExitCode(), is(0));
             Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
                 allOf(
@@ -440,107 +433,6 @@ public class JettyShStartTest extends AbstractJettyHomeTest
             assertThat("argfile preserves the non-ASCII value", content.getStdout(), containsString("test.marker=" + marker));
 
             genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "stop");
-        }
-    }
-
-    /**
-     * With the default {@code JETTY_ARGFILE_DELETE=early}, jetty.sh removes the generated
-     * @argument-file as soon as the server has started (while it is still running), and
-     * {@code jetty.sh -d check} reports the removal rather than the file's contents.
-     */
-    @Test
-    public void testArgFileRemovedAfterStartByDefault() throws Exception
-    {
-        ImageOS osImage = new ImageOSUbuntuJammyJDK17();
-        ImageFromDSL userImage = new ImageUserRoot(osImage);
-        ImageFromDSL jettyImage = new ImageFromDSL(userImage, "base-basic-early-delete", builder ->
-            builder
-                .from(userImage.getDockerImageName())
-                .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,ee10-deploy")
-                .build());
-        ensureParentImagesExist(jettyImage);
-
-        try (GenericContainer<?> genericContainer = new GenericContainer<>(jettyImage))
-        {
-            genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
-
-            genericContainer.withExposedPorts(80, 8080)
-                .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
-                .withStartupAttempts(2)
-                .withLogConsumer(new Slf4jLogConsumer(LOG))
-                .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
-                .start();
-
-            // Default policy (early): start succeeds and Jetty keeps running...
-            Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "start");
-            assertThat(asReason(result, "jetty.sh start"), result.getExitCode(), is(0));
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                allOf(containsString("Starting Jetty:"), containsString("\nOK ")));
-
-            result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "status");
-            assertThat(asReason(result, "jetty.sh status"), result.getExitCode(), is(0));
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(result::getStdout,
-                containsString("Jetty running pid"));
-
-            // ... but the argfile has already been removed, even though Jetty is up.
-            Container.ExecResult argFilePresent = genericContainer.execInContainer("test", "-f", JETTY_ARGFILE);
-            assertThat("argfile removed after start (early): " + JETTY_ARGFILE, argFilePresent.getExitCode(), is(1));
-
-            // "-d check" reports the removal (and how to retain it), rather than the content.
-            Container.ExecResult debugCheck = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "-d", "check");
-            assertThat(asReason(debugCheck, "jetty.sh -d check"), debugCheck.getStdout(),
-                containsString("removed per JETTY_ARGFILE_DELETE=early"));
-
-            genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "stop");
-        }
-    }
-
-    /**
-     * {@code run} backgrounds the JVM and returns, so jetty.sh cannot remove the argfile itself; the
-     * server JVM removes its own via the path-cleaner module. With the default early policy the
-     * argfile is gone shortly after the server starts.
-     */
-    @Test
-    public void testRunSelfCleansArgFile() throws Exception
-    {
-        ImageOS osImage = new ImageOSUbuntuJammyJDK17();
-        ImageFromDSL userImage = new ImageUserRoot(osImage);
-        ImageFromDSL jettyImage = new ImageFromDSL(userImage, "base-basic-run-selfclean", builder ->
-            builder
-                .from(userImage.getDockerImageName())
-                .run("java -jar ${JETTY_HOME}/start.jar --add-modules=http,ee10-deploy")
-                .build());
-        ensureParentImagesExist(jettyImage);
-
-        try (GenericContainer<?> genericContainer = new GenericContainer<>(jettyImage))
-        {
-            genericContainer.setWaitStrategy(new ShellStrategy().withCommand("id"));
-
-            genericContainer.withExposedPorts(80, 8080)
-                .withCommand("/bin/sh", "-c", "while true; do pwd | nc -l -p 80; done")
-                .withStartupAttempts(2)
-                .withLogConsumer(new Slf4jLogConsumer(LOG))
-                .withStartupCheckStrategy(new IsRunningStartupCheckStrategy())
-                .start();
-
-            // "run" backgrounds the server and returns immediately.
-            Container.ExecResult result = genericContainer.execInContainer("/var/test/jetty-home/bin/jetty.sh", "run");
-            assertThat(asReason(result, "jetty.sh run"), result.getExitCode(), is(0));
-
-            // The forked server removes its own argfile during startup (early -> immediate delete).
-            Awaitility.await().atMost(Duration.ofSeconds(20)).until(
-                () -> genericContainer.execInContainer("test", "-f", JETTY_ARGFILE).getExitCode(),
-                is(1));
-
-            // ...and it is a live HTTP server: any response proves "run" actually started Jetty
-            // (an empty base yields 404; a 200 would be equally valid).
-            startHttpClient();
-            URI containerUriRoot = URI.create("http://" + genericContainer.getHost() + ":" + genericContainer.getMappedPort(8080) + "/");
-            Awaitility.await().atMost(Duration.ofSeconds(20)).ignoreExceptions().until(
-                () -> client.GET(containerUriRoot).getStatus(),
-                anyOf(is(HttpStatus.OK_200), is(HttpStatus.NOT_FOUND_404)));
-
-            genericContainer.execInContainer("/bin/sh", "-c", "pkill -f start.d || pkill -f XmlConfiguration || true");
         }
     }
 
