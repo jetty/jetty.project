@@ -379,7 +379,7 @@ public class PropertyPassingTest
         commands.add(getStartJarBin());
         // Include the "main" part so the file itself names the main class: the launcher only
         // expands @file in launcher position (before the main class), not as an application arg.
-        commands.add("--arglines=main,args");
+        commands.add("--argfile=main,args");
         commands.addAll(List.of(properties));
 
         ProcessBuilder builder = new ProcessBuilder(commands);
@@ -390,7 +390,7 @@ public class PropertyPassingTest
         builder.redirectOutput(argFile.toFile());
         builder.redirectError(ProcessBuilder.Redirect.INHERIT);
         int exit = builder.start().waitFor();
-        assertThat("generate (--arglines) exit code", exit, is(0));
+        assertThat("generate (--argfile) exit code", exit, is(0));
     }
 
     private byte[] runPropertyDump(Path argFile, String lang) throws Exception

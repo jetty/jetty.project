@@ -143,7 +143,7 @@ public class StartArgs
     public enum DryRun
     {
         LEGACY,
-        ARGLINES
+        ARGFILE
     }
 
     // module inspection commands
@@ -498,7 +498,7 @@ public class StartArgs
 
     public CommandLineBuilder getMainArgs(Set<String> parts) throws IOException
     {
-        // By default, properties are inlined as args only when generating dry-run/arglines
+        // By default, properties are inlined as args only when generating dry-run/argfile
         // output; otherwise they are written to a (temp) properties file.
         return getMainArgs(parts, dryRun != null);
     }
@@ -874,7 +874,7 @@ public class StartArgs
     /**
      * Select the dry-run mode, rejecting an attempt to combine the two families of
      * option. {@code --dry-run*} (LEGACY) emits a shell command line, while
-     * {@code --arglines*} (ARGLINES) emits a Java {@code @argument-file}; the two share
+     * {@code --argfile*} (ARGFILE) emits a Java {@code @argument-file}; the two share
      * the {@link #dryRunParts} set and a single output pass, so mixing them (whether on
      * one command line or via an ini file) would silently produce one mode's output with
      * the other's parts. They are mutually exclusive.
@@ -885,7 +885,7 @@ public class StartArgs
     private void setDryRun(DryRun mode, String source)
     {
         if (dryRun != null && dryRun != mode)
-            throw new UsageException(UsageException.ERR_BAD_ARG, "Cannot combine --dry-run and --arglines in %s", source);
+            throw new UsageException(UsageException.ERR_BAD_ARG, "Cannot combine --dry-run and --argfile in %s", source);
         dryRun = mode;
     }
 
@@ -1159,10 +1159,10 @@ public class StartArgs
             return environment;
         }
 
-        if ("--arglines".equals(arg))
+        if ("--argfile".equals(arg))
         {
-            setDryRun(DryRun.ARGLINES, source);
-            // "java" is the only part not compatible with @arglines (the java binary must
+            setDryRun(DryRun.ARGFILE, source);
+            // "java" is the only part not compatible with an @argument-file (the java binary must
             // not be a token in the argfile), so default to all parts except "java".
             dryRunParts.addAll(ALL_PARTS);
             dryRunParts.remove("java");
@@ -1170,16 +1170,16 @@ public class StartArgs
             return environment;
         }
 
-        if (arg.startsWith("--arglines="))
+        if (arg.startsWith("--argfile="))
         {
-            setDryRun(DryRun.ARGLINES, source);
+            setDryRun(DryRun.ARGFILE, source);
             int colon = arg.indexOf('=');
             for (String part : arg.substring(colon + 1).split(","))
             {
                 if (!ALL_PARTS.contains(part))
-                    throw new UsageException(UsageException.ERR_BAD_ARG, "Unrecognized --arglines=\"%s\" in %s", part, source);
+                    throw new UsageException(UsageException.ERR_BAD_ARG, "Unrecognized --argfile=\"%s\" in %s", part, source);
                 if ("java".equals(part))
-                    throw new UsageException(UsageException.ERR_BAD_ARG, "Invalid --arglines=\"java\" (not compatible with java @arglines) in %s", source);
+                    throw new UsageException(UsageException.ERR_BAD_ARG, "Invalid --argfile=\"java\" (not compatible with java @argument-file) in %s", source);
 
                 dryRunParts.add(part);
             }

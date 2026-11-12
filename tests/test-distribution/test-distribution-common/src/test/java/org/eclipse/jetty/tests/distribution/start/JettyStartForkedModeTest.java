@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Tests the <em>forked</em> start.jar path: {@code java -jar start.jar --exec ...}, where
  * {@code Main} forks a second JVM and launches it via a {@code java @argument-file}
  * ({@code Main.writeExecArgFile}). This is distinct from {@code jetty.sh}, which flattens the
- * configuration through {@code --arglines} and launches a plain {@code java @jetty.argfile} (so it
+ * configuration through {@code --argfile} and launches a plain {@code java @jetty.argfile} (so it
  * never reaches the fork path) -- that is covered by {@code JettyShStartTest}.
  * <p>
  * The focus is the encoding round-trip of a non-ASCII core-environment property value. The core

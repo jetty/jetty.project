@@ -301,10 +301,10 @@ public class CommandLineBuilder
     }
 
     /**
-     * Write the command line following {@code java @arglines} format, one quoted
+     * Write the command line following the {@code java @argument-file} format, one quoted
      * argument per line (see {@link #argFileQuoteIfNeeded(String)}).
      */
-    public void writeArgLines(PrintStream writer)
+    public void writeArgFile(PrintStream writer)
     {
         for (String arg: args)
         {

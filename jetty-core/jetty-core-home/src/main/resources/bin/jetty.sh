@@ -655,7 +655,7 @@ generateArgFile()
     umask 077
     rm -f "$JETTY_ARGFILE"
     set -C
-    echo "${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]}" | xargs "$JAVA" -jar "$JETTY_START" --arglines=opts,path,main,args,envs > "$JETTY_ARGFILE"
+    echo "${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]}" | xargs "$JAVA" -jar "$JETTY_START" --argfile=opts,path,main,args,envs > "$JETTY_ARGFILE"
   )
   then
     echo "** ERROR: unable to generate $JETTY_ARGFILE" >&2

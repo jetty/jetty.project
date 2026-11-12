@@ -151,7 +151,7 @@ public class CommandLineBuilderTest
     }
 
     @Test
-    public void testWriteArgLines()
+    public void testWriteArgFile()
     {
         CommandLineBuilder cmd = new CommandLineBuilder();
         cmd.addArg("-Djetty.home", "/opt/jetty 12/home");
@@ -161,7 +161,7 @@ public class CommandLineBuilderTest
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         try (PrintStream out = new PrintStream(bout, true, UTF_8))
         {
-            cmd.writeArgLines(out);
+            cmd.writeArgFile(out);
         }
 
         String[] lines = bout.toString(UTF_8).split("\\R");

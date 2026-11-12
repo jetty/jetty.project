@@ -426,11 +426,11 @@ replace=( ),$1\\\n
 Note how the environments configuration specifies additional class-path and Jetty XML files for every environment.
 
 The various parts of the full JVM command line can be combined to leverage the JVM arguments file feature (that is, specify the JVM options in a file rather than on the command line) that is built-in in the `java` executable.
-The `--dry-run` output is formatted for a POSIX compliant shell, which is not the format expected by the `java` arguments file feature, so to generate an arguments file use the `--arglines` option instead (see <<configure-arglines,this section>>):
+The `--dry-run` output is formatted for a POSIX compliant shell, which is not the format expected by the `java` arguments file feature, so to generate an arguments file use the `--argfile` option instead (see <<configure-argfile,this section>>):
 
 [source,bash,subs=+quotes]
 ----
-$ (umask 077; java -jar $JETTY_HOME/start.jar --arglines=##opts,path,main,args,envs## > "$JETTY_BASE/jvm_cmd_line.txt")
+$ (umask 077; java -jar $JETTY_HOME/start.jar --argfile=##opts,path,main,args,envs## > "$JETTY_BASE/jvm_cmd_line.txt")
 $ /some/other/java @"$JETTY_BASE/jvm_cmd_line.txt"
 ----
 
@@ -454,17 +454,17 @@ $ ENVS=$(java -jar start.jar --dry-run=##envs##)
 $ echo $OPTS -Dextra=opt $MAIN $ARGS $ENVS extraProp=value extra.xml | xargs java
 ----
 
-[[configure-arglines]]
+[[configure-argfile]]
 === Generating a Java Arguments File
 
 The `--dry-run` option formats its output for a POSIX compliant shell, which is not the format expected by the `java` _arguments file_ feature (the `java @file` syntax, see the output of `java --help`).
-Use the `--arglines` option to generate a valid `java` arguments file: it prints one argument per line, quoted as required by the `java` launcher.
+Use the `--argfile` option to generate a valid `java` arguments file: it prints one argument per line, quoted as required by the `java` launcher.
 
 Because the arguments file can contain the configuration values themselves (including secrets such as passwords), create it with a restrictive `umask` and write it to a directory that is not world-readable, rather than to a shared location such as `/tmp`:
 
 [source,bash]
 ----
-$ (umask 077; java -jar $JETTY_HOME/start.jar --arglines > "$JETTY_BASE/jetty.args")
+$ (umask 077; java -jar $JETTY_HOME/start.jar --argfile > "$JETTY_BASE/jetty.args")
 $ java @"$JETTY_BASE/jetty.args"
 ----
 
@@ -472,7 +472,7 @@ As with `--dry-run`, the output can be limited to specific parts; the `java` par
 
 [source,bash]
 ----
-$ (umask 077; java -jar $JETTY_HOME/start.jar --arglines=opts,path,main,args,envs > "$JETTY_BASE/jetty.args")
+$ (umask 077; java -jar $JETTY_HOME/start.jar --argfile=opts,path,main,args,envs > "$JETTY_BASE/jetty.args")
 $ java -Xmx4g @"$JETTY_BASE/jetty.args"
 ----
 

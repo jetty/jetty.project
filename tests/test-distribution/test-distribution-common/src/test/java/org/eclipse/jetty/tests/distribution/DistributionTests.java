@@ -119,7 +119,7 @@ public class DistributionTests extends AbstractJettyHomeTest
     }
 
     @Test
-    public void testArgLines() throws Exception
+    public void testArgFile() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();
         String jettyVersion = System.getProperty("jettyVersion");
@@ -142,7 +142,7 @@ public class DistributionTests extends AbstractJettyHomeTest
                 Tester.getJavaExecutable("java"),
                 "-jar", startJar,
                 "jetty.http.port=" + port,
-                "--arglines=opts,path,main,args,envs");
+                "--argfile=opts,path,main,args,envs");
             ProcessBuilder genPb = new ProcessBuilder(genCommand);
             genPb.directory(jettyBase.toFile());
             genPb.redirectOutput(argFile.toFile());
@@ -153,11 +153,11 @@ public class DistributionTests extends AbstractJettyHomeTest
 
             // The generated argument-file must be a valid "java @file": it must not contain the
             // java executable (that is the thing that reads the file), and must name the main class.
-            List<String> argLines = Files.readAllLines(argFile, StandardCharsets.UTF_8);
-            assertFalse(argLines.isEmpty());
-            assertThat(argLines, Matchers.hasItem(containsString("XmlConfiguration")));
-            assertThat(argLines, not(Matchers.hasItem(Matchers.endsWith(File.separator + "java"))));
-            assertThat(argLines, not(Matchers.hasItem(Matchers.endsWith(File.separator + "java.exe"))));
+            List<String> argFileLines = Files.readAllLines(argFile, StandardCharsets.UTF_8);
+            assertFalse(argFileLines.isEmpty());
+            assertThat(argFileLines, Matchers.hasItem(containsString("XmlConfiguration")));
+            assertThat(argFileLines, not(Matchers.hasItem(Matchers.endsWith(File.separator + "java"))));
+            assertThat(argFileLines, not(Matchers.hasItem(Matchers.endsWith(File.separator + "java.exe"))));
 
             // Launch the server using the generated @argument-file and verify it serves requests.
             List<String> runCommand = List.of(Tester.getJavaExecutable("java"), "@" + argFile.toAbsolutePath());

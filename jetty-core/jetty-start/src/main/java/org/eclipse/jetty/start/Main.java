@@ -305,7 +305,7 @@ public class Main
         // shares this JVM's native encoding.
         try (PrintStream out = new PrintStream(Files.newOutputStream(argFile), false, nativeEncoding()))
         {
-            cmd.writeArgLines(out);
+            cmd.writeArgFile(out);
         }
         StartLog.debug("Generated exec @argument-file: %s", argFile);
         return argFile;
@@ -606,18 +606,18 @@ public class Main
             switch (args.getDryRun())
             {
                 case LEGACY -> cmd.writeCommandLine(System.out);
-                case ARGLINES ->
+                case ARGFILE ->
                 {
-                    // --arglines output is redirected to a file that "java @file" later reads in the
+                    // --argfile output is redirected to a file that "java @file" later reads in the
                     // platform native encoding (the native.encoding property). System.out encodes in
                     // stdout.encoding (JDK 19+) or file.encoding (JDK 17), either of which can differ
                     // from the native encoding under a non-UTF-8 locale, corrupting non-ASCII values
                     // even on the same host. Write straight to stdout's file descriptor in the native
                     // encoding so the generated file round-trips wherever it is generated and used.
                     System.out.flush();
-                    PrintStream argLines = new PrintStream(new FileOutputStream(FileDescriptor.out), true, nativeEncoding());
-                    cmd.writeArgLines(argLines);
-                    argLines.flush();
+                    PrintStream argFileOut = new PrintStream(new FileOutputStream(FileDescriptor.out), true, nativeEncoding());
+                    cmd.writeArgFile(argFileOut);
+                    argFileOut.flush();
                 }
             }
         }

@@ -366,7 +366,7 @@ public class BasicTest extends AbstractUseCase
     }
 
     @Test
-    public void testArgLines() throws Exception
+    public void testArgFile() throws Exception
     {
         setupDistHome();
 
@@ -379,16 +379,16 @@ public class BasicTest extends AbstractUseCase
         runArgs.add("--create-files");
         runArgs.add("java.version=21.0.1");
         runArgs.add("--modules=optional,extra");
-        runArgs.add("--arglines");
+        runArgs.add("--argfile");
 
         ExecResults results = exec(runArgs, true);
         assertThat("No exception", results.exception, is(nullValue()));
-        assertThat("DryRun mode", results.startArgs.getDryRun(), is(StartArgs.DryRun.ARGLINES));
-        // "java" is not compatible with java @arglines and must be excluded
-        assertThat("arglines parts", results.startArgs.getDryRunParts(), not(hasItem("java")));
+        assertThat("DryRun mode", results.startArgs.getDryRun(), is(StartArgs.DryRun.ARGFILE));
+        // "java" is not compatible with a java @argument-file and must be excluded
+        assertThat("argfile parts", results.startArgs.getDryRunParts(), not(hasItem("java")));
 
-        String argLines = renderArgLines(results);
-        List<String> lines = argLines.lines().toList();
+        String rendered = renderArgFile(results);
+        List<String> lines = rendered.lines().toList();
 
         // The java binary must NOT be present (it is the thing that reads the @argfile)
         assertThat("no java binary line", lines, not(hasItem(endsWith(File.separator + "java"))));
@@ -401,7 +401,7 @@ public class BasicTest extends AbstractUseCase
     }
 
     @Test
-    public void testArgLinesParts() throws Exception
+    public void testArgFileParts() throws Exception
     {
         setupDistHome();
 
@@ -414,42 +414,42 @@ public class BasicTest extends AbstractUseCase
         runArgs.add("--create-files");
         runArgs.add("java.version=21.0.1");
         runArgs.add("--modules=optional,extra");
-        runArgs.add("--arglines=path,main");
+        runArgs.add("--argfile=path,main");
 
         ExecResults results = exec(runArgs, true);
         assertThat("No exception", results.exception, is(nullValue()));
-        assertThat("arglines parts", results.startArgs.getDryRunParts(), containsInAnyOrder("path", "main"));
+        assertThat("argfile parts", results.startArgs.getDryRunParts(), containsInAnyOrder("path", "main"));
 
-        String argLines = renderArgLines(results);
+        String rendered = renderArgFile(results);
         // "main" part present
-        assertThat(argLines, containsString(results.startArgs.getMainClassname()));
+        assertThat(rendered, containsString(results.startArgs.getMainClassname()));
         // "opts" part excluded, so no -D system properties
-        assertThat(argLines, not(containsString("-Djetty.home")));
+        assertThat(rendered, not(containsString("-Djetty.home")));
     }
 
     @Test
-    public void testArgLinesJavaPartRejected() throws Exception
+    public void testArgFileJavaPartRejected() throws Exception
     {
         setupDistHome();
 
         List<String> runArgs = new ArrayList<>();
-        runArgs.add("--arglines=java");
+        runArgs.add("--argfile=java");
 
         ExecResults results = exec(runArgs, false);
         assertThat("UsageException expected", results.exception, instanceOf(UsageException.class));
     }
 
     @Test
-    public void testArgLinesCombinedWithDryRunRejected() throws Exception
+    public void testArgFileCombinedWithDryRunRejected() throws Exception
     {
         setupDistHome();
 
-        // --dry-run (shell format) and --arglines (java @argfile format) share the dry-run
+        // --dry-run (shell format) and --argfile (java @argument-file format) share the dry-run
         // state, so combining them must be rejected rather than silently producing one mode's
         // output with the other's parts.
         List<String> runArgs = new ArrayList<>();
         runArgs.add("--dry-run");
-        runArgs.add("--arglines");
+        runArgs.add("--argfile");
 
         ExecResults results = exec(runArgs, false);
         assertThat("UsageException expected", results.exception, instanceOf(UsageException.class));
@@ -457,20 +457,20 @@ public class BasicTest extends AbstractUseCase
     }
 
     @Test
-    public void testArgLinesBannedInIniFile() throws Exception
+    public void testArgFileBannedInIniFile() throws Exception
     {
         setupDistHome();
 
-        // --arglines is a command-line-only option; it must not be accepted from a start.ini.
+        // --argfile is a command-line-only option; it must not be accepted from a start.ini.
         Files.writeString(baseDir.resolve("start.ini"),
             """
             --modules=main
-            --arglines
+            --argfile
             """, UTF_8);
 
         ExecResults results = exec(List.of(), false);
         assertThat("UsageException expected", results.exception, instanceOf(UsageException.class));
-        assertThat(results.exception.getMessage(), containsString("--arglines"));
+        assertThat(results.exception.getMessage(), containsString("--argfile"));
         assertThat(results.exception.getMessage(), containsString("not allowed"));
     }
 
@@ -508,16 +508,16 @@ public class BasicTest extends AbstractUseCase
     }
 
     /**
-     * Render the {@code java @arglines} output using the same code path that
+     * Render the {@code java @argument-file} output using the same code path that
      * {@link org.eclipse.jetty.start.Main} uses.
      */
-    private String renderArgLines(ExecResults results) throws IOException
+    private String renderArgFile(ExecResults results) throws IOException
     {
         CommandLineBuilder cmd = results.startArgs.getMainArgs(results.startArgs.getDryRunParts());
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         try (PrintStream out = new PrintStream(bout, true, UTF_8))
         {
-            cmd.writeArgLines(out);
+            cmd.writeArgFile(out);
         }
         return bout.toString(UTF_8);
     }
