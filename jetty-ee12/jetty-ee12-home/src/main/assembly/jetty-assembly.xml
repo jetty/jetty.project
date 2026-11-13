@@ -6,13 +6,8 @@
   </formats>
   <includeBaseDirectory>false</includeBaseDirectory>
   <fileSets>
-    <fileSet>
-      <directory>src/main/resources/</directory>
-      <outputDirectory></outputDirectory>
-      <includes>
-        <include>**</include>
-      </includes>
-    </fileSet>
+    <!-- src/main/resources/modules are filtered into ${assembly-directory}/modules by
+         maven-resources-plugin (mod-files hint) and picked up by the fileSet below. -->
     <fileSet>
       <directory>${assembly-directory}</directory>
       <outputDirectory></outputDirectory>
