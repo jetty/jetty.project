@@ -14,6 +14,19 @@
     <bundle-symbolic-name>${project.groupId}.session</bundle-symbolic-name>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <!-- Holds transitively-pulled OpenTelemetry (via google-cloud-core) to a patched line; not a direct dep, do not remove as unused. -->
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>${opentelemetry.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>com.google.cloud</groupId>
