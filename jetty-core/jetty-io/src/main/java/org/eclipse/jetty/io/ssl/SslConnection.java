@@ -37,6 +37,7 @@ import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
@@ -1261,9 +1262,19 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
             catch (Throwable x)
             {
-                close(x);
+                if (!shouldPreserveInput(x))
+                    close(x);
                 throw IO.rethrow(x);
             }
+        }
+
+        private boolean shouldPreserveInput(Throwable failure)
+        {
+            // A client may still read a response that the server sent
+            // before the write failed, so do not close the connection.
+            return failure instanceof EofException &&
+                _sslEngine.getUseClientMode() &&
+                isHandshakeSucceeded();
         }
 
         @Override
