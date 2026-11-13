@@ -439,6 +439,203 @@ public class HttpParserTest
         assertEquals(1, _headers);
     }
 
+    private static ByteBuffer toBuffer(String message, boolean direct)
+    {
+        byte[] bytes = message.getBytes(StandardCharsets.ISO_8859_1);
+        ByteBuffer buffer = direct ? ByteBuffer.allocateDirect(bytes.length) : ByteBuffer.allocate(bytes.length);
+        buffer.put(bytes).flip();
+        return buffer;
+    }
+
+    /**
+     * Parses the message from both a heap and a direct buffer, split in two at every possible position,
+     * so that every field value is seen both entirely contained in a buffer and split over two buffers.
+     */
+    private void parseSplitAtEveryPosition(String message, HttpCompliance compliance, int maxHeaderBytes, Runnable verifier)
+    {
+        for (boolean direct : new boolean[]{false, true})
+        {
+            ByteBuffer buffer = toBuffer(message, direct);
+            for (int split = 0; split <= buffer.capacity(); split++)
+            {
+                init();
+                HttpParser.RequestHandler handler = new Handler();
+                HttpParser parser = new HttpParser(handler, maxHeaderBytes, compliance);
+
+                buffer.position(0);
+                buffer.limit(split);
+                if (!parser.parseNext(buffer) && !parser.isTerminated())
+                {
+                    // consumed all
+                    assertEquals(0, buffer.remaining());
+
+                    // parse the rest
+                    buffer.limit(buffer.capacity());
+                    parser.parseNext(buffer);
+                }
+
+                try
+                {
+                    verifier.run();
+                }
+                catch (AssertionError e)
+                {
+                    throw new AssertionError("direct=%b split=%d: %s".formatted(direct, split, e.getMessage()), e);
+                }
+            }
+        }
+    }
+
+    public static Stream<Arguments> fieldValues()
+    {
+        return Stream.of(
+            Arguments.of("value", "value"),
+            Arguments.of(" value", "value"),
+            Arguments.of("value  ", "value"),
+            Arguments.of(" \t value \t ", "value"),
+            Arguments.of("  a  b\tc  ", "a  b\tc"),
+            Arguments.of("", ""),
+            Arguments.of("  \t", ""),
+            Arguments.of("a:b", "a:b"),
+            Arguments.of(":", ":"),
+            Arguments.of(" \"quoted, value\" ; p=1", "\"quoted, value\" ; p=1"),
+            Arguments.of("caf\u00e9", "caf\u00e9"),
+            Arguments.of(" \u0080 \u00ff ", "\u0080 \u00ff"),
+            Arguments.of("x".repeat(300) + " ", "x".repeat(300))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("fieldValues")
+    public void testFieldValue(String rawValue, String expectedValue)
+    {
+        for (String eol : new String[]{"\r\n", "\n"})
+        {
+            String message = "GET / HTTP/1.1" + eol +
+                "Host: localhost" + eol +
+                "Name:" + rawValue + eol +
+                "Other: other value " + eol +
+                eol;
+
+            parseSplitAtEveryPosition(message, HttpCompliance.RFC7230, -1, () ->
+            {
+                assertThat(_bad, nullValue());
+                assertTrue(_messageCompleted);
+                assertEquals(2, _headers);
+                assertEquals("Host", _hdr[0]);
+                assertEquals("localhost", _val[0]);
+                assertEquals("Name", _hdr[1]);
+                assertEquals(expectedValue, _val[1]);
+                assertEquals("Other", _hdr[2]);
+                assertEquals("other value", _val[2]);
+            });
+        }
+    }
+
+    @Test
+    public void testFieldValueMultiLine()
+    {
+        for (String eol : new String[]{"\r\n", "\n"})
+        {
+            String message = "GET / HTTP/1.1" + eol +
+                "Host: localhost" + eol +
+                "Name: value  " + eol +
+                "  extra " + eol +
+                "\tm\u00f6re" + eol +
+                "Name2:" + eol +
+                " value2 " + eol +
+                "Other: other" + eol +
+                eol;
+
+            parseSplitAtEveryPosition(message, HttpCompliance.RFC2616, -1, () ->
+            {
+                assertThat(_bad, nullValue());
+                assertTrue(_messageCompleted);
+                assertEquals(3, _headers);
+                assertEquals("Name", _hdr[1]);
+                assertEquals("value extra m\u00f6re", _val[1]);
+                assertEquals("Name2", _hdr[2]);
+                assertEquals("value2", _val[2]);
+                assertEquals("Other", _hdr[3]);
+                assertEquals("other", _val[3]);
+            });
+        }
+    }
+
+    public static Stream<Arguments> badFieldValues()
+    {
+        return Stream.of(
+            Arguments.of("val\u0000ue", "Illegal character CNTL=0x0"),
+            Arguments.of("value\u0001", "Illegal character CNTL=0x1"),
+            Arguments.of("value \u007f", "Illegal character CNTL=0x7f"),
+            Arguments.of("\u0008value", "Illegal character CNTL=0x8"),
+            Arguments.of("value\rmore", "Bad EOL"),
+            Arguments.of("value\r\rmore", "Bad EOL"),
+            Arguments.of("value \r", "Bad EOL")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("badFieldValues")
+    public void testFieldValueBad(String rawValue, String expectedBad)
+    {
+        try (StacklessLogging ignored = new StacklessLogging(HttpParser.class))
+        {
+            String message = """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Name: %s\r
+                Other: other\r
+                \r
+                """.formatted(rawValue);
+
+            parseSplitAtEveryPosition(message, HttpCompliance.RFC2616_LEGACY, -1, () ->
+            {
+                assertThat(_bad, is(expectedBad));
+                assertFalse(_messageCompleted);
+                assertEquals(0, _headers);
+            });
+        }
+    }
+
+    @Test
+    public void testFieldValueMaxHeaderBytes()
+    {
+        String message = """
+            GET / HTTP/1.1\r
+            Host: localhost\r
+            Name: %s  \r
+            Other: other\r
+            \r
+            """.formatted("x".repeat(64));
+        int length = message.length();
+
+        // The limit is not exceeded.
+        for (int maxHeaderBytes : new int[]{length, length + 1})
+        {
+            parseSplitAtEveryPosition(message, HttpCompliance.RFC7230, maxHeaderBytes, () ->
+            {
+                assertThat(_bad, nullValue());
+                assertTrue(_messageCompleted);
+                assertEquals("x".repeat(64), _val[1]);
+                assertEquals("other", _val[2]);
+            });
+        }
+
+        // The limit is exceeded before, within and after the value.
+        try (StacklessLogging ignored = new StacklessLogging(HttpParser.class))
+        {
+            for (int maxHeaderBytes = message.indexOf("Name"); maxHeaderBytes < length; maxHeaderBytes++)
+            {
+                parseSplitAtEveryPosition(message, HttpCompliance.RFC7230, maxHeaderBytes, () ->
+                {
+                    assertThat(_bad, is("431"));
+                    assertFalse(_messageCompleted);
+                });
+            }
+        }
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"\r\n", "\n"})
     public void testFoldedField2616(String eoln)
