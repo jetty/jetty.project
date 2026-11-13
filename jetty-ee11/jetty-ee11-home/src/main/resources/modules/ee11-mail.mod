@@ -14,9 +14,9 @@ ee11.jakarta.mail.api.version?=@version(jakarta.mail:jakarta.mail-api)@
 ee11.org.eclipse.angus.mail.version?=@version(org.eclipse.angus:angus-mail)@
 
 [files]
-maven://jakarta.mail/jakarta.mail-api/${ee11.jakarta.mail.api.version}/jar|lib/ee11/jakarta.mail-api-${ee11.jakarta.mail.api.version}.jar
+maven://jakarta.mail/jakarta.mail-api/${ee11.jakarta.mail.api.version}/jar|lib/ee11/support/jakarta.mail.jakarta.mail-api-${ee11.jakarta.mail.api.version}.jar
 maven://org.eclipse.angus/angus-mail/${ee11.org.eclipse.angus.mail.version}/jar|lib/ee11/support/org.eclipse.angus.angus-mail-${ee11.org.eclipse.angus.mail.version}.jar
 
 [lib]
-lib/ee11/jakarta.mail-api-${ee11.jakarta.mail.api.version}.jar
+lib/ee11/support/jakarta.mail.jakarta.mail-api-${ee11.jakarta.mail.api.version}.jar
 lib/ee11/support/org.eclipse.angus.angus-mail-${ee11.org.eclipse.angus.mail.version}.jar
