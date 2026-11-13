@@ -14,8 +14,12 @@
 package org.eclipse.jetty.http3.qpack;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.qpack.internal.metadata.MetaDataBuilder;
 import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
@@ -24,7 +28,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class QpackDecoderTest
@@ -109,6 +115,18 @@ public class QpackDecoderTest
         assertThat(metaData.getHttpFields().get("sec-fetch-dest"), equalTo("script"));
     }
     
+    @Test
+    public void testConnectionSpecificHeaderFields() throws Exception
+    {
+        for (HttpHeader header : List.of(HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE, HttpHeader.PROXY_CONNECTION, HttpHeader.TRANSFER_ENCODING, HttpHeader.UPGRADE))
+        {
+            MetaDataBuilder builder = new MetaDataBuilder(4096);
+            builder.emit(new HttpField(header, "value"));
+            QpackException.StreamException ex = assertThrows(QpackException.StreamException.class, builder::build);
+            assertThat(ex.getMessage(), containsString("Connection specific field '" + header + "'"));
+        }
+    }
+
     private ByteBuffer fromHex(String hex)
     {
         return BufferUtil.toBuffer(StringUtil.fromHexString(hex));
