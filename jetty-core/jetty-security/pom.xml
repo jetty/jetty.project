@@ -76,9 +76,7 @@
           <groupId>org.apache.directory.shared</groupId>
           <artifactId>shared-ldap-schema</artifactId>
         </exclusion>
-        <!-- ApacheDS bundles the retired BouncyCastle jdk15on line; drop all of it
-          and use the maintained jdk18on build declared below. Same org.bouncycastle.*
-          packages, so the two must not coexist on the classpath. -->
+        <!-- ApacheDS depends on the retired BouncyCastle jdk15on line; replaced by jdk18on below. -->
         <exclusion>
           <groupId>org.bouncycastle</groupId>
           <artifactId>*</artifactId>
