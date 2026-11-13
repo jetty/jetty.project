@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -25,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -1759,6 +1761,75 @@ public final class URIUtil
     public static URI correctFileURI(URI uri)
     {
         return correctURI(uri);
+    }
+
+    /**
+     * <p>Normalizes the non-ASCII characters of a URI string to Unicode NFC, whether they
+     * are percent-encoded or not, and leaves every other character unchanged, including
+     * percent-encoded ASCII characters such as {@code %2F}.</p>
+     * <p>A file system that stores names in NFD, such as ZFS with {@code normalization=NFD}
+     * or APFS as seen through {@link java.nio.file.Path#toRealPath(java.nio.file.LinkOption...)},
+     * reports a name requested in NFC with different escapes, for example {@code a%CC%8A}
+     * instead of {@code %C3%A5}; after this normalization the two forms are equal.</p>
+     *
+     * @param uri the URI string to normalize
+     * @return the URI string with its non-ASCII characters percent-encoded in NFC
+     */
+    public static String normalizeNonAsciiEscapes(String uri)
+    {
+        if (uri == null)
+            return null;
+        int length = uri.length();
+        StringBuilder decoded = null;
+        for (int i = 0; i < length; i++)
+        {
+            char c = uri.charAt(i);
+            if (c == '%' && i + 2 < length)
+            {
+                int b = TypeUtil.parseInt(uri, i + 1, 2, 16);
+                if (b >= 0x80)
+                {
+                    // Collect the bytes of a run of non-ASCII escapes and decode them as UTF-8.
+                    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                    while (i + 2 < length && uri.charAt(i) == '%' && (b = TypeUtil.parseInt(uri, i + 1, 2, 16)) >= 0x80)
+                    {
+                        bytes.write(b);
+                        i += 3;
+                    }
+                    i--;
+                    if (decoded == null)
+                        decoded = new StringBuilder(length).append(uri, 0, i + 1 - bytes.size() * 3);
+                    decoded.append(bytes.toString(StandardCharsets.UTF_8));
+                    continue;
+                }
+            }
+            if (c >= 0x80 && decoded == null)
+                decoded = new StringBuilder(length).append(uri, 0, i);
+            if (decoded != null)
+                decoded.append(c);
+        }
+        if (decoded == null)
+            return uri;
+
+        String normalized = Normalizer.normalize(decoded, Normalizer.Form.NFC);
+        StringBuilder encoded = new StringBuilder(normalized.length() + 16);
+        for (int i = 0; i < normalized.length(); i++)
+        {
+            char c = normalized.charAt(i);
+            if (c < 0x80)
+            {
+                encoded.append(c);
+                continue;
+            }
+            int codePoint = normalized.codePointAt(i);
+            i += Character.charCount(codePoint) - 1;
+            for (byte b : new String(Character.toChars(codePoint)).getBytes(StandardCharsets.UTF_8))
+            {
+                encoded.append('%');
+                TypeUtil.toHex(b, encoded);
+            }
+        }
+        return encoded.toString();
     }
 
     /**
