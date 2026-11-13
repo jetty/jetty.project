@@ -455,6 +455,29 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         return newRequest(uri).method(HttpMethod.POST);
     }
 
+    /**
+     * Creates a QUERY request to the specified URI.
+     *
+     * @param uri the URI to QUERY to
+     * @return the QUERY request
+     * @see #QUERY(URI)
+     */
+    public Request QUERY(String uri)
+    {
+        return QUERY(URI.create(uri));
+    }
+
+    /**
+     * Creates a QUERY request to the specified URI.
+     *
+     * @param uri the URI to QUERY to
+     * @return the QUERY request
+     */
+    public Request QUERY(URI uri)
+    {
+        return newRequest(uri).method(HttpMethod.QUERY);
+    }
+
     // @checkstyle-enable-check : MethodNameCheck
 
     /**

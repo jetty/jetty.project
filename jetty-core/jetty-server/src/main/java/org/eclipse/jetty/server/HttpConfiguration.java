@@ -125,6 +125,7 @@ public class HttpConfiguration implements Dumpable
     {
         _formEncodedMethods.put(HttpMethod.POST.asString(), Boolean.TRUE);
         _formEncodedMethods.put(HttpMethod.PUT.asString(), Boolean.TRUE);
+        _formEncodedMethods.put(HttpMethod.QUERY.asString(), Boolean.TRUE);
     }
 
     /**
