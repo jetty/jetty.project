@@ -14,6 +14,7 @@
 package org.eclipse.jetty.fcgi.parser;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -199,6 +200,54 @@ public class ClientParserTest
         assertEquals(5, verifier.get());
 
         accumulator.release();
+    }
+
+    @Test
+    public void testParseStopsOnlyAfterEndRequest()
+    {
+        int id = 13;
+        AtomicInteger ends = new AtomicInteger();
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
+        {
+            @Override
+            public boolean onEnd(int request)
+            {
+                assertEquals(id, request);
+                ends.incrementAndGet();
+                return true;
+            }
+        });
+
+        // A padded STDOUT record that ends exactly at the end of the buffer,
+        // as if it was read from the network separately from END_REQUEST:
+        // the parser must not ask to stop parsing, since no event was notified.
+        byte[] content = "Content-Length: 5\r\n\r\nhello".getBytes(StandardCharsets.US_ASCII);
+        ByteBuffer stdOut = createRecord(FCGI.FrameType.STDOUT, id, content);
+        assertFalse(parser.parse(stdOut));
+        assertFalse(stdOut.hasRemaining());
+        assertEquals(0, ends.get());
+
+        // The END_REQUEST record must make the parser stop parsing.
+        ByteBuffer endRequest = createRecord(FCGI.FrameType.END_REQUEST, id, new byte[8]);
+        assertTrue(parser.parse(endRequest));
+        assertFalse(endRequest.hasRemaining());
+        assertEquals(1, ends.get());
+    }
+
+    private static ByteBuffer createRecord(FCGI.FrameType type, int request, byte[] content)
+    {
+        // Pad to a multiple of 8 bytes, like php-fpm does.
+        int padding = (8 - content.length % 8) % 8;
+        ByteBuffer buffer = ByteBuffer.allocate(8 + content.length + padding);
+        buffer.put((byte)1)
+            .put((byte)type.code)
+            .putShort((short)request)
+            .putShort((short)content.length)
+            .put((byte)padding)
+            .put((byte)0)
+            .put(content)
+            .put(new byte[padding]);
+        return buffer.flip();
     }
 
     @Test
