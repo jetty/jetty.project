@@ -391,6 +391,18 @@ include::code:example$src/main/java/org/eclipse/jetty/docs/programming/WebSocket
 Note that when you use blocking APIs, the invocations to `Session.demand()` are now performed by the `Reader` or `InputStream` implementations (as well as the `ByteBuffer` lifecycle management).
 You indirectly control the demand by deciding when to read from `Reader` or `InputStream`.
 
+To consume large binary messages asynchronously, without blocking APIs, you can use the `@OnWebSocketMessage` annotation, but you change the signature of the method to take a `Flow.Publisher<ByteBuffer>`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=publisherAnnotatedEndpoint]
+----
+
+The `Flow.Publisher` publishes the payload of each frame of the message as a `ByteBuffer`, which is valid only for the duration of the call to `Flow.Subscriber.onNext(ByteBuffer)`, so it must be consumed or copied before returning from that method.
+The invocations to `Session.demand()` are performed by the `Flow.Publisher` implementation according to the demand of the `Flow.Subscriber`: the next WebSocket frame is demanded only when the subscriber has requested more items, so that a slow subscriber applies backpressure to the remote peer.
+Cancelling the `Flow.Subscription` discards the rest of the message.
+The endpoint method must subscribe to the `Flow.Publisher`, possibly asynchronously after it has returned, since otherwise no more frames are demanded.
+
 [[session]]
 == WebSocket Session
 
