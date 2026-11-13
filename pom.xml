@@ -252,6 +252,8 @@
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.6.1</json-smart.version>
     <junit.jupiter.execution.parallel.config.dynamic.factor>0.8</junit.jupiter.execution.parallel.config.dynamic.factor>
+    <!-- Only used by the fixed strategy. 258 matches JUnit's own default of fixed.parallelism + 256. -->
+    <junit.jupiter.execution.parallel.config.fixed.max-pool-size>258</junit.jupiter.execution.parallel.config.fixed.max-pool-size>
     <junit.jupiter.execution.parallel.config.fixed.parallelism>2</junit.jupiter.execution.parallel.config.fixed.parallelism>
     <junit.jupiter.execution.parallel.config.strategy>dynamic</junit.jupiter.execution.parallel.config.strategy>
     <junit.jupiter.execution.parallel.enabled>true</junit.jupiter.execution.parallel.enabled>
@@ -1836,6 +1838,7 @@
                 junit.jupiter.execution.parallel.mode.classes.default=${junit.jupiter.execution.parallel.mode.classes.default}
                 junit.jupiter.execution.parallel.config.strategy=${junit.jupiter.execution.parallel.config.strategy}
                 junit.jupiter.execution.parallel.config.fixed.parallelism=${junit.jupiter.execution.parallel.config.fixed.parallelism}
+                junit.jupiter.execution.parallel.config.fixed.max-pool-size=${junit.jupiter.execution.parallel.config.fixed.max-pool-size}
                 junit.jupiter.execution.parallel.config.dynamic.factor=${junit.jupiter.execution.parallel.config.dynamic.factor}
                 junit.jupiter.extensions.autodetection.enabled=${junit.jupiter.extensions.autodetection.enabled}</configurationParameters>
             </properties>
