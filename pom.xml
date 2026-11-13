@@ -169,9 +169,9 @@
     <!-- bctls 1.86 shipped a broken multi-release jar, see bcgit/bc-java#2448 -->
     <bouncycastle.tls.version>1.86.2</bouncycastle.tls.version>
     <bouncycastle.version>1.86</bouncycastle.version>
-    <build-helper.maven.plugin.version>3.7.0</build-helper.maven.plugin.version>
+    <build-helper.maven.plugin.version>3.8.0</build-helper.maven.plugin.version>
     <build-support.version>1.6</build-support.version>
-    <buildnumber.maven.plugin.version>3.3.1</buildnumber.maven.plugin.version>
+    <buildnumber.maven.plugin.version>3.4.0</buildnumber.maven.plugin.version>
     <bundle.debug>false</bundle.debug>
     <checkstyle.version>10.26.1</checkstyle.version>
     <commons-codec.version>1.23.0</commons-codec.version>
@@ -263,7 +263,7 @@
     <maven.deploy.plugin.version>3.2.0</maven.deploy.plugin.version>
     <maven.deps.version>3.10.0</maven.deps.version>
     <maven.enforcer.plugin.version>3.7.0</maven.enforcer.plugin.version>
-    <maven.exec.plugin.version>3.6.4</maven.exec.plugin.version>
+    <maven.exec.plugin.version>3.7.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.2.0</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.10.1</maven.invoker.plugin.version>
@@ -323,7 +323,7 @@
     <testcontainers.version>1.21.4</testcontainers.version>
     <testng.version>7.12.0</testng.version>
     <tinybundles.version>4.0.1</tinybundles.version>
-    <versions.maven.plugin.version>2.24.0</versions.maven.plugin.version>
+    <versions.maven.plugin.version>2.25.1</versions.maven.plugin.version>
     <wildfly.common.version>2.0.1</wildfly.common.version>
     <wildfly.elytron.version>2.9.4.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.9</xmemcached.version>
