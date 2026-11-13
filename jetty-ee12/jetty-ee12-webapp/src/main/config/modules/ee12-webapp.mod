@@ -6,7 +6,7 @@ This module enables support for Jakarta EE 11 web applications.
 [environment]
 ee12
 
-[depend]
+[depends]
 ee/common-webapp
 ee12-servlet
 ee12-security
@@ -14,8 +14,11 @@ ee12-security
 [xml]
 etc/jetty-ee12-webapp.xml
 
+[files]
+maven://org.eclipse.jetty.ee12/jetty-ee12-webapp/${jetty.version}/jar|lib/ee12/jetty-ee12-webapp-${jetty.version}.jar
+
 [lib]
-lib/jetty-ee12-webapp-${jetty.version}.jar
+lib/ee12/jetty-ee12-webapp-${jetty.version}.jar
 
 [ini-template]
 # tag::ini-template[]

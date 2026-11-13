@@ -116,6 +116,18 @@
             </configuration>
           </execution>
           <execution>
+            <id>ee12</id>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Jetty-Environment>ee12</Jetty-Environment>
+              </instructions>
+              <manifestLocation>${project.build.outputDirectory}/META-INF-ee12</manifestLocation>
+            </configuration>
+          </execution>
+          <execution>
             <id>ee9</id>
             <goals>
               <goal>manifest</goal>
@@ -175,6 +187,21 @@
               </descriptors>
               <archive>
                 <manifestFile>${project.build.outputDirectory}/META-INF-ee11/MANIFEST.MF</manifestFile>
+              </archive>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ee12-web-bundle-assembly</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/ee12-web-bundle.xml</descriptor>
+              </descriptors>
+              <archive>
+                <manifestFile>${project.build.outputDirectory}/META-INF-ee12/MANIFEST.MF</manifestFile>
               </archive>
             </configuration>
           </execution>

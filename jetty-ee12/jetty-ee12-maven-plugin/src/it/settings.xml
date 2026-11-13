@@ -14,6 +14,25 @@
           <url>@localRepositoryUrl@</url>
           <releases>
             <enabled>true</enabled>
+            <checksumPolicy>ignore</checksumPolicy>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <checksumPolicy>ignore</checksumPolicy>
+          </snapshots>
+        </repository>
+        <!--
+          Jakarta EE12 artifacts (the jakarta.jakartaee-bom and its specs) are not yet released to
+          Maven Central, so the invoked integration-test builds resolve the 12.0.0-SNAPSHOT BOM from
+          the Central Portal snapshots repository. Drop this once EE12 is released to Central (keep
+          in sync with the jakarta-snapshots profile in jetty-ee12/pom.xml).
+        -->
+        <repository>
+          <id>central-portal-snapshots</id>
+          <name>Central Portal Snapshots</name>
+          <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+          <releases>
+            <enabled>false</enabled>
           </releases>
           <snapshots>
             <enabled>true</enabled>
@@ -26,6 +45,19 @@
           <url>@localRepositoryUrl@</url>
           <releases>
             <enabled>true</enabled>
+            <checksumPolicy>ignore</checksumPolicy>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <checksumPolicy>ignore</checksumPolicy>
+          </snapshots>
+        </pluginRepository>
+        <pluginRepository>
+          <id>central-portal-snapshots</id>
+          <name>Central Portal Snapshots</name>
+          <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+          <releases>
+            <enabled>false</enabled>
           </releases>
           <snapshots>
             <enabled>true</enabled>

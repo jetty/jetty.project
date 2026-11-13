@@ -220,8 +220,8 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("jakarta.inject").artifactId("jakarta.inject-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.interceptor").artifactId("jakarta.interceptor-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.enterprise").artifactId("jakarta.enterprise.lang-model").versionAsInProject().start());
-        res.add(mavenBundle().groupId("jakarta.enterprise").artifactId("jakarta.enterprise.cdi-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("jakarta.cdi").artifactId("jakarta.cdi-lang-model-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("jakarta.cdi").artifactId("jakarta.cdi-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.transaction").artifactId("jakarta.transaction-api").versionAsInProject().start());
 
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());

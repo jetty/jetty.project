@@ -18,4 +18,4 @@ ee12-websocket-jetty
 [files]
 basehome:modules/demo.d/ee12-demo-jetty-websocket.xml|webapps/ee12-demo-jetty-websocket.xml
 basehome:modules/demo.d/ee12-demo-jetty-websocket.properties|webapps/ee12-demo-jetty-websocket.properties
-maven://org.eclipse.jetty.demos/jetty-ee12-demo-jetty-websocket/webapp/${jetty.version}/war|webapps/ee12-demo-jetty-websocket.war
+maven://org.eclipse.jetty.ee12.demos/jetty-ee12-demo-jetty-websocket-webapp/${jetty.version}/war|webapps/ee12-demo-jetty-websocket.war
