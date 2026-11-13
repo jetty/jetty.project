@@ -292,6 +292,7 @@
               <includeGroupIds>org.eclipse.jetty.ee11,
                 org.eclipse.jetty.ee11.websocket</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.ee11.demos</excludeGroupIds>
+              <excludeArtifactIds>jetty-ee11-glassfish-jstl</excludeArtifactIds>
               <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>

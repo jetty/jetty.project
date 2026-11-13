@@ -266,7 +266,7 @@
                 org.eclipse.jetty.ee9,
                 org.eclipse.jetty.ee9.websocket</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.ee9.demos</excludeGroupIds>
-              <excludeArtifactIds>jetty-schemas</excludeArtifactIds>
+              <excludeArtifactIds>jetty-ee9-glassfish-jstl,jetty-schemas</excludeArtifactIds>
               <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>

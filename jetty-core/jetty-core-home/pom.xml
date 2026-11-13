@@ -368,7 +368,8 @@
                 org.eclipse.jetty.quic,
                 org.eclipse.jetty.websocket,
                 org.eclipse.jetty.fcgi</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit,
+              <excludeGroupIds>org.eclipse.jetty.demos,
+                org.eclipse.jetty.orbit,
                 org.eclipse.jetty.toolchain</excludeGroupIds>
               <excludeArtifactIds>jetty-start,jetty-setuid-jna,jetty-http2-client,jetty-http2-client-transport</excludeArtifactIds>
               <includeTypes>jar</includeTypes>

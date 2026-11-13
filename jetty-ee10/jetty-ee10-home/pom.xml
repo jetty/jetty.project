@@ -268,6 +268,7 @@
               <includeGroupIds>org.eclipse.jetty.ee10,
                 org.eclipse.jetty.ee10.websocket</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.ee10.demos</excludeGroupIds>
+              <excludeArtifactIds>jetty-ee10-glassfish-jstl</excludeArtifactIds>
               <excludeClassifiers>config</excludeClassifiers>
               <includeTypes>jar</includeTypes>
               <includeScope>runtime</includeScope>
