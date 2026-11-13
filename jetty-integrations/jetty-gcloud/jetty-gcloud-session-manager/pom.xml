@@ -16,9 +16,7 @@
 
   <dependencyManagement>
     <dependencies>
-      <!-- Address transitive OpenTelemetry API/SDK due to CVEs.
-           * CVE-2026-118259 (tracestate parsing, fixed in 1.67.0)
-           * CVE-2026-45292 (W3C baggage propagation, fixed in 1.62.0). -->
+      <!-- Holds transitively-pulled OpenTelemetry (via google-cloud-core) to a patched line; not a direct dep, do not remove as unused. -->
       <dependency>
         <groupId>io.opentelemetry</groupId>
         <artifactId>opentelemetry-bom</artifactId>
