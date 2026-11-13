@@ -57,6 +57,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private Content.Chunk chunk;
     private boolean upgraded;
     private boolean shutdown;
+    private boolean unexpectedBytes;
     private boolean disposed;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
@@ -369,6 +370,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Discarding unexpected content after response {}: {} in {}", status, BufferUtil.toDetailString(byteBuffer), this);
                             BufferUtil.clear(byteBuffer);
+                            // More unexpected bytes may follow, so the
+                            // connection must be closed, not pooled.
+                            unexpectedBytes = true;
                         }
                     }
 
@@ -422,6 +426,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     protected boolean isShutdown()
     {
         return shutdown;
+    }
+
+    boolean hasUnexpectedBytes()
+    {
+        return unexpectedBytes;
     }
 
     @Override

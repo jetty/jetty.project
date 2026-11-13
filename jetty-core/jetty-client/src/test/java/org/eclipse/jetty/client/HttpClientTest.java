@@ -81,7 +81,6 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -1850,23 +1849,33 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 assertNotNull(responseContent);
                 assertEquals(0, responseContent.length);
 
-                // Send another request to verify we have handled the wrong response correctly.
-                request = client.newRequest("localhost", server.getLocalPort())
-                    .scheme(scenario.getScheme())
-                    .timeout(5, TimeUnit.SECONDS);
-                completable = new CompletableResponseListener(request).send();
+                // The unexpected bytes after the response cause the connection to be closed.
+                assertEquals(-1, input.read());
+            }
 
+            // Send another request to verify we have handled the wrong response correctly.
+            request = client.newRequest("localhost", server.getLocalPort())
+                .scheme(scenario.getScheme())
+                .timeout(5, TimeUnit.SECONDS);
+            completable = new CompletableResponseListener(request).send();
+
+            try (Socket socket = server.accept())
+            {
+                socket.setSoTimeout(idleTimeout / 2);
+
+                InputStream input = socket.getInputStream();
                 consume(input, false);
 
-                httpResponse = """
+                String httpResponse = """
                     HTTP/1.1 200 OK
                     Content-Length: 0
                     
                     """;
+                OutputStream output = socket.getOutputStream();
                 output.write(httpResponse.getBytes(UTF_8));
                 output.flush();
 
-                response = completable.get(5, TimeUnit.SECONDS);
+                ContentResponse response = completable.get(5, TimeUnit.SECONDS);
                 assertEquals(200, response.getStatus());
             }
         }
