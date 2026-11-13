@@ -14,6 +14,21 @@
     <bundle-symbolic-name>${project.groupId}.session</bundle-symbolic-name>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <!-- Address transitive OpenTelemetry API/SDK due to CVEs.
+           * CVE-2026-118259 (tracestate parsing, fixed in 1.67.0)
+           * CVE-2026-45292 (W3C baggage propagation, fixed in 1.62.0). -->
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-bom</artifactId>
+        <version>1.68.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>com.google.cloud</groupId>
