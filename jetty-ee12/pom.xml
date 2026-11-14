@@ -56,7 +56,7 @@
     <ee12.jakarta.xml.bind.impl.version>4.0.9</ee12.jakarta.xml.bind.impl.version>
     <ee12.jakarta.xml.jaxws.impl.version>4.0.2</ee12.jakarta.xml.jaxws.impl.version>
     <ee12.jersey.version>4.0.3</ee12.jersey.version>
-    <ee12.jsp.impl.version>11.0.23</ee12.jsp.impl.version>
+    <ee12.jsp.impl.version>12.0.0-SNAPSHOT</ee12.jsp.impl.version>
     <ee12.weld.version>7.0.0.Final</ee12.weld.version>
   </properties>
 
