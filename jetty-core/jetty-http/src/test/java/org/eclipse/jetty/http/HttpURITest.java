@@ -483,6 +483,17 @@ public class HttpURITest
         cases.add(Arguments.of("%2F/info", "%2F/info", "//info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)));
         cases.add(Arguments.of("/path/%2f../info", "/path/%2F../info", "/path//../info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)));
 
+        // encoded octets inside a path parameter are checked the same as the rest of the segment
+        cases.add(Arguments.of("/path;%2f..%2f/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)));
+        cases.add(Arguments.of("/path;%2f..%2f", "/path", "/path", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)));
+        cases.add(Arguments.of("/path;a;%2f/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)));
+        cases.add(Arguments.of("/path;a=%2f..%2f/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)));
+        cases.add(Arguments.of("/path;%u002f/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.UTF16_ENCODINGS)));
+        cases.add(Arguments.of("/path;%25/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)));
+        cases.add(Arguments.of("/path;%00/info", null, null, null)); // encoded NUL in a parameter is rejected
+        // an ordinary path parameter with no encoded octets stays clean
+        cases.add(Arguments.of("/path;jsessionid=12345/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)));
+
         // ambiguous encoding
         cases.add(Arguments.of("/path/%25/info", "/path/%25/info", "/path/%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)));
         cases.add(Arguments.of("/path/%2520/info", "/path/%2520/info", "/path/%20/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)));
@@ -650,6 +661,15 @@ public class HttpURITest
                 {"%2F/info", "%2F/info", "//info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
                 {"/path/%2f../info", "/path/%2F../info", "/path//../info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
 
+                // encoded octets inside a path parameter are checked the same as the rest of the segment
+                {"/path;%2f..%2f/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
+                {"/path;%2f..%2f", "/path", "/path", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
+                {"/path;a;%2f/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR)},
+                {"/path;%u002f/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_SEPARATOR, Violation.UTF16_ENCODINGS)},
+                {"/path;%25/info", "/path/info", "/path/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
+                {"/path;%00/info", null, null, null},
+                {"/path;jsessionid=12345/info", "/path/info", "/path/info", EnumSet.noneOf(Violation.class)},
+
                 // ambiguous encoding
                 {"/path/%25/info", "/path/%25/info", "/path/%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
                 {"%25/info", "%25/info", "%/info", EnumSet.of(Violation.AMBIGUOUS_PATH_ENCODING)},
@@ -707,6 +727,9 @@ public class HttpURITest
             Arguments.of("/foo/bar/zed/%5c"),
             Arguments.of("/foo/bar/..\\zed"),
             Arguments.of("/foo/bar/zed/%5C"),
+            // encoded backslash inside a path parameter
+            Arguments.of("/foo;%5c/bar"),
+            Arguments.of("/foo;%5C"),
             // TAB
             Arguments.of("/%09b"),
             Arguments.of("/a\tb"),

@@ -83,7 +83,7 @@ public class AmbiguousPathTest
         client = new HttpClient();
         client.start();
 
-        for (String ambiguous : new String[]{"/foo%2Fbar", "/foo//bar", "/foo/..;/bar", "/foo/%2e%2e;param/bar"})
+        for (String ambiguous : new String[]{"/foo%2Fbar", "/foo//bar", "/foo/..;/bar", "/foo/%2e%2e;param/bar", "/foo;%2f..%2f/bar", "/foo;a=%2f/bar"})
         {
             ContentResponse response = client.GET(baseURI + ambiguous);
             assertEquals(HttpStatus.BAD_REQUEST_400, response.getStatus(), new ResponseDetails(response));

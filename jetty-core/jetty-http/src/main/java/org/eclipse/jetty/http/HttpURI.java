@@ -1679,25 +1679,7 @@ public interface HttpURI
                             encodedValue = (encodedValue << 4) + TypeUtil.convertHexDigit(c);
 
                             if (--encodedCharacters == 0)
-                            {
-                                switch (encodedValue)
-                                {
-                                    case 0:
-                                        // Byte 0 cannot be present in a UTF-8 sequence in any position
-                                        // other than as the NUL ASCII byte which we do not wish to allow.
-                                        throw new IllegalArgumentException("Illegal character in path");
-                                    case '/':
-                                        addViolation(Violation.AMBIGUOUS_PATH_SEPARATOR);
-                                        break;
-                                    case '%':
-                                        addViolation(Violation.AMBIGUOUS_PATH_ENCODING);
-                                        break;
-                                    default:
-                                        if (encodedValue < __suspiciousPathCharacters.length && __suspiciousPathCharacters[encodedValue])
-                                            addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
-                                        break;
-                                }
-                            }
+                                classifyEncodedPathCharacter(encodedValue);
                         }
                         else
                         {
@@ -1749,31 +1731,58 @@ public interface HttpURI
                     }
                     case PARAM:
                     {
-                        switch (c)
+                        // A path parameter is part of its segment, so its encoded octets must answer
+                        // to the same ambiguity and legality checks as the rest of the path. The
+                        // parameter is still delimited by the next literal '/', so classifying an
+                        // encoded octet records a violation without ending the parameter.
+                        if (encodedCharacters > 0)
                         {
-                            case '?':
-                                _path = uri.substring(pathMark, i);
-                                _param = uri.substring(mark, i);
-                                mark = i + 1;
-                                state = State.QUERY;
-                                break;
-                            case '#':
-                                _path = uri.substring(pathMark, i);
-                                _param = uri.substring(mark, i);
-                                mark = i + 1;
-                                addViolation(Violation.FRAGMENT);
-                                state = State.FRAGMENT;
-                                break;
-                            case '/':
-                                encoded = true;
-                                segment = i + 1;
-                                state = State.PATH;
-                                break;
-                            case ';':
-                                // multiple parameters
-                                break;
-                            default:
-                                break;
+                            if (encodedCharacters == 2 && c == 'u' && !encodedUtf16)
+                            {
+                                addViolation(Violation.UTF16_ENCODINGS);
+                                encodedUtf16 = true;
+                                encodedCharacters = 4;
+                                continue;
+                            }
+                            encodedValue = (encodedValue << 4) + TypeUtil.convertHexDigit(c);
+
+                            if (--encodedCharacters == 0)
+                                classifyEncodedPathCharacter(encodedValue);
+                        }
+                        else
+                        {
+                            switch (c)
+                            {
+                                case '?':
+                                    _path = uri.substring(pathMark, i);
+                                    _param = uri.substring(mark, i);
+                                    mark = i + 1;
+                                    state = State.QUERY;
+                                    break;
+                                case '#':
+                                    _path = uri.substring(pathMark, i);
+                                    _param = uri.substring(mark, i);
+                                    mark = i + 1;
+                                    addViolation(Violation.FRAGMENT);
+                                    state = State.FRAGMENT;
+                                    break;
+                                case '/':
+                                    encoded = true;
+                                    segment = i + 1;
+                                    state = State.PATH;
+                                    break;
+                                case ';':
+                                    // multiple parameters
+                                    break;
+                                case '%':
+                                    encoded = true;
+                                    encodedUtf16 = false;
+                                    encodedCharacters = 2;
+                                    encodedValue = 0;
+                                    break;
+                                default:
+                                    break;
+                            }
                         }
                         break;
                     }
@@ -1891,6 +1900,36 @@ public interface HttpURI
             // We just remember the violation and return null so nothing is thrown
             addViolation(Violation.BAD_UTF8_ENCODING);
             return null;
+        }
+
+        /**
+         * Classify a percent-decoded path octet and record any resulting violation.
+         *
+         * Shared by the PATH and PARAM states so that an encoded octet is treated identically whether it
+         * appears in a path segment or in one of that segment's path parameters. The method only records
+         * violations (or rejects); it never changes the parse state, so it is safe to call mid-parameter.
+         *
+         * @param encodedValue the decoded octet value
+         */
+        private void classifyEncodedPathCharacter(int encodedValue)
+        {
+            switch (encodedValue)
+            {
+                case 0:
+                    // Byte 0 cannot be present in a UTF-8 sequence in any position
+                    // other than as the NUL ASCII byte which we do not wish to allow.
+                    throw new IllegalArgumentException("Illegal character in path");
+                case '/':
+                    addViolation(Violation.AMBIGUOUS_PATH_SEPARATOR);
+                    break;
+                case '%':
+                    addViolation(Violation.AMBIGUOUS_PATH_ENCODING);
+                    break;
+                default:
+                    if (encodedValue < __suspiciousPathCharacters.length && __suspiciousPathCharacters[encodedValue])
+                        addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
+                    break;
+            }
         }
 
         /**
