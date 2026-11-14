@@ -1594,6 +1594,42 @@
     </dependency>
   </dependencies>
 
+  <!--
+    EE12 ships against not-yet-released Jakarta EE12 artifacts resolved as snapshots (the
+    jakarta.jakartaee-bom and the org.mortbay.jasper JSP/EL impls). Those snapshots are bundled
+    into jetty-home, which is consumed across the reactor (e.g. the ee/ee10/ee11 maven-plugin
+    integration tests pull jetty-home.zip), so the Central Portal snapshots repository must be
+    visible to every module, not only the ee12 tree. It is declared unconditionally here rather
+    than in a profile: an activeByDefault profile in this pom would be deactivated whenever any
+    other profile (ci, fast) is activated. Drop this once EE12 is released to Central.
+  -->
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>central-portal-snapshots</id>
+      <name>Central Portal Snapshots</name>
+      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>central-portal-snapshots</id>
+      <name>Central Portal Snapshots</name>
+      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+    </pluginRepository>
+  </pluginRepositories>
+
   <build>
     <pluginManagement>
       <plugins>

@@ -25,7 +25,7 @@
           Jakarta EE12 artifacts (the jakarta.jakartaee-bom and its specs) are not yet released to
           Maven Central, so the invoked integration-test builds resolve the 12.0.0-SNAPSHOT BOM from
           the Central Portal snapshots repository. Drop this once EE12 is released to Central (keep
-          in sync with the jakarta-snapshots profile in jetty-ee12/pom.xml).
+          in sync with the central-portal-snapshots repository in the top-level pom.xml).
         -->
         <repository>
           <id>central-portal-snapshots</id>

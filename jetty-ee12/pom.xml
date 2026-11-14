@@ -269,46 +269,4 @@
     </dependencies>
   </dependencyManagement>
 
-  <profiles>
-    <!--
-      Jakarta EE12 artifacts (the jakarta.jakartaee-bom and its specs) are not yet released to
-      Maven Central. This profile adds the Central Portal snapshots repository so the
-      12.0.0-SNAPSHOT BOM resolves. It is active by default for now; once EE12 is released to
-      Central, drop this profile and set ee12.jakarta.bom.version to the release version.
-      Source: https://www.eclipse.org/lists/jakartaee-platform-dev/msg04869.html
-    -->
-    <profile>
-      <id>jakarta-snapshots</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <repositories>
-        <repository>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-          <id>central-portal-snapshots</id>
-          <name>Central Portal Snapshots</name>
-          <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-        </repository>
-      </repositories>
-      <pluginRepositories>
-        <pluginRepository>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-          <id>central-portal-snapshots</id>
-          <name>Central Portal Snapshots</name>
-          <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-        </pluginRepository>
-      </pluginRepositories>
-    </profile>
-  </profiles>
-
 </project>
