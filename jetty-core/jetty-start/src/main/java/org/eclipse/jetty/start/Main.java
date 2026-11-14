@@ -14,6 +14,8 @@
 package org.eclipse.jetty.start;
 
 import java.io.BufferedReader;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -26,10 +28,13 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -267,6 +272,76 @@ public class Main
         }
 
         return "";
+    }
+
+    /**
+     * Write the forked-JVM command to a restricted-permission {@code java @argument-file}
+     * so the child's configuration stays out of the visible process arguments. The file is
+     * created {@code 0600} where the filesystem supports it, in {@code java.io.tmpdir} (a
+     * per-user temp directory on Windows), and removed on JVM exit.
+     *
+     * @param cmd the child command, built without the {@code "java"} part
+     * @return the argument file to hand the child as {@code @<path>}
+     * @throws IOException if the file cannot be created or written
+     */
+    Path writeExecArgFile(CommandLineBuilder cmd) throws IOException
+    {
+        Path argFile;
+        try
+        {
+            argFile = Files.createTempFile("jetty-exec-", ".argfile",
+                PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+        }
+        catch (UnsupportedOperationException e)
+        {
+            // Non-POSIX filesystem (e.g. Windows): java.io.tmpdir is a per-user temp directory.
+            argFile = Files.createTempFile("jetty-exec-", ".argfile");
+        }
+        // deleteOnExit removes the file on a normal JVM exit. A SIGKILL of this (parent) process
+        // leaves it behind, but it is created in java.io.tmpdir (not jetty.base), which the OS
+        // reclaims, so a killed parent does not accumulate argfiles in the server's base directory.
+        argFile.toFile().deleteOnExit();
+
+        // The java launcher expands @argument-file bytes into the child's native argv, which the
+        // JVM then decodes with the platform native encoding (see nativeEncoding()). Write with
+        // that encoding so non-ASCII values (passwords, paths, etc.) round-trip; the forked child
+        // shares this JVM's native encoding.
+        try (PrintStream out = new PrintStream(Files.newOutputStream(argFile), false, nativeEncoding()))
+        {
+            cmd.writeArgFile(out);
+        }
+        StartLog.debug("Generated exec @argument-file: %s", argFile);
+        return argFile;
+    }
+
+    /**
+     * The platform native encoding, exposed as the {@code native.encoding} system property. This is
+     * the charset the {@code java} launcher uses to decode an {@code @argument-file} back into
+     * {@code argv}, and it is locale-driven; it is NOT {@code file.encoding} /
+     * {@link Charset#defaultCharset()}, which JEP 400 fixed to UTF-8 on JDK 18+. Falls back to the
+     * default charset when the property is missing or names an unknown charset.
+     * <p>
+     * This is deliberately the native encoding rather than a hardcoded UTF-8: the native encoding is
+     * the ANSI code page on Windows (for example Cp1252 or Cp932), not UTF-8, so the argument file
+     * must be written in it for non-ASCII values and filesystem paths to round-trip. Writing UTF-8
+     * would corrupt them anywhere the native encoding is not UTF-8 (default Windows, or a non-UTF-8
+     * locale). It is not a non-UTF-8-locale workaround; it is the charset the child actually reads.
+     */
+    private static Charset nativeEncoding()
+    {
+        String nativeEncoding = System.getProperty("native.encoding");
+        if (nativeEncoding != null)
+        {
+            try
+            {
+                return Charset.forName(nativeEncoding);
+            }
+            catch (Exception ignore)
+            {
+                // fall through to the default charset
+            }
+        }
+        return Charset.defaultCharset();
     }
 
     public void invokeMain(ClassLoader classloader, StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, IOException
@@ -537,7 +612,29 @@ public class Main
         {
             CommandLineBuilder cmd = args.getMainArgs(args.getDryRunParts());
             cmd.debug();
-            System.out.println(cmd.toCommandLine());
+            switch (args.getDryRun())
+            {
+                case LEGACY -> cmd.writeCommandLine(System.out);
+                case ARGFILE ->
+                {
+                    // --argfile output is redirected to a file that "java @file" later reads in the
+                    // platform native encoding (the native.encoding property). System.out encodes in
+                    // stdout.encoding (JDK 19+) or file.encoding (JDK 17), either of which can differ
+                    // from the native encoding under a non-UTF-8 locale, corrupting non-ASCII values
+                    // even on the same host. Write straight to stdout's file descriptor in the native
+                    // encoding so the generated file round-trips wherever it is generated and used.
+                    //
+                    // TODO: (JDK-25 minimum) a redirected System.out already matches the
+                    // native encoding on JDK 17 (file.encoding) and JDK 19+ (stdout.encoding falls back
+                    // to native.encoding when stdout is not a tty), so the explicit file-descriptor
+                    // stream mainly covers JDK 18 and tty output. Once those stop mattering, writing
+                    // cmd.writeArgFile(System.out) directly may be enough for the redirect-to-file use.
+                    System.out.flush();
+                    PrintStream argFileOut = new PrintStream(new FileOutputStream(FileDescriptor.out), true, nativeEncoding());
+                    cmd.writeArgFile(argFileOut);
+                    argFileOut.flush();
+                }
+            }
         }
 
         if (args.isStopCommand())
@@ -575,7 +672,27 @@ public class Main
         // execute Jetty in another JVM
         if (args.isExec())
         {
-            CommandLineBuilder cmd = args.getMainArgs(StartArgs.ALL_PARTS);
+            // Build the child command without the "java" part, so the whole command can be written
+            // to a java @argument-file. Launching the child as "java @argfile" keeps its
+            // configuration - STOP.KEY, secondary-environment properties, -D system properties,
+            // etc. - off the publicly visible process arguments, and sidesteps the OS
+            // command-line length limit.
+            //
+            // The core-environment properties are written to a temp .properties file (not inlined
+            // as key=value args): Properties.store uses ISO-8859-1 with \\uXXXX escapes and
+            // XmlConfiguration reads it back with Properties.load, so non-ASCII values round-trip
+            // under any locale. Inlining would route them through the argfile in the native encoding,
+            // corrupting non-ASCII values under a non-UTF-8 locale (e.g. LANG=C); the file's path
+            // is all that reaches the argfile, and the 0600 temp file keeps the values off the
+            // visible arguments just the same.
+            //
+            // The false (properties-file) argument here is not extra machinery for the fork: the same
+            // branch of StartArgs.getMainArgs is used by the normal in-process start, so this is
+            // shared code that costs nothing to reuse and gives lossless non-ASCII properties (such as
+            // keystore passwords) regardless of locale or platform native encoding.
+            Set<String> parts = new LinkedHashSet<>(StartArgs.ALL_PARTS);
+            parts.remove("java");
+            CommandLineBuilder cmd = args.getMainArgs(parts, false);
             cmd.debug();
 
             List<String> execModules = args.getAllModules().getEnabled().stream()
@@ -585,7 +702,15 @@ public class Main
                 .collect(Collectors.toList());
             StartLog.warn("Forking second JVM due to forking module(s): %s. Use --dry-run to generate the command line to avoid forking.", execModules);
 
-            ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
+            // Resolve the java binary before writing the argfile; findJavaBin() returns null when
+            // java.home is unset or missing, and passing null to ProcessBuilder would NPE.
+            String javaBin = CommandLineBuilder.findJavaBin();
+            if (javaBin == null)
+                throw new IOException("Unable to locate the java executable to fork the second JVM (java.home=" +
+                    System.getProperty("java.home") + ")");
+
+            Path argFile = writeExecArgFile(cmd);
+            ProcessBuilder pbuilder = new ProcessBuilder(javaBin, "@" + argFile.toAbsolutePath());
             StartLog.endStartLog();
             final Process process = pbuilder.start();
             Runtime.getRuntime().addShutdownHook(new Thread(() ->

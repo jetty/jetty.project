@@ -97,7 +97,7 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 
 usage()
 {
-    echo "Usage: ${0##*/} [-d] {start|stop|run|restart|check|supervise} [ CONFIGS ... ] "
+    echo "Usage: ${0##*/} [-d] {start|stop|run|restart|check} [ CONFIGS ... ] "
     exit 1
 }
 
@@ -116,6 +116,48 @@ findDirectory()
     printf %s "$L"
     break
   done
+}
+
+# Refuse a directory that another user could use to tamper with the files we place in it.
+# JETTY_RUN may be a pre-existing, shared directory (findDirectory can land on /tmp/jetty),
+# and the argfile written there can carry secrets from start.d/*.ini and is handed straight
+# to the JVM.  A directory owned or writable by another user therefore lets them swap the
+# argfile and inject JVM options such as -javaagent or -cp that then execute as us.  Reject a
+# directory that is neither ours nor root's, or that is group- or world-writable without the
+# sticky bit.
+checkDirSafe()
+{
+  local DIR=$1 OWNER MODE JETTY_USER_UID=""
+
+  # Owner uid and permission bits of the target (-L follows a symlinked JETTY_RUN, matching the
+  # -O test below), supporting both GNU (-c) and BSD/macOS (-f) stat.
+  OWNER=$(stat -L -c '%u' "$DIR" 2>/dev/null) || OWNER=$(stat -L -f '%u' "$DIR" 2>/dev/null)
+  MODE=$(stat -L -c '%a' "$DIR" 2>/dev/null) || MODE=$(stat -L -f '%Lp' "$DIR" 2>/dev/null)
+
+  # When we run as root and will drop privileges to JETTY_USER, a directory owned by that user
+  # is safe too: the server runs as JETTY_USER anyway, so JETTY_USER owning it grants no extra
+  # privilege.
+  if [ -n "$JETTY_USER" ]
+  then
+    JETTY_USER_UID=$(id -u "$JETTY_USER" 2>/dev/null)
+  fi
+
+  # Owner must be ourselves (-O), root, or JETTY_USER; fall back to -O alone if stat is unavailable.
+  if [ ! -O "$DIR" ] && [ "${OWNER:-}" != "0" ] && [ "${OWNER:-}" != "${JETTY_USER_UID:-x}" ]
+  then
+    echo "** ERROR: \$JETTY_RUN ($DIR) is owned by another user; refusing to use it." >&2
+    echo "          Point JETTY_RUN at a directory owned by you (or root) and try again." >&2
+    exit 1
+  fi
+
+  # Reject group- or world-writable (octal 022) directories unless the sticky bit (01000) is set.
+  if [ -n "$MODE" ] && (( (8#$MODE & 022) != 0 )) && (( (8#$MODE & 01000) == 0 ))
+  then
+    echo "** ERROR: \$JETTY_RUN ($DIR) is group- or world-writable without the sticky bit." >&2
+    echo "          Another user could replace files here; run 'chmod go-w $DIR' (or set the" >&2
+    echo "          sticky bit) and try again." >&2
+    exit 1
+  fi
 }
 
 # test if process specified in PID file is still running
@@ -279,11 +321,21 @@ dumpEnv()
   echo "JETTY_STATE           =  $JETTY_STATE"
   echo "JETTY_START_TIMEOUT   =  $JETTY_START_TIMEOUT"
   echo "JETTY_SYS_PROPS       =  $JETTY_SYS_PROPS"
-  echo "RUN_ARGS              =  ${RUN_ARGS[*]}"
+  echo "JETTY_ARGFILE         =  $JETTY_ARGFILE"
   echo "ID                    =  $(id)"
   echo "JETTY_USER            =  $JETTY_USER"
   echo "USE_START_STOP_DAEMON =  $USE_START_STOP_DAEMON"
   echo "START_STOP_DAEMON     =  $START_STOP_DAEMON_AVAILABLE"
+
+  # The effective command line now lives in the argfile rather than on the process arguments, so
+  # it no longer shows above as RUN_ARGS.  Print the argfile's contents to restore that view, but
+  # only under DEBUG: it can hold secrets (for example start.d/ssl.ini passwords), which is why
+  # they are kept off the command line in the first place.
+  if (( DEBUG )) && [ -r "$JETTY_ARGFILE" ]
+  then
+    echo "JETTY_ARGFILE content =  (effective command line)"
+    sed 's/^/                         /' "$JETTY_ARGFILE"
+  fi
 }
 
 
@@ -422,7 +474,15 @@ if [ ! -d "$JETTY_RUN" ] ; then
     echo "          Correct issues preventing the creation of \$JETTY_RUN and try again."
     exit 1
   fi
+  # Strip group/other write from the directory we just created so it is safe regardless of the
+  # caller's umask; keep r-x so a dropped-privilege JETTY_USER can still traverse it to read
+  # its own 0600 argfile.
+  chmod go-w "$JETTY_RUN"
 fi
+
+# $JETTY_RUN may be a pre-existing, shared directory; make sure no other user can tamper with
+# the (possibly secret-bearing) argfile and other files we place there.
+checkDirSafe "$JETTY_RUN"
 
 #####################################################
 # define start log location
@@ -446,7 +506,7 @@ then
 fi
 
 case "`uname`" in
-CYGWIN*) JETTY_STATE="`cygpath -w $JETTY_STATE`";;
+CYGWIN*) JETTY_STATE="`cygpath -w \"$JETTY_STATE\"`";;
 esac
 
 JETTY_ARGS=(${JETTY_ARGS[*]} "jetty.state=$JETTY_STATE" "jetty.pid=$JETTY_PID")
@@ -530,9 +590,9 @@ esac
 
 case "`uname`" in
 CYGWIN*)
-JETTY_HOME="`cygpath -w $JETTY_HOME`"
-JETTY_BASE="`cygpath -w $JETTY_BASE`"
-TMPDIR="`cygpath -w $TMPDIR`"
+JETTY_HOME="`cygpath -w \"$JETTY_HOME\"`"
+JETTY_BASE="`cygpath -w \"$JETTY_BASE\"`"
+TMPDIR="`cygpath -w \"$TMPDIR\"`"
 ;;
 esac
 
@@ -550,7 +610,7 @@ then
 fi
 
 case "`uname`" in
-CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
+CYGWIN*) JETTY_START="`cygpath -w \"$JETTY_START\"`";;
 esac
 
 # Determine if we can use start-stop-daemon or not
@@ -567,16 +627,59 @@ then
   fi
 fi
 
-# Collect the dry-run (of opts,path,main,args,envs) from the jetty.base configuration
-JETTY_DRY_RUN=$(echo "${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]}" | xargs "$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args,envs)
-RUN_ARGS=($JETTY_SYS_PROPS ${JETTY_DRY_RUN[@]})
+# Generate a Java @argument-file (of opts,path,main,args,envs) from the jetty.base
+# configuration.  Launching via "java @argfile" instead of expanding every argument onto
+# the command line keeps configuration values - such as passwords in start.d/ssl.ini -
+# out of the publicly visible process arguments (see issue #14005).  The file is created
+# with restrictive permissions because it may contain such secrets.
+JETTY_ARGFILE="$JETTY_RUN/${NAME}.argfile"
 
-if (( DEBUG ))
-then
-  if expr -- "${RUN_ARGS[*]}" : '.*/etc/console-capture.xml.*' > /dev/null
+# The java launcher opens an @argfile with native file APIs, so on Cygwin it must be handed
+# a Windows path; bash still writes, greps, and removes the file through the POSIX path.
+JETTY_ARGFILE_ARG="$JETTY_ARGFILE"
+case "`uname`" in
+CYGWIN*) JETTY_ARGFILE_ARG="`cygpath -w \"$JETTY_ARGFILE\"`";;
+esac
+
+# Generate the Java @argument-file (opts,path,main,args,envs) that the JVM is launched with.
+# Launching via "java @argfile" instead of expanding every argument onto the command line
+# keeps configuration values - such as passwords in start.d/ssl.ini - out of the publicly
+# visible process arguments.  The file may therefore hold secrets, so it
+# is (re)created fresh with a restrictive umask and O_EXCL ("set -C", which also refuses to
+# follow a pre-existing symlink), and handed to JETTY_USER when we will drop privileges at
+# launch.  Call this only after the per-action checks (NO_START, already running) have
+# passed, so a disabled or already-running service never (re)writes the file.
+generateArgFile()
+{
+  if ! (
+    umask 077
+    rm -f "$JETTY_ARGFILE"
+    set -C
+    echo "${JETTY_ARGS[*]} ${JAVA_OPTIONS[*]}" | xargs "$JAVA" -jar "$JETTY_START" --argfile=opts,path,main,args,envs > "$JETTY_ARGFILE"
+  )
+  then
+    echo "** ERROR: unable to generate $JETTY_ARGFILE" >&2
+    rm -f "$JETTY_ARGFILE"
+    exit 1
+  fi
+
+  # If we will drop privileges to JETTY_USER at launch (start-stop-daemon --chuid, or the
+  # "su - $JETTY_USER" shell), that user must be able to read the argfile we just generated
+  # as the current (root) user.  Keep it mode 0600, but hand ownership to JETTY_USER; use -h
+  # so a symlink is never chowned through.
+  if [ -n "$JETTY_USER" ] && [ "`whoami`" != "$JETTY_USER" ]
+  then
+    chown -h "$JETTY_USER" "$JETTY_ARGFILE"
+  fi
+
+  if (( DEBUG )) && grep -q '/etc/console-capture.xml' "$JETTY_ARGFILE" 2>/dev/null
   then
     echo "WARNING: Disable console-capture module for best DEBUG results"
   fi
+}
+
+if (( DEBUG ))
+then
   echo "IDs are $(id)"
   dumpEnv
 fi
@@ -605,6 +708,9 @@ case "$ACTION" in
       rm $JETTY_STATE
     fi
 
+    # Generate the argfile only now that NO_START and the already-running check have passed.
+    generateArgFile
+
     echo -n "Starting Jetty: "
 
     # Startup from a service file
@@ -618,14 +724,14 @@ case "$ACTION" in
 
       # use of --pidfile /dev/null disables internal pidfile
       # management of the start-stop-daemon (see man page)
-      echo ${RUN_ARGS[@]} | xargs start-stop-daemon \
+      start-stop-daemon \
        --start $CH_USER \
        --pidfile /dev/null \
        --chdir "$JETTY_BASE" \
        --background \
        --output "${JETTY_RUN}/start-stop.log" \
        --startas "$JAVA" \
-       --
+       -- $JETTY_SYS_PROPS @"$JETTY_ARGFILE_ARG"
       (( DEBUG )) && echo "Starting: start-stop-daemon"
     else
       # Startup if switching users (not as a service, or from root)
@@ -640,13 +746,13 @@ case "$ACTION" in
         chown "$JETTY_USER" "$JETTY_PID"
         su - "$JETTY_USER" $SU_SHELL -c "
           cd \"$JETTY_BASE\"
-          echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
+          ${JAVA} $JETTY_SYS_PROPS @\"$JETTY_ARGFILE_ARG\" > /dev/null &
           PID=\$!
           disown \$PID"
         (( DEBUG )) && echo "Starting: su shell (w/user $JETTY_USER) on PID $PID"
       else
         # Startup if not switching users
-        echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
+        ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE_ARG" > /dev/null &
         PID=$!
         disown $PID
         (( DEBUG )) && echo "Starting: java command on PID $PID"
@@ -661,6 +767,9 @@ case "$ACTION" in
       else
         echo "FAILED `date`"
         pidKill $JETTY_PID 30
+        # Start failed and the JVM (if any) has already read the @argfile, so remove the
+        # secret-bearing file rather than leave it behind.
+        rm -f "$JETTY_ARGFILE"
         exit 1
       fi
     else
@@ -671,6 +780,9 @@ case "$ACTION" in
 
   stop)
     echo -n "Stopping Jetty: "
+    # Remove the argument-file first: it may contain secrets and must go even when there is
+    # no pid file to stop.
+    rm -f "$JETTY_ARGFILE"
     if [ ! -r "$JETTY_PID" ] ; then
       echo "** ERROR: no pid found at $JETTY_PID"
       exit 1
@@ -731,16 +843,7 @@ case "$ACTION" in
 
     ;;
 
-  supervise)
-    #
-    # Under control of daemontools supervise monitor which
-    # handles restarts and shutdowns via the svc program.
-    #
-    echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
-
-    ;;
-
-  run|demo)
+  run)
     echo "Running Jetty: "
 
     if running "$JETTY_PID"
@@ -749,7 +852,8 @@ case "$ACTION" in
       exit 1
     fi
 
-    echo ${RUN_ARGS[*]} | xargs ${JAVA} > /dev/null &
+    generateArgFile
+    ${JAVA} $JETTY_SYS_PROPS @"$JETTY_ARGFILE_ARG" > /dev/null &
     ;;
 
   check|status)

@@ -54,6 +54,7 @@ import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.quic.quiche.client.QuicheClientQuicConfiguration;
 import org.eclipse.jetty.quic.quiche.client.QuicheTransport;
 import org.eclipse.jetty.tests.testers.JettyHomeTester;
+import org.eclipse.jetty.tests.testers.ProcessWrapper;
 import org.eclipse.jetty.tests.testers.Tester;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.PathMatchers;
@@ -113,6 +114,63 @@ public class DistributionTests extends AbstractJettyHomeTest
 
                 run2.stop();
                 assertTrue(run2.awaitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            }
+        }
+    }
+
+    @Test
+    public void testArgFile() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http"))
+        {
+            assertTrue(run1.awaitForStart());
+            assertEquals(0, run1.getExitValue());
+
+            int port = Tester.freePort();
+            String startJar = distribution.getJettyHome().toAbsolutePath() + File.separator + "start.jar";
+
+            // Generate a java @argument-file for the configured server, redirecting stdout to a file.
+            Path argFile = jettyBase.resolve("jetty.args");
+            List<String> genCommand = List.of(
+                Tester.getJavaExecutable("java"),
+                "-jar", startJar,
+                "jetty.http.port=" + port,
+                "--argfile=opts,path,main,args,envs");
+            ProcessBuilder genPb = new ProcessBuilder(genCommand);
+            genPb.directory(jettyBase.toFile());
+            genPb.redirectOutput(argFile.toFile());
+            genPb.redirectError(ProcessBuilder.Redirect.INHERIT);
+            Process genProcess = genPb.start();
+            assertTrue(genProcess.waitFor(START_TIMEOUT, TimeUnit.SECONDS));
+            assertEquals(0, genProcess.exitValue());
+
+            // The generated argument-file must be a valid "java @file": it must not contain the
+            // java executable (that is the thing that reads the file), and must name the main class.
+            List<String> argFileLines = Files.readAllLines(argFile, StandardCharsets.UTF_8);
+            assertFalse(argFileLines.isEmpty());
+            assertThat(argFileLines, Matchers.hasItem(containsString("XmlConfiguration")));
+            assertThat(argFileLines, not(Matchers.hasItem(Matchers.endsWith(File.separator + "java"))));
+            assertThat(argFileLines, not(Matchers.hasItem(Matchers.endsWith(File.separator + "java.exe"))));
+
+            // Launch the server using the generated @argument-file and verify it serves requests.
+            List<String> runCommand = List.of(Tester.getJavaExecutable("java"), "@" + argFile.toAbsolutePath());
+            ProcessBuilder runPb = new ProcessBuilder(runCommand);
+            runPb.directory(jettyBase.toFile());
+            try (ProcessWrapper run2 = new ProcessWrapper(runPb.start()))
+            {
+                assertTrue(run2.awaitConsoleLogsFor(ProcessWrapper.JETTY_START_SEARCH, START_TIMEOUT, TimeUnit.SECONDS),
+                    () -> "Server did not start from @argfile; logs:\n" + run2.logs().get());
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port);
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
             }
         }
     }

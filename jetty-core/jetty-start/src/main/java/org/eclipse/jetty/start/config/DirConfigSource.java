@@ -56,6 +56,7 @@ public class DirConfigSource implements ConfigSource
         BANNED_ARGS.add("--stop");
         BANNED_ARGS.add("--dry-run");
         BANNED_ARGS.add("--exec-print");
+        BANNED_ARGS.add("--argfile");
         BANNED_ARGS.add("--list-config");
         BANNED_ARGS.add("--list-classpath");
         BANNED_ARGS.add("--list-module");
