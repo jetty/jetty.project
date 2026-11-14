@@ -37,6 +37,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -250,5 +251,37 @@ public class CompactPathRuleTest extends AbstractRuleTest
             allOf(containsString("UriCompliance.Violations.size=1"),
                 containsString("Violation: AMBIGUOUS_PATH_SEGMENT: Ambiguous URI path segment"))
         );
+    }
+
+    /**
+     * A request that CompactPathRule rewrites but whose original HttpURI has no violations must
+     * still be rewritten (200), not rejected with 400, when preserveViolations is true.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"/a/b;x=1", "/a;x=1/b", "/a/./b", "/a/%41/b"})
+    public void testPreserveViolationsWithNoOriginalViolations(String inputPath) throws Exception
+    {
+        _httpConfig.setUriCompliance(UriCompliance.UNSAFE);
+        CompactPathRule rule = new CompactPathRule();
+        rule.setPreserveViolations(true);
+        _rewriteHandler.addRule(rule);
+        start(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                Content.Sink.write(response, true, "OK", callback);
+                return true;
+            }
+        });
+
+        String request = """
+            GET %s HTTP/1.1
+            Host: localhost
+
+            """.formatted(inputPath);
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 }
