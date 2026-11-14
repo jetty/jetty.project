@@ -287,6 +287,7 @@ public class HttpParser
     private boolean _cr;
     private ByteBuffer _contentChunk;
     private int _length;
+    private byte[] _scratch;
     private ChunkSizeState _chunkSizeState = ChunkSizeState.SIZE;
     private boolean _chunkQuotedEscape = false;
 
@@ -1327,6 +1328,77 @@ public class HttpParser
         return value;
     }
 
+    /* Quick lookahead for a field value that is entirely contained in the buffer.
+     * This is called after the first byte of the value has been consumed by next().
+     * If the end of the line is in the buffer and all the bytes up to it are legal,
+     * then the value (less any trailing white space) is converted to a String in a
+     * single step, rather than being accumulated a char at a time, and the buffer is
+     * left positioned at the end of line, which is then parsed as normal by next().
+     * Otherwise, nothing is changed and the value is parsed a byte at a time, so that
+     * values split over multiple buffers and illegal characters are handled as normal.
+     */
+    private boolean quickValue(ByteBuffer buffer)
+    {
+        int position = buffer.position();
+        int limit = buffer.limit();
+        // The first byte of the value has already been consumed.
+        int start = position - 1;
+        int last = start;
+        int eol = -1;
+
+        loop:
+        for (int i = position; i < limit; i++)
+        {
+            switch (HttpTokens.TOKENS[0xFF & buffer.get(i)].getType())
+            {
+                case ALPHA, DIGIT, TCHAR, VCHAR, COLON, OTEXT -> last = i;
+                case SPACE, HTAB ->
+                {
+                    // Only part of the value if followed by non white space.
+                }
+                case CR, LF ->
+                {
+                    eol = i;
+                    break loop;
+                }
+                default ->
+                {
+                    // Let the normal parsing report the illegal character.
+                    return false;
+                }
+            }
+        }
+
+        // Is the value split over multiple buffers?
+        if (eol < 0)
+            return false;
+
+        // If the header size is exceeded within the value, let the
+        // normal parsing fail on the exact byte that exceeds it.
+        int skipped = eol - position;
+        if (_maxHeaderBytes > 0 && _maxHeaderBytes - _headerBytes < skipped)
+            return false;
+
+        int length = last + 1 - start;
+        if (buffer.hasArray())
+        {
+            _valueString = new String(buffer.array(), buffer.arrayOffset() + start, length, StandardCharsets.ISO_8859_1);
+        }
+        else
+        {
+            byte[] scratch = _scratch;
+            if (scratch == null || scratch.length < length)
+                _scratch = scratch = new byte[Math.max(length, scratch == null ? 128 : 2 * scratch.length)];
+            buffer.get(start, scratch, 0, length);
+            _valueString = new String(scratch, 0, length, StandardCharsets.ISO_8859_1);
+        }
+
+        buffer.position(eol);
+        addAndCheckHeadersSize(skipped);
+        _length = -1;
+        return true;
+    }
+
     /*
      * Parse the message headers and return true if the handler has signalled for a return
      */
@@ -1640,6 +1712,13 @@ public class HttpParser
                         case VCHAR:
                         case COLON:
                         case OTEXT: // TODO review? should this be a utf8 string?
+                            // Try to take the whole value in one go, unless this
+                            // is the continuation of a multi-line field value.
+                            if (_string.isEmpty() && quickValue(buffer))
+                            {
+                                setState(FieldState.IN_VALUE);
+                                break;
+                            }
                             _string.append(t.getChar());
                             _length = _string.length();
                             setState(FieldState.IN_VALUE);
