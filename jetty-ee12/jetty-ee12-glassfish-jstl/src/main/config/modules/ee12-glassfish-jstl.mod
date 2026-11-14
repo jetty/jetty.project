@@ -10,12 +10,13 @@ ee12
 ee12-apache-jsp
 
 [ini]
-ee12.jakarta.servlet.jsp.jstl.impl.version?=@ee12.jakarta.servlet.jsp.jstl.impl.version@
+ee12.jakarta.servlet.jsp.jstl.api.version?=@version(jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api)@
+ee12.jakarta.servlet.jsp.jstl.impl.version?=@version(org.glassfish.wasp:wasp)@
 
 [files]
-maven://jakarta.servlet.jsp.jstl/jakarta.servlet.jsp.jstl-api/3.1.0-M2/jar|lib/ee12/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-3.1.0-M2.jar
+maven://jakarta.servlet.jsp.jstl/jakarta.servlet.jsp.jstl-api/${ee12.jakarta.servlet.jsp.jstl.api.version}/jar|lib/ee12/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee12.jakarta.servlet.jsp.jstl.api.version}.jar
 maven://org.glassfish.wasp/wasp/${ee12.jakarta.servlet.jsp.jstl.impl.version}/jar|lib/ee12/support/org.glassfish.wasp.wasp-${ee12.jakarta.servlet.jsp.jstl.impl.version}.jar
 
 [lib]
-lib/ee12/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-3.1.0-M2.jar
+lib/ee12/support/jakarta.servlet.jsp.jstl.jakarta.servlet.jsp.jstl-api-${ee12.jakarta.servlet.jsp.jstl.api.version}.jar
 lib/ee12/support/org.glassfish.wasp.wasp-${ee12.jakarta.servlet.jsp.jstl.impl.version}.jar

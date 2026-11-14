@@ -15,9 +15,13 @@ websocket-core-client
 websocket-core-server
 ee12-annotations
 
+[ini]
+ee12.jakarta.websocket.api.version?=@version(jakarta.websocket:jakarta.websocket-api)@
+ee12.jakarta.websocket.client.api.version?=@version(jakarta.websocket:jakarta.websocket-client-api)@
+
 [files]
-maven://jakarta.websocket/jakarta.websocket-api/2.3.0-M2/jar|lib/ee12/support/jakarta.websocket.jakarta.websocket-api-2.3.0-M2.jar
-maven://jakarta.websocket/jakarta.websocket-client-api/2.3.0-M2/jar|lib/ee12/support/jakarta.websocket.jakarta.websocket-client-api-2.3.0-M2.jar
+maven://jakarta.websocket/jakarta.websocket-api/${ee12.jakarta.websocket.api.version}/jar|lib/ee12/support/jakarta.websocket.jakarta.websocket-api-${ee12.jakarta.websocket.api.version}.jar
+maven://jakarta.websocket/jakarta.websocket-client-api/${ee12.jakarta.websocket.client.api.version}/jar|lib/ee12/support/jakarta.websocket.jakarta.websocket-client-api-${ee12.jakarta.websocket.client.api.version}.jar
 maven://org.eclipse.jetty.ee12.websocket/jetty-ee12-websocket-jakarta-client/${jetty.version}/jar|lib/ee12/jetty-ee12-websocket-jakarta-client-${jetty.version}.jar
 maven://org.eclipse.jetty.ee12.websocket/jetty-ee12-websocket-jakarta-common/${jetty.version}/jar|lib/ee12/jetty-ee12-websocket-jakarta-common-${jetty.version}.jar
 maven://org.eclipse.jetty.ee12.websocket/jetty-ee12-websocket-jakarta-server/${jetty.version}/jar|lib/ee12/jetty-ee12-websocket-jakarta-server-${jetty.version}.jar
@@ -28,5 +32,5 @@ lib/ee12/jetty-ee12-websocket-jakarta-client-${jetty.version}.jar
 lib/ee12/jetty-ee12-websocket-jakarta-common-${jetty.version}.jar
 lib/ee12/jetty-ee12-websocket-jakarta-server-${jetty.version}.jar
 lib/ee12/jetty-ee12-websocket-servlet-${jetty.version}.jar
-lib/ee12/support/jakarta.websocket.jakarta.websocket-api-2.3.0-M2.jar
-lib/ee12/support/jakarta.websocket.jakarta.websocket-client-api-2.3.0-M2.jar
+lib/ee12/support/jakarta.websocket.jakarta.websocket-api-${ee12.jakarta.websocket.api.version}.jar
+lib/ee12/support/jakarta.websocket.jakarta.websocket-client-api-${ee12.jakarta.websocket.client.api.version}.jar
