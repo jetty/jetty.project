@@ -963,6 +963,8 @@ public abstract class QuicSession extends AbstractSession
 
         while (buffer.hasRemaining())
         {
+            // The packet is auto-closed to release buffers
+            // that have been retained in stream/crypto frames.
             try (Packet packet = parser.parse(buffer))
             {
                 if (LOG.isDebugEnabled())
@@ -1194,7 +1196,7 @@ public abstract class QuicSession extends AbstractSession
                         throw new QuicException(ErrorCode.STREAM_STATE_ERROR, "local_unidirectional_stream_reset", frame.type());
                     yield resetStreamFrame.finalSize();
                 }
-                case StreamFrame streamFrame -> streamFrame.offset() + streamFrame.length();
+                case StreamFrame streamFrame -> streamFrame.endOffset();
                 case StreamMaxDataFrame streamMaxDataFrame ->
                 {
                     flusher.processMaxData(stream, streamMaxDataFrame);
@@ -1242,8 +1244,14 @@ public abstract class QuicSession extends AbstractSession
             {
                 if (cryptoFrame.length() == 0)
                     checkRateControl(frame);
+                int queueMaxSize = getQuicConfiguration().getCryptoQueueMaxSize();
                 EncryptionLevel encryptionLevel = EncryptionLevel.from(packet);
-                cryptoStreams.computeIfAbsent(encryptionLevel, e -> new FrameStream.Crypto(e, this::processCryptoFrame)).offer(cryptoFrame);
+                FrameStream cryptoStream = cryptoStreams.computeIfAbsent(encryptionLevel, e ->
+                    new FrameStream.Crypto(queueMaxSize, this::processCryptoFrame, e));
+                long maxOffset = getQuicConfiguration().getCryptoMaxData();
+                if (maxOffset > 0 && cryptoFrame.endOffset() > maxOffset)
+                    throw new QuicException(ErrorCode.CRYPTO_BUFFER_EXCEEDED_ERROR, "crypto_max_data_exceeded", cryptoFrame.type());
+                cryptoStream.offer(cryptoFrame);
             }
             case DataBlockedFrame dataBlockedFrame ->
             {

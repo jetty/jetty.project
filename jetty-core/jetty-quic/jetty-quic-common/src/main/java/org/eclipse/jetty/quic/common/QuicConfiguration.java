@@ -31,6 +31,9 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     private int outputBufferSize = 2048;
     private boolean useOutputDirectByteBuffers = true;
     private int minInputBufferSpace = 1500;
+    private long cryptoMaxData = 64 * 1024;
+    private int cryptoQueueMaxSize = 256;
+    private int streamQueueMaxSize = 2048;
     private long sessionMaxData;
     private long biLocalStreamMaxData;
     private long biRemoteStreamMaxData;
@@ -111,6 +114,51 @@ public abstract class QuicConfiguration extends ContainerLifeCycle
     public void setMinInputBufferSpace(int minInputBufferSpace)
     {
         this.minInputBufferSpace = minInputBufferSpace;
+    }
+
+    public long getCryptoMaxData()
+    {
+        return cryptoMaxData;
+    }
+
+    /// The max data a local peer is willing to receive in `CRYPTO` frames for each [EncryptionLevel].
+    public void setCryptoMaxData(long cryptoMaxData)
+    {
+        this.cryptoMaxData = cryptoMaxData;
+    }
+
+    public int getCryptoQueueMaxSize()
+    {
+        return cryptoQueueMaxSize;
+    }
+
+    /// The max number of queued `CRYPTO` frames.
+    ///
+    /// A `CRYPTO` frame is queued if it cannot be delivered because
+    /// its offset is larger than the current crypto data offset.
+    ///
+    /// This value bounds the memory retained for `CRYPTO` frames to
+    /// `cryptoQueueMaxSize * datagramLength * number_of_encryption_levels`.
+    public void setCryptoQueueMaxSize(int cryptoQueueMaxSize)
+    {
+        this.cryptoQueueMaxSize = cryptoQueueMaxSize;
+    }
+
+    public int getStreamQueueMaxSize()
+    {
+        return streamQueueMaxSize;
+    }
+
+    /// The max number of queued `STREAM` frames.
+    ///
+    /// A `STREAM` frame is queued if it cannot be delivered because
+    /// its offset is larger than the current stream data offset.
+    ///
+    /// This value bounds the memory retained for `STREAM` frames to
+    /// `streamQueueMaxSize * datagramLength * max_concurrent_streams`.
+    public void setStreamQueueMaxSize(int streamQueueMaxSize)
+    {
+        this.streamQueueMaxSize = streamQueueMaxSize;
     }
 
     /// The session max data sent by a local peer to indicate the max data it is willing to receive.

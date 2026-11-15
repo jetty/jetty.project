@@ -369,7 +369,7 @@ class CryptoFlusher implements Callback
                 else
                 {
                     // A retransmitted frame.
-                    long offset = cryptoFrame.offset() + (cryptoFrame.length() - cryptoFrame.remaining());
+                    long offset = cryptoFrame.endOffset() - cryptoFrame.remaining();
                     yield framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, offset, maxBytes);
                 }
             }

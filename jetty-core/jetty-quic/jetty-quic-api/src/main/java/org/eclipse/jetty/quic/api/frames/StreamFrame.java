@@ -112,6 +112,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
         return slice.remaining();
     }
 
+    @Override
     public long skip(long skip)
     {
         return slice.skip(skip);

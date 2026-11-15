@@ -110,6 +110,11 @@ public sealed interface Frame extends AutoCloseable
 
         long length();
 
+        default long endOffset()
+        {
+            return offset() + length();
+        }
+
         @Override
         default int compareTo(WithOffset that)
         {
@@ -120,6 +125,8 @@ public sealed interface Frame extends AutoCloseable
     sealed interface WithData extends WithOffset permits CryptoFrame, StreamFrame
     {
         long remaining();
+
+        long skip(long skip);
 
         WithData slice(long offset, long length);
 

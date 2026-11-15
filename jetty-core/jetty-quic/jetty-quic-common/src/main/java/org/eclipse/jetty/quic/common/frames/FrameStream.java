@@ -18,6 +18,7 @@ import java.util.Queue;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
@@ -40,39 +41,85 @@ public abstract sealed class FrameStream
     private static final Logger LOG = LoggerFactory.getLogger(FrameStream.class);
 
     private final Queue<Frame.WithOffset> frames = new PriorityQueue<>();
+    private final int queueMaxSize;
     private final Consumer<Frame.WithOffset> listener;
     private long offset;
     private long finalOffset = -1;
+    private long lastEndOffset;
 
-    public FrameStream(Consumer<Frame.WithOffset> listener)
+    public FrameStream(int queueMaxSize, Consumer<Frame.WithOffset> listener)
     {
+        this.queueMaxSize = queueMaxSize;
         this.listener = listener;
     }
 
+    /// Offers a [Frame.WithOffset] to be delivered in sequence.
     public void offer(Frame.WithOffset frame)
     {
         long finalSize = switch (frame)
         {
             case ResetStreamFrame resetFrame -> resetFrame.finalSize();
-            case StreamFrame streamFrame when streamFrame.isEndStream() -> streamFrame.offset() + streamFrame.length();
-            default -> finalOffset;
+            case StreamFrame streamFrame when streamFrame.isEndStream() -> streamFrame.endOffset();
+            case CryptoFrame _, StreamFrame _ -> -1;
         };
 
-        // RFC-9000 #4.5: cannot change the final size.
-        if (finalOffset >= 0)
+        // RFC-9000 #4.5: final size cannot change.
+        if (finalOffset < 0)
         {
-            if (finalOffset != finalSize)
-                throw new QuicException(ErrorCode.FINAL_SIZE_ERROR, "invalid_final_size", frame.type());
+            if (finalSize >= 0)
+            {
+                if (offset > finalSize || lastEndOffset > finalSize)
+                    throw new QuicException(ErrorCode.FINAL_SIZE_ERROR, "invalid_final_size", frame.type());
+            }
+            finalOffset = finalSize;
+        }
+        else
+        {
+            if (finalSize < 0)
+            {
+                if (frame.endOffset() > finalOffset)
+                    throw new QuicException(ErrorCode.FINAL_SIZE_ERROR, "invalid_final_size", frame.type());
+            }
+            else
+            {
+                if (finalOffset != finalSize)
+                    throw new QuicException(ErrorCode.FINAL_SIZE_ERROR, "invalid_final_size", frame.type());
+            }
+
             if (offset == finalOffset)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("discarding, all data delivered {} on {}", frame, this);
                 return;
+            }
         }
 
-        finalOffset = finalSize;
+        if (finalSize < 0)
+        {
+            // Scan the queue and discard duplicates.
+            for (Frame.WithOffset element : frames)
+            {
+                if (element.offset() <= frame.offset() && element.endOffset() >= frame.endOffset())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("discarding, data duplicate {} on {}", frame, this);
+                    return;
+                }
+            }
+        }
+
+        if (queueMaxSize > 0 && frames.size() >= queueMaxSize && frame.offset() > offset)
+        {
+            ErrorCode error = frame instanceof CryptoFrame ? ErrorCode.CRYPTO_BUFFER_EXCEEDED_ERROR : ErrorCode.PROTOCOL_VIOLATION_ERROR;
+            throw new QuicException(error, "frame_stream_size_exceeded", frame.type());
+        }
 
         // Retain the frame because it is stored for later use.
-        // When the frame is removed from the queue, it will be released.
+        // When the frame is removed from the queue,
+        // it will be released by closing it.
         retain(frame);
         frames.offer(frame);
+        lastEndOffset = Math.max(lastEndOffset, frame.endOffset());
 
         if (LOG.isDebugEnabled())
             LOG.debug("offered {} on {}", frame, this);
@@ -87,15 +134,13 @@ public abstract sealed class FrameStream
                 return;
             }
 
-            long candidateOffset = candidate.offset();
-            if (candidateOffset > offset)
+            if (candidate.offset() > offset)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("stalling, data gap on {}", this);
                 return;
             }
-
-            if (candidateOffset == offset)
+            else if (candidate.offset() == offset)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("notifying, data {} on {}", candidate, this);
@@ -103,40 +148,36 @@ public abstract sealed class FrameStream
                 offset += candidate.length();
                 notifyFrame(candidate);
                 candidate.close();
-                continue;
             }
-
-            long offsetEnd = candidateOffset + candidate.length();
-            if (offsetEnd <= offset)
+            else
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("discarding, data delivered {} on {}", candidate, this);
-                frames.poll();
-                candidate.close();
-                continue;
-            }
-
-            switch (candidate)
-            {
-                case ResetStreamFrame resetStreamFrame ->
+                if (candidate.endOffset() <= offset)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("notifying, reset {} on {}", resetStreamFrame, this);
+                        LOG.debug("discarding, data delivered {} on {}", candidate, this);
                     frames.poll();
-                    notifyFrame(resetStreamFrame);
+                    candidate.close();
+                    continue;
                 }
-                case Frame.WithData dataFrame ->
+
+                switch (candidate)
                 {
-                    long length = offsetEnd - offset;
-                    try (Frame.WithData slice = dataFrame.slice(offset, length))
+                    case Frame.WithData dataFrame ->
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("notifying, data slice {} on {}", slice, this);
-                        frames.poll();
-                        dataFrame.close();
-                        offset += length;
-                        notifyFrame(slice);
+                        dataFrame.skip(offset - dataFrame.offset());
+                        long length = candidate.endOffset() - offset;
+                        try (Frame.WithData slice = dataFrame.slice(offset, length))
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("notifying, data slice {} on {}", slice, this);
+                            frames.poll();
+                            dataFrame.close();
+                            offset += length;
+                            notifyFrame(slice);
+                        }
                     }
+                    case ResetStreamFrame _ ->
+                        throw new QuicException(ErrorCode.INTERNAL_ERROR, "invalid_reset_frame", candidate.type());
                 }
             }
         }
@@ -181,9 +222,9 @@ public abstract sealed class FrameStream
     {
         private final EncryptionLevel encryptionLevel;
 
-        public Crypto(EncryptionLevel encryptionLevel, Consumer<Frame.WithOffset> listener)
+        public Crypto(int queueMaxSize, Consumer<Frame.WithOffset> listener, EncryptionLevel encryptionLevel)
         {
-            super(listener);
+            super(queueMaxSize, listener);
             this.encryptionLevel = encryptionLevel;
         }
 
@@ -198,9 +239,9 @@ public abstract sealed class FrameStream
     {
         private final long streamId;
 
-        public Stream(long streamId, Consumer<Frame.WithOffset> listener)
+        public Stream(int queueMaxSize, Consumer<Frame.WithOffset> listener, long streamId)
         {
-            super(listener);
+            super(queueMaxSize, listener);
             this.streamId = streamId;
         }
 

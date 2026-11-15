@@ -15,17 +15,23 @@ package org.eclipse.jetty.quic.common.frames;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
+import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -37,7 +43,7 @@ public class FrameStreamTest
     public void testInOrderOfferNotifiesInOrder()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream.Stream(0, output::add);
+        FrameStream stream = new FrameStream.Crypto(256, output::add, EncryptionLevel.INITIAL);
 
         int length1 = 5;
         stream.offer(new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(length1))));
@@ -56,7 +62,7 @@ public class FrameStreamTest
     public void testOutOfOrderOfferNotifiesInOrder()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream.Stream(0, output::add);
+        FrameStream stream = new FrameStream.Crypto(256, output::add, EncryptionLevel.INITIAL);
 
         int length1 = 5;
         int length2 = 7;
@@ -71,10 +77,10 @@ public class FrameStreamTest
     }
 
     @Test
-    public void testDuplicateOfferIsDiscarded()
+    public void testDuplicateOfferIsDiscardedAtCurrentOffset()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream.Stream(0, output::add);
+        FrameStream stream = new FrameStream.Crypto(256, output::add, EncryptionLevel.INITIAL);
 
         int length1 = 5;
         stream.offer(new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(length1))));
@@ -84,6 +90,7 @@ public class FrameStreamTest
 
         // Duplicate offer.
         stream.offer(new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(length1))));
+
         // Nothing changed.
         assertEquals(1, output.size());
         assertEquals(length1, stream.offset());
@@ -97,10 +104,32 @@ public class FrameStreamTest
     }
 
     @Test
+    public void testDuplicateOfferIsDiscardedAtLargerOffset()
+    {
+        List<Frame> output = new ArrayList<>();
+        FrameStream stream = new FrameStream.Crypto(256, output::add, EncryptionLevel.INITIAL);
+
+        // Offer at a larger offset.
+        stream.offer(new CryptoFrame(1, RetainableByteBuffer.wrap(ByteBuffer.allocate(1))));
+        assertEquals(1, stream.queueSize());
+        assertEquals(0, output.size());
+        assertEquals(0, stream.offset());
+
+
+        // Duplicate offer.
+        stream.offer(new CryptoFrame(1, RetainableByteBuffer.wrap(ByteBuffer.allocate(1))));
+
+        // Nothing changed.
+        assertEquals(1, stream.queueSize());
+        assertEquals(0, output.size());
+        assertEquals(0, stream.offset());
+    }
+
+    @Test
     public void testOfferSmallerThanGap()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream.Stream(0, output::add);
+        FrameStream stream = new FrameStream.Crypto(256, output::add, EncryptionLevel.INITIAL);
 
         int length1 = 5;
         int length2 = 7;
@@ -126,35 +155,44 @@ public class FrameStreamTest
     public void testOfferGapThatOverlapsPastLength()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream.Stream(0, output::add);
+        FrameStream stream = new FrameStream.Crypto(256, output::add, EncryptionLevel.INITIAL);
 
-        int length1 = 5;
-        int length2 = 7;
-        stream.offer(new CryptoFrame(length1, RetainableByteBuffer.wrap(ByteBuffer.allocate(length2))));
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        byte[] data1 = new byte[5];
+        random.nextBytes(data1);
+        byte[] data2 = new byte[7];
+        random.nextBytes(data2);
+        stream.offer(new CryptoFrame(data1.length, RetainableByteBuffer.wrap(ByteBuffer.wrap(data2))));
 
         assertEquals(0, output.size());
 
         // Offer a frame that overlaps the gap.
         int delta = 3;
-        stream.offer(new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(length1 + delta))));
+        byte[] data3 = new byte[data1.length + delta];
+        System.arraycopy(data1, 0, data3, 0, data1.length);
+        stream.offer(new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.wrap(data3))));
 
         assertEquals(2, output.size());
-        assertEquals(length1 + length2, stream.offset());
+        assertEquals(data1.length + data2.length, stream.offset());
 
         CryptoFrame frame1 = (CryptoFrame)output.getFirst();
         assertEquals(0, frame1.offset());
-        assertEquals(length1 + delta, frame1.length());
+        assertEquals(data1.length + delta, frame1.length());
+        byte[] bytes1 = frame1.map(RetainableByteBuffer::takeByteArray);
+        assertArrayEquals(data3, bytes1);
 
         CryptoFrame frame2 = (CryptoFrame)output.getLast();
-        assertEquals(length1 + delta, frame2.offset());
-        assertEquals(length2 - delta, frame2.length());
+        assertEquals(data1.length + delta, frame2.offset());
+        assertEquals(data2.length - delta, frame2.length());
+        byte[] bytes2 = frame2.map(RetainableByteBuffer::takeByteArray);
+        assertArrayEquals(Arrays.copyOfRange(data2, delta, data2.length), bytes2);
     }
 
     @Test
     public void testEmptyInitialOfferIsNotifiedThenEmptyOfferIsAlsoNotified()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream.Stream(0, output::add);
+        FrameStream stream = new FrameStream.Crypto(256, output::add, EncryptionLevel.INITIAL);
 
         stream.offer(new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(0))));
 
@@ -172,7 +210,7 @@ public class FrameStreamTest
     public void testResetFrameReceivedWithNoData()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream.Stream(0, output::add);
+        FrameStream stream = new FrameStream.Stream(256, output::add, 0);
 
         stream.offer(new ResetStreamFrame(0, 0, 0));
         assertEquals(1, output.size());
@@ -188,11 +226,26 @@ public class FrameStreamTest
         assertEquals(1, output.size());
     }
 
+    @ParameterizedTest
+    @ValueSource(longs = {0, 1})
+    public void testResetFrameReceivedWithDeliveredNonLastData(long offset)
+    {
+        List<Frame> output = new ArrayList<>();
+        FrameStream stream = new FrameStream.Stream(256, output::add, 0);
+
+        StreamFrame frame = new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(32)), offset, true, true, false);
+        stream.offer(frame);
+
+        // Offer a final size smaller than what already queued/delivered.
+        QuicException failure = assertThrows(QuicException.class, () -> stream.offer(new ResetStreamFrame(0, 0, frame.endOffset() - 1)));
+        assertSame(ErrorCode.FINAL_SIZE_ERROR, failure.getErrorCode());
+    }
+
     @Test
     public void testResetFrameReceivedAfterLastData()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream.Stream(0, output::add);
+        FrameStream stream = new FrameStream.Stream(256, output::add, 0);
 
         int finalSize = 32;
         stream.offer(new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(finalSize)), 0, true, true, true));
@@ -215,7 +268,7 @@ public class FrameStreamTest
     public void testLastDataAfterLastData()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream.Stream(0, output::add);
+        FrameStream stream = new FrameStream.Stream(256, output::add, 0);
 
         int finalSize = 32;
         StreamFrame last = new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(finalSize)), 0, true, true, true);
@@ -231,7 +284,7 @@ public class FrameStreamTest
     public void testResetFrameReceivedInOrderIsNotified()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream.Stream(0, output::add);
+        FrameStream stream = new FrameStream.Stream(256, output::add, 0);
 
         stream.offer(new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(32)), 0, true, true, false));
         assertEquals(1, output.size());
@@ -248,7 +301,7 @@ public class FrameStreamTest
     public void testResetFrameReceivedOutOfOrderIsNotified()
     {
         List<Frame> output = new ArrayList<>();
-        FrameStream stream = new FrameStream.Stream(0, output::add);
+        FrameStream stream = new FrameStream.Stream(256, output::add, 0);
 
         StreamFrame data1 = new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(32)), 0, true, true, false);
         stream.offer(data1);
@@ -264,5 +317,60 @@ public class FrameStreamTest
 
         assertEquals(data1.length() + data2.length(), stream.offset());
         assertInstanceOf(ResetStreamFrame.class, output.getLast());
+    }
+
+    @Test
+    public void testCryptoMaxSize()
+    {
+        List<Frame> output = new ArrayList<>();
+        FrameStream stream = new FrameStream.Crypto(1, output::add, EncryptionLevel.INITIAL);
+
+        CryptoFrame crypto1 = new CryptoFrame(1, RetainableByteBuffer.wrap(ByteBuffer.allocate(24)));
+        stream.offer(crypto1);
+        assertEquals(1, stream.queueSize());
+        assertEquals(0, output.size());
+
+        long offset2 = crypto1.endOffset() + 1;
+        CryptoFrame crypto2 = new CryptoFrame(offset2, RetainableByteBuffer.wrap(ByteBuffer.allocate(48)));
+        QuicException failure = assertThrows(QuicException.class, () -> stream.offer(crypto2));
+
+        assertSame(ErrorCode.CRYPTO_BUFFER_EXCEEDED_ERROR, failure.getErrorCode());
+    }
+
+    @Test
+    public void testStreamMaxSize()
+    {
+        List<Frame> output = new ArrayList<>();
+        FrameStream stream = new FrameStream.Stream(1, output::add, 0);
+
+        StreamFrame data1 = new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(32)), 1, true, true, false);
+        stream.offer(data1);
+        assertEquals(1, stream.queueSize());
+        assertEquals(0, output.size());
+
+        long offset2 = data1.endOffset() + 1;
+        StreamFrame data2 = new StreamFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(32)), offset2, true, true, false);
+        QuicException failure = assertThrows(QuicException.class, () -> stream.offer(data2));
+
+        assertSame(ErrorCode.PROTOCOL_VIOLATION_ERROR, failure.getErrorCode());
+    }
+
+    @Test
+    public void testQueueMaxedUnblockingFrameArrives()
+    {
+        List<Frame> output = new ArrayList<>();
+        FrameStream stream = new FrameStream.Crypto(1, output::add, EncryptionLevel.INITIAL);
+
+        int offset1 = 1;
+        CryptoFrame crypto1 = new CryptoFrame(offset1, RetainableByteBuffer.wrap(ByteBuffer.allocate(24)));
+        stream.offer(crypto1);
+        assertEquals(1, stream.queueSize());
+        assertEquals(0, output.size());
+
+        CryptoFrame crypto0 = new CryptoFrame(0, RetainableByteBuffer.wrap(ByteBuffer.allocate(offset1)));
+        stream.offer(crypto0);
+
+        assertEquals(0, stream.queueSize());
+        assertEquals(2, output.size());
     }
 }

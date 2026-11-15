@@ -67,7 +67,8 @@ public class QuicStream extends AbstractStream
     {
         super(streamId, local);
         this.session = session;
-        this.frameStream = new FrameStream.Stream(streamId, this::processDataFrame);
+        int queueMaxSize = session.getQuicConfiguration().getStreamQueueMaxSize();
+        this.frameStream = new FrameStream.Stream(queueMaxSize, this::processDataFrame, streamId);
         this.readStalled = true;
     }
 

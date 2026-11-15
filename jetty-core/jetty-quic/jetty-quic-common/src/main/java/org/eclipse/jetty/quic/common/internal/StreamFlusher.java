@@ -170,7 +170,7 @@ class StreamFlusher extends CryptoFlusher
                     // A retransmitted frame.
                     if (LOG.isDebugEnabled())
                         LOG.debug("re-generating {} for stream {} on {}", frame, stream, this);
-                    long offset = streamFrame.offset() + (streamFrame.length() - streamFrame.remaining());
+                    long offset = streamFrame.endOffset() - streamFrame.remaining();
                     yield getFramesGenerator().generateStreamFrame(framesAccumulator, streamFrame, offset, Long.MAX_VALUE, maxBytes);
                 }
             }
