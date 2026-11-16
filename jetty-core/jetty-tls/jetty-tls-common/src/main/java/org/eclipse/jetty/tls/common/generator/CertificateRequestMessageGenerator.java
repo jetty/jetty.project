@@ -13,47 +13,58 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CertificateRequestMessage;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class CertificateRequestMessageGenerator extends MessageGenerator
 {
     private final ExtensionsGenerator extensionsGenerator;
 
-    protected CertificateRequestMessageGenerator(ByteBufferPool bufferPool, ExtensionsGenerator extensionsGenerator)
+    protected CertificateRequestMessageGenerator(ByteBufferPool bufferPool, boolean useDirectBuffers, ExtensionsGenerator extensionsGenerator)
     {
-        super(bufferPool);
+        super(bufferPool, useDirectBuffers);
         this.extensionsGenerator = extensionsGenerator;
     }
 
     @Override
-    public void generate(RetainableByteBuffer.Mutable accumulator, Message message)
+    public void generate(BufferAccumulator accumulator, Message message)
     {
         generate(accumulator, (CertificateRequestMessage)message);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, CertificateRequestMessage message)
+    private void generate(BufferAccumulator accumulator, CertificateRequestMessage message)
     {
-        byte[] context = message.context();
-
-        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), true, -1, 0, 0);
-        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
-        if (extensionsLength > 0xFFFF)
-            throw new IllegalStateException("could not generate ClientHello, extensions too long");
-
         // RFC 8446, 4.3.2.
-        int length = 1 + context.length + 2 + extensionsLength;
+        // Field                  | (bytes)
+        // -----------------------+--------
+        // Context length         | (1)
+        // Context                | (C)
+        // Extensions length      | (2)
+        // Extensions             | (M)
+
+        byte[] context = message.context();
+        int capacity = 4 + 1 + context.length + 2;
+        RetainableByteBuffer.Mutable header = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(header);
+
+        int extensionsLength = extensionsGenerator.generate(accumulator, message.extensions());
+        if (extensionsLength > 0xFFFF)
+            throw new IllegalStateException("could not generate CertificateRequest, extensions too long");
+
+        int length = capacity - 4 + extensionsLength;
+        if (length > 0xFFFFFF)
+            throw new IllegalStateException("could not generate CertificateRequest, too long");
 
         int typeAndLength = (message.type().code() << 24) | length;
-        accumulator.putInt(typeAndLength);
+        header.putInt(typeAndLength);
 
-        accumulator.put((byte)context.length);
-        accumulator.put(context);
+        header.put((byte)context.length);
+        header.put(context);
 
-        accumulator.putShort((short)extensionsLength);
-        accumulator.add(extensionsAccumulator);
+        header.putShort((short)extensionsLength);
 
         notifyMessageGenerated(message);
     }

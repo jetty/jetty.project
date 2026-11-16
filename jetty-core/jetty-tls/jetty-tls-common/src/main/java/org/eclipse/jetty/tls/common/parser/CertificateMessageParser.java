@@ -14,18 +14,17 @@
 package org.eclipse.jetty.tls.common.parser;
 
 import java.io.ByteArrayInputStream;
-import java.nio.ByteBuffer;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class CertificateMessageParser implements MessageParser
 {
@@ -48,15 +47,14 @@ public class CertificateMessageParser implements MessageParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return null;
             switch (state)
             {
                 case CONTEXT_LENGTH ->
                 {
-                    int length = byteBuffer.get() & 0xFF;
+                    int length = buffer.getByteAsInt();
                     context = new byte[length];
                     state = State.CONTEXT;
                 }
@@ -64,7 +62,7 @@ public class CertificateMessageParser implements MessageParser
                 {
                     int offset = cursor;
                     int length = Math.min(context.length - cursor, remaining);
-                    byteBuffer.get(context, offset, length);
+                    buffer.get(context, offset, length);
                     cursor += length;
                     if (cursor == context.length)
                     {
@@ -76,7 +74,7 @@ public class CertificateMessageParser implements MessageParser
                 {
                     if (remaining > 2)
                     {
-                        entriesLength = ((byteBuffer.getShort() & 0xFFFF) << 8) | (byteBuffer.get() & 0xFF);
+                        entriesLength = (buffer.getShortAsInt() << 8) | buffer.getByteAsInt();
                         state = State.CERTIFICATE_LENGTH;
                     }
                     else
@@ -87,7 +85,7 @@ public class CertificateMessageParser implements MessageParser
                 }
                 case ENTRIES_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     entriesLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -97,7 +95,7 @@ public class CertificateMessageParser implements MessageParser
                 {
                     if (remaining > 2)
                     {
-                        certificateLength = ((byteBuffer.getShort() & 0xFFFF) << 8) | (byteBuffer.get() & 0xFF);
+                        certificateLength = (buffer.getShortAsInt() << 8) | buffer.getByteAsInt();
                         certificate = new byte[certificateLength];
                         entriesLength -= 3;
                         state = State.CERTIFICATE;
@@ -110,7 +108,7 @@ public class CertificateMessageParser implements MessageParser
                 }
                 case CERTIFICATE_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     certificateLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -124,7 +122,7 @@ public class CertificateMessageParser implements MessageParser
                 {
                     int offset = cursor;
                     int length = Math.min(certificateLength - cursor, remaining);
-                    byteBuffer.get(certificate, offset, length);
+                    buffer.get(certificate, offset, length);
                     cursor += length;
                     if (cursor == certificateLength)
                     {

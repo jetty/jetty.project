@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /// Parser for TLS [Extension]s.
 ///

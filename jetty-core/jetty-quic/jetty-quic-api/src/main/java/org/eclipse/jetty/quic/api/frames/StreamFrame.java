@@ -13,12 +13,10 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /// A QUIC frame carrying stream data bytes.
 public final class StreamFrame extends Frame.WithStreamId.Abstract implements Frame.WithData
@@ -40,11 +38,11 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     }
 
     private final long offset;
-    private final RetainableByteBuffer data;
     private final long length;
     private final boolean endStream;
     private final boolean endData;
-    private RetainableByteBuffer slice;
+    private final RetainableByteBuffer original;
+    private RetainableByteBuffer current;
 
     /// Creates a stream data frame for a [Stream].
     ///
@@ -59,7 +57,7 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     /// Creates a stream frame for a [Stream].
     ///
     /// Applications should not use this constructor but instead
-    /// use [Stream#data(boolean, RetainableByteBuffer, org.eclipse.jetty.util.Callback)].
+    /// use [Stream#data(boolean, RetainableByteBuffer, Callback)].
     ///
     /// @param streamId the stream id generated using [Session#newStreamId(boolean)]
     /// @param data the data bytes to send
@@ -84,12 +82,12 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     {
         super(frameType, streamId);
         this.offset = offset;
-        this.data = data.slice();
-        this.length = data.size();
+        this.length = data.remaining();
         this.endStream = (frameType & END_STREAM_MASK) == END_STREAM_MASK;
         this.endData = endData;
-        this.slice = data;
-        this.slice.retain();
+        this.original = data;
+        // Implicitly retains once.
+        this.current = data.slice();
     }
 
     /// @return the stream offset of the data bytes carried by this frame
@@ -109,35 +107,14 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
     @Override
     public long remaining()
     {
-        return slice.remaining();
+        return current.remaining();
     }
 
     @Override
-    public long skip(long skip)
+    public RetainableByteBuffer acquire()
     {
-        return slice.skip(skip);
-    }
-
-    @Override
-    public StreamFrame slice(long offset, long length)
-    {
-        return slice(type(), offset, length);
-    }
-
-    public StreamFrame slice(long type, long offset, long length)
-    {
-        return new StreamFrame(type, streamId(), slice.slice(length), offset, isEndData());
-    }
-
-    public void accept(Consumer<RetainableByteBuffer> consumer)
-    {
-        consumer.accept(slice);
-    }
-
-    @Override
-    public <T> T map(Function<RetainableByteBuffer, T> mapper)
-    {
-        return mapper.apply(slice);
+        current.retain();
+        return current;
     }
 
     /// @return whether this frame is the last in the stream
@@ -158,15 +135,15 @@ public final class StreamFrame extends Frame.WithStreamId.Abstract implements Fr
 
     public void rewind()
     {
-        slice.release();
-        slice = data.slice();
+        RetainableByteBuffer slice = original.slice();
+        current.release();
+        current = slice;
     }
 
     @Override
     public void close()
     {
-        slice.release();
-        data.release();
+        current.release();
     }
 
     @Override

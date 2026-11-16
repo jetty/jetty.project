@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.NamedGroup;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class SupportedGroupsExtensionParser implements ExtensionParser
 {
@@ -47,8 +46,7 @@ public class SupportedGroupsExtensionParser implements ExtensionParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
             {
                 return -1;
@@ -59,7 +57,7 @@ public class SupportedGroupsExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        totalLength = byteBuffer.getShort() & 0xFFFF;
+                        totalLength = buffer.getShortAsInt();
                         if (totalLength < 4)
                         {
                             throw new IllegalStateException("invalid supported groups extension length " + totalLength);
@@ -74,7 +72,7 @@ public class SupportedGroupsExtensionParser implements ExtensionParser
                 }
                 case TOTAL_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -90,7 +88,7 @@ public class SupportedGroupsExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        listLength = byteBuffer.getShort() & 0xFFFF;
+                        listLength = buffer.getShortAsInt();
                         if (listLength == 0 || listLength % 2 != 0)
                         {
                             throw new IllegalStateException("invalid supported groups list length " + listLength);
@@ -105,7 +103,7 @@ public class SupportedGroupsExtensionParser implements ExtensionParser
                 }
                 case LIST_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     listLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -121,7 +119,7 @@ public class SupportedGroupsExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        group = byteBuffer.getShort() & 0xFFFF;
+                        group = buffer.getShortAsInt();
                         listLength -= 2;
                         int result = groupComplete();
                         if (result > 0)
@@ -137,7 +135,7 @@ public class SupportedGroupsExtensionParser implements ExtensionParser
                 }
                 case GROUP_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     group += b << (8 * cursor);
                     if (cursor == 0)

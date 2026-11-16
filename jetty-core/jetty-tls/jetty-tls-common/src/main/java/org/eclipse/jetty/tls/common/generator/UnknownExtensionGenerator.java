@@ -13,37 +13,38 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.UnknownExtension;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class UnknownExtensionGenerator implements ExtensionGenerator
+public class UnknownExtensionGenerator extends ExtensionGenerator
 {
-    private final int code;
-
-    public UnknownExtensionGenerator(int code)
+    public UnknownExtensionGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, int code)
     {
-        this.code = code;
+        super(byteBufferPool, useDirectBuffers, code);
     }
 
     @Override
-    public int type()
-    {
-        return code;
-    }
-
-    @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
+    public int generate(BufferAccumulator accumulator, Extension extension)
     {
         return generate(accumulator, (UnknownExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, UnknownExtension extension)
+    private int generate(BufferAccumulator accumulator, UnknownExtension extension)
     {
-        accumulator.putShort((short)extension.code());
-        int length = extension.bytes().length;
-        accumulator.putShort((short)length);
-        accumulator.put(extension.bytes());
-        return 2 + 2 + length;
+        byte[] bytes = extension.bytes();
+        int totalLength = bytes.length;
+
+        int capacity = 2 + 2 + totalLength;
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+
+        buffer.putShort((short)extension.code());
+        buffer.putShort((short)totalLength);
+        buffer.put(bytes);
+
+        return capacity;
     }
 }

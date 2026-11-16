@@ -13,12 +13,10 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.SignatureAlgorithm;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class CertificateVerifyMessageParser implements MessageParser
 {
@@ -33,8 +31,7 @@ public class CertificateVerifyMessageParser implements MessageParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return null;
             switch (state)
@@ -43,7 +40,7 @@ public class CertificateVerifyMessageParser implements MessageParser
                 {
                     if (remaining > 2)
                     {
-                        algorithm = byteBuffer.getShort() & 0xFFFF;
+                        algorithm = buffer.getShortAsInt();
                         state = State.SIGNATURE_LENGTH;
                     }
                     else
@@ -54,7 +51,7 @@ public class CertificateVerifyMessageParser implements MessageParser
                 }
                 case ALGORITHM_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     algorithm += b << (8 * cursor);
                     if (cursor == 0)
@@ -64,7 +61,7 @@ public class CertificateVerifyMessageParser implements MessageParser
                 {
                     if (remaining > 2)
                     {
-                        signatureLength = byteBuffer.getShort() & 0xFFFF;
+                        signatureLength = buffer.getShortAsInt();
                         signature = new byte[signatureLength];
                         state = State.SIGNATURE;
                     }
@@ -76,7 +73,7 @@ public class CertificateVerifyMessageParser implements MessageParser
                 }
                 case SIGNATURE_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     signatureLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -89,13 +86,11 @@ public class CertificateVerifyMessageParser implements MessageParser
                 {
                     int offset = cursor;
                     int length = Math.min(signatureLength - cursor, remaining);
-                    byteBuffer.get(signature, offset, length);
+                    buffer.get(signature, offset, length);
                     cursor += length;
                     if (cursor == signatureLength)
                     {
                         SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.from(algorithm);
-                        if (signatureAlgorithm == null)
-                            throw new IllegalArgumentException("unknown signature algorithm " + Integer.toHexString(algorithm));
                         CertificateVerifyMessage message = new CertificateVerifyMessage(signatureAlgorithm, signature);
                         state = State.ALGORITHM;
                         cursor = 0;

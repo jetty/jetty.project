@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.ServerNameExtension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /// Extension format:
 /// ```
@@ -59,8 +58,7 @@ public class ServerNameExtensionParser implements ExtensionParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return -1;
             switch (state)
@@ -69,7 +67,7 @@ public class ServerNameExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        totalLength = (byteBuffer.getShort() & 0xFFFF);
+                        totalLength = buffer.getShortAsInt();
                         if (totalLength < 4)
                             throw new IllegalStateException("invalid server name extension length " + totalLength);
                         state = State.LIST_LENGTH;
@@ -82,7 +80,7 @@ public class ServerNameExtensionParser implements ExtensionParser
                 }
                 case TOTAL_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -96,7 +94,7 @@ public class ServerNameExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        listLength = (byteBuffer.getShort() & 0xFFFF);
+                        listLength = buffer.getShortAsInt();
                         if (listLength < 2)
                             throw new IllegalStateException("invalid server name list length " + listLength);
                         state = State.TYPE;
@@ -109,7 +107,7 @@ public class ServerNameExtensionParser implements ExtensionParser
                 }
                 case LIST_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     listLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -121,7 +119,7 @@ public class ServerNameExtensionParser implements ExtensionParser
                 }
                 case TYPE ->
                 {
-                    byte type = byteBuffer.get();
+                    byte type = buffer.get();
                     if (type != 0x00)
                         throw new IllegalStateException("invalid server name type " + type);
                     listLength -= 1;
@@ -131,7 +129,7 @@ public class ServerNameExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        length = (byteBuffer.getShort() & 0xFFFF);
+                        length = buffer.getShortAsInt();
                         listLength -= 2;
                         name = new byte[length];
                         state = State.NAME;
@@ -144,7 +142,7 @@ public class ServerNameExtensionParser implements ExtensionParser
                 }
                 case LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     length += b << (8 * cursor);
                     if (cursor == 0)
@@ -158,7 +156,7 @@ public class ServerNameExtensionParser implements ExtensionParser
                 {
                     if (remaining >= length)
                     {
-                        byteBuffer.get(name);
+                        buffer.get(name);
                         listLength -= length;
                         int result = nameComplete();
                         if (result > 0)
@@ -172,7 +170,7 @@ public class ServerNameExtensionParser implements ExtensionParser
                 }
                 case NAME_BYTES ->
                 {
-                    name[length - cursor] = byteBuffer.get();
+                    name[length - cursor] = buffer.get();
                     --cursor;
                     if (cursor == 0)
                     {

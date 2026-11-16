@@ -15,35 +15,31 @@ package org.eclipse.jetty.tls.common.generator;
 
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.KeyShare;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.KeyShareExtension;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class KeyShareExtensionGenerator implements ExtensionGenerator
+public class KeyShareExtensionGenerator extends ExtensionGenerator
 {
     private final boolean client;
 
-    public KeyShareExtensionGenerator(boolean client)
+    public KeyShareExtensionGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, boolean client)
     {
+        super(byteBufferPool, useDirectBuffers, KeyShareExtension.CODE);
         this.client = client;
     }
 
     @Override
-    public int type()
-    {
-        return KeyShareExtension.CODE;
-    }
-
-    @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
+    public int generate(BufferAccumulator accumulator, Extension extension)
     {
         return generate(accumulator, (KeyShareExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, KeyShareExtension extension)
+    private int generate(BufferAccumulator accumulator, KeyShareExtension extension)
     {
-        accumulator.putShort((short)extension.code());
         List<KeyShare> keyShares = extension.keyShares();
         if (client)
         {
@@ -51,16 +47,23 @@ public class KeyShareExtensionGenerator implements ExtensionGenerator
                 .mapToInt(keyShare -> 2 + 2 + keyShare.keyExchange().length)
                 .sum();
             int totalLength = 2 + listLength;
-            accumulator.putShort((short)totalLength);
-            accumulator.putShort((short)listLength);
+
+            int capacity = 2 + 2 + totalLength;
+            RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+            accumulator.addRetained(buffer);
+
+            buffer.putShort((short)extension.code());
+            buffer.putShort((short)totalLength);
+            buffer.putShort((short)listLength);
             for (KeyShare keyShare : keyShares)
             {
-                accumulator.putShort((short)keyShare.namedGroup().code());
+                buffer.putShort((short)keyShare.namedGroup().code());
                 byte[] keyExchange = keyShare.keyExchange();
-                accumulator.putShort((short)keyExchange.length);
-                accumulator.put(keyExchange);
+                buffer.putShort((short)keyExchange.length);
+                buffer.put(keyExchange);
             }
-            return 2 + 2 + totalLength;
+
+            return capacity;
         }
         else
         {
@@ -70,24 +73,24 @@ public class KeyShareExtensionGenerator implements ExtensionGenerator
             KeyShare keyShare = keyShares.getFirst();
             // Detect whether it is a ServerHello or a RetryHelloRequest.
             int length = keyShare.keyExchange().length;
+            // ServerHello: group + length + key exchange.
+            // RetryHelloRequest: group only.
+            int totalLength = length > 0 ? 2 + 2 + length : 2;
+
+            int capacity = 2 + 2 + totalLength;
+            RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+            accumulator.addRetained(buffer);
+
+            buffer.putShort((short)extension.code());
+            buffer.putShort((short)totalLength);
+            buffer.putShort((short)keyShare.namedGroup().code());
             if (length > 0)
             {
-                // ServerHello.
-                int totalLength = 2 + 2 + length;
-                accumulator.putShort((short)totalLength);
-                accumulator.putShort((short)keyShare.namedGroup().code());
-                accumulator.putShort((short)length);
-                accumulator.put(keyShare.keyExchange());
-                return 2 + 2 + totalLength;
+                buffer.putShort((short)length);
+                buffer.put(keyShare.keyExchange());
             }
-            else
-            {
-                // RetryHelloRequest.
-                int totalLength = 2;
-                accumulator.putShort((short)totalLength);
-                accumulator.putShort((short)keyShare.namedGroup().code());
-                return 2 + 2 + totalLength;
-            }
+
+            return capacity;
         }
     }
 }

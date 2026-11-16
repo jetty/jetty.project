@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.ClientHelloMessage;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ClientHelloMessageParser implements MessageParser
 {
@@ -46,8 +45,7 @@ public class ClientHelloMessageParser implements MessageParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return null;
             switch (state)
@@ -56,7 +54,7 @@ public class ClientHelloMessageParser implements MessageParser
                 {
                     if (remaining > 1)
                     {
-                        version = byteBuffer.getShort() & 0xFFFF;
+                        version = buffer.getShortAsInt();
                         if (version != TLSVersion.TLS_1_2.code())
                             throw new IllegalStateException("invalid ClientHello TLS version 0x" + Integer.toHexString(version));
                         version = 0;
@@ -71,7 +69,7 @@ public class ClientHelloMessageParser implements MessageParser
                 }
                 case VERSION_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     version += b << (8 * cursor);
                     if (cursor == 0)
@@ -87,7 +85,7 @@ public class ClientHelloMessageParser implements MessageParser
                 {
                     int offset = cursor;
                     int length = Math.min(random.length - cursor, remaining);
-                    byteBuffer.get(random, offset, length);
+                    buffer.get(random, offset, length);
                     cursor += length;
                     if (cursor == random.length)
                     {
@@ -97,7 +95,7 @@ public class ClientHelloMessageParser implements MessageParser
                 }
                 case SESSION_ID_LENGTH ->
                 {
-                    value = byteBuffer.get() & 0xFF;
+                    value = buffer.getByteAsInt();
                     sessionId = new byte[value];
                     state = State.SESSION_ID;
                 }
@@ -105,7 +103,7 @@ public class ClientHelloMessageParser implements MessageParser
                 {
                     int offset = cursor;
                     int length = Math.min(value - cursor, remaining);
-                    byteBuffer.get(sessionId, offset, length);
+                    buffer.get(sessionId, offset, length);
                     cursor += length;
                     if (cursor == value)
                     {
@@ -118,7 +116,7 @@ public class ClientHelloMessageParser implements MessageParser
                 {
                     if (remaining > 1)
                     {
-                        value = byteBuffer.getShort() & 0xFFFF;
+                        value = buffer.getShortAsInt();
                         state = State.CIPHER_SUITE;
                     }
                     else
@@ -129,7 +127,7 @@ public class ClientHelloMessageParser implements MessageParser
                 }
                 case CIPHER_SUITES_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     value += b << (8 * cursor);
                     if (cursor == 0)
@@ -139,11 +137,10 @@ public class ClientHelloMessageParser implements MessageParser
                 {
                     if (remaining > 1)
                     {
-                        cipher = byteBuffer.getShort() & 0xFFFF;
+                        cipher = buffer.getShortAsInt();
                         value -= 2;
                         CipherSuite cipherSuite = CipherSuite.from(cipher);
-                        if (cipherSuite != null)
-                            cipherSuites.add(cipherSuite);
+                        cipherSuites.add(cipherSuite);
                         cipher = 0;
                         if (value == 0)
                             state = State.COMPRESSION_METHODS_LENGTH;
@@ -156,15 +153,14 @@ public class ClientHelloMessageParser implements MessageParser
                 }
                 case CIPHER_SUITE_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     cipher += b << (8 * cursor);
                     if (cursor == 0)
                     {
                         value -= 2;
                         CipherSuite cipherSuite = CipherSuite.from(cipher);
-                        if (cipherSuite != null)
-                            cipherSuites.add(cipherSuite);
+                        cipherSuites.add(cipherSuite);
                         cipher = 0;
                         if (value == 0)
                             state = State.COMPRESSION_METHODS_LENGTH;
@@ -174,13 +170,13 @@ public class ClientHelloMessageParser implements MessageParser
                 }
                 case COMPRESSION_METHODS_LENGTH ->
                 {
-                    cursor = byteBuffer.get() & 0xFF;
+                    cursor = buffer.getByteAsInt();
                     state = State.COMPRESSION_METHODS;
                 }
                 case COMPRESSION_METHODS ->
                 {
                     // Skip compression methods.
-                    byteBuffer.get();
+                    buffer.get();
                     --cursor;
                     if (cursor == 0)
                         state = State.EXTENSIONS;

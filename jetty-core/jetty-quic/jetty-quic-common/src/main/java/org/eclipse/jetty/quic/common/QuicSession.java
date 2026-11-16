@@ -30,10 +30,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RateControl;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
@@ -81,6 +79,9 @@ import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.ReadyTask;
@@ -956,7 +957,7 @@ public abstract class QuicSession extends AbstractSession
             else
             {
                 // RFC-9000 #21.2: the remote address cannot change during the handshake, discard.
-                buffer.skip(buffer.size());
+                buffer.consume(buffer.remaining());
                 return;
             }
         }
@@ -1513,14 +1514,17 @@ public abstract class QuicSession extends AbstractSession
         try
         {
             CryptoFrame cryptoFrame = (CryptoFrame)frame;
-            while (cryptoFrame.remaining() > 0)
+            try (RetainableByteBuffer buffer = cryptoFrame.acquire())
             {
-                Message message = cryptoFrame.map(data -> getTLSEngine().getMessagesParser().parse(data));
-                if (LOG.isDebugEnabled())
-                    LOG.debug("parsed {} on {}", message, this);
-                if (message == null)
-                    return;
-                processMessage(message);
+                while (buffer.hasRemaining())
+                {
+                    Message message = getTLSEngine().getMessagesParser().parse(buffer);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("parsed {} on {}", message, this);
+                    if (message == null)
+                        return;
+                    processMessage(message);
+                }
             }
         }
         catch (Throwable x)
@@ -1678,25 +1682,23 @@ public abstract class QuicSession extends AbstractSession
         if (LOG.isDebugEnabled())
             LOG.debug("sending TLS messages {} on {}", messages, this);
 
-        // TODO: why the messages need to be generated here?
-        //  Perhaps I can have a version of CryptoFrame that carries the messages.
-        //  When parsing, it must be a RBB because they can be out of order.
-        //  But for generation, should not be necessary.
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), getQuicConfiguration().isUseOutputDirectByteBuffers(), -1, 0, 0);
+        BufferAccumulator accumulator = new BufferAccumulator();
         try
         {
             for (Message message : messages)
             {
                 getTLSEngine().getMessagesGenerator().generate(accumulator, message);
             }
-            // The offset will be calculated properly when flushing the frame.
-            CryptoFrame cryptoFrame = new CryptoFrame(-1, accumulator);
-            crypto(encryptionLevel, cryptoFrame, callback);
-            accumulator.release();
+            try (RetainableByteBuffer buffer = accumulator.take())
+            {
+                // The offset will be calculated properly when flushing the frame.
+                CryptoFrame cryptoFrame = new CryptoFrame(-1, buffer);
+                crypto(encryptionLevel, cryptoFrame, callback);
+            }
         }
         catch (Throwable x)
         {
-            accumulator.release();
+            accumulator.clear();
             callback.failed(x);
         }
     }

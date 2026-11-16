@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class MessagesParser
 {
@@ -49,17 +48,16 @@ public class MessagesParser
 
     public Message parse(RetainableByteBuffer buffer)
     {
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (true)
         {
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return null;
             switch (state)
             {
                 case TYPE ->
                 {
-                    int messageType = byteBuffer.get() & 0xFF;
+                    int messageType = buffer.getByteAsInt();
                     type = Message.Type.from(messageType);
                     if (type == null)
                         throw new UnsupportedOperationException("could not parse unsupported TLS message 0x" + Integer.toHexString(messageType));
@@ -69,7 +67,7 @@ public class MessagesParser
                 {
                     if (remaining > 2)
                     {
-                        length = ((byteBuffer.getShort() & 0xFFFF) << 8) | (byteBuffer.get() & 0xFF);
+                        length = (buffer.getShortAsInt() << 8) | buffer.getByteAsInt();
                         state = State.MESSAGE;
                     }
                     else
@@ -80,7 +78,7 @@ public class MessagesParser
                 }
                 case LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     length += b << (8 * cursor);
                     if (cursor == 0)

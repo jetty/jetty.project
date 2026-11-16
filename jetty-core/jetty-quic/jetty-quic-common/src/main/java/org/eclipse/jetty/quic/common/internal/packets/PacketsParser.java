@@ -15,11 +15,11 @@ package org.eclipse.jetty.quic.common.internal.packets;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class PacketsParser
 {

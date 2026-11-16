@@ -28,8 +28,6 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.HKDFParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.PacketBuffers;
@@ -42,6 +40,7 @@ import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.common.HKDF;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

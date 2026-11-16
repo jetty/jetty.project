@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class FinishedMessageParser implements MessageParser
 {
@@ -27,11 +25,10 @@ public class FinishedMessageParser implements MessageParser
     @Override
     public Message parse(int messageLength, RetainableByteBuffer buffer)
     {
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
         if (verifyData == null)
             verifyData = new byte[messageLength];
-        int length = Math.min(messageLength - cursor, byteBuffer.remaining());
-        byteBuffer.get(verifyData, cursor, length);
+        int length = Math.min(messageLength - cursor, Math.toIntExact(buffer.remaining()));
+        buffer.get(verifyData, cursor, length);
         cursor += length;
         if (cursor == messageLength)
         {

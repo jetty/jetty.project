@@ -17,9 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.KeyShare;
 import org.eclipse.jetty.tls.NamedGroup;
 import org.eclipse.jetty.tls.SignatureAlgorithm;
@@ -37,6 +34,10 @@ import org.eclipse.jetty.tls.ext.ServerPreSharedKeyExtension;
 import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -52,38 +53,42 @@ public class ExtensionsGenerateParseTest
     public void testGenerateParseALPNExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        BufferAccumulator accumulator = new BufferAccumulator();
 
         ALPNExtension expected = new ALPNExtension(List.of("h2", "http/1.1"));
-        ExtensionsGenerator generator = new ExtensionsGenerator(client);
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool, false, client);
         int length = generator.generate(accumulator, List.of(expected));
         assertEquals(accumulator.remaining(), length);
 
         ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
         assertNull(parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer)));
-        List<Extension> extensions = parser.parse(accumulator);
-        assertNotNull(extensions);
-
-        assertEquals(1, extensions.size());
-        ALPNExtension result = (ALPNExtension)extensions.getFirst();
-        assertEquals(expected.protocols(), result.protocols());
-
-        // Parse again one byte at a time.
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                List<Extension> extensions = parser.parse(slice);
+                assertNotNull(extensions);
+                assertEquals(1, extensions.size());
+                ALPNExtension result = (ALPNExtension)extensions.getFirst();
+                assertEquals(expected.protocols(), result.protocols());
+            }
 
-        assertNotNull(extensions);
-        assertEquals(1, extensions.size());
-        result = (ALPNExtension)extensions.getFirst();
-        assertEquals(expected.protocols(), result.protocols());
+            // Parse again one byte at a time.
+            parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
+            List<Extension> extensions = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    extensions = parser.parse(slice);
+                }
+            }
+            assertNotNull(extensions);
+            assertEquals(1, extensions.size());
+            ALPNExtension result = (ALPNExtension)extensions.getFirst();
+            assertEquals(expected.protocols(), result.protocols());
+        }
     }
 
     @ParameterizedTest
@@ -91,7 +96,7 @@ public class ExtensionsGenerateParseTest
     public void testGenerateParseKeyShareExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        BufferAccumulator accumulator = new BufferAccumulator();
 
         byte[] keyExchange1 = new byte[32];
         ThreadLocalRandom.current().nextBytes(keyExchange1);
@@ -101,35 +106,39 @@ public class ExtensionsGenerateParseTest
         KeyShare keyShare2 = new KeyShare(NamedGroup.secp256r1, keyExchange2);
         List<KeyShare> keyShares = client ? List.of(keyShare1, keyShare2) : List.of(keyShare1);
         KeyShareExtension expected = new KeyShareExtension(keyShares);
-        ExtensionsGenerator generator = new ExtensionsGenerator(client);
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool, false, client);
         int length = generator.generate(accumulator, List.of(expected));
         assertEquals(accumulator.remaining(), length);
 
         ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
-        List<Extension> extensions = parser.parse(accumulator);
-        assertNotNull(extensions);
-
-        assertEquals(1, extensions.size());
-        KeyShareExtension result = (KeyShareExtension)extensions.getFirst();
-        assertEquals(expected.keyShares(), result.keyShares());
-
-        // Parse again one byte at a time.
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        assertNull(parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer)));
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                List<Extension> extensions = parser.parse(slice);
+                assertNotNull(extensions);
+                assertEquals(1, extensions.size());
+                KeyShareExtension result = (KeyShareExtension)extensions.getFirst();
+                assertEquals(expected.keyShares(), result.keyShares());
+            }
 
-        assertNotNull(extensions);
-        assertEquals(1, extensions.size());
-        result = (KeyShareExtension)extensions.getFirst();
-        assertEquals(expected.keyShares(), result.keyShares());
+            // Parse again one byte at a time.
+            parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
+            List<Extension> extensions = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    extensions = parser.parse(slice);
+                }
+            }
+            assertNotNull(extensions);
+            assertEquals(1, extensions.size());
+            KeyShareExtension result = (KeyShareExtension)extensions.getFirst();
+            assertEquals(expected.keyShares(), result.keyShares());
+        }
     }
 
     @ParameterizedTest
@@ -137,38 +146,42 @@ public class ExtensionsGenerateParseTest
     public void testGenerateParseServerNameExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        BufferAccumulator accumulator = new BufferAccumulator();
 
         ServerNameExtension expected = new ServerNameExtension("webtide.com");
-        ExtensionsGenerator generator = new ExtensionsGenerator(client);
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool, false, client);
         int length = generator.generate(accumulator, List.of(expected));
         assertEquals(accumulator.remaining(), length);
 
         ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
-        List<Extension> extensions = parser.parse(accumulator);
-        assertNotNull(extensions);
-
-        assertEquals(1, extensions.size());
-        ServerNameExtension result = (ServerNameExtension)extensions.getFirst();
-        assertEquals(expected.serverName(), result.serverName());
-
-        // Parse again one byte at a time.
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        assertNull(parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer)));
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                List<Extension> extensions = parser.parse(slice);
+                assertNotNull(extensions);
+                assertEquals(1, extensions.size());
+                ServerNameExtension result = (ServerNameExtension)extensions.getFirst();
+                assertEquals(expected.serverName(), result.serverName());
+            }
 
-        assertNotNull(extensions);
-        assertEquals(1, extensions.size());
-        result = (ServerNameExtension)extensions.getFirst();
-        assertEquals(expected.serverName(), result.serverName());
+            // Parse again one byte at a time.
+            parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
+            List<Extension> extensions = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    extensions = parser.parse(slice);
+                }
+            }
+            assertNotNull(extensions);
+            assertEquals(1, extensions.size());
+            ServerNameExtension result = (ServerNameExtension)extensions.getFirst();
+            assertEquals(expected.serverName(), result.serverName());
+        }
     }
 
     @ParameterizedTest
@@ -176,38 +189,42 @@ public class ExtensionsGenerateParseTest
     public void testGenerateParseSignatureAlgorithmsExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        BufferAccumulator accumulator = new BufferAccumulator();
 
         SignatureAlgorithmsExtension expected = new SignatureAlgorithmsExtension(List.of(SignatureAlgorithm.ECDSA_SECP256R1_SHA256, SignatureAlgorithm.RSA_PSS_RSAE_SHA256));
-        ExtensionsGenerator generator = new ExtensionsGenerator(client);
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool, false, client);
         int length = generator.generate(accumulator, List.of(expected));
         assertEquals(accumulator.remaining(), length);
 
         ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
-        List<Extension> extensions = parser.parse(accumulator);
-        assertNotNull(extensions);
-
-        assertEquals(1, extensions.size());
-        SignatureAlgorithmsExtension result = (SignatureAlgorithmsExtension)extensions.getFirst();
-        assertEquals(expected.signatureAlgorithms(), result.signatureAlgorithms());
-
-        // Parse again one byte at a time.
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        assertNull(parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer)));
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                List<Extension> extensions = parser.parse(slice);
+                assertNotNull(extensions);
+                assertEquals(1, extensions.size());
+                SignatureAlgorithmsExtension result = (SignatureAlgorithmsExtension)extensions.getFirst();
+                assertEquals(expected.signatureAlgorithms(), result.signatureAlgorithms());
+            }
 
-        assertNotNull(extensions);
-        assertEquals(1, extensions.size());
-        result = (SignatureAlgorithmsExtension)extensions.getFirst();
-        assertEquals(expected.signatureAlgorithms(), result.signatureAlgorithms());
+            // Parse again one byte at a time.
+            parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
+            List<Extension> extensions = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    extensions = parser.parse(slice);
+                }
+            }
+            assertNotNull(extensions);
+            assertEquals(1, extensions.size());
+            SignatureAlgorithmsExtension result = (SignatureAlgorithmsExtension)extensions.getFirst();
+            assertEquals(expected.signatureAlgorithms(), result.signatureAlgorithms());
+        }
     }
 
     @ParameterizedTest
@@ -215,39 +232,43 @@ public class ExtensionsGenerateParseTest
     public void testGenerateParseSupportedVersionsExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        BufferAccumulator accumulator = new BufferAccumulator();
 
         List<TLSVersion> versions = client ? List.of(TLSVersion.TLS_1_3, TLSVersion.TLS_1_2) : List.of(TLSVersion.TLS_1_3);
         SupportedVersionsExtension expected = new SupportedVersionsExtension(versions);
-        ExtensionsGenerator generator = new ExtensionsGenerator(client);
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool, false, client);
         int length = generator.generate(accumulator, List.of(expected));
         assertEquals(accumulator.remaining(), length);
 
         ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
-        List<Extension> extensions = parser.parse(accumulator);
-        assertNotNull(extensions);
-
-        assertEquals(1, extensions.size());
-        SupportedVersionsExtension result = (SupportedVersionsExtension)extensions.getFirst();
-        assertEquals(expected.versions(), result.versions());
-
-        // Parse again one byte at a time.
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        assertNull(parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer)));
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                List<Extension> extensions = parser.parse(slice);
+                assertNotNull(extensions);
+                assertEquals(1, extensions.size());
+                SupportedVersionsExtension result = (SupportedVersionsExtension)extensions.getFirst();
+                assertEquals(expected.versions(), result.versions());
+            }
 
-        assertNotNull(extensions);
-        assertEquals(1, extensions.size());
-        result = (SupportedVersionsExtension)extensions.getFirst();
-        assertEquals(expected.versions(), result.versions());
+            // Parse again one byte at a time.
+            parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
+            List<Extension> extensions = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    extensions = parser.parse(slice);
+                }
+            }
+            assertNotNull(extensions);
+            assertEquals(1, extensions.size());
+            SupportedVersionsExtension result = (SupportedVersionsExtension)extensions.getFirst();
+            assertEquals(expected.versions(), result.versions());
+        }
     }
 
     @ParameterizedTest
@@ -255,38 +276,42 @@ public class ExtensionsGenerateParseTest
     public void testGenerateParseSupportedGroupsExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        BufferAccumulator accumulator = new BufferAccumulator();
 
         SupportedGroupsExtension expected = new SupportedGroupsExtension(List.of(NamedGroup.secp256r1, NamedGroup.ffdhe2048));
-        ExtensionsGenerator generator = new ExtensionsGenerator(client);
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool, false, client);
         int length = generator.generate(accumulator, List.of(expected));
         assertEquals(accumulator.remaining(), length);
 
         ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
-        List<Extension> extensions = parser.parse(accumulator);
-        assertNotNull(extensions);
-
-        assertEquals(1, extensions.size());
-        SupportedGroupsExtension result = (SupportedGroupsExtension)extensions.getFirst();
-        assertEquals(expected.namedGroups(), result.namedGroups());
-
-        // Parse again one byte at a time.
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        assertNull(parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer)));
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                List<Extension> extensions = parser.parse(slice);
+                assertNotNull(extensions);
+                assertEquals(1, extensions.size());
+                SupportedGroupsExtension result = (SupportedGroupsExtension)extensions.getFirst();
+                assertEquals(expected.namedGroups(), result.namedGroups());
+            }
 
-        assertNotNull(extensions);
-        assertEquals(1, extensions.size());
-        result = (SupportedGroupsExtension)extensions.getFirst();
-        assertEquals(expected.namedGroups(), result.namedGroups());
+            // Parse again one byte at a time.
+            parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
+            List<Extension> extensions = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    extensions = parser.parse(slice);
+                }
+            }
+            assertNotNull(extensions);
+            assertEquals(1, extensions.size());
+            SupportedGroupsExtension result = (SupportedGroupsExtension)extensions.getFirst();
+            assertEquals(expected.namedGroups(), result.namedGroups());
+        }
     }
 
     @ParameterizedTest
@@ -294,83 +319,91 @@ public class ExtensionsGenerateParseTest
     public void testGenerateParseEarlyDataExtension(boolean client)
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        BufferAccumulator accumulator = new BufferAccumulator();
 
         EarlyDataExtension expected = new EarlyDataExtension(2L * Integer.MAX_VALUE);
-        ExtensionsGenerator generator = new ExtensionsGenerator(client);
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool, false, client);
         int length = generator.generate(accumulator, List.of(expected));
         assertEquals(accumulator.remaining(), length);
 
         ExtensionsParser parser = new ExtensionsParser(!client);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
-        List<Extension> extensions = parser.parse(accumulator);
-        assertNotNull(extensions);
-
-        assertEquals(1, extensions.size());
-        EarlyDataExtension result = (EarlyDataExtension)extensions.getFirst();
-        assertEquals(expected.maxData(), result.maxData());
-
-        // Parse again one byte at a time.
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        assertNull(parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer)));
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                List<Extension> extensions = parser.parse(slice);
+                assertNotNull(extensions);
+                assertEquals(1, extensions.size());
+                EarlyDataExtension result = (EarlyDataExtension)extensions.getFirst();
+                assertEquals(expected.maxData(), result.maxData());
+            }
 
-        assertNotNull(extensions);
-        assertEquals(1, extensions.size());
-        result = (EarlyDataExtension)extensions.getFirst();
-        assertEquals(expected.maxData(), result.maxData());
+            // Parse again one byte at a time.
+            parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
+            List<Extension> extensions = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    extensions = parser.parse(slice);
+                }
+            }
+            assertNotNull(extensions);
+            assertEquals(1, extensions.size());
+            EarlyDataExtension result = (EarlyDataExtension)extensions.getFirst();
+            assertEquals(expected.maxData(), result.maxData());
+        }
     }
 
     @Test
     public void testGenerateParseServerPreSharedKeyExtension()
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        BufferAccumulator accumulator = new BufferAccumulator();
 
         ServerPreSharedKeyExtension expected = new ServerPreSharedKeyExtension(3);
-        ExtensionsGenerator generator = new ExtensionsGenerator(false);
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool, false, false);
         int length = generator.generate(accumulator, List.of(expected));
         assertEquals(accumulator.remaining(), length);
 
         ExtensionsParser parser = new ExtensionsParser(true);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
-        List<Extension> extensions = parser.parse(accumulator);
-        assertNotNull(extensions);
-
-        assertEquals(1, extensions.size());
-        ServerPreSharedKeyExtension result = (ServerPreSharedKeyExtension)extensions.getFirst();
-        assertEquals(expected.identityIndex(), result.identityIndex());
-
-        // Parse again one byte at a time.
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        assertNull(parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer)));
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                List<Extension> extensions = parser.parse(slice);
+                assertNotNull(extensions);
+                assertEquals(1, extensions.size());
+                ServerPreSharedKeyExtension result = (ServerPreSharedKeyExtension)extensions.getFirst();
+                assertEquals(expected.identityIndex(), result.identityIndex());
+            }
 
-        assertNotNull(extensions);
-        assertEquals(1, extensions.size());
-        result = (ServerPreSharedKeyExtension)extensions.getFirst();
-        assertEquals(expected.identityIndex(), result.identityIndex());
+            // Parse again one byte at a time.
+            parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
+            List<Extension> extensions = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    extensions = parser.parse(slice);
+                }
+            }
+            assertNotNull(extensions);
+            assertEquals(1, extensions.size());
+            ServerPreSharedKeyExtension result = (ServerPreSharedKeyExtension)extensions.getFirst();
+            assertEquals(expected.identityIndex(), result.identityIndex());
+        }
     }
 
     @Test
     public void testGenerateParseClientPreSharedKeyExtension()
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        BufferAccumulator accumulator = new BufferAccumulator();
 
         byte[] identity1 = new byte[] {1, 2, 3, 4, 5};
         byte[] identity2 = new byte[] {6, 7, 8};
@@ -378,34 +411,38 @@ public class ExtensionsGenerateParseTest
         byte[] binder2 = {0x0C, 0x0D, 0x0E, 0x0F};
         List<PreSharedKeyIdentity> identities = List.of(new PreSharedKeyIdentity(identity1, 39, binder1), new PreSharedKeyIdentity(identity2, 41, binder2));
         ClientPreSharedKeyExtension expected = new ClientPreSharedKeyExtension(identities, true);
-        ExtensionsGenerator generator = new ExtensionsGenerator(true);
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool, false, true);
         int length = generator.generate(accumulator, List.of(expected));
         assertEquals(accumulator.remaining(), length);
 
         ExtensionsParser parser = new ExtensionsParser(false);
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
-        List<Extension> extensions = parser.parse(accumulator);
-        assertNotNull(extensions);
-
-        assertEquals(1, extensions.size());
-        ClientPreSharedKeyExtension result = (ClientPreSharedKeyExtension)extensions.getFirst();
-        assertEquals(expected.identities(), result.identities());
-
-        // Parse again one byte at a time.
-        parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        assertNull(parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer)));
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                List<Extension> extensions = parser.parse(slice);
+                assertNotNull(extensions);
+                assertEquals(1, extensions.size());
+                ClientPreSharedKeyExtension result = (ClientPreSharedKeyExtension)extensions.getFirst();
+                assertEquals(expected.identities(), result.identities());
+            }
 
-        assertNotNull(extensions);
-        assertEquals(1, extensions.size());
-        result = (ClientPreSharedKeyExtension)extensions.getFirst();
-        assertEquals(expected.identities(), result.identities());
+            // Parse again one byte at a time.
+            parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
+            List<Extension> extensions = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    extensions = parser.parse(slice);
+                }
+            }
+            assertNotNull(extensions);
+            assertEquals(1, extensions.size());
+            ClientPreSharedKeyExtension result = (ClientPreSharedKeyExtension)extensions.getFirst();
+            assertEquals(expected.identities(), result.identities());
+        }
     }
 }

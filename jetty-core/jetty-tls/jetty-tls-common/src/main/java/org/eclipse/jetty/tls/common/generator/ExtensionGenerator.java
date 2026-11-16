@@ -13,18 +13,43 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 
 /// A generator for a TLS extension.
-public interface ExtensionGenerator
+public abstract class ExtensionGenerator
 {
+    private final ByteBufferPool byteBufferPool;
+    private final boolean useDirectBuffers;
+    private final int code;
+
+    protected ExtensionGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, int code)
+    {
+        this.byteBufferPool = byteBufferPool;
+        this.useDirectBuffers = useDirectBuffers;
+        this.code = code;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return byteBufferPool;
+    }
+
+    public boolean isUseDirectBuffers()
+    {
+        return useDirectBuffers;
+    }
+
     /// @return the TLS extension code
-    int type();
+    public int type()
+    {
+        return code;
+    }
 
     /// @param accumulator the accumulator to generate the extension bytes into
     /// @param extension the extension to generate
     /// @return the number of bytes generated for the extension,
     /// including the extension code, length, and body
-    int generate(RetainableByteBuffer.Mutable accumulator, Extension extension);
+    public abstract int generate(BufferAccumulator accumulator, Extension extension);
 }

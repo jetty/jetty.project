@@ -13,29 +13,37 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.ServerPreSharedKeyExtension;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class ServerPreSharedKeyExtensionGenerator implements ExtensionGenerator
+public class ServerPreSharedKeyExtensionGenerator extends ExtensionGenerator
 {
-    @Override
-    public int type()
+    public ServerPreSharedKeyExtensionGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers)
     {
-        return ServerPreSharedKeyExtension.CODE;
+        super(byteBufferPool, useDirectBuffers, ServerPreSharedKeyExtension.CODE);
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
+    public int generate(BufferAccumulator accumulator, Extension extension)
     {
         return generate(accumulator, (ServerPreSharedKeyExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, ServerPreSharedKeyExtension extension)
+    private int generate(BufferAccumulator accumulator, ServerPreSharedKeyExtension extension)
     {
-        accumulator.putShort((short)extension.code());
-        accumulator.putShort((short)2);
-        accumulator.putShort((short)extension.identityIndex());
-        return 2 + 2 + 2;
+        int totalLength = 2;
+
+        int capacity = 2 + 2 + totalLength;
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+
+        buffer.putShort((short)extension.code());
+        buffer.putShort((short)totalLength);
+        buffer.putShort((short)extension.identityIndex());
+
+        return capacity;
     }
 }

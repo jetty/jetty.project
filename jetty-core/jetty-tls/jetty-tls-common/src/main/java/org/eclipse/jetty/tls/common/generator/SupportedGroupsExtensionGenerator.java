@@ -15,37 +15,44 @@ package org.eclipse.jetty.tls.common.generator;
 
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.NamedGroup;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class SupportedGroupsExtensionGenerator implements ExtensionGenerator
+public class SupportedGroupsExtensionGenerator extends ExtensionGenerator
 {
-    @Override
-    public int type()
+    public SupportedGroupsExtensionGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers)
     {
-        return SupportedGroupsExtension.CODE;
+        super(byteBufferPool, useDirectBuffers, SupportedGroupsExtension.CODE);
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
+    public int generate(BufferAccumulator accumulator, Extension extension)
     {
         return generate(accumulator, (SupportedGroupsExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, SupportedGroupsExtension extension)
+    private int generate(BufferAccumulator accumulator, SupportedGroupsExtension extension)
     {
-        accumulator.putShort((short)extension.code());
         List<NamedGroup> groups = extension.namedGroups();
         int listLength = 2 * groups.size();
         int totalLength = 2 + listLength;
-        accumulator.putShort((short)totalLength);
-        accumulator.putShort((short)listLength);
+
+        int capacity = 2 + 2 + totalLength;
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+
+        buffer.putShort((short)extension.code());
+        buffer.putShort((short)totalLength);
+        buffer.putShort((short)listLength);
         for (NamedGroup group : groups)
         {
-            accumulator.putShort((short)group.code());
+            buffer.putShort((short)group.code());
         }
-        return 2 + 2 + totalLength;
+
+        return capacity;
     }
 }

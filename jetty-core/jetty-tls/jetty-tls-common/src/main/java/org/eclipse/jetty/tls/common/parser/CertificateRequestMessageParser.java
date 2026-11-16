@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CertificateRequestMessage;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class CertificateRequestMessageParser implements MessageParser
 {
@@ -38,15 +37,14 @@ public class CertificateRequestMessageParser implements MessageParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return null;
             switch (state)
             {
                 case CONTEXT_LENGTH ->
                 {
-                    int length = byteBuffer.get() & 0xFF;
+                    int length = buffer.getByteAsInt();
                     context = new byte[length];
                     state = State.CONTEXT;
                 }
@@ -54,7 +52,7 @@ public class CertificateRequestMessageParser implements MessageParser
                 {
                     int offset = cursor;
                     int length = Math.min(context.length - cursor, remaining);
-                    byteBuffer.get(context, offset, length);
+                    buffer.get(context, offset, length);
                     cursor += length;
                     if (cursor == context.length)
                     {

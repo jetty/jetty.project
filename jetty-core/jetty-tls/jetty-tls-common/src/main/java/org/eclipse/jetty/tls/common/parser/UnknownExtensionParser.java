@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.UnknownExtension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class UnknownExtensionParser implements ExtensionParser
 {
@@ -44,8 +42,7 @@ public class UnknownExtensionParser implements ExtensionParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return -1;
             switch (state)
@@ -54,7 +51,7 @@ public class UnknownExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        totalLength = byteBuffer.getShort() & 0xFFFF;
+                        totalLength = buffer.getShortAsInt();
                         bytes = new byte[totalLength];
                         state = State.DATA;
                     }
@@ -66,7 +63,7 @@ public class UnknownExtensionParser implements ExtensionParser
                 }
                 case TOTAL_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -77,8 +74,8 @@ public class UnknownExtensionParser implements ExtensionParser
                 }
                 case DATA ->
                 {
-                    int length = Math.min(totalLength, byteBuffer.remaining());
-                    byteBuffer.get(bytes, bytes.length - totalLength, length);
+                    int length = Math.min(totalLength, Math.toIntExact(buffer.remaining()));
+                    buffer.get(bytes, bytes.length - totalLength, length);
                     totalLength -= length;
                     if (totalLength == 0)
                     {

@@ -13,38 +13,41 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class CertificateVerifyMessageGenerator extends MessageGenerator
 {
-    public CertificateVerifyMessageGenerator(ByteBufferPool byteBufferPool)
+    public CertificateVerifyMessageGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers)
     {
-        super(byteBufferPool);
+        super(byteBufferPool, useDirectBuffers);
     }
 
     @Override
-    public void generate(RetainableByteBuffer.Mutable accumulator, Message message) throws Exception
+    public void generate(BufferAccumulator accumulator, Message message) throws Exception
     {
         generate(accumulator, (CertificateVerifyMessage)message);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, CertificateVerifyMessage message) throws Exception
+    private void generate(BufferAccumulator accumulator, CertificateVerifyMessage message) throws Exception
     {
         byte[] signature = message.signature();
-
         int length = 2 + 2 + signature.length;
         if (length > 0xFFFFFF)
             throw new IllegalStateException("could not generate CertificateVerifyMessage, too long");
 
-        int typeAndLength = (message.type().code() << 24) | length;
-        accumulator.putInt(typeAndLength);
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(4 + length, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
 
-        accumulator.putShort((short)message.signatureAlgorithm().code());
-        accumulator.putShort((short)signature.length);
-        accumulator.put(signature);
+        int typeAndLength = (message.type().code() << 24) | length;
+        buffer.putInt(typeAndLength);
+
+        buffer.putShort((short)message.signatureAlgorithm().code());
+        buffer.putShort((short)signature.length);
+        buffer.put(signature);
 
         notifyMessageGenerated(message);
     }

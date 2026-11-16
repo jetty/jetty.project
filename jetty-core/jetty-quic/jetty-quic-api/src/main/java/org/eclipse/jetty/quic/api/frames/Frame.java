@@ -13,11 +13,8 @@
 
 package org.eclipse.jetty.quic.api.frames;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /// A generic QUIC frame carrying a frame type.
 ///
@@ -126,12 +123,6 @@ public sealed interface Frame extends AutoCloseable
     {
         long remaining();
 
-        long skip(long skip);
-
-        WithData slice(long offset, long length);
-
-        void accept(Consumer<RetainableByteBuffer> consumer);
-
-        <T> T map(Function<RetainableByteBuffer, T> mapper);
+        RetainableByteBuffer acquire();
     }
 }

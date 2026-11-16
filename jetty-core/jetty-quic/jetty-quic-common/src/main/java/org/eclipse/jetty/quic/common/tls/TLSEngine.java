@@ -94,7 +94,7 @@ public abstract class TLSEngine
     {
         this.random = random;
         this.protector = protector;
-        this.tlsGenerator = new QuicMessagesGenerator(protector.getByteBufferPool(), client);
+        this.tlsGenerator = new QuicMessagesGenerator(protector.getByteBufferPool(), protector.isUseDirectBuffers(), client);
         this.tlsParser = new QuicMessagesParser(client);
         this.cipherSuite = CipherSuite.TLS_AES_128_GCM_SHA256;
     }

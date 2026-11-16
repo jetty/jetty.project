@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class SupportedVersionsExtensionParser implements ExtensionParser
 {
@@ -49,8 +48,7 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return -1;
             switch (state)
@@ -59,7 +57,7 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        totalLength = byteBuffer.getShort() & 0xFFFF;
+                        totalLength = buffer.getShortAsInt();
                         if (totalLength < (client ? 2 : 3))
                             throw new IllegalStateException("invalid supported versions extension length " + totalLength);
                         state = client ? State.VERSION : State.LIST_LENGTH;
@@ -72,7 +70,7 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
                 }
                 case TOTAL_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -84,7 +82,7 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
                 }
                 case LIST_LENGTH ->
                 {
-                    listLength = byteBuffer.get() & 0xFF;
+                    listLength = buffer.getByteAsInt();
                     if (listLength % 2 != 0)
                         throw new IllegalStateException("invalid supported versions list length " + listLength);
                     state = State.VERSION;
@@ -93,7 +91,7 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
                 {
                     if (remaining >= 2)
                     {
-                        version = byteBuffer.getShort() & 0xFFFF;
+                        version = buffer.getShortAsInt();
                         if (!client)
                             listLength -= 2;
                         int result = versionComplete();
@@ -108,7 +106,7 @@ public class SupportedVersionsExtensionParser implements ExtensionParser
                 }
                 case VERSION_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     version += b << (8 * cursor);
                     if (cursor == 0)

@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class EncryptedExtensionsMessageParser implements MessageParser
 {
@@ -33,9 +32,7 @@ public class EncryptedExtensionsMessageParser implements MessageParser
     @Override
     public Message parse(int messageLength, RetainableByteBuffer buffer)
     {
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        int remaining = byteBuffer.remaining();
-        if (remaining == 0)
+        if (!buffer.hasRemaining())
             return null;
         List<Extension> extensions = extensionsParser.parse(buffer);
         if (extensions == null)

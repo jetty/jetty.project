@@ -13,37 +13,30 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.NewSessionTicketMessage;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class NewSessionTicketMessageGenerator extends MessageGenerator
 {
     private final ExtensionsGenerator extensionsGenerator;
 
-    public NewSessionTicketMessageGenerator(ByteBufferPool byteBufferPool, ExtensionsGenerator extensionsGenerator)
+    public NewSessionTicketMessageGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, ExtensionsGenerator extensionsGenerator)
     {
-        super(byteBufferPool);
+        super(byteBufferPool, useDirectBuffers);
         this.extensionsGenerator = extensionsGenerator;
     }
 
     @Override
-    public void generate(RetainableByteBuffer.Mutable accumulator, Message message)
+    public void generate(BufferAccumulator accumulator, Message message)
     {
         generate(accumulator, (NewSessionTicketMessage)message);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, NewSessionTicketMessage message)
+    private void generate(BufferAccumulator accumulator, NewSessionTicketMessage message)
     {
-        byte[] nonce = message.nonce();
-        byte[] ticket = message.ticket();
-
-        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), true, -1, 0, 0);
-        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
-        if (extensionsLength > 0xFFFF)
-            throw new IllegalStateException("could not generate NewSessionTicket, extensions too long");
-
         // RFC-8446[4.6.1].
         // Field                | (bytes)
         // ---------------------+--------
@@ -56,24 +49,33 @@ public class NewSessionTicketMessageGenerator extends MessageGenerator
         // extensions length    | (2)
         // extensions           | (E)
 
-        int length = 4 + 4 + 1 + nonce.length + 2 + ticket.length + 2 + extensionsLength;
+        byte[] nonce = message.nonce();
+        byte[] ticket = message.ticket();
+        int capacity = 4 + 4 + 4 + 1 + nonce.length + 2 + ticket.length + 2;
+        RetainableByteBuffer.Mutable header = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(header);
+
+        int extensionsLength = extensionsGenerator.generate(accumulator, message.extensions());
+        if (extensionsLength > 0xFFFF)
+            throw new IllegalStateException("could not generate NewSessionTicket, extensions too long");
+
+        int length = capacity - 4 + extensionsLength;
         if (length > 0xFFFFFF)
             throw new IllegalStateException("could not generate NewSessionTicket, too long");
 
         int typeAndLength = (message.type().code() << 24) | length;
-        accumulator.putInt(typeAndLength);
+        header.putInt(typeAndLength);
 
-        accumulator.putInt((int)message.lifetime());
-        accumulator.putInt(message.ageAdd());
+        header.putInt((int)message.lifetime());
+        header.putInt(message.ageAdd());
 
-        accumulator.put((byte)nonce.length);
-        accumulator.put(nonce);
+        header.put((byte)nonce.length);
+        header.put(nonce);
 
-        accumulator.putShort((short)ticket.length);
-        accumulator.put(ticket);
+        header.putShort((short)ticket.length);
+        header.put(ticket);
 
-        accumulator.putShort((short)extensionsLength);
-        accumulator.add(extensionsAccumulator);
+        header.putShort((short)extensionsLength);
 
         notifyMessageGenerated(message);
     }

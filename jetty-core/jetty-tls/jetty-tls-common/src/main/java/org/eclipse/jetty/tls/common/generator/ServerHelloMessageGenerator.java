@@ -13,36 +13,31 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.ServerHelloMessage;
+import org.eclipse.jetty.tls.TLSVersion;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ServerHelloMessageGenerator extends MessageGenerator
 {
     private final ExtensionsGenerator extensionsGenerator;
 
-    public ServerHelloMessageGenerator(ByteBufferPool byteBufferPool, ExtensionsGenerator extensionsGenerator)
+    public ServerHelloMessageGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, ExtensionsGenerator extensionsGenerator)
     {
-        super(byteBufferPool);
+        super(byteBufferPool, useDirectBuffers);
         this.extensionsGenerator = extensionsGenerator;
     }
 
     @Override
-    public void generate(RetainableByteBuffer.Mutable accumulator, Message message)
+    public void generate(BufferAccumulator accumulator, Message message)
     {
         generate(accumulator, (ServerHelloMessage)message);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, ServerHelloMessage message)
+    private void generate(BufferAccumulator accumulator, ServerHelloMessage message)
     {
-        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), true, -1, 0, 0);
-        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
-        if (extensionsLength > 0xFFFF)
-            throw new IllegalStateException("could not generate ServerHello, extensions too long");
-
-        byte[] sessionId = message.sessionId();
-
         // RFC-8446[4.1.3].
         // Field                             | (bytes)
         // ----------------------------------+--------
@@ -55,28 +50,37 @@ public class ServerHelloMessageGenerator extends MessageGenerator
         // Extensions length                 | (2)
         // Extensions                        | (M)
 
-        int length = 2 + 32 + 1 + sessionId.length + 2 + 1 + 2 + extensionsLength;
+        byte[] sessionId = message.sessionId();
+        int capacity = 4 + 2 + 32 + 1 + sessionId.length + 2 + 1 + 2;
+        RetainableByteBuffer.Mutable header = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(header);
+
+        int extensionsLength = extensionsGenerator.generate(accumulator, message.extensions());
+        if (extensionsLength > 0xFFFF)
+            throw new IllegalStateException("could not generate ServerHello, extensions too long");
+
+        int length = capacity - 4 + extensionsLength;
 
         int typeAndLength = (message.type().code() << 24) | length;
-        accumulator.putInt(typeAndLength);
+        header.putInt(typeAndLength);
 
-        accumulator.putShort((short)0x0303);
+        // Legacy version.
+        header.putShort((short)TLSVersion.TLS_1_2.code());
 
         byte[] random = message.random();
-        accumulator.put(random);
+        header.put(random);
 
         // Legacy session ID.
-        accumulator.put((byte)sessionId.length);
-        accumulator.put(sessionId);
+        header.put((byte)sessionId.length);
+        header.put(sessionId);
 
         // Cipher suite.
-        accumulator.putShort((short)message.cipherSuite().code());
+        header.putShort((short)message.cipherSuite().code());
 
         // Legacy compression methods (no methods).
-        accumulator.put((byte)0x00);
+        header.put((byte)0x00);
 
-        accumulator.putShort((short)extensionsLength);
-        accumulator.add(extensionsAccumulator);
+        header.putShort((short)extensionsLength);
 
         notifyMessageGenerated(message);
     }

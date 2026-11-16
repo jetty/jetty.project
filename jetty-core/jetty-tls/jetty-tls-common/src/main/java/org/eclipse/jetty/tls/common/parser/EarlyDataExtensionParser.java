@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.EarlyDataExtension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class EarlyDataExtensionParser implements ExtensionParser
 {
@@ -42,8 +40,7 @@ public class EarlyDataExtensionParser implements ExtensionParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return -1;
             switch (state)
@@ -52,7 +49,7 @@ public class EarlyDataExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        totalLength = byteBuffer.getShort() & 0xFFFF;
+                        totalLength = buffer.getShortAsInt();
                         if (totalLength != 0 && totalLength != 4)
                             throw new IllegalStateException("invalid early data extension length " + totalLength);
                         if (totalLength == 0)
@@ -67,7 +64,7 @@ public class EarlyDataExtensionParser implements ExtensionParser
                 }
                 case TOTAL_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -83,7 +80,7 @@ public class EarlyDataExtensionParser implements ExtensionParser
                 {
                     if (remaining >= 4)
                     {
-                        maxData = byteBuffer.getInt() & 0xFFFFFFFFL;
+                        maxData = Integer.toUnsignedLong(buffer.getInt());
                         return maxDataComplete();
                     }
                     else
@@ -94,7 +91,7 @@ public class EarlyDataExtensionParser implements ExtensionParser
                 }
                 case MAX_DATA_BYTES ->
                 {
-                    long b = byteBuffer.get() & 0xFFL;
+                    long b = buffer.getByteAsInt();
                     --cursor;
                     maxData += b << (8 * cursor);
                     if (cursor == 0)

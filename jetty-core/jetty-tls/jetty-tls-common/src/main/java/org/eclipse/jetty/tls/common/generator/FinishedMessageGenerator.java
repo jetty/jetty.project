@@ -13,36 +13,39 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class FinishedMessageGenerator extends MessageGenerator
 {
-    public FinishedMessageGenerator(ByteBufferPool byteBufferPool)
+    public FinishedMessageGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers)
     {
-        super(byteBufferPool);
+        super(byteBufferPool, useDirectBuffers);
     }
 
     @Override
-    public void generate(RetainableByteBuffer.Mutable accumulator, Message message) throws Exception
+    public void generate(BufferAccumulator accumulator, Message message) throws Exception
     {
         generate(accumulator, (FinishedMessage)message);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, FinishedMessage message) throws Exception
+    private void generate(BufferAccumulator accumulator, FinishedMessage message) throws Exception
     {
         byte[] verifyData = message.verifyData();
-
         int length = verifyData.length;
         if (length > 0xFFFFFF)
             throw new IllegalStateException("could not generate FinishedMessage, too long");
 
-        int typeAndLength = (message.type().code() << 24) | length;
-        accumulator.putInt(typeAndLength);
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(4 + length, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
 
-        accumulator.put(verifyData);
+        int typeAndLength = (message.type().code() << 24) | length;
+        buffer.putInt(typeAndLength);
+
+        buffer.put(verifyData);
 
         notifyMessageGenerated(message);
     }

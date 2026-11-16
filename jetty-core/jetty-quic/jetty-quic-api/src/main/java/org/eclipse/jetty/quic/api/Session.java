@@ -17,7 +17,6 @@ import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.EventListener;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -26,6 +25,7 @@ import org.eclipse.jetty.quic.api.frames.MaxStreamsFrame;
 import org.eclipse.jetty.quic.api.frames.StreamsBlockedFrame;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /// Represents a QUIC connection to a remote peer.
 ///

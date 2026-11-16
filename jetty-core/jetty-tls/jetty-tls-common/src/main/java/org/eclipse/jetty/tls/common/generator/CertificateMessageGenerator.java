@@ -13,85 +13,84 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class CertificateMessageGenerator extends MessageGenerator
 {
     private final ExtensionsGenerator extensionsGenerator;
 
-    public CertificateMessageGenerator(ByteBufferPool byteBufferPool, ExtensionsGenerator extensionsGenerator)
+    public CertificateMessageGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, ExtensionsGenerator extensionsGenerator)
     {
-        super(byteBufferPool);
+        super(byteBufferPool, useDirectBuffers);
         this.extensionsGenerator = extensionsGenerator;
     }
 
     @Override
-    public void generate(RetainableByteBuffer.Mutable accumulator, Message message) throws Exception
+    public void generate(BufferAccumulator accumulator, Message message) throws Exception
     {
         generate(accumulator, (CertificateMessage)message);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, CertificateMessage message) throws Exception
+    private void generate(BufferAccumulator accumulator, CertificateMessage message) throws Exception
     {
-        byte[] context = message.requestContext();
-        List<CertificateMessage.Entry> entries = message.entries();
-
         // RFC 8446, 4.4.2.
+        // Field                  | (bytes)
+        // -----------------------+--------
+        // Context length         | (1)
+        // Context                | (C)
+        // Entries length         | (3)
+        // Entries                | (E)
+        //
+        // Each entry:
+        // Certificate length     | (3)
+        // Certificate            | (N)
+        // Extensions length      | (2)
+        // Extensions             | (M)
+
+        byte[] context = message.requestContext();
+        int capacity = 4 + 1 + context.length + 3;
+        RetainableByteBuffer.Mutable header = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(header);
+
         int entriesLength = 0;
-        List<byte[]> encodedCertificates = new ArrayList<>();
-        List<RetainableByteBuffer> encodedExtensions = new ArrayList<>();
-        for (CertificateMessage.Entry entry : entries)
+        for (CertificateMessage.Entry entry : message.entries())
         {
-            // The certificate length is encoded in 3 bytes.
-            entriesLength += 3;
-
             byte[] certificateBytes = entry.certificate().getEncoded();
-            encodedCertificates.add(certificateBytes);
-            entriesLength += certificateBytes.length;
 
-            // The extensions length is encoded in 2 bytes.
-            entriesLength += 2;
+            int entryCapacity = 3 + certificateBytes.length + 2;
+            RetainableByteBuffer.Mutable entryBuffer = getByteBufferPool().acquire(entryCapacity, isUseDirectBuffers());
+            accumulator.addRetained(entryBuffer);
 
-            RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), true, -1, 0, 0);
-            encodedExtensions.add(extensionsAccumulator);
-            int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, entry.extensions());
+            int extensionsLength = extensionsGenerator.generate(accumulator, entry.extensions());
             if (extensionsLength > 0xFFFF)
                 throw new IllegalStateException("could not generate CertificateMessage, extensions too long");
-            entriesLength += extensionsLength;
+
+            entryBuffer.put((byte)(certificateBytes.length >> 16));
+            entryBuffer.put((byte)(certificateBytes.length >> 8));
+            entryBuffer.put((byte)certificateBytes.length);
+            entryBuffer.put(certificateBytes);
+            entryBuffer.putShort((short)extensionsLength);
+
+            entriesLength += entryCapacity + extensionsLength;
         }
 
-        int length = 1 + context.length + 3 + entriesLength;
+        int length = capacity - 4 + entriesLength;
         if (length > 0xFFFFFF)
             throw new IllegalStateException("could not generate CertificateMessage, too long");
 
         int typeAndLength = (message.type().code() << 24) | length;
-        accumulator.putInt(typeAndLength);
+        header.putInt(typeAndLength);
 
-        accumulator.put((byte)context.length);
-        accumulator.put(context);
+        header.put((byte)context.length);
+        header.put(context);
 
-        accumulator.put((byte)(entriesLength >> 16));
-        accumulator.put((byte)(entriesLength >> 8));
-        accumulator.put((byte)entriesLength);
-
-        for (int i = 0; i < entries.size(); ++i)
-        {
-            byte[] certificateBytes = encodedCertificates.get(i);
-            accumulator.put((byte)(certificateBytes.length >> 16));
-            accumulator.put((byte)(certificateBytes.length >> 8));
-            accumulator.put((byte)certificateBytes.length);
-            accumulator.put(certificateBytes);
-
-            RetainableByteBuffer extensionsAccumulator = encodedExtensions.get(i);
-            accumulator.putShort((short)extensionsAccumulator.remaining());
-            accumulator.add(extensionsAccumulator);
-        }
+        header.put((byte)(entriesLength >> 16));
+        header.put((byte)(entriesLength >> 8));
+        header.put((byte)entriesLength);
 
         notifyMessageGenerated(message);
     }

@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.NewSessionTicketMessage;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class NewSessionTicketMessageParser implements MessageParser
 {
@@ -43,8 +42,7 @@ public class NewSessionTicketMessageParser implements MessageParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return null;
             switch (state)
@@ -53,7 +51,7 @@ public class NewSessionTicketMessageParser implements MessageParser
                 {
                     if (remaining >= 4)
                     {
-                        lifetime = byteBuffer.getInt() & 0xFFFFFFFFL;
+                        lifetime = Integer.toUnsignedLong(buffer.getInt());
                         state = State.AGE_ADD;
                     }
                     else
@@ -64,7 +62,7 @@ public class NewSessionTicketMessageParser implements MessageParser
                 }
                 case LIFETIME_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     lifetime += (long)b << (8 * cursor);
                     if (cursor == 0)
@@ -74,7 +72,7 @@ public class NewSessionTicketMessageParser implements MessageParser
                 {
                     if (remaining >= 4)
                     {
-                        ageAdd = byteBuffer.getInt();
+                        ageAdd = buffer.getInt();
                         state = State.NONCE_LENGTH;
                     }
                     else
@@ -85,7 +83,7 @@ public class NewSessionTicketMessageParser implements MessageParser
                 }
                 case AGE_ADD_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     ageAdd += b << (8 * cursor);
                     if (cursor == 0)
@@ -93,14 +91,14 @@ public class NewSessionTicketMessageParser implements MessageParser
                 }
                 case NONCE_LENGTH ->
                 {
-                    nonceLength = byteBuffer.get() & 0xFF;
+                    nonceLength = buffer.getByteAsInt();
                     nonce = new byte[nonceLength];
                     state = nonceLength == 0 ? State.TICKET_LENGTH : State.NONCE;
                 }
                 case NONCE ->
                 {
                     int length = Math.min(nonceLength - cursor, remaining);
-                    byteBuffer.get(nonce, cursor, length);
+                    buffer.get(nonce, cursor, length);
                     cursor += length;
                     if (cursor == nonceLength)
                     {
@@ -112,7 +110,7 @@ public class NewSessionTicketMessageParser implements MessageParser
                 {
                     if (remaining >= 2)
                     {
-                        ticketLength = byteBuffer.getShort() & 0xFFFF;
+                        ticketLength = buffer.getShortAsInt();
                         ticket = new byte[ticketLength];
                         state = State.TICKET;
                     }
@@ -124,7 +122,7 @@ public class NewSessionTicketMessageParser implements MessageParser
                 }
                 case TICKET_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     ticketLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -136,7 +134,7 @@ public class NewSessionTicketMessageParser implements MessageParser
                 case TICKET ->
                 {
                     int length = Math.min(ticketLength - cursor, remaining);
-                    byteBuffer.get(ticket, cursor, length);
+                    buffer.get(ticket, cursor, length);
                     cursor += length;
                     if (cursor == ticketLength)
                     {

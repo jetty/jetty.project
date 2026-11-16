@@ -65,7 +65,7 @@ public class ServerTLSEngineTest
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers packetNumbers = new PacketNumbers();
-        TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, true), new QuicMessagesGenerator(byteBufferPool, false));
+        TranscriptHash transcriptHash = new TranscriptHash(new QuicMessagesGenerator(byteBufferPool, , true, ), new QuicMessagesGenerator(byteBufferPool, , false, ));
         PacketProtector packetProtector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(MavenPaths.findTestResourceFile("server_keystore.p12"));

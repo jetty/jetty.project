@@ -17,24 +17,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 
 /// A generator for many TLS extensions.
 public class ExtensionsGenerator
 {
     private final Map<Integer, ExtensionGenerator> generators = new HashMap<>();
+    private final ByteBufferPool byteBufferPool;
+    private final boolean useDirectBuffers;
 
-    public ExtensionsGenerator(boolean client)
+    public ExtensionsGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, boolean client)
     {
-        put(new ALPNExtensionGenerator());
-        put(new EarlyDataExtensionGenerator());
-        put(new KeyShareExtensionGenerator(client));
-        put(client ? new ClientPreSharedKeyExtensionGenerator() : new ServerPreSharedKeyExtensionGenerator());
-        put(new ServerNameExtensionGenerator());
-        put(new SignatureAlgorithmsExtensionGenerator());
-        put(new SupportedGroupsExtensionGenerator());
-        put(new SupportedVersionsExtensionGenerator(client));
+        this.byteBufferPool = byteBufferPool;
+        this.useDirectBuffers = useDirectBuffers;
+        put(new ALPNExtensionGenerator(byteBufferPool, useDirectBuffers));
+        put(new EarlyDataExtensionGenerator(byteBufferPool, useDirectBuffers));
+        put(new KeyShareExtensionGenerator(byteBufferPool, useDirectBuffers, client));
+        put(client ? new ClientPreSharedKeyExtensionGenerator(byteBufferPool, useDirectBuffers) : new ServerPreSharedKeyExtensionGenerator(byteBufferPool, useDirectBuffers));
+        put(new ServerNameExtensionGenerator(byteBufferPool, useDirectBuffers));
+        put(new SignatureAlgorithmsExtensionGenerator(byteBufferPool, useDirectBuffers));
+        put(new SupportedGroupsExtensionGenerator(byteBufferPool, useDirectBuffers));
+        put(new SupportedVersionsExtensionGenerator(byteBufferPool, useDirectBuffers, client));
     }
 
     public ExtensionGenerator put(ExtensionGenerator generator)
@@ -45,12 +50,12 @@ public class ExtensionsGenerator
     /// @param accumulator the accumulator to generate the extensions bytes into
     /// @param extensions the extensions to generate
     /// @return the number of bytes generated for all the extensions.
-    public int generate(RetainableByteBuffer.Mutable accumulator, List<Extension> extensions)
+    public int generate(BufferAccumulator accumulator, List<Extension> extensions)
     {
         int totalLength = 0;
         for (Extension extension : extensions)
         {
-            ExtensionGenerator generator = generators.computeIfAbsent(extension.code(), UnknownExtensionGenerator::new);
+            ExtensionGenerator generator = generators.computeIfAbsent(extension.code(), code -> new UnknownExtensionGenerator(byteBufferPool, useDirectBuffers, code));
             totalLength += generator.generate(accumulator, extension);
         }
         return totalLength;

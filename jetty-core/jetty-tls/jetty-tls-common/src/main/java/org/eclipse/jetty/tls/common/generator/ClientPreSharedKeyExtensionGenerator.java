@@ -15,28 +15,28 @@ package org.eclipse.jetty.tls.common.generator;
 
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.ClientPreSharedKeyExtension;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.PreSharedKeyIdentity;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class ClientPreSharedKeyExtensionGenerator implements ExtensionGenerator
+public class ClientPreSharedKeyExtensionGenerator extends ExtensionGenerator
 {
-    @Override
-    public int type()
+    public ClientPreSharedKeyExtensionGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers)
     {
-        return ClientPreSharedKeyExtension.CODE;
+        super(byteBufferPool, useDirectBuffers, ClientPreSharedKeyExtension.CODE);
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
+    public int generate(BufferAccumulator accumulator, Extension extension)
     {
         return generate(accumulator, (ClientPreSharedKeyExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, ClientPreSharedKeyExtension extension)
+    private int generate(BufferAccumulator accumulator, ClientPreSharedKeyExtension extension)
     {
-        accumulator.putShort((short)extension.code());
         List<PreSharedKeyIdentity> identities = extension.identities();
         // Identities length + binders length.
         int totalLength = 2 + 2;
@@ -52,24 +52,31 @@ public class ClientPreSharedKeyExtensionGenerator implements ExtensionGenerator
         }
         if (totalLength > 0xFFFF)
             throw new IllegalStateException("invalid pre-shared key extension length " + totalLength);
-        accumulator.putShort((short)totalLength);
-        accumulator.putShort((short)identitiesLength);
+
+        int capacity = 2 + 2 + totalLength;
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+
+        buffer.putShort((short)extension.code());
+        buffer.putShort((short)totalLength);
+        buffer.putShort((short)identitiesLength);
         for (PreSharedKeyIdentity identity : identities)
         {
-            accumulator.putShort((short)identity.identity().length);
-            accumulator.put(identity.identity());
-            accumulator.putInt(identity.obfuscatedTicketAge());
+            buffer.putShort((short)identity.identity().length);
+            buffer.put(identity.identity());
+            buffer.putInt(identity.obfuscatedTicketAge());
         }
         if (extension.hasBinders())
         {
-            accumulator.putShort((short)bindersLength);
+            buffer.putShort((short)bindersLength);
             for (PreSharedKeyIdentity identity : identities)
             {
                 byte[] binder = identity.binder();
-                accumulator.put((byte)binder.length);
-                accumulator.put(binder);
+                buffer.put((byte)binder.length);
+                buffer.put(binder);
             }
         }
-        return 2 + 2 + totalLength;
+
+        return capacity;
     }
 }

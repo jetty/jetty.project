@@ -13,10 +13,8 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.ServerPreSharedKeyExtension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ServerPreSharedKeyExtensionParser implements ExtensionParser
 {
@@ -42,8 +40,7 @@ public class ServerPreSharedKeyExtensionParser implements ExtensionParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return -1;
             switch (state)
@@ -52,7 +49,7 @@ public class ServerPreSharedKeyExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        totalLength = byteBuffer.getShort() & 0xFFFF;
+                        totalLength = buffer.getShortAsInt();
                         if (totalLength != 2)
                             throw new IllegalStateException("invalid pre-shared key extension length " + totalLength);
                         state = State.IDENTITY;
@@ -65,7 +62,7 @@ public class ServerPreSharedKeyExtensionParser implements ExtensionParser
                 }
                 case TOTAL_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -79,7 +76,7 @@ public class ServerPreSharedKeyExtensionParser implements ExtensionParser
                 {
                     if (remaining >= 2)
                     {
-                        identity = byteBuffer.getShort() & 0xFFFF;
+                        identity = buffer.getShortAsInt();
                         return identityComplete();
                     }
                     else
@@ -90,7 +87,7 @@ public class ServerPreSharedKeyExtensionParser implements ExtensionParser
                 }
                 case IDENTITY_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     identity += b << (8 * cursor);
                     if (cursor == 0)

@@ -29,11 +29,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RateControl;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
@@ -59,6 +57,7 @@ import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable.Task;
@@ -307,7 +306,7 @@ public class ServerQuicConnection extends QuicConnection
         packetTracker.setAcknowledgmentDelayExponent(quicConfiguration.getAcknowledgmentDelayExponent());
         PacketNumbers packetNumbers = new PacketNumbers();
         ByteBufferPool byteBufferPool = getByteBufferPool();
-        TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, true), new QuicMessagesGenerator(byteBufferPool, false));
+        TranscriptHash transcriptHash = new TranscriptHash(new QuicMessagesGenerator(byteBufferPool, false, true), new QuicMessagesGenerator(byteBufferPool, false, false));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
         ServerTLSConfiguration tlsConfiguration = new ServerTLSConfiguration(getServerQuicConfiguration(), getSslContextFactory());
         ServerTLSEngine tlsEngine = new ServerTLSEngine(random, protector, tlsConfiguration);

@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.quic.common.tls.generator;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 
 public class QuicMessagesGenerator extends MessagesGenerator
 {
-    public QuicMessagesGenerator(ByteBufferPool byteBufferPool, boolean client)
+    public QuicMessagesGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, boolean client)
     {
-        super(byteBufferPool, client);
+        super(byteBufferPool, useDirectBuffers, client);
         getExtensionsGenerator().put(new QuicTransportParametersExtensionGenerator());
     }
 }

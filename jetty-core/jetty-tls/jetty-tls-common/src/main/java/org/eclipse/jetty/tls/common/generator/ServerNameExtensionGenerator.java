@@ -15,27 +15,27 @@ package org.eclipse.jetty.tls.common.generator;
 
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.ServerNameExtension;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class ServerNameExtensionGenerator implements ExtensionGenerator
+public class ServerNameExtensionGenerator extends ExtensionGenerator
 {
-    @Override
-    public int type()
+    public ServerNameExtensionGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers)
     {
-        return ServerNameExtension.CODE;
+        super(byteBufferPool, useDirectBuffers, ServerNameExtension.CODE);
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
+    public int generate(BufferAccumulator accumulator, Extension extension)
     {
         return generate(accumulator, (ServerNameExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, ServerNameExtension extension)
+    private int generate(BufferAccumulator accumulator, ServerNameExtension extension)
     {
-        accumulator.putShort((short)extension.code());
         String serverName = extension.serverName();
         // RFC 6066, section 3: names are ASCII.
         byte[] bytes = serverName.getBytes(StandardCharsets.US_ASCII);
@@ -43,13 +43,20 @@ public class ServerNameExtensionGenerator implements ExtensionGenerator
         int listLength = 1 + 2 + bytes.length;
         // Type length + list length.
         int totalLength = 2 + listLength;
-        accumulator.putShort((short)totalLength);
-        accumulator.putShort((short)listLength);
+
+        int capacity = 2 + 2 + totalLength;
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+
+        buffer.putShort((short)extension.code());
+        buffer.putShort((short)totalLength);
+        buffer.putShort((short)listLength);
         // Type host_name is 0x00.
-        accumulator.put((byte)0x00);
+        buffer.put((byte)0x00);
         // Name length.
-        accumulator.putShort((short)bytes.length);
-        accumulator.put(bytes);
-        return 2 + 2 + totalLength;
+        buffer.putShort((short)bytes.length);
+        buffer.put(bytes);
+
+        return capacity;
     }
 }

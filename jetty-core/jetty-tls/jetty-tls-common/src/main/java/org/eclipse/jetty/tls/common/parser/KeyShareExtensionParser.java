@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.KeyShare;
 import org.eclipse.jetty.tls.NamedGroup;
 import org.eclipse.jetty.tls.ext.KeyShareExtension;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class KeyShareExtensionParser implements ExtensionParser
 {
@@ -53,8 +52,7 @@ public class KeyShareExtensionParser implements ExtensionParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0 && state != State.KEY_EXCHANGE)
                 return -1;
             switch (state)
@@ -63,7 +61,7 @@ public class KeyShareExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        totalLength = byteBuffer.getShort() & 0xFFFF;
+                        totalLength = buffer.getShortAsInt();
                         // The format of this extension is different depending on
                         // whether is in a ClientHello, ServerHello or RetryHelloRequest.
                         // RFC-8446[4.2.8].
@@ -80,7 +78,7 @@ public class KeyShareExtensionParser implements ExtensionParser
                 }
                 case TOTAL_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -95,7 +93,7 @@ public class KeyShareExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        listLength = byteBuffer.getShort() & 0xFFFF;
+                        listLength = buffer.getShortAsInt();
                         state = State.GROUP;
                     }
                     else
@@ -106,7 +104,7 @@ public class KeyShareExtensionParser implements ExtensionParser
                 }
                 case LIST_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     listLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -116,7 +114,7 @@ public class KeyShareExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        group = byteBuffer.getShort() & 0xFFFF;
+                        group = buffer.getShortAsInt();
                         if (!client)
                             listLength -= 2;
                         state = totalLength == 2 ? State.KEY_EXCHANGE : State.KEY_EXCHANGE_LENGTH;
@@ -129,7 +127,7 @@ public class KeyShareExtensionParser implements ExtensionParser
                 }
                 case GROUP_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     group += b << (8 * cursor);
                     if (cursor == 0)
@@ -143,7 +141,7 @@ public class KeyShareExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        keyExchangeLength = byteBuffer.getShort() & 0xFFFF;
+                        keyExchangeLength = buffer.getShortAsInt();
                         if (!client)
                             listLength -= 2;
                         keyExchange = new byte[keyExchangeLength];
@@ -157,7 +155,7 @@ public class KeyShareExtensionParser implements ExtensionParser
                 }
                 case KEY_EXCHANGE_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     keyExchangeLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -172,7 +170,7 @@ public class KeyShareExtensionParser implements ExtensionParser
                 {
                     int offset = keyExchange.length - keyExchangeLength;
                     int length = Math.min(keyExchangeLength, remaining);
-                    byteBuffer.get(keyExchange, offset, length);
+                    buffer.get(keyExchange, offset, length);
                     if (!client)
                         listLength -= length;
                     keyExchangeLength -= length;

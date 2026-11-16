@@ -15,35 +15,32 @@ package org.eclipse.jetty.tls.common.generator;
 
 import java.util.List;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.ClientHelloMessage;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.tls.TLSVersion;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ClientHelloMessageGenerator extends MessageGenerator
 {
     private final ExtensionsGenerator extensionsGenerator;
 
-    public ClientHelloMessageGenerator(ByteBufferPool byteBufferPool, ExtensionsGenerator extensionsGenerator)
+    public ClientHelloMessageGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, ExtensionsGenerator extensionsGenerator)
     {
-        super(byteBufferPool);
+        super(byteBufferPool, useDirectBuffers);
         this.extensionsGenerator = extensionsGenerator;
     }
 
     @Override
-    public void generate(RetainableByteBuffer.Mutable accumulator, Message message)
+    public void generate(BufferAccumulator accumulator, Message message)
     {
         generate(accumulator, (ClientHelloMessage)message);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, ClientHelloMessage message)
+    private void generate(BufferAccumulator accumulator, ClientHelloMessage message)
     {
-        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), true, -1, 0, 0);
-        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
-        if (extensionsLength > 0xFFFF)
-            throw new IllegalStateException("could not generate ClientHello, extensions too long");
-
         // RFC 8446, 4.1.2.
         // Field                             | (bytes)
         // ----------------------------------+--------
@@ -60,31 +57,39 @@ public class ClientHelloMessageGenerator extends MessageGenerator
         List<CipherSuite> cipherSuites = message.cipherSuites();
         int cipherSuitesLength = 2 * cipherSuites.size();
 
-        int length = 2 + 32 + 1 + 2 + cipherSuitesLength + 1 + 1 + 2 + extensionsLength;
+        int capacity = 4 + 2 + 32 + 1 + 2 + cipherSuitesLength + 1 + 1 + 2;
+        RetainableByteBuffer.Mutable header = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(header);
+
+        int extensionsLength = extensionsGenerator.generate(accumulator, message.extensions());
+        if (extensionsLength > 0xFFFF)
+            throw new IllegalStateException("could not generate ClientHello, extensions too long");
+
+        int length = capacity - 4 + extensionsLength;
         if (length > 0xFFFFFF)
             throw new IllegalStateException("could not generate ClientHello, too long");
 
         int typeAndLength = (message.type().code() << 24) | length;
-        accumulator.putInt(typeAndLength);
+        header.putInt(typeAndLength);
 
-        accumulator.putShort((short)0x0303);
+        // Legacy version.
+        header.putShort((short)TLSVersion.TLS_1_2.code());
 
         byte[] random = message.random();
-        accumulator.put(random);
+        header.put(random);
 
         // Legacy session ID.
-        accumulator.put((byte)0x00);
+        header.put((byte)0x00);
 
         // Cipher suites.
-        accumulator.putShort((short)cipherSuitesLength);
-        cipherSuites.forEach(c -> accumulator.putShort((short)c.code()));
+        header.putShort((short)cipherSuitesLength);
+        cipherSuites.forEach(c -> header.putShort((short)c.code()));
 
         // Legacy compression methods (one method, no compression).
-        accumulator.put((byte)0x01);
-        accumulator.put((byte)0x00);
+        header.put((byte)0x01);
+        header.put((byte)0x00);
 
-        accumulator.putShort((short)extensionsLength);
-        accumulator.add(extensionsAccumulator);
+        header.putShort((short)extensionsLength);
 
         notifyMessageGenerated(message);
     }

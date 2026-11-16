@@ -15,47 +15,50 @@ package org.eclipse.jetty.tls.common.generator;
 
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class SupportedVersionsExtensionGenerator implements ExtensionGenerator
+public class SupportedVersionsExtensionGenerator extends ExtensionGenerator
 {
     private final boolean client;
 
-    public SupportedVersionsExtensionGenerator(boolean client)
+    public SupportedVersionsExtensionGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, boolean client)
     {
+        super(byteBufferPool, useDirectBuffers, SupportedVersionsExtension.CODE);
         this.client = client;
     }
 
     @Override
-    public int type()
-    {
-        return SupportedVersionsExtension.CODE;
-    }
-
-    @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
+    public int generate(BufferAccumulator accumulator, Extension extension)
     {
         return generate(accumulator, (SupportedVersionsExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, SupportedVersionsExtension extension)
+    private int generate(BufferAccumulator accumulator, SupportedVersionsExtension extension)
     {
-        accumulator.putShort((short)extension.code());
         List<TLSVersion> versions = extension.versions();
         if (!client && versions.size() != 1)
             throw new IllegalStateException("server must send one TLS version " + versions);
         int listLength = 2 * versions.size();
         int totalLength = client ? 1 + listLength : listLength;
-        accumulator.putShort((short)totalLength);
+
+        int capacity = 2 + 2 + totalLength;
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+
+        buffer.putShort((short)extension.code());
+        buffer.putShort((short)totalLength);
         if (client)
-            accumulator.put((byte)listLength);
+            buffer.put((byte)listLength);
         for (TLSVersion version : versions)
         {
-            accumulator.putShort((short)version.code());
+            buffer.putShort((short)version.code());
         }
-        return 2 + 2 + totalLength;
+
+        return capacity;
     }
 }

@@ -13,16 +13,12 @@
 
 package org.eclipse.jetty.tls.common;
 
-import java.nio.ByteBuffer;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CertificateMessage;
 import org.eclipse.jetty.tls.CertificateRequestMessage;
 import org.eclipse.jetty.tls.CertificateVerifyMessage;
@@ -45,6 +41,10 @@ import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
 import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -60,8 +60,8 @@ public class MessagesGenerateParseTest
     public void testClientHelloMessage(boolean client) throws Exception
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, client);
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, false, client);
+        BufferAccumulator accumulator = new BufferAccumulator();
 
         byte[] random = new byte[32];
         ThreadLocalRandom.current().nextBytes(random);
@@ -82,29 +82,35 @@ public class MessagesGenerateParseTest
         generator.generate(accumulator, generated);
 
         MessagesParser parser = new MessagesParser(!client);
-        Message message = parser.parse(accumulator);
-
-        assertInstanceOf(ClientHelloMessage.class, message);
-        ClientHelloMessage parsed = (ClientHelloMessage)message;
-        assertArrayEquals(generated.random(), parsed.random());
-        assertEquals(generated.cipherSuites(), parsed.cipherSuites());
-        assertEquals(generated.extensions(), parsed.extensions());
-
-        // Parse again one byte at a time.
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            message = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                Message message = parser.parse(slice);
 
-        assertInstanceOf(ClientHelloMessage.class, message);
-        parsed = (ClientHelloMessage)message;
-        assertArrayEquals(generated.random(), parsed.random());
-        assertEquals(generated.cipherSuites(), parsed.cipherSuites());
-        assertEquals(generated.extensions(), parsed.extensions());
+                assertInstanceOf(ClientHelloMessage.class, message);
+                ClientHelloMessage parsed = (ClientHelloMessage)message;
+                assertArrayEquals(generated.random(), parsed.random());
+                assertEquals(generated.cipherSuites(), parsed.cipherSuites());
+                assertEquals(generated.extensions(), parsed.extensions());
+            }
+
+            // Parse again one byte at a time.
+            Message message = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    message = parser.parse(slice);
+                }
+            }
+
+            assertInstanceOf(ClientHelloMessage.class, message);
+            ClientHelloMessage parsed = (ClientHelloMessage)message;
+            assertArrayEquals(generated.random(), parsed.random());
+            assertEquals(generated.cipherSuites(), parsed.cipherSuites());
+            assertEquals(generated.extensions(), parsed.extensions());
+        }
     }
 
     @ParameterizedTest
@@ -112,8 +118,8 @@ public class MessagesGenerateParseTest
     public void testServerHelloMessage(boolean client) throws Exception
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, client);
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, false, client);
+        BufferAccumulator accumulator = new BufferAccumulator();
         byte[] random = new byte[32];
         ThreadLocalRandom.current().nextBytes(random);
         byte[] sessionId = new byte[13];
@@ -122,29 +128,35 @@ public class MessagesGenerateParseTest
         generator.generate(accumulator, generated);
 
         MessagesParser parser = new MessagesParser(!client);
-        Message message = parser.parse(accumulator);
-
-        assertInstanceOf(ServerHelloMessage.class, message);
-        ServerHelloMessage parsed = (ServerHelloMessage)message;
-        assertArrayEquals(generated.random(), parsed.random());
-        assertEquals(generated.cipherSuite(), parsed.cipherSuite());
-        assertEquals(generated.extensions(), parsed.extensions());
-
-        // Parse again one byte at a time.
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            message = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                Message message = parser.parse(slice);
 
-        assertInstanceOf(ServerHelloMessage.class, message);
-        parsed = (ServerHelloMessage)message;
-        assertArrayEquals(generated.random(), parsed.random());
-        assertEquals(generated.cipherSuite(), parsed.cipherSuite());
-        assertEquals(generated.extensions(), parsed.extensions());
+                assertInstanceOf(ServerHelloMessage.class, message);
+                ServerHelloMessage parsed = (ServerHelloMessage)message;
+                assertArrayEquals(generated.random(), parsed.random());
+                assertEquals(generated.cipherSuite(), parsed.cipherSuite());
+                assertEquals(generated.extensions(), parsed.extensions());
+            }
+
+            // Parse again one byte at a time.
+            Message message = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    message = parser.parse(slice);
+                }
+            }
+
+            assertInstanceOf(ServerHelloMessage.class, message);
+            ServerHelloMessage parsed = (ServerHelloMessage)message;
+            assertArrayEquals(generated.random(), parsed.random());
+            assertEquals(generated.cipherSuite(), parsed.cipherSuite());
+            assertEquals(generated.extensions(), parsed.extensions());
+        }
     }
 
     @ParameterizedTest
@@ -152,31 +164,37 @@ public class MessagesGenerateParseTest
     public void testEncryptedExtensionsMessage(boolean client) throws Exception
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, client);
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, false, client);
+        BufferAccumulator accumulator = new BufferAccumulator();
         EncryptedExtensionsMessage generated = new EncryptedExtensionsMessage(List.of(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3))));
         generator.generate(accumulator, generated);
 
         MessagesParser parser = new MessagesParser(!client);
-        Message message = parser.parse(accumulator);
-
-        assertInstanceOf(EncryptedExtensionsMessage.class, message);
-        EncryptedExtensionsMessage parsed = (EncryptedExtensionsMessage)message;
-        assertEquals(generated.extensions(), parsed.extensions());
-
-        // Parse again one byte at a time.
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            message = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                Message message = parser.parse(slice);
 
-        assertInstanceOf(EncryptedExtensionsMessage.class, message);
-        parsed = (EncryptedExtensionsMessage)message;
-        assertEquals(generated.extensions(), parsed.extensions());
+                assertInstanceOf(EncryptedExtensionsMessage.class, message);
+                EncryptedExtensionsMessage parsed = (EncryptedExtensionsMessage)message;
+                assertEquals(generated.extensions(), parsed.extensions());
+            }
+
+            // Parse again one byte at a time.
+            Message message = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    message = parser.parse(slice);
+                }
+            }
+
+            assertInstanceOf(EncryptedExtensionsMessage.class, message);
+            EncryptedExtensionsMessage parsed = (EncryptedExtensionsMessage)message;
+            assertEquals(generated.extensions(), parsed.extensions());
+        }
     }
 
     @ParameterizedTest
@@ -184,35 +202,41 @@ public class MessagesGenerateParseTest
     public void testCertificateRequestMessage(boolean client) throws Exception
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, client);
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, false, client);
+        BufferAccumulator accumulator = new BufferAccumulator();
         byte[] context = new byte[13];
         ThreadLocalRandom.current().nextBytes(context);
         CertificateRequestMessage generated = new CertificateRequestMessage(context, List.of(new SupportedVersionsExtension(List.of(TLSVersion.TLS_1_3))));
         generator.generate(accumulator, generated);
 
         MessagesParser parser = new MessagesParser(!client);
-        Message message = parser.parse(accumulator);
-
-        assertInstanceOf(CertificateRequestMessage.class, message);
-        CertificateRequestMessage parsed = (CertificateRequestMessage)message;
-        assertArrayEquals(generated.context(), parsed.context());
-        assertEquals(generated.extensions(), parsed.extensions());
-
-        // Parse again one byte at a time.
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            message = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                Message message = parser.parse(slice);
 
-        assertInstanceOf(CertificateRequestMessage.class, message);
-        parsed = (CertificateRequestMessage)message;
-        assertArrayEquals(generated.context(), parsed.context());
-        assertEquals(generated.extensions(), parsed.extensions());
+                assertInstanceOf(CertificateRequestMessage.class, message);
+                CertificateRequestMessage parsed = (CertificateRequestMessage)message;
+                assertArrayEquals(generated.context(), parsed.context());
+                assertEquals(generated.extensions(), parsed.extensions());
+            }
+
+            // Parse again one byte at a time.
+            Message message = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    message = parser.parse(slice);
+                }
+            }
+
+            assertInstanceOf(CertificateRequestMessage.class, message);
+            CertificateRequestMessage parsed = (CertificateRequestMessage)message;
+            assertArrayEquals(generated.context(), parsed.context());
+            assertEquals(generated.extensions(), parsed.extensions());
+        }
     }
 
     @ParameterizedTest
@@ -225,8 +249,8 @@ public class MessagesGenerateParseTest
         sslContextFactory.start();
 
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, client);
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, false, client);
+        BufferAccumulator accumulator = new BufferAccumulator();
         byte[] context = new byte[13];
         ThreadLocalRandom.current().nextBytes(context);
         List<X509Certificate> certificates = Arrays.stream(sslContextFactory.getKeyStore().getCertificateChain("mykey"))
@@ -242,27 +266,33 @@ public class MessagesGenerateParseTest
         generator.generate(accumulator, generated);
 
         MessagesParser parser = new MessagesParser(!client);
-        Message message = parser.parse(accumulator);
-
-        assertInstanceOf(CertificateMessage.class, message);
-        CertificateMessage parsed = (CertificateMessage)message;
-        assertArrayEquals(generated.requestContext(), parsed.requestContext());
-        assertEquals(generated.entries(), parsed.entries());
-
-        // Parse again one byte at a time.
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            message = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                Message message = parser.parse(slice);
 
-        assertInstanceOf(CertificateMessage.class, message);
-        parsed = (CertificateMessage)message;
-        assertArrayEquals(generated.requestContext(), parsed.requestContext());
-        assertEquals(generated.entries(), parsed.entries());
+                assertInstanceOf(CertificateMessage.class, message);
+                CertificateMessage parsed = (CertificateMessage)message;
+                assertArrayEquals(generated.requestContext(), parsed.requestContext());
+                assertEquals(generated.entries(), parsed.entries());
+            }
+
+            // Parse again one byte at a time.
+            Message message = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    message = parser.parse(slice);
+                }
+            }
+
+            assertInstanceOf(CertificateMessage.class, message);
+            CertificateMessage parsed = (CertificateMessage)message;
+            assertArrayEquals(generated.requestContext(), parsed.requestContext());
+            assertEquals(generated.entries(), parsed.entries());
+        }
     }
 
     @ParameterizedTest
@@ -270,35 +300,41 @@ public class MessagesGenerateParseTest
     public void testCertificateVerifyMessage(boolean client) throws Exception
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, client);
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, false, client);
+        BufferAccumulator accumulator = new BufferAccumulator();
         byte[] signature = new byte[13];
         ThreadLocalRandom.current().nextBytes(signature);
         CertificateVerifyMessage generated = new CertificateVerifyMessage(SignatureAlgorithm.RSA_PSS_RSAE_SHA256, signature);
         generator.generate(accumulator, generated);
 
         MessagesParser parser = new MessagesParser(!client);
-        Message message = parser.parse(accumulator);
-
-        assertInstanceOf(CertificateVerifyMessage.class, message);
-        CertificateVerifyMessage parsed = (CertificateVerifyMessage)message;
-        assertEquals(generated.signatureAlgorithm(), parsed.signatureAlgorithm());
-        assertArrayEquals(generated.signature(), parsed.signature());
-
-        // Parse again one byte at a time.
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            message = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                Message message = parser.parse(slice);
 
-        assertInstanceOf(CertificateVerifyMessage.class, message);
-        parsed = (CertificateVerifyMessage)message;
-        assertEquals(generated.signatureAlgorithm(), parsed.signatureAlgorithm());
-        assertArrayEquals(generated.signature(), parsed.signature());
+                assertInstanceOf(CertificateVerifyMessage.class, message);
+                CertificateVerifyMessage parsed = (CertificateVerifyMessage)message;
+                assertEquals(generated.signatureAlgorithm(), parsed.signatureAlgorithm());
+                assertArrayEquals(generated.signature(), parsed.signature());
+            }
+
+            // Parse again one byte at a time.
+            Message message = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    message = parser.parse(slice);
+                }
+            }
+
+            assertInstanceOf(CertificateVerifyMessage.class, message);
+            CertificateVerifyMessage parsed = (CertificateVerifyMessage)message;
+            assertEquals(generated.signatureAlgorithm(), parsed.signatureAlgorithm());
+            assertArrayEquals(generated.signature(), parsed.signature());
+        }
     }
 
     @ParameterizedTest
@@ -306,32 +342,38 @@ public class MessagesGenerateParseTest
     public void testFinishedMessage(boolean client) throws Exception
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, client);
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        MessagesGenerator generator = new MessagesGenerator(byteBufferPool, false, client);
+        BufferAccumulator accumulator = new BufferAccumulator();
         byte[] verifyData = new byte[13];
         ThreadLocalRandom.current().nextBytes(verifyData);
         FinishedMessage generated = new FinishedMessage(verifyData);
         generator.generate(accumulator, generated);
 
         MessagesParser parser = new MessagesParser(!client);
-        Message message = parser.parse(accumulator);
-
-        assertInstanceOf(FinishedMessage.class, message);
-        FinishedMessage parsed = (FinishedMessage)message;
-        assertArrayEquals(generated.verifyData(), parsed.verifyData());
-
-        // Parse again one byte at a time.
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        try (RetainableByteBuffer buffer = accumulator.take())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            message = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
-        }
+            try (RetainableByteBuffer slice = buffer.slice())
+            {
+                Message message = parser.parse(slice);
 
-        assertInstanceOf(FinishedMessage.class, message);
-        parsed = (FinishedMessage)message;
-        assertArrayEquals(generated.verifyData(), parsed.verifyData());
+                assertInstanceOf(FinishedMessage.class, message);
+                FinishedMessage parsed = (FinishedMessage)message;
+                assertArrayEquals(generated.verifyData(), parsed.verifyData());
+            }
+
+            // Parse again one byte at a time.
+            Message message = null;
+            while (buffer.hasRemaining())
+            {
+                try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                {
+                    message = parser.parse(slice);
+                }
+            }
+
+            assertInstanceOf(FinishedMessage.class, message);
+            FinishedMessage parsed = (FinishedMessage)message;
+            assertArrayEquals(generated.verifyData(), parsed.verifyData());
+        }
     }
 }

@@ -16,26 +16,26 @@ package org.eclipse.jetty.tls.common.generator;
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 
 public class MessagesGenerator
 {
     private final Map<Message.Type, MessageGenerator> generators = new EnumMap<>(Message.Type.class);
     private final ExtensionsGenerator extensionsGenerator;
 
-    public MessagesGenerator(ByteBufferPool byteBufferPool, boolean client)
+    public MessagesGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, boolean client)
     {
-        extensionsGenerator = new ExtensionsGenerator(client);
-        generators.put(Message.Type.CLIENT_HELLO, new ClientHelloMessageGenerator(byteBufferPool, extensionsGenerator));
-        generators.put(Message.Type.SERVER_HELLO, new ServerHelloMessageGenerator(byteBufferPool, extensionsGenerator));
-        generators.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsMessageGenerator(byteBufferPool, extensionsGenerator));
-        generators.put(Message.Type.CERTIFICATE_REQUEST, new CertificateRequestMessageGenerator(byteBufferPool, extensionsGenerator));
-        generators.put(Message.Type.CERTIFICATE, new CertificateMessageGenerator(byteBufferPool, extensionsGenerator));
-        generators.put(Message.Type.CERTIFICATE_VERIFY, new CertificateVerifyMessageGenerator(byteBufferPool));
-        generators.put(Message.Type.FINISHED, new FinishedMessageGenerator(byteBufferPool));
-        generators.put(Message.Type.NEW_SESSION_TICKET, new NewSessionTicketMessageGenerator(byteBufferPool, extensionsGenerator));
+        extensionsGenerator = new ExtensionsGenerator(byteBufferPool, useDirectBuffers, client);
+        generators.put(Message.Type.CLIENT_HELLO, new ClientHelloMessageGenerator(byteBufferPool, useDirectBuffers, extensionsGenerator));
+        generators.put(Message.Type.SERVER_HELLO, new ServerHelloMessageGenerator(byteBufferPool, useDirectBuffers, extensionsGenerator));
+        generators.put(Message.Type.ENCRYPTED_EXTENSIONS, new EncryptedExtensionsMessageGenerator(byteBufferPool, useDirectBuffers, extensionsGenerator));
+        generators.put(Message.Type.CERTIFICATE_REQUEST, new CertificateRequestMessageGenerator(byteBufferPool, useDirectBuffers, extensionsGenerator));
+        generators.put(Message.Type.CERTIFICATE, new CertificateMessageGenerator(byteBufferPool, useDirectBuffers, extensionsGenerator));
+        generators.put(Message.Type.CERTIFICATE_VERIFY, new CertificateVerifyMessageGenerator(byteBufferPool, useDirectBuffers));
+        generators.put(Message.Type.FINISHED, new FinishedMessageGenerator(byteBufferPool, useDirectBuffers));
+        generators.put(Message.Type.NEW_SESSION_TICKET, new NewSessionTicketMessageGenerator(byteBufferPool, useDirectBuffers, extensionsGenerator));
     }
 
     public ExtensionsGenerator getExtensionsGenerator()
@@ -48,7 +48,7 @@ public class MessagesGenerator
         generators.values().forEach(g -> g.addListener(listener));
     }
 
-    public void generate(RetainableByteBuffer.Mutable accumulator, Message message) throws Exception
+    public void generate(BufferAccumulator accumulator, Message message) throws Exception
     {
         MessageGenerator messageGenerator = generators.get(message.type());
         if (messageGenerator == null)

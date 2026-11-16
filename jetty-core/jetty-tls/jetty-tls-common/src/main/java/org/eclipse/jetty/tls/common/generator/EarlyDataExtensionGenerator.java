@@ -13,38 +13,39 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.EarlyDataExtension;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class EarlyDataExtensionGenerator implements ExtensionGenerator
+public class EarlyDataExtensionGenerator extends ExtensionGenerator
 {
-    @Override
-    public int type()
+    public EarlyDataExtensionGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers)
     {
-        return EarlyDataExtension.CODE;
+        super(byteBufferPool, useDirectBuffers, EarlyDataExtension.CODE);
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
+    public int generate(BufferAccumulator accumulator, Extension extension)
     {
         return generate(accumulator, (EarlyDataExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, EarlyDataExtension extension)
+    private int generate(BufferAccumulator accumulator, EarlyDataExtension extension)
     {
-        accumulator.putShort((short)extension.code());
         long maxData = extension.maxData();
+        int totalLength = maxData > 0 ? 4 : 0;
+
+        int capacity = 2 + 2 + totalLength;
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+
+        buffer.putShort((short)extension.code());
+        buffer.putShort((short)totalLength);
         if (maxData > 0)
-        {
-            accumulator.putShort((short)4);
-            accumulator.putInt((int)maxData);
-            return 2 + 2 + 4;
-        }
-        else
-        {
-            accumulator.putShort((short)0);
-            return 2 + 2;
-        }
+            buffer.putInt((int)maxData);
+
+        return capacity;
     }
 }

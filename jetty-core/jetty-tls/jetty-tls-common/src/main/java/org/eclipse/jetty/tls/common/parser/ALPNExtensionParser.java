@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.ALPNExtension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ALPNExtensionParser implements ExtensionParser
 {
@@ -48,8 +47,7 @@ public class ALPNExtensionParser implements ExtensionParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return -1;
             switch (state)
@@ -58,7 +56,7 @@ public class ALPNExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        totalLength = (byteBuffer.getShort() & 0xFFFF);
+                        totalLength = buffer.getShortAsInt();
                         if (totalLength < 4)
                             throw new IllegalStateException("invalid alpn extension length " + totalLength);
                         state = State.LIST_LENGTH;
@@ -71,7 +69,7 @@ public class ALPNExtensionParser implements ExtensionParser
                 }
                 case TOTAL_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -85,7 +83,7 @@ public class ALPNExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        listLength = (byteBuffer.getShort() & 0xFFFF);
+                        listLength = buffer.getShortAsInt();
                         if (listLength < 2)
                             throw new IllegalStateException("invalid alpn list length " + listLength);
                         state = State.LENGTH;
@@ -98,7 +96,7 @@ public class ALPNExtensionParser implements ExtensionParser
                 }
                 case LIST_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     listLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -110,7 +108,7 @@ public class ALPNExtensionParser implements ExtensionParser
                 }
                 case LENGTH ->
                 {
-                    length = byteBuffer.get() & 0xFF;
+                    length = buffer.getByteAsInt();
                     listLength -= 1;
                     protocol = new byte[length];
                     state = State.PROTOCOL;
@@ -119,7 +117,7 @@ public class ALPNExtensionParser implements ExtensionParser
                 {
                     if (remaining >= length)
                     {
-                        byteBuffer.get(protocol);
+                        buffer.get(protocol);
                         listLength -= length;
                         int result = protocolComplete();
                         if (result > 0)
@@ -133,7 +131,7 @@ public class ALPNExtensionParser implements ExtensionParser
                 }
                 case PROTOCOL_BYTES ->
                 {
-                    protocol[length - cursor] = byteBuffer.get();
+                    protocol[length - cursor] = buffer.get();
                     --cursor;
                     if (cursor == 0)
                     {

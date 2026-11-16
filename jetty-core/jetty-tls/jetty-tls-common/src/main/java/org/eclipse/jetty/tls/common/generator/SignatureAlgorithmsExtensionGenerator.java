@@ -15,37 +15,44 @@ package org.eclipse.jetty.tls.common.generator;
 
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.SignatureAlgorithm;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.tls.ext.SignatureAlgorithmsExtension;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class SignatureAlgorithmsExtensionGenerator implements ExtensionGenerator
+public class SignatureAlgorithmsExtensionGenerator extends ExtensionGenerator
 {
-    @Override
-    public int type()
+    public SignatureAlgorithmsExtensionGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers)
     {
-        return SignatureAlgorithmsExtension.CODE;
+        super(byteBufferPool, useDirectBuffers, SignatureAlgorithmsExtension.CODE);
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
+    public int generate(BufferAccumulator accumulator, Extension extension)
     {
         return generate(accumulator, (SignatureAlgorithmsExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, SignatureAlgorithmsExtension extension)
+    private int generate(BufferAccumulator accumulator, SignatureAlgorithmsExtension extension)
     {
-        accumulator.putShort((short)extension.code());
         List<SignatureAlgorithm> algorithms = extension.signatureAlgorithms();
         int listLength = 2 * algorithms.size();
         int totalLength = 2 + listLength;
-        accumulator.putShort((short)totalLength);
-        accumulator.putShort((short)listLength);
+
+        int capacity = 2 + 2 + totalLength;
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+
+        buffer.putShort((short)extension.code());
+        buffer.putShort((short)totalLength);
+        buffer.putShort((short)listLength);
         for (SignatureAlgorithm algorithm : algorithms)
         {
-            accumulator.putShort((short)algorithm.code());
+            buffer.putShort((short)algorithm.code());
         }
-        return 2 + 2 + totalLength;
+
+        return capacity;
     }
 }

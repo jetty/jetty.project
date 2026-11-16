@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.ClientPreSharedKeyExtension;
 import org.eclipse.jetty.tls.ext.PreSharedKeyIdentity;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ClientPreSharedKeyExtensionParser implements ExtensionParser
 {
@@ -53,8 +52,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return -1;
             switch (state)
@@ -63,7 +61,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        totalLength = byteBuffer.getShort() & 0xFFFF;
+                        totalLength = buffer.getShortAsInt();
                         state = State.IDENTITIES_LENGTH;
                     }
                     else
@@ -74,7 +72,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 }
                 case TOTAL_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     totalLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -84,7 +82,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        identitiesLength = byteBuffer.getShort() & 0xFFFF;
+                        identitiesLength = buffer.getShortAsInt();
                         state = State.IDENTITY_LENGTH;
                     }
                     else
@@ -95,7 +93,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 }
                 case IDENTITIES_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     identitiesLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -105,7 +103,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        identityLength = byteBuffer.getShort() & 0xFFFF;
+                        identityLength = buffer.getShortAsInt();
                         identitiesLength -= 2;
                         identity = new byte[identityLength];
                         state = State.IDENTITY;
@@ -118,7 +116,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 }
                 case IDENTITY_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     identityLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -132,7 +130,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 {
                     int offset = identity.length - identityLength;
                     int length = Math.min(identityLength, remaining);
-                    byteBuffer.get(identity, offset, length);
+                    buffer.get(identity, offset, length);
                     identityLength -= length;
                     if (identityLength == 0)
                     {
@@ -144,7 +142,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 {
                     if (remaining > 3)
                     {
-                        obfuscatedTicketAge = byteBuffer.getInt();
+                        obfuscatedTicketAge = buffer.getInt();
                         identities.add(new PreSharedKeyIdentity(identity, obfuscatedTicketAge, null));
                         identity = null;
                         obfuscatedTicketAge = 0;
@@ -159,7 +157,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 }
                 case OBFUSCATED_TICKET_AGE_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     obfuscatedTicketAge += b << (8 * cursor);
                     if (cursor == 0)
@@ -175,7 +173,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 {
                     if (remaining > 1)
                     {
-                        bindersLength = byteBuffer.getShort() & 0xFFFF;
+                        bindersLength = buffer.getShortAsInt();
                         state = State.BINDER_LENGTH;
                     }
                     else
@@ -186,7 +184,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 }
                 case BINDERS_LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     bindersLength += b << (8 * cursor);
                     if (cursor == 0)
@@ -194,7 +192,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 }
                 case BINDER_LENGTH ->
                 {
-                    binderLength = byteBuffer.get() & 0xFF;
+                    binderLength = buffer.getByteAsInt();
                     bindersLength -= 1;
                     binder = new byte[binderLength];
                     state = State.BINDER;
@@ -203,7 +201,7 @@ public class ClientPreSharedKeyExtensionParser implements ExtensionParser
                 {
                     int offset = binder.length - binderLength;
                     int length = Math.min(binderLength, remaining);
-                    byteBuffer.get(binder, offset, length);
+                    buffer.get(binder, offset, length);
                     binderLength -= length;
                     if (binderLength == 0)
                     {

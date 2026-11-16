@@ -71,7 +71,7 @@ public class PacketGeneratorParserTest
                 return new EncodedPacketNumber((int)packetNumber, 4);
             }
         };
-        TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
+        TranscriptHash transcriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         protector.generateInitialKeys(QuicVersion.V1, destination);
 
@@ -161,7 +161,7 @@ public class PacketGeneratorParserTest
                 return new EncodedPacketNumber((int)packetNumber, 2);
             }
         };
-        TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
+        TranscriptHash transcriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
         protector.generateInitialKeys(QuicVersion.V1, StringUtil.fromHexString("8394c8f03e515708"));
 
@@ -213,7 +213,7 @@ public class PacketGeneratorParserTest
 
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers clientPacketNumbers = new PacketNumbers();
-        TranscriptHash clientTranscriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
+        TranscriptHash clientTranscriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
         PacketProtector clientProtector = new PacketProtector(byteBufferPool, clientPacketNumbers, clientTranscriptHash, true);
         clientProtector.generateInitialKeys(QuicVersion.V1, destination);
 
@@ -228,7 +228,7 @@ public class PacketGeneratorParserTest
         framesAccumulator.release();
 
         PacketNumbers serverPacketNumbers = new PacketNumbers();
-        TranscriptHash serverTranscriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, true), new MessagesGenerator(byteBufferPool, false));
+        TranscriptHash serverTranscriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, true), new MessagesGenerator(byteBufferPool, false));
         PacketProtector serverProtector = new PacketProtector(byteBufferPool, serverPacketNumbers, serverTranscriptHash, false);
         serverProtector.generateInitialKeys(QuicVersion.V1, destination);
         FramesParser framesParser = new FramesParser();
@@ -263,7 +263,7 @@ public class PacketGeneratorParserTest
 
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers clientPacketNumbers = new PacketNumbers();
-        TranscriptHash clientTranscriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
+        TranscriptHash clientTranscriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
         PacketProtector clientProtector = new PacketProtector(byteBufferPool, clientPacketNumbers, clientTranscriptHash, true);
         clientProtector.generateInitialKeys(QuicVersion.V1, destination);
 
@@ -283,7 +283,7 @@ public class PacketGeneratorParserTest
         framesAccumulator.release();
 
         PacketNumbers serverPacketNumbers = new PacketNumbers();
-        TranscriptHash serverTranscriptHash = new TranscriptHash(byteBufferPool, new MessagesGenerator(byteBufferPool, true), new MessagesGenerator(byteBufferPool, false));
+        TranscriptHash serverTranscriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, true), new MessagesGenerator(byteBufferPool, false));
         PacketProtector serverProtector = new PacketProtector(byteBufferPool, serverPacketNumbers, serverTranscriptHash, false);
         serverProtector.generateInitialKeys(QuicVersion.V1, destination);
         FramesParser framesParser = new FramesParser();

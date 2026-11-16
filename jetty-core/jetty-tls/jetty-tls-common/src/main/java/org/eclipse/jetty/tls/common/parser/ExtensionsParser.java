@@ -13,15 +13,14 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntConsumer;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,10 +69,9 @@ public class ExtensionsParser implements ExtensionParser.Listener
 
     public List<Extension> parse(RetainableByteBuffer buffer, IntConsumer lengthConsumer)
     {
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
         while (true)
         {
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return null;
             switch (state)
@@ -82,7 +80,7 @@ public class ExtensionsParser implements ExtensionParser.Listener
                 {
                     if (remaining > 1)
                     {
-                        length = (byteBuffer.getShort() & 0xFFFF);
+                        length = buffer.getShortAsInt();
                         if (length == 0)
                         {
                             lengthConsumer.accept(2);
@@ -98,7 +96,7 @@ public class ExtensionsParser implements ExtensionParser.Listener
                 }
                 case LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     length += b << (8 * cursor);
                     if (cursor == 0)
@@ -115,7 +113,7 @@ public class ExtensionsParser implements ExtensionParser.Listener
                 {
                     if (remaining > 1)
                     {
-                        code = (byteBuffer.getShort() & 0xFFFF);
+                        code = buffer.getShortAsInt();
                         consumed += 2;
                         state = State.BODY;
                     }
@@ -127,7 +125,7 @@ public class ExtensionsParser implements ExtensionParser.Listener
                 }
                 case TYPE_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     code += b << (8 * cursor);
                     if (cursor == 0)

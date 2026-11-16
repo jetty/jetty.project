@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
@@ -27,6 +26,7 @@ import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -178,14 +178,18 @@ public class FrameStreamTest
         CryptoFrame frame1 = (CryptoFrame)output.getFirst();
         assertEquals(0, frame1.offset());
         assertEquals(data1.length + delta, frame1.length());
-        byte[] bytes1 = frame1.map(RetainableByteBuffer::takeByteArray);
-        assertArrayEquals(data3, bytes1);
+        try (RetainableByteBuffer buffer = frame1.acquire())
+        {
+            assertArrayEquals(data3, buffer.getArray());
+        }
 
         CryptoFrame frame2 = (CryptoFrame)output.getLast();
         assertEquals(data1.length + delta, frame2.offset());
         assertEquals(data2.length - delta, frame2.length());
-        byte[] bytes2 = frame2.map(RetainableByteBuffer::takeByteArray);
-        assertArrayEquals(Arrays.copyOfRange(data2, delta, data2.length), bytes2);
+        try (RetainableByteBuffer buffer = frame2.acquire())
+        {
+            assertArrayEquals(Arrays.copyOfRange(data2, delta, data2.length), buffer.getArray());
+        }
     }
 
     @Test
@@ -220,9 +224,9 @@ public class FrameStreamTest
         assertEquals(1, output.size());
 
         // An empty data frame is discarded.
-        stream.offer(new StreamFrame(0, RetainableByteBuffer.EMPTY, 0, true, true, false));
+        stream.offer(new StreamFrame(0, RetainableByteBuffer.empty(), 0, true, true, false));
         assertEquals(1, output.size());
-        stream.offer(new StreamFrame(0, RetainableByteBuffer.EMPTY, 0, true, true, true));
+        stream.offer(new StreamFrame(0, RetainableByteBuffer.empty(), 0, true, true, true));
         assertEquals(1, output.size());
     }
 

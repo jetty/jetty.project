@@ -66,7 +66,7 @@ public class ClientTLSEngineTest
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers packetNumbers = new PacketNumbers();
-        TranscriptHash transcriptHash = new TranscriptHash(byteBufferPool, new QuicMessagesGenerator(byteBufferPool, false), new QuicMessagesGenerator(byteBufferPool, true));
+        TranscriptHash transcriptHash = new TranscriptHash(new QuicMessagesGenerator(byteBufferPool, , false, ), new QuicMessagesGenerator(byteBufferPool, , true, ));
         PacketProtector packetProtector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         QuicClientQuicConfiguration quicConfig = new QuicClientQuicConfiguration();

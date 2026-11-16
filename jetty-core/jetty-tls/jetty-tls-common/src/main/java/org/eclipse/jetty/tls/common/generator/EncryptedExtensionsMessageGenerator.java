@@ -13,42 +13,45 @@
 
 package org.eclipse.jetty.tls.common.generator;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.EncryptedExtensionsMessage;
 import org.eclipse.jetty.tls.Message;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class EncryptedExtensionsMessageGenerator extends MessageGenerator
 {
     private final ExtensionsGenerator extensionsGenerator;
 
-    public EncryptedExtensionsMessageGenerator(ByteBufferPool byteBufferPool, ExtensionsGenerator extensionsGenerator)
+    public EncryptedExtensionsMessageGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, ExtensionsGenerator extensionsGenerator)
     {
-        super(byteBufferPool);
+        super(byteBufferPool, useDirectBuffers);
         this.extensionsGenerator = extensionsGenerator;
     }
 
     @Override
-    public void generate(RetainableByteBuffer.Mutable accumulator, Message message)
+    public void generate(BufferAccumulator accumulator, Message message)
     {
         generate(accumulator, (EncryptedExtensionsMessage)message);
     }
 
-    private void generate(RetainableByteBuffer.Mutable accumulator, EncryptedExtensionsMessage message)
+    private void generate(BufferAccumulator accumulator, EncryptedExtensionsMessage message)
     {
-        RetainableByteBuffer.Mutable extensionsAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), true, -1, 0, 0);
-        int extensionsLength = extensionsGenerator.generate(extensionsAccumulator, message.extensions());
+        // RFC 8446, 4.3.1.
+        int capacity = 4 + 2;
+        RetainableByteBuffer.Mutable header = getByteBufferPool().acquire(capacity, isUseDirectBuffers());
+        accumulator.addRetained(header);
+
+        int extensionsLength = extensionsGenerator.generate(accumulator, message.extensions());
         if (extensionsLength > 0xFFFF)
             throw new IllegalStateException("could not generate EncryptedExtensions, extensions too long");
 
-        // RFC 8446, 4.3.1.
-        int length = 2 + extensionsLength;
+        int length = capacity - 4 + extensionsLength;
 
         int typeAndLength = (message.type().code() << 24) | length;
-        accumulator.putInt(typeAndLength);
+        header.putInt(typeAndLength);
 
-        accumulator.putShort((short)extensionsLength);
-        accumulator.add(extensionsAccumulator);
+        header.putShort((short)extensionsLength);
 
         notifyMessageGenerated(message);
     }

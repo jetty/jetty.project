@@ -19,13 +19,13 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,16 +41,16 @@ public class TranscriptHash
     private final Deque<Entry> entries = new ArrayDeque<>();
     private final MessagesGenerator inputGenerator;
     private final MessagesGenerator outputGenerator;
-    private final RetainableByteBuffer.Mutable accumulator;
+    private final BufferAccumulator accumulator;
     private MessageDigest digest;
     private byte[] emptyHash;
     private byte[] hash;
 
-    public TranscriptHash(ByteBufferPool byteBufferPool, MessagesGenerator inputGenerator, MessagesGenerator outputGenerator)
+    public TranscriptHash(MessagesGenerator inputGenerator, MessagesGenerator outputGenerator)
     {
         this.inputGenerator = inputGenerator;
         this.outputGenerator = outputGenerator;
-        this.accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
+        this.accumulator = new BufferAccumulator();
     }
 
     public void initialize(CipherSuite cipherSuite)
@@ -82,15 +82,18 @@ public class TranscriptHash
         accumulator.clear();
         for (Entry entry : transcript)
         {
-            int remaining = accumulator.remaining();
+            long remaining = accumulator.remaining();
             MessagesGenerator generator = entry.input() ? inputGenerator : outputGenerator;
             generator.generate(accumulator, entry.message());
             if (LOG.isDebugEnabled())
                 LOG.debug("generated {} bytes for {} on {}", accumulator.remaining() - remaining, entry, this);
         }
-        digest.update(accumulator.getByteBuffer());
-        hash = digest.digest();
-        return hash;
+        try (RetainableByteBuffer buffer = accumulator.take())
+        {
+            digest.update(buffer.getArray());
+            hash = digest.digest();
+            return hash;
+        }
     }
 
     /// Offers the given message for hashing, specifying whether
@@ -116,7 +119,7 @@ public class TranscriptHash
     public void dispose()
     {
         entries.clear();
-        accumulator.release();
+        accumulator.clear();
     }
 
     @Override

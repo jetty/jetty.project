@@ -13,16 +13,15 @@
 
 package org.eclipse.jetty.tls.common.parser;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.tls.ServerHelloMessage;
 import org.eclipse.jetty.tls.TLSException;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ServerHelloMessageParser implements MessageParser
 {
@@ -45,8 +44,7 @@ public class ServerHelloMessageParser implements MessageParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            int remaining = Math.toIntExact(buffer.remaining());
             if (remaining == 0)
                 return null;
             switch (state)
@@ -55,7 +53,7 @@ public class ServerHelloMessageParser implements MessageParser
                 {
                     if (remaining > 1)
                     {
-                        version = byteBuffer.getShort() & 0xFFFF;
+                        version = buffer.getShortAsInt();
                         if (version != TLSVersion.TLS_1_2.code())
                             throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "invalid ServerHello TLS version 0x" + Integer.toHexString(version));
                         version = 0;
@@ -70,7 +68,7 @@ public class ServerHelloMessageParser implements MessageParser
                 }
                 case VERSION_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     version += b << (8 * cursor);
                     if (cursor == 0)
@@ -86,7 +84,7 @@ public class ServerHelloMessageParser implements MessageParser
                 {
                     int offset = cursor;
                     int length = Math.min(random.length - cursor, remaining);
-                    byteBuffer.get(random, offset, length);
+                    buffer.get(random, offset, length);
                     cursor += length;
                     if (cursor == random.length)
                     {
@@ -96,7 +94,7 @@ public class ServerHelloMessageParser implements MessageParser
                 }
                 case SESSION_ID_LENGTH ->
                 {
-                    value = byteBuffer.get() & 0xFF;
+                    value = buffer.getByteAsInt();
                     sessionId = new byte[value];
                     state = State.SESSION_ID;
                 }
@@ -104,7 +102,7 @@ public class ServerHelloMessageParser implements MessageParser
                 {
                     int offset = cursor;
                     int length = Math.min(value - cursor, remaining);
-                    byteBuffer.get(sessionId, offset, length);
+                    buffer.get(sessionId, offset, length);
                     cursor += length;
                     if (cursor == value)
                     {
@@ -117,7 +115,7 @@ public class ServerHelloMessageParser implements MessageParser
                 {
                     if (remaining > 1)
                     {
-                        int cipher = byteBuffer.getShort() & 0xFFFF;
+                        int cipher = buffer.getShortAsInt();
                         cipherSuite = CipherSuite.from(cipher);
                         state = State.COMPRESSION_METHOD;
                     }
@@ -129,7 +127,7 @@ public class ServerHelloMessageParser implements MessageParser
                 }
                 case CIPHER_SUITE_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     value += b << (8 * cursor);
                     if (cursor == 0)
@@ -142,7 +140,7 @@ public class ServerHelloMessageParser implements MessageParser
                 case COMPRESSION_METHOD ->
                 {
                     // Skip the compression method.
-                    int compressionMethod = byteBuffer.get() & 0xFF;
+                    int compressionMethod = buffer.getByteAsInt();
                     if (compressionMethod != 0)
                         throw new TLSException(TLSException.Alert.ILLEGAL_PARAMETER, "invalid compression method " + compressionMethod);
                     state = State.EXTENSIONS;

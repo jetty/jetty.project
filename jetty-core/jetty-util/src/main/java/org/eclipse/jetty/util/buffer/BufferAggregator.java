@@ -133,15 +133,14 @@ public class BufferAggregator implements AutoCloseable
     }
 
     /// Empties the internal backing store.
+    /// The internal backing store is not released.
     public void clear()
     {
         if (buffer != null)
             buffer.clear();
     }
 
-    /// Closes this aggregator and releases the internal backing store.
-    ///
-    /// This aggregator cannot be used after being closed.
+    /// Closes this aggregator by releasing the internal backing store.
     @Override
     public void close()
     {

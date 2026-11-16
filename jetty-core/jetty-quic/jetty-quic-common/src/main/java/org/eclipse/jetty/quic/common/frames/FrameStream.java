@@ -17,7 +17,6 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.function.Consumer;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
@@ -26,6 +25,7 @@ import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,7 +140,8 @@ public abstract sealed class FrameStream
                     LOG.debug("stalling, data gap on {}", this);
                 return;
             }
-            else if (candidate.offset() == offset)
+
+            if (candidate.offset() == offset)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("notifying, data {} on {}", candidate, this);
@@ -149,36 +150,44 @@ public abstract sealed class FrameStream
                 notifyFrame(candidate);
                 candidate.close();
             }
-            else
-            {
-                if (candidate.endOffset() <= offset)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("discarding, data delivered {} on {}", candidate, this);
-                    frames.poll();
-                    candidate.close();
-                    continue;
-                }
 
-                switch (candidate)
+            if (candidate.endOffset() <= offset)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("discarding, data delivered {} on {}", candidate, this);
+                frames.poll();
+                candidate.close();
+                continue;
+            }
+
+            switch (candidate)
+            {
+                case Frame.WithData withData ->
                 {
-                    case Frame.WithData dataFrame ->
+                    try (RetainableByteBuffer buffer = withData.acquire())
                     {
-                        dataFrame.skip(offset - dataFrame.offset());
+                        buffer.consume(offset - withData.offset());
                         long length = candidate.endOffset() - offset;
-                        try (Frame.WithData slice = dataFrame.slice(offset, length))
+                        try (RetainableByteBuffer slice = buffer.slice(offset, length))
                         {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("notifying, data slice {} on {}", slice, this);
-                            frames.poll();
-                            dataFrame.close();
-                            offset += length;
-                            notifyFrame(slice);
+                            try (Frame.WithData dataFrame = switch (withData)
+                            {
+                                case CryptoFrame _ -> new CryptoFrame(offset, slice);
+                                case StreamFrame s -> new StreamFrame(s.type(), s.streamId(), slice, offset, s.isEndData());
+                            })
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("notifying, data slice {} on {}", dataFrame, this);
+                                frames.poll();
+                                withData.close();
+                                offset += length;
+                                notifyFrame(dataFrame);
+                            }
                         }
                     }
-                    case ResetStreamFrame _ ->
-                        throw new QuicException(ErrorCode.INTERNAL_ERROR, "invalid_reset_frame", candidate.type());
                 }
+                case ResetStreamFrame _ ->
+                    throw new QuicException(ErrorCode.INTERNAL_ERROR, "invalid_reset_frame", candidate.type());
             }
         }
     }
@@ -186,7 +195,10 @@ public abstract sealed class FrameStream
     private void retain(Frame.WithOffset frame)
     {
         if (frame instanceof Frame.WithData dataFrame)
-            dataFrame.accept(RetainableByteBuffer::retain);
+        {
+            // TODO: make WithData implement Retainable?
+            dataFrame.acquire();
+        }
     }
 
     long offset()
