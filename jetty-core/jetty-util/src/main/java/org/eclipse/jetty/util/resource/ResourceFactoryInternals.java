@@ -79,16 +79,7 @@ class ResourceFactoryInternals
         URL url = ResourceFactoryInternals.class.getResource("/org/eclipse/jetty/version/build.properties");
         if ((url != null) && !RESOURCE_FACTORIES.contains(url.getProtocol()))
         {
-            ResourceFactory resourceFactory;
-            if (GraalIssue5720PathResource.isAffectedURL(url))
-            {
-                resourceFactory = new GraalIssue5720PathResourceFactory();
-            }
-            else
-            {
-                resourceFactory = url.toString().contains("!/") ? mountedPathResourceFactory : pathResourceFactory;
-            }
-
+            ResourceFactory resourceFactory = url.toString().contains("!/") ? mountedPathResourceFactory : pathResourceFactory;
             RESOURCE_FACTORIES.put(url.getProtocol(), resourceFactory);
         }
     }
