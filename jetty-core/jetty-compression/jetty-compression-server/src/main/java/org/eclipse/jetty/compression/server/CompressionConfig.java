@@ -642,13 +642,5 @@ public class CompressionConfig extends AbstractLifeCycle
         {
             return new CompressionConfig(this);
         }
-
-        // TODO: compression specific config (eg: compression level, strategy, etc)
-        // TODO: dictionary support
-
-        // TODO: Add configuration for decompression body size limit (to help with decompression bombs)
-        // See: apache httpd mod_deflate DeflateInflateLimitRequestBody config
-        // TODO: Add configuration for decompression ration burst / limit (to help with decompression bombs)
-        // See: apache httpd mod_deflate DeflateInflateRatioBurst and DeflateInflateRatioLimit configs
     }
 }
