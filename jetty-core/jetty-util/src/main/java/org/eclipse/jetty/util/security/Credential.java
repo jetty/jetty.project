@@ -225,6 +225,8 @@ public abstract class Credential implements Serializable
                     return byteEquals(_digest, md5(password));
                 if (credentials instanceof MD5)
                     return equals(credentials);
+                if (credentials instanceof MD)
+                    return false;
                 if (credentials instanceof Credential other)
                     // Allow the other Credential to check.
                     return other.check(this);
@@ -321,6 +323,8 @@ public abstract class Credential implements Serializable
                     return byteEquals(_digest, digest(_algorithm, password));
                 if (credentials instanceof MD)
                     return equals(credentials);
+                if (credentials instanceof MD5)
+                    return false;
                 if (credentials instanceof Credential other)
                     // Allow the other Credential to check.
                     return other.check(this);
