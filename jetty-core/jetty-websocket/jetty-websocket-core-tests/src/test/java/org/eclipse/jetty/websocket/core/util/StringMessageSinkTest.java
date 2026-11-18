@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -49,7 +50,13 @@ public class StringMessageSinkTest
 
         FutureCallback callback = new FutureCallback();
         coreSession.setMaxTextMessageSize(3);
-        messageSink.accept(new Frame(OpCode.TEXT, utf8Payload).setFin(true), callback);
+        try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(utf8Payload))
+        {
+            try (Frame frame = new Frame(OpCode.TEXT, true, payload))
+            {
+                messageSink.accept(frame, callback);
+            }
+        }
 
         // Callback should fail and we don't receive the message in the sink.
         RuntimeException error = assertThrows(RuntimeException.class, () -> callback.block(5, TimeUnit.SECONDS));
@@ -64,8 +71,14 @@ public class StringMessageSinkTest
         ByteBuffer utf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0xF0, (byte)0x90, (byte)0x8D, (byte)0x88});
 
         FutureCallback callback = new FutureCallback();
-        messageSink.accept(new Frame(OpCode.TEXT, utf8Payload).setFin(true), callback);
-        callback.block(5, TimeUnit.SECONDS);
+        try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(utf8Payload))
+        {
+            try (Frame frame = new Frame(OpCode.TEXT, true, payload))
+            {
+                messageSink.accept(frame, callback);
+                callback.block(5, TimeUnit.SECONDS);
+            }
+        }
 
         assertThat(endpoint.messages.poll(5, TimeUnit.SECONDS), is("\uD800\uDF48")); // UTF-8 encoded payload.
     }
@@ -78,12 +91,24 @@ public class StringMessageSinkTest
         ByteBuffer continuationUtf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0x8D, (byte)0x88});
 
         FutureCallback callback = new FutureCallback();
-        messageSink.accept(new Frame(OpCode.TEXT, firstUtf8Payload).setFin(false), callback);
-        callback.block(5, TimeUnit.SECONDS);
+        try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(firstUtf8Payload))
+        {
+            try (Frame frame = new Frame(OpCode.TEXT, false, payload))
+            {
+                messageSink.accept(frame, callback);
+                callback.block(5, TimeUnit.SECONDS);
+            }
+        }
 
         callback = new FutureCallback();
-        messageSink.accept(new Frame(OpCode.TEXT, continuationUtf8Payload).setFin(true), callback);
-        callback.block(5, TimeUnit.SECONDS);
+        try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(continuationUtf8Payload))
+        {
+            try (Frame frame = new Frame(OpCode.TEXT, true, payload))
+            {
+                messageSink.accept(frame, callback);
+                callback.block(5, TimeUnit.SECONDS);
+            }
+        }
 
         assertThat(endpoint.messages.poll(5, TimeUnit.SECONDS), is("\uD800\uDF48")); // UTF-8 encoded payload.
     }
@@ -95,7 +120,13 @@ public class StringMessageSinkTest
         ByteBuffer invalidUtf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0xF0, (byte)0x90, (byte)0x8D});
 
         FutureCallback callback = new FutureCallback();
-        messageSink.accept(new Frame(OpCode.TEXT, invalidUtf8Payload).setFin(true), callback);
+        try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(invalidUtf8Payload))
+        {
+            try (Frame frame = new Frame(OpCode.TEXT, true, payload))
+            {
+                messageSink.accept(frame, callback);
+            }
+        }
 
         // Callback should fail and we don't receive the message in the sink.
         RuntimeException error = assertThrows(RuntimeException.class, () -> callback.block(5, TimeUnit.SECONDS));
@@ -111,11 +142,23 @@ public class StringMessageSinkTest
         ByteBuffer continuationUtf8Payload = BufferUtil.toBuffer(new byte[]{(byte)0x8D});
 
         FutureCallback firstCallback = new FutureCallback();
-        messageSink.accept(new Frame(OpCode.TEXT, firstUtf8Payload).setFin(false), firstCallback);
-        firstCallback.block(5, TimeUnit.SECONDS);
+        try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(firstUtf8Payload))
+        {
+            try (Frame frame = new Frame(OpCode.TEXT, false, payload))
+            {
+                messageSink.accept(frame, firstCallback);
+                firstCallback.block(5, TimeUnit.SECONDS);
+            }
+        }
 
         FutureCallback continuationCallback = new FutureCallback();
-        messageSink.accept(new Frame(OpCode.TEXT, continuationUtf8Payload).setFin(true), continuationCallback);
+        try (RetainableByteBuffer payload = RetainableByteBuffer.wrap(continuationUtf8Payload))
+        {
+            try (Frame frame = new Frame(OpCode.TEXT, true, payload))
+            {
+                messageSink.accept(frame, continuationCallback);
+            }
+        }
 
         // Callback should fail and we don't receive the message in the sink.
         RuntimeException error = assertThrows(RuntimeException.class, () -> continuationCallback.block(5, TimeUnit.SECONDS));

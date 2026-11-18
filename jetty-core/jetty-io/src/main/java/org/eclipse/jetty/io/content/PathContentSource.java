@@ -15,8 +15,8 @@ package org.eclipse.jetty.io.content;
 
 import java.nio.file.Path;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 
 /**
  * <p>A {@link Content.Source} that provides the file content of the passed {@link Path}.</p>

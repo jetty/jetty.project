@@ -19,13 +19,13 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Test;
@@ -62,7 +62,7 @@ public class SslConnectionTest
         // There are no bytes in the endPoint, so we fill zero.
         // However, this will trigger state changes in SSLEngine
         // that will later cause it to throw ISE("Internal error").
-        sslEndPoint.fill(BufferUtil.EMPTY_BUFFER);
+        sslEndPoint.fill(RetainableByteBuffer.Mutable.empty());
 
         // Close the connection before filling.
         sslEndPoint.shutdownOutput();
@@ -76,6 +76,6 @@ public class SslConnectionTest
         // We want SSLHandshakeException to be thrown instead, because it is
         // handled better (it is an IOException) by the Connection code that
         // reads from the EndPoint.
-        assertThrows(SSLHandshakeException.class, () -> sslEndPoint.fill(BufferUtil.EMPTY_BUFFER));
+        assertThrows(SSLHandshakeException.class, () -> sslEndPoint.fill(RetainableByteBuffer.Mutable.empty()));
     }
 }

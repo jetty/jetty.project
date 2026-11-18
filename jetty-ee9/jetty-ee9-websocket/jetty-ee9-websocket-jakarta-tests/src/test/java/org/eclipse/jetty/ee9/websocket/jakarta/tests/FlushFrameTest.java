@@ -111,7 +111,7 @@ public class FlushFrameTest
         // Receive the close frame and succeed the callback.
         TestFrameHandler.FrameCallback received = testFrameHandler.received.poll(5, TimeUnit.SECONDS);
         assertNotNull(received);
-        assertThat(received.frame.getOpCode(), equalTo(OpCode.CLOSE));
+        assertThat(received.opCode, equalTo(OpCode.CLOSE));
         received.callback.succeeded();
 
         // FrameHandler is closed normally.
@@ -134,13 +134,14 @@ public class FlushFrameTest
 
         public static class FrameCallback
         {
-            public FrameCallback(Frame frame, Callback callback)
+            // Do not store the frame, as it is only valid during onFrame().
+            public FrameCallback(byte opCode, Callback callback)
             {
-                this.frame = frame;
+                this.opCode = opCode;
                 this.callback = callback;
             }
 
-            public Frame frame;
+            public byte opCode;
             public Callback callback;
         }
 
@@ -156,7 +157,7 @@ public class FlushFrameTest
         @Override
         public void onFrame(Frame frame, Callback callback)
         {
-            received.offer(new FrameCallback(frame, callback));
+            received.offer(new FrameCallback(frame.getOpCode(), callback));
             coreSession.demand();
         }
 

@@ -22,7 +22,6 @@ import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -45,7 +44,7 @@ public class MessageReader extends Reader implements MessageSink
     public MessageReader(CoreSession coreSession)
     {
         this.stream = new MessageInputStream(coreSession);
-        this.buffer = BufferUtil.allocate(coreSession.getInputBufferSize());
+        this.buffer = ByteBuffer.allocate(coreSession.getInputBufferSize());
     }
 
     @Override
@@ -60,8 +59,11 @@ public class MessageReader extends Reader implements MessageSink
             if (eof || read == 0)
                 break;
         }
+        buffer.flip();
 
         CoderResult result = utf8Decoder.decode(buffer, charBuffer, eof);
+        buffer.compact();
+
         if (result.isError())
             result.throwException();
 

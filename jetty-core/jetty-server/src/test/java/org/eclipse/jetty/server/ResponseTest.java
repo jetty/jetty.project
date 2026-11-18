@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,7 +88,6 @@ public class ResponseTest
         @Override
         public void setStatus(int code)
         {
-
         }
 
         @Override
@@ -106,7 +105,6 @@ public class ResponseTest
         @Override
         public void setTrailersSupplier(Supplier<HttpFields> trailers)
         {
-
         }
 
         @Override
@@ -130,7 +128,6 @@ public class ResponseTest
         @Override
         public void reset()
         {
-
         }
 
         @Override
@@ -140,9 +137,8 @@ public class ResponseTest
         }
 
         @Override
-        public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+        public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
         {
-
         }
     }
 
@@ -373,7 +369,7 @@ public class ResponseTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         assertThat(response.getStatus(), is(code == 0 ? HttpStatus.FOUND_302 : code));
@@ -499,7 +495,7 @@ public class ResponseTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                Response.sendRedirect(request, response, callback, 0, "/somewhere/else", false, null);
+                Response.sendRedirect(request, response, callback, 0, "/somewhere/else", false);
                 return true;
             }
         });

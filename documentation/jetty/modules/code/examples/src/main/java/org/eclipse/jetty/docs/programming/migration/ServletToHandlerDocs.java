@@ -44,6 +44,7 @@ import org.eclipse.jetty.server.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -330,40 +331,41 @@ public class ServletToHandlerDocs
                     while (true)
                     {
                         // Read a chunk of content.
-                        Content.Chunk chunk = request.read();
-
-                        // If there is no content, demand to be
-                        // called back when more content is available.
-                        if (chunk == null)
+                        // The chunk MUST be released, here done
+                        // by closing it using try-with-resources.
+                        try (Content.Chunk chunk = request.read())
                         {
-                            request.demand(this);
-                            return;
-                        }
+                            // If there is no content, demand to be
+                            // called back when more content is available.
+                            if (chunk == null)
+                            {
+                                request.demand(this);
+                                return;
+                            }
 
-                        // If a failure is read, complete with a failure.
-                        if (Content.Chunk.isFailure(chunk))
-                        {
-                            Throwable failure = chunk.getFailure();
-                            failed(failure);
-                            return;
-                        }
+                            // If a failure is read, complete with a failure.
+                            if (Content.Chunk.isFailure(chunk))
+                            {
+                                Throwable failure = chunk.getFailure();
+                                failed(failure);
+                                return;
+                            }
 
-                        if (chunk instanceof Trailers trailers)
-                        {
-                            // Possibly process the request trailers here.
-                            // Trailers have an empty ByteBuffer and are a last chunk.
-                        }
+                            if (chunk instanceof Trailers trailers)
+                            {
+                                // Possibly process the request trailers here.
+                                // Trailers have an empty ByteBuffer and are a last chunk.
+                            }
 
-                        // Process the request content chunk here.
-                        // After the processing, the chunk MUST be released.
-                        chunk.release();
+                            // Process the request content chunk here.
 
-                        // If the last chunk is read, complete normally.
-                        if (chunk.isLast())
-                        {
-                            succeeded(null);
-                            return;
-                        }
+                            // If the last chunk is read, complete normally.
+                            if (chunk.isLast())
+                            {
+                                succeeded(null);
+                                return;
+                            }
+                        } // Closing the chunk will release it.
 
                         // Not the last chunk of content, loop around to read more.
                     }
@@ -608,7 +610,7 @@ public class ServletToHandlerDocs
 
             // Explicit first write that writes the response status code, headers and content.
             // When this write completes, the Handler callback is completed.
-            response.write(true, content, callback);
+            response.write(true, RetainableByteBuffer.wrap(content), callback);
 
             return true;
         }
@@ -639,7 +641,7 @@ public class ServletToHandlerDocs
                 {
                     // Now explicitly write the content as the last write.
                     // When this write completes, the Handler callback is completed.
-                    response.write(true, content, callback);
+                    response.write(true, RetainableByteBuffer.wrap(content), callback);
                 }
                 else
                 {
@@ -706,7 +708,7 @@ public class ServletToHandlerDocs
             // The trailers have not been written yet; they will be written with the last write.
             ByteBuffer content = UTF_8.encode("Hello World");
             Callback.Completable completable = new Callback.Completable();
-            response.write(false, content, completable);
+            response.write(false, RetainableByteBuffer.wrap(content), completable);
 
             completable.whenComplete((ignored, failure) ->
             {

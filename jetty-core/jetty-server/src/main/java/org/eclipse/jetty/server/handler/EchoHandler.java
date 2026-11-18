@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -25,6 +24,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * A utility handler that echoes content from the request to the response.
@@ -116,9 +116,9 @@ public class EchoHandler extends Handler.Abstract
         @Override
         protected void copy(Request request, Response response, Callback callback)
         {
-            try
+            try (RetainableByteBuffer buffer = Content.Source.asRetainableByteBuffer(request))
             {
-                response.write(true, Content.Source.asByteBuffer(request), callback);
+                response.write(true, buffer, callback);
             }
             catch (IOException e)
             {
@@ -132,10 +132,10 @@ public class EchoHandler extends Handler.Abstract
         @Override
         protected void copy(Request request, Response response, Callback callback)
         {
-            Content.Source.asByteBuffer(request, new Promise<>()
+            Content.Source.asRetainableByteBuffer(request, new Promise.Invocable<>()
             {
                 @Override
-                public void succeeded(ByteBuffer result)
+                public void succeeded(RetainableByteBuffer result)
                 {
                     response.write(true, result, callback);
                 }
@@ -144,6 +144,12 @@ public class EchoHandler extends Handler.Abstract
                 public void failed(Throwable x)
                 {
                     callback.failed(x);
+                }
+
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return callback.getInvocationType();
                 }
             });
         }

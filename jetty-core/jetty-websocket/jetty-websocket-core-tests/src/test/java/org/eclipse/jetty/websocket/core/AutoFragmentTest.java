@@ -17,13 +17,14 @@ import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.Deflater;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.junit.jupiter.api.AfterEach;
@@ -35,6 +36,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -87,27 +89,34 @@ public class AutoFragmentTest
         int size = maxFrameSize * 2;
         byte[] array = new byte[size];
         Arrays.fill(array, 0, size, (byte)'X');
-        ByteBuffer message = BufferUtil.toBuffer(array);
-        Frame sentFrame = new Frame(OpCode.BINARY, BufferUtil.copy(message));
-        clientHandler.getCoreSession().sendFrame(sentFrame, Callback.NOOP, false);
+        RetainableByteBuffer sentPayload = RetainableByteBuffer.wrap(array);
+        try (Frame sentFrame = new Frame(OpCode.BINARY, sentPayload))
+        {
+            clientHandler.getCoreSession().sendFrame(sentFrame, Callback.NOOP, false);
+        }
 
         // We should not receive any frames larger than the max frame size.
         // So our message should be split into two frames.
-        Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
-        assertNotNull(frame);
-        assertThat(frame.getOpCode(), is(OpCode.BINARY));
-        assertThat(frame.getPayloadLength(), is(maxFrameSize));
-        assertThat(frame.isFin(), is(false));
+        try (Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS))
+        {
+            assertNotNull(frame);
+            assertThat(frame.getOpCode(), is(OpCode.BINARY));
+            assertThat(frame.getPayloadLength(), is((long)maxFrameSize));
+            assertThat(frame.isFin(), is(false));
+        }
 
         // Second frame should be final and contain rest of the data.
-        frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
-        assertNotNull(frame);
-        assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
-        assertThat(frame.getPayloadLength(), is(maxFrameSize));
-        assertThat(frame.isFin(), is(true));
+        try (Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS))
+        {
+            assertNotNull(frame);
+            assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
+            assertThat(frame.getPayloadLength(), is((long)maxFrameSize));
+            assertThat(frame.isFin(), is(true));
+        }
 
-        // Original frame payload should not have been changed.
-        assertThat(sentFrame.getPayload().remaining(), is(0));
+        // Original frame payload should have been consumed.
+        assertThat(sentPayload.remaining(), is(0L));
+        sentPayload.release();
 
         clientHandler.sendClose();
         assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
@@ -135,22 +144,29 @@ public class AutoFragmentTest
         int size = maxFrameSize * 2;
         byte[] message = new byte[size];
         Arrays.fill(message, 0, size, (byte)'X');
-        clientHandler.getCoreSession().sendFrame(new Frame(OpCode.BINARY, BufferUtil.toBuffer(message)), Callback.NOOP, false);
+        try (Frame sentFrame = new Frame(OpCode.BINARY, RetainableByteBuffer.wrap(message)))
+        {
+            clientHandler.getCoreSession().sendFrame(sentFrame, Callback.NOOP, false);
+        }
 
         // We should not receive any frames larger than the max frame size.
         // So our message should be split into two frames.
-        Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
-        assertNotNull(frame);
-        assertThat(frame.getOpCode(), is(OpCode.BINARY));
-        assertThat(frame.getPayloadLength(), is(maxFrameSize));
-        assertThat(frame.isFin(), is(false));
+        try (Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS))
+        {
+            assertNotNull(frame);
+            assertThat(frame.getOpCode(), is(OpCode.BINARY));
+            assertThat(frame.getPayloadLength(), is((long)maxFrameSize));
+            assertThat(frame.isFin(), is(false));
+        }
 
         // Second frame should be final and contain rest of the data.
-        frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
-        assertNotNull(frame);
-        assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
-        assertThat(frame.getPayloadLength(), is(maxFrameSize));
-        assertThat(frame.isFin(), is(true));
+        try (Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS))
+        {
+            assertNotNull(frame);
+            assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
+            assertThat(frame.getPayloadLength(), is((long)maxFrameSize));
+            assertThat(frame.isFin(), is(true));
+        }
 
         clientHandler.sendClose();
         assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
@@ -178,32 +194,30 @@ public class AutoFragmentTest
 
         // Generate a large random payload.
         int payloadSize = 1000;
-        Random rand = new Random();
-        ByteBuffer payload = BufferUtil.allocate(payloadSize);
-        BufferUtil.clearToFill(payload);
-        for (int i = 0; i < payloadSize; i++)
-        {
-            payload.put((byte)rand.nextInt(Byte.MAX_VALUE));
-        }
-        BufferUtil.flipToFlush(payload, 0);
+        byte[] payloadBytes = new byte[payloadSize];
+        ThreadLocalRandom.current().nextBytes(payloadBytes);
 
         // Send the large random payload which should be fragmented on the server.
-        clientHandler.getCoreSession().sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
+        try (Frame sentFrame = new Frame(OpCode.BINARY, RetainableByteBuffer.wrap(payloadBytes)))
+        {
+            clientHandler.getCoreSession().sendFrame(sentFrame, Callback.NOOP, false);
+        }
 
         // Assemble the message from the fragmented frames.
-        ByteBuffer message = BufferUtil.allocate(payloadSize * 2);
+        RetainableByteBuffer.Mutable message = RetainableByteBuffer.Mutable.allocate(payloadSize * 2, false);
         Frame frame = serverHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         while (frame != null)
         {
-            int framePayloadLen = frame.getPayloadLength();
-            assertThat(framePayloadLen, lessThanOrEqualTo(maxFrameSize));
-            int appended = BufferUtil.append(message, frame.getPayload());
-            assertThat(appended, is(framePayloadLen));
-
+            long framePayloadLen = frame.getPayloadLength();
+            assertThat(framePayloadLen, lessThanOrEqualTo((long)maxFrameSize));
+            try (Frame f = frame; RetainableByteBuffer framePayload = f.acquire())
+            {
+                message.put(framePayload);
+            }
             frame = serverHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         }
 
-        assertThat(message, is(payload));
+        assertArrayEquals(payloadBytes, message.getArray());
 
         clientHandler.sendClose();
         assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
@@ -232,25 +246,28 @@ public class AutoFragmentTest
         // Highly compressible payload.
         byte[] data = new byte[512 * 1024];
         Arrays.fill(data, (byte)'X');
-        ByteBuffer payload = ByteBuffer.wrap(data);
 
         // Send the payload which should be fragmented on the server.
-        clientHandler.getCoreSession().sendFrame(new Frame(OpCode.BINARY, BufferUtil.copy(payload)), Callback.NOOP, false);
+        try (Frame sentFrame = new Frame(OpCode.BINARY, RetainableByteBuffer.wrap(data.clone())))
+        {
+            clientHandler.getCoreSession().sendFrame(sentFrame, Callback.NOOP, false);
+        }
 
         // Assemble the message from the fragmented frames.
-        ByteBuffer message = BufferUtil.allocate(payload.remaining() * 2);
+        RetainableByteBuffer.Mutable message = RetainableByteBuffer.Mutable.allocate(data.length * 2, false);
         Frame frame = serverHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         while (frame != null)
         {
-            int framePayloadLen = frame.getPayloadLength();
-            assertThat(framePayloadLen, lessThanOrEqualTo(maxFrameSize));
-            int appended = BufferUtil.append(message, frame.getPayload());
-            assertThat(appended, is(framePayloadLen));
-
+            long framePayloadLen = frame.getPayloadLength();
+            assertThat(framePayloadLen, lessThanOrEqualTo((long)maxFrameSize));
+            try (Frame f = frame; RetainableByteBuffer framePayload = f.acquire())
+            {
+                message.put(framePayload);
+            }
             frame = serverHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         }
 
-        assertThat(message, is(payload));
+        assertArrayEquals(data, message.getArray());
 
         clientHandler.sendClose();
         assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
@@ -292,30 +309,35 @@ public class AutoFragmentTest
         serverHandler.getCoreSession().setAutoFragment(true);
 
         // Send the payload which should be fragmented by the server permessage-deflate.
-        ByteBuffer sendPayload = BufferUtil.copy(payload);
-        serverHandler.sendFrame(new Frame(OpCode.BINARY, sendPayload), Callback.NOOP, false);
+        RetainableByteBuffer sendPayload = RetainableByteBuffer.wrap(payload.slice());
+        try (Frame sentFrame = new Frame(OpCode.BINARY, sendPayload))
+        {
+            serverHandler.sendFrame(sentFrame, Callback.NOOP, false);
+        }
 
         // Assemble the message from the fragmented frames.
-        ByteBuffer message = BufferUtil.allocate(payload.remaining() * 2);
+        RetainableByteBuffer.Mutable message = RetainableByteBuffer.Mutable.allocate(payload.remaining() * 2, false);
         Frame frame = clientHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         int numFrames = 0;
         while (frame != null)
         {
             numFrames++;
-            int framePayloadLen = frame.getPayloadLength();
-            assertThat(framePayloadLen, lessThanOrEqualTo(maxFrameSize));
-            int appended = BufferUtil.append(message, frame.getPayload());
-            assertThat(appended, is(framePayloadLen));
-
+            long framePayloadLen = frame.getPayloadLength();
+            assertThat(framePayloadLen, lessThanOrEqualTo((long)maxFrameSize));
+            try (Frame f = frame; RetainableByteBuffer framePayload = f.acquire())
+            {
+                message.put(framePayload);
+            }
             frame = clientHandler.receivedFrames.poll(1, TimeUnit.SECONDS);
         }
 
         // Content of the sentPayload  was fully consumed.
-        assertThat(sendPayload.remaining(), equalTo(0));
+        assertThat(sendPayload.remaining(), equalTo(0L));
 
         // We received correct payload in 2 frames.
-        assertThat(message, is(payload));
-        assertThat(sendPayload.remaining(), is(0));
+        assertArrayEquals(RetainableByteBuffer.wrap(payload).getArray(), message.getArray());
+        assertThat(sendPayload.remaining(), is(0L));
+        sendPayload.release();
         assertThat(numFrames, is(2));
 
         clientHandler.sendClose();

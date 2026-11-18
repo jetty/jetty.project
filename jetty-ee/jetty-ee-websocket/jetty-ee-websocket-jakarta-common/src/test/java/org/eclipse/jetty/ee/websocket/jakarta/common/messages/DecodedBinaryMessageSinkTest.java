@@ -27,6 +27,7 @@ import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.ee.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.util.MethodHolder;
@@ -48,18 +49,21 @@ public class DecodedBinaryMessageSinkTest extends AbstractMessageSinkTest
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
         DecodedBinaryMessageSink<Calendar> sink = new DecodedBinaryMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
-        FutureCallback finCallback = new FutureCallback();
         ByteBuffer data = ByteBuffer.allocate(16);
         data.putShort((short)1999);
         data.put((byte)12);
         data.put((byte)31);
         data.flip();
-        sink.accept(new Frame(OpCode.BINARY).setPayload(data).setFin(true), finCallback);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        try (Frame frame = new Frame(OpCode.BINARY, RetainableByteBuffer.wrap(data)))
+        {
+            FutureCallback finCallback = new FutureCallback();
+            sink.accept(frame, finCallback);
+            coreSession.waitForDemand(1, TimeUnit.SECONDS);
+            finCallback.get(1, TimeUnit.SECONDS);
+        }
 
         Calendar decoded = copyFuture.get(1, TimeUnit.SECONDS);
         assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("12-31-1999"));
-        assertThat("FinCallback.done", finCallback.isDone(), is(true));
     }
 
     @Test
@@ -87,19 +91,27 @@ public class DecodedBinaryMessageSinkTest extends AbstractMessageSinkTest
         data3.put((byte)1);
         data3.flip();
 
-        sink.accept(new Frame(OpCode.BINARY).setPayload(data1).setFin(false), callback1);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
-        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(data2).setFin(false), callback2);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
-        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(data3).setFin(true), finCallback);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        try (Frame frame = new Frame(OpCode.BINARY, false, RetainableByteBuffer.wrap(data1)))
+        {
+            sink.accept(frame, callback1);
+            coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, false, RetainableByteBuffer.wrap(data2)))
+        {
+            sink.accept(frame, callback2);
+            coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, true, RetainableByteBuffer.wrap(data3)))
+        {
+            sink.accept(frame, finCallback);
+            coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        }
 
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         Calendar decoded = copyFuture.get(1, TimeUnit.SECONDS);
         assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("01-01-2000"));
         assertThat("Callback1.done", callback1.isDone(), is(true));
         assertThat("Callback2.done", callback2.isDone(), is(true));
-        assertThat("finCallback.done", finCallback.isDone(), is(true));
     }
 
     private String format(Calendar cal, String formatPattern)

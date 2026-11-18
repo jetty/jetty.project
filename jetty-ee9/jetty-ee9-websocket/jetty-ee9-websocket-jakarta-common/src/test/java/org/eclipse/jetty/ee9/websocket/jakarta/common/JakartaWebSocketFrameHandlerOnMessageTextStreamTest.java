@@ -68,15 +68,15 @@ public class JakartaWebSocketFrameHandlerOnMessageTextStreamTest extends Abstrac
     {
         TrackingSocket socket = performOnMessageInvocation(new MessageStreamSocket(), (endpoint) ->
         {
-            try
+            try (Frame frame = new Frame(OpCode.TEXT, "Hello World"))
             {
-                endpoint.onFrame(new Frame(OpCode.TEXT).setPayload("Hello World").setFin(true), Callback.NOOP);
+                endpoint.onFrame(frame, Callback.NOOP);
+                return null;
             }
             catch (Exception e)
             {
                 throw new RuntimeException("Unexpected error", e);
             }
-            return null;
         });
         String event = socket.events.poll(1, TimeUnit.SECONDS);
         assertThat("Event", event, is("onMessage(MessageReader) = \"Hello World\""));

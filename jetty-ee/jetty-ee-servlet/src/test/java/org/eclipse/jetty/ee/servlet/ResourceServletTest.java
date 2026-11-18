@@ -68,7 +68,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -91,6 +90,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.resource.URLResourceFactory;
@@ -3863,11 +3864,11 @@ public class ResourceServletTest
                 response = new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
+                    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
                     {
                         if (last)
                             lastWriteCounter.incrementAndGet();
-                        super.write(last, byteBuffer, callback);
+                        super.write(last, buffer, callback);
                     }
                 };
                 return super.handle(request, response, callback);

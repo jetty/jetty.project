@@ -14,16 +14,12 @@
 package org.eclipse.jetty.websocket.core.extensions;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -70,20 +66,22 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            Frame frame = new Frame(OpCode.TEXT).setPayload(section);
-            ext.onFrame(frame, Callback.NOOP);
+            try (Frame frame = new Frame(OpCode.TEXT, section))
+            {
+                ext.onFrame(frame, Callback.NOOP);
+            }
         }
 
         // Expected Frames
         List<Frame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("No amount of experim").setFin(false));
-        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("entation can ever pr").setFin(false));
-        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("ove me right;").setFin(true));
+        expectedFrames.add(new Frame(OpCode.TEXT, false, "No amount of experim"));
+        expectedFrames.add(new Frame(OpCode.CONTINUATION, false, "entation can ever pr"));
+        expectedFrames.add(new Frame(OpCode.CONTINUATION, true, "ove me right;"));
 
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("a single experiment ").setFin(false));
-        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("can prove me wrong.").setFin(true));
+        expectedFrames.add(new Frame(OpCode.TEXT, false, "a single experiment "));
+        expectedFrames.add(new Frame(OpCode.CONTINUATION, true, "can prove me wrong."));
 
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("-- Albert Einstein").setFin(true));
+        expectedFrames.add(new Frame(OpCode.TEXT, true, "-- Albert Einstein"));
 
         // capture.dump();
 
@@ -95,25 +93,23 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         for (int i = 0; i < len; i++)
         {
             prefix = "Frame[" + i + "]";
-            Frame actualFrame = frames.poll(1, TimeUnit.SECONDS);
-            Frame expectedFrame = expectedFrames.get(i);
+            try (Frame actualFrame = frames.poll(1, TimeUnit.SECONDS);
+                 Frame expectedFrame = expectedFrames.get(i))
+            {
+                // System.out.printf("actual: %s%n",actualFrame);
+                // System.out.printf("expect: %s%n",expectedFrame);
 
-            // System.out.printf("actual: %s%n",actualFrame);
-            // System.out.printf("expect: %s%n",expectedFrame);
+                // Validate Frame
+                assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
+                assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
+                assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
+                assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
+                assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
 
-            // Validate Frame
-            assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
-            assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
-            assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
-            assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
-            assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
-
-            // Validate Payload
-            ByteBuffer expectedData = expectedFrame.getPayload().slice();
-            ByteBuffer actualData = actualFrame.getPayload().slice();
-
-            assertThat(prefix + ".payloadLength", actualData.remaining(), is(expectedData.remaining()));
-            ByteBufferAssert.assertEquals(prefix + ".payload", expectedData, actualData);
+                // Validate Payload
+                assertThat(prefix + ".payloadLength", actualFrame.getPayloadLength(), is(expectedFrame.getPayloadLength()));
+                assertThat(prefix + ".payload", actualFrame.getPayloadAsUTF8(), is(expectedFrame.getPayloadAsUTF8()));
+            }
         }
     }
 
@@ -134,22 +130,25 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         coreSession.demand();
 
         String payload = "Are you there?";
-        Frame ping = new Frame(OpCode.PING).setPayload(payload);
-        ext.onFrame(ping, Callback.NOOP);
+        try (Frame ping = new Frame(OpCode.PING, payload))
+        {
+            ext.onFrame(ping, Callback.NOOP);
+        }
 
         capture.assertFrameCount(1);
         capture.assertHasOpCount(OpCode.PING, 1);
-        Frame actual = capture.frames.poll();
+        try (Frame actual = capture.frames.poll())
+        {
+            assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+            assertThat("Frame.fin", actual.isFin(), is(true));
+            assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+            assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+            assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
-        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
-        assertThat("Frame.fin", actual.isFin(), is(true));
-        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
-
-        ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
-        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+            String expected = payload;
+            assertThat("Frame.payloadLength", actual.getPayloadLength(), is((long)expected.length()));
+            assertThat("Frame.payload", actual.getPayloadAsUTF8(), is(expected));
+        }
     }
 
     /**
@@ -177,20 +176,22 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            Frame frame = new Frame(OpCode.TEXT).setPayload(section);
-            ext.sendFrame(frame, Callback.NOOP, false);
+            try (Frame frame = new Frame(OpCode.TEXT, section))
+            {
+                ext.sendFrame(frame, Callback.NOOP, false);
+            }
         }
 
         // Expected Frames
         List<Frame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("No amount of experim").setFin(false));
-        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("entation can ever pr").setFin(false));
-        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("ove me right;").setFin(true));
+        expectedFrames.add(new Frame(OpCode.TEXT, false, "No amount of experim"));
+        expectedFrames.add(new Frame(OpCode.CONTINUATION, false, "entation can ever pr"));
+        expectedFrames.add(new Frame(OpCode.CONTINUATION, true, "ove me right;"));
 
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("a single experiment ").setFin(false));
-        expectedFrames.add(new Frame(OpCode.CONTINUATION).setPayload("can prove me wrong.").setFin(true));
+        expectedFrames.add(new Frame(OpCode.TEXT, false, "a single experiment "));
+        expectedFrames.add(new Frame(OpCode.CONTINUATION, true, "can prove me wrong."));
 
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("-- Albert Einstein").setFin(true));
+        expectedFrames.add(new Frame(OpCode.TEXT, true, "-- Albert Einstein"));
 
         // capture.dump();
 
@@ -202,25 +203,23 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         for (int i = 0; i < len; i++)
         {
             prefix = "Frame[" + i + "]";
-            Frame actualFrame = frames.poll(1, TimeUnit.SECONDS);
-            Frame expectedFrame = expectedFrames.get(i);
+            try (Frame actualFrame = frames.poll(1, TimeUnit.SECONDS);
+                 Frame expectedFrame = expectedFrames.get(i))
+            {
+                // System.out.printf("actual: %s%n",actualFrame);
+                // System.out.printf("expect: %s%n",expectedFrame);
 
-            // System.out.printf("actual: %s%n",actualFrame);
-            // System.out.printf("expect: %s%n",expectedFrame);
+                // Validate Frame
+                assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
+                assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
+                assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
+                assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
+                assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
 
-            // Validate Frame
-            assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
-            assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
-            assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
-            assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
-            assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
-
-            // Validate Payload
-            ByteBuffer expectedData = expectedFrame.getPayload().slice();
-            ByteBuffer actualData = actualFrame.getPayload().slice();
-
-            assertThat(prefix + ".payloadLength", actualData.remaining(), is(expectedData.remaining()));
-            ByteBufferAssert.assertEquals(prefix + ".payload", expectedData, actualData);
+                // Validate Payload
+                assertThat(prefix + ".payloadLength", actualFrame.getPayloadLength(), is(expectedFrame.getPayloadLength()));
+                assertThat(prefix + ".payload", actualFrame.getPayloadAsUTF8(), is(expectedFrame.getPayloadAsUTF8()));
+            }
         }
     }
 
@@ -249,15 +248,17 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         // Write quote as separate frames
         for (String section : quote)
         {
-            Frame frame = new Frame(OpCode.TEXT).setPayload(section);
-            ext.sendFrame(frame, Callback.NOOP, false);
+            try (Frame frame = new Frame(OpCode.TEXT, section))
+            {
+                ext.sendFrame(frame, Callback.NOOP, false);
+            }
         }
 
         // Expected Frames
         List<Frame> expectedFrames = new ArrayList<>();
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("No amount of experimentation can ever prove me right;"));
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("a single experiment can prove me wrong."));
-        expectedFrames.add(new Frame(OpCode.TEXT).setPayload("-- Albert Einstein"));
+        expectedFrames.add(new Frame(OpCode.TEXT, "No amount of experimentation can ever prove me right;"));
+        expectedFrames.add(new Frame(OpCode.TEXT, "a single experiment can prove me wrong."));
+        expectedFrames.add(new Frame(OpCode.TEXT, "-- Albert Einstein"));
 
         // capture.dump();
 
@@ -269,22 +270,20 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         for (int i = 0; i < len; i++)
         {
             prefix = "Frame[" + i + "]";
-            Frame actualFrame = frames.poll(1, TimeUnit.SECONDS);
-            Frame expectedFrame = expectedFrames.get(i);
+            try (Frame actualFrame = frames.poll(1, TimeUnit.SECONDS);
+                 Frame expectedFrame = expectedFrames.get(i))
+            {
+                // Validate Frame
+                assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
+                assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
+                assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
+                assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
+                assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
 
-            // Validate Frame
-            assertThat(prefix + ".opcode", actualFrame.getOpCode(), is(expectedFrame.getOpCode()));
-            assertThat(prefix + ".fin", actualFrame.isFin(), is(expectedFrame.isFin()));
-            assertThat(prefix + ".rsv1", actualFrame.isRsv1(), is(expectedFrame.isRsv1()));
-            assertThat(prefix + ".rsv2", actualFrame.isRsv2(), is(expectedFrame.isRsv2()));
-            assertThat(prefix + ".rsv3", actualFrame.isRsv3(), is(expectedFrame.isRsv3()));
-
-            // Validate Payload
-            ByteBuffer expectedData = expectedFrame.getPayload().slice();
-            ByteBuffer actualData = actualFrame.getPayload().slice();
-
-            assertThat(prefix + ".payloadLength", actualData.remaining(), is(expectedData.remaining()));
-            ByteBufferAssert.assertEquals(prefix + ".payload", expectedData, actualData);
+                // Validate Payload
+                assertThat(prefix + ".payloadLength", actualFrame.getPayloadLength(), is(expectedFrame.getPayloadLength()));
+                assertThat(prefix + ".payload", actualFrame.getPayloadAsUTF8(), is(expectedFrame.getPayloadAsUTF8()));
+            }
         }
     }
 
@@ -305,23 +304,25 @@ public class FragmentExtensionTest extends AbstractExtensionTest
         ext.setNextOutgoingFrames(capture);
 
         String payload = "Are you there?";
-        Frame ping = new Frame(OpCode.PING).setPayload(payload);
-
-        ext.sendFrame(ping, Callback.NOOP, false);
+        try (Frame ping = new Frame(OpCode.PING, payload))
+        {
+            ext.sendFrame(ping, Callback.NOOP, false);
+        }
 
         capture.assertFrameCount(1);
 
-        Frame actual = capture.frames.poll();
+        try (Frame actual = capture.frames.poll())
+        {
+            assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
+            assertThat("Frame.fin", actual.isFin(), is(true));
+            assertThat("Frame.rsv1", actual.isRsv1(), is(false));
+            assertThat("Frame.rsv2", actual.isRsv2(), is(false));
+            assertThat("Frame.rsv3", actual.isRsv3(), is(false));
 
-        assertThat("Frame.opcode", actual.getOpCode(), is(OpCode.PING));
-        assertThat("Frame.fin", actual.isFin(), is(true));
-        assertThat("Frame.rsv1", actual.isRsv1(), is(false));
-        assertThat("Frame.rsv2", actual.isRsv2(), is(false));
-        assertThat("Frame.rsv3", actual.isRsv3(), is(false));
-
-        ByteBuffer expected = BufferUtil.toBuffer(payload, StandardCharsets.UTF_8);
-        assertThat("Frame.payloadLength", actual.getPayloadLength(), is(expected.remaining()));
-        ByteBufferAssert.assertEquals("Frame.payload", expected, actual.getPayload().slice());
+            String expected = payload;
+            assertThat("Frame.payloadLength", actual.getPayloadLength(), is((long)expected.length()));
+            assertThat("Frame.payload", actual.getPayloadAsUTF8(), is(expected));
+        }
     }
 
     private WebSocketCoreSession newSession(ExtensionConfig config)

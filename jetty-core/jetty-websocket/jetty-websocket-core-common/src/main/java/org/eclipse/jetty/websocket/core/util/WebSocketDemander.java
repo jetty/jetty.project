@@ -152,6 +152,8 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
             {
                 // Fulfill the incoming demand to receive a new frame.
                 _inputDemand = false;
+                // The frame is stored to be handled later, possibly by another thread.
+                frame.retain();
                 _frame = frame;
                 // Wrap the callback with CountingCallback to protect against the case where the demander is failed
                 // as the application is completing the callback.
@@ -238,13 +240,16 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
             boolean needContent = handle(_frame, _callback, first);
             if (needContent)
             {
+                Frame frame;
                 try (AutoLock ignored = _lock.lock())
                 {
                     _needContent = true;
                     _first = true;
+                    frame = _frame;
                     _frame = null;
                     _callback = null;
                 }
+                frame.release();
             }
         }
     }
@@ -252,6 +257,7 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
     @Override
     protected void onCompleteFailure(Throwable cause)
     {
+        Frame frame;
         Callback callback;
         try (AutoLock ignored = _lock.lock())
         {
@@ -260,14 +266,17 @@ public abstract class WebSocketDemander extends IteratingCallback implements Dem
             else
                 _failure = cause;
 
-            callback = _callback;
+            frame = _frame;
             _frame = null;
+            callback = _callback;
             _callback = null;
         }
 
         // This is wrapped with CountingCallback so protects against double succeed/failed.
         if (callback != null)
             callback.failed(cause);
+        if (frame != null)
+            frame.release();
     }
 
     @Override

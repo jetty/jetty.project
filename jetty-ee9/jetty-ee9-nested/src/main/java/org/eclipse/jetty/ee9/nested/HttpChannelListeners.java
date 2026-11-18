@@ -78,7 +78,7 @@ public class HttpChannelListeners implements HttpChannel.Listener
                 if (!listener.getClass().getMethod("onAfterDispatch", Request.class).isDefault())
                     onAfterDispatch = combine(onAfterDispatch, listener::onAfterDispatch);
                 if (!listener.getClass().getMethod("onRequestContent", Request.class, ByteBuffer.class).isDefault())
-                    onRequestContent = combine(onRequestContent, listener::onRequestContent);
+                    onRequestContent = combine(onRequestContent, (request, content) -> listener.onRequestContent(request, content));
                 if (!listener.getClass().getMethod("onRequestContentEnd", Request.class).isDefault())
                     onRequestContentEnd = combine(onRequestContentEnd, listener::onRequestContentEnd);
                 if (!listener.getClass().getMethod("onRequestTrailers", Request.class).isDefault())

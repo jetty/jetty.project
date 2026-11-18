@@ -19,9 +19,10 @@ import java.util.List;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.PriorityGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -54,16 +55,17 @@ public class PriorityGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.generatePriority(accumulator, streamId, parentStreamId, weight, exclusive);
-
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            try (RetainableByteBuffer buffer = accumulator.take())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
         }
 
         assertEquals(1, frames.size());
-        PriorityFrame frame = frames.get(0);
+        PriorityFrame frame = frames.getFirst();
         assertEquals(streamId, frame.getStreamId());
         assertEquals(parentStreamId, frame.getParentStreamId());
         assertEquals(weight, frame.getWeight());
@@ -94,15 +96,16 @@ public class PriorityGenerateParseTest
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
-            RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity();
+            BufferAccumulator accumulator = new BufferAccumulator();
             generator.generatePriority(accumulator, streamId, parentStreamId, weight, exclusive);
-
             frames.clear();
-            UnknownParseTest.parse(parser, accumulator);
-            accumulator.release();
+            try (RetainableByteBuffer buffer = accumulator.take())
+            {
+                UnknownParseTest.parse(parser, buffer);
+            }
 
             assertEquals(1, frames.size());
-            PriorityFrame frame = frames.get(0);
+            PriorityFrame frame = frames.getFirst();
             assertEquals(streamId, frame.getStreamId());
             assertEquals(parentStreamId, frame.getParentStreamId());
             assertEquals(weight, frame.getWeight());

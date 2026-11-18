@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -139,16 +140,21 @@ public class AsyncCloseTest
         @Override
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
-            switch (frame.getEffectiveOpCode())
+            try (RetainableByteBuffer buffer = frame.acquire())
             {
-                case OpCode.TEXT -> _session.sendPartialText(BufferUtil.toUTF8String(frame.getPayload()), frame.isFin(), Callback.from(callback, () -> _session.demand()));
-                case OpCode.BINARY -> _session.sendPartialBinary(frame.getPayload(), frame.isFin(), Callback.from(callback, () -> _session.demand()));
-                case OpCode.PING -> _session.sendPong(frame.getPayload(), Callback.from(callback, () -> _session.demand()));
-                case OpCode.CLOSE -> new Thread(() ->
+                switch (frame.getEffectiveOpCode())
                 {
-                    awaitClose(_closeLatch);
-                    _session.close(StatusCode.NORMAL, "custom close", callback);
-                }).start();
+                    case OpCode.TEXT ->
+                        _session.sendPartialText(buffer.getString(UTF_8), frame.isFin(), Callback.from(callback, () -> _session.demand()));
+                    case OpCode.BINARY ->
+                        _session.sendPartialBinary(buffer, frame.isFin(), Callback.from(callback, () -> _session.demand()));
+                    case OpCode.PING -> _session.sendPong(buffer, Callback.from(callback, () -> _session.demand()));
+                    case OpCode.CLOSE -> new Thread(() ->
+                    {
+                        awaitClose(_closeLatch);
+                        _session.close(StatusCode.NORMAL, "custom close", callback);
+                    }).start();
+                }
             }
         }
 
@@ -182,17 +188,21 @@ public class AsyncCloseTest
         @OnWebSocketFrame
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
-            switch (frame.getEffectiveOpCode())
+            try (RetainableByteBuffer buffer = frame.acquire())
             {
-                case OpCode.TEXT ->
-                    _session.sendPartialText(BufferUtil.toUTF8String(frame.getPayload()), frame.isFin(), Callback.from(callback, () -> _session.demand()));
-                case OpCode.BINARY -> _session.sendPartialBinary(frame.getPayload(), frame.isFin(), Callback.from(callback, () -> _session.demand()));
-                case OpCode.PING -> _session.sendPong(frame.getPayload(), Callback.from(callback, () -> _session.demand()));
-                case OpCode.CLOSE -> new Thread(() ->
+                switch (frame.getEffectiveOpCode())
                 {
-                    awaitClose(_closeLatch);
-                    _session.close(StatusCode.NORMAL, "custom close", callback);
-                }).start();
+                    case OpCode.TEXT ->
+                        _session.sendPartialText(buffer.getString(UTF_8), frame.isFin(), Callback.from(callback, () -> _session.demand()));
+                    case OpCode.BINARY ->
+                        _session.sendPartialBinary(buffer, frame.isFin(), Callback.from(callback, () -> _session.demand()));
+                    case OpCode.PING -> _session.sendPong(buffer, Callback.from(callback, () -> _session.demand()));
+                    case OpCode.CLOSE -> new Thread(() ->
+                    {
+                        awaitClose(_closeLatch);
+                        _session.close(StatusCode.NORMAL, "custom close", callback);
+                    }).start();
+                }
             }
         }
 

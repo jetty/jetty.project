@@ -35,7 +35,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
@@ -56,6 +55,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -410,7 +410,7 @@ public class WebSocketClientTest
             int size = 80 * 1024;
             byte[] buf = new byte[size];
             Arrays.fill(buf, (byte)'x');
-            String msg = StringUtil.toUTF8String(buf, 0, buf.length);
+            String msg = new String(buf, UTF_8);
 
             sess.sendText(msg, Callback.NOOP);
 

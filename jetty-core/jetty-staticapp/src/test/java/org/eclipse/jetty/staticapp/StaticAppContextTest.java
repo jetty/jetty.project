@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.staticapp;
 
-import java.io.FileWriter;
 import java.io.Writer;
 import java.net.URI;
 import java.nio.file.FileSystem;

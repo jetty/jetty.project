@@ -14,7 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.BufferedReader;
-import java.io.File;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
@@ -24,29 +24,32 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,10 +63,9 @@ public class SslConnectionTest
 
     private static final int TIMEOUT = 1000000;
 
-    // TODO: track leaks
-    private final ByteBufferPool _bufferPool = new ArrayByteBufferPool();
+    private final ArrayByteBufferPool.Tracking _bufferPool = new ArrayByteBufferPool.Tracking();
     private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
-    protected volatile EndPoint _lastEndp;
+    protected volatile EndPoint _lastEndPoint;
     private volatile boolean _testFill = true;
     private volatile boolean _onXWriteThenShutdown = false;
 
@@ -79,7 +81,7 @@ public class SslConnectionTest
             super.execute(job);
         }
     };
-    protected Scheduler _scheduler = new TimerScheduler();
+    protected Scheduler _scheduler = new ScheduledExecutorScheduler();
     protected SelectorManager _manager = new SelectorManager(_threadPool, _scheduler)
     {
         @Override
@@ -99,10 +101,10 @@ public class SslConnectionTest
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
-            SocketChannelEndPoint endp = new TestEP(channel, selector, selectionKey, getScheduler());
-            endp.setIdleTimeout(TIMEOUT);
-            _lastEndp = endp;
-            return endp;
+            SocketChannelEndPoint endPoint = new TestEndPoint(channel, selector, selectionKey, getScheduler());
+            endPoint.setIdleTimeout(TIMEOUT);
+            _lastEndPoint = endPoint;
+            return endPoint;
         }
     };
 
@@ -110,9 +112,9 @@ public class SslConnectionTest
     static final AtomicInteger __blockFor = new AtomicInteger();
     static final AtomicBoolean __onIncompleteFlush = new AtomicBoolean();
 
-    private static class TestEP extends SocketChannelEndPoint
+    private static class TestEndPoint extends SocketChannelEndPoint
     {
-        public TestEP(SelectableChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
+        public TestEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
         {
             super((SocketChannel)channel, selector, key, scheduler);
         }
@@ -124,7 +126,7 @@ public class SslConnectionTest
         }
 
         @Override
-        public boolean flush(ByteBuffer... buffers) throws IOException
+        public boolean flush(RetainableByteBuffer buffer) throws IOException
         {
             __onIncompleteFlush.set(false);
             if (__startBlocking.get() == 0 || __startBlocking.decrementAndGet() == 0)
@@ -134,15 +136,15 @@ public class SslConnectionTest
                     return false;
                 }
             }
-            return super.flush(buffers);
+            return super.flush(buffer);
         }
     }
 
     @BeforeEach
     public void initSSL() throws Exception
     {
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
-        _sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
+        Path keystore = MavenPaths.findTestResourceFile("keystore.p12");
+        _sslCtxFactory.setKeyStorePath(keystore);
         _sslCtxFactory.setKeyStorePassword("storepwd");
         _sslCtxFactory.setRenegotiationAllowed(true);
         _sslCtxFactory.setRenegotiationLimit(-1);
@@ -153,7 +155,7 @@ public class SslConnectionTest
     {
         _testFill = true;
         _writeCallback = null;
-        _lastEndp = null;
+        _lastEndPoint = null;
         _connector = ServerSocketChannel.open();
         _connector.socket().bind(null);
         _threadPool.start();
@@ -171,12 +173,13 @@ public class SslConnectionTest
     {
         stopManager();
         _sslCtxFactory.stop();
+        assertThat("leaks: " + _bufferPool.dumpLeaks(), _bufferPool.getLeaks().size(), is(0));
     }
 
     private void stopManager() throws Exception
     {
-        if (_lastEndp != null && _lastEndp.isOpen())
-            _lastEndp.close();
+        if (_lastEndPoint != null && _lastEndPoint.isOpen())
+            _lastEndPoint.close();
         _manager.stop();
         _scheduler.stop();
         _threadPool.stop();
@@ -185,11 +188,11 @@ public class SslConnectionTest
 
     public class TestConnection extends AbstractConnection
     {
-        ByteBuffer _in = BufferUtil.allocate(8 * 1024);
+        RetainableByteBuffer.Mutable _in = RetainableByteBuffer.Mutable.allocate(8 * 1024, false);
 
-        public TestConnection(EndPoint endp)
+        public TestConnection(EndPoint endPoint)
         {
-            super(endp, _threadPool);
+            super(endPoint, _threadPool);
         }
 
         @Override
@@ -199,9 +202,7 @@ public class SslConnectionTest
             if (_testFill)
                 fillInterested();
             else
-            {
-                getExecutor().execute(() -> getEndPoint().write(_writeCallback, BufferUtil.toBuffer("Hello Client")));
-            }
+                getExecutor().execute(() -> getEndPoint().write(RetainableByteBuffer.wrap("Hello Client", UTF_8), _writeCallback));
         }
 
         @Override
@@ -213,7 +214,7 @@ public class SslConnectionTest
         @Override
         public void onFillable()
         {
-            EndPoint endp = getEndPoint();
+            EndPoint endPoint = getEndPoint();
             try
             {
                 boolean progress = true;
@@ -222,30 +223,29 @@ public class SslConnectionTest
                     progress = false;
 
                     // Fill the input buffer with everything available
-                    int filled = endp.fill(_in);
+                    int filled = endPoint.fill(_in);
                     while (filled > 0)
                     {
                         progress = true;
-                        filled = endp.fill(_in);
+                        filled = endPoint.fill(_in);
                     }
 
-                    boolean shutdown = _onXWriteThenShutdown && BufferUtil.toString(_in).contains("X");
+                    boolean shutdown = _onXWriteThenShutdown && _in.getString(_in.readPosition(), UTF_8).contains("X");
 
                     // Write everything
-                    int l = _in.remaining();
+                    long l = _in.remaining();
                     if (l > 0)
                     {
                         FutureCallback blockingWrite = new FutureCallback();
-
-                        endp.write(blockingWrite, _in);
+                        endPoint.write(_in, blockingWrite);
                         blockingWrite.get();
                         if (shutdown)
-                            endp.shutdownOutput();
+                            endPoint.shutdownOutput();
                     }
 
                     // are we done?
-                    if (endp.isInputShutdown() || shutdown)
-                        endp.shutdownOutput();
+                    if (endPoint.isInputShutdown() || shutdown)
+                        endPoint.shutdownOutput();
                 }
             }
             catch (InterruptedException | EofException e)
@@ -259,7 +259,7 @@ public class SslConnectionTest
             }
             finally
             {
-                if (endp.isOpen())
+                if (endPoint.isOpen())
                     fillInterested();
             }
         }
@@ -284,14 +284,14 @@ public class SslConnectionTest
                 server.configureBlocking(false);
                 _manager.accept(server);
 
-                client.getOutputStream().write("Hello".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("Hello".getBytes(UTF_8));
                 byte[] buffer = new byte[1024];
                 int len = client.getInputStream().read(buffer);
                 assertEquals(5, len);
-                assertEquals("Hello", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals("Hello", new String(buffer, 0, len, UTF_8));
 
                 _dispatches.set(0);
-                client.getOutputStream().write("World".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("World".getBytes(UTF_8));
                 len = 5;
                 while (len > 0)
                 {
@@ -313,18 +313,18 @@ public class SslConnectionTest
                 server.configureBlocking(false);
                 _manager.accept(server);
 
-                client.getOutputStream().write("Hello".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("Hello".getBytes(UTF_8));
                 byte[] buffer = new byte[1024];
                 int len = client.getInputStream().read(buffer);
                 assertEquals(5, len);
-                assertEquals("Hello", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals("Hello", new String(buffer, 0, len, UTF_8));
 
                 client.startHandshake();
 
-                client.getOutputStream().write("World".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("World".getBytes(UTF_8));
                 len = client.getInputStream().read(buffer);
                 assertEquals(5, len);
-                assertEquals("World", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals("World", new String(buffer, 0, len, UTF_8));
             }
         }
     }
@@ -344,16 +344,16 @@ public class SslConnectionTest
                 server.configureBlocking(false);
                 _manager.accept(server);
 
-                client.getOutputStream().write("Hello".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("Hello".getBytes(UTF_8));
                 byte[] buffer = new byte[1024];
                 int len = client.getInputStream().read(buffer);
                 assertEquals(5, len);
-                assertEquals("Hello", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals("Hello", new String(buffer, 0, len, UTF_8));
 
                 // Try to renegotiate, must fail.
                 client.startHandshake();
 
-                client.getOutputStream().write("World".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("World".getBytes(UTF_8));
                 assertThrows(SSLException.class, () -> client.getInputStream().read(buffer));
             }
         }
@@ -375,29 +375,29 @@ public class SslConnectionTest
                 server.configureBlocking(false);
                 _manager.accept(server);
 
-                client.getOutputStream().write("Good".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("Good".getBytes(UTF_8));
                 byte[] buffer = new byte[1024];
                 int len = client.getInputStream().read(buffer);
                 assertEquals(4, len);
-                assertEquals("Good", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals("Good", new String(buffer, 0, len, UTF_8));
 
                 client.startHandshake();
 
-                client.getOutputStream().write("Bye".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("Bye".getBytes(UTF_8));
                 len = client.getInputStream().read(buffer);
                 assertEquals(3, len);
-                assertEquals("Bye", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals("Bye", new String(buffer, 0, len, UTF_8));
 
                 client.startHandshake();
 
-                client.getOutputStream().write("Cruel".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("Cruel".getBytes(UTF_8));
                 len = client.getInputStream().read(buffer);
                 assertEquals(5, len);
-                assertEquals("Cruel", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals("Cruel", new String(buffer, 0, len, UTF_8));
 
                 client.startHandshake();
 
-                client.getOutputStream().write("World".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("World".getBytes(UTF_8));
                 assertThrows(SSLException.class, () -> client.getInputStream().read(buffer));
             }
         }
@@ -423,7 +423,7 @@ public class SslConnectionTest
 
                 byte[] buffer = new byte[1024];
                 int len = client.getInputStream().read(buffer);
-                assertEquals("Hello Client", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals("Hello Client", new String(buffer, 0, len, UTF_8));
 
                 assertNull(_writeCallback.get(1, TimeUnit.SECONDS));
             }
@@ -442,15 +442,15 @@ public class SslConnectionTest
                 server.configureBlocking(false);
                 _manager.accept(server);
 
-                client.getOutputStream().write("Hello".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("Hello".getBytes(UTF_8));
                 byte[] buffer = new byte[1024];
                 int len = client.getInputStream().read(buffer);
-                assertEquals("Hello", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals("Hello", new String(buffer, 0, len, UTF_8));
 
                 __startBlocking.set(0);
                 __blockFor.set(2);
                 _dispatches.set(0);
-                client.getOutputStream().write("World".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("World".getBytes(UTF_8));
 
                 try
                 {
@@ -464,10 +464,10 @@ public class SslConnectionTest
                 }
 
                 assertTrue(__onIncompleteFlush.get());
-                ((TestEP)_lastEndp).getWriteFlusher().completeWrite();
+                ((TestEndPoint)_lastEndPoint).getWriteFlusher().completeWrite();
 
                 len = client.getInputStream().read(buffer);
-                assertEquals("World", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals("World", new String(buffer, 0, len, UTF_8));
             }
         }
     }
@@ -484,17 +484,17 @@ public class SslConnectionTest
                 server.configureBlocking(false);
                 _manager.accept(server);
 
-                client.getOutputStream().write("Short".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("Short".getBytes(UTF_8));
                 byte[] buffer = new byte[1024];
                 int len = client.getInputStream().read(buffer);
-                assertEquals("Short", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals("Short", new String(buffer, 0, len, UTF_8));
 
                 _onXWriteThenShutdown = true;
                 __startBlocking.set(2); // block on the close handshake flush
                 __blockFor.set(Integer.MAX_VALUE); // > retry loops in SslConnection + 1
-                client.getOutputStream().write("This is a much longer example with X".getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().write("This is a much longer example with X".getBytes(UTF_8));
                 len = client.getInputStream().read(buffer);
-                assertEquals("This is a much longer example with X", new String(buffer, 0, len, StandardCharsets.UTF_8));
+                assertEquals("This is a much longer example with X", new String(buffer, 0, len, UTF_8));
 
                 try
                 {
@@ -509,7 +509,7 @@ public class SslConnectionTest
 
                 __blockFor.set(0);
                 assertTrue(__onIncompleteFlush.get());
-                ((TestEP)_lastEndp).getWriteFlusher().completeWrite();
+                ((TestEndPoint)_lastEndPoint).getWriteFlusher().completeWrite();
                 len = client.getInputStream().read(buffer);
                 assertThat(len, is(-1));
             }
@@ -535,7 +535,7 @@ public class SslConnectionTest
                 {
                     try
                     {
-                        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
+                        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream(), UTF_8));
                         while (count.getCount() > 0)
                         {
                             String line = in.readLine();
@@ -552,7 +552,7 @@ public class SslConnectionTest
 
                 for (int i = 0; i < LINES; i++)
                 {
-                    client.getOutputStream().write(("HelloWorld " + i + "\n").getBytes(StandardCharsets.UTF_8));
+                    client.getOutputStream().write(("HelloWorld " + i + "\n").getBytes(UTF_8));
                     if (i % 1000 == 0)
                     {
                         client.getOutputStream().flush();
@@ -562,6 +562,192 @@ public class SslConnectionTest
 
                 assertTrue(count.await(20, TimeUnit.SECONDS));
             }
+        }
+    }
+
+    @Test
+    public void testFillFailureDoesNotReleaseCallerBuffer() throws Exception
+    {
+        startSSL();
+
+        // The first network read returns a partial TLS record header,
+        // so that unwrap() underflows; the second network read fails.
+        AtomicInteger fills = new AtomicInteger();
+        ByteArrayEndPoint networkEndPoint = new ByteArrayEndPoint()
+        {
+            @Override
+            public int fill(RetainableByteBuffer.Mutable buffer) throws IOException
+            {
+                if (fills.incrementAndGet() == 1)
+                    return (int)buffer.append(new byte[]{0x16, 0x03, 0x03});
+                throw new IOException("connection reset");
+            }
+        };
+        SSLEngine engine = _sslCtxFactory.newSSLEngine();
+        engine.setUseClientMode(false);
+        SslConnection sslConnection = new SslConnection(_bufferPool, _threadPool, _sslCtxFactory, networkEndPoint, engine);
+        SslConnection.SslEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+
+        // A caller buffer with existing data and enough space to be used
+        // directly as the unwrap destination, as it happens with nested TLS.
+        RetainableByteBuffer.Mutable buffer = _bufferPool.acquire(2 * engine.getSession().getApplicationBufferSize(), false);
+        buffer.putString("hello", UTF_8);
+
+        assertThrows(IOException.class, () -> sslEndPoint.fill(buffer));
+        assertEquals(2, fills.get());
+
+        // The caller still owns the buffer.
+        assertEquals("hello", buffer.getString(UTF_8));
+        assertTrue(buffer.release());
+    }
+
+    @Test
+    public void testDecryptedInputStoredByReentrantFillDuringFlushIsNotLost() throws Exception
+    {
+        startSSL();
+
+        SslContextFactory.Client clientTLS = new SslContextFactory.Client(true);
+        clientTLS.start();
+        try
+        {
+            SSLEngine clientEngine = clientTLS.newSSLEngine();
+            clientEngine.setUseClientMode(true);
+            clientEngine.setEnabledProtocols(new String[]{"TLSv1.3"});
+            clientEngine.beginHandshake();
+            TLSPeer client = new TLSPeer(clientEngine, "hello");
+
+            // The network delivers the client's Finished and its application data right
+            // after the server flushes its handshake flight, so that the fill() re-entered
+            // by the flush() in the NEED_WRAP branch of the outer fill() decrypts them.
+            ByteArrayEndPoint networkEndPoint = new ByteArrayEndPoint()
+            {
+                @Override
+                public boolean flush(RetainableByteBuffer buffer) throws IOException
+                {
+                    boolean flushed = super.flush(buffer);
+                    client.exchange(this);
+                    return flushed;
+                }
+            };
+            client.exchange(networkEndPoint);
+
+            SSLEngine serverEngine = _sslCtxFactory.newSSLEngine();
+            serverEngine.setUseClientMode(false);
+            serverEngine.setEnabledProtocols(new String[]{"TLSv1.3"});
+            SslConnection sslConnection = new SslConnection(_bufferPool, _threadPool, _sslCtxFactory, networkEndPoint, serverEngine)
+            {
+                @Override
+                protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer input, ByteBuffer output) throws SSLException
+                {
+                    return laggingStatus(super.wrap(sslEngine, input, output));
+                }
+
+                @Override
+                protected SSLEngineResult wrap(SSLEngine sslEngine, ByteBuffer[] inputs, int offset, int length, ByteBuffer output) throws SSLException
+                {
+                    return laggingStatus(super.wrap(sslEngine, inputs, offset, length, output));
+                }
+
+                private SSLEngineResult laggingStatus(SSLEngineResult result)
+                {
+                    // Simulate an SSLEngine whose wrap() result reports NEED_WRAP, while getHandshakeStatus()
+                    // already reports NEED_UNWRAP, as otherwise flush() returns without re-entering fill().
+                    if (result.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_UNWRAP && result.bytesProduced() > 0)
+                        return new SSLEngineResult(result.getStatus(), SSLEngineResult.HandshakeStatus.NEED_WRAP, result.bytesConsumed(), result.bytesProduced());
+                    return result;
+                }
+            };
+            SslConnection.SslEndPoint sslEndPoint = sslConnection.getSslEndPoint();
+
+            // A buffer large enough to be used directly as the unwrap destination.
+            // The ClientHello unwraps into it producing no bytes, then the outer
+            // fill() goes through NEED_TASK to NEED_WRAP, and calls flush().
+            RetainableByteBuffer.Mutable buffer = _bufferPool.acquire(2 * serverEngine.getSession().getApplicationBufferSize(), false);
+            try
+            {
+                for (int i = 0; i < 16 && !buffer.hasRemaining(); ++i)
+                {
+                    sslEndPoint.fill(buffer);
+                }
+                assertEquals("hello", buffer.getString(UTF_8));
+            }
+            finally
+            {
+                buffer.release();
+            }
+        }
+        finally
+        {
+            clientTLS.stop();
+        }
+    }
+
+    /**
+     * <p>A TLS peer driven synchronously, whose output is delivered as a single network read.</p>
+     */
+    private static class TLSPeer
+    {
+        private final SSLEngine _engine;
+        private final String _data;
+        private final ByteBuffer _networkIn;
+        private boolean _dataSent;
+
+        private TLSPeer(SSLEngine engine, String data)
+        {
+            _engine = engine;
+            _data = data;
+            _networkIn = ByteBuffer.allocate(16 * engine.getSession().getPacketBufferSize());
+        }
+
+        private void exchange(ByteArrayEndPoint endPoint) throws IOException
+        {
+            RetainableByteBuffer output = endPoint.takeOutput();
+            _networkIn.put(output.getArray());
+            output.release();
+            _networkIn.flip();
+
+            ByteArrayOutputStream networkOut = new ByteArrayOutputStream();
+            ByteBuffer appIn = ByteBuffer.allocate(_engine.getSession().getApplicationBufferSize());
+            ByteBuffer packet = ByteBuffer.allocate(_engine.getSession().getPacketBufferSize());
+            loop:
+            while (true)
+            {
+                SSLEngineResult.HandshakeStatus status = _engine.getHandshakeStatus();
+                switch (status)
+                {
+                    case NEED_TASK ->
+                    {
+                        _engine.getDelegatedTask().run();
+                    }
+                    case NEED_WRAP ->
+                    {
+                        packet.clear();
+                        _engine.wrap(ByteBuffer.allocate(0), packet);
+                        networkOut.write(packet.array(), 0, packet.position());
+                    }
+                    case NEED_UNWRAP ->
+                    {
+                        if (!_networkIn.hasRemaining() || _engine.unwrap(_networkIn, appIn).getStatus() == SSLEngineResult.Status.BUFFER_UNDERFLOW)
+                            break loop;
+                    }
+                    case NOT_HANDSHAKING ->
+                    {
+                        if (!_dataSent)
+                        {
+                            _dataSent = true;
+                            packet.clear();
+                            _engine.wrap(ByteBuffer.wrap(_data.getBytes(UTF_8)), packet);
+                            networkOut.write(packet.array(), 0, packet.position());
+                        }
+                        break loop;
+                    }
+                    default -> throw new IllegalStateException("Unexpected HandshakeStatus " + status);
+                }
+            }
+            _networkIn.compact();
+
+            if (networkOut.size() > 0)
+                endPoint.addInput(ByteBuffer.wrap(networkOut.toByteArray()));
         }
     }
 }

@@ -21,6 +21,8 @@ public interface WebSocketFrameListener extends WebSocketConnectionListener
     /**
      * A WebSocket frame has been received.
      *
+     * The frame's payload is only valid for the duration of the method.
+     *
      * @param frame the immutable frame received
      */
     void onWebSocketFrame(Frame frame);

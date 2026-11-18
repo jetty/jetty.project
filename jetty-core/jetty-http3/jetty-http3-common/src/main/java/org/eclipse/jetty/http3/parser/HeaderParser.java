@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.http3.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>The parser for the frame header of HTTP/3 frames.</p>
@@ -46,13 +45,13 @@ public class HeaderParser
      * @return true if all the frame header bytes were parsed, false if not enough
      * frame header bytes were present in the buffer
      */
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
             switch (state)
             {
-                case TYPE:
+                case TYPE ->
                 {
                     if (varLenInt.tryDecode(buffer, v -> type = v))
                     {
@@ -61,7 +60,7 @@ public class HeaderParser
                     }
                     return false;
                 }
-                case LENGTH:
+                case LENGTH ->
                 {
                     if (varLenInt.tryDecode(buffer, v -> length = v))
                     {
@@ -69,10 +68,6 @@ public class HeaderParser
                         return true;
                     }
                     return false;
-                }
-                default:
-                {
-                    throw new IllegalStateException();
                 }
             }
         }

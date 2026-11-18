@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee9.nested;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.AfterEach;
@@ -30,7 +30,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -69,11 +68,11 @@ public class BlockingContentProducerTest
     @Test
     public void testBlockingContentProducerNoInterceptor()
     {
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(buffers);
+        RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
+        buffers[0] = RetainableByteBuffer.wrap("1 hello 1", StandardCharsets.ISO_8859_1);
+        buffers[1] = RetainableByteBuffer.wrap("2 howdy 2", StandardCharsets.ISO_8859_1);
+        buffers[2] = RetainableByteBuffer.wrap("3 hey ya 3", StandardCharsets.ISO_8859_1);
+        final long totalContentBytesCount = countRemaining(buffers);
         final String originalContentString = asString(buffers);
 
         ContentListener contentListener = new ContentListener();
@@ -91,11 +90,11 @@ public class BlockingContentProducerTest
     @Test
     public void testBlockingContentProducerNoInterceptorWithError()
     {
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(buffers);
+        RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
+        buffers[0] = RetainableByteBuffer.wrap("1 hello 1", StandardCharsets.ISO_8859_1);
+        buffers[1] = RetainableByteBuffer.wrap("2 howdy 2", StandardCharsets.ISO_8859_1);
+        buffers[2] = RetainableByteBuffer.wrap("3 hey ya 3", StandardCharsets.ISO_8859_1);
+        final long totalContentBytesCount = countRemaining(buffers);
         final String originalContentString = asString(buffers);
         final Throwable expectedError = new EofException("Early EOF");
 
@@ -114,11 +113,11 @@ public class BlockingContentProducerTest
     @Test
     public void testBlockingContentProducerEofContentIsPassedToInterceptor()
     {
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(buffers);
+        RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
+        buffers[0] = RetainableByteBuffer.wrap("1 hello 1", StandardCharsets.ISO_8859_1);
+        buffers[1] = RetainableByteBuffer.wrap("2 howdy 2", StandardCharsets.ISO_8859_1);
+        buffers[2] = RetainableByteBuffer.wrap("3 hey ya 3", StandardCharsets.ISO_8859_1);
+        final long totalContentBytesCount = countRemaining(buffers);
         final String originalContentString = asString(buffers);
 
         ContentListener contentListener = new ContentListener();
@@ -149,11 +148,11 @@ public class BlockingContentProducerTest
     @Test
     public void testBlockingContentProducerErrorContentIsPassedToInterceptor()
     {
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        buffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(buffers);
+        RetainableByteBuffer[] buffers = new RetainableByteBuffer[3];
+        buffers[0] = RetainableByteBuffer.wrap("1 hello 1", StandardCharsets.ISO_8859_1);
+        buffers[1] = RetainableByteBuffer.wrap("2 howdy 2", StandardCharsets.ISO_8859_1);
+        buffers[2] = RetainableByteBuffer.wrap("3 hey ya 3", StandardCharsets.ISO_8859_1);
+        final long totalContentBytesCount = countRemaining(buffers);
         final String originalContentString = asString(buffers);
 
         ContentListener contentListener = new ContentListener();
@@ -185,7 +184,7 @@ public class BlockingContentProducerTest
     public void testBlockingContentProducerInterceptorGeneratesError()
     {
         AtomicInteger contentSucceededCount = new AtomicInteger();
-        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(ByteBuffer.allocate(1))
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(RetainableByteBuffer.allocate(1, false))
         {
             @Override
             public void succeeded()
@@ -214,7 +213,7 @@ public class BlockingContentProducerTest
     public void testBlockingContentProducerInterceptorGeneratesEof()
     {
         AtomicInteger contentSucceededCount = new AtomicInteger();
-        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(ByteBuffer.allocate(1))
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(RetainableByteBuffer.allocate(1, false))
         {
             @Override
             public void succeeded()
@@ -243,7 +242,7 @@ public class BlockingContentProducerTest
     public void testBlockingContentProducerInterceptorThrows()
     {
         AtomicInteger contentFailedCount = new AtomicInteger();
-        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(ByteBuffer.allocate(1))
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(RetainableByteBuffer.allocate(1, false))
         {
             @Override
             public void failed(Throwable x)
@@ -277,7 +276,7 @@ public class BlockingContentProducerTest
         AtomicInteger contentSucceededCount = new AtomicInteger();
         AtomicInteger specialContentInterceptedCount = new AtomicInteger();
         AtomicInteger nullContentInterceptedCount = new AtomicInteger();
-        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(ByteBuffer.allocate(0))
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(RetainableByteBuffer.allocate(0, false))
         {
             @Override
             public void succeeded()
@@ -311,9 +310,9 @@ public class BlockingContentProducerTest
         assertThat(nullContentInterceptedCount.get(), is(1));
     }
 
-    private Throwable readAndAssertContent(int totalContentBytesCount, String originalContentString, int totalContentCount, ContentProducer contentProducer)
+    private Throwable readAndAssertContent(long totalContentBytesCount, String originalContentString, int totalContentCount, ContentProducer contentProducer)
     {
-        int readBytes = 0;
+        long readBytes = 0;
         int nextContentCount = 0;
         String consumedString = "";
         Throwable error = null;
@@ -330,11 +329,11 @@ public class BlockingContentProducerTest
                 break;
             }
 
-            byte[] b = new byte[content.remaining()];
-            content.getByteBuffer().get(b);
-            consumedString += new String(b, StandardCharsets.ISO_8859_1);
-
-            readBytes += b.length;
+            try (RetainableByteBuffer buffer = content.acquire())
+            {
+                readBytes += buffer.remaining();
+                consumedString += buffer.getString(StandardCharsets.ISO_8859_1);
+            }
         }
         assertThat(readBytes, is(totalContentBytesCount));
         assertThat(nextContentCount, is(totalContentCount));
@@ -342,24 +341,23 @@ public class BlockingContentProducerTest
         return error;
     }
 
-    private static int countRemaining(ByteBuffer[] byteBuffers)
+    private static long countRemaining(RetainableByteBuffer[] buffers)
     {
-        int total = 0;
-        for (ByteBuffer byteBuffer : byteBuffers)
+        long total = 0;
+        for (RetainableByteBuffer buffer : buffers)
         {
-            total += byteBuffer.remaining();
+            total += buffer.remaining();
         }
         return total;
     }
 
-    private static String asString(ByteBuffer[] buffers)
+    private static String asString(RetainableByteBuffer[] buffers)
     {
         StringBuilder sb = new StringBuilder();
-        for (ByteBuffer buffer : buffers)
+        for (RetainableByteBuffer buffer : buffers)
         {
-            byte[] b = new byte[buffer.remaining()];
-            buffer.duplicate().get(b);
-            sb.append(new String(b, StandardCharsets.ISO_8859_1));
+            // Do not consume the buffer.
+            sb.append(buffer.getString(0, StandardCharsets.ISO_8859_1));
         }
         return sb.toString();
     }
@@ -431,23 +429,23 @@ public class BlockingContentProducerTest
 
     private static class ArrayDelayedHttpChannel extends HttpChannel
     {
-        private final ByteBuffer[] byteBuffers;
+        private final RetainableByteBuffer[] buffers;
         private final HttpInput.Content finalContent;
         private final ScheduledExecutorService scheduledExecutorService;
         private final ContentListener contentListener;
         private int counter;
         private volatile HttpInput.Content nextContent;
 
-        public ArrayDelayedHttpChannel(ByteBuffer[] byteBuffers, HttpInput.Content finalContent, ScheduledExecutorService scheduledExecutorService, ContentListener contentListener)
+        public ArrayDelayedHttpChannel(RetainableByteBuffer[] buffers, HttpInput.Content finalContent, ScheduledExecutorService scheduledExecutorService, ContentListener contentListener)
         {
             super(new ContextHandler(), new MockConnectionMetaData(new MockConnector()));
-            this.byteBuffers = new ByteBuffer[byteBuffers.length];
+            this.buffers = new RetainableByteBuffer[buffers.length];
             this.finalContent = finalContent;
             this.scheduledExecutorService = scheduledExecutorService;
             this.contentListener = contentListener;
-            for (int i = 0; i < byteBuffers.length; i++)
+            for (int i = 0; i < buffers.length; i++)
             {
-                this.byteBuffers[i] = byteBuffers[i].duplicate();
+                this.buffers[i] = buffers[i];
             }
         }
 
@@ -458,8 +456,8 @@ public class BlockingContentProducerTest
                 return true;
             scheduledExecutorService.schedule(() ->
             {
-                if (byteBuffers.length > counter)
-                    nextContent = new HttpInput.Content(byteBuffers[counter++]);
+                if (buffers.length > counter)
+                    nextContent = new HttpInput.Content(buffers[counter++]);
                 else
                     nextContent = finalContent;
                 contentListener.onContent();
@@ -479,7 +477,7 @@ public class BlockingContentProducerTest
         public boolean failAllContent(Throwable failure)
         {
             nextContent = null;
-            counter = byteBuffers.length;
+            counter = buffers.length;
             return false;
         }
 

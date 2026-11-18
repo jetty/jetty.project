@@ -13,7 +13,6 @@
 
 module org.eclipse.jetty.quic.api
 {
-    // TODO: this is only necessary for Retainable, which should be moved to jetty-util.
     requires transitive org.eclipse.jetty.io;
 
     exports org.eclipse.jetty.quic.api;

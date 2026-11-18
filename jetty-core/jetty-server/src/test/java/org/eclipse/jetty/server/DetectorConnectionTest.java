@@ -19,27 +19,25 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.SocketException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLSocketFactory;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -53,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DetectorConnectionTest
 {
-    private final AtomicInteger _bufferLeaks = new AtomicInteger();
     private Server _server;
     private StacklessLogging _stacklessLogging;
 
@@ -117,26 +114,7 @@ public class DetectorConnectionTest
 
     private void start(ConnectionFactory... connectionFactories) throws Exception
     {
-        _server = new Server(null, null, new ArrayByteBufferPool()
-        {
-
-            @Override
-            public RetainableByteBuffer.Mutable acquire(int size, boolean direct)
-            {
-                _bufferLeaks.incrementAndGet();
-                return new RetainableByteBuffer.Mutable.Wrapper(super.acquire(size, direct).asMutable())
-                {
-                    @Override
-                    public boolean release()
-                    {
-                        boolean released = super.release();
-                        if (released)
-                            _bufferLeaks.decrementAndGet();
-                        return released;
-                    }
-                };
-            }
-        });
+        _server = new Server(null, null, new ArrayByteBufferPool.Tracking());
         _server.addConnector(new ServerConnector(_server, 1, 1, connectionFactories));
         _server.setHandler(new DumpHandler());
         _server.start();
@@ -146,13 +124,13 @@ public class DetectorConnectionTest
     @AfterEach
     public void destroy() throws Exception
     {
-        // Wait a bit for the server to release the buffers.
-        await()
-            .pollDelay(5, TimeUnit.MILLISECONDS)
-            .atMost(5, TimeUnit.SECONDS)
-            .until(() -> _bufferLeaks.get() == 0);
         if (_server != null)
+        {
+            // Wait a bit for the server to release the buffers.
+            ArrayByteBufferPool.Tracking bufferPool = (ArrayByteBufferPool.Tracking)_server.getByteBufferPool();
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertEquals(0, bufferPool.getLeaks().size(), bufferPool.dumpLeaks()));
             _server.stop();
+        }
         if (_stacklessLogging != null)
             _stacklessLogging.close();
     }
@@ -405,12 +383,11 @@ public class DetectorConnectionTest
         DetectorConnectionFactory detector = new DetectorConnectionFactory(proxy)
         {
             @Override
-            protected void nextProtocol(Connector connector, EndPoint endPoint, ByteBuffer buffer)
+            protected void nextProtocol(Connector connector, EndPoint endPoint, RetainableByteBuffer buffer)
             {
                 if (!detectionSuccessful.compareAndSet(true, false))
                     throw new AssertionError("DetectionUnsuccessful callback should only have been called once");
-                Callback.Completable.with(c -> endPoint.write(c, ByteBuffer.wrap("No upgrade for you".getBytes(StandardCharsets.US_ASCII))))
-                    .whenComplete((r, x) -> endPoint.close());
+                endPoint.write(RetainableByteBuffer.wrap("No upgrade for you", StandardCharsets.US_ASCII), Callback.from(endPoint::close));
             }
         };
         HttpConnectionFactory http = new HttpConnectionFactory();
@@ -551,7 +528,7 @@ public class DetectorConnectionTest
         ConnectionFactory.Detecting noUpgradeTo = new ConnectionFactory.Detecting()
         {
             @Override
-            public Detection detect(ByteBuffer buffer)
+            public Detection detect(RetainableByteBuffer buffer)
             {
                 return Detection.RECOGNIZED;
             }
@@ -687,7 +664,7 @@ public class DetectorConnectionTest
         ConnectionFactory.Detecting detectingNeverRecognizes = new ConnectionFactory.Detecting()
         {
             @Override
-            public Detection detect(ByteBuffer buffer)
+            public Detection detect(RetainableByteBuffer buffer)
             {
                 return Detection.NOT_RECOGNIZED;
             }
@@ -714,7 +691,7 @@ public class DetectorConnectionTest
         ConnectionFactory.Detecting detectingAlwaysNeedMoreBytes = new ConnectionFactory.Detecting()
         {
             @Override
-            public Detection detect(ByteBuffer buffer)
+            public Detection detect(RetainableByteBuffer buffer)
             {
                 return Detection.NEED_MORE_BYTES;
             }

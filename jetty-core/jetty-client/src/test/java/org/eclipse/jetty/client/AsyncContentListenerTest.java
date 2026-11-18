@@ -25,6 +25,7 @@ import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.HttpResponse;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ChunksContentSource;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -50,9 +51,11 @@ public class AsyncContentListenerTest
         asyncContentListener.onContentSource(response, originalSource);
 
         // Assert that the source was failed.
-        Content.Chunk lastChunk = originalSource.read();
-        assertThat(Content.Chunk.isFailure(lastChunk, true), is(true));
-        assertThat(lastChunk.getFailure(), instanceOf(NumberFormatException.class));
+        try (Content.Chunk lastChunk = originalSource.read())
+        {
+            assertThat(Content.Chunk.isFailure(lastChunk, true), is(true));
+            assertThat(lastChunk.getFailure(), instanceOf(NumberFormatException.class));
+        }
 
         // Assert that the response was aborted.
         assertThat(response.getRequest().getAbortCause(), instanceOf(NumberFormatException.class));
@@ -62,7 +65,7 @@ public class AsyncContentListenerTest
     public void testTransientFailureBecomesTerminal()
     {
         TestSource originalSource = new TestSource(
-            Content.Chunk.from(ByteBuffer.wrap(new byte[] {1}), false),
+            Content.Chunk.from(RetainableByteBuffer.wrap(new byte[] {1}), false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[] {2}), false),
             Content.Chunk.from(new NumberFormatException(), false),
             Content.Chunk.from(ByteBuffer.wrap(new byte[] {3}), true)
@@ -81,15 +84,21 @@ public class AsyncContentListenerTest
 
         assertThat(collectedChunks.size(), is(2));
         assertThat(collectedChunks.get(0).isLast(), is(false));
-        assertThat(collectedChunks.get(0).getByteBuffer().get(), is((byte)1));
-        assertThat(collectedChunks.get(0).getByteBuffer().hasRemaining(), is(false));
+        RetainableByteBuffer buffer0 = collectedChunks.get(0).acquire();
+        assertThat(buffer0.get(), is((byte)1));
+        assertThat(buffer0.hasRemaining(), is(false));
+        buffer0.release();
         assertThat(collectedChunks.get(1).isLast(), is(false));
-        assertThat(collectedChunks.get(1).getByteBuffer().get(), is((byte)2));
-        assertThat(collectedChunks.get(1).getByteBuffer().hasRemaining(), is(false));
+        RetainableByteBuffer buffer1 = collectedChunks.get(1).acquire();
+        assertThat(buffer1.get(), is((byte)2));
+        assertThat(buffer1.hasRemaining(), is(false));
+        buffer1.release();
 
-        Content.Chunk chunk = originalSource.read();
-        assertThat(Content.Chunk.isFailure(chunk, true), is(true));
-        assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+        try (Content.Chunk chunk = originalSource.read())
+        {
+            assertThat(Content.Chunk.isFailure(chunk, true), is(true));
+            assertThat(chunk.getFailure(), instanceOf(NumberFormatException.class));
+        }
 
         collectedChunks.forEach(Content.Chunk::release);
         originalSource.close();

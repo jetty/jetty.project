@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Deque;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -66,10 +65,13 @@ import org.eclipse.jetty.http2.client.transport.internal.HttpConnectionOverHTTP2
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.internal.HttpChannelState;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -77,9 +79,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static java.nio.ByteBuffer.wrap;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
-import static org.eclipse.jetty.util.BufferUtil.toArray;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
@@ -279,9 +280,8 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        String data = "0123456789";
         AsyncRequestContent content = new AsyncRequestContent();
-        content.write(ByteBuffer.wrap(data.getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+        content.offer(false, "0123456789", UTF_8, Callback.NOOP);
         CountDownLatch responseLatch = new CountDownLatch(1);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
@@ -295,8 +295,8 @@ public class AsyncIOServletTest extends AbstractTest
                 clientLatch.countDown();
             });
 
-        // HTTP/2 does not close a Connection when the request idle times out.
-        if (transportType != TransportType.H2C && transportType != TransportType.H2)
+        // Multiplexed transports do not close the Connection when the request idle times out.
+        if (!transportType.isMultiplexed())
             assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "close latch expired");
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS), "response latch expired");
         content.close();
@@ -596,7 +596,7 @@ public class AsyncIOServletTest extends AbstractTest
     public void testIsReadyAtEOF(TransportType transportType) throws Exception
     {
         String text = "TEST\n";
-        byte[] data = text.getBytes(StandardCharsets.UTF_8);
+        byte[] data = text.getBytes(UTF_8);
 
         start(transportType, new HttpServlet()
         {
@@ -637,7 +637,7 @@ public class AsyncIOServletTest extends AbstractTest
                     public void onAllDataRead() throws IOException
                     {
                         assertScope();
-                        output.write(String.format("i=%d eof=%b finished=%b", _i, _minusOne, _finished).getBytes(StandardCharsets.UTF_8));
+                        output.write(String.format("i=%d eof=%b finished=%b", _i, _minusOne, _finished).getBytes(UTF_8));
                         async.complete();
                     }
 
@@ -709,7 +709,7 @@ public class AsyncIOServletTest extends AbstractTest
                     public void onAllDataRead() throws IOException
                     {
                         assertScope();
-                        out.write(success.getBytes(StandardCharsets.UTF_8));
+                        out.write(success.getBytes(UTF_8));
                         async.complete();
                     }
 
@@ -724,7 +724,7 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        byte[] data = "X".getBytes(StandardCharsets.UTF_8);
+        byte[] data = "X".getBytes(UTF_8);
         CountDownLatch clientLatch = new CountDownLatch(1);
         AsyncRequestContent content = new AsyncRequestContent()
         {
@@ -754,8 +754,7 @@ public class AsyncIOServletTest extends AbstractTest
             });
 
         sleep(100);
-        content.write(ByteBuffer.wrap(data), Callback.NOOP);
-        content.close();
+        content.offer(true, RetainableByteBuffer.wrap(data), Callback.NOOP);
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
@@ -820,7 +819,7 @@ public class AsyncIOServletTest extends AbstractTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
-                        output.write(success.getBytes(StandardCharsets.UTF_8));
+                        output.write(success.getBytes(UTF_8));
                         async.complete();
                     }
 
@@ -835,7 +834,6 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        byte[] data = "X".getBytes(StandardCharsets.UTF_8);
         CountDownLatch clientLatch = new CountDownLatch(1);
         AsyncRequestContent content = new AsyncRequestContent();
         client.newRequest(newURI(transportType))
@@ -858,8 +856,7 @@ public class AsyncIOServletTest extends AbstractTest
             });
 
         sleep(100);
-        content.write(ByteBuffer.wrap(data), Callback.NOOP);
-        content.close();
+        content.offer(true, "X", UTF_8, Callback.NOOP);
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
@@ -893,7 +890,7 @@ public class AsyncIOServletTest extends AbstractTest
                             int b = input.read();
                             if (b < 0)
                             {
-                                output.write(success.getBytes(StandardCharsets.UTF_8));
+                                output.write(success.getBytes(UTF_8));
                                 async.complete();
                                 return;
                             }
@@ -904,7 +901,7 @@ public class AsyncIOServletTest extends AbstractTest
                     public void onAllDataRead() throws IOException
                     {
                         assertScope();
-                        output.write("FAILURE".getBytes(StandardCharsets.UTF_8));
+                        output.write("FAILURE".getBytes(UTF_8));
                         throw new IllegalStateException();
                     }
 
@@ -1050,7 +1047,7 @@ public class AsyncIOServletTest extends AbstractTest
 
         String content = "0123456789ABCDEF";
         AsyncRequestContent requestContent = new AsyncRequestContent();
-        requestContent.write(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+        requestContent.offer(false, content, UTF_8, Callback.NOOP);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
@@ -1130,7 +1127,7 @@ public class AsyncIOServletTest extends AbstractTest
 
         CountDownLatch responseLatch = new CountDownLatch(1);
         AsyncRequestContent requestContent = new AsyncRequestContent();
-        requestContent.write(ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+        requestContent.offer(false, content, UTF_8, Callback.NOOP);
         var request = client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
             .body(requestContent)
@@ -1196,9 +1193,10 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    @Disabled // TODO
     public void testAsyncIntercepted(TransportType transportType) throws Exception
     {
+        ArrayByteBufferPool.Tracking serverBufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(new QueuedThreadPool(), null, serverBufferPool);
         start(transportType, new HttpServlet()
         {
             @Override
@@ -1220,7 +1218,6 @@ public class AsyncIOServletTest extends AbstractTest
                             case 0:
                                 // null transform
                                 content.skip(content.remaining());
-                                content.succeeded();
                                 state++;
                                 return null;
 
@@ -1232,10 +1229,12 @@ public class AsyncIOServletTest extends AbstractTest
                                     state++;
                                     return content;
                                 }
-                                ByteBuffer copy = wrap(toArray(content.getByteBuffer()));
-                                content.skip(copy.remaining());
-                                content.succeeded();
-                                return new HttpInput.Content(copy);
+                                try (RetainableByteBuffer buffer = content.acquire())
+                                {
+                                    RetainableByteBuffer.Mutable copy = RetainableByteBuffer.Mutable.allocate((int)buffer.remaining(), false);
+                                    copy.put(buffer);
+                                    return new HttpInput.Content(copy);
+                                }
                             }
 
                             case 2:
@@ -1245,12 +1244,13 @@ public class AsyncIOServletTest extends AbstractTest
                                     state++;
                                     return content;
                                 }
-                                byte[] b = new byte[1];
-                                int l = content.get(b, 0, 1);
-                                if (!content.hasContent())
-                                    content.succeeded();
-                                return new HttpInput.Content(wrap(b, 0, l));
-
+                                try (RetainableByteBuffer buffer = content.acquire())
+                                {
+                                    try (RetainableByteBuffer slice = buffer.sliceAndConsume(1))
+                                    {
+                                        return new HttpInput.Content(slice);
+                                    }
+                                }
                             case 3:
                             {
                                 // double vision
@@ -1265,12 +1265,12 @@ public class AsyncIOServletTest extends AbstractTest
                                     saved = null;
                                     return ref;
                                 }
-
-                                byte[] data = toArray(content.getByteBuffer());
-                                content.skip(data.length);
-                                content.succeeded();
-                                saved = new HttpInput.Content(wrap(data));
-                                return new HttpInput.Content(wrap(data));
+                                try (RetainableByteBuffer buffer = content.acquire())
+                                {
+                                    byte[] data = buffer.getArray();
+                                    saved = new HttpInput.Content(RetainableByteBuffer.wrap(data));
+                                    return new HttpInput.Content(RetainableByteBuffer.wrap(data));
+                                }
                             }
 
                             default:
@@ -1345,22 +1345,25 @@ public class AsyncIOServletTest extends AbstractTest
                 }
             });
 
-        content.write(BufferUtil.toBuffer("S0"), Callback.NOOP);
+        content.offer(false, "S0", UTF_8, Callback.NOOP);
         content.flush();
-        content.write(BufferUtil.toBuffer("S1"), Callback.NOOP);
+        content.offer(false, "S1", UTF_8, Callback.NOOP);
         content.flush();
-        content.write(BufferUtil.toBuffer("S2"), Callback.NOOP);
+        content.offer(false, "S2", UTF_8, Callback.NOOP);
         content.flush();
-        content.write(BufferUtil.toBuffer("S3"), Callback.NOOP);
+        content.offer(false, "S3", UTF_8, Callback.NOOP);
         content.flush();
-        content.write(BufferUtil.toBuffer("S4"), Callback.NOOP);
+        content.offer(false, "S4", UTF_8, Callback.NOOP);
         content.flush();
-        content.write(BufferUtil.toBuffer("S5"), Callback.NOOP);
+        content.offer(false, "S5", UTF_8, Callback.NOOP);
         content.flush();
-        content.write(BufferUtil.toBuffer("S6"), Callback.NOOP);
+        content.offer(false, "S6", UTF_8, Callback.NOOP);
         content.close();
 
         assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
+
+        server.stop();
+        assertEquals(0, serverBufferPool.getLeaks().size(), serverBufferPool::dumpLeaks);
     }
 
     @ParameterizedTest
@@ -1411,13 +1414,13 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        AsyncRequestContent contentProvider = new AsyncRequestContent();
+        AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch clientLatch = new CountDownLatch(1);
 
         AtomicReference<Result> resultRef = new AtomicReference<>();
         client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
-            .body(contentProvider)
+            .body(content)
             .send(new RetainingResponseListener(16 * 1024 * 1024)
             {
                 @Override
@@ -1430,9 +1433,9 @@ public class AsyncIOServletTest extends AbstractTest
 
         for (int i = 0; i < 1_000_000; i++)
         {
-            contentProvider.write(BufferUtil.toBuffer("S" + i), Callback.NOOP);
+            content.offer(false, "S" + i, UTF_8, Callback.NOOP);
         }
-        contentProvider.close();
+        content.close();
 
         assertTrue(clientLatch.await(30, TimeUnit.SECONDS));
         assertThat(resultRef.get().isSucceeded(), Matchers.is(true));
@@ -1547,9 +1550,10 @@ public class AsyncIOServletTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transportsNoFCGI")
-    @Disabled // TODO
     public void testAsyncInterceptedTwiceWithNulls(TransportType transportType) throws Exception
     {
+        ArrayByteBufferPool.Tracking serverBufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(new QueuedThreadPool(), null, serverBufferPool);
         start(transportType, new HttpServlet()
         {
             @Override
@@ -1562,30 +1566,28 @@ public class AsyncIOServletTest extends AbstractTest
                 {
                     if (!chunk.hasContent())
                         return chunk;
-
-                    // skip contents with odd numbers
-                    ByteBuffer duplicate = chunk.getByteBuffer().duplicate();
-                    duplicate.get();
-                    byte integer = duplicate.get();
-                    int idx = Character.getNumericValue(integer);
-                    HttpInput.Content chunkCopy = new HttpInput.Content(chunk.getByteBuffer().duplicate());
-                    chunk.skip(chunk.remaining());
-                    chunk.succeeded();
-                    if (idx % 2 == 0)
-                        return chunkCopy;
-                    return null;
+                    // Skip contents with odd numbers.
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        int num = Character.getNumericValue(buffer.get(1));
+                        ByteBuffer copy = buffer.getByteBuffer(false);
+                        if (num % 2 == 0)
+                            return new HttpInput.Content(RetainableByteBuffer.wrap(copy));
+                        return null;
+                    }
                 });
                 httpInput.addInterceptor(chunk ->
                 {
                     if (!chunk.hasContent())
                         return chunk;
-
-                    // reverse the bytes
-                    ByteBuffer byteBuffer = chunk.getByteBuffer();
-                    byte[] bytes = new byte[2];
-                    bytes[1] = byteBuffer.get();
-                    bytes[0] = byteBuffer.get();
-                    return new HttpInput.Content(wrap(bytes));
+                    // Reverse the bytes.
+                    try (RetainableByteBuffer buffer = chunk.acquire())
+                    {
+                        byte[] bytes = new byte[2];
+                        bytes[1] = buffer.get();
+                        bytes[0] = buffer.get();
+                        return new HttpInput.Content(RetainableByteBuffer.wrap(bytes));
+                    }
                 });
 
                 AsyncContext asyncContext = request.startAsync();
@@ -1625,7 +1627,7 @@ public class AsyncIOServletTest extends AbstractTest
             }
         });
 
-        AsyncRequestContent contentProvider = new AsyncRequestContent();
+        AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch clientLatch = new CountDownLatch(1);
 
         String expected =
@@ -1636,7 +1638,7 @@ public class AsyncIOServletTest extends AbstractTest
 
         client.newRequest(newURI(transportType))
             .method(HttpMethod.POST)
-            .body(contentProvider)
+            .body(content)
             .send(new RetainingResponseListener()
             {
                 @Override
@@ -1652,22 +1654,25 @@ public class AsyncIOServletTest extends AbstractTest
                 }
             });
 
-        contentProvider.write(BufferUtil.toBuffer("S0"), Callback.NOOP);
-        contentProvider.flush();
-        contentProvider.write(BufferUtil.toBuffer("S1"), Callback.NOOP);
-        contentProvider.flush();
-        contentProvider.write(BufferUtil.toBuffer("S2"), Callback.NOOP);
-        contentProvider.flush();
-        contentProvider.write(BufferUtil.toBuffer("S3"), Callback.NOOP);
-        contentProvider.flush();
-        contentProvider.write(BufferUtil.toBuffer("S4"), Callback.NOOP);
-        contentProvider.flush();
-        contentProvider.write(BufferUtil.toBuffer("S5"), Callback.NOOP);
-        contentProvider.flush();
-        contentProvider.write(BufferUtil.toBuffer("S6"), Callback.NOOP);
-        contentProvider.close();
+        content.offer(false, "S0", UTF_8, Callback.NOOP);
+        content.flush();
+        content.offer(false, "S1", UTF_8, Callback.NOOP);
+        content.flush();
+        content.offer(false, "S2", UTF_8, Callback.NOOP);
+        content.flush();
+        content.offer(false, "S3", UTF_8, Callback.NOOP);
+        content.flush();
+        content.offer(false, "S4", UTF_8, Callback.NOOP);
+        content.flush();
+        content.offer(false, "S5", UTF_8, Callback.NOOP);
+        content.flush();
+        content.offer(false, "S6", UTF_8, Callback.NOOP);
+        content.close();
 
         assertTrue(clientLatch.await(10, TimeUnit.SECONDS));
+
+        server.stop();
+        assertEquals(0, serverBufferPool.getLeaks().size(), serverBufferPool::dumpLeaks);
     }
 
     @ParameterizedTest
@@ -1768,7 +1773,7 @@ public class AsyncIOServletTest extends AbstractTest
         setStreamIdleTimeout(idleTimeout);
 
         CountDownLatch latch = new CountDownLatch(1);
-        byte[] bytes = "[{\"key\":\"value\"}]".getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = "[{\"key\":\"value\"}]".getBytes(UTF_8);
         OutputStreamRequestContent content = new OutputStreamRequestContent("application/json;charset=UTF-8")
         {
             @Override

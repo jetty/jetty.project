@@ -15,9 +15,10 @@ package org.eclipse.jetty.http3.qpack;
 
 import org.eclipse.jetty.http3.qpack.internal.instruction.IndexedNameEntryInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,9 +30,12 @@ public class InstructionGeneratorTest
 
     private String toHexString(Instruction instruction)
     {
-        RetainableByteBuffer.DynamicCapacity lease = new RetainableByteBuffer.DynamicCapacity();
-        instruction.encode(_bufferPool, lease);
-        return BufferUtil.toHexString(lease.getByteBuffer());
+        BufferAccumulator accumulator = new BufferAccumulator();
+        instruction.encode(_bufferPool, accumulator);
+        try (RetainableByteBuffer buffer = accumulator.take())
+        {
+            return StringUtil.toHexString(buffer.getArray());
+        }
     }
 
     @Test

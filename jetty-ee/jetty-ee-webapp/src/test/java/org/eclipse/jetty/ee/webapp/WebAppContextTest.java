@@ -242,10 +242,10 @@ public class WebAppContextTest
                 \r
                 01234""";
 
-            LocalConnector.LocalEndPoint endPoint = connector.connect();
-            endPoint.addInputAndExecute(rawRequest);
+            LocalConnector.LocalEndPoint endPoint = connector.connectToServer();
+            endPoint.writeRequestString(rawRequest);
             await().atMost(5, TimeUnit.SECONDS).until(() -> servlet.readCounter.get() == 5);
-            endPoint.close(new ArithmeticException());
+            endPoint.getRemoteEndPoint().close(new ArithmeticException());
             await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(servlet.failureRef.get(), instanceOf(ArithmeticException.class)));
         }
     }

@@ -34,9 +34,9 @@ import org.eclipse.jetty.ee.websocket.jakarta.common.messages.DecodedBinaryStrea
 import org.eclipse.jetty.ee.websocket.jakarta.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.ee.websocket.jakarta.common.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -560,6 +560,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         }
     }
 
+    @Override
     public String toString()
     {
         StringBuilder ret = new StringBuilder();
@@ -567,13 +568,9 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         ret.append('@').append(Integer.toHexString(this.hashCode()));
         ret.append("[endpoint=");
         if (endpointInstance == null)
-        {
             ret.append("<null>");
-        }
         else
-        {
             ret.append(endpointInstance.getClass().getName());
-        }
         ret.append(']');
         return ret.toString();
     }
@@ -597,33 +594,40 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
 
     public void onPing(Frame frame, Callback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(frame.getPayload()), Callback.from(() ->
+        try (RetainableByteBuffer buffer = frame.acquire())
         {
-            callback.succeeded();
-            coreSession.demand();
-        }, x ->
-        {
-            // Ignore failures, as we might be OSHUT but receive a PING.
-            callback.succeeded();
-            coreSession.demand();
-        }), false);
+            try (Frame pong = new Frame(OpCode.PONG, buffer))
+            {
+                coreSession.sendFrame(pong, Callback.from(() ->
+                {
+                    callback.succeeded();
+                    coreSession.demand();
+                }, x ->
+                {
+                    // Ignore failures, as we might be OSHUT but receive a PING.
+                    callback.succeeded();
+                    coreSession.demand();
+                }), false);
+            }
+        }
     }
 
     public void onPong(Frame frame, Callback callback)
     {
         if (pongHandle != null)
         {
-            try
+            try (RetainableByteBuffer buffer = frame.acquire())
             {
-                ByteBuffer payload = frame.getPayload();
-                if (payload == null)
-                    payload = BufferUtil.EMPTY_BUFFER;
-
-                // Use JSR356 PongMessage interface
-                JakartaWebSocketPongMessage pongMessage = new JakartaWebSocketPongMessage(payload);
-                pongHandle.invoke(pongMessage);
-                callback.succeeded();
-                coreSession.demand();
+                buffer.read(b ->
+                {
+                    int r = b.remaining();
+                    // Use JSR356 PongMessage interface
+                    JakartaWebSocketPongMessage pongMessage = new JakartaWebSocketPongMessage(b);
+                    pongHandle.invoke(pongMessage);
+                    callback.succeeded();
+                    coreSession.demand();
+                    return r - b.remaining();
+                });
             }
             catch (Throwable cause)
             {

@@ -33,28 +33,27 @@ public class ContentSourceConsumer implements Invocable.Task
     {
         while (true)
         {
-            Content.Chunk chunk = source.read();
-
-            if (chunk == null)
+            try (Content.Chunk chunk = source.read())
             {
-                source.demand(this);
-                return;
-            }
+                if (chunk == null)
+                {
+                    source.demand(this);
+                    return;
+                }
 
-            if (Content.Chunk.isFailure(chunk))
-            {
-                callback.failed(chunk.getFailure());
-                if (!chunk.isLast())
-                    source.fail(chunk.getFailure());
-                return;
-            }
+                if (Content.Chunk.isFailure(chunk))
+                {
+                    callback.failed(chunk.getFailure());
+                    if (!chunk.isLast())
+                        source.fail(chunk.getFailure());
+                    return;
+                }
 
-            chunk.release();
-
-            if (chunk.isLast())
-            {
-                callback.succeeded();
-                return;
+                if (chunk.isLast())
+                {
+                    callback.succeeded();
+                    return;
+                }
             }
         }
     }

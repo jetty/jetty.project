@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.http2.parser;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class PushPromiseBodyParser extends BodyParser
 {
@@ -46,7 +45,7 @@ public class PushPromiseBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public boolean parse(RetainableByteBuffer buffer)
     {
         boolean loop = false;
         while (buffer.hasRemaining() || loop)
@@ -148,8 +147,8 @@ public class PushPromiseBodyParser extends BodyParser
                 }
                 case PADDING:
                 {
-                    int size = Math.min(buffer.remaining(), paddingLength);
-                    buffer.position(buffer.position() + size);
+                    int size = buffer.remaining() > Integer.MAX_VALUE ? paddingLength : Math.min((int)buffer.remaining(), paddingLength);
+                    buffer.readPosition(buffer.readPosition() + size);
                     paddingLength -= size;
                     if (paddingLength == 0)
                     {

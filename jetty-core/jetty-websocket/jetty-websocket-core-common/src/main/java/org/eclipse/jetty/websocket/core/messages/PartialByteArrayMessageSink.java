@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.websocket.core.messages;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.util.MethodHolder;
@@ -45,10 +45,12 @@ public class PartialByteArrayMessageSink extends AbstractMessageSink
         {
             if (frame.hasPayload() || frame.isFin())
             {
-                byte[] buffer = BufferUtil.toArray(frame.getPayload());
-                getMethodHolder().invoke(buffer, frame.isFin());
-                callback.succeeded();
-                autoDemand();
+                try (RetainableByteBuffer buffer = frame.acquire())
+                {
+                    getMethodHolder().invoke(buffer.getArray(), frame.isFin());
+                    callback.succeeded();
+                    autoDemand();
+                }
             }
             else
             {

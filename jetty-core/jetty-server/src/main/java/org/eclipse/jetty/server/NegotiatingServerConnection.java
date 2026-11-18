@@ -21,7 +21,7 @@ import javax.net.ssl.SSLEngineResult;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,7 +144,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
     {
         try
         {
-            return getEndPoint().fill(BufferUtil.EMPTY_BUFFER);
+            return getEndPoint().fill(RetainableByteBuffer.Mutable.empty());
         }
         catch (IOException x)
         {

@@ -21,7 +21,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -44,7 +43,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -52,10 +50,11 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -144,7 +143,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 return true;
             }
         });
@@ -228,7 +227,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 return true;
             }
         });
@@ -399,7 +398,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, "font/woff2");
-                response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 return true;
             }
         });
@@ -579,7 +578,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 return true;
             }
         });
@@ -662,15 +661,17 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                     {
                         response.setStatus(200);
                         response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                        response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                        response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                     }
                     case "PUT", "POST" ->
                     {
-                        ByteBuffer requestContent = Content.Source.asByteBuffer(request);
-                        response.setStatus(200);
-                        response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                        response.getHeaders().put("X-Request-Content-Length", requestContent.remaining());
-                        response.write(true, requestContent, callback);
+                        try (RetainableByteBuffer requestContent = Content.Source.asRetainableByteBuffer(request))
+                        {
+                            response.setStatus(200);
+                            response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
+                            response.getHeaders().put("X-Request-Content-Length", requestContent.remaining());
+                            response.write(true, requestContent, callback);
+                        }
                     }
                 }
                 return true;
@@ -773,11 +774,11 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     {
         pool = new ArrayByteBufferPool.Tracking();
         GzipCompression gzipCompression = new GzipCompression();
-        gzipCompression.setByteBufferPool(pool);
+        gzipCompression.setBufferPool(pool);
         BrotliCompression brotliCompression = new BrotliCompression();
-        brotliCompression.setByteBufferPool(pool);
+        brotliCompression.setBufferPool(pool);
         ZstandardCompression zstdCompression = new ZstandardCompression();
-        zstdCompression.setByteBufferPool(pool);
+        zstdCompression.setBufferPool(pool);
 
         String resourceName = "texts/quotes.txt";
         String resourceContentType = "text/plain;charset=utf-8";
@@ -804,7 +805,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 return true;
             }
         });
@@ -895,7 +896,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     {
         pool = new ArrayByteBufferPool.Tracking();
         GzipCompression gzipCompression = new GzipCompression();
-        gzipCompression.setByteBufferPool(pool);
+        gzipCompression.setBufferPool(pool);
 
         String resourceName = "texts/quotes.txt";
         String resourceContentType = "text/plain;charset=utf-8";
@@ -918,7 +919,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
             {
                 response.setStatus(status);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, resourceContentType);
-                response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 return true;
             }
         });
@@ -946,7 +947,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     {
         pool = new ArrayByteBufferPool.Tracking();
         GzipCompression gzipCompression = new GzipCompression();
-        gzipCompression.setByteBufferPool(pool);
+        gzipCompression.setBufferPool(pool);
 
         String resourceName = "texts/quotes.txt";
         String resourceContentType = "text/plain;charset=utf-8";
@@ -981,7 +982,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                 {
                     response.getHeaders().put(HttpHeader.ETAG, "W\"deadbeef\"");
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                    response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 }
                 return true;
             }
@@ -1027,7 +1028,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     {
         pool = new ArrayByteBufferPool.Tracking();
         GzipCompression gzipCompression = new GzipCompression();
-        gzipCompression.setByteBufferPool(pool);
+        gzipCompression.setBufferPool(pool);
 
         String resourceName = "texts/quotes.txt";
         String resourceContentType = "text/plain;charset=utf-8";
@@ -1062,7 +1063,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                 {
                     response.getHeaders().put(HttpHeader.ETAG, "W\"deadbeef\"");
                     response.setStatus(HttpStatus.OK_200);
-                    response.write(true, ByteBuffer.wrap(resourceBody), callback);
+                    response.write(true, RetainableByteBuffer.wrap(resourceBody), callback);
                 }
                 return true;
             }
@@ -1106,7 +1107,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         GzipEncoderConfig gzipEncoderConfig = new GzipEncoderConfig();
         gzipEncoderConfig.setSyncFlush(true);
         gzipCompression.setDefaultEncoderConfig(gzipEncoderConfig);
-        gzipCompression.setByteBufferPool(pool);
+        gzipCompression.setBufferPool(pool);
 
         CompressionHandler compressionHandler = new CompressionHandler();
         compressionHandler.putCompression(gzipCompression);
@@ -1130,7 +1131,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                     assertTrue(latch.await(5, TimeUnit.SECONDS), "Post-Flush Latch timed out");
                     writer.print("This line should be seen afterwards\n");
                     // trigger "last" write to allow Gzip to finish and write its trailers.
-                    response.write(true, BufferUtil.EMPTY_BUFFER, callback);
+                    response.write(true, RetainableByteBuffer.empty(), callback);
                 }
                 catch (InterruptedException e)
                 {
@@ -1172,7 +1173,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
                 latch.countDown();
                 // collect the rest of the body
                 IO.copy(in, baos);
-                response = HttpTester.parseResponse(ByteBuffer.wrap(baos.toByteArray()));
+                response = HttpTester.parseResponse(RetainableByteBuffer.wrap(baos.toByteArray()));
             }
 
             byte[] rawResponseBodyBytes = response.getContentBytes();
@@ -1242,7 +1243,7 @@ public class CompressionHandlerTest extends AbstractCompressionTest
     {
         pool = new ArrayByteBufferPool.Tracking();
         GzipCompression gzipCompression = new GzipCompression();
-        gzipCompression.setByteBufferPool(pool);
+        gzipCompression.setBufferPool(pool);
 
         CompressionHandler compressionHandler = new CompressionHandler();
         compressionHandler.putCompression(gzipCompression);

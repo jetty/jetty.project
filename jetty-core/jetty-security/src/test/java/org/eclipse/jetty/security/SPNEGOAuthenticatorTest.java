@@ -17,7 +17,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.security.authentication.SPNEGOAuthenticator;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -39,8 +38,7 @@ public class SPNEGOAuthenticatorTest
     {
         _server = new Server();
 
-        HttpConnectionFactory http = new HttpConnectionFactory();
-        _connector = new LocalConnector(_server, http);
+        _connector = new LocalConnector(_server);
         _connector.setIdleTimeout(300000);
 
         _server.addConnector(_connector);

@@ -14,11 +14,11 @@
 package org.eclipse.jetty.ee9.test.support.rawhttp;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,7 +34,7 @@ public class HttpRequestTesterTest
         request.setVersion("HTTP/1.0");
         request.put("Host", "fakehost");
 
-        ByteBuffer bBuff = request.generate();
+        RetainableByteBuffer buffer = request.generate();
 
         String expectedRequest = """
             GET /uri HTTP/1.0\r
@@ -42,7 +42,7 @@ public class HttpRequestTesterTest
             \r
             """;
 
-        assertEquals(expectedRequest, BufferUtil.toString(bBuff), "Basic Request");
+        assertEquals(expectedRequest, buffer.getString(StandardCharsets.UTF_8), "Basic Request");
     }
 
     @Test
@@ -56,7 +56,7 @@ public class HttpRequestTesterTest
         request.put("Connection", "close");
         request.setContent("aaa");
 
-        ByteBuffer bBuff = request.generate();
+        RetainableByteBuffer buffer = request.generate();
 
         String expectedRequest = """
             GET /uri HTTP/1.1\r
@@ -66,6 +66,6 @@ public class HttpRequestTesterTest
             \r
             aaa""";
 
-        assertEquals(expectedRequest, BufferUtil.toString(bBuff), "Basic Request");
+        assertEquals(expectedRequest, buffer.getString(StandardCharsets.UTF_8), "Basic Request");
     }
 }

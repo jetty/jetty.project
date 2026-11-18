@@ -28,8 +28,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
@@ -679,11 +679,11 @@ public class WebSocketCoreSession implements CoreSession, Dumpable
                 }
                 else
                 {
+                    CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
                     closeCallback = Callback.from(() ->
                     {
                         if (sessionState.isOutputOpen())
                         {
-                            CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ConnectionState: sending close response {}", closeStatus);
                             close(closeStatus == null ? CloseStatus.NO_CODE_STATUS : closeStatus, callback);

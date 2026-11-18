@@ -50,7 +50,6 @@ public abstract class AbstractEEActivator implements BundleActivator, ServerClas
     private PackageAdminServiceListener _packageAdminServiceListener;
     private final Collection<ServerClasspathContributor> _serverClasspathContributors = new ArrayList<>();
 
-
     /**
      * Track jetty Server instances and add ability to deploy EE contexts/webapps
      *

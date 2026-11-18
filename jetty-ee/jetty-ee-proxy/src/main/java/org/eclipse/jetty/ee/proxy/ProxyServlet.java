@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee.proxy;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ExceptionUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * <p>Servlet 3.0 asynchronous proxy servlet.</p>
@@ -91,7 +91,7 @@ public class ProxyServlet extends AbstractProxyServlet
                     try
                     {
                         Request.Content content = proxyRequestContent(request, response, proxyRequest);
-                        Content.copy(content, delegate, Callback.from(
+                        Content.copy(content, delegate::offer, Callback.from(
                             delegate::close,
                             x -> ExceptionUtil.callAndThen(
                                 x, delegate::fail, t -> onClientRequestFailure(request, proxyRequest, response, t)
@@ -205,24 +205,14 @@ public class ProxyServlet extends AbstractProxyServlet
         @Override
         public void onContent(Response proxyResponse, Content.Chunk chunk, Runnable demander)
         {
-            ByteBuffer content = chunk.getByteBuffer();
-            byte[] buffer;
-            int offset;
-            int length = content.remaining();
-            if (content.hasArray())
+            try (RetainableByteBuffer buffer = chunk.acquire())
             {
-                buffer = content.array();
-                offset = content.arrayOffset();
+                Callback callback = Callback.from(demander, proxyResponse::abort);
+                // The bytes are a copy, so the chunk need not be retained
+                // even if onResponseContent() writes them asynchronously.
+                byte[] bytes = buffer.getArray();
+                onResponseContent(request, response, proxyResponse, bytes, 0, bytes.length, callback);
             }
-            else
-            {
-                buffer = new byte[length];
-                content.get(buffer);
-                offset = 0;
-            }
-            chunk.retain();
-            Callback callback = Callback.from(chunk::release, Callback.from(demander, proxyResponse::abort));
-            onResponseContent(request, response, proxyResponse, buffer, offset, length, callback);
         }
 
         @Override
@@ -256,18 +246,21 @@ public class ProxyServlet extends AbstractProxyServlet
         @Override
         public Content.Chunk read()
         {
-            Content.Chunk chunk = super.read();
-            if (Content.Chunk.isFailure(chunk))
+            try (Content.Chunk chunk = super.read())
             {
-                if (!chunk.isLast())
-                    fail(chunk.getFailure());
+                if (Content.Chunk.isFailure(chunk))
+                {
+                    if (!chunk.isLast())
+                        fail(chunk.getFailure());
+                }
+                else
+                {
+                    if (_log.isDebugEnabled())
+                        _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), chunk.remaining());
+                }
+                chunk.retain();
+                return chunk;
             }
-            else
-            {
-                if (_log.isDebugEnabled())
-                    _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), chunk.remaining());
-            }
-            return chunk;
         }
     }
 }

@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -299,7 +300,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             if (LOG.isDebugEnabled())
                 LOG.debug("{} {}: {}", this, HttpHeader.HTTP2_SETTINGS, StringUtil.toHexString(settings));
 
-            SettingsFrame settingsFrame = SettingsBodyParser.parseBody(BufferUtil.toBuffer(settings));
+            SettingsFrame settingsFrame = SettingsBodyParser.parseBody(RetainableByteBuffer.wrap(BufferUtil.toBuffer(settings)));
             if (settingsFrame == null)
             {
                 LOG.warn("Invalid {} header value: {}", HttpHeader.HTTP2_SETTINGS, value);

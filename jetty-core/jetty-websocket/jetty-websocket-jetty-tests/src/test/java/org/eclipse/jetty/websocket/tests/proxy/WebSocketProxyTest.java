@@ -21,6 +21,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -30,6 +31,9 @@ import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
@@ -52,6 +56,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -61,16 +66,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketProxyTest
 {
+    private ArrayByteBufferPool.Tracking serverBufferPool;
     private Server server;
     private EventSocket serverSocket;
     private WebSocketProxy webSocketProxy;
+    private ArrayByteBufferPool.Tracking clientBufferPool;
+    private HttpClient httpClient;
     private WebSocketClient client;
     private URI proxyUri;
 
     @BeforeEach
     public void before() throws Exception
     {
-        server = new Server();
+        serverBufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(null, null, serverBufferPool);
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
@@ -94,7 +103,13 @@ public class WebSocketProxyTest
 
         int port = connector.getLocalPort();
 
-        client = new WebSocketClient();
+        clientBufferPool = new ArrayByteBufferPool.Tracking();
+        httpClient = new HttpClient();
+        httpClient.setByteBufferPool(clientBufferPool);
+        // Start the HttpClient before creating the WebSocketClient,
+        // so that the WebSocketComponents use the same ByteBufferPool.
+        httpClient.start();
+        client = new WebSocketClient(httpClient);
         client.start();
 
         proxyUri = URI.create("ws://localhost:" + port + "/proxy");
@@ -105,8 +120,20 @@ public class WebSocketProxyTest
     @AfterEach
     public void after() throws Exception
     {
-        client.stop();
-        server.stop();
+        try
+        {
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() ->
+            {
+                assertThat("Detected server leaks: " + serverBufferPool.dumpLeaks(), serverBufferPool.getLeaks().size(), is(0));
+                assertThat("Detected client leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0));
+            });
+        }
+        finally
+        {
+            LifeCycle.stop(client);
+            LifeCycle.stop(httpClient);
+            LifeCycle.stop(server);
+        }
     }
 
     @Test
@@ -365,19 +392,25 @@ public class WebSocketProxyTest
         @OnWebSocketFrame
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
-            switch (frame.getOpCode())
+            try (RetainableByteBuffer buffer = frame.acquire())
             {
-                case OpCode.PING ->
+                switch (frame.getOpCode())
                 {
-                    pingMessages.add(BufferUtil.copy(frame.getPayload()));
-                    session.sendPong(frame.getPayload(), callback);
+                    case OpCode.PING ->
+                    {
+                        try (RetainableByteBuffer slice = buffer.slice())
+                        {
+                            pingMessages.add(slice.getByteBuffer(false));
+                            session.sendPong(buffer, callback);
+                        }
+                    }
+                    case OpCode.PONG ->
+                    {
+                        pongMessages.add(buffer.getByteBuffer(false));
+                        callback.succeed();
+                    }
+                    default -> callback.succeed();
                 }
-                case OpCode.PONG ->
-                {
-                    pongMessages.add(BufferUtil.copy(frame.getPayload()));
-                    callback.succeed();
-                }
-                default -> callback.succeed();
             }
         }
 

@@ -21,6 +21,7 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
+import org.eclipse.jetty.websocket.core.internal.ParsedFrame;
 
 /**
  * Some static utility methods for validating a {@link Frame} based on the state of its {@link CoreSession}.
@@ -60,7 +61,7 @@ public class FrameValidation
          */
         if (frame.getOpCode() == OpCode.CLOSE)
         {
-            if (!(frame instanceof Frame.Parsed)) // already check in parser
+            if (!(frame instanceof ParsedFrame)) // already check in parser
                 CloseStatus.getCloseStatus(frame); // return ignored as get used to validate there is a closeStatus
         }
     }
@@ -81,7 +82,7 @@ public class FrameValidation
          */
         if (frame.getOpCode() == OpCode.CLOSE)
         {
-            if (!(frame instanceof Frame.Parsed)) // already check in parser
+            if (!(frame instanceof ParsedFrame)) // already check in parser
             {
                 CloseStatus closeStatus = CloseStatus.getCloseStatus(frame);
                 if (!CloseStatus.isTransmittableStatusCode(closeStatus.getCode()) && (closeStatus.getCode() != CloseStatus.NO_CODE))
@@ -97,7 +98,7 @@ public class FrameValidation
         if (!OpCode.isKnown(frame.getOpCode()))
             throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
 
-        int payloadLength = frame.getPayloadLength();
+        long payloadLength = frame.getPayloadLength();
         if (frame.isControlFrame())
         {
             if (!frame.isFin())

@@ -17,8 +17,8 @@ import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -69,15 +69,19 @@ public class WebSocketClientServerTest
 
         String message = "hello world";
         clientHandler.sendText(message);
-        Frame recv = serverHandler.getFrames().poll(5, TimeUnit.SECONDS);
-        assertNotNull(recv);
-        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+        try (Frame recv = serverHandler.getFrames().poll(5, TimeUnit.SECONDS))
+        {
+            assertNotNull(recv);
+            assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+        }
 
         message = "back at ya!";
         serverHandler.sendText(message);
-        recv = clientHandler.getFrames().poll(5, TimeUnit.SECONDS);
-        assertNotNull(recv);
-        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+        try (Frame recv = clientHandler.getFrames().poll(5, TimeUnit.SECONDS))
+        {
+            assertNotNull(recv);
+            assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+        }
 
         clientHandler.sendClose();
 
@@ -93,18 +97,23 @@ public class WebSocketClientServerTest
             @Override
             public void onFrame(Frame frame, Callback callback)
             {
-                LOG.info("onFrame: " + BufferUtil.toDetailString(frame.getPayload()));
-                super.receivedFrames.offer(Frame.copy(frame));
-                if (frame.getOpCode() == OpCode.CLOSE)
+                try (RetainableByteBuffer buffer = frame.acquire())
                 {
-                    LOG.info("session aborted");
-                    getCoreSession().abort();
-                    callback.failed(new Exception());
-                }
-                else
-                {
-                    callback.succeeded();
-                    getCoreSession().demand();
+                    LOG.info("onFrame: " + buffer);
+                    // The frame is stored, so it must be retained.
+                    frame.retain();
+                    super.receivedFrames.offer(frame);
+                    if (frame.getOpCode() == OpCode.CLOSE)
+                    {
+                        LOG.info("session aborted");
+                        getCoreSession().abort();
+                        callback.failed(new Exception());
+                    }
+                    else
+                    {
+                        callback.succeeded();
+                        getCoreSession().demand();
+                    }
                 }
             }
         };
@@ -113,9 +122,11 @@ public class WebSocketClientServerTest
 
         String message = "hello world";
         serverHandler.sendText(message);
-        Frame recv = clientHandler.getFrames().poll(5, TimeUnit.SECONDS);
-        assertNotNull(recv);
-        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+        try (Frame recv = clientHandler.getFrames().poll(5, TimeUnit.SECONDS))
+        {
+            assertNotNull(recv);
+            assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+        }
 
         serverHandler.sendClose();
 
@@ -132,9 +143,11 @@ public class WebSocketClientServerTest
 
         String message = "hello world";
         clientHandler.sendText(message);
-        Frame recv = serverHandler.getFrames().poll(2, TimeUnit.SECONDS);
-        assertNotNull(recv);
-        assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+        try (Frame recv = serverHandler.getFrames().poll(2, TimeUnit.SECONDS))
+        {
+            assertNotNull(recv);
+            assertThat(recv.getPayloadAsUTF8(), Matchers.equalTo(message));
+        }
 
         ((WebSocketCoreSession)clientHandler.getCoreSession()).getConnection().getEndPoint().close();
 

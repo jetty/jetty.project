@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -47,6 +48,8 @@ import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
@@ -58,6 +61,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -113,7 +117,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+        assertThat(stream.getResponseContentAsString(), equalTo(helloHandler.getMessage()));
     }
 
     @Test
@@ -129,7 +133,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
             {
                 sendCB.set(callback);
                 super.send(request, response, last, content, NOOP);
@@ -149,7 +153,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+        assertThat(stream.getResponseContentAsString(), equalTo(helloHandler.getMessage()));
     }
 
     @Test
@@ -218,7 +222,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(stream.getResponseContent().remaining(), equalTo(10000));
+        assertThat(stream.getResponseContentAsString().length(), equalTo(10000));
     }
 
     @Test
@@ -296,7 +300,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
+        assertThat(stream.getResponseContentAsString(), equalTo(message));
     }
 
     @ParameterizedTest
@@ -339,7 +343,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
+        assertThat(stream.getResponseContentAsString(), equalTo(message));
     }
 
     @ParameterizedTest
@@ -357,7 +361,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
             {
                 sendCB.set(callback);
                 super.send(request, response, last, content, NOOP);
@@ -399,7 +403,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
+        assertThat(stream.getResponseContentAsString(), equalTo(message));
     }
 
     @Test
@@ -553,7 +557,7 @@ public class HttpChannelTest
             @Override
             public boolean handle(Request request, Response response, Callback callback)
             {
-                response.write(true, BufferUtil.toBuffer("12345"), callback);
+                response.write(true, RetainableByteBuffer.wrap("12345", StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         };
@@ -574,7 +578,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().getLongField(HttpHeader.CONTENT_LENGTH), equalTo(5L));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
+        assertThat(stream.getResponseContentAsString(), equalTo("12345"));
     }
 
     @Test
@@ -591,7 +595,7 @@ public class HttpChannelTest
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 try (StacklessLogging ignore = new StacklessLogging(Response.class))
                 {
-                    response.write(true, BufferUtil.toBuffer("12345"), Callback.from(callback, writeFailureRef::set));
+                    response.write(true, RetainableByteBuffer.wrap("12345", StandardCharsets.ISO_8859_1), Callback.from(callback, writeFailureRef::set));
                 }
                 return true;
             }
@@ -636,13 +640,13 @@ public class HttpChannelTest
 
                 try (Blocker.Callback cb = Blocker.callback())
                 {
-                    response.write(false, BufferUtil.toBuffer("0"), cb);
+                    response.write(false, RetainableByteBuffer.wrap("0", StandardCharsets.ISO_8859_1), cb);
                     cb.block();
                 }
 
                 try (StacklessLogging ignore = new StacklessLogging(Response.class))
                 {
-                    response.write(true, BufferUtil.toBuffer("12345"), Callback.from(callback, writeFailureRef::set));
+                    response.write(true, RetainableByteBuffer.wrap("12345", StandardCharsets.ISO_8859_1), Callback.from(callback, writeFailureRef::set));
                 }
                 return true;
             }
@@ -687,7 +691,7 @@ public class HttpChannelTest
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 10);
                 response.write(false,
-                    BufferUtil.toBuffer("12345"), Callback.from(() ->
+                    RetainableByteBuffer.wrap("12345", StandardCharsets.ISO_8859_1), Callback.from(() ->
                         response.write(true, null, callback)));
                 return true;
             }
@@ -720,7 +724,7 @@ public class HttpChannelTest
             public boolean handle(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(true, BufferUtil.toBuffer("1234567890"), callback);
+                response.write(true, RetainableByteBuffer.wrap("1234567890", StandardCharsets.ISO_8859_1), callback);
                 return true;
             }
         };
@@ -760,9 +764,9 @@ public class HttpChannelTest
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
                 try (StacklessLogging ignore = new StacklessLogging(Response.class))
                 {
-                    response.write(false, BufferUtil.toBuffer("1234"),
+                    response.write(false, RetainableByteBuffer.wrap("1234", StandardCharsets.ISO_8859_1),
                         Callback.from(() ->
-                            response.write(true, BufferUtil.toBuffer("567890"),
+                            response.write(true, RetainableByteBuffer.wrap("567890", StandardCharsets.ISO_8859_1),
                                 callback)));
                 }
                 return true;
@@ -820,7 +824,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
+        assertThat(stream.getResponseContentAsString(), equalTo(helloHandler.getMessage()));
 
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
         assertThat(stream.read(), sameInstance(Content.Chunk.EOF));
@@ -837,7 +841,7 @@ public class HttpChannelTest
                 response.setStatus(200);
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
+                response.write(false, null, Callback.from(() -> response.write(true, RetainableByteBuffer.wrap("12345", StandardCharsets.ISO_8859_1), callback)));
                 return true;
             }
         };
@@ -862,7 +866,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
+        assertThat(stream.getResponseContentAsString(), equalTo("12345"));
 
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
         assertThat(stream.read(), nullValue());
@@ -880,7 +884,7 @@ public class HttpChannelTest
                 response.getHeaders().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.getHeaders().put(HttpHeader.CONTENT_LENGTH, 5);
-                response.write(false, null, Callback.from(() -> response.write(true, BufferUtil.toBuffer("12345"), callback)));
+                response.write(false, null, Callback.from(() -> response.write(true, RetainableByteBuffer.wrap("12345", StandardCharsets.ISO_8859_1), callback)));
                 return true;
             }
         };
@@ -905,7 +909,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
+        assertThat(stream.getResponseContentAsString(), equalTo("12345"));
 
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(true));
         assertThat(stream.read(), nullValue());
@@ -940,7 +944,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
+        assertThat(stream.getResponseContentAsString(), equalTo(message));
 
         // 2nd request
         fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -956,7 +960,7 @@ public class HttpChannelTest
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), nullValue());
         assertThat(stream.getResponseHeaders().getLongField(HttpHeader.CONTENT_LENGTH), equalTo(0L));
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(""));
+        assertThat(stream.getResponseContentAsString(), equalTo(""));
     }
 
     @Test
@@ -978,7 +982,7 @@ public class HttpChannelTest
             }
 
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
             {
                 sendCB.set(callback);
                 super.send(request, response, last, content, NOOP);
@@ -1018,13 +1022,13 @@ public class HttpChannelTest
                 }
 
                 @Override
-                public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+                public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
                 {
                     history.add(String.format("send %d l=%b %d %s",
                         response == null ? 0 : response.getStatus(),
                         last,
-                        BufferUtil.length(content),
-                        BufferUtil.toDetailString(content)));
+                        content.remaining(),
+                        content));
                     super.send(request, response, last, content, callback);
                 }
 
@@ -1070,7 +1074,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
+        assertThat(stream.getResponseContentAsString(), equalTo(message));
 
         Iterator<String> timeline = history.iterator();
 
@@ -1091,7 +1095,7 @@ public class HttpChannelTest
         // demand content
         assertThat(timeline.next(), allOf(startsWith("demandContent")));
         // read the last part when it arrives
-        assertThat(timeline.next(), allOf(startsWith("readContent: "), containsString("<<<echo>>>"), containsString("l=true")));
+        assertThat(timeline.next(), allOf(startsWith("readContent: "), containsString("<<<echo>>>"), containsString("last=true")));
         // send the last part
         assertThat(timeline.next(), allOf(startsWith("send 0 l=true "), containsString("<<<echo>>>")));
         // succeed the stream
@@ -1147,7 +1151,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
+        assertThat(stream.getResponseContentAsString(), equalTo(message));
 
         HttpFields trailersRcv = stream.getResponseTrailers();
         assertThat(trailersRcv, notNullValue());
@@ -1169,20 +1173,21 @@ public class HttpChannelTest
                     @Override
                     public void run()
                     {
-                        Content.Chunk chunk = request.read();
-                        contentSize.add(chunk.remaining());
-                        chunk.release();
-                        if (chunk.isLast())
-                            latch.countDown();
-                        else
-                            request.demand(this);
+                        try (Content.Chunk chunk = request.read())
+                        {
+                            contentSize.add(chunk.remaining());
+                            if (chunk.isLast())
+                                latch.countDown();
+                            else
+                                request.demand(this);
+                        }
                     }
                 };
                 request.demand(onContentAvailable);
                 if (latch.await(30, TimeUnit.SECONDS))
                 {
                     response.setStatus(200);
-                    response.write(true, BufferUtil.toBuffer("contentSize=" + contentSize.longValue()), callback);
+                    response.write(true, RetainableByteBuffer.wrap("contentSize=" + contentSize.longValue(), StandardCharsets.ISO_8859_1), callback);
                 }
                 else
                 {
@@ -1231,7 +1236,7 @@ public class HttpChannelTest
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
         assertThat(stream.getResponseHeaders().contains(HttpFields.CONNECTION_CLOSE), is(false));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("contentSize=" + (chunks * data.remaining())));
+        assertThat(stream.getResponseContentAsString(), equalTo("contentSize=" + (chunks * data.remaining())));
     }
 
     @Test
@@ -1352,10 +1357,12 @@ public class HttpChannelTest
 
         // Can read the failure.
         Request rq = handling.get().getRequest();
-        Content.Chunk chunk = rq.read();
-        assertTrue(chunk.isLast());
-        assertTrue(Content.Chunk.isFailure(chunk, true));
-        assertThat(chunk.getFailure(), sameInstance(failure));
+        try (Content.Chunk chunk = rq.read())
+        {
+            assertTrue(chunk.isLast());
+            assertTrue(Content.Chunk.isFailure(chunk, true));
+            assertThat(chunk.getFailure(), sameInstance(failure));
+        }
 
         CountDownLatch demand = new CountDownLatch(1);
         // Demand callback is serialized after the onFailure task runs.
@@ -1414,7 +1421,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
             {
                 committing.countDown();
                 super.send(request, response, last, content, callback);
@@ -1541,7 +1548,7 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, ByteBuffer content, Callback callback)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
             {
                 sendCallback.set(callback);
                 super.send(request, response, last, content, NOOP);
@@ -1613,6 +1620,82 @@ public class HttpChannelTest
             assertThat(stream.getFailure(), notNullValue());
             assertThat(stream.getResponse(), nullValue());
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testWriteDeferredByInterimResponseRetainsContent(boolean interimFails) throws Exception
+    {
+        AtomicReference<Response> responseRef = new AtomicReference<>();
+        AtomicReference<Callback> callbackRef = new AtomicReference<>();
+        _server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                responseRef.set(response);
+                callbackRef.set(callback);
+                return true;
+            }
+        });
+        _server.start();
+
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
+
+        // Simulate a slow client, that keeps the interim response write pending.
+        AtomicReference<Callback> interimCallbackRef = new AtomicReference<>();
+        MockHttpStream stream = new MockHttpStream(channel)
+        {
+            @Override
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, RetainableByteBuffer content, Callback callback)
+            {
+                if (response != null && HttpStatus.isInterim(response.getStatus()))
+                {
+                    interimCallbackRef.set(callback);
+                    callback = NOOP;
+                }
+                super.send(request, response, last, content, callback);
+            }
+        };
+
+        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        channel.onRequest(request).run();
+
+        Response response = responseRef.get();
+        response.writeInterim(HttpStatus.EARLY_HINTS_103, HttpFields.EMPTY);
+        assertNotNull(interimCallbackRef.get());
+
+        ArrayByteBufferPool.Tracking bufferPool = new ArrayByteBufferPool.Tracking();
+        RetainableByteBuffer.Mutable buffer = bufferPool.acquire(1024, false);
+        buffer.putString("hello", StandardCharsets.UTF_8);
+
+        // The write is deferred, and the caller is allowed to release as soon as write() returns.
+        FutureCallback written = new FutureCallback();
+        response.write(true, buffer, written);
+        buffer.release();
+        assertFalse(written.isDone());
+
+        // If the buffer had been released to the pool, it would be reused here.
+        try (RetainableByteBuffer.Mutable other = bufferPool.acquire(1024, false))
+        {
+            other.putString("XXXXX", StandardCharsets.UTF_8);
+
+            Callback interimCallback = interimCallbackRef.get();
+            if (interimFails)
+                interimCallback.failed(new QuietException.Exception("interim failed"));
+            else
+                interimCallback.succeeded();
+        }
+
+        written.get(5, TimeUnit.SECONDS);
+        callbackRef.get().succeeded();
+
+        assertThat(stream.isComplete(), is(true));
+        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        assertThat(stream.getResponseContentAsString(), equalTo("hello"));
+        assertThat("leaks: " + bufferPool.dumpLeaks(), bufferPool.getLeaks().size(), is(0));
     }
 
     private static class HttpStreamCaptureFailure extends HttpStream.Wrapper

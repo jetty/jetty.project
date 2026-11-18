@@ -24,6 +24,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -123,13 +124,16 @@ public class MessageReaderTest
         giveByteBuffer(ByteBuffer.wrap(StringUtil.getUtf8Bytes(s)), last);
     }
 
-    private void giveByteBuffer(ByteBuffer buffer, boolean last) throws IOException
+    private void giveByteBuffer(ByteBuffer byteBuffer, boolean last) throws IOException
     {
-        byte opCode = first ? OpCode.TEXT : OpCode.CONTINUATION;
-        Frame frame = new Frame(opCode, last, buffer);
-        FutureCallback callback = new FutureCallback();
-        reader.accept(frame, callback);
-        callback.block(5, TimeUnit.SECONDS);
-        first = false;
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(byteBuffer))
+        {
+            byte opCode = first ? OpCode.TEXT : OpCode.CONTINUATION;
+            Frame frame = new Frame(opCode, last, buffer);
+            FutureCallback callback = new FutureCallback();
+            reader.accept(frame, callback);
+            callback.block(5, TimeUnit.SECONDS);
+            first = false;
+        }
     }
 }

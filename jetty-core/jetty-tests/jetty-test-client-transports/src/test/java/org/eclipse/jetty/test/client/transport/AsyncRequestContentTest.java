@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -65,8 +66,10 @@ public class AsyncRequestContentTest extends AbstractTest
             {
                 request.addFailureListener(x -> failureRef.compareAndExchange(null, x).addSuppressed(x));
 
-                Content.Chunk chunk = request.read();
-                assertNull(chunk);
+                try (Content.Chunk chunk = request.read())
+                {
+                    assertNull(chunk);
+                }
 
                 request.demand(new Runnable()
                 {
@@ -160,8 +163,7 @@ public class AsyncRequestContentTest extends AbstractTest
                     result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
-        content.write(ByteBuffer.wrap(new byte[1]), Callback.NOOP);
-        content.close();
+        content.offer(true, RetainableByteBuffer.allocate(1, false), Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -255,7 +257,7 @@ public class AsyncRequestContentTest extends AbstractTest
 
     @ParameterizedTest
     @MethodSource("transports")
-    public void testBufferReuseAfterCallbackCompleted(TransportType transportType) throws Exception
+    public void testBufferReuseAfterRelease(TransportType transportType) throws Exception
     {
         start(transportType, new ConsumeInputHandler());
 
@@ -277,12 +279,20 @@ public class AsyncRequestContentTest extends AbstractTest
         byte second = '2';
         byte[] bytes = new byte[1];
         bytes[0] = first;
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        content.write(buffer, Callback.from(() ->
+        // The offer() callback is completed when the content is read, before it is written,
+        // so the bytes can only be reused when the buffer is released by the implementation.
+        Runnable releaser = () ->
         {
             bytes[0] = second;
-            content.write(ByteBuffer.wrap(bytes), Callback.from(content::close));
-        }));
+            try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(bytes))
+            {
+                content.offer(false, buffer, Callback.from(content::close));
+            }
+        };
+        try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(ByteBuffer.wrap(bytes), releaser))
+        {
+            content.offer(false, buffer, Callback.NOOP);
+        }
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertEquals(2, requestContent.size());

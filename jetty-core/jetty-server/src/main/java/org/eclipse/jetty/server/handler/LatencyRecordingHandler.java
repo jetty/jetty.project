@@ -19,10 +19,10 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.NanoTime;
 
 /**
- * <p>A <code>Handler</code> that helps recording the total latency of the requests executed by the wrapped handler.</p>
- * <p>The latency reported by {@link #onRequestComplete(String, long)} is the delay between when {@link Request#getBeginNanoTime()
- * the request arrived to a connector} until {@link EventsHandler#onComplete(Request, Throwable) the completion of that
- * request}.</p>
+ * <p>A <code>Handler</code> that helps to record the total latency of the requests executed by the wrapped handler.</p>
+ * <p>The latency reported by {@link #onRequestComplete(String, long)} is the delay between when {@link Request#getBeginNanoTime()}
+ * the request arrived to a connector until {@link EventsHandler#onComplete(Request, int, HttpFields, Throwable)} the completion
+ * of that request.</p>
  */
 public abstract class LatencyRecordingHandler extends EventsHandler
 {

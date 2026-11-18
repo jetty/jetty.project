@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.api.Test;
 
@@ -39,17 +38,18 @@ public class GeneratorParserRoundTripTest
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
-        RetainableByteBuffer out = bufferPool.acquire(8192, false);
+        RetainableByteBuffer.Mutable out = bufferPool.acquire(8192, false);
         try
         {
             // Generate Buffer
-            ByteBuffer byteBuffer = out.getByteBuffer();
-            Frame frame = new Frame(OpCode.TEXT).setPayload(message);
-            gen.generateHeader(frame, byteBuffer);
-            gen.generatePayload(frame, byteBuffer);
+            try (Frame frame = new Frame(OpCode.TEXT, message))
+            {
+                gen.generateHeader(frame, out);
+                gen.generatePayload(frame, out);
+            }
 
             // Parse Buffer
-            capture.parse(byteBuffer);
+            capture.parse(out);
         }
         finally
         {
@@ -57,37 +57,37 @@ public class GeneratorParserRoundTripTest
         }
 
         // Validate
-        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Text parsed", txt.getPayloadAsUTF8(), is(message));
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Text parsed", txt.getPayloadAsUTF8(), is(message));
+        }
     }
 
     @Test
     public void testParserAndGeneratorMasked() throws Exception
     {
         Generator gen = new Generator();
-        ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
+        ParserCapture capture = new ParserCapture(Behavior.SERVER);
 
         String message = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF";
 
-        RetainableByteBuffer out = bufferPool.acquire(8192, false);
+        RetainableByteBuffer.Mutable out = bufferPool.acquire(8192, false);
         try
         {
-            ByteBuffer byteBuffer = out.getByteBuffer();
-
-            // Setup Frame
-            Frame frame = new Frame(OpCode.TEXT).setPayload(message);
-
-            // Add masking
+            // Setup masking
             byte[] mask = new byte[4];
             Arrays.fill(mask, (byte)0xFF);
-            frame.setMask(mask);
 
             // Generate Buffer
-            gen.generateHeader(frame, byteBuffer);
-            gen.generatePayload(frame, byteBuffer);
+            try (Frame unmasked = new Frame(OpCode.TEXT, message);
+                 Frame frame = unmasked.withMask(mask))
+            {
+                gen.generateHeader(frame, out);
+                gen.generatePayload(frame, out);
+            }
 
             // Parse Buffer
-            capture.parse(byteBuffer);
+            capture.parse(out);
         }
         finally
         {
@@ -95,8 +95,10 @@ public class GeneratorParserRoundTripTest
         }
 
         // Validate
-        Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertTrue(txt.isMasked(), "Text.isMasked");
-        assertThat("Text parsed", txt.getPayloadAsUTF8(), is(message));
+        try (Frame txt = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertTrue(txt.isMasked(), "Text.isMasked");
+            assertThat("Text parsed", txt.getPayloadAsUTF8(), is(message));
+        }
     }
 }

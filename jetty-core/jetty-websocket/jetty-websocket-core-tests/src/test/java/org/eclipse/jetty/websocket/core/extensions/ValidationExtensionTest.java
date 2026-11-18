@@ -18,8 +18,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -82,18 +83,25 @@ public class ValidationExtensionTest extends WebSocketTester
         try (Socket client = newClient(server.getLocalPort()))
         {
             client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.BINARY, nonUtf8Payload, true));
-            Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
-            assertNotNull(frame);
-            assertThat(frame.getOpCode(), is(OpCode.BINARY));
-            assertThat(BufferUtil.toArray(frame.getPayload()), is(nonUtf8Payload));
+            try (Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS))
+            {
+                assertNotNull(frame);
+                assertThat(frame.getOpCode(), is(OpCode.BINARY));
+                try (RetainableByteBuffer payload = frame.acquire())
+                {
+                    assertArrayEquals(nonUtf8Payload, payload.getArray());
+                }
+            }
 
             //close normally
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
             assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
-            frame = receiveFrame(client.getInputStream());
-            assertNotNull(frame);
-            assertThat(frame.getOpCode(), is(OpCode.CLOSE));
-            assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.NORMAL));
+            try (Frame frame = receiveFrame(client.getInputStream()))
+            {
+                assertNotNull(frame);
+                assertThat(frame.getOpCode(), is(OpCode.CLOSE));
+                assertThat(CloseStatus.from(frame).getCode(), is(CloseStatus.NORMAL));
+            }
         }
     }
 
@@ -107,24 +115,36 @@ public class ValidationExtensionTest extends WebSocketTester
         try (Socket client = newClient(server.getLocalPort()))
         {
             client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.TEXT, initialPayload, true, false));
-            Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
-            assertNotNull(frame);
-            assertThat(frame.getOpCode(), is(OpCode.TEXT));
-            assertThat(BufferUtil.toArray(frame.getPayload()), is(initialPayload));
+            try (Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS))
+            {
+                assertNotNull(frame);
+                assertThat(frame.getOpCode(), is(OpCode.TEXT));
+                try (RetainableByteBuffer payload = frame.acquire())
+                {
+                    assertArrayEquals(initialPayload, payload.getArray());
+                }
+            }
 
             client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.CONTINUATION, continuationPayload, true));
-            frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
-            assertNotNull(frame);
-            assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
-            assertThat(BufferUtil.toArray(frame.getPayload()), is(continuationPayload));
+            try (Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS))
+            {
+                assertNotNull(frame);
+                assertThat(frame.getOpCode(), is(OpCode.CONTINUATION));
+                try (RetainableByteBuffer payload = frame.acquire())
+                {
+                    assertArrayEquals(continuationPayload, payload.getArray());
+                }
+            }
 
             //close normally
             client.getOutputStream().write(RawFrameBuilder.buildClose(CloseStatus.NORMAL_STATUS, true));
             assertTrue(serverHandler.closed.await(5, TimeUnit.SECONDS));
-            frame = receiveFrame(client.getInputStream());
-            assertNotNull(frame);
-            assertThat(frame.getOpCode(), is(OpCode.CLOSE));
-            assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.NORMAL));
+            try (Frame frame = receiveFrame(client.getInputStream()))
+            {
+                assertNotNull(frame);
+                assertThat(frame.getOpCode(), is(OpCode.CLOSE));
+                assertThat(CloseStatus.from(frame).getCode(), is(CloseStatus.NORMAL));
+            }
         }
     }
 
@@ -138,16 +158,23 @@ public class ValidationExtensionTest extends WebSocketTester
         try (Socket client = newClient(server.getLocalPort()))
         {
             client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.TEXT, initialPayload, true, false));
-            Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS);
-            assertNotNull(frame);
-            assertThat(frame.getOpCode(), is(OpCode.TEXT));
-            assertThat(BufferUtil.toArray(frame.getPayload()), is(initialPayload));
+            try (Frame frame = serverHandler.receivedFrames.poll(5, TimeUnit.SECONDS))
+            {
+                assertNotNull(frame);
+                assertThat(frame.getOpCode(), is(OpCode.TEXT));
+                try (RetainableByteBuffer payload = frame.acquire())
+                {
+                    assertArrayEquals(initialPayload, payload.getArray());
+                }
+            }
 
             client.getOutputStream().write(RawFrameBuilder.buildFrame(OpCode.CONTINUATION, incompleteContinuationPayload, true));
-            frame = receiveFrame(client.getInputStream());
-            assertNotNull(frame);
-            assertThat(frame.getOpCode(), is(OpCode.CLOSE));
-            assertThat(new CloseStatus(frame.getPayload()).getCode(), is(CloseStatus.BAD_PAYLOAD));
+            try (Frame frame = receiveFrame(client.getInputStream()))
+            {
+                assertNotNull(frame);
+                assertThat(frame.getOpCode(), is(OpCode.CLOSE));
+                assertThat(CloseStatus.from(frame).getCode(), is(CloseStatus.BAD_PAYLOAD));
+            }
         }
     }
 }

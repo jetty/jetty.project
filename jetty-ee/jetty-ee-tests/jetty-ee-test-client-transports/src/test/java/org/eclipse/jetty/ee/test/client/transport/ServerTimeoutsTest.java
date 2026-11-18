@@ -45,6 +45,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -363,7 +364,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
         for (int i = 0; i < 3; ++i)
         {
-            content.write(ByteBuffer.allocate(bytesPerSecond / 2), Callback.NOOP);
+            content.offer(false, RetainableByteBuffer.allocate(bytesPerSecond / 2, false), Callback.NOOP);
             Thread.sleep(2500);
         }
         content.close();
@@ -412,7 +413,7 @@ public class ServerTimeoutsTest extends AbstractTest
         // Write at 4 times the minimum data rate.
         for (int i = 0; i < 3; ++i)
         {
-            content.write(ByteBuffer.allocate(bytesPerSecond * 2), Callback.NOOP);
+            content.offer(false, RetainableByteBuffer.allocate(bytesPerSecond * 2, false), Callback.NOOP);
             Thread.sleep(500);
         }
         content.close();
@@ -577,8 +578,7 @@ public class ServerTimeoutsTest extends AbstractTest
 
         // Wait for the server application to block reading.
         Thread.sleep(2 * idleTimeout);
-        content.write(ByteBuffer.wrap(data2), Callback.NOOP);
-        content.close();
+        content.offer(true, RetainableByteBuffer.wrap(data2), Callback.NOOP);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

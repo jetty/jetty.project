@@ -20,8 +20,8 @@ import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +70,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
         super.onOpen();
         try
         {
-            getEndPoint().flush(BufferUtil.EMPTY_BUFFER);
+            getEndPoint().flush(RetainableByteBuffer.empty());
             if (completed)
                 replaceConnection();
             else
@@ -91,7 +91,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
         {
             while (true)
             {
-                int filled = getEndPoint().fill(BufferUtil.EMPTY_BUFFER);
+                int filled = getEndPoint().fill(RetainableByteBuffer.Mutable.empty());
                 if (completed)
                 {
                     replaceConnection();

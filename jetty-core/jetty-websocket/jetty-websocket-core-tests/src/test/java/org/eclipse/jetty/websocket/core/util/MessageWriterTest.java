@@ -20,9 +20,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MessageWriterTest
@@ -111,10 +113,12 @@ public class MessageWriterTest
             writer.write(cbuf);
         }
 
-        Frame frame = capture.frames.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame[0].opcode", frame.getOpCode(), is(OpCode.TEXT));
-        assertThat("Frame[0].payloadLength", frame.getPayloadLength(), is(512));
-        assertThat("Frame[0].fin", frame.isFin(), is(true));
+        try (Frame frame = capture.frames.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame[0].opcode", frame.getOpCode(), is(OpCode.TEXT));
+            assertThat("Frame[0].payloadLength", frame.getPayloadLength(), is(512L));
+            assertThat("Frame[0].fin", frame.isFin(), is(true));
+        }
     }
 
     @Test
@@ -129,15 +133,19 @@ public class MessageWriterTest
             writer.write(cbuf);
         }
 
-        Frame frame = capture.frames.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame[0].opcode", frame.getOpCode(), is(OpCode.TEXT));
-        assertThat("Frame[0].payloadLength", frame.getPayloadLength(), is(1024));
-        assertThat("Frame[0].fin", frame.isFin(), is(false));
+        try (Frame frame = capture.frames.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame[0].opcode", frame.getOpCode(), is(OpCode.TEXT));
+            assertThat("Frame[0].payloadLength", frame.getPayloadLength(), is(1024L));
+            assertThat("Frame[0].fin", frame.isFin(), is(false));
+        }
 
-        frame = capture.frames.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame[1].opcode", frame.getOpCode(), is(OpCode.CONTINUATION));
-        assertThat("Frame[1].payloadLength", frame.getPayloadLength(), is(1024));
-        assertThat("Frame[1].fin", frame.isFin(), is(true));
+        try (Frame frame = capture.frames.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame[1].opcode", frame.getOpCode(), is(OpCode.CONTINUATION));
+            assertThat("Frame[1].payloadLength", frame.getPayloadLength(), is(1024L));
+            assertThat("Frame[1].fin", frame.isFin(), is(true));
+        }
     }
 
     @Test
@@ -163,24 +171,24 @@ public class MessageWriterTest
             }
         }
 
-        Frame frame;
-
-        int remaining = testSize;
+        long remaining = testSize;
         byte expectedOpCode = OpCode.TEXT;
         int i = 0;
 
         while (remaining > 0)
         {
-            frame = capture.frames.poll(1, TimeUnit.SECONDS);
-            String prefix = String.format("Frame[%d](op=%d,%sfin)", (i++), frame.getOpCode(), frame.isFin() ? "" : "!");
-            assertThat(prefix + ".opcode", frame.getOpCode(), is(expectedOpCode));
-            int expectedSize = Math.min(remaining, writerBufferSize);
-            assertThat(prefix + ".payloadLength", frame.getPayloadLength(), is(expectedSize));
-            boolean expectedFin = (remaining < outputSize);
-            assertThat(prefix + ".fin", frame.isFin(), is(expectedFin));
+            try (Frame frame = capture.frames.poll(1, TimeUnit.SECONDS))
+            {
+                String prefix = String.format("Frame[%d](op=%d,%sfin)", (i++), frame.getOpCode(), frame.isFin() ? "" : "!");
+                assertThat(prefix + ".opcode", frame.getOpCode(), is(expectedOpCode));
+                long expectedSize = Math.min(remaining, writerBufferSize);
+                assertEquals(expectedSize, frame.getPayloadLength(), prefix + ".payloadLength");
+                boolean expectedFin = (remaining < outputSize);
+                assertThat(prefix + ".fin", frame.isFin(), is(expectedFin));
 
-            expectedOpCode = OpCode.CONTINUATION;
-            remaining -= frame.getPayloadLength();
+                expectedOpCode = OpCode.CONTINUATION;
+                remaining -= frame.getPayloadLength();
+            }
         }
     }
 
@@ -214,8 +222,9 @@ public class MessageWriterTest
         public void sendFrame(OutgoingEntry entry)
         {
             Frame frame = entry.getFrame();
-            frames.add(Frame.copy(frame));
-            frame.getPayload().position(frame.getPayload().limit());
+            // The frame is stored, so it must be retained.
+            frame.retain();
+            frames.add(frame);
             entry.getCallback().succeeded();
         }
     }
@@ -230,18 +239,20 @@ public class MessageWriterTest
         public void sendFrame(OutgoingEntry entry)
         {
             Frame frame = entry.getFrame();
-            if (frame.getOpCode() == OpCode.TEXT)
-                activeMessage = new Utf8StringBuilder();
-
-            activeMessage.append(frame.getPayload().slice());
-
-            if (frame.isFin())
+            try (RetainableByteBuffer buffer = frame.acquire())
             {
-                messages.add(activeMessage.takeCompleteString(IllegalArgumentException::new));
-                activeMessage = null;
+                if (frame.getOpCode() == OpCode.TEXT)
+                    activeMessage = new Utf8StringBuilder();
+
+                activeMessage.append(buffer);
+
+                if (frame.isFin())
+                {
+                    messages.add(activeMessage.takeCompleteString(IllegalArgumentException::new));
+                    activeMessage = null;
+                }
+                entry.getCallback().succeeded();
             }
-            frame.getPayload().position(frame.getPayload().limit());
-            entry.getCallback().succeeded();
         }
     }
 }

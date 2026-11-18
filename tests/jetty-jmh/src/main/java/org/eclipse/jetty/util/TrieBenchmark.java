@@ -14,12 +14,12 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -31,6 +31,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
+
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
 @State(Scope.Benchmark)
 public class TrieBenchmark
@@ -116,12 +118,22 @@ public class TrieBenchmark
         throw new IllegalStateException();
     }
 
-    private static final ByteBuffer X = BufferUtil.toBuffer("Xx\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ByteBuffer Z = BufferUtil.toBuffer("Zasdfadsfasfasfbae9mn3m0mdmmfkk092nvfs0smnsmm3k23m3m23m\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ByteBuffer M = BufferUtil.toBuffer(LONG_MISS + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ByteBuffer P = BufferUtil.toBuffer("Pragma: no-cache;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ByteBuffer A = BufferUtil.toBuffer("Accept-Language: en-US,enq=0.5;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    private static final ByteBuffer H = BufferUtil.toBuffer(LONG_HIT + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    private static final RetainableByteBuffer X;
+    private static final RetainableByteBuffer Z;
+    private static final RetainableByteBuffer M;
+    private static final RetainableByteBuffer P;
+    private static final RetainableByteBuffer A;
+    private static final RetainableByteBuffer H;
+
+    static
+    {
+        X = RetainableByteBuffer.wrap("Xx\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", ISO_8859_1);
+        Z = RetainableByteBuffer.wrap("Zasdfadsfasfasfbae9mn3m0mdmmfkk092nvfs0smnsmm3k23m3m23m\r\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", ISO_8859_1);
+        M = RetainableByteBuffer.wrap(LONG_MISS + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", ISO_8859_1);
+        P = RetainableByteBuffer.wrap("Pragma: no-cache;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", ISO_8859_1);
+        A = RetainableByteBuffer.wrap("Accept-Language: en-US,enq=0.5;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", ISO_8859_1);
+        H = RetainableByteBuffer.wrap(LONG_HIT + ";xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", ISO_8859_1);
+    }
 
     @Benchmark
     public boolean testGetBest()
@@ -192,18 +204,30 @@ public class TrieBenchmark
         }
 
         @Override
-        public String getBest(ByteBuffer buf)
+        public String getBest(RetainableByteBuffer b, long offset, long len)
         {
-            int len = buf.remaining();
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getBest(ByteBuffer b)
+        {
+            return getBest(RetainableByteBuffer.wrap(b));
+        }
+
+        @Override
+        public String getBest(RetainableByteBuffer buf)
+        {
+            long len = buf.remaining();
             for (int i = 0; i < len; i++)
             {
-                byte b = buf.get(buf.position() + i);
+                byte b = buf.get(buf.readPosition() + i);
                 switch (b)
                 {
                     case '\r':
                     case '\n':
                     case ';':
-                        String s = BufferUtil.toString(buf, buf.position(), i, StandardCharsets.ISO_8859_1);
+                        String s = buf.getString(buf.readPosition(), i, ISO_8859_1);
                         if (isCaseInsensitive())
                             s = StringUtil.asciiToLowerCase(s);
                         return trie.get(s);

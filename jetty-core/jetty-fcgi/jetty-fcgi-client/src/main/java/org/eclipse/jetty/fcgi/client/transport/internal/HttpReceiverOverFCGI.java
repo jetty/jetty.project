@@ -42,7 +42,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         else
         {
             HttpConnectionOverFCGI httpConnection = getHttpConnection();
-            boolean setFillInterest = httpConnection.parseAndFill(true);
+            boolean setFillInterest = httpConnection.process(true);
             if (!hasContent() && setFillInterest)
                 httpConnection.fillInterested();
         }
@@ -83,7 +83,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
         if (chunk != null)
             return chunk;
         HttpConnectionOverFCGI httpConnection = getHttpConnection();
-        boolean needFillInterest = httpConnection.parseAndFill(false);
+        boolean needFillInterest = httpConnection.process(false);
         chunk = consumeChunk();
         if (httpConnection.isComplete())
             httpConnection.complete();
@@ -102,7 +102,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
     private Content.Chunk consumeChunk()
     {
         Content.Chunk chunk = this.chunk;
-        this.chunk = null;
+        this.chunk = Content.Chunk.next(chunk);
         return chunk;
     }
 
@@ -146,7 +146,7 @@ public class HttpReceiverOverFCGI extends HttpReceiver
             throw new IllegalStateException();
 
         HttpConnectionOverFCGI httpConnection = getHttpConnection();
-        boolean setFillInterest = httpConnection.parseAndFill(true);
+        boolean setFillInterest = httpConnection.process(false);
         if (!hasContent() && setFillInterest)
             httpConnection.fillInterested();
     }

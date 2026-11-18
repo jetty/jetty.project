@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -112,41 +111,47 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
                 }
             }
 
-            ByteBuffer payload = frame.getPayload();
-            int remaining = payload.remaining();
-            int fragmentSize = (int)Math.min(remaining, maxFrameSize);
-            byte opCode = (frame.getOpCode() == OpCode.CONTINUATION || !first) ? OpCode.CONTINUATION : frame.getOpCode();
-            Frame fragment = new Frame(opCode);
-            boolean finished = (maxFrameSize <= 0 || remaining <= maxFrameSize);
-            fragment.setFin(frame.isFin() && finished);
+            try (RetainableByteBuffer payload = frame.acquire())
+            {
+                long remaining = payload.remaining();
+                long fragmentSize = Math.min(remaining, maxFrameSize);
+                byte opCode = (frame.getOpCode() == OpCode.CONTINUATION || !first) ? OpCode.CONTINUATION : frame.getOpCode();
+                boolean finished = (maxFrameSize <= 0 || remaining <= maxFrameSize);
 
-            if (finished)
-            {
-                // If finished we don't need to fragment, forward original payload.
-                fragment.setPayload(payload);
-            }
-            else
-            {
-                // Slice the fragmented payload from the buffer.
-                fragment.setPayload(payload.slice(payload.position(), fragmentSize));
-                payload.position(payload.position() + fragmentSize);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Fragmented {}->{}", frame, fragment);
-            }
-
-            Callback payloadCallback = Callback.from(() ->
-            {
+                Frame fragment;
                 if (finished)
-                    callback.succeeded();
-            }, t ->
-            {
-                // This is wrapped with CountingCallback so will only be failed once.
-                callback.failed(t);
-                failFlusher(t);
-            });
+                {
+                    // If finished we don't need to fragment, forward original payload.
+                    fragment = new Frame(opCode, frame.isFin(), payload);
+                }
+                else
+                {
+                    // Slice the fragmented payload from the buffer.
+                    try (RetainableByteBuffer slice = payload.sliceAndConsume(fragmentSize))
+                    {
+                        fragment = new Frame(opCode, false, slice);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Fragmented {}->{}", frame, fragment);
+                    }
+                }
 
-            emitFrame(fragment, payloadCallback);
-            return finished;
+                Callback payloadCallback = Callback.from(() ->
+                {
+                    if (finished)
+                        callback.succeeded();
+                }, t ->
+                {
+                    // This is wrapped with CountingCallback so will only be failed once.
+                    callback.failed(t);
+                    failFlusher(t);
+                });
+
+                try (fragment)
+                {
+                    emitFrame(fragment, payloadCallback);
+                    return finished;
+                }
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee9.websocket.common;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -23,9 +24,9 @@ import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.ee9.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.ee9.websocket.api.WriteCallback;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -185,7 +186,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     }
 
     @Override
-    public void onFrame(Frame frame, Callback callback)
+    public void onFrame(Frame coreFrame, Callback coreCallback)
     {
         try (AutoLock ignored = lock.lock())
         {
@@ -196,8 +197,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
                 case SUSPENDING:
                     assert (delayedFrame == null && delayedCallback == null);
-                    delayedFrame = frame;
-                    delayedCallback = callback;
+                    // The frame is stored to be processed when resumed, possibly by another thread.
+                    coreFrame.retain();
+                    delayedFrame = coreFrame;
+                    delayedCallback = coreCallback;
                     state = SuspendState.SUSPENDED;
                     return;
 
@@ -206,32 +209,33 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
 
             // If we have received a close frame, set state to closed to disallow further suspends and resumes.
-            if (frame.getOpCode() == OpCode.CLOSE)
+            if (coreFrame.getOpCode() == OpCode.CLOSE)
                 state = SuspendState.CLOSED;
         }
 
         // Send to raw frame handling on user side (eg: WebSocketFrameListener)
         if (frameHandle != null)
         {
-            try
+            try (JettyWebSocketFrame frame = new JettyWebSocketFrame(coreFrame))
             {
-                frameHandle.invoke(new JettyWebSocketFrame(frame));
+                frameHandle.invoke(frame);
             }
             catch (Throwable cause)
             {
-                throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " FRAME method error: " + cause.getMessage(), cause);
+                coreCallback.failed(new WebSocketException(endpointInstance.getClass().getSimpleName() + " FRAME method error: " + cause.getMessage(), cause));
+                return;
             }
         }
 
-        switch (frame.getOpCode())
+        switch (coreFrame.getOpCode())
         {
-            case OpCode.CLOSE -> onCloseFrame(frame, callback);
-            case OpCode.PING -> onPingFrame(frame, callback);
-            case OpCode.PONG -> onPongFrame(frame, callback);
-            case OpCode.TEXT -> onTextFrame(frame, callback);
-            case OpCode.BINARY -> onBinaryFrame(frame, callback);
-            case OpCode.CONTINUATION -> onContinuationFrame(frame, callback);
-            default -> callback.failed(new IllegalStateException());
+            case OpCode.CLOSE -> onCloseFrame(coreFrame, coreCallback);
+            case OpCode.PING -> onPingFrame(coreFrame, coreCallback);
+            case OpCode.PONG -> onPongFrame(coreFrame, coreCallback);
+            case OpCode.TEXT -> onTextFrame(coreFrame, coreCallback);
+            case OpCode.BINARY -> onBinaryFrame(coreFrame, coreCallback);
+            case OpCode.CONTINUATION -> onContinuationFrame(coreFrame, coreCallback);
+            default -> coreCallback.failed(new IllegalStateException());
         }
     }
 
@@ -268,11 +272,13 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
+        Frame delayedFrame;
         Callback delayedCallback;
         try (AutoLock ignored = lock.lock())
         {
             // We are now closed and cannot suspend or resume.
             state = SuspendState.CLOSED;
+            delayedFrame = this.delayedFrame;
             this.delayedFrame = null;
             delayedCallback = this.delayedCallback;
             this.delayedCallback = null;
@@ -281,6 +287,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         CloseException closeException = new CloseException(closeStatus.getCode(), closeStatus.getCause());
         if (delayedCallback != null)
             delayedCallback.failed(closeException);
+        if (delayedFrame != null)
+            delayedFrame.release();
 
         if (textSink != null)
             textSink.fail(closeException);
@@ -352,42 +360,47 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         if (pingHandle != null)
         {
-            try
+            try (RetainableByteBuffer buffer = frame.acquire())
             {
-                ByteBuffer payload = frame.getPayload();
-                if (payload == null)
-                    payload = BufferUtil.EMPTY_BUFFER;
-
-                pingHandle.invoke(payload);
+                ByteBuffer byteBuffer = ByteBuffer.allocate((int)buffer.remaining());
+                buffer.putTo(byteBuffer);
+                pingHandle.invoke(byteBuffer.flip());
+                callback.succeeded();
+                demand();
             }
             catch (Throwable cause)
             {
                 throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PING method error: " + cause.getMessage(), cause);
             }
-
-            callback.succeeded();
-            demand();
         }
         else
         {
             // Automatically respond.
-            getSession().getRemote().sendPong(frame.getPayload(), new WriteCallback()
+            try (RetainableByteBuffer buffer = frame.acquire())
             {
-                @Override
-                public void writeSuccess()
+                buffer.read(b ->
                 {
-                    callback.succeeded();
-                    demand();
-                }
+                    int r = b.remaining();
+                    getSession().getRemote().sendPong(b, new WriteCallback()
+                    {
+                        @Override
+                        public void writeSuccess()
+                        {
+                            callback.succeeded();
+                            demand();
+                        }
 
-                @Override
-                public void writeFailed(Throwable x)
-                {
-                    // Ignore failures, we might be output closed and receive ping.
-                    callback.succeeded();
-                    demand();
-                }
-            });
+                        @Override
+                        public void writeFailed(Throwable x)
+                        {
+                            // Ignore failures, we might be output closed and receive ping.
+                            callback.succeeded();
+                            demand();
+                        }
+                    });
+                    return r - b.remaining();
+                });
+            }
         }
     }
 
@@ -395,22 +408,24 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         if (pongHandle != null)
         {
-            try
+            try (RetainableByteBuffer buffer = frame.acquire())
             {
-                ByteBuffer payload = frame.getPayload();
-                if (payload == null)
-                    payload = BufferUtil.EMPTY_BUFFER;
-
-                pongHandle.invoke(payload);
+                ByteBuffer byteBuffer = ByteBuffer.allocate((int)buffer.remaining());
+                buffer.putTo(byteBuffer);
+                pongHandle.invoke(byteBuffer.flip());
+                callback.succeeded();
+                demand();
             }
             catch (Throwable cause)
             {
                 throw new WebSocketException(endpointInstance.getClass().getSimpleName() + " PONG method error: " + cause.getMessage(), cause);
             }
         }
-
-        callback.succeeded();
-        demand();
+        else
+        {
+            callback.succeeded();
+            demand();
+        }
     }
 
     private void onTextFrame(Frame frame, Callback callback)
@@ -425,15 +440,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         try (AutoLock ignored = lock.lock())
         {
-            switch (state)
-            {
-                case DEMANDING:
-                    state = SuspendState.SUSPENDING;
-                    break;
-
-                default:
-                    throw new IllegalStateException(state.name());
-            }
+            if (Objects.requireNonNull(state) == SuspendState.DEMANDING)
+                state = SuspendState.SUSPENDING;
+            else
+                throw new IllegalStateException(state.name());
         }
     }
 
@@ -472,9 +482,16 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         if (needDemand)
         {
             if (frame != null)
-                onFrame(frame, callback);
+            {
+                try (Frame f = frame)
+                {
+                    onFrame(f, callback);
+                }
+            }
             else
+            {
                 session.getCoreSession().demand();
+            }
         }
     }
 

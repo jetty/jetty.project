@@ -21,6 +21,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -202,11 +203,13 @@ public class MessageHandler implements FrameHandler
             if (frame.hasPayload())
             {
                 long maxSize = coreSession.getMaxTextMessageSize();
-                long currentSize = frame.getPayload().remaining() + textBuffer.length();
+                long currentSize = frame.getPayloadLength() + textBuffer.length();
                 if (currentSize > maxSize)
                     throw new MessageTooLargeException("Message larger than " + maxSize + " bytes");
-                else
-                    textBuffer.append(frame.getPayload());
+                try (RetainableByteBuffer buffer = frame.acquire())
+                {
+                    textBuffer.append(buffer);
+                }
             }
 
             if (frame.isFin())
@@ -240,11 +243,13 @@ public class MessageHandler implements FrameHandler
             if (frame.hasPayload())
             {
                 long maxSize = coreSession.getMaxBinaryMessageSize();
-                long currentSize = frame.getPayload().remaining() + binaryBuffer.size();
+                long currentSize = frame.getPayloadLength() + binaryBuffer.size();
                 if (currentSize > maxSize)
                     throw new MessageTooLargeException("Message larger than " + maxSize + " bytes");
-                else
-                    BufferUtil.writeTo(frame.getPayload(), binaryBuffer);
+                try (RetainableByteBuffer buffer = frame.acquire())
+                {
+                    buffer.putTo(binaryBuffer);
+                }
             }
 
             if (frame.isFin())
@@ -279,7 +284,13 @@ public class MessageHandler implements FrameHandler
 
     protected void onPingFrame(Frame frame, Callback callback)
     {
-        coreSession.sendFrame(new Frame(OpCode.PONG, true, frame.getPayload()), Callback.from(() -> coreSession.demand(), callback), false);
+        try (RetainableByteBuffer buffer = frame.acquire())
+        {
+            try (Frame pong = new Frame(OpCode.PONG, true, buffer))
+            {
+                coreSession.sendFrame(pong, Callback.from(() -> coreSession.demand(), callback), false);
+            }
+        }
     }
 
     protected void onPongFrame(Frame frame, Callback callback)
@@ -324,7 +335,10 @@ public class MessageHandler implements FrameHandler
      */
     public void sendText(String message, Callback callback, boolean batch)
     {
-        getCoreSession().sendFrame(new Frame(OpCode.TEXT, true, message), callback, batch);
+        try (Frame frame = new Frame(OpCode.TEXT, true, message))
+        {
+            getCoreSession().sendFrame(frame, callback, batch);
+        }
     }
 
     /**
@@ -361,10 +375,11 @@ public class MessageHandler implements FrameHandler
                     return Action.SUCCEEDED;
 
                 String part = parts[i++];
-                getCoreSession().sendFrame(new Frame(
-                        i == 1 ? OpCode.TEXT : OpCode.CONTINUATION,
-                        i == parts.length, part), this, batch);
-                return Action.SCHEDULED;
+                try (Frame frame = new Frame(i == 1 ? OpCode.TEXT : OpCode.CONTINUATION, i == parts.length, part))
+                {
+                    getCoreSession().sendFrame(frame, this, batch);
+                    return Action.SCHEDULED;
+                }
             }
         }.iterate();
     }
@@ -378,7 +393,10 @@ public class MessageHandler implements FrameHandler
      */
     public void sendBinary(ByteBuffer message, Callback callback, boolean batch)
     {
-        getCoreSession().sendFrame(new Frame(OpCode.BINARY, true, message), callback, batch);
+        try (Frame frame = new Frame(OpCode.BINARY, true, RetainableByteBuffer.wrap(message)))
+        {
+            getCoreSession().sendFrame(frame, callback, batch);
+        }
     }
 
     /**
@@ -413,10 +431,11 @@ public class MessageHandler implements FrameHandler
                     return Action.SUCCEEDED;
 
                 ByteBuffer part = parts[i++];
-                getCoreSession().sendFrame(new Frame(
-                        i == 1 ? OpCode.BINARY : OpCode.CONTINUATION,
-                        i == parts.length, part), this, batch);
-                return Action.SCHEDULED;
+                try (Frame frame = new Frame(i == 1 ? OpCode.BINARY : OpCode.CONTINUATION, i == parts.length, RetainableByteBuffer.wrap(part)))
+                {
+                    getCoreSession().sendFrame(frame, this, batch);
+                    return Action.SCHEDULED;
+                }
             }
         }.iterate();
     }

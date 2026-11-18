@@ -83,10 +83,12 @@ public class WebSocketQueryParamsTest
         CoreSession coreSession = _client.connect(upgradeRequest).get(5, TimeUnit.SECONDS);
         Assertions.assertTrue(frameHandler.open.await(5, TimeUnit.SECONDS));
 
-        Frame frame = Objects.requireNonNull(frameHandler.receivedFrames.poll(5, TimeUnit.SECONDS));
-        String payload = frame.getPayloadAsUTF8();
-        assertThat(payload, containsString("name1=[value1]"));
-        assertThat(payload, containsString("name2=[value2, value3]"));
+        try (Frame frame = Objects.requireNonNull(frameHandler.receivedFrames.poll(5, TimeUnit.SECONDS)))
+        {
+            String payload = frame.getPayloadAsUTF8();
+            assertThat(payload, containsString("name1=[value1]"));
+            assertThat(payload, containsString("name2=[value2, value3]"));
+        }
 
         coreSession.close(Callback.NOOP);
         assertTrue(frameHandler.closed.await(5, TimeUnit.SECONDS));

@@ -47,14 +47,18 @@ public class BrotliDecoderSourceTest extends AbstractBrotliTest
         assertEquals(expected, result);
         assertTrue(decoderSource.isComplete());
 
-        Content.Chunk eof = decoderSource.read();
-        assertTrue(eof.isLast() && eof.isEmpty() && !Content.Chunk.isFailure(eof));
+        try (Content.Chunk eof = decoderSource.read())
+        {
+            assertTrue(eof.isLast() && !eof.hasRemaining() && !Content.Chunk.isFailure(eof));
+        }
 
         // Failed after EOF, too late.
         decoderSource.fail(new Throwable());
 
-        Content.Chunk chunk = decoderSource.read();
-        assertTrue(chunk.isLast() && chunk.isEmpty() && !Content.Chunk.isFailure(chunk));
+        try (Content.Chunk chunk = decoderSource.read())
+        {
+            assertTrue(chunk.isLast() && !chunk.hasRemaining() && !Content.Chunk.isFailure(chunk));
+        }
     }
 
     @ParameterizedTest
@@ -72,8 +76,10 @@ public class BrotliDecoderSourceTest extends AbstractBrotliTest
         decoderSource.fail(new Throwable());
         assertTrue(decoderSource.isComplete());
 
-        Content.Chunk err = decoderSource.read();
-        assertTrue(Content.Chunk.isFailure(err));
+        try (Content.Chunk err = decoderSource.read())
+        {
+            assertTrue(Content.Chunk.isFailure(err));
+        }
     }
 
     @ParameterizedTest
@@ -88,21 +94,29 @@ public class BrotliDecoderSourceTest extends AbstractBrotliTest
         DecoderSource decoderSource = brotli.newDecoderSource(fileSource);
         assertFalse(decoderSource.isComplete());
 
-        Content.Chunk chunk = decoderSource.read();
-        // skip empty chunks
-        while (chunk.isEmpty() && !chunk.isLast())
-            chunk = decoderSource.read();
-        assertTrue(chunk.hasRemaining());
-        chunk.release();
-        // This test tests the behavior of
-        // a failure before the last chunk.
-        assumeFalse(chunk.isLast());
+        while (true)
+        {
+            try (Content.Chunk chunk = decoderSource.read())
+            {
+                // Skip empty chunks.
+                if (!chunk.hasRemaining() && !chunk.isLast())
+                    continue;
+
+                assertTrue(chunk.hasRemaining());
+                // This test tests the behavior of
+                // a failure before the last chunk.
+                assumeFalse(chunk.isLast());
+                break;
+            }
+        }
         assertFalse(decoderSource.isComplete());
 
         decoderSource.fail(new Throwable());
         assertTrue(decoderSource.isComplete());
 
-        Content.Chunk err = decoderSource.read();
-        assertTrue(Content.Chunk.isFailure(err));
+        try (Content.Chunk err = decoderSource.read())
+        {
+            assertTrue(Content.Chunk.isFailure(err));
+        }
     }
 }

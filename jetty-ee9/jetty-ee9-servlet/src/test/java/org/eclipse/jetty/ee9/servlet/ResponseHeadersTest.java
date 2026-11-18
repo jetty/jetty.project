@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee9.servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.EnumSet;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -248,7 +248,7 @@ public class ResponseHeadersTest
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
         assertTrue(response.getContent().startsWith("OK"));
 
@@ -272,7 +272,7 @@ public class ResponseHeadersTest
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
         assertTrue(response.getContent().startsWith("Test 2"));
     }
@@ -286,7 +286,7 @@ public class ResponseHeadersTest
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -308,8 +308,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -333,8 +332,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -353,8 +351,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -373,8 +370,7 @@ public class ResponseHeadersTest
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
-        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.
@@ -392,7 +388,7 @@ public class ResponseHeadersTest
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Host", "test");
 
-        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        RetainableByteBuffer responseBuffer = connector.getResponse(request.generate());
         HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
 
         // Now test for properly formatted HTTP Response Headers.

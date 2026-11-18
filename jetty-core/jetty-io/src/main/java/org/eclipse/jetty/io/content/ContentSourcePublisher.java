@@ -180,38 +180,37 @@ public class ContentSourcePublisher implements Flow.Publisher<Content.Chunk>
                 return Action.SUCCEEDED;
             }
 
-            Content.Chunk chunk = content.read();
+            try (Content.Chunk chunk = content.read())
+            {
+                if (chunk == null)
+                {
+                    // Pass this, which is Invocable
+                    content.demand(this);
+                    return Action.SCHEDULED;
+                }
 
-            if (chunk == null)
-            {
-                // Pass this, which is Invocable
-                content.demand(this);
-                return Action.SCHEDULED;
-            }
+                if (Content.Chunk.isFailure(chunk))
+                {
+                    cancel(chunk.getFailure());
+                    return Action.IDLE;
+                }
 
-            if (Content.Chunk.isFailure(chunk))
-            {
-                cancel(chunk.getFailure());
-                chunk.release();
-                return Action.IDLE;
-            }
+                try
+                {
+                    this.subscriber.onNext(chunk);
+                }
+                catch (Throwable err)
+                {
+                    cancel(new SuppressedException(err));
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
+                }
 
-            try
-            {
-                this.subscriber.onNext(chunk);
-            }
-            catch (Throwable err)
-            {
-                cancel(new SuppressedException(err));
-                if (LOG.isTraceEnabled())
-                    LOG.trace("Flow.Subscriber " + subscriber + " violated rule 2.13", err);
-            }
-            chunk.release();
-
-            if (chunk.isLast())
-            {
-                cancel(COMPLETED);
-                return Action.IDLE;
+                if (chunk.isLast())
+                {
+                    cancel(COMPLETED);
+                    return Action.IDLE;
+                }
             }
 
             if (demand.decrementAndGet() > 0)

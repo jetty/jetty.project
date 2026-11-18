@@ -28,8 +28,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee.test.resources.TestEEResources;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Disabled;
@@ -87,8 +85,7 @@ public class CacheControlHeaderTest
     {
         server = new Server();
 
-        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(new HttpConfiguration());
-        connector = new LocalConnector(server, null, null, null, -1, httpConnectionFactory);
+        connector = new LocalConnector(server);
 
         ServletContextHandler context = new ServletContextHandler();
 

@@ -41,7 +41,7 @@ public class FrameEcho implements FrameHandler
         if (frame.isControlFrame())
             callback.succeeded();
         else
-            coreSession.sendFrame(Frame.copy(frame), callback, false);
+            coreSession.sendFrame(frame, callback, false);
     }
 
     @Override

@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.MultiPart;
 import org.eclipse.jetty.http.MultiPartByteRanges;
 import org.eclipse.jetty.http.content.HttpContent;
 import org.eclipse.jetty.http.content.ResourceHttpContent;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.server.Handler;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.FileSystemPool;
 import org.eclipse.jetty.util.resource.Resource;
@@ -278,7 +278,7 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(request.generate());
+            request.generate().read(socket::write);
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);
@@ -297,7 +297,7 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(request.generate());
+            request.generate().read(socket::write);
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);
@@ -318,7 +318,7 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(request.generate());
+            request.generate().read(socket::write);
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);
@@ -346,7 +346,7 @@ public class ResourceHandlerByteRangesTest
 
         try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
         {
-            socket.write(request.generate());
+            request.generate().read(socket::write);
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(socket));
             assertNotNull(response);

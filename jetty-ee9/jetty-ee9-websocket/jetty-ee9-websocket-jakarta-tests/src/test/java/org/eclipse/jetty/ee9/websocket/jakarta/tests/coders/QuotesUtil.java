@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.ListIterator;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 
@@ -69,22 +68,19 @@ public class QuotesUtil
     public static List<Frame> loadAsWebSocketFrames(String filename) throws IOException
     {
         List<String> lines = loadLines(filename);
-        List<Frame> ret = new ArrayList<>();
+        List<Frame> result = new ArrayList<>();
         ListIterator<String> linesIter = lines.listIterator();
         while (linesIter.hasNext())
         {
-            Frame frame;
+            byte opCode;
             if (!linesIter.hasPrevious())
-                frame = new Frame(OpCode.TEXT);
+                opCode = OpCode.TEXT;
             else
-                frame = new Frame(OpCode.CONTINUATION);
-
-            frame.setPayload(BufferUtil.toBuffer(linesIter.next() + "\n"));
-            frame.setFin(!linesIter.hasNext());
-
-            ret.add(frame);
+                opCode = OpCode.CONTINUATION;
+            String payload = linesIter.next() + "\n";
+            Frame frame = new Frame(opCode, !linesIter.hasNext(), payload);
+            result.add(frame);
         }
-
-        return ret;
+        return result;
     }
 }

@@ -13,15 +13,12 @@
 
 package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import org.eclipse.jetty.ee9.websocket.jakarta.common.sockets.TrackingSocket;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -44,8 +41,10 @@ public class JakartaWebSocketFrameHandlerOnMessageTextTest extends AbstractJakar
         // This invocation is the same for all tests
         localEndpoint.onOpen(coreSession, Callback.NOOP);
 
-        ByteBuffer payload = BufferUtil.toBuffer(msg, StandardCharsets.UTF_8);
-        localEndpoint.onFrame(new Frame(OpCode.TEXT).setPayload(payload).setFin(true), Callback.NOOP);
+        try (Frame frame = new Frame(OpCode.TEXT, msg))
+        {
+            localEndpoint.onFrame(frame, Callback.NOOP);
+        }
     }
 
     private void assertOnMessageInvocation(TrackingSocket socket, Matcher<String> eventMatcher) throws Exception

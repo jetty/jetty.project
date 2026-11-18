@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http3.internal.ControlStreamConnection;
@@ -22,12 +21,13 @@ import org.eclipse.jetty.http3.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.StreamEndPoint;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Retainable;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +41,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection.NonBlocki
     private final ParserListener listener;
     private final VarLenInt parser = new VarLenInt();
     private boolean useInputDirectByteBuffers = true;
-    private RetainableByteBuffer buffer;
+    private RetainableByteBuffer.Mutable buffer;
 
     public UnidirectionalStreamConnection(StreamEndPoint endPoint, Executor executor, ByteBufferPool bufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
     {
@@ -76,14 +76,10 @@ public class UnidirectionalStreamConnection extends AbstractConnection.NonBlocki
     }
 
     @Override
-    public ByteBuffer onUpgradeFrom()
+    public RetainableByteBuffer.Mutable onUpgradeFrom()
     {
-        int remaining = buffer.remaining();
-        ByteBuffer copy = buffer.isDirect() ? ByteBuffer.allocateDirect(remaining) : ByteBuffer.allocate(remaining);
-        copy.put(buffer.getByteBuffer());
-        releaseBuffer();
-        copy.flip();
-        return copy;
+        buffer.retain();
+        return buffer;
     }
 
     @Override
@@ -93,19 +89,18 @@ public class UnidirectionalStreamConnection extends AbstractConnection.NonBlocki
         {
             if (buffer == null)
                 buffer = bufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
             while (true)
             {
-                int filled = getEndPoint().fill(byteBuffer);
+                int filled = getEndPoint().fill(buffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled {} on {}: {}", filled, this, buffer);
 
                 if (filled > 0)
                 {
-                    boolean parsed = parser.tryDecode(byteBuffer, value ->
+                    boolean parsed = parser.tryDecode(buffer, value ->
                     {
-                        if (!detectAndUpgrade(value))
-                            releaseBuffer();
+                        detectAndUpgrade(value);
+                        releaseBuffer();
                     });
                     if (parsed)
                         break;
@@ -135,8 +130,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection.NonBlocki
 
     private void releaseBuffer()
     {
-        buffer.release();
-        buffer = null;
+        buffer = Retainable.dispose(buffer);
     }
 
     private boolean detectAndUpgrade(long type)

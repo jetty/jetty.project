@@ -17,11 +17,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -38,7 +38,8 @@ public class MessageOutputStream extends OutputStream
 
     private final AutoLock lock = new AutoLock();
     private final CoreSession coreSession;
-    private final RetainableByteBuffer buffer;
+    private final ByteBufferPool bufferPool;
+    private RetainableByteBuffer.Mutable buffer;
     private long frameCount;
     private long bytesSent;
     private Callback callback;
@@ -48,18 +49,14 @@ public class MessageOutputStream extends OutputStream
     public MessageOutputStream(CoreSession coreSession, ByteBufferPool bufferPool)
     {
         this.coreSession = coreSession;
+        this.bufferPool = bufferPool;
         int bufferSize = coreSession.getOutputBufferSize();
-        RetainableByteBuffer pooled = bufferPool.acquire(bufferSize, true);
-
-        // TODO is it really necessary to restrict the buffer to exactly the size requested, rather than the size acquired?
-        if (pooled.capacity() != bufferSize)
-            pooled = new RetainableByteBuffer.FixedCapacity(pooled.getByteBuffer().limit(bufferSize).slice().limit(0), pooled);
-        this.buffer = pooled;
+        this.buffer = bufferPool.acquire(bufferSize, true);
     }
 
-    void setMessageType(byte opcode)
+    void setMessageType(byte opCode)
     {
-        this.messageOpCode = opcode;
+        this.messageOpCode = opCode;
     }
 
     @Override
@@ -130,20 +127,30 @@ public class MessageOutputStream extends OutputStream
 
             if (closed)
                 throw new IOException("Stream is closed");
-
             closed = fin;
-            Frame frame = new Frame(frameCount == 0 ? messageOpCode : OpCode.CONTINUATION);
-            frame.setPayload(buffer.getByteBuffer());
-            frame.setFin(fin);
 
-            int initialBufferSize = buffer.remaining();
-            FutureCallback b = new FutureCallback();
-            coreSession.sendFrame(frame, b, false);
-            b.block();
+            long initialBufferSize = buffer.remaining();
+            try (Frame frame = new Frame(frameCount == 0 ? messageOpCode : OpCode.CONTINUATION, fin, buffer))
+            {
+                FutureCallback b = new FutureCallback();
+                coreSession.sendFrame(frame, b, false);
+                b.block();
+            }
 
             // Any flush after the first will be a CONTINUATION frame.
             bytesSent += initialBufferSize;
             ++frameCount;
+
+            // The frame may have been retained, for example an extension.
+            if (buffer.isRetained())
+            {
+                buffer.release();
+                buffer = bufferPool.acquire(coreSession.getOutputBufferSize(), true);
+            }
+            else
+            {
+                buffer.clear();
+            }
         }
     }
 
@@ -155,10 +162,20 @@ public class MessageOutputStream extends OutputStream
                 throw new IOException("Stream is closed");
 
             if (LOG.isDebugEnabled())
-                LOG.debug("send() data={}, buffer={}", BufferUtil.toDetailString(data), BufferUtil.toDetailString(buffer.getByteBuffer()));
+                LOG.debug("send() data={}, buffer={}", BufferUtil.toDetailString(data), buffer);
 
-            while (!buffer.asMutable().append(data))
-                flush(false);
+            // Write data in chunks.
+            int bufferSize = coreSession.getOutputBufferSize();
+            while (data.hasRemaining())
+            {
+                int length = (int)Math.min(bufferSize - buffer.remaining(), data.remaining());
+                int limit = data.limit();
+                data.limit(data.position() + length);
+                long copied = buffer.append(data);
+                data.limit(limit);
+                if (copied == length && data.hasRemaining())
+                    flush(false);
+            }
         }
     }
 

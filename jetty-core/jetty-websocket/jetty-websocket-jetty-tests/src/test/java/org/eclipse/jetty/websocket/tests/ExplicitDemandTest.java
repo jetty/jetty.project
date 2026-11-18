@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.tests;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -27,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
@@ -40,6 +39,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -72,7 +72,7 @@ public class ExplicitDemandTest
     @WebSocket(autoDemand = false)
     public static class ListenerSocket implements Session.Listener
     {
-        final List<Frame> frames = new CopyOnWriteArrayList<>();
+        final List<ReceivedFrame> frames = new CopyOnWriteArrayList<>();
         final List<Callback> callbacks = new CopyOnWriteArrayList<>();
         Session session;
 
@@ -86,23 +86,32 @@ public class ExplicitDemandTest
         @Override
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
-            frames.add(frame);
-            callbacks.add(callback);
+            try (RetainableByteBuffer buffer = frame.acquire())
+            {
+                // Store the frame data to allow assertions later.
+                frames.add(new ReceivedFrame(frame.getType(), buffer.getString(buffer.readPosition(), UTF_8)));
+                callbacks.add(callback);
 
-            // Because no pingListener is registered, the frameListener is responsible for handling pings.
-            if (frame.getOpCode() == OpCode.PING)
-            {
-                session.sendPong(frame.getPayload(), Callback.from(session::demand, callback::fail));
-                return;
-            }
-            else if (frame.getOpCode() == OpCode.CLOSE)
-            {
-                Frame.CloseStatus closeStatus = frame.getCloseStatus();
-                session.close(closeStatus.statusCode(), closeStatus.reason(), Callback.NOOP);
-                return;
+                // Because no pingListener is registered, the frameListener is responsible for handling pings.
+                if (frame.getOpCode() == OpCode.PING)
+                {
+                    session.sendPong(buffer, Callback.from(session::demand, callback::fail));
+                    return;
+                }
+
+                if (frame.getOpCode() == OpCode.CLOSE)
+                {
+                    Frame.CloseStatus closeStatus = frame.getCloseStatus();
+                    session.close(closeStatus.statusCode(), closeStatus.reason(), Callback.NOOP);
+                    return;
+                }
             }
 
             session.demand();
+        }
+
+        record ReceivedFrame(Frame.Type type, String payload)
+        {
         }
     }
 
@@ -132,7 +141,12 @@ public class ExplicitDemandTest
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
             if (frame.getOpCode() == OpCode.TEXT)
-                textMessages.add(BufferUtil.toString(frame.getPayload()));
+            {
+                try (RetainableByteBuffer buffer = frame.acquire())
+                {
+                    textMessages.add(buffer.getString(UTF_8));
+                }
+            }
             callback.succeed();
             session.demand();
         }
@@ -145,7 +159,7 @@ public class ExplicitDemandTest
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
             if (frame.getType() == Frame.Type.TEXT)
-                session.sendPing(ByteBuffer.wrap("server-ping".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+                session.sendPing(ByteBuffer.wrap("server-ping".getBytes(UTF_8)), Callback.NOOP);
             super.onWebSocketFrame(frame, callback);
         }
     }
@@ -226,28 +240,28 @@ public class ExplicitDemandTest
         Future<Session> connect = client.connect(listenerSocket, uri);
         Session session = connect.get(5, TimeUnit.SECONDS);
 
-        session.sendPing(ByteBuffer.wrap("ping-0".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+        session.sendPing(ByteBuffer.wrap("ping-0".getBytes(UTF_8)), Callback.NOOP);
         session.sendText("test-text", Callback.NOOP);
-        session.sendPing(ByteBuffer.wrap("ping-1".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+        session.sendPing(ByteBuffer.wrap("ping-1".getBytes(UTF_8)), Callback.NOOP);
 
         await().atMost(5, TimeUnit.SECONDS).until(listenerSocket.frames::size, is(2));
-        Frame frame0 = listenerSocket.frames.get(0);
-        assertThat(frame0.getType(), is(Frame.Type.PONG));
-        assertThat(StandardCharsets.UTF_8.decode(frame0.getPayload()).toString(), is("ping-0"));
-        Callback callback0 = listenerSocket.callbacks.get(0);
+        ListenerSocket.ReceivedFrame frame0 = listenerSocket.frames.get(0);
+        assertThat(frame0.type(), is(Frame.Type.PONG));
+        assertThat(frame0.payload(), is("ping-0"));
+        Callback callback0 = listenerSocket.callbacks.getFirst();
         assertNotNull(callback0);
         callback0.succeed();
 
-        Frame frame1 = listenerSocket.frames.get(1);
-        assertThat(frame1.getType(), is(Frame.Type.PONG));
-        assertThat(StandardCharsets.UTF_8.decode(frame1.getPayload()).toString(), is("ping-1"));
+        ListenerSocket.ReceivedFrame frame1 = listenerSocket.frames.get(1);
+        assertThat(frame1.type(), is(Frame.Type.PONG));
+        assertThat(frame1.payload(), is("ping-1"));
         Callback callback1 = listenerSocket.callbacks.get(1);
         assertNotNull(callback1);
         callback1.succeed();
 
         session.close();
         await().atMost(5, TimeUnit.SECONDS).until(listenerSocket.frames::size, is(3));
-        assertThat(listenerSocket.frames.get(2).getType(), is(Frame.Type.CLOSE));
+        assertThat(listenerSocket.frames.get(2).type(), is(Frame.Type.CLOSE));
         Callback closeCallback = listenerSocket.callbacks.get(2);
         assertNotNull(closeCallback);
         closeCallback.succeed();
@@ -264,21 +278,21 @@ public class ExplicitDemandTest
         session.sendText("send-me-a-ping", Callback.NOOP);
 
         await().atMost(5, TimeUnit.SECONDS).until(pingSocket.frames::size, is(1));
-        Frame frame = pingSocket.frames.get(0);
-        assertThat(frame.getType(), is(Frame.Type.PING));
-        assertThat(StandardCharsets.UTF_8.decode(frame.getPayload()).toString(), is("server-ping"));
+        ListenerSocket.ReceivedFrame frame = pingSocket.frames.getFirst();
+        assertThat(frame.type(), is(Frame.Type.PING));
+        assertThat(frame.payload(), is("server-ping"));
 
         session.sendText("send-me-another-ping", Callback.NOOP);
 
         await().atMost(5, TimeUnit.SECONDS).until(pingSocket.frames::size, is(2));
         frame = pingSocket.frames.get(1);
-        assertThat(frame.getType(), is(Frame.Type.PING));
-        assertThat(StandardCharsets.UTF_8.decode(frame.getPayload()).toString(), is("server-ping"));
+        assertThat(frame.type(), is(Frame.Type.PING));
+        assertThat(frame.payload(), is("server-ping"));
 
         session.close();
         await().atMost(5, TimeUnit.SECONDS).until(pingSocket.frames::size, is(3));
         frame = pingSocket.frames.get(2);
-        assertThat(frame.getType(), is(Frame.Type.CLOSE));
+        assertThat(frame.type(), is(Frame.Type.CLOSE));
     }
 
     @Test

@@ -21,7 +21,6 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -40,6 +39,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -767,14 +767,14 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             }
 
             @Override
-            protected int read(EndPoint endPoint, ByteBuffer buffer, ConcurrentMap<String, Object> context) throws IOException
+            protected int read(EndPoint endPoint, RetainableByteBuffer.Mutable buffer, ConcurrentMap<String, Object> context) throws IOException
             {
                 assertEquals(contextValue, context.get(contextKey));
                 return super.read(endPoint, buffer, context);
             }
 
             @Override
-            protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
+            protected void write(EndPoint endPoint, RetainableByteBuffer buffer, Callback callback, ConcurrentMap<String, Object> context)
             {
                 assertEquals(contextValue, context.get(contextKey));
                 super.write(endPoint, buffer, callback, context);
@@ -930,7 +930,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
                                 if (x != null)
                                     callback.failed(x);
                                 else
-                                    response.write(true, ByteBuffer.wrap(bytes), callback);
+                                    response.write(true, RetainableByteBuffer.wrap(bytes), callback);
                             });
                     }
                 }

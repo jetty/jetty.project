@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -46,6 +48,44 @@ public class AsyncJSONTest
         AsyncJSON.Factory factory = new AsyncJSON.Factory();
         factory.setDetailedParseException(true);
         return factory.newAsyncJSON();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testParseValidJSONDoesNotRetainBuffer(boolean detailed)
+    {
+        ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
+        AsyncJSON.Factory factory = new AsyncJSON.Factory();
+        factory.setDetailedParseException(detailed);
+        AsyncJSON parser = factory.newAsyncJSON();
+
+        RetainableByteBuffer.Mutable buffer = pool.acquire(1024, false);
+        buffer.append("{\"a\":1}".getBytes(UTF_8));
+
+        assertTrue(parser.parse(buffer));
+        assertFalse(buffer.isRetained());
+
+        buffer.release();
+        assertEquals(0, pool.getLeaks().size(), pool::dumpLeaks);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testParseInvalidJSONDoesNotRetainBuffer(boolean detailed)
+    {
+        ArrayByteBufferPool.Tracking pool = new ArrayByteBufferPool.Tracking();
+        AsyncJSON.Factory factory = new AsyncJSON.Factory();
+        factory.setDetailedParseException(detailed);
+        AsyncJSON parser = factory.newAsyncJSON();
+
+        RetainableByteBuffer.Mutable buffer = pool.acquire(1024, false);
+        buffer.append("{\"a\":|}".getBytes(UTF_8));
+
+        assertThrows(IllegalArgumentException.class, () -> parser.parse(buffer));
+        assertFalse(buffer.isRetained());
+
+        buffer.release();
+        assertEquals(0, pool.getLeaks().size(), pool::dumpLeaks);
     }
 
     @ParameterizedTest

@@ -22,9 +22,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.AsyncContentSource;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.FutureCallback;
@@ -33,6 +32,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -71,7 +71,7 @@ public class FormFieldsTest
     @MethodSource("validData")
     public void testValidFormFields(List<String> chunks, Charset charset, int maxFields, int maxLength, Map<String, String> expected)
     {
-        AsyncContent source = new AsyncContent();
+        AsyncContentSource source = new AsyncContentSource();
         Attributes attributes = new Attributes.Mapped();
         CompletableFuture<Fields> futureFields = FormFields.from(source, Invocable.InvocationType.NON_BLOCKING, attributes, null, charset, maxFields, maxLength);
         assertFalse(futureFields.isDone());
@@ -80,7 +80,7 @@ public class FormFieldsTest
         FutureCallback eof = new FutureCallback();
         for (int i = 0; i <= last; i++)
         {
-            source.write(i == last, BufferUtil.toBuffer(chunks.get(i), charset), i == last ? eof : Callback.NOOP);
+            source.offer(i == last, chunks.get(i), charset, i == last ? eof : Callback.NOOP);
         }
 
         try
@@ -138,13 +138,13 @@ public class FormFieldsTest
     @MethodSource("invalidData")
     public void testInvalidFormFields(List<String> chunks, Charset charset, int maxFields, int maxLength, Class<? extends Exception> expectedException)
     {
-        AsyncContent source = new AsyncContent();
+        AsyncContentSource source = new AsyncContentSource();
         CompletableFuture<Fields> futureFields = FormFields.from(source, Invocable.InvocationType.NON_BLOCKING, new Attributes.Mapped(), null, charset, maxFields, maxLength);
         assertFalse(futureFields.isDone());
         int last = chunks.size() - 1;
         for (int i = 0; i <= last; i++)
         {
-            source.write(i == last, BufferUtil.toBuffer(chunks.get(i)), Callback.NOOP);
+            source.offer(i == last, chunks.get(i), ISO_8859_1, Callback.NOOP);
         }
         Throwable cause = assertThrows(ExecutionException.class, futureFields::get).getCause();
         assertThat(cause, instanceOf(expectedException));

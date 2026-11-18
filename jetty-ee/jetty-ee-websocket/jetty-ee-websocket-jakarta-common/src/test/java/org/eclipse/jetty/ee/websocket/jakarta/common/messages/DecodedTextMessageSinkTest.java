@@ -49,13 +49,16 @@ public class DecodedTextMessageSinkTest extends AbstractMessageSinkTest
         List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
         DecodedTextMessageSink<Calendar> sink = new DecodedTextMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
-        FutureCallback finCallback = new FutureCallback();
-        sink.accept(new Frame(OpCode.TEXT).setPayload("2018.02.13").setFin(true), finCallback);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        try (Frame frame = new Frame(OpCode.TEXT, "2018.02.13"))
+        {
+            FutureCallback finCallback = new FutureCallback();
+            sink.accept(frame, finCallback);
+            coreSession.waitForDemand(1, TimeUnit.SECONDS);
+            finCallback.get(1, TimeUnit.SECONDS);
+        }
 
         Date decoded = copyFuture.get(1, TimeUnit.SECONDS);
         assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("02-13-2018"));
-        assertThat("FinCallback.done", finCallback.isDone(), is(true));
     }
 
     @Test
@@ -71,12 +74,21 @@ public class DecodedTextMessageSinkTest extends AbstractMessageSinkTest
         FutureCallback callback2 = new FutureCallback();
         FutureCallback finCallback = new FutureCallback();
 
-        sink.accept(new Frame(OpCode.TEXT).setPayload("2023").setFin(false), callback1);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
-        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(".08").setFin(false), callback2);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
-        sink.accept(new Frame(OpCode.CONTINUATION).setPayload(".22").setFin(true), finCallback);
-        coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        try (Frame frame = new Frame(OpCode.TEXT, false, "2023"))
+        {
+            sink.accept(frame, callback1);
+            coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, false, ".08"))
+        {
+            sink.accept(frame, callback2);
+            coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        }
+        try (Frame frame = new Frame(OpCode.CONTINUATION, true, ".22"))
+        {
+            sink.accept(frame, finCallback);
+            coreSession.waitForDemand(1, TimeUnit.SECONDS);
+        }
 
         Date decoded = copyFuture.get(1, TimeUnit.SECONDS);
         assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("08-22-2023"));

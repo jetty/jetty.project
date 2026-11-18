@@ -48,6 +48,7 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -479,12 +480,12 @@ public class FileBufferedResponseHandlerTest
         HttpTester.Response response = new HttpTester.Response()
         {
             @Override
-            public boolean content(ByteBuffer ref)
+            public boolean content(RetainableByteBuffer buffer)
             {
                 // Verify the content is what was sent.
-                while (ref.hasRemaining())
+                while (buffer.hasRemaining())
                 {
-                    byte byteFromBuffer = ref.get();
+                    byte byteFromBuffer = buffer.get();
                     long totalReceived = received.getAndIncrement();
                     int bytesIndex = (int)(totalReceived % bytes.length);
                     byte byteFromArray = bytes[bytesIndex];

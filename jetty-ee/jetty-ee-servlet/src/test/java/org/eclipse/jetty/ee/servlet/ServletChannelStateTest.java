@@ -14,7 +14,6 @@
 package org.eclipse.jetty.ee.servlet;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,12 +29,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -107,7 +107,7 @@ public class ServletChannelStateTest
                     response = new Response.Wrapper(request, response)
                     {
                         @Override
-                        public void write(boolean last, ByteBuffer byteBuffer, Callback writeCallback)
+                        public void write(boolean last, RetainableByteBuffer byteBuffer, Callback writeCallback)
                         {
                             if (!last)
                             {
@@ -183,7 +183,7 @@ public class ServletChannelStateTest
                 response = new Response.Wrapper(request, response)
                 {
                     @Override
-                    public void write(boolean last, ByteBuffer byteBuffer, Callback writeCallback)
+                    public void write(boolean last, RetainableByteBuffer byteBuffer, Callback writeCallback)
                     {
                         if (!last)
                         {
@@ -277,7 +277,7 @@ public class ServletChannelStateTest
         server.setHandler(servletContextHandler);
         server.start();
 
-        connector.executeRequest("""
+        LocalConnector.LocalEndPoint endPoint = connector.executeRequest("""
             GET / HTTP/1.1\r
             Host: localhost\r
             Connection: close\r
@@ -292,6 +292,9 @@ public class ServletChannelStateTest
         await().atMost(5, TimeUnit.SECONDS).until(() -> servletChannel.getServletContextRequest() == null);
         assertThat(onCompleteCount.get(), is(1));
         assertThrows(IllegalStateException.class, () -> asyncContextRef.get().complete());
+
+        // The response is not read, close the client side to release it.
+        endPoint.close();
     }
 
     // A ServletChannel that blocks the thread calling ServletChannelState.completed()

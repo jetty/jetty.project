@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.websocket.core;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -26,7 +25,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test behavior of Parser with payload length parsing (per RFC6455)
@@ -59,8 +57,7 @@ public class ParsePayloadLengthTest
         ParserCapture capture = new ParserCapture();
         capture.getCoreSession().setMaxFrameSize(0);
 
-        ByteBuffer raw = BufferUtil.allocate(size + Generator.MAX_HEADER_LENGTH);
-        BufferUtil.clearToFill(raw);
+        RetainableByteBuffer.Mutable raw = RetainableByteBuffer.Mutable.allocate(size + Generator.MAX_HEADER_LENGTH, false);
 
         // Create text frame
         RawFrameBuilder.putOpFin(raw, OpCode.TEXT, true);
@@ -70,16 +67,14 @@ public class ParsePayloadLengthTest
         raw.put(payload);
 
         // parse buffer
-        BufferUtil.flipToFlush(raw, 0);
         capture.parse(raw);
 
         // validate frame
-        Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS);
-        assertThat("Frame opcode", frame.getOpCode(), is(OpCode.TEXT));
-        assertThat("Frame payloadLength", frame.getPayloadLength(), is(size));
-        if (size > 0)
-            assertThat("Frame payload.remaining", frame.getPayload().remaining(), is(size));
-        else
-            assertTrue(BufferUtil.isEmpty(frame.getPayload()), "Frame payload");
+        try (Frame frame = capture.framesQueue.poll(1, TimeUnit.SECONDS))
+        {
+            assertThat("Frame opcode", frame.getOpCode(), is(OpCode.TEXT));
+            assertThat("Frame payloadLength", frame.getPayloadLength(), is((long)size));
+            assertThat("Frame hasPayload", frame.hasPayload(), is(size > 0));
+        }
     }
 }

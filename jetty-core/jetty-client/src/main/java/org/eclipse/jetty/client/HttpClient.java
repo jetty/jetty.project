@@ -50,28 +50,26 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.SetCookieParser;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.Transport;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
-import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.Sweeper;
-import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -216,12 +214,9 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
             executor = threadPool;
             setExecutor(executor);
         }
-        int maxBucketSize = executor instanceof ThreadPool.SizedThreadPool
-            ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2
-            : ProcessorUtils.availableProcessors() * 2;
         ByteBufferPool byteBufferPool = getByteBufferPool();
         if (byteBufferPool == null)
-            setByteBufferPool(new ArrayByteBufferPool(0, 2048, 65536, maxBucketSize));
+            setByteBufferPool(new ArrayByteBufferPool());
         Scheduler scheduler = getScheduler();
         if (scheduler == null)
         {
@@ -243,7 +238,7 @@ public class HttpClient extends ContainerLifeCycle implements AutoCloseable
         if (decoderFactories.isEmpty())
         {
             TypeUtil.serviceStream(ServiceLoader.load(Compression.class))
-                .peek(c -> c.setByteBufferPool(getByteBufferPool()))
+                .peek(c -> c.setBufferPool(getByteBufferPool()))
                 .forEach(c -> decoderFactories.put(new CompressionContentDecoderFactory(c)));
         }
 

@@ -13,16 +13,19 @@
 
 package org.eclipse.jetty.io;
 
-import org.eclipse.jetty.io.content.AsyncContent;
+import org.eclipse.jetty.io.content.AsyncContentSource;
 import org.eclipse.jetty.io.content.ByteBufferContentSource;
 import org.eclipse.jetty.io.internal.ContentSourceRange;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,7 +36,7 @@ public class ContentSourceRangeTest
     @Test
     public void testNullReturn()
     {
-        Content.Source source = new ContentSourceRange(new AsyncContent(), 0, -1);
+        Content.Source source = new ContentSourceRange(new AsyncContentSource(), 0, -1);
         assertNull(source.read());
     }
 
@@ -41,7 +44,7 @@ public class ContentSourceRangeTest
     public void testInvalidArguments()
     {
         // Throws if the offset is negative.
-        assertThrows(IndexOutOfBoundsException.class, () -> new ContentSourceRange(new AsyncContent(), -1, -1));
+        assertThrows(IndexOutOfBoundsException.class, () -> new ContentSourceRange(new AsyncContentSource(), -1, -1));
 
         // Throws if the offset is beyond the length of the source.
         ByteBufferContentSource source = new ByteBufferContentSource(BufferUtil.toBuffer("hello".getBytes()));
@@ -51,162 +54,199 @@ public class ContentSourceRangeTest
     @Test
     public void testFullLength()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 0, -1);
 
-        asyncContent.write(false, BufferUtil.toBuffer("A"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("B"), Callback.NOOP);
-        asyncContent.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+        asyncContent.offer(false, "A", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "B", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(true, RetainableByteBuffer.empty(), Callback.NOOP);
 
-        Content.Chunk c1 = source.read();
-        assertThat(c1.getByteBuffer(), equalTo(BufferUtil.toBuffer("A")));
-        assertFalse(c1.isLast());
-        c1.release();
+        try (Content.Chunk c1 = source.read())
+        {
+            try (RetainableByteBuffer buffer = c1.acquire())
+            {
+                assertThat(buffer.getString(ISO_8859_1), is("A"));
+                assertFalse(c1.isLast());
+            }
+        }
 
-        Content.Chunk c2 = source.read();
-        assertThat(c2.getByteBuffer(), equalTo(BufferUtil.toBuffer("B")));
-        assertFalse(c2.isLast());
-        c2.release();
+        try (Content.Chunk c2 = source.read())
+        {
+            try (RetainableByteBuffer buffer = c2.acquire())
+            {
+                assertThat(buffer.getString(ISO_8859_1), is("B"));
+                assertFalse(c2.isLast());
+            }
+        }
 
-        Content.Chunk last = source.read();
-        assertThat(last.remaining(), equalTo(0));
-        assertTrue(last.isLast());
-        last.release();
+        try (Content.Chunk last = source.read())
+        {
+            assertThat(last.remaining(), equalTo(0L));
+            assertTrue(last.isLast());
+        }
     }
 
     @Test
     public void testOffset()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 5, -1);
 
-        asyncContent.write(false, BufferUtil.toBuffer("12"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("345"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("XYZ"), Callback.NOOP);
-        asyncContent.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+        asyncContent.offer(false, "12", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "345", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "XYZ", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(true, RetainableByteBuffer.empty(), Callback.NOOP);
 
-        Content.Chunk c1 = source.read();
-        assertThat(c1.getByteBuffer(), equalTo(BufferUtil.toBuffer("XYZ")));
-        assertFalse(c1.isLast());
-        c1.release();
+        try (Content.Chunk c1 = source.read())
+        {
+            try (RetainableByteBuffer buffer = c1.acquire())
+            {
+                assertThat(buffer.getString(ISO_8859_1), is("XYZ"));
+                assertFalse(c1.isLast());
+            }
+        }
 
-        Content.Chunk c2 = source.read();
-        assertTrue(c2.isLast());
-        assertThat(c2.remaining(), equalTo(0));
-        c2.release();
+        try (Content.Chunk c2 = source.read())
+        {
+            assertTrue(c2.isLast());
+            assertThat(c2.remaining(), equalTo(0L));
+        }
     }
 
     @Test
     public void testOffsetMidChunk()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 3, 2);
 
-        asyncContent.write(true, BufferUtil.toBuffer("abcdef"), Callback.NOOP);
+        asyncContent.offer(true, "abcdef", ISO_8859_1, Callback.NOOP);
 
-        Content.Chunk c1 = source.read();
-        assertTrue(c1.isLast());
-        assertThat(c1.getByteBuffer(), equalTo(BufferUtil.toBuffer("de")));
-        c1.release();
+        try (Content.Chunk c1 = source.read())
+        {
+            try (RetainableByteBuffer buffer = c1.acquire())
+            {
+                assertThat(buffer.getString(ISO_8859_1), is("de"));
+                assertTrue(c1.isLast());
+            }
+        }
     }
 
     @Test
     public void testSpanMultipleChunks()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 2, 8);
 
-        asyncContent.write(false, BufferUtil.toBuffer("AAAA"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("BBBB"), Callback.NOOP);
-        asyncContent.write(true, BufferUtil.toBuffer("CCCC"), Callback.NOOP);
+        asyncContent.offer(false, "AAAA", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "BBBB", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(true, "CCCC", ISO_8859_1, Callback.NOOP);
 
-        Content.Chunk c1 = source.read();
-        assertThat(c1.getByteBuffer(), equalTo(BufferUtil.toBuffer("AA")));
-        assertFalse(c1.isLast());
-        c1.release();
+        try (Content.Chunk c1 = source.read())
+        {
+            try (RetainableByteBuffer buffer = c1.acquire())
+            {
+                assertThat(buffer.getString(ISO_8859_1), is("AA"));
+                assertFalse(c1.isLast());
+            }
+        }
 
-        Content.Chunk c2 = source.read();
-        assertThat(c2.getByteBuffer(), equalTo(BufferUtil.toBuffer("BBBB")));
-        assertFalse(c2.isLast());
-        c2.release();
+        try (Content.Chunk c2 = source.read())
+        {
+            try (RetainableByteBuffer buffer = c2.acquire())
+            {
+                assertThat(buffer.getString(ISO_8859_1), is("BBBB"));
+                assertFalse(c2.isLast());
+            }
+        }
 
-        Content.Chunk c3 = source.read();
-        assertThat(c3.getByteBuffer(), equalTo(BufferUtil.toBuffer("CC")));
-        assertTrue(c3.isLast());
-        c3.release();
+        try (Content.Chunk c3 = source.read())
+        {
+            try (RetainableByteBuffer buffer = c3.acquire())
+            {
+                assertThat(buffer.getString(ISO_8859_1), is("CC"));
+                assertTrue(c3.isLast());
+            }
+        }
     }
 
     @Test
     public void testZeroLengthRange()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 0, 0);
 
-        asyncContent.write(false, BufferUtil.toBuffer("foo"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("bar"), Callback.NOOP);
-        asyncContent.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+        asyncContent.offer(false, "foo", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "bar", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(true, RetainableByteBuffer.empty(), Callback.NOOP);
 
-        Content.Chunk c1 = source.read();
-        assertTrue(c1.isLast());
-        assertThat(c1.remaining(), equalTo(0));
-        c1.release();
+        try (Content.Chunk c1 = source.read())
+        {
+            assertTrue(c1.isLast());
+            assertThat(c1.remaining(), equalTo(0L));
+        }
     }
 
     @Test
     public void testOffsetBeyondLength()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 200, -1);
 
-        asyncContent.write(false, BufferUtil.toBuffer("hello"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("world"), Callback.NOOP);
-        asyncContent.write(true, BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+        asyncContent.offer(false, "hello", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "world", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(true, RetainableByteBuffer.empty(), Callback.NOOP);
 
-        Content.Chunk c1 = source.read();
-        assertTrue(c1.isLast());
-        assertThat(c1.remaining(), equalTo(0));
-        c1.release();
+        try (Content.Chunk c1 = source.read())
+        {
+            assertTrue(c1.isLast());
+            assertThat(c1.remaining(), equalTo(0L));
+        }
     }
 
     @Test
     public void testFailureChunkBeforeEOF()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 5, 5);
 
-        asyncContent.write(false, BufferUtil.toBuffer("hello"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("world"), Callback.NOOP);
+        asyncContent.offer(false, "hello", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "world", ISO_8859_1, Callback.NOOP);
 
-        Content.Chunk c1 = source.read();
-        assertFalse(c1.isLast());
-        assertThat(c1.getByteBuffer(), equalTo(BufferUtil.toBuffer("world")));
-        c1.release();
+        try (Content.Chunk c1 = source.read())
+        {
+            try (RetainableByteBuffer buffer = c1.acquire())
+            {
+                assertThat(buffer.getString(ISO_8859_1), is("world"));
+                assertFalse(c1.isLast());
+            }
+        }
 
         // We have read the full range, but trying to read to EOF we can still get a failure.
         asyncContent.fail(new RuntimeException("test exception"));
 
-        Content.Chunk c2 = source.read();
-        assertTrue(c2.isLast());
-        assertThat(c2.getFailure(), instanceOf(RuntimeException.class));
-        c2.release();
+        try (Content.Chunk c2 = source.read())
+        {
+            assertThat(c2.getFailure(), instanceOf(RuntimeException.class));
+            assertTrue(c2.isLast());
+        }
     }
 
     @Test
     public void testFailureBeforeStartingOffset()
     {
-        AsyncContent asyncContent = new AsyncContent();
+        AsyncContentSource asyncContent = new AsyncContentSource();
         Content.Source source = new ContentSourceRange(asyncContent, 20, 5);
 
-        asyncContent.write(false, BufferUtil.toBuffer("hello"), Callback.NOOP);
-        asyncContent.write(false, BufferUtil.toBuffer("world"), Callback.NOOP);
+        asyncContent.offer(false, "hello", ISO_8859_1, Callback.NOOP);
+        asyncContent.offer(false, "world", ISO_8859_1, Callback.NOOP);
         asyncContent.fail(new RuntimeException("test exception"));
 
-        Content.Chunk c1 = source.read();
-        assertTrue(c1.isLast());
-        assertTrue(c1.isEmpty());
-        assertThat(c1.getFailure(), instanceOf(RuntimeException.class));
-        assertThat(c1.getFailure().getMessage(), equalTo("test exception"));
-
-        c1.release();
+        try (Content.Chunk c1 = source.read())
+        {
+            assertTrue(c1.isLast());
+            assertFalse(c1.hasRemaining());
+            assertThat(c1.getFailure(), instanceOf(RuntimeException.class));
+            assertThat(c1.getFailure().getMessage(), equalTo("test exception"));
+        }
     }
 }

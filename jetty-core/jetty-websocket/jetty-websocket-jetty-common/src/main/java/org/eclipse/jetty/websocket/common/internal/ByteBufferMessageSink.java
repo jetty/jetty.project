@@ -13,8 +13,7 @@
 
 package org.eclipse.jetty.websocket.common.internal;
 
-import java.nio.ByteBuffer;
-
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.util.MethodHolder;
@@ -27,8 +26,30 @@ public class ByteBufferMessageSink extends org.eclipse.jetty.websocket.core.mess
     }
 
     @Override
-    protected void invoke(MethodHolder methodHolder, ByteBuffer byteBuffer, org.eclipse.jetty.util.Callback callback) throws Throwable
+    protected void invoke(MethodHolder methodHolder, RetainableByteBuffer buffer, org.eclipse.jetty.util.Callback callback) throws Throwable
     {
-        methodHolder.invoke(byteBuffer, Callback.from(callback::succeeded, callback::failed));
+        // The buffer is coalesced, so buffer.read() is a single invocation.
+        // Differently from core WebSocket, we pass the callback to the
+        // application, that may use the ByteBuffer until callback completion.
+        buffer.retain();
+        buffer.read(b ->
+        {
+            int r = b.remaining();
+            var cb = org.eclipse.jetty.util.Callback.from(() ->
+            {
+                buffer.consume(r);
+                buffer.release();
+            }, callback);
+            try
+            {
+                methodHolder.invoke(b.slice(), Callback.from(cb::succeeded, cb::failed));
+                return 0;
+            }
+            catch (Throwable x)
+            {
+                buffer.release();
+                throw x;
+            }
+        });
     }
 }

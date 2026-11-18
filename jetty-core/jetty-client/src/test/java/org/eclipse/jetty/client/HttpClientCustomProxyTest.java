@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -31,9 +30,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -149,7 +148,7 @@ public class HttpClientCustomProxyTest
         public void onOpen()
         {
             super.onOpen();
-            getEndPoint().write(this, ByteBuffer.wrap(CAFE_BABE));
+            getEndPoint().write(RetainableByteBuffer.wrap(CAFE_BABE), this);
         }
 
         @Override
@@ -169,10 +168,10 @@ public class HttpClientCustomProxyTest
         {
             try
             {
-                ByteBuffer buffer = BufferUtil.allocate(4);
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(4, true);
                 int filled = getEndPoint().fill(buffer);
                 assertEquals(4, filled);
-                assertArrayEquals(CAFE_BABE, buffer.array());
+                assertArrayEquals(CAFE_BABE, buffer.getArray());
 
                 // We are good, upgrade the connection
                 getEndPoint().upgrade(connectionFactory.newConnection(getEndPoint(), context));
@@ -226,11 +225,11 @@ public class HttpClientCustomProxyTest
         {
             try
             {
-                ByteBuffer buffer = BufferUtil.allocate(4);
+                RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(4, true);
                 int filled = getEndPoint().fill(buffer);
                 assertEquals(4, filled);
-                assertArrayEquals(CAFE_BABE, buffer.array());
-                getEndPoint().write(this, buffer);
+                assertArrayEquals(CAFE_BABE, buffer.getArray(0));
+                getEndPoint().write(buffer, this);
             }
             catch (Throwable x)
             {

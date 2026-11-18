@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -138,7 +139,15 @@ public class ValidationExtension extends AbstractExtension
             if (frame.getOpCode() == TEXT || continuedOpCode == TEXT)
             {
                 if (frame.hasPayload())
-                    appendable.append(frame.getPayload().slice());
+                {
+                    try (RetainableByteBuffer buffer = frame.acquire())
+                    {
+                        try (RetainableByteBuffer slice = buffer.slice())
+                        {
+                            appendable.append(slice);
+                        }
+                    }
+                }
 
                 if (frame.isFin())
                     appendable.complete();

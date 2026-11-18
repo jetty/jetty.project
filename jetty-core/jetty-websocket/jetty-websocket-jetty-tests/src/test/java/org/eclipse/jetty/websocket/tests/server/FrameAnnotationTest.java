@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.tests.server;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -23,7 +24,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
@@ -147,12 +148,15 @@ public class FrameAnnotationTest
         @OnWebSocketFrame
         public void onWebSocketFrame(Frame frame, Callback callback)
         {
-            frameEvents.offer(String.format("FRAME[%s,fin=%b,payload=%s,len=%d]",
-                OpCode.name(frame.getOpCode()),
-                frame.isFin(),
-                BufferUtil.toUTF8String(frame.getPayload()),
-                frame.getPayloadLength()));
-            callback.succeed();
+            try (RetainableByteBuffer buffer = frame.acquire())
+            {
+                frameEvents.offer(String.format("FRAME[%s,fin=%b,payload=%s,len=%d]",
+                    OpCode.name(frame.getOpCode()),
+                    frame.isFin(),
+                    buffer.getString(buffer.readPosition(), StandardCharsets.UTF_8),
+                    frame.getPayloadLength()));
+                callback.succeed();
+            }
         }
 
         @OnWebSocketError

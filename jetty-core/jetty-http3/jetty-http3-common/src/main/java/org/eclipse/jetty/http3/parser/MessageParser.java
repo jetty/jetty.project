@@ -14,15 +14,14 @@
 package org.eclipse.jetty.http3.parser;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http3.Grease;
 import org.eclipse.jetty.http3.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +43,7 @@ public class MessageParser
     private State state = State.HEADER;
     private long beginNanoTime;
     private boolean beginNanoTimeStored;
+    private boolean failed;
 
     public MessageParser(ParserListener listener, QpackDecoder decoder, long streamId)
     {
@@ -55,7 +55,15 @@ public class MessageParser
 
     public void init(UnaryOperator<ParserListener> wrapper)
     {
-        ParserListener listener = wrapper.apply(this.listener);
+        ParserListener listener = new ParserListener.Wrapper(wrapper.apply(this.listener))
+        {
+            @Override
+            public void onSessionFailure(long error, String reason, Throwable failure)
+            {
+                failed = true;
+                super.onSessionFailure(error, reason, failure);
+            }
+        };
         this.bodyParsers[FrameType.DATA.type()] = new DataBodyParser(headerParser, listener, streamId);
         this.bodyParsers[FrameType.HEADERS.type()] = new HeadersBodyParser(headerParser, listener, decoder, streamId);
         this.bodyParsers[FrameType.PUSH_PROMISE.type()] = new PushPromiseBodyParser(headerParser, listener);
@@ -89,6 +97,14 @@ public class MessageParser
     }
 
     /**
+     * @return whether the parsing resulted in a session failure
+     */
+    public boolean isFailed()
+    {
+        return failed;
+    }
+
+    /**
      * <p>Parses the given {@code buffer} bytes and emit events to a {@link ParserListener}.</p>
      * <p>Only the bytes of one frame are consumed, therefore when this method returns,
      * the buffer may contain unconsumed bytes, for example for other frames.</p>
@@ -96,7 +112,7 @@ public class MessageParser
      * @param buffer the buffer to parse
      * @return the result of the parsing
      */
-    public Result parse(ByteBuffer buffer, boolean last)
+    public Result parse(RetainableByteBuffer buffer, boolean quicLast)
     {
         try
         {
@@ -111,7 +127,7 @@ public class MessageParser
                         if (headerParser.parse(buffer))
                             state = State.BODY;
                         else
-                            return Result.NO_FRAME;
+                            return noFrame(buffer, quicLast);
                     }
                     case BODY ->
                     {
@@ -135,9 +151,9 @@ public class MessageParser
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ignoring {} frame type {}", Grease.isGreaseValue(frameType) ? "grease" : "unknown", Long.toHexString(frameType));
 
-                            BodyParser.Result result = unknownBodyParser.parse(buffer, last);
+                            BodyParser.Result result = unknownBodyParser.parse(buffer, quicLast);
                             if (result == BodyParser.Result.NO_FRAME)
-                                return Result.NO_FRAME;
+                                return noFrame(buffer, quicLast);
                             if (LOG.isDebugEnabled())
                                 LOG.debug("parsed unknown frame body for type {}", Long.toHexString(frameType));
                             if (result == BodyParser.Result.WHOLE_FRAME)
@@ -147,21 +163,21 @@ public class MessageParser
                         {
                             if (headerParser.getFrameLength() == 0)
                             {
-                                bodyParser.emptyBody(buffer, last);
+                                bodyParser.emptyBody(buffer, quicLast);
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("parsed {} empty frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
+                                    LOG.debug("parsed {} empty frame body from {}", FrameType.from(frameType), buffer);
                                 reset();
                                 return Result.FRAME;
                             }
                             else
                             {
-                                BodyParser.Result result = bodyParser.parse(buffer, last);
+                                BodyParser.Result result = bodyParser.parse(buffer, quicLast);
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("parsed {} {} body from {}", result, FrameType.from(frameType), BufferUtil.toDetailString(buffer));
+                                    LOG.debug("parsed {} {} body from {}", result, FrameType.from(frameType), buffer);
 
                                 // Not enough bytes, there is no frame.
                                 if (result == BodyParser.Result.NO_FRAME)
-                                    return Result.NO_FRAME;
+                                    return noFrame(buffer, quicLast);
 
                                 // Do not reset() if it is a fragment frame.
                                 if (result == BodyParser.Result.FRAGMENT_FRAME)
@@ -192,7 +208,16 @@ public class MessageParser
         }
     }
 
-    private void sessionFailure(ByteBuffer buffer, long error, String reason, Throwable failure)
+    private Result noFrame(RetainableByteBuffer buffer, boolean quicLast)
+    {
+        boolean midFrame = state == State.BODY || beginNanoTimeStored;
+        // SPEC: a stream that terminates cleanly with a truncated last frame is an error.
+        if (quicLast && !buffer.hasRemaining() && midFrame && !isFailed())
+            sessionFailure(buffer, HTTP3ErrorCode.FRAME_ERROR.code(), "truncated_frame", new IOException("frame truncated by end of stream"));
+        return Result.NO_FRAME;
+    }
+
+    private void sessionFailure(RetainableByteBuffer buffer, long error, String reason, Throwable failure)
     {
         unknownBodyParser.sessionFailure(buffer, error, reason, failure);
     }

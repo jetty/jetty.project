@@ -104,7 +104,6 @@ public class JettyRunWarMojo extends AbstractWebAppMojo
         }
     }
 
-    
     /**
      * Fork a jetty instance to run the built war.
      */

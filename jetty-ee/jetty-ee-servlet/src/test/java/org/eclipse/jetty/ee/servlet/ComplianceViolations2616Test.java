@@ -110,7 +110,7 @@ public class ComplianceViolations2616Test
         httpConfig.addComplianceViolationListener(new ComplianceViolation.CapturingListener());
 
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(httpConfig);
-        connector = new LocalConnector(server, null, null, null, -1, httpConnectionFactory);
+        connector = new LocalConnector(server, httpConnectionFactory);
         server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler();

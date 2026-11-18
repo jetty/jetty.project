@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpException;
@@ -21,6 +20,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /**
  * A Factory to create {@link Connection} instances for {@link Connector}s.
@@ -87,7 +87,7 @@ public interface ConnectionFactory
     interface Detecting extends ConnectionFactory
     {
         /**
-         * The possible outcomes of the {@link #detect(ByteBuffer)} method.
+         * The possible outcomes of the {@link Detecting#detect(RetainableByteBuffer)} method.
          */
         enum Detection
         {
@@ -108,7 +108,7 @@ public interface ConnectionFactory
         /**
          * <p>Check the bytes in the given {@code buffer} to figure out if this {@link Detecting} instance
          * can work with them or not.</p>
-         * <p>The {@code buffer} MUST be left untouched by this method: bytes MUST NOT be consumed and MUST NOT be modified.</p>
+         *
          * @param buffer the buffer.
          * @return One of:
          * <ul>
@@ -117,7 +117,7 @@ public interface ConnectionFactory
          * <li>{@link Detection#NEED_MORE_BYTES} if this {@link Detecting} instance requires more bytes to make a decision</li>
          * </ul>
          */
-        Detection detect(ByteBuffer buffer);
+        Detection detect(RetainableByteBuffer buffer);
     }
 
     /**
