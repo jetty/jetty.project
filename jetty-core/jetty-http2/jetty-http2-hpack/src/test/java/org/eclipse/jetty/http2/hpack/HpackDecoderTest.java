@@ -365,6 +365,19 @@ public class HpackDecoderTest
     }
 
     @Test
+    public void testRejectsAllConnectionSpecificHeaderFields() throws Exception
+    {
+        HttpHeader[] headers = {HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE, HttpHeader.PROXY_CONNECTION,
+            HttpHeader.TRANSFER_ENCODING, HttpHeader.UPGRADE};
+        for (HttpHeader header : headers)
+        {
+            MetaDataBuilder mdb = new MetaDataBuilder(4096);
+            mdb.emit(new HttpField(header, "value"));
+            assertThrows(StreamException.class, mdb::build);
+        }
+    }
+
+    @Test
     public void test8123RequestPseudoHeaderFields() throws Exception
     {
         {
