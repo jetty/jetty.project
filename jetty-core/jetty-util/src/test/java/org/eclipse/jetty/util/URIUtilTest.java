@@ -46,6 +46,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -90,6 +91,87 @@ public class URIUtilTest
         buf.setLength(0);
         URIUtil.encodeString(buf, "foo%23;,:=b a r", ";,= ");
         assertEquals("foo%2523%3b%2c:%3db%20a%20r", buf.toString());
+    }
+
+    public static Stream<Arguments> canonicalServletPathProvider()
+    {
+        return Stream.of(
+            Arguments.of("/", "/"),
+            Arguments.of("/a/b", "/a/b"),
+
+            // Rule 1: Discard fragment
+            Arguments.of("/a/b#frag", "/a/b"),
+            Arguments.of("/a/b#/c/../d", "/a/b"), // fragment discarded before any dot processing
+            Arguments.of("/a?b#c", "/a?b"),
+            Arguments.of("/a#b?c", "/a"), // '#' found first, takes the '?b' with it
+            Arguments.of("/a/b#", "/a/b"),
+
+            // Rule 2: Separation of path and query (query is not canonicalized)
+            Arguments.of("/a/b?x=1", "/a/b?x=1"),
+            Arguments.of("/a/b?x=/c/../d", "/a/b?x=/c/../d"),
+            Arguments.of("/a/b?", "/a/b?"),
+            Arguments.of("/a/..?x=1", "/?x=1"), // path still canonicalized after query stripped
+
+            // Rule 4: Remove path parameters
+            Arguments.of("/a;x=1/b;y=2/c", "/a/b/c"),
+            Arguments.of("/a;jsessionid=1234", "/a"),
+            Arguments.of("/a;/b;/c;", "/a/b/c"),
+            Arguments.of("/a/..;/b", "/b"),
+            Arguments.of("/a/;../b", "/a/b"),
+            Arguments.of("/foo/bar;a=b;c=d/baz", "/foo/bar/baz"),
+
+            // Rule 5: Decode (decoded '.' is a literal char unless it is the whole segment)
+            Arguments.of("/%2e/a", "/a"), // %2e => "." single-dot segment removed
+            Arguments.of("/foo/%2ebar", "/foo/.bar"), // decodes to ".bar", not a dot-segment
+            Arguments.of("/a/b%2ec", "/a/b.c"),
+            Arguments.of("/%41%42%43", "/ABC"),
+
+            // Rule 6: Remove empty segments (all empty segments other than the last are removed)
+            Arguments.of("/a//b", "/a/b"),
+            Arguments.of("/a///b", "/a/b"),
+            Arguments.of("//a", "/a"),
+            Arguments.of("/a//", "/a/"), // trailing empty segment is kept
+            Arguments.of("/a/b//", "/a/b/"),
+            Arguments.of("/a//./b", "/a/b"), // empty segment removed, then "." removed
+            Arguments.of("/a//../b", "/b"), // empty removed first, so ".." collapses "a"
+
+            // Rule 7: Remove dot-segments
+            Arguments.of("/a/./b", "/a/b"),
+            Arguments.of("/a/b/.", "/a/b/"),
+            Arguments.of("/a/b/..", "/a/"),
+            Arguments.of("/a/b/../", "/a/"),
+            Arguments.of("/./a", "/a"),
+            Arguments.of("/a/b/../../c", "/c"),
+            Arguments.of("/a/./b/../c/", "/a/c/"),
+            Arguments.of("/a/.%2e/b/", "/b/"), // ".%2e" => ".." resolved (encoded)
+
+            // Rule 8: Concatenate - re-encode '/' (%2F) and '%' (%25) in a segment
+            Arguments.of("/a%2Fb", "/a%252Fb"),
+            Arguments.of("/a%2Fb/c", "/a%252Fb/c"),
+            Arguments.of("/a%2fb%2fc", "/a%252Fb%252Fc"), // lowercase in, uppercase out
+            Arguments.of("/a%2525b", "/a%2525b"),
+            Arguments.of("/a%2540b", "/a%2540b")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("canonicalServletPathProvider")
+    public void testCanonicalServletPath(String input, String expected)
+    {
+        String result = URIUtil.canonicalServletPath(input);
+        assertEquals(expected, result);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/../a",
+        "/a/../b/../../c",
+        "/%2e%2e/a"
+    })
+    public void testCanonicalServletPathAboveRoot(String input)
+    {
+        String result = URIUtil.canonicalServletPath(input);
+        assertNull(result);
     }
 
     public static Stream<Arguments> decodePathSource()
