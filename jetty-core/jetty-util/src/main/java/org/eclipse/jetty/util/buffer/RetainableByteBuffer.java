@@ -333,36 +333,48 @@ public interface RetainableByteBuffer extends Retainable
     /// @param position the absolute read position of the `long` to read
     long getLong(long position);
 
-    /// Reads `n` bytes into the given byte array to offset `0`
-    /// from the current read position, where `n` is the array length.
+    /// Copies `n` bytes from the current read position into the given
+    /// byte array starting at offset `0`, where `n` is the array length.
     /// Advances the read position by `n`.
     ///
-    /// @param b the byte array to read into
+    /// @param array the byte array to read into
     /// @throws BufferUnderflowException if there are not enough bytes to read
-    default void get(byte[] b)
+    default void getArray(byte[] array)
     {
-        get(b, 0, b.length);
+        getArray(array, 0, array.length);
     }
 
-    /// Reads `len` bytes into the given byte array to offset `offset`
-    /// from the current position.
-    /// Advances the read position by `len`.
-    ///
-    /// @param b the byte array to read into
-    /// @param off the offset within the array
-    /// @param len the number of bytes to be read
-    /// @throws BufferUnderflowException if there are not enough bytes to read
-    void get(byte[] b, int off, int len);
-
-    /// Reads `len` bytes into the given byte array to offset `offset`
-    /// from the specified absolute read position.
+    /// Copies `n` bytes from the specified absolute read position into the
+    /// given byte array starting at offset `0`, where `n` is the array length.
     /// Does not advance the read position.
     ///
     /// @param position the absolute read position to read
-    /// @param b the byte array to read into
+    /// @param array the byte array to read into
+    /// @throws BufferUnderflowException if there are not enough bytes to read
+    default void getArray(long position, byte[] array)
+    {
+        getArray(position, array, 0, array.length);
+    }
+
+    /// Copies `length` bytes from the current read position into the given
+    /// byte array starting at offset `offset`.
+    /// Advances the read position by `length`.
+    ///
+    /// @param array the byte array to read into
     /// @param off the offset within the array
-    /// @param len the number of bytes to be read
-    void get(long position, byte[] b, int off, int len);
+    /// @param length the number of bytes to be read
+    /// @throws BufferUnderflowException if there are not enough bytes to read
+    void getArray(byte[] array, int off, int length);
+
+    /// Reads `length` bytes from the specified absolute read position into
+    /// the given byte array starting at offset `offset`.
+    /// Does not advance the read position.
+    ///
+    /// @param position the absolute read position to read
+    /// @param array the byte array to read into
+    /// @param off the offset within the array
+    /// @param length the number of bytes to be read
+    void getArray(long position, byte[] array, int off, int length);
 
     /// Reads the bytes of this buffer into a byte array,
     /// from the current read position for the number of remaining bytes.
@@ -373,7 +385,7 @@ public interface RetainableByteBuffer extends Retainable
     default byte[] getArray()
     {
         byte[] bytes = new byte[Math.toIntExact(remaining())];
-        get(bytes);
+        getArray(bytes);
         return bytes;
     }
 
@@ -398,7 +410,7 @@ public interface RetainableByteBuffer extends Retainable
     default byte[] getArray(long position, long length)
     {
         byte[] bytes = new byte[Math.toIntExact(length)];
-        get(position, bytes, 0, bytes.length);
+        getArray(position, bytes, 0, bytes.length);
         return bytes;
     }
 
@@ -754,16 +766,16 @@ public interface RetainableByteBuffer extends Retainable
         }
 
         @Override
-        public void get(byte[] b, int off, int len)
+        public void getArray(byte[] array, int off, int length)
         {
-            if (len != 0)
+            if (length != 0)
                 throw new BufferUnderflowException();
         }
 
         @Override
-        public void get(long position, byte[] b, int off, int len)
+        public void getArray(long position, byte[] array, int off, int length)
         {
-            if (len != 0)
+            if (length != 0)
                 throw new BufferUnderflowException();
         }
 
@@ -850,7 +862,10 @@ public interface RetainableByteBuffer extends Retainable
         /// [#readPosition()] or after [#capacity()]
         void writePosition(long position);
 
-        /// Fills this buffer with `length` number of the byte `0`, starting at the current write position.
+        /// Fills this buffer with `length` number of the byte `0`,
+        /// starting at the current write position.
+        ///
+        /// Advances the write position by `length`.
         ///
         /// @param length the number of bytes to pad
         void pad(long length);
@@ -860,11 +875,15 @@ public interface RetainableByteBuffer extends Retainable
 
         /// Writes a `byte` at the current write position.
         ///
+        /// Advances the write position by `1`.
+        ///
         /// @param b the `byte` to write
         /// @throws BufferOverflowException if there is no space left
         void put(byte b);
 
         /// Writes a `byte` at the specified write position.
+        ///
+        /// Does not advance the write position.
         ///
         /// @param position the write position
         /// @param b the `byte` to write
@@ -873,11 +892,15 @@ public interface RetainableByteBuffer extends Retainable
 
         /// Writes a `short` at the current write position.
         ///
+        /// Advances the write position by `2`.
+        ///
         /// @param s the `short` to write
         /// @throws BufferOverflowException if there is no space left
         void putShort(short s);
 
         /// Writes a `short` at the specified write position.
+        ///
+        /// Does not advance the write position.
         ///
         /// @param position the write position
         /// @param s the `short` to write
@@ -886,11 +909,15 @@ public interface RetainableByteBuffer extends Retainable
 
         /// Writes an `int` at the current write position.
         ///
+        /// Advances the write position by `4`.
+        ///
         /// @param i the `int` to write
         /// @throws BufferOverflowException if there is no space left
         void putInt(int i);
 
         /// Writes an `int` at the specified write position.
+        ///
+        /// Does not advance the write position.
         ///
         /// @param position the write position
         /// @param i the `int` to write
@@ -899,11 +926,15 @@ public interface RetainableByteBuffer extends Retainable
 
         /// Writes a `long` at the current write position.
         ///
+        /// Advances the write position by `8`.
+        ///
         /// @param l the `long` to write
         /// @throws BufferOverflowException if there is no space left
         void putLong(long l);
 
         /// Writes a `long` at the specified write position.
+        ///
+        /// Does not advance the write position.
         ///
         /// @param position the write position
         /// @param l the `long` to write
@@ -912,32 +943,73 @@ public interface RetainableByteBuffer extends Retainable
 
         /// Writes the given byte array at the current write position.
         ///
-        /// @param bytes the byte array to write
+        /// Advances the write position by the array length.
+        ///
+        /// @param array the byte array to write
         /// @throws BufferOverflowException if there is no space left
-        default void put(byte[] bytes)
+        default void put(byte[] array)
         {
-            put(bytes, 0, bytes.length);
+            put(array, 0, array.length);
         }
+
+        /// Writes the given byte array at the current write position.
+        ///
+        /// Advances the write position by `length`.
+        ///
+        /// @param array the byte array to write
+        /// @param offset the offset within the byte array of the first byte to be read
+        /// @param length the number of array to be read from the byte array
+        /// @throws BufferOverflowException if there is no space left
+        void put(byte[] array, int offset, int length);
 
         /// Writes the given byte array at the specified write position.
         ///
-        /// @param bytes the byte array to write
+        /// Does not advance the write position.
+        ///
+        /// @param position the write position
+        /// @param array the byte array to write
         /// @param offset the offset within the byte array of the first byte to be read
-        /// @param length the number of bytes to be read from the byte array
+        /// @param length the number of array to be read from the byte array
         /// @throws BufferOverflowException if there is no space left
-        void put(byte[] bytes, int offset, int length);
+        void put(long position, byte[] array, int offset, int length);
 
         /// Writes the given [ByteBuffer] at the current write position.
+        /// The [ByteBuffer] parameter is consumed.
+        ///
+        /// Advances the write position by the [ByteBuffer] remaining bytes.
         ///
         /// @param byteBuffer the [ByteBuffer] to write
         /// @throws BufferOverflowException if there is no space left
         void put(ByteBuffer byteBuffer);
 
+        /// Writes the given [ByteBuffer] at the specified write position.
+        /// The [ByteBuffer] parameter is consumed.
+        ///
+        /// Does not advance the write position.
+        ///
+        /// @param position the write position
+        /// @param byteBuffer the [ByteBuffer] to write
+        /// @throws BufferOverflowException if there is no space left
+        void put(long position, ByteBuffer byteBuffer);
+
         /// Writes the given [RetainableByteBuffer] at the current write position.
+        /// The [RetainableByteBuffer] parameter is consumed.
+        ///
+        /// Advances the write position by the [RetainableByteBuffer] remaining bytes.
         ///
         /// @param buffer the [RetainableByteBuffer] to write
         /// @throws BufferOverflowException if there is no space left
         void put(RetainableByteBuffer buffer);
+
+        /// Writes the given [RetainableByteBuffer] at the specified write position.
+        /// The [RetainableByteBuffer] parameter is consumed.
+        ///
+        /// Does not advance the write position.
+        ///
+        /// @param position the write position
+        /// @param buffer the [RetainableByteBuffer] to write
+        /// @throws BufferOverflowException if there is no space left
+        void put(long position, RetainableByteBuffer buffer);
 
         /// Writes the given [String] at the current write position.
         ///
@@ -951,22 +1023,22 @@ public interface RetainableByteBuffer extends Retainable
 
         /// Copies the given byte array into this buffer.
         ///
-        /// @param bytes the byte array to copy
-        /// @return the number of copied bytes
+        /// @param array the byte array to copy
+        /// @return the number of copied array
         /// @throws BufferOverflowException if there is no space left
-        default long append(byte[] bytes)
+        default long append(byte[] array)
         {
-            return append(bytes, 0, bytes.length);
+            return append(array, 0, array.length);
         }
 
         /// Copies the given byte array into this buffer.
         ///
-        /// @param bytes the byte array to copy
+        /// @param array the byte array to copy
         /// @param offset the offset within the byte array of the first byte to copy
-        /// @param length the number of bytes to copy
-        /// @return the number of copied bytes
+        /// @param length the number of array to copy
+        /// @return the number of copied array
         /// @throws BufferOverflowException if there is no space left
-        long append(byte[] bytes, int offset, int length);
+        long append(byte[] array, int offset, int length);
 
         /// Copies the given [ByteBuffer] into this buffer.
         ///
@@ -976,6 +1048,7 @@ public interface RetainableByteBuffer extends Retainable
         /// Differently from [#put(ByteBuffer)], this method does not throw
         /// when not all the `n` bytes can be copied, but rather copies
         /// as many bytes as possible and returns the number of copied bytes.
+        /// The [ByteBuffer] parameter is consumed by `n` bytes.
         ///
         /// @param byteBuffer the [ByteBuffer] to copy
         /// @return the number of copied bytes
@@ -989,6 +1062,7 @@ public interface RetainableByteBuffer extends Retainable
         /// Differently from [#put(RetainableByteBuffer)], this method does not throw
         /// when not all the `n` bytes can be copied, but rather copies
         /// as many bytes as possible and returns the number of copied bytes.
+        /// The [RetainableByteBuffer] parameter is consumed by `n` bytes.
         ///
         /// @param buffer the [RetainableByteBuffer] to copy
         /// @return the number of copied bytes
@@ -1117,7 +1191,14 @@ public interface RetainableByteBuffer extends Retainable
             }
 
             @Override
-            public void put(byte[] bytes, int offset, int length)
+            public void put(byte[] array, int offset, int length)
+            {
+                if (length != 0)
+                    throw new BufferOverflowException();
+            }
+
+            @Override
+            public void put(long position, byte[] array, int offset, int length)
             {
                 if (length != 0)
                     throw new BufferOverflowException();
@@ -1131,6 +1212,13 @@ public interface RetainableByteBuffer extends Retainable
             }
 
             @Override
+            public void put(long position, ByteBuffer byteBuffer)
+            {
+                if (byteBuffer.hasRemaining())
+                    throw new BufferOverflowException();
+            }
+
+            @Override
             public void put(RetainableByteBuffer buffer)
             {
                 if (buffer.hasRemaining())
@@ -1138,7 +1226,14 @@ public interface RetainableByteBuffer extends Retainable
             }
 
             @Override
-            public long append(byte[] bytes, int offset, int length)
+            public void put(long position, RetainableByteBuffer buffer)
+            {
+                if (buffer.hasRemaining())
+                    throw new BufferOverflowException();
+            }
+
+            @Override
+            public long append(byte[] array, int offset, int length)
             {
                 return 0;
             }

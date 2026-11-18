@@ -162,7 +162,7 @@ public class ParamsContentParser extends ContentParser
                     nameBytes = new byte[nameLength];
                     if (buffer.remaining() >= nameLength)
                     {
-                        buffer.get(nameBytes);
+                        buffer.getArray(nameBytes);
                         state = State.VALUE;
                         length -= nameLength;
                     }
@@ -186,7 +186,7 @@ public class ParamsContentParser extends ContentParser
                     valueBytes = new byte[valueLength];
                     if (buffer.remaining() >= valueLength)
                     {
-                        buffer.get(valueBytes);
+                        buffer.getArray(valueBytes);
                         state = State.PARAM;
                         length -= valueLength;
                     }

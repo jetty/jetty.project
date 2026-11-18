@@ -329,7 +329,7 @@ public class SingleMutableBufferTest
         assertEquals(4, b.getInt());
         assertEquals(8, b.getLong());
         byte[] bytes = new byte[3];
-        b.get(bytes);
+        b.getArray(bytes);
         assertEquals((byte)1, bytes[0]);
         assertEquals((byte)2, bytes[1]);
         assertEquals((byte)3, bytes[2]);

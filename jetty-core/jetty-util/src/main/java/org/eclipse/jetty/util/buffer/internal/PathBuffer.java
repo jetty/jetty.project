@@ -251,20 +251,20 @@ public class PathBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public void get(byte[] b, int off, int len)
+    public void getArray(byte[] array, int off, int length)
     {
-        try (RetainableByteBuffer buffer = getBytesAt(position, false, len))
+        try (RetainableByteBuffer buffer = getBytesAt(position, false, length))
         {
-            buffer.get(b, off, len);
+            buffer.getArray(array, off, length);
         }
     }
 
     @Override
-    public void get(long position, byte[] b, int off, int len)
+    public void getArray(long position, byte[] array, int off, int length)
     {
-        try (RetainableByteBuffer buffer = getBytesAt(position, true, len))
+        try (RetainableByteBuffer buffer = getBytesAt(position, true, length))
         {
-            buffer.get(b, off, len);
+            buffer.getArray(array, off, length);
         }
     }
 

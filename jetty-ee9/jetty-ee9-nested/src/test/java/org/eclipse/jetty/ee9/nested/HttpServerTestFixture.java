@@ -174,7 +174,7 @@ public class HttpServerTestFixture
                         try (RetainableByteBuffer b = c.acquire())
                         {
                             int r = Math.toIntExact(c.remaining());
-                            b.get(content, offset, r);
+                            b.getArray(content, offset, r);
                             offset += r;
                         }
                     }

@@ -248,7 +248,7 @@ public class HeadersGenerateParseTest
         try (RetainableByteBuffer buffer = accumulator.take())
         {
             byte[] bytes = new byte[(int)buffer.remaining()];
-            buffer.get(bytes);
+            buffer.getArray(bytes);
             return bytes;
         }
     }

@@ -474,27 +474,27 @@ public class MultiBufferTest
 
         assertEquals(0, acc.readPosition());
         assertEquals(32, acc.remaining());
-        acc.get(bytes);
+        acc.getArray(bytes);
         assertArrayEquals(new byte[]{0, 0, 0, 0, 0, 0, 0, 1}, bytes);
 
         assertEquals(8, acc.readPosition());
         assertEquals(24, acc.remaining());
-        acc.get(bytes);
+        acc.getArray(bytes);
         assertArrayEquals(new byte[]{0, 0, 0, 0, 0, 0, 0, 2}, bytes);
 
         assertEquals(16, acc.readPosition());
         assertEquals(16, acc.remaining());
-        acc.get(bytes);
+        acc.getArray(bytes);
         assertArrayEquals(new byte[]{0, 0, 0, 0, 0, 0, 0, 3}, bytes);
 
         assertEquals(24, acc.readPosition());
         assertEquals(8, acc.remaining());
-        acc.get(bytes);
+        acc.getArray(bytes);
         assertArrayEquals(new byte[]{0, 0, 0, 0, 0, 0, 0, 4}, bytes);
 
         assertEquals(32, acc.readPosition());
         assertEquals(0, acc.remaining());
-        assertThrows(BufferUnderflowException.class, () -> acc.get(bytes));
+        assertThrows(BufferUnderflowException.class, () -> acc.getArray(bytes));
     }
 
     @Test
@@ -562,12 +562,12 @@ public class MultiBufferTest
         {
             assertEquals(0, acc.readPosition());
             assertEquals(8, acc.remaining());
-            acc.get(bytes);
+            acc.getArray(bytes);
             assertArrayEquals(expected, bytes);
 
             assertEquals(8, acc.readPosition());
             assertEquals(0, acc.remaining());
-            assertThrows(BufferUnderflowException.class, () -> acc.get(bytes));
+            assertThrows(BufferUnderflowException.class, () -> acc.getArray(bytes));
         }
     }
 
@@ -590,7 +590,7 @@ public class MultiBufferTest
         assertEquals(0, acc.readPosition());
         assertEquals(7, acc.remaining());
         byte[] bytes = new byte[8];
-        assertThrows(BufferUnderflowException.class, () -> acc.get(bytes));
+        assertThrows(BufferUnderflowException.class, () -> acc.getArray(bytes));
 
         assertEquals(1, acc.getInt());
         assertEquals(2, acc.get());
@@ -1198,32 +1198,32 @@ public class MultiBufferTest
 
         // Entirely within the first buffer.
         byte[] bytes = new byte[2];
-        acc.get(1, bytes, 0, 2);
+        acc.getArray(1, bytes, 0, 2);
         assertArrayEquals(new byte[]{2, 3}, bytes);
 
         // Spanning the first two buffers.
         bytes = new byte[3];
-        acc.get(1, bytes, 0, 3);
+        acc.getArray(1, bytes, 0, 3);
         assertArrayEquals(new byte[]{2, 3, 4}, bytes);
 
         // Spanning all three buffers, starting and ending mid-buffer.
         bytes = new byte[5];
-        acc.get(2, bytes, 0, 5);
+        acc.getArray(2, bytes, 0, 5);
         assertArrayEquals(new byte[]{3, 4, 5, 6, 7}, bytes);
 
         // The whole content.
         bytes = new byte[8];
-        acc.get(0, bytes, 0, 8);
+        acc.getArray(0, bytes, 0, 8);
         assertArrayEquals(new byte[]{1, 2, 3, 4, 5, 6, 7, 8}, bytes);
 
         // Starting exactly on a buffer boundary.
         bytes = new byte[4];
-        acc.get(4, bytes, 0, 4);
+        acc.getArray(4, bytes, 0, 4);
         assertArrayEquals(new byte[]{5, 6, 7, 8}, bytes);
 
         // Honours the destination offset and leaves the rest of the array alone.
         bytes = new byte[6];
-        acc.get(3, bytes, 2, 3);
+        acc.getArray(3, bytes, 2, 3);
         assertArrayEquals(new byte[]{0, 0, 4, 5, 6, 0}, bytes);
 
         // Absolute reads do not consume.
@@ -1232,14 +1232,14 @@ public class MultiBufferTest
 
         // Zero length is a no-op, even past the end.
         bytes = new byte[1];
-        acc.get(8, bytes, 0, 0);
+        acc.getArray(8, bytes, 0, 0);
         assertArrayEquals(new byte[]{0}, bytes);
 
         // Reading past the end underflows without touching the destination.
         byte[] target = new byte[4];
-        assertThrows(BufferUnderflowException.class, () -> acc.get(5, target, 0, 4));
+        assertThrows(BufferUnderflowException.class, () -> acc.getArray(5, target, 0, 4));
         assertArrayEquals(new byte[]{0, 0, 0, 0}, target);
-        assertThrows(BufferUnderflowException.class, () -> acc.get(8, target, 0, 1));
+        assertThrows(BufferUnderflowException.class, () -> acc.getArray(8, target, 0, 1));
 
         acc.release();
     }

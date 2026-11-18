@@ -1366,7 +1366,7 @@ public class HttpOutputTest
                                     break;
                                 }
 
-                                _content.get(_arrayBuffer, 0, len);
+                                _content.getArray(_arrayBuffer, 0, len);
                                 if (len == 1)
                                     out.write(_arrayBuffer[0]);
                                 else
@@ -1390,7 +1390,7 @@ public class HttpOutputTest
                     int len = Math.toIntExact(_content.remaining());
                     if (len > _arrayBuffer.length)
                         len = _arrayBuffer.length;
-                    _content.get(_arrayBuffer, 0, len);
+                    _content.getArray(_arrayBuffer, 0, len);
                     if (len == 1)
                         out.write(_arrayBuffer[0]);
                     else

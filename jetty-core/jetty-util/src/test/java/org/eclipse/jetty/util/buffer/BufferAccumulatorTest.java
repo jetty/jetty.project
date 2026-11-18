@@ -405,7 +405,7 @@ public class BufferAccumulatorTest
         {
             assertEquals(9, taken.remaining());
             byte[] bytes = new byte[5];
-            taken.get(bytes);
+            taken.getArray(bytes);
             assertEquals("01234", new String(bytes, UTF_8));
             assertEquals(4, taken.remaining());
             assertEquals('5', taken.get());

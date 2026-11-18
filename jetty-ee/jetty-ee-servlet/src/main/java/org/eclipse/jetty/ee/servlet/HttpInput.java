@@ -92,7 +92,7 @@ public class HttpInput extends ServletInputStream
         int l = Math.toIntExact(Math.min(chunk.remaining(), length));
         try (RetainableByteBuffer buffer = chunk.acquire())
         {
-            buffer.get(bytes, offset, l);
+            buffer.getArray(bytes, offset, l);
             _contentConsumed.add(l);
             return l;
         }

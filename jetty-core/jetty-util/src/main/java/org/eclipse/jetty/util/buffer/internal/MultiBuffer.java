@@ -320,7 +320,7 @@ public class MultiBuffer implements RetainableByteBuffer
     }
 
     @Override
-    public void get(byte[] bytes, int offset, int length)
+    public void getArray(byte[] array, int offset, int length)
     {
         if (length > remaining())
             throw new BufferUnderflowException();
@@ -329,14 +329,14 @@ public class MultiBuffer implements RetainableByteBuffer
         {
             RetainableByteBuffer buffer = current();
             int l = (int)Math.min(length, buffer.remaining());
-            buffer.get(bytes, offset, l);
+            buffer.getArray(array, offset, l);
             offset += l;
             length -= l;
         }
     }
 
     @Override
-    public void get(long position, byte[] bytes, int offset, int length)
+    public void getArray(long position, byte[] array, int offset, int length)
     {
         if (position + length > capacity())
             throw new BufferUnderflowException();
@@ -350,7 +350,7 @@ public class MultiBuffer implements RetainableByteBuffer
             if (position < capacity)
             {
                 int l = (int)Math.min(length, capacity - position);
-                buffer.get(position, bytes, offset, l);
+                buffer.getArray(position, array, offset, l);
                 offset += l;
                 length -= l;
                 if (length == 0)

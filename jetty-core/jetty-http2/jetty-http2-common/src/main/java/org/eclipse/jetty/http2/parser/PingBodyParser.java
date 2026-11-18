@@ -59,7 +59,7 @@ public class PingBodyParser extends BodyParser
                     payload = new byte[8];
                     if (buffer.remaining() >= 8)
                     {
-                        buffer.get(payload);
+                        buffer.getArray(payload);
                         return onPing(buffer, payload);
                     }
                     else

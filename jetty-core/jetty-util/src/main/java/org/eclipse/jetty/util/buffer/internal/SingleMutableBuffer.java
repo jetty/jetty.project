@@ -208,15 +208,15 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public void get(byte[] b, int off, int len)
+    public void getArray(byte[] array, int off, int length)
     {
-        flipToRead().get(b, off, len);
+        flipToRead().get(array, off, length);
     }
 
     @Override
-    public void get(long position, byte[] b, int off, int len)
+    public void getArray(long position, byte[] array, int off, int length)
     {
-        flipToRead().get(Math.toIntExact(position), b, off, len);
+        flipToRead().get(Math.toIntExact(position), array, off, length);
     }
 
     @Override
@@ -281,15 +281,29 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public void put(byte[] bytes, int offset, int length)
+    public void put(byte[] array, int offset, int length)
     {
-        flipToWrite().put(bytes, offset, length);
+        flipToWrite().put(array, offset, length);
+    }
+
+    @Override
+    public void put(long position, byte[] array, int offset, int length)
+    {
+        flipToWrite().put(Math.toIntExact(position), array, offset, length);
     }
 
     @Override
     public void put(ByteBuffer byteBuffer)
     {
         flipToWrite().put(byteBuffer);
+    }
+
+    @Override
+    public void put(long position, ByteBuffer byteBuffer)
+    {
+        flipToWrite().put(Math.toIntExact(position), byteBuffer, byteBuffer.position(), byteBuffer.remaining());
+        // Consume the ByteBuffer.
+        byteBuffer.position(byteBuffer.limit());
     }
 
     @Override
@@ -315,11 +329,35 @@ public class SingleMutableBuffer implements RetainableByteBuffer.Mutable
     }
 
     @Override
-    public long append(byte[] bytes, int offset, int length)
+    public void put(long position, RetainableByteBuffer buffer)
+    {
+        if (buffer instanceof SingleMutableBuffer smb)
+        {
+            put(position, smb.flipToRead());
+        }
+        else
+        {
+            // Enforce all-or-nothing copy in case the
+            // given buffer wraps multiple ByteBuffers.
+            if (buffer.remaining() > space())
+                throw new BufferOverflowException();
+            int[] p = {Math.toIntExact(position)};
+            buffer.read(src ->
+            {
+                int remaining = src.remaining();
+                flipToWrite().put(p[0], src, src.position(), remaining);
+                p[0] = Math.addExact(p[0], remaining);
+                return remaining;
+            });
+        }
+    }
+
+    @Override
+    public long append(byte[] array, int offset, int length)
     {
         long space = space();
         long l = Math.min(length, space);
-        flipToWrite().put(bytes, offset, (int)l);
+        flipToWrite().put(array, offset, (int)l);
         return l;
     }
 

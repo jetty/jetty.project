@@ -124,7 +124,7 @@ public class PathBufferTest
         try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(testResourcePathFile, ByteBufferPool.SIZED_NON_POOLING))
         {
             byte[] bytes = new byte[Math.toIntExact(buffer.remaining())];
-            buffer.get(bytes);
+            buffer.getArray(bytes);
             assertEquals(0L, buffer.remaining());
             assertEquals(20L, buffer.readPosition());
             assertEquals("This is a text file\n", new String(bytes));
@@ -138,7 +138,7 @@ public class PathBufferTest
         try (RetainableByteBuffer buffer = RetainableByteBuffer.wrap(testResourcePathFile, ByteBufferPool.SIZED_NON_POOLING))
         {
             byte[] bytes = new byte[Math.toIntExact(buffer.remaining())];
-            buffer.get(bytes);
+            buffer.getArray(bytes);
             assertEquals(0L, buffer.remaining());
             assertEquals("This is a text file\n", new String(bytes));
 
@@ -162,7 +162,7 @@ public class PathBufferTest
                 assertEquals(0L, slice.readPosition());
                 assertEquals(10L, slice.remaining());
                 byte[] bytes = new byte[10];
-                slice.get(bytes);
+                slice.getArray(bytes);
                 assertEquals("is a text ", new String(bytes));
             }
         }

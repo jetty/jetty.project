@@ -85,7 +85,7 @@ public class FrameFloodTest
         RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(1024, false);
         encoder.encode(buffer, metadata);
         byte[] payload = new byte[(int)buffer.remaining()];
-        buffer.get(payload);
+        buffer.getArray(payload);
         testFrameFlood(null, frameFrom(payload.length, FrameType.HEADERS.getType(), Flags.END_HEADERS, 13, payload));
     }
 

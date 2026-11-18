@@ -599,9 +599,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         case INET ->
                         {
                             byte[] addr = new byte[4];
-                            _buffer.get(addr);
+                            _buffer.getArray(addr);
                             InetAddress srcAddr = Inet4Address.getByAddress(addr);
-                            _buffer.get(addr);
+                            _buffer.getArray(addr);
                             InetAddress dstAddr = Inet4Address.getByAddress(addr);
                             int srcPort = _buffer.getShortAsInt();
                             int dstPort = _buffer.getShortAsInt();
@@ -611,9 +611,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         case INET6 ->
                         {
                             byte[] addr = new byte[16];
-                            _buffer.get(addr);
+                            _buffer.getArray(addr);
                             InetAddress srcAddr = Inet6Address.getByAddress(addr);
-                            _buffer.get(addr);
+                            _buffer.getArray(addr);
                             InetAddress dstAddr = Inet6Address.getByAddress(addr);
                             int srcPort = _buffer.getShortAsInt();
                             int dstPort = _buffer.getShortAsInt();
@@ -623,9 +623,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         case UNIX ->
                         {
                             byte[] addr = new byte[108];
-                            _buffer.get(addr);
+                            _buffer.getArray(addr);
                             String src = toUnixDomainPath(addr);
-                            _buffer.get(addr);
+                            _buffer.getArray(addr);
                             String dst = toUnixDomainPath(addr);
                             local = UnixDomainSocketAddress.of(dst);
                             remote = UnixDomainSocketAddress.of(src);
@@ -643,7 +643,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                         int type = _buffer.getByteAsInt();
                         int length = _buffer.getShortAsInt();
                         byte[] value = new byte[length];
-                        _buffer.get(value);
+                        _buffer.getArray(value);
 
                         if (LOG.isDebugEnabled())
                             LOG.debug(String.format("Proxy v2 T=%x L=%d V=%s for %s", type, length, StringUtil.toHexString(value), this));

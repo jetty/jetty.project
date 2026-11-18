@@ -70,7 +70,7 @@ public class ContentSourceInputStream extends InputStream
                 try (RetainableByteBuffer buffer = chunk.acquire())
                 {
                     int length = (int)Math.min(buffer.remaining(), len);
-                    buffer.get(bytes, offset, length);
+                    buffer.getArray(bytes, offset, length);
                     if (!buffer.hasRemaining())
                         chunk = Content.Chunk.releaseAndNext(chunk);
                     return length;

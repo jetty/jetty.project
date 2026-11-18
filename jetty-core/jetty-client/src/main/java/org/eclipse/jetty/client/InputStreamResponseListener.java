@@ -342,7 +342,7 @@ public class InputStreamResponseListener implements Listener, AutoCloseable
                     try (RetainableByteBuffer buffer = chunkCallback.chunk().acquire())
                     {
                         result = Math.min((int)buffer.remaining(), length);
-                        buffer.get(bytes, offset, result);
+                        buffer.getArray(bytes, offset, result);
                         if (!buffer.hasRemaining())
                             chunkCallbacks.poll();
                         else

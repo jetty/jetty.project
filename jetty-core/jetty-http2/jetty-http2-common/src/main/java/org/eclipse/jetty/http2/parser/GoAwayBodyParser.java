@@ -124,7 +124,7 @@ public class GoAwayBodyParser extends BodyParser
                     payload = new byte[length];
                     if (buffer.remaining() >= length)
                     {
-                        buffer.get(payload);
+                        buffer.getArray(payload);
                         return onGoAway(lastStreamId, error, payload);
                     }
                     else

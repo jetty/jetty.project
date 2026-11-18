@@ -263,7 +263,7 @@ public class HttpClientDemandTest extends AbstractTest
             int length = (int)chunk.remaining();
             try (RetainableByteBuffer buffer = chunk.acquire())
             {
-                buffer.get(received, offset.getAndAdd(length), length);
+                buffer.getArray(received, offset.getAndAdd(length), length);
             }
         });
         assertArrayEquals(content, received);
@@ -474,7 +474,7 @@ public class HttpClientDemandTest extends AbstractTest
                 try (RetainableByteBuffer buffer = chunk.acquire())
                 {
                     int length = (int)chunk.remaining();
-                    buffer.get(bytes, offset.getAndAdd(length), length);
+                    buffer.getArray(bytes, offset.getAndAdd(length), length);
                 }
                 if (demand)
                     new Thread(demander).start();
@@ -540,7 +540,7 @@ public class HttpClientDemandTest extends AbstractTest
                         try (RetainableByteBuffer buffer = chunk.acquire())
                         {
                             int length = (int)chunk.remaining();
-                            buffer.get(bytes, offset.getAndAdd(length), length);
+                            buffer.getArray(bytes, offset.getAndAdd(length), length);
                         }
                     }
                     demander.run();

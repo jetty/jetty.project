@@ -182,7 +182,7 @@ public class Parser
                     {
                         if (buffer.remaining() >= 4)
                         {
-                            buffer.get(mask, 0, 4);
+                            buffer.getArray(mask, 0, 4);
                             if (payloadLength == 0)
                             {
                                 state = State.START;

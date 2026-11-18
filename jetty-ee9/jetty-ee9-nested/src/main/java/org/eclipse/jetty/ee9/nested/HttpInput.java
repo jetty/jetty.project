@@ -141,7 +141,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         length = Math.min(content.remaining(), length);
         try (RetainableByteBuffer buffer = content.acquire())
         {
-            buffer.get(bytes, offset, length);
+            buffer.getArray(bytes, offset, length);
             _contentConsumed.add(length);
             return length;
         }

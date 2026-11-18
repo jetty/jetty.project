@@ -138,7 +138,7 @@ public class DumpHandler extends Handler.Abstract
                                     break;
                                 try (RetainableByteBuffer buffer = chunk.acquire())
                                 {
-                                    buffer.get(bytes, 0, l);
+                                    buffer.getArray(bytes, 0, l);
                                     read.append(bytes, 0, l);
                                     len -= l;
                                 }

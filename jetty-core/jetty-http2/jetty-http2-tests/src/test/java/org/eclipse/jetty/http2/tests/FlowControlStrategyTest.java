@@ -628,7 +628,7 @@ public class FlowControlStrategyTest
                     int remaining = (int)chunk.remaining();
                     try (RetainableByteBuffer buffer = chunk.acquire())
                     {
-                        buffer.get(bytes, received, remaining);
+                        buffer.getArray(bytes, received, remaining);
                         this.received += remaining;
                         if (chunk.isLast())
                             latch.countDown();

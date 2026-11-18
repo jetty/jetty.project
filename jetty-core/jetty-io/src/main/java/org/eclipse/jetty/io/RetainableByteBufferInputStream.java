@@ -59,7 +59,7 @@ public class RetainableByteBufferInputStream extends InputStream
             return -1;
 
         len = Math.min(len, available());
-        buf.get(bytes, off, len);
+        buf.getArray(bytes, off, len);
         return len;
     }
 

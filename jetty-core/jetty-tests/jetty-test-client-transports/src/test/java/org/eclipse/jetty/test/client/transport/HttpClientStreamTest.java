@@ -1518,7 +1518,7 @@ public class HttpClientStreamTest extends AbstractTest
                 try (RetainableByteBuffer buffer = c.acquire())
                 {
                     int length = (int)buffer.remaining();
-                    buffer.get(bytes, offset.getAndAdd(length), length);
+                    buffer.getArray(bytes, offset.getAndAdd(length), length);
                 }
             }
         }
