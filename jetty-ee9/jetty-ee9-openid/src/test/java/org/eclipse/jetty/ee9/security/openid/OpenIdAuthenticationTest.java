@@ -75,6 +75,8 @@ public class OpenIdAuthenticationTest
     public void setup(LoginService loginService, boolean logoutWhenIdTokenIsExpired) throws Exception
     {
         openIdProvider = new OpenIdProvider(CLIENT_ID, CLIENT_SECRET);
+        // PKCE is on by default, so every login in these tests must carry a challenge and its verifier.
+        openIdProvider.setRequirePkce(true);
         openIdProvider.start();
 
         server = new Server();
