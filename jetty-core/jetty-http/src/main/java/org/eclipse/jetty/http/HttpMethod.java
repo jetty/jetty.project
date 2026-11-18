@@ -52,6 +52,7 @@ public enum HttpMethod
     PROPFIND(Type.SAFE),
     PROPPATCH(Type.IDEMPOTENT),
     PUT(Type.IDEMPOTENT),
+    QUERY(Type.SAFE),
     REBIND(Type.IDEMPOTENT),
     REPORT(Type.SAFE),
     SEARCH(Type.SAFE),

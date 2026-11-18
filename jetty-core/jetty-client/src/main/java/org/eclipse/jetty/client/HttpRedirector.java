@@ -263,7 +263,7 @@ public class HttpRedirector
         {
             case HttpStatus.MOVED_PERMANENTLY_301 ->
             {
-                if (HttpMethod.GET.is(method) || HttpMethod.HEAD.is(method) || HttpMethod.PUT.is(method))
+                if (HttpMethod.GET.is(method) || HttpMethod.HEAD.is(method) || HttpMethod.PUT.is(method) || HttpMethod.QUERY.is(method))
                     yield method;
                 else if (HttpMethod.POST.is(method))
                     yield HttpMethod.GET.asString();
@@ -271,7 +271,7 @@ public class HttpRedirector
             }
             case HttpStatus.MOVED_TEMPORARILY_302 ->
             {
-                if (HttpMethod.HEAD.is(method) || HttpMethod.PUT.is(method))
+                if (HttpMethod.HEAD.is(method) || HttpMethod.PUT.is(method) || HttpMethod.QUERY.is(method))
                     yield method;
                 else
                     yield HttpMethod.GET.asString();

@@ -343,7 +343,7 @@ public interface Response extends Content.Sink
         }
 
         if (code <= 0)
-            code = HttpMethod.GET.is(request.getMethod()) || request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
+            code = HttpMethod.GET.is(request.getMethod()) || HttpMethod.QUERY.is(request.getMethod()) || request.getConnectionMetaData().getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
             ? HttpStatus.MOVED_TEMPORARILY_302
             : HttpStatus.SEE_OTHER_303;
         if (!HttpStatus.isRedirectionWithLocation(code))

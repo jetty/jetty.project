@@ -917,6 +917,25 @@ public class ErrorHandlerTest
         assertThat(response.getContent(), containsString("/ok/badMessage Error 444"));
     }
 
+    @Test
+    public void testQueryErrorPage() throws Exception
+    {
+        server.start();
+
+        String rawResponse = connector.getResponse("""
+            QUERY /notfound HTTP/1.1\r
+            Host: localhost\r
+            Connection: close\r
+            \r
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(404));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("HTTP ERROR 404 Not Found"));
+    }
+
     static class TestException extends RuntimeException implements QuietException
     {
         public TestException(String message)
