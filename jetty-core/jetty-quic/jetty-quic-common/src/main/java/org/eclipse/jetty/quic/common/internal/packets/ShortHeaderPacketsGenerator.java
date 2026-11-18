@@ -13,11 +13,11 @@
 
 package org.eclipse.jetty.quic.common.internal.packets;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.packets.OneRTTPacket;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.ShortHeaderPacket;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ShortHeaderPacketsGenerator
 {
@@ -28,8 +28,8 @@ public class ShortHeaderPacketsGenerator
         this.generator = new OneRTTPacketGenerator(packetNumbers, encrypter);
     }
 
-    public void generate(RetainableByteBuffer.Mutable packetAccumulator, ShortHeaderPacket packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
+    public void generate(ShortHeaderPacket packet, RetainableByteBuffer framesBuffer, RetainableByteBuffer.Mutable packetBuffer) throws Exception
     {
-        generator.generate(packetAccumulator, (OneRTTPacket)packet, framesAccumulator);
+        generator.generate((OneRTTPacket)packet, framesBuffer, packetBuffer);
     }
 }

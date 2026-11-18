@@ -18,7 +18,6 @@ import java.util.List;
 
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.RateControl;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -50,6 +49,7 @@ import org.eclipse.jetty.tls.ClientHelloMessage;
 import org.eclipse.jetty.tls.FinishedMessage;
 import org.eclipse.jetty.tls.Message;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -198,9 +198,8 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
 
                 token = getQuicConfiguration().getTokenFactory().newRetryToken(getRemoteSocketAddress(), origDstConnectionId);
                 RetryPacket retryPacket = new RetryPacket(packet.quicVersion(), packet.sourceConnectionId(), getSourceConnectionId(), token, null);
-                RetainableByteBuffer.Mutable retryAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), false, -1, 0, 0);
-                generateRetryPacket(retryAccumulator, retryPacket);
-                byte[] integrity = getTLSEngine().createRetryIntegrity(retryAccumulator, origDstConnectionId);
+                RetainableByteBuffer retryPacketBuffer = generateRetryPacket(retryPacket);
+                byte[] integrity = getTLSEngine().createRetryIntegrity(retryPacketBuffer, origDstConnectionId);
                 retryPacketSent = true;
                 retryPacket = retryPacket.withIntegrity(integrity);
                 packet(retryPacket, Callback.NOOP);

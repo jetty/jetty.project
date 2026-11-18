@@ -1720,9 +1720,10 @@ public abstract class QuicSession extends AbstractSession
         }
     }
 
-    protected void generateRetryPacket(RetainableByteBuffer.Mutable retryAccumulator, RetryPacket retryPacket)
+    protected RetainableByteBuffer generateRetryPacket(RetryPacket retryPacket)
     {
-        retryPacketGenerator.generate(retryAccumulator, retryPacket);
+        retryPacketGenerator.generate(retryPacket, retryBuffer);
+        return retryBuffer;
     }
 
     public void retransmit(List<Packet.WithFrames> packets)

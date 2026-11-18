@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.quic.client.internal.tls;
 
-import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
@@ -23,7 +22,6 @@ import java.util.Locale;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.HKDFParameterSpec;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
 import org.eclipse.jetty.quic.common.ZeroRTTStore;
 import org.eclipse.jetty.quic.common.packets.PacketProtector;
@@ -62,6 +60,7 @@ import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -152,7 +151,7 @@ public class ClientTLSEngine extends TLSEngine
                         .findFirst()
                         .orElse(0L);
 
-                    int earlyData = earlyDataByteBuffer.remaining();
+                    long earlyData = earlyDataByteBuffer.remaining();
                     if (earlyData > 0 && earlyData <= earlyMaxData)
                     {
                         // Just add the presence of the early data extension.
@@ -611,14 +610,13 @@ public class ClientTLSEngine extends TLSEngine
         notifyHandshakeCompleted(null, failure);
     }
 
-    public boolean verifyRetryIntegrity(RetainableByteBuffer.Mutable retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
+    public boolean verifyRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId) throws Exception
     {
         // RFC-9001 #5.8: build a retry pseudo-packet.
         // The buffer contains up to the integrity bytes (16 bytes).
         byte[] expected = createRetryIntegrity(retryPacketBuffer, originalDestinationConnectionId, true);
         byte[] integrity = new byte[16];
-        ByteBuffer byteBuffer = retryPacketBuffer.getByteBuffer();
-        byteBuffer.get(integrity);
+        retryPacketBuffer.getArray(integrity);
         // Verify the integrity.
         return MessageDigest.isEqual(integrity, expected);
     }

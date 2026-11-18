@@ -19,14 +19,13 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.MaxDataFrame;
 import org.eclipse.jetty.quic.api.frames.StreamMaxDataFrame;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
+import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStream;
 import org.eclipse.jetty.quic.common.frames.FramesGenerator;
@@ -36,6 +35,9 @@ import org.eclipse.jetty.quic.common.packets.RetryPacket;
 import org.eclipse.jetty.quic.common.packets.VersionNegotiationPacket;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,8 +56,8 @@ public class QuicFlusher extends IteratingCallback
     private final QuicSession session;
     private final FramesGenerator framesGenerator;
     private final PacketsGenerator packetsGenerator;
-    private final RetainableByteBuffer.Mutable plaintextBuffer;
-    private final RetainableByteBuffer.Mutable encryptedBuffer;
+    private final BufferAccumulator framesAccumulator;
+    private final RetainableByteBuffer.Mutable packetBuffer;
     private long pacingDelayThreshold = TimeUnit.MILLISECONDS.toNanos(1);
     private Callback flusher;
 
@@ -65,9 +67,9 @@ public class QuicFlusher extends IteratingCallback
         ByteBufferPool byteBufferPool = session.getByteBufferPool();
         this.framesGenerator = new FramesGenerator(byteBufferPool);
         this.packetsGenerator = new PacketsGenerator(session.getPacketNumbers(), session.getTLSEngine().getPacketProtector());
-        boolean direct = session.getQuicConfiguration().isUseOutputDirectByteBuffers();
-        this.plaintextBuffer = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, direct, -1, 0, 0);
-        this.encryptedBuffer = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, direct, -1, 0, 0);
+        this.framesAccumulator = new BufferAccumulator();
+        QuicConfiguration quicConfig = session.getQuicConfiguration();
+        this.packetBuffer = byteBufferPool.acquire(quicConfig.getOutputBufferSize(), quicConfig.isUseOutputDirectByteBuffers());
     }
 
     public QuicSession getQuicSession()
@@ -85,14 +87,14 @@ public class QuicFlusher extends IteratingCallback
         return packetsGenerator;
     }
 
-    RetainableByteBuffer.Mutable getPlaintextBuffer()
+    BufferAccumulator getFramesAccumulator()
     {
-        return plaintextBuffer;
+        return framesAccumulator;
     }
 
-    RetainableByteBuffer.Mutable getEncryptedBuffer()
+    RetainableByteBuffer.Mutable getPacketBuffer()
     {
-        return encryptedBuffer;
+        return packetBuffer;
     }
 
     public long getPacingDelayThreshold()
@@ -307,8 +309,8 @@ public class QuicFlusher extends IteratingCallback
     @Override
     protected void onSuccess()
     {
-        encryptedBuffer.clear();
-        plaintextBuffer.clear();
+        packetBuffer.clear();
+        framesAccumulator.clear();
         flusher.succeeded();
         flusher = null;
     }
@@ -316,8 +318,8 @@ public class QuicFlusher extends IteratingCallback
     @Override
     protected void onCompleteFailure(Throwable cause)
     {
-        encryptedBuffer.release();
-        plaintextBuffer.release();
+        packetBuffer.release();
+        framesAccumulator.clear();
         flusher.failed(cause);
         flusher = null;
     }

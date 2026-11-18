@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.quic.common.internal.packets;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
-import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.packets.OneRTTPacket;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,32 +35,24 @@ public class OneRTTPacketGenerator
         this.encrypter = encrypter;
     }
 
-    public void generate(RetainableByteBuffer.Mutable packetAccumulator, OneRTTPacket packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
+    public void generate(OneRTTPacket packet, RetainableByteBuffer framesBuffer, RetainableByteBuffer.Mutable packetBuffer) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("generating {}", packet);
 
-        RetainableByteBuffer.Mutable headerAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
         int form = 0b01000000;
         int spin = packet.spin() ? 0b00100000 : 0b00000000;
         int keyPhase = packet.keyPhase() ? 0b00000100 : 0b00000000;
         long packetNumber = packet.packetNumber();
         EncodedPacketNumber encodedPacketNumber = packetNumbers.encode(EncryptionLevel.ONE_RTT, packetNumber);
-        int msb = form | spin | keyPhase | (encodedPacketNumber.length() - 1);
-        headerAccumulator.put((byte)msb);
+        int firstByte = form | spin | keyPhase | (encodedPacketNumber.length() - 1);
+        packetBuffer.put((byte)firstByte);
+        packetBuffer.put(packet.destinationConnectionId());
+        encodedPacketNumber.putTo(packetBuffer);
 
-        headerAccumulator.put(packet.destinationConnectionId());
-
-        encodedPacketNumber.putTo(headerAccumulator);
-
-        PacketBuffers packetBuffers = encrypter.encrypt(EncryptionLevel.ONE_RTT, packetNumber, headerAccumulator, framesAccumulator);
+        encrypter.encrypt(EncryptionLevel.ONE_RTT, packetNumber, framesBuffer, packetBuffer);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("encrypted {} {}", packet, packetBuffers);
-
-        headerAccumulator.release();
-
-        packetAccumulator.add(packetBuffers.header());
-        packetAccumulator.add(packetBuffers.payload());
+            LOG.debug("encrypted {} {}", packet, packetBuffer);
     }
 }

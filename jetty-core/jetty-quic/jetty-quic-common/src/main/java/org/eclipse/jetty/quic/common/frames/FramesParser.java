@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.quic.common.frames;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.PaddingFrame;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
@@ -44,6 +42,7 @@ import org.eclipse.jetty.quic.common.internal.frames.StreamsBlockedFrameParser;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class FramesParser
 {
@@ -90,8 +89,7 @@ public class FramesParser
 
     public Frame parse(RetainableByteBuffer buffer)
     {
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        while (byteBuffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
             switch (state)
             {
@@ -100,7 +98,7 @@ public class FramesParser
                     // Only peek the type byte, since FrameParsers
                     // for frames that may have multiple types such
                     // as ACK or STREAM need to know the exact value.
-                    type = byteBuffer.get(byteBuffer.position()) & 0xFF;
+                    type = buffer.getByteAsInt(buffer.readPosition());
                     state = State.FRAME_BODY;
                 }
                 case FRAME_BODY ->

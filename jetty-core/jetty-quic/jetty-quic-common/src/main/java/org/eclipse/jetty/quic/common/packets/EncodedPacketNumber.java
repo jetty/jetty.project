@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.quic.common.packets;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public record EncodedPacketNumber(int number, int length)
 {

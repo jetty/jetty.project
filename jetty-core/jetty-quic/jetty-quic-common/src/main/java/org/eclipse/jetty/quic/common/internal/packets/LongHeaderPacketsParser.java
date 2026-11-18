@@ -13,17 +13,16 @@
 
 package org.eclipse.jetty.quic.common.internal.packets;
 
-import java.nio.ByteBuffer;
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.packets.LongHeaderPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class LongHeaderPacketsParser
 {
@@ -41,13 +40,12 @@ public class LongHeaderPacketsParser
     {
         while (true)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int remaining = byteBuffer.remaining();
+            long remaining = buffer.remaining();
             if (remaining == 0)
                 return null;
 
-            int position = byteBuffer.position();
-            int version = byteBuffer.getInt(position + 1);
+            long position = buffer.readPosition();
+            int version = buffer.getInt(position + 1);
 
             if (version == 0)
                 return parseVersionNegotiationPacket(buffer);
@@ -57,8 +55,8 @@ public class LongHeaderPacketsParser
             if (quicVersion.reserved())
                 return Packet.DISCARD;
 
-            byte form = byteBuffer.get(position);
-            int type = (form & 0b00110000) >>> 4;
+            byte firstByte = buffer.get(position);
+            int type = (firstByte & 0b00110000) >>> 4;
             LongHeaderPacket.PacketType packetType = LongHeaderPacket.PacketType.from(type, quicVersion);
             Packet packet = parsers.get(packetType).parse(buffer);
             if (packet != null)

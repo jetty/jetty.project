@@ -13,34 +13,35 @@
 
 package org.eclipse.jetty.quic.common.tls.generator;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.TransportParametersGenerator;
 import org.eclipse.jetty.quic.common.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.tls.common.generator.ExtensionGenerator;
 import org.eclipse.jetty.tls.ext.Extension;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
-public class QuicTransportParametersExtensionGenerator implements ExtensionGenerator
+public class QuicTransportParametersExtensionGenerator extends ExtensionGenerator
 {
     private final TransportParametersGenerator generator = new TransportParametersGenerator();
 
-    @Override
-    public int type()
+    public QuicTransportParametersExtensionGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers)
     {
-        return QuicTransportParametersExtension.CODE;
+        super(byteBufferPool, useDirectBuffers, QuicTransportParametersExtension.CODE);
     }
 
     @Override
-    public int generate(RetainableByteBuffer.Mutable accumulator, Extension extension)
+    public int generate(BufferAccumulator accumulator, Extension extension)
     {
         return generate(accumulator, (QuicTransportParametersExtension)extension);
     }
 
-    private int generate(RetainableByteBuffer.Mutable accumulator, QuicTransportParametersExtension extension)
+    private int generate(BufferAccumulator accumulator, QuicTransportParametersExtension extension)
     {
-        accumulator.putShort((short)extension.code());
-        TransportParameters parameters = extension.transportParameters();
-        int totalLength = generator.generate(accumulator, parameters);
+        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(2, isUseDirectBuffers());
+        accumulator.addRetained(buffer);
+        buffer.putShort((short)extension.code());
+        int totalLength = generator.generate(buffer, extension.transportParameters());
         return 2 + totalLength;
     }
 }

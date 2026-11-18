@@ -42,7 +42,7 @@ public interface ExtensionParser
     /// @return the number of bytes consumed to decode a
     /// TLS extension, or a negative value if not enough
     /// bytes were available
-    int parse(RetainableByteBuffer buffer);
+    long parse(RetainableByteBuffer buffer);
 
     /// The listener to notify of a successfully parsed
     /// TLS [Extension].

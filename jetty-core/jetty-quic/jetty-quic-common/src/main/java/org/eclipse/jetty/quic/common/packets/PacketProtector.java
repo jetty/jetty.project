@@ -30,7 +30,6 @@ import javax.crypto.spec.IvParameterSpec;
 
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
-import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.internal.packets.QuicCrypto;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.tls.common.HKDF;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -268,16 +268,16 @@ public class PacketProtector implements Encrypter, Decrypter
     }
 
     @Override
-    public PacketBuffers encrypt(EncryptionLevel encryptionLevel, long packetNumber, RetainableByteBuffer header, RetainableByteBuffer.Mutable payload) throws Exception
+    public void encrypt(EncryptionLevel encryptionLevel, long packetNumber, RetainableByteBuffer framesBuffer, RetainableByteBuffer.Mutable packetBuffer) throws Exception
     {
         KeyManager keyManager = keyManagers.get(encryptionLevel);
         if (keyManager == null)
             throw new IllegalStateException("no KeyManager for encryption level " + encryptionLevel);
-        return keyManager.encrypt(packetNumber, header, payload);
+        keyManager.encrypt(packetNumber, framesBuffer, packetBuffer);
     }
 
     @Override
-    public PacketBuffers decryptLongHeaderPacket(EncryptionLevel encryptionLevel, RetainableByteBuffer encrypted) throws Exception
+    public RetainableByteBuffer decryptLongHeaderPacket(EncryptionLevel encryptionLevel, RetainableByteBuffer encrypted) throws Exception
     {
         // We might receive a Packet for an encryption level that has already been discarded.
         KeyManager keyManager = keyManagers.get(encryptionLevel);
@@ -287,7 +287,7 @@ public class PacketProtector implements Encrypter, Decrypter
     }
 
     @Override
-    public PacketBuffers decryptShortHeaderPacket(byte[] dstConnectionId, RetainableByteBuffer encrypted) throws Exception
+    public RetainableByteBuffer decryptShortHeaderPacket(byte[] dstConnectionId, RetainableByteBuffer encrypted) throws Exception
     {
         KeyManager keyManager = keyManagers.get(EncryptionLevel.ONE_RTT);
         if (keyManager == null)
@@ -325,17 +325,17 @@ public class PacketProtector implements Encrypter, Decrypter
             return input ? readKeys.traffic : writeKeys.traffic;
         }
 
-        public PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer.Mutable payload) throws Exception
+        private void encrypt(long packetNumber, RetainableByteBuffer framesBuffer, RetainableByteBuffer.Mutable packetBuffer) throws Exception
         {
-            return writeKeys.encrypt(packetNumber, header, payload);
+            writeKeys.encrypt(packetNumber, framesBuffer, packetBuffer);
         }
 
-        public PacketBuffers decryptLongHeaderPacket(RetainableByteBuffer encrypted) throws Exception
+        private RetainableByteBuffer decryptLongHeaderPacket(RetainableByteBuffer encrypted) throws Exception
         {
             return readKeys.decryptLongHeaderPacket(encrypted);
         }
 
-        public PacketBuffers decryptShortHeaderPacket(byte[] dstConnectionId, RetainableByteBuffer encrypted) throws Exception
+        private RetainableByteBuffer decryptShortHeaderPacket(byte[] dstConnectionId, RetainableByteBuffer encrypted) throws Exception
         {
             return readKeys.decryptShortHeaderPacket(dstConnectionId, encrypted);
         }
@@ -442,151 +442,168 @@ public class PacketProtector implements Encrypter, Decrypter
                 this.protection = protection;
             }
 
-            public PacketBuffers decryptLongHeaderPacket(RetainableByteBuffer encrypted) throws Exception
+            private RetainableByteBuffer decryptLongHeaderPacket(RetainableByteBuffer encrypted) throws Exception
             {
-                ByteBuffer byteBuffer = encrypted.getByteBuffer();
-
-                // To remove header protection, we need a sample of the payload.
-                // RFC 9001, 5.4.2: compute the offset of the sample.
-                int position = byteBuffer.position();
-
-                int type = (byteBuffer.get() & 0b00110000) >>> 4;
-                QuicVersion version = QuicVersion.from(byteBuffer.getInt());
-                LongHeaderPacket.PacketType packetType = LongHeaderPacket.PacketType.from(type, version);
-                int dstConnectionIdLength = byteBuffer.get() & 0xFF;
-                byteBuffer.position(byteBuffer.position() + dstConnectionIdLength);
-                int srcConnectionIdLength = byteBuffer.get() & 0xFF;
-                byteBuffer.position(byteBuffer.position() + srcConnectionIdLength);
-                if (packetType == LongHeaderPacket.PacketType.INITIAL)
+                try (RetainableByteBuffer.Mutable decrypted = getByteBufferPool().acquire(encrypted.remaining(), true))
                 {
-                    int tokenLength = VarLenInt.decodeInt(byteBuffer);
-                    byteBuffer.position(byteBuffer.position() + tokenLength);
+                    // To remove header protection, we need a sample of the payload.
+                    // RFC 9001 #5.4.2: compute the offset of the sample.
+                    long position = encrypted.readPosition();
+                    int firstByte = encrypted.getByteAsInt();
+
+                    int type = (firstByte & 0b00110000) >>> 4;
+                    QuicVersion version = QuicVersion.from(encrypted.getInt());
+                    LongHeaderPacket.PacketType packetType = LongHeaderPacket.PacketType.from(type, version);
+                    int dstConnectionIdLength = encrypted.getByteAsInt();
+                    encrypted.consume(dstConnectionIdLength);
+                    int srcConnectionIdLength = encrypted.getByteAsInt();
+                    encrypted.consume(srcConnectionIdLength);
+                    if (packetType == LongHeaderPacket.PacketType.INITIAL)
+                    {
+                        int tokenLength = VarLenInt.decodeInt(encrypted);
+                        encrypted.consume(tokenLength);
+                    }
+                    // The payload length at this point also includes
+                    // the packet number length and the AEAD tag.
+                    int payloadLength = VarLenInt.decodeInt(encrypted);
+                    long packetNumberPosition = encrypted.readPosition();
+                    // Packet number length is at most 4 bytes.
+                    encrypted.consume(4);
+                    byte[] sample = new byte[16];
+                    encrypted.get(sample);
+
+                    // RFC 9001 #5.4.1: long header packets mask 4 bits.
+                    byte[] mask = newHeaderCipherMask(headerCipher, protection, sample);
+                    int form = firstByte ^ (mask[0] & 0b00001111);
+                    int encodedPacketNumberLength = (form & 0x03) + 1;
+                    payloadLength -= encodedPacketNumberLength;
+
+                    long headerLength = packetNumberPosition + encodedPacketNumberLength - position;
+                    try (RetainableByteBuffer encryptedHeaderSlice = encrypted.slice(position, headerLength))
+                    {
+                        decrypted.put(0, encryptedHeaderSlice);
+                    }
+                    // Replace the first byte with its unprotected value.
+                    decrypted.put((byte)form);
+                    // Header bytes up to the packet number are
+                    // not protected, no need to unprotect them.
+                    encrypted.readPosition(packetNumberPosition);
+                    decrypted.writePosition(packetNumberPosition - position);
+                    // Unprotect the packet number.
+                    int encodedPacketNumber = 0;
+                    for (int i = 0; i < encodedPacketNumberLength; ++i)
+                    {
+                        int unmasked = encrypted.getByteAsInt() ^ (mask[i + 1] & 0xFF);
+                        decrypted.put((byte)unmasked);
+                        encodedPacketNumber = (encodedPacketNumber << 8) | unmasked;
+                    }
+
+                    EncodedPacketNumber encoded = new EncodedPacketNumber(encodedPacketNumber, encodedPacketNumberLength);
+                    long packetNumber = packetNumbers.decode(encryptionLevel, encoded);
+
+                    byte[] nonce = nonce(initialization, packetNumber);
+                    initPayloadCipher(payloadCipher, Cipher.DECRYPT_MODE, encryption, nonce);
+
+                    // Supply AAD as the plaintext packet header.
+                    decrypted.read(b ->
+                    {
+                        payloadCipher.updateAAD(b.slice());
+                        return 0;
+                    });
+
+                    // The encrypted buffer must be at the start of the payload bytes.
+                    assert encrypted.readPosition() == packetNumberPosition + encodedPacketNumberLength;
+                    // The decrypted buffer must be at the start of the payload bytes.
+                    assert decrypted.writePosition() == packetNumberPosition + encodedPacketNumberLength - position;
+
+                    // Decrypt the payload.
+                    try (RetainableByteBuffer encryptedPayloadSlice = encrypted.sliceAndConsume(payloadLength))
+                    {
+                        encryptedPayloadSlice.read(input ->
+                        {
+                            int r = input.remaining();
+                            decrypted.write(output -> payloadCipher.doFinal(input, output));
+                            return r - input.remaining();
+                        });
+                    }
+
+                    decrypted.retain();
+                    return decrypted;
                 }
-                // The payload length at this point also includes
-                // the packet number length and the AEAD tag.
-                int payloadLength = VarLenInt.decodeInt(byteBuffer);
-                int packetNumberPosition = byteBuffer.position();
-                // Packet number length is at most 4 bytes.
-                byteBuffer.position(packetNumberPosition + 4);
-                byte[] sample = new byte[16];
-                byteBuffer.get(sample);
-
-                byte[] mask = newHeaderCipherMask(headerCipher, protection, sample);
-
-                int firstByte = byteBuffer.get(position) & 0xFF;
-                // Long header packets mask 4 bits.
-                byte form = (byte)(firstByte ^ (mask[0] & 0xF));
-                int encodedPacketNumberLength = (form & 0x03) + 1;
-                payloadLength -= encodedPacketNumberLength;
-
-                // Prepare the decrypted header buffer.
-                int headerLength = packetNumberPosition + encodedPacketNumberLength - position;
-                RetainableByteBuffer decryptedHeaderBuffer = byteBufferPool.acquire(headerLength, true);
-                ByteBuffer decryptedHeader = decryptedHeaderBuffer.getByteBuffer();
-                decryptedHeader.clear();
-                decryptedHeader.put(byteBuffer.slice(position, headerLength)).flip();
-                decryptedHeader.put(form);
-
-                // Unmask the packet number.
-                byteBuffer.position(packetNumberPosition);
-                decryptedHeader.position(packetNumberPosition - position);
-                int encodedPacketNumber = 0;
-                for (int i = 0; i < encodedPacketNumberLength; ++i)
-                {
-                    int unmasked = (byteBuffer.get() & 0xFF) ^ (mask[i + 1] & 0xFF);
-                    decryptedHeader.put((byte)unmasked);
-                    encodedPacketNumber = (encodedPacketNumber << 8) | unmasked;
-                }
-                decryptedHeader.position(0);
-
-                EncodedPacketNumber encoded = new EncodedPacketNumber(encodedPacketNumber, encodedPacketNumberLength);
-                long packetNumber = packetNumbers.decode(encryptionLevel, encoded);
-
-                byte[] nonce = nonce(initialization, packetNumber);
-                initPayloadCipher(payloadCipher, Cipher.DECRYPT_MODE, encryption, nonce);
-
-                // Supply AAD as the plaintext packet header.
-                payloadCipher.updateAAD(decryptedHeader);
-                decryptedHeader.flip();
-
-                // Decrypt the payload.
-                ByteBuffer encryptedPayload = byteBuffer.slice(byteBuffer.position(), payloadLength);
-                byteBuffer.position(byteBuffer.position() + payloadLength);
-                RetainableByteBuffer decryptedPayloadBuffer = byteBufferPool.acquire(payloadLength, true);
-                ByteBuffer decryptedPayload = decryptedPayloadBuffer.getByteBuffer();
-                decryptedPayload.clear();
-                payloadCipher.doFinal(encryptedPayload, decryptedPayload);
-                decryptedPayload.flip();
-
-                return new PacketBuffers(decryptedHeaderBuffer, decryptedPayloadBuffer);
             }
 
-            private PacketBuffers decryptShortHeaderPacket(byte[] dstConnectionId, RetainableByteBuffer encrypted) throws Exception
+            private RetainableByteBuffer decryptShortHeaderPacket(byte[] dstConnectionId, RetainableByteBuffer encrypted) throws Exception
             {
-                ByteBuffer byteBuffer = encrypted.getByteBuffer();
-
-                // To remove header protection, we need a sample of the payload.
-                // RFC-9001 #5.4.2: compute the offset of the sample.
-                int position = byteBuffer.position();
-
-                // Skip form byte and destination connection ID bytes.
-                byteBuffer.position(position + 1 + dstConnectionId.length);
-                int packetNumberPosition = byteBuffer.position();
-                // Packet number length is at most 4 bytes.
-                byteBuffer.position(packetNumberPosition + 4);
-                byte[] sample = new byte[16];
-                byteBuffer.get(sample);
-
-                byte[] mask = newHeaderCipherMask(headerCipher, protection, sample);
-
-                int firstByte = byteBuffer.get(position) & 0xFF;
-                // Short header packets mask 5 bits.
-                byte form = (byte)(firstByte ^ (mask[0] & 0x1F));
-                int encodedPacketNumberLength = (form & 0x03) + 1;
-
-                // Prepare the decrypted header buffer.
-                int headerLength = packetNumberPosition + encodedPacketNumberLength - position;
-                RetainableByteBuffer decryptedHeaderBuffer = byteBufferPool.acquire(headerLength, true);
-                ByteBuffer decryptedHeader = decryptedHeaderBuffer.getByteBuffer();
-                decryptedHeader.clear();
-                decryptedHeader.put(byteBuffer.slice(position, headerLength)).flip();
-                decryptedHeader.put(form);
-
-                // Unmask the packet number.
-                byteBuffer.position(packetNumberPosition);
-                decryptedHeader.position(packetNumberPosition - position);
-                int encodedPacketNumber = 0;
-                for (int i = 0; i < encodedPacketNumberLength; ++i)
+                try (RetainableByteBuffer.Mutable decrypted = getByteBufferPool().acquire(encrypted.remaining(), true))
                 {
-                    int unmasked = (byteBuffer.get() & 0xFF) ^ (mask[i + 1] & 0xFF);
-                    decryptedHeader.put((byte)unmasked);
-                    encodedPacketNumber = (encodedPacketNumber << 8) | unmasked;
+                    // To remove header protection, we need a sample of the payload.
+                    // RFC-9001 #5.4.2: compute the offset of the sample.
+                    long position = encrypted.readPosition();
+                    int firstByte = encrypted.getByteAsInt();
+
+                    // Skip form byte and destination connection ID bytes.
+                    encrypted.consume(1 + dstConnectionId.length);
+                    long packetNumberPosition = encrypted.readPosition();
+                    // Packet number length is at most 4 bytes.
+                    encrypted.consume(4);
+                    byte[] sample = new byte[16];
+                    encrypted.get(sample);
+
+                    // RFC 9001 #5.4.1: long header packets mask 5 bits.
+                    byte[] mask = newHeaderCipherMask(headerCipher, protection, sample);
+                    int form = firstByte ^ (mask[0] & 0b00011111);
+                    int encodedPacketNumberLength = (form & 0x03) + 1;
+
+                    long headerLength = packetNumberPosition + encodedPacketNumberLength - position;
+                    try (RetainableByteBuffer encryptedHeaderSlice = encrypted.slice(position, headerLength))
+                    {
+                        decrypted.put(0, encryptedHeaderSlice);
+                    }
+                    // Replace the first byte with its unprotected value.
+                    decrypted.put((byte)form);
+                    // Header bytes up to the packet number are
+                    // not protected, no need to unprotect them.
+                    encrypted.readPosition(packetNumberPosition);
+                    decrypted.writePosition(packetNumberPosition - position);
+                    // Unprotect the packet number.
+                    int encodedPacketNumber = 0;
+                    for (int i = 0; i < encodedPacketNumberLength; ++i)
+                    {
+                        int unmasked = encrypted.getByteAsInt() ^ (mask[i + 1] & 0xFF);
+                        decrypted.put((byte)unmasked);
+                        encodedPacketNumber = (encodedPacketNumber << 8) | unmasked;
+                    }
+
+                    EncodedPacketNumber encoded = new EncodedPacketNumber(encodedPacketNumber, encodedPacketNumberLength);
+                    long packetNumber = packetNumbers.decode(encryptionLevel, encoded);
+
+                    byte[] nonce = nonce(initialization, packetNumber);
+                    initPayloadCipher(payloadCipher, Cipher.DECRYPT_MODE, encryption, nonce);
+
+                    // Supply AAD as the plaintext packet header.
+                    decrypted.read(b ->
+                    {
+                        payloadCipher.updateAAD(b.slice());
+                        return 0;
+                    });
+
+                    // The encrypted buffer must be at the start of the payload bytes.
+                    assert encrypted.readPosition() == packetNumberPosition + encodedPacketNumberLength;
+                    // The decrypted buffer must be at the start of the payload bytes.
+                    assert decrypted.writePosition() == packetNumberPosition + encodedPacketNumberLength - position;
+
+                    // Decrypt the payload.
+                    // Short header packets are always the only or the last in the datagram.
+                    encrypted.read(input ->
+                    {
+                        int r = input.remaining();
+                        decrypted.write(output -> payloadCipher.doFinal(input, output));
+                        return r;
+                    });
+
+                    decrypted.retain();
+                    return decrypted;
                 }
-                decryptedHeader.position(0);
-
-                EncodedPacketNumber encoded = new EncodedPacketNumber(encodedPacketNumber, encodedPacketNumberLength);
-                long packetNumber = packetNumbers.decode(encryptionLevel, encoded);
-
-                byte[] nonce = nonce(initialization, packetNumber);
-                initPayloadCipher(payloadCipher, Cipher.DECRYPT_MODE, encryption, nonce);
-
-                // Supply AAD as the plaintext packet header.
-                payloadCipher.updateAAD(decryptedHeader);
-                decryptedHeader.flip();
-
-                // Decrypt the payload.
-                byteBuffer.position(packetNumberPosition + encodedPacketNumberLength);
-                // Short header packets are always the only or the last in the datagram.
-                int payloadLength = byteBuffer.remaining();
-                ByteBuffer encryptedPayload = byteBuffer.slice(byteBuffer.position(), payloadLength);
-                byteBuffer.position(byteBuffer.position() + payloadLength);
-                RetainableByteBuffer decryptedPayloadBuffer = byteBufferPool.acquire(payloadLength, true);
-                ByteBuffer decryptedPayload = decryptedPayloadBuffer.getByteBuffer();
-                decryptedPayload.clear();
-                payloadCipher.doFinal(encryptedPayload, decryptedPayload);
-                decryptedPayload.flip();
-
-                return new PacketBuffers(decryptedHeaderBuffer, decryptedPayloadBuffer);
             }
 
             private void destroy()
@@ -635,52 +652,48 @@ public class PacketProtector implements Encrypter, Decrypter
                 this.protection = protection;
             }
 
-            private PacketBuffers encrypt(long packetNumber, RetainableByteBuffer header, RetainableByteBuffer.Mutable payload) throws Exception
+            private void encrypt(long packetNumber, RetainableByteBuffer framesBuffer, RetainableByteBuffer.Mutable packetBuffer) throws Exception
             {
                 byte[] nonce = nonce(initialization, packetNumber);
                 initPayloadCipher(payloadCipher, Cipher.ENCRYPT_MODE, encryption, nonce);
 
                 // Supply AAD as the plaintext packet header.
-                ByteBuffer headerByteBuffer = header.getByteBuffer();
-                payloadCipher.updateAAD(headerByteBuffer);
-                headerByteBuffer.flip();
+                packetBuffer.read(b ->
+                {
+                    payloadCipher.updateAAD(b.slice());
+                    return 0;
+                });
+                long headerLength = packetBuffer.remaining();
 
                 // Encrypt the payload.
                 // AEAD encryption produces additional tag bytes.
-                ByteBuffer payloadByteBuffer = payload.getByteBuffer();
-                RetainableByteBuffer.Mutable encryptedPayloadBuffer = byteBufferPool.acquire(payloadByteBuffer.remaining() + cipherSuite.tagLength(), true);
-                ByteBuffer encryptedPayload = encryptedPayloadBuffer.getByteBuffer();
-                encryptedPayload.clear();
-                payloadCipher.doFinal(payloadByteBuffer, encryptedPayload);
-                encryptedPayload.flip();
+                framesBuffer.read(input ->
+                {
+                    int r = input.remaining();
+                    packetBuffer.write(output -> payloadCipher.doFinal(input, output));
+                    return r;
+                });
 
-                // RFC 9001, 5.4.2: header protection sample.
-                int firstByte = headerByteBuffer.get(headerByteBuffer.position()) & 0xFF;
+                // RFC 9001 #5.4.2: header protection sample.
+                int firstByte = packetBuffer.getByteAsInt(0);
                 // The packet number length is encoded in the last 2 bits.
                 int pktNumLen = (firstByte & 0x03) + 1;
-                int sampleOffset = 4 - pktNumLen;
-                byte[] sample = new byte[16];
-                encryptedPayload.get(sampleOffset, sample);
+                long sampleOffset = headerLength - pktNumLen + 4;
+                byte[] sample = packetBuffer.getArray(sampleOffset, 16);
 
                 byte[] mask = newHeaderCipherMask(headerCipher, protection, sample);
 
-                RetainableByteBuffer.Mutable encryptedHeaderBuffer = byteBufferPool.acquire(headerByteBuffer.remaining(), true);
-                ByteBuffer encryptedHeader = encryptedHeaderBuffer.getByteBuffer();
-                encryptedHeader.clear();
-                encryptedHeader.put(headerByteBuffer).flip();
                 // Long header packets mask 4 bits, short header packets mask 5 bits.
                 int bits = (firstByte & 0x80) == 0x80 ? 0x0F : 0x1F;
-                encryptedHeader.put(0, (byte)(firstByte ^ (mask[0] & bits)));
+                packetBuffer.put(0, (byte)(firstByte ^ (mask[0] & bits)));
 
                 // Mask the packet number.
-                int start = encryptedHeader.limit() - pktNumLen;
+                long start = headerLength - pktNumLen;
                 for (int i = 0; i < pktNumLen; ++i)
                 {
-                    int pktNumByte = headerByteBuffer.get(start + i) & 0xFF;
-                    encryptedHeader.put(start + i, (byte)(pktNumByte ^ (mask[i + 1] & 0xFF)));
+                    int pktNumByte = packetBuffer.getByteAsInt(start + i);
+                    packetBuffer.put(start + i, (byte)(pktNumByte ^ (mask[i + 1] & 0xFF)));
                 }
-
-                return new PacketBuffers(encryptedHeaderBuffer, encryptedPayloadBuffer);
             }
 
             private void destroy()

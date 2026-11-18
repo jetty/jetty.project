@@ -19,11 +19,11 @@ import java.util.List;
 import java.util.Queue;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.internal.packets.PacketsGenerator;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,18 +66,18 @@ class PacketFlusher implements Callback
             dataStalled = packetEntries.isEmpty();
         }
 
-        RetainableByteBuffer.Mutable packetAccumulator = flusher.getEncryptedBuffer();
+        RetainableByteBuffer.Mutable packetBuffer = flusher.getPacketBuffer();
         PacketsGenerator packetGenerator = flusher.getPacketsGenerator();
         QuicSession session = flusher.getQuicSession();
         EndPoint endPoint = session.getEndPoint();
 
         Packet packet = processingPacketEntry.packet();
-        packetGenerator.generate(packetAccumulator, packet, null);
-        session.getPacketTracker().processPacketSent(session, packet, packetAccumulator.size(), dataStalled);
-        bytesWritten = packetAccumulator.size();
+        packetGenerator.generate(packet, null, packetBuffer);
+        session.getPacketTracker().processPacketSent(session, packet, packetBuffer.remaining(), dataStalled);
+        bytesWritten = packetBuffer.remaining();
         if (LOG.isDebugEnabled())
-            LOG.debug("writing packet {} {} to {} on {}", packet, packetAccumulator, endPoint, this);
-        endPoint.write(flusher, session.getRemoteSocketAddress(), packetAccumulator.getByteBuffer());
+            LOG.debug("writing packet {} {} to {} on {}", packet, packetBuffer, endPoint, this);
+        endPoint.write(packetBuffer, session.getRemoteSocketAddress(), flusher);
         return true;
     }
 

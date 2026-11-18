@@ -13,48 +13,41 @@
 
 package org.eclipse.jetty.quic.common.internal.packets;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
-import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.RetryPacket;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RetryPacketGenerator implements PacketGenerator
+public class RetryPacketGenerator
 {
     private static final Logger LOG = LoggerFactory.getLogger(RetryPacketGenerator.class);
 
-    @Override
-    public void generate(RetainableByteBuffer.Mutable packetAccumulator, Packet packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
-    {
-        generate(packetAccumulator, (RetryPacket)packet);
-    }
-
-    public void generate(RetainableByteBuffer.Mutable packetAccumulator, RetryPacket packet)
+    public void generate(RetryPacket packet, RetainableByteBuffer.Mutable packetBuffer)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("generating {}", packet);
 
         int form = 0b11000000;
         int type = packet.packetType().type(packet.quicVersion()) << 4;
-        int msb = form | type;
-        packetAccumulator.put((byte)msb);
+        int firstByte = form | type;
+        packetBuffer.put((byte)firstByte);
 
-        packetAccumulator.putInt(packet.quicVersion().code());
+        packetBuffer.putInt(packet.quicVersion().code());
 
         byte[] dstConnectionId = packet.destinationConnectionId();
-        packetAccumulator.put((byte)dstConnectionId.length);
-        packetAccumulator.put(dstConnectionId);
+        packetBuffer.put((byte)dstConnectionId.length);
+        packetBuffer.put(dstConnectionId);
 
         byte[] srcConnectionId = packet.sourceConnectionId();
-        packetAccumulator.put((byte)srcConnectionId.length);
-        packetAccumulator.put(srcConnectionId);
+        packetBuffer.put((byte)srcConnectionId.length);
+        packetBuffer.put(srcConnectionId);
 
         // The token length is implicit.
         byte[] token = packet.token();
-        packetAccumulator.put(token);
+        packetBuffer.put(token);
 
         byte[] integrity = packet.integrity();
         if (integrity != null)
-            packetAccumulator.put(integrity);
+            packetBuffer.put(integrity);
     }
 }

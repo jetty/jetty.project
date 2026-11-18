@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.quic.common.internal.frames;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class DataBlockedFrameParser implements FrameParser
 {
@@ -33,19 +31,18 @@ public class DataBlockedFrameParser implements FrameParser
     @Override
     public DataBlockedFrame parse(RetainableByteBuffer buffer)
     {
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        while (byteBuffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
             switch (state)
             {
                 case FRAME_TYPE ->
                 {
-                    byteBuffer.get();
+                    buffer.get();
                     state = State.MAX_DATA;
                 }
                 case MAX_DATA ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, v -> maxData = v))
+                    if (varLenInt.tryDecode(buffer, v -> maxData = v))
                         return result();
                 }
             }

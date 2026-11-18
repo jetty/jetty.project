@@ -21,6 +21,6 @@ public class QuicMessagesGenerator extends MessagesGenerator
     public QuicMessagesGenerator(ByteBufferPool byteBufferPool, boolean useDirectBuffers, boolean client)
     {
         super(byteBufferPool, useDirectBuffers, client);
-        getExtensionsGenerator().put(new QuicTransportParametersExtensionGenerator());
+        getExtensionsGenerator().put(new QuicTransportParametersExtensionGenerator(byteBufferPool, useDirectBuffers));
     }
 }

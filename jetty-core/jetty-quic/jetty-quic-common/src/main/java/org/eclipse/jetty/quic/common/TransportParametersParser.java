@@ -13,12 +13,11 @@
 
 package org.eclipse.jetty.quic.common;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class TransportParametersParser
 {
@@ -36,11 +35,11 @@ public class TransportParametersParser
         this.varLenInt = varLenInt;
     }
 
-    public TransportParameters parse(ByteBuffer byteBuffer)
+    public TransportParameters parse(RetainableByteBuffer buffer)
     {
         while (true)
         {
-            int remaining = byteBuffer.remaining();
+            long remaining = buffer.remaining();
             if (remaining == 0)
                 return null;
 
@@ -50,7 +49,7 @@ public class TransportParametersParser
                 {
                     if (remaining > 1)
                     {
-                        length = (byteBuffer.getShort() & 0xFFFF);
+                        length = buffer.getShortAsInt();
                         parameters = new TransportParameters();
                         state = State.PARAMETER_ID;
                     }
@@ -62,7 +61,7 @@ public class TransportParametersParser
                 }
                 case LENGTH_BYTES ->
                 {
-                    int b = byteBuffer.get() & 0xFF;
+                    int b = buffer.getByteAsInt();
                     --cursor;
                     length += b << (8 * cursor);
                     if (cursor == 0)
@@ -73,7 +72,7 @@ public class TransportParametersParser
                 }
                 case PARAMETER_ID ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, (l, v) ->
+                    if (varLenInt.tryDecode(buffer, (l, v) ->
                     {
                         length -= l;
                         parameterId = convert(v);
@@ -88,7 +87,7 @@ public class TransportParametersParser
                 }
                 case PARAMETER_LENGTH ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, (l, v) ->
+                    if (varLenInt.tryDecode(buffer, (l, v) ->
                     {
                         length -= l;
                         parameterLength = (int)v;
@@ -112,7 +111,7 @@ public class TransportParametersParser
                     if (remaining >= parameterLength)
                     {
                         int offset = parameterValue.length - parameterLength;
-                        byteBuffer.get(parameterValue, offset, parameterLength);
+                        buffer.get(parameterValue, offset, parameterLength);
                         store(parameterId, parameterValue);
                         length -= parameterLength;
                         if (length == 0)
@@ -122,9 +121,10 @@ public class TransportParametersParser
                     else
                     {
                         int offset = parameterValue.length - parameterLength;
-                        byteBuffer.get(parameterValue, offset, remaining);
-                        parameterLength -= remaining;
-                        length -= remaining;
+                        int l = (int)remaining;
+                        buffer.get(parameterValue, offset, l);
+                        parameterLength -= l;
+                        length -= l;
                     }
                 }
             }
@@ -139,7 +139,7 @@ public class TransportParametersParser
         switch (parameterId)
         {
             case TransportParameters.LongId longId ->
-                varLenInt.tryDecode(ByteBuffer.wrap(parameterValue), v -> parameters.put(longId, v));
+                varLenInt.tryDecode(RetainableByteBuffer.wrap(parameterValue), v -> parameters.put(longId, v));
             case TransportParameters.BytesId bytesId ->
                 parameters.put(bytesId, parameterValue);
             // TODO: preferred_address and version_information.

@@ -13,12 +13,10 @@
 
 package org.eclipse.jetty.quic.common.internal.frames;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.NewTokenFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class NewTokenFrameParser implements FrameParser
 {
@@ -35,19 +33,18 @@ public class NewTokenFrameParser implements FrameParser
     @Override
     public Frame parse(RetainableByteBuffer buffer)
     {
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        while (byteBuffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
             switch (state)
             {
                 case FRAME_TYPE ->
                 {
-                    byteBuffer.get();
+                    buffer.get();
                     state = State.TOKEN_LENGTH;
                 }
                 case TOKEN_LENGTH ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, v -> length = Math.toIntExact(v)))
+                    if (varLenInt.tryDecode(buffer, v -> length = Math.toIntExact(v)))
                     {
                         token = new byte[length];
                         state = State.TOKEN;
@@ -55,8 +52,8 @@ public class NewTokenFrameParser implements FrameParser
                 }
                 case TOKEN ->
                 {
-                    int remaining = Math.min(byteBuffer.remaining(), length);
-                    byteBuffer.get(token, token.length - length, remaining);
+                    int remaining = (int)Math.min(buffer.remaining(), length);
+                    buffer.get(token, token.length - length, remaining);
                     length -= remaining;
                     if (length == 0)
                         return result();

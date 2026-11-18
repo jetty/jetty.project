@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.quic.common.internal.frames;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class ResetStreamFrameParser implements FrameParser
 {
@@ -35,29 +33,28 @@ public class ResetStreamFrameParser implements FrameParser
     @Override
     public ResetStreamFrame parse(RetainableByteBuffer buffer)
     {
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        while (byteBuffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
             switch (state)
             {
                 case FRAME_TYPE ->
                 {
-                    byteBuffer.get();
+                    buffer.get();
                     state = State.STREAM_ID;
                 }
                 case STREAM_ID ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, v -> streamId = v))
+                    if (varLenInt.tryDecode(buffer, v -> streamId = v))
                         state = State.ERROR_CODE;
                 }
                 case ERROR_CODE ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, v -> errorCode = v))
+                    if (varLenInt.tryDecode(buffer, v -> errorCode = v))
                         state = State.FINAL_SIZE;
                 }
                 case FINAL_SIZE ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, v -> finalSize = v))
+                    if (varLenInt.tryDecode(buffer, v -> finalSize = v))
                         return result();
                 }
             }

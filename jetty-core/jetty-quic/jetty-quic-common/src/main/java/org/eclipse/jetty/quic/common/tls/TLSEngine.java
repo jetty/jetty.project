@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.quic.common.tls;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.MessageDigest;
@@ -43,7 +42,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
@@ -66,6 +64,7 @@ import org.eclipse.jetty.tls.common.parser.MessagesParser;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -415,9 +414,8 @@ public abstract class TLSEngine
 
     protected byte[] createRetryIntegrity(RetainableByteBuffer retryPacketBuffer, byte[] originalDestinationConnectionId, boolean integrityPresent) throws Exception
     {
-        ByteBuffer byteBuffer = retryPacketBuffer.getByteBuffer();
-        QuicVersion quicVersion = QuicVersion.from(byteBuffer.getInt(1));
-        int capacity = 1 + originalDestinationConnectionId.length + byteBuffer.remaining();
+        QuicVersion quicVersion = QuicVersion.from(retryPacketBuffer.getInt(retryPacketBuffer.readPosition() + 1));
+        int capacity = 1 + originalDestinationConnectionId.length + (int)retryPacketBuffer.remaining();
         if (integrityPresent)
             capacity -= 16;
         byte[] pseudoPacket = new byte[capacity];
@@ -426,7 +424,7 @@ public abstract class TLSEngine
         ++offset;
         System.arraycopy(originalDestinationConnectionId, 0, pseudoPacket, offset, originalDestinationConnectionId.length);
         offset += originalDestinationConnectionId.length;
-        byteBuffer.get(pseudoPacket, offset, capacity - offset);
+        retryPacketBuffer.get(pseudoPacket, offset, capacity - offset);
 
         // RFC-9001 #5.8: compute the integrity.
         KDF kdf = KDF.getInstance("HKDF-SHA256");

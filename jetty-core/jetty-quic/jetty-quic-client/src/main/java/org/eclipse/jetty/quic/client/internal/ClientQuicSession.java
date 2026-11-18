@@ -25,7 +25,6 @@ import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.RateControl;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
@@ -61,6 +60,7 @@ import org.eclipse.jetty.tls.NewSessionTicketMessage;
 import org.eclipse.jetty.tls.ServerHelloMessage;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -428,9 +428,8 @@ public class ClientQuicSession extends QuicSession
         }
 
         // Verify the integrity of the RetryPacket.
-        RetainableByteBuffer.Mutable retryAccumulator = new RetainableByteBuffer.DynamicCapacity(getByteBufferPool(), false, -1, 0, 0);
-        generateRetryPacket(retryAccumulator, packet);
-        boolean verified = getTLSEngine().verifyRetryIntegrity(retryAccumulator, getOriginalDestinationConnectionId());
+        RetainableByteBuffer retryPacketBuffer = generateRetryPacket(packet);
+        boolean verified = getTLSEngine().verifyRetryIntegrity(retryPacketBuffer, getOriginalDestinationConnectionId());
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} on {}", verified ? "processing verified" : "discarding non-verified", packet, this);
         if (!verified)

@@ -15,38 +15,57 @@ package org.eclipse.jetty.quic.common;
 
 import java.util.Map;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class TransportParametersGenerator
 {
-    public int generate(RetainableByteBuffer.Mutable accumulator, TransportParameters parameters)
+    /// Returns the number of bytes of the encoded representation of the given [TransportParameters].
+    ///
+    /// The number includes 2 bytes to encode the total length, plus the sum of
+    /// the bytes necessary to encode each id and its correspondent value of the
+    /// [TransportParameters].
+    ///
+    /// @param parameters the [TransportParameters] to calculate the encoding length for
+    /// @return the number of bytes of the encoded representation
+    public static int length(TransportParameters parameters)
     {
-        RetainableByteBuffer.DynamicCapacity parametersAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-
-        int totalLength = 0;
+        int length = 0;
         for (Map.Entry<TransportParameters.Id<?>, Object> entry : parameters)
         {
             TransportParameters.Id<?> id = entry.getKey();
-            totalLength += VarLenInt.encode(parametersAccumulator, id.id());
+            length += VarLenInt.length(id.id());
             int valueLength = switch (id)
             {
                 case TransportParameters.LongId longId -> VarLenInt.length(parameters.get(longId));
                 case TransportParameters.BytesId bytesId -> parameters.get(bytesId).length;
             };
-            totalLength += VarLenInt.encode(parametersAccumulator, valueLength);
+            length += VarLenInt.length(valueLength) + valueLength;
+        }
+        return 2 + length;
+    }
+
+    public int generate(RetainableByteBuffer.Mutable buffer, TransportParameters parameters)
+    {
+        int parametersLength = length(parameters) - 2;
+        buffer.putShort((short)parametersLength);
+        for (Map.Entry<TransportParameters.Id<?>, Object> entry : parameters)
+        {
+            TransportParameters.Id<?> id = entry.getKey();
+            VarLenInt.encode(buffer, id.id());
+            int valueLength = switch (id)
+            {
+                case TransportParameters.LongId longId -> VarLenInt.length(parameters.get(longId));
+                case TransportParameters.BytesId bytesId -> parameters.get(bytesId).length;
+            };
+            VarLenInt.encode(buffer, valueLength);
             switch (id)
             {
-                case TransportParameters.LongId longId -> VarLenInt.encode(parametersAccumulator, parameters.get(longId));
-                case TransportParameters.BytesId bytesId -> parametersAccumulator.put(parameters.get(bytesId));
+                case TransportParameters.LongId longId -> VarLenInt.encode(buffer, parameters.get(longId));
+                case TransportParameters.BytesId bytesId -> buffer.put(parameters.get(bytesId));
             }
-            totalLength += valueLength;
         }
-
-        accumulator.putShort((short)totalLength);
-        accumulator.add(parametersAccumulator);
-
-        return 2 + totalLength;
+        return 2 + parametersLength;
     }
 }

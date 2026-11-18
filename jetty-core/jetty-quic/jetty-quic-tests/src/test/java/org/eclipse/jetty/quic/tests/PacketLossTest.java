@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
@@ -101,28 +101,32 @@ public class PacketLossTest extends AbstractTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = stream.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
-                    }
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        completable.completeExceptionally(chunk.getFailure());
-                        return;
-                    }
-                    received.put(chunk.getByteBuffer());
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        completable.complete(null);
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        if (Content.Chunk.isFailure(chunk))
+                        {
+                            completable.completeExceptionally(chunk.getFailure());
+                            return;
+                        }
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            buffer.putTo(received);
+                            if (chunk.isLast())
+                            {
+                                completable.complete(null);
+                                return;
+                            }
+                        }
                     }
                 }
             }
         });
-        stream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
+        stream.data(true, RetainableByteBuffer.empty(), Callback.NOOP);
         stream.demand();
 
         completable.get(5, TimeUnit.SECONDS);
@@ -158,17 +162,17 @@ public class PacketLossTest extends AbstractTest
                         // first remotely closed, then locally closed.
                         while (true)
                         {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                stream.demand();
-                                return;
+                                if (chunk == null)
+                                {
+                                    stream.demand();
+                                    return;
+                                }
+                                if (chunk.isLast())
+                                    break;
                             }
-                            chunk.release();
-                            if (chunk.isLast())
-                                break;
                         }
-
                         stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.wrap(data)), Callback.NOOP);
                     }
                 };
@@ -216,28 +220,32 @@ public class PacketLossTest extends AbstractTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = stream.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
-                    }
-                    if (Content.Chunk.isFailure(chunk))
-                    {
-                        completable.completeExceptionally(chunk.getFailure());
-                        return;
-                    }
-                    received.put(chunk.getByteBuffer());
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        completable.complete(null);
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        if (Content.Chunk.isFailure(chunk))
+                        {
+                            completable.completeExceptionally(chunk.getFailure());
+                            return;
+                        }
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            buffer.putTo(received);
+                            if (chunk.isLast())
+                            {
+                                completable.complete(null);
+                                return;
+                            }
+                        }
                     }
                 }
             }
         });
-        clientStream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
+        clientStream.data(true, RetainableByteBuffer.empty(), Callback.NOOP);
         clientStream.demand();
 
         completable.get(5, TimeUnit.SECONDS);

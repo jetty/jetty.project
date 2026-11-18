@@ -17,9 +17,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.common.tls.generator.QuicTransportParametersExtensionGenerator;
@@ -29,6 +26,10 @@ import org.eclipse.jetty.tls.common.generator.ExtensionsGenerator;
 import org.eclipse.jetty.tls.common.parser.ExtensionsParser;
 import org.eclipse.jetty.tls.ext.Extension;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -41,7 +42,6 @@ public class QuicExtensionsGenerateParseTest
     public void testGenerateParseQuicTransportParametersExtension()
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, false, -1, 0, 0);
 
         TransportParameters generatedParams = new TransportParameters();
         // Smaller long value.
@@ -58,22 +58,24 @@ public class QuicExtensionsGenerateParseTest
         long unknownId = 0x5000;
         long unknownValue = 1052198;
         byte[] unknownValueBytes = new byte[VarLenInt.length(unknownValue)];
-        VarLenInt.encode(ByteBuffer.wrap(unknownValueBytes), unknownValue);
+        VarLenInt.encode(RetainableByteBuffer.Mutable.wrap(unknownValueBytes), unknownValue);
         generatedParams.put(new TransportParameters.LongId(unknownId), unknownValue);
         // Zero-length value.
         // When being the last, it is an edge case for parsing,
         // since there are no more bytes to read in the buffer.
         generatedParams.put(TransportParameters.Ids.DISABLE_ACTIVE_MIGRATION, BufferUtil.EMPTY_BYTES);
         QuicTransportParametersExtension generated = new QuicTransportParametersExtension(generatedParams);
-        ExtensionsGenerator generator = new ExtensionsGenerator(true);
-        generator.put(new QuicTransportParametersExtensionGenerator());
+        ExtensionsGenerator generator = new ExtensionsGenerator(byteBufferPool, false, true);
+        generator.put(new QuicTransportParametersExtensionGenerator(byteBufferPool, false));
+        BufferAccumulator accumulator = new BufferAccumulator();
         int length = generator.generate(accumulator, List.of(generated));
 
         ExtensionsParser parser = new ExtensionsParser(true);
         parser.put(new QuicTransportParametersExtensionParser(parser));
         ByteBuffer lengthByteBuffer = ByteBuffer.allocate(2).putShort((short)length).flip();
         parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer));
-        List<Extension> extensions = parser.parse(accumulator);
+        RetainableByteBuffer buffer = accumulator.take();
+        List<Extension> extensions = parser.parse(buffer.slice());
         assertNotNull(extensions);
 
         assertEquals(1, extensions.size());
@@ -98,13 +100,12 @@ public class QuicExtensionsGenerateParseTest
 
         // Parse again one byte at a time.
         parser.parse(RetainableByteBuffer.wrap(lengthByteBuffer.flip()));
-        ByteBuffer byteBuffer = accumulator.getByteBuffer().flip();
-        while (byteBuffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
-            int position = byteBuffer.position();
-            ByteBuffer oneByteSlice = byteBuffer.slice(position, 1);
-            byteBuffer.position(position + 1);
-            extensions = parser.parse(RetainableByteBuffer.wrap(oneByteSlice));
+            try (RetainableByteBuffer oneByteSlice = buffer.sliceAndConsume(1))
+            {
+                extensions = parser.parse(oneByteSlice);
+            }
         }
 
         assertNotNull(extensions);

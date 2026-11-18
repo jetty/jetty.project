@@ -13,12 +13,12 @@
 
 package org.eclipse.jetty.quic.common.internal.packets;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.packets.LongHeaderPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.ShortHeaderPacket;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class PacketsGenerator
 {
@@ -31,12 +31,12 @@ public class PacketsGenerator
         shortHeaderPacketsGenerator = new ShortHeaderPacketsGenerator(packetNumbers, encrypter);
     }
 
-    public void generate(RetainableByteBuffer.Mutable packetAccumulator, Packet packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
+    public void generate(Packet packet, RetainableByteBuffer framesBuffer, RetainableByteBuffer.Mutable packetBuffer) throws Exception
     {
         switch (packet)
         {
-            case LongHeaderPacket longHeader -> longHeaderPacketsGenerator.generate(packetAccumulator, longHeader, framesAccumulator);
-            case ShortHeaderPacket shortHeader -> shortHeaderPacketsGenerator.generate(packetAccumulator, shortHeader, framesAccumulator);
+            case LongHeaderPacket longHeader -> longHeaderPacketsGenerator.generate(longHeader, framesBuffer, packetBuffer);
+            case ShortHeaderPacket shortHeader -> shortHeaderPacketsGenerator.generate(shortHeader, framesBuffer, packetBuffer);
             default -> throw new IllegalStateException("unsupported packet type " + packet.getClass());
         }
     }

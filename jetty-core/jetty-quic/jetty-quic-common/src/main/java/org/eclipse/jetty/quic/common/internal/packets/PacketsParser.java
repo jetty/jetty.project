@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.quic.common.internal.packets;
 
-import java.nio.ByteBuffer;
-
 import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.packets.Packet;
@@ -42,15 +40,14 @@ public class PacketsParser
     {
         while (true)
         {
-            int remaining = buffer.remaining();
+            long remaining = buffer.remaining();
             if (remaining == 0)
                 return null;
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
             switch (state)
             {
                 case FORM ->
                 {
-                    byte form = byteBuffer.get(byteBuffer.position());
+                    byte form = buffer.get(buffer.readPosition());
                     state = Packet.isLongHeader(form) ? State.LONG : State.SHORT;
                 }
                 case LONG ->

@@ -42,6 +42,7 @@ import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,25 +134,22 @@ public class ClientQuicConnection extends QuicConnection implements Callback
     @Override
     protected Runnable doProduce()
     {
-        RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-        try
+        try (RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(getInputBufferSize(), isUseInputDirectByteBuffers()))
         {
             while (true)
             {
-                SocketAddress address = getEndPoint().receive(buffer.getByteBuffer());
-                int filled = address == EndPoint.EOF ? -1 : buffer.remaining();
+                SocketAddress address = getEndPoint().receive(buffer);
+                long filled = address == EndPoint.EOF ? -1 : buffer.remaining();
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled {} bytes from {} on {}", filled, address, this);
 
                 if (filled < 0)
                 {
-                    buffer.release();
                     getEndPoint().shutdownOutput();
                     return null;
                 }
                 if (filled == 0)
                 {
-                    buffer.release();
                     fillInterested();
                     return null;
                 }
@@ -165,7 +163,6 @@ public class ClientQuicConnection extends QuicConnection implements Callback
                 if (task == null)
                     continue;
 
-                buffer.release();
                 return task;
             }
         }
@@ -173,7 +170,6 @@ public class ClientQuicConnection extends QuicConnection implements Callback
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failed to produce on {}", this, x);
-            buffer.release();
             fail(x);
             return null;
         }

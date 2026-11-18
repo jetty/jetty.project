@@ -13,19 +13,17 @@
 
 package org.eclipse.jetty.quic.common.internal.packets;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
-import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.packets.HandshakePacket;
-import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HandshakePacketGenerator implements PacketGenerator
+public class HandshakePacketGenerator
 {
     private static final Logger LOG = LoggerFactory.getLogger(HandshakePacketGenerator.class);
 
@@ -38,51 +36,39 @@ public class HandshakePacketGenerator implements PacketGenerator
         this.encrypter = encrypter;
     }
 
-    @Override
-    public void generate(RetainableByteBuffer.Mutable packetAccumulator, Packet packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
-    {
-        generate(packetAccumulator, (HandshakePacket)packet, framesAccumulator);
-    }
-
-    private void generate(RetainableByteBuffer.Mutable packetAccumulator, HandshakePacket packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
+    public void generate(HandshakePacket packet, RetainableByteBuffer framesBuffer, RetainableByteBuffer.Mutable packetBuffer) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("generating {}", packet);
 
-        RetainableByteBuffer.Mutable headerAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
         int form = 0b11000000;
         int type = packet.packetType().type(packet.quicVersion()) << 4;
         long packetNumber = packet.packetNumber();
         EncodedPacketNumber encodedPacketNumber = packetNumbers.encode(EncryptionLevel.HANDSHAKE, packetNumber);
-        int msb = form | type | (encodedPacketNumber.length() - 1);
-        headerAccumulator.put((byte)msb);
+        int firstByte = form | type | (encodedPacketNumber.length() - 1);
+        packetBuffer.put((byte)firstByte);
 
-        headerAccumulator.putInt(packet.quicVersion().code());
+        packetBuffer.putInt(packet.quicVersion().code());
 
         byte[] dstConnectionId = packet.destinationConnectionId();
-        headerAccumulator.put((byte)dstConnectionId.length);
-        headerAccumulator.put(dstConnectionId);
+        packetBuffer.put((byte)dstConnectionId.length);
+        packetBuffer.put(dstConnectionId);
 
         byte[] srcConnectionId = packet.sourceConnectionId();
-        headerAccumulator.put((byte)srcConnectionId.length);
-        headerAccumulator.put(srcConnectionId);
+        packetBuffer.put((byte)srcConnectionId.length);
+        packetBuffer.put(srcConnectionId);
 
         // AEAD encryption produces 16 additional bytes.
-        long encryptedFramesLength = framesAccumulator.size() + 16;
+        long encryptedFramesLength = framesBuffer.remaining() + 16;
         long packetLength = encodedPacketNumber.length() + encryptedFramesLength;
 
-        VarLenInt.encode(headerAccumulator, packetLength);
+        VarLenInt.encode(packetBuffer, packetLength);
 
-        encodedPacketNumber.putTo(headerAccumulator);
+        encodedPacketNumber.putTo(packetBuffer);
 
-        PacketBuffers packetBuffers = encrypter.encrypt(EncryptionLevel.HANDSHAKE, packetNumber, headerAccumulator, framesAccumulator);
+        encrypter.encrypt(EncryptionLevel.HANDSHAKE, packetNumber, framesBuffer, packetBuffer);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("encrypted {} {}", packet, packetBuffers);
-
-        headerAccumulator.release();
-
-        packetAccumulator.add(packetBuffers.header());
-        packetAccumulator.add(packetBuffers.payload());
+            LOG.debug("encrypted {} {}", packet, packetBuffer);
     }
 }

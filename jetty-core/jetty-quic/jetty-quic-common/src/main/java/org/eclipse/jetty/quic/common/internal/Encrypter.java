@@ -13,11 +13,10 @@
 
 package org.eclipse.jetty.quic.common.internal;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
-import org.eclipse.jetty.quic.common.PacketBuffers;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public interface Encrypter
 {
-    PacketBuffers encrypt(EncryptionLevel encryptionLevel, long packetNumber, RetainableByteBuffer header, RetainableByteBuffer.Mutable payload) throws Exception;
+    void encrypt(EncryptionLevel encryptionLevel, long packetNumber, RetainableByteBuffer framesBuffer, RetainableByteBuffer.Mutable packetBuffer) throws Exception;
 }

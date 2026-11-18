@@ -13,20 +13,18 @@
 
 package org.eclipse.jetty.quic.common.tls.parser;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.TransportParametersParser;
 import org.eclipse.jetty.quic.common.tls.ext.QuicTransportParametersExtension;
 import org.eclipse.jetty.quic.util.VarLenInt;
 import org.eclipse.jetty.tls.common.parser.ExtensionParser;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class QuicTransportParametersExtensionParser implements ExtensionParser
 {
     private final TransportParametersParser parser = new TransportParametersParser(new VarLenInt());
     private final ExtensionParser.Listener listener;
-    private int totalLength;
+    private long totalLength;
 
     public QuicTransportParametersExtensionParser(Listener listener)
     {
@@ -40,16 +38,15 @@ public class QuicTransportParametersExtensionParser implements ExtensionParser
     }
 
     @Override
-    public int parse(RetainableByteBuffer buffer)
+    public long parse(RetainableByteBuffer buffer)
     {
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        int remaining = byteBuffer.remaining();
-        TransportParameters parameters = parser.parse(byteBuffer);
-        totalLength += remaining - byteBuffer.remaining();
+        long remaining = buffer.remaining();
+        TransportParameters parameters = parser.parse(buffer);
+        totalLength += remaining - buffer.remaining();
         if (parameters == null)
             return -1;
         listener.onExtension(new QuicTransportParametersExtension(parameters));
-        int result = totalLength;
+        long result = totalLength;
         totalLength = 0;
         return result;
     }

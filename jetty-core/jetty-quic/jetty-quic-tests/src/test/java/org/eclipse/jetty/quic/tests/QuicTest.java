@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -34,6 +33,7 @@ import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStream;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -128,17 +128,23 @@ public class QuicTest extends AbstractTest
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
-                        Content.Chunk chunk = stream.read();
-                        if (chunk == null)
+                        try (Content.Chunk chunk = stream.read())
                         {
-                            stream.demand();
-                            return;
-                        }
-                        stream.data(chunk.isLast(), chunk, Callback.from(NON_BLOCKING, x ->
-                        {
-                            if (x == null && !chunk.isLast())
+                            if (chunk == null)
+                            {
                                 stream.demand();
-                        }));
+                                return;
+                            }
+                            boolean last = chunk.isLast();
+                            try (RetainableByteBuffer buffer = chunk.acquire())
+                            {
+                                stream.data(last, buffer, Callback.from(NON_BLOCKING, x ->
+                                {
+                                    if (x == null && !last)
+                                        stream.demand();
+                                }));
+                            }
+                        }
                     }
                 };
             }
@@ -149,7 +155,7 @@ public class QuicTest extends AbstractTest
         ).get(5, SECONDS);
 
         CountDownLatch dataLatch = new CountDownLatch(1);
-        RetainableByteBuffer.Mutable accumulator = new RetainableByteBuffer.DynamicCapacity(quicClient.getClientConnector().getByteBufferPool(), false, -1, 0, 0);
+        ByteBuffer received = ByteBuffer.allocate(length);
         long streamId = clientSession.newStreamId(true);
         Stream stream = clientSession.newStream(streamId, new Stream.Listener()
         {
@@ -158,17 +164,22 @@ public class QuicTest extends AbstractTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = stream.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
-                    }
-                    accumulator.add(chunk);
-                    if (chunk.isLast())
-                    {
-                        dataLatch.countDown();
-                        break;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            buffer.putTo(received);
+                        }
+                        if (chunk.isLast())
+                        {
+                            dataLatch.countDown();
+                            break;
+                        }
                     }
                 }
             }
@@ -181,7 +192,7 @@ public class QuicTest extends AbstractTest
         stream.demand();
 
         assertTrue(dataLatch.await(15, SECONDS));
-        assertEquals(ByteBuffer.wrap(bytes), accumulator.getByteBuffer());
+        assertEquals(ByteBuffer.wrap(bytes), received.flip());
 
         Session serverSession = serverSessionRef.get();
         await().atMost(5, SECONDS).until(serverSession::getStreams, empty());
@@ -228,23 +239,24 @@ public class QuicTest extends AbstractTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = stream.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
-                    }
-                    received.addAndGet(chunk.remaining());
-                    chunk.release();
-                    if (chunk.isLast())
-                    {
-                        clientDataLatch.countDown();
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        received.addAndGet(chunk.remaining());
+                        if (chunk.isLast())
+                        {
+                            clientDataLatch.countDown();
+                            return;
+                        }
                     }
                 }
             }
         });
-        clientStream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
+        clientStream.data(true, RetainableByteBuffer.empty(), Callback.NOOP);
         clientStream.demand();
 
         assertTrue(clientDataLatch.await(15, SECONDS));
@@ -276,17 +288,18 @@ public class QuicTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                stream.demand();
-                                return;
+                                if (chunk == null)
+                                {
+                                    stream.demand();
+                                    return;
+                                }
+                                if (chunk.isLast())
+                                    break;
                             }
-                            chunk.release();
-                            if (chunk.isLast())
-                                break;
                         }
-                        stream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
+                        stream.data(true, RetainableByteBuffer.empty(), Callback.NOOP);
                     }
                 };
             }
@@ -305,21 +318,22 @@ public class QuicTest extends AbstractTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = stream.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        if (chunk.isLast())
+                            break;
                     }
-                    chunk.release();
-                    if (chunk.isLast())
-                        break;
                 }
                 clientDataLatch.countDown();
             }
         });
 
-        clientStream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
+        clientStream.data(true, RetainableByteBuffer.empty(), Callback.NOOP);
         clientStream.demand();
 
         assertTrue(clientDataLatch.await(5, SECONDS));
@@ -331,12 +345,12 @@ public class QuicTest extends AbstractTest
         Thread.sleep(500);
 
         // Send another StreamFrame, simulating that the server receives a re-transmission that's not necessary.
-        ((QuicSession)clientSession).data((QuicStream)clientStream, new StreamFrame(clientStream.getId(), RetainableByteBuffer.EMPTY, false), Callback.NOOP);
+        ((QuicSession)clientSession).data((QuicStream)clientStream, new StreamFrame(clientStream.getId(), RetainableByteBuffer.empty(), false), Callback.NOOP);
         // Wait for the frame to reach the server, but it should be discarded.
         await().during(1, SECONDS).atMost(5, SECONDS).untilAsserted(() -> assertThat(serverSession.getStreams(), empty()));
 
         // Send a StreamFrame from the server, simulating a re-transmission.
-        ((QuicSession)serverSession).data((QuicStream)serverStream, new StreamFrame(clientStream.getId(), RetainableByteBuffer.EMPTY, false), Callback.NOOP);
+        ((QuicSession)serverSession).data((QuicStream)serverStream, new StreamFrame(clientStream.getId(), RetainableByteBuffer.empty(), false), Callback.NOOP);
         // Wait for the frame to reach the client, but it should be discarded.
         await().during(1, SECONDS).atMost(5, SECONDS).untilAsserted(() -> assertThat(clientSession.getStreams(), empty()));
     }

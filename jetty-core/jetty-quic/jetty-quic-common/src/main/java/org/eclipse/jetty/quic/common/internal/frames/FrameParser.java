@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.quic.common.internal.frames;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public interface FrameParser
 {

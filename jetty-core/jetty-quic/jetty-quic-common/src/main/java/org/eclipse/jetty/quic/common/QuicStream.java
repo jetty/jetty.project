@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicMarkableReference;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.ResetStreamFrame;
 import org.eclipse.jetty.quic.api.frames.StopSendingFrame;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -173,7 +173,7 @@ public class QuicStream extends AbstractStream
                 terminated = closeState.remoteClose();
         }
 
-        session.getFlowController().onDataRead(this, chunk.size());
+        session.getFlowController().onDataRead(this, chunk.remaining());
 
         if (LOG.isDebugEnabled())
             LOG.debug("reading {} on {}", chunk, this);
@@ -450,14 +450,16 @@ public class QuicStream extends AbstractStream
         {
             process = dataQueue.isEmpty() && readDemand;
             boolean last = frame.isEndStream();
-            Content.Chunk chunk = frame.map(data -> Content.Chunk.from(data, last));
-            // Retain the chunk because it is stored for later use.
-            chunk.retain();
-            dataQueue.offer(chunk);
             if (last && !closeState.remoteClosing())
                 throw new IllegalStateException("stream_remotely_closed");
-            if (LOG.isDebugEnabled())
-                LOG.debug("offer data notify={} {} on {}", process, chunk, this);
+            try (RetainableByteBuffer data = frame.acquire())
+            {
+                // The chunk is implicitly retained, and stored for later use.
+                Content.Chunk chunk = Content.Chunk.from(data, last);
+                dataQueue.offer(chunk);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("offer data notify={} {} on {}", process, chunk, this);
+            }
         }
 
         if (process)

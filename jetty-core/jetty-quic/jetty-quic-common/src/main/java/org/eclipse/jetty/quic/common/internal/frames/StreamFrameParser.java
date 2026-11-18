@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.quic.common.internal.frames;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.StreamFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class StreamFrameParser implements FrameParser
 {
@@ -39,14 +37,13 @@ public class StreamFrameParser implements FrameParser
     @Override
     public StreamFrame parse(RetainableByteBuffer buffer)
     {
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        while (byteBuffer.hasRemaining())
+        while (buffer.hasRemaining())
         {
             switch (state)
             {
                 case FRAME_TYPE ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, (l, v) ->
+                    if (varLenInt.tryDecode(buffer, (l, v) ->
                     {
                         frameSize += l;
                         frameType = v;
@@ -59,7 +56,7 @@ public class StreamFrameParser implements FrameParser
                 }
                 case STREAM_ID ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, (l, v) ->
+                    if (varLenInt.tryDecode(buffer, (l, v) ->
                     {
                         frameSize += l;
                         streamId = v;
@@ -75,7 +72,7 @@ public class StreamFrameParser implements FrameParser
                 }
                 case OFFSET ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, (l, v) ->
+                    if (varLenInt.tryDecode(buffer, (l, v) ->
                     {
                         frameSize += l;
                         offset = v;
@@ -89,14 +86,14 @@ public class StreamFrameParser implements FrameParser
                 }
                 case LENGTH ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, (l, v) ->
+                    if (varLenInt.tryDecode(buffer, (l, v) ->
                     {
                         frameSize += l;
                         dataLength = v;
                     }))
                     {
                         if (dataLength == 0)
-                            return result(RetainableByteBuffer.EMPTY, true);
+                            return result(RetainableByteBuffer.empty(), true);
                         state = State.DATA;
                     }
                 }
@@ -106,12 +103,13 @@ public class StreamFrameParser implements FrameParser
                     if (dataLength < 0)
                         dataLength = buffer.remaining();
 
-                    int length = (int)Math.min(dataLength, byteBuffer.remaining());
-                    RetainableByteBuffer data = buffer.slice(length);
-                    byteBuffer.position(byteBuffer.position() + length);
-                    dataLength -= length;
-                    boolean done = dataLength == 0;
-                    return result(data, done);
+                    long length = Math.min(dataLength, buffer.remaining());
+                    try (RetainableByteBuffer data = buffer.sliceAndConsume(length))
+                    {
+                        dataLength -= length;
+                        boolean done = dataLength == 0;
+                        return result(data, done);
+                    }
                 }
             }
         }

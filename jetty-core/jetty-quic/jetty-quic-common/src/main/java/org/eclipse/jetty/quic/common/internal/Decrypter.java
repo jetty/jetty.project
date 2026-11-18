@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.quic.common.internal;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
-import org.eclipse.jetty.quic.common.PacketBuffers;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public interface Decrypter
 {
-    PacketBuffers decryptLongHeaderPacket(EncryptionLevel encryptionLevel, RetainableByteBuffer encrypted) throws Exception;
+    RetainableByteBuffer decryptLongHeaderPacket(EncryptionLevel encryptionLevel, RetainableByteBuffer encrypted) throws Exception;
 
-    PacketBuffers decryptShortHeaderPacket(byte[] dstConnectionId, RetainableByteBuffer encrypted) throws Exception;
+    RetainableByteBuffer decryptShortHeaderPacket(byte[] dstConnectionId, RetainableByteBuffer encrypted) throws Exception;
 }

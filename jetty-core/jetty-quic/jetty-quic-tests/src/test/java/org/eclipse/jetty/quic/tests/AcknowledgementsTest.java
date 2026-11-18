@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -73,7 +73,7 @@ public class AcknowledgementsTest extends AbstractTest
                     public void onNewStream(Stream stream, Frame.WithStreamId frame)
                     {
                         // Send data so that the client acknowledges it.
-                        stream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
+                        stream.data(true, RetainableByteBuffer.empty(), Callback.NOOP);
                     }
                 };
             }

@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.DataBlockedFrame;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.quic.common.QuicStream;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -84,17 +84,18 @@ public class FlowControlTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                stream.demand();
-                                return;
-                            }
-                            chunk.release();
-                            if (chunk.isLast())
-                            {
-                                stream.reset(ErrorCode.NO_ERROR.code(), Callback.from(NON_BLOCKING, serverDataLatch::countDown));
-                                return;
+                                if (chunk == null)
+                                {
+                                    stream.demand();
+                                    return;
+                                }
+                                if (chunk.isLast())
+                                {
+                                    stream.reset(ErrorCode.NO_ERROR.code(), Callback.from(NON_BLOCKING, serverDataLatch::countDown));
+                                    return;
+                                }
                             }
                         }
                     }
@@ -199,17 +200,18 @@ public class FlowControlTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                stream.demand();
-                                return;
-                            }
-                            chunk.release();
-                            if (chunk.isLast())
-                            {
-                                stream.data(true, RetainableByteBuffer.EMPTY, Callback.from(NON_BLOCKING, serverDataLatch::countDown));
-                                return;
+                                if (chunk == null)
+                                {
+                                    stream.demand();
+                                    return;
+                                }
+                                if (chunk.isLast())
+                                {
+                                    stream.data(true, RetainableByteBuffer.empty(), Callback.from(NON_BLOCKING, serverDataLatch::countDown));
+                                    return;
+                                }
                             }
                         }
                     }
@@ -338,17 +340,18 @@ public class FlowControlTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                stream.demand();
-                                return;
-                            }
-                            chunk.release();
-                            if (chunk.isLast())
-                            {
-                                stream.reset(ErrorCode.NO_ERROR.code(), Callback.from(NON_BLOCKING, serverDataLatch::countDown));
-                                return;
+                                if (chunk == null)
+                                {
+                                    stream.demand();
+                                    return;
+                                }
+                                if (chunk.isLast())
+                                {
+                                    stream.reset(ErrorCode.NO_ERROR.code(), Callback.from(NON_BLOCKING, serverDataLatch::countDown));
+                                    return;
+                                }
                             }
                         }
                     }

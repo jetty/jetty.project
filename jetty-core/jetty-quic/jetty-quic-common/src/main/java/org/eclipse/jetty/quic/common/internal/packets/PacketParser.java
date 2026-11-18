@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.quic.common.internal.packets;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.packets.Packet;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public interface PacketParser
 {

@@ -54,7 +54,7 @@ public class ServerNameExtensionParser implements ExtensionParser
     }
 
     @Override
-    public int parse(RetainableByteBuffer buffer)
+    public long parse(RetainableByteBuffer buffer)
     {
         while (true)
         {

@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.ListIterator;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.ConnectionCloseFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
@@ -33,6 +32,8 @@ import org.eclipse.jetty.quic.common.frames.GeneratedFrame;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -228,7 +229,7 @@ class CryptoFlusher implements Callback
         maxFrameBytes -= session.estimatePacketHeaderLength(encryptionLevel);
         maxFrameBytes -= session.getTLSEngine().getCipherSuite().tagLength();
 
-        RetainableByteBuffer.Mutable framesAccumulator = flusher.getPlaintextBuffer();
+        BufferAccumulator framesAccumulator = flusher.getFramesAccumulator();
 
         // Generate the non-congestion-controlled entries such as ACKs
         // and PING probes, which are not limited by the congestion window.
@@ -240,7 +241,7 @@ class CryptoFlusher implements Callback
             long ccMaxFrameBytes = availableWindow;
             ccMaxFrameBytes -= session.estimatePacketHeaderLength(encryptionLevel);
             ccMaxFrameBytes -= session.getTLSEngine().getCipherSuite().tagLength();
-            ccMaxFrameBytes -= framesAccumulator.size();
+            ccMaxFrameBytes -= framesAccumulator.remaining();
             maxFrameBytes = Math.min(maxFrameBytes, ccMaxFrameBytes);
         }
 
@@ -262,29 +263,32 @@ class CryptoFlusher implements Callback
         // so there must be at least 3 bytes of payload
         // if the packet number is just 1 byte, which is
         // the common case. Pad with 4 bytes for simplicity.
-        if (framesAccumulator.size() < 4)
-            framesAccumulator.putInt(0);
+        if (framesAccumulator.remaining() < 4)
+            framesAccumulator.addRetained(RetainableByteBuffer.wrap(new byte[4]));
 
         List<Frame> frames = writing.size() == 1
             ? writing.getFirst().frames()
             : writing.stream().flatMap(entry -> entry.frames().stream()).toList();
         Packet packet = session.newPacket(encryptionLevel, frames);
 
-        RetainableByteBuffer.Mutable packetAccumulator = flusher.getEncryptedBuffer();
-        flusher.getPacketsGenerator().generate(packetAccumulator, packet, framesAccumulator);
-        boolean dataStalled = processing.isEmpty() || session.getSendWindow() == 0;
-        session.getPacketTracker().processPacketSent(session, packet, packetAccumulator.size(), dataStalled);
-        bytesWritten = packetAccumulator.size();
+        try (RetainableByteBuffer framesBuffer = framesAccumulator.take())
+        {
+            RetainableByteBuffer.Mutable packetBuffer = flusher.getPacketBuffer();
+            flusher.getPacketsGenerator().generate(packet, framesBuffer, packetBuffer);
+            boolean dataStalled = processing.isEmpty() || session.getSendWindow() == 0;
+            session.getPacketTracker().processPacketSent(session, packet, packetBuffer.remaining(), dataStalled);
+            bytesWritten = packetBuffer.remaining();
 
-        EndPoint endPoint = session.getEndPoint();
-        if (LOG.isDebugEnabled())
-            LOG.debug("writing {} {} to {} on {}", packet, packetAccumulator, endPoint, this);
-        endPoint.write(flusher, session.getRemoteSocketAddress(), packetAccumulator.getByteBuffer());
+            EndPoint endPoint = session.getEndPoint();
+            if (LOG.isDebugEnabled())
+                LOG.debug("writing {} {} to {} on {}", packet, packetBuffer, endPoint, this);
+            endPoint.write(packetBuffer, session.getRemoteSocketAddress(), flusher);
 
-        return true;
+            return true;
+        }
     }
 
-    private long generateEntries(RetainableByteBuffer.Mutable framesAccumulator, List<FramesEntry> entries, long maxFrameBytes)
+    private long generateEntries(BufferAccumulator framesAccumulator, List<FramesEntry> entries, long maxFrameBytes)
     {
         ListIterator<FramesEntry> iterator = entries.listIterator();
         while (iterator.hasNext())
@@ -350,7 +354,7 @@ class CryptoFlusher implements Callback
         return maxFrameBytes;
     }
 
-    GeneratedFrame generateFrame(RetainableByteBuffer.Mutable framesAccumulator, QuicStream stream, Frame frame, long maxBytes)
+    GeneratedFrame generateFrame(BufferAccumulator framesAccumulator, QuicStream stream, Frame frame, long maxBytes)
     {
         FramesGenerator framesGenerator = getFramesGenerator();
         return switch (frame)

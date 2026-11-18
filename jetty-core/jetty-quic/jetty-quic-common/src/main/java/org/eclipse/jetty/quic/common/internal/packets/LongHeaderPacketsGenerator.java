@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.quic.common.internal.packets;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.packets.HandshakePacket;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
 import org.eclipse.jetty.quic.common.packets.LongHeaderPacket;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.common.packets.RetryPacket;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class LongHeaderPacketsGenerator
 {
@@ -34,14 +34,14 @@ public class LongHeaderPacketsGenerator
         retryGenerator = new RetryPacketGenerator();
     }
 
-    public void generate(RetainableByteBuffer.Mutable packetAccumulator, LongHeaderPacket longPacket, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
+    public void generate(LongHeaderPacket packet, RetainableByteBuffer framesBuffer, RetainableByteBuffer.Mutable packetBuffer) throws Exception
     {
-        switch (longPacket)
+        switch (packet)
         {
-            case InitialPacket initialPacket -> initialGenerator.generate(packetAccumulator, initialPacket, framesAccumulator);
-            case HandshakePacket handshakePacket -> handshakeGenerator.generate(packetAccumulator, handshakePacket, framesAccumulator);
-            case RetryPacket retryPacket -> retryGenerator.generate(packetAccumulator, retryPacket, framesAccumulator);
-//            case ZeroRTTPacket zeroRTTPacket -> zeroGenerator.generate(packetAccumulator, zeroRTTPacket);
+            case InitialPacket initialPacket -> initialGenerator.generate(initialPacket, framesBuffer, packetBuffer);
+            case HandshakePacket handshakePacket -> handshakeGenerator.generate(handshakePacket, framesBuffer, packetBuffer);
+            case RetryPacket retryPacket -> retryGenerator.generate(retryPacket, packetBuffer);
+//            case ZeroRTTPacket zeroRTTPacket -> zeroGenerator.generate(zerRTTPacket, framesBuffer, packetBuffer);
             default -> throw new UnsupportedOperationException();
         }
     }

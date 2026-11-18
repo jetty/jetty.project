@@ -34,7 +34,7 @@ public class ExtensionsParser implements ExtensionParser.Listener
     private State state = State.LENGTH;
     private int cursor;
     private int length;
-    private int consumed;
+    private long consumed;
     private int code;
 
     public ExtensionsParser(boolean client)
@@ -136,8 +136,8 @@ public class ExtensionsParser implements ExtensionParser.Listener
                 }
                 case BODY ->
                 {
-                    ExtensionParser parser = parsers.computeIfAbsent(code, k -> new UnknownExtensionParser(code, this));
-                    int parsed = parser.parse(buffer);
+                    ExtensionParser parser = parsers.computeIfAbsent(code, _ -> new UnknownExtensionParser(code, this));
+                    long parsed = parser.parse(buffer);
                     if (parsed < 0)
                         return null;
                     code = 0;

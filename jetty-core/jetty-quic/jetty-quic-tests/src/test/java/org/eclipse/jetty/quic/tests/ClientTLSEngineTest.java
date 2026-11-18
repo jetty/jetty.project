@@ -20,8 +20,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.client.QuicClientQuicConfiguration;
@@ -43,6 +41,8 @@ import org.eclipse.jetty.tls.ext.SupportedGroupsExtension;
 import org.eclipse.jetty.tls.ext.SupportedVersionsExtension;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConstantThrowable;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +66,7 @@ public class ClientTLSEngineTest
     {
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers packetNumbers = new PacketNumbers();
-        TranscriptHash transcriptHash = new TranscriptHash(new QuicMessagesGenerator(byteBufferPool, , false, ), new QuicMessagesGenerator(byteBufferPool, , true, ));
+        TranscriptHash transcriptHash = new TranscriptHash(new QuicMessagesGenerator(byteBufferPool, false, false), new QuicMessagesGenerator(byteBufferPool, false, true));
         PacketProtector packetProtector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         QuicClientQuicConfiguration quicConfig = new QuicClientQuicConfiguration();

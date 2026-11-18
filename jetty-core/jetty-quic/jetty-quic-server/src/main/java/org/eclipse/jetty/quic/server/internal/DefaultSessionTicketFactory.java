@@ -14,7 +14,6 @@
 package org.eclipse.jetty.quic.server.internal;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
@@ -28,7 +27,6 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.frames.TransportParameters;
 import org.eclipse.jetty.quic.common.TransportParametersGenerator;
@@ -40,7 +38,10 @@ import org.eclipse.jetty.tls.CipherSuite;
 import org.eclipse.jetty.tls.TLSVersion;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.NanoTime;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /// An implementation of [SessionTicket.Factory] that produces
 /// [SessionTicket]s for the stateless server case.
@@ -136,13 +137,14 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
 
             SessionTicket.Configuration configuration = ticket.configuration();
             HandshakeData handshake = ticket.handshakeData();
-            byte[] serverName = handshake.serverName().getBytes(StandardCharsets.UTF_8);
+            byte[] serverName = handshake.serverName().getBytes(UTF_8);
             String appProtocol = handshake.applicationProtocol();
-            byte[] protocol = appProtocol == null ? BufferUtil.EMPTY_BYTES : appProtocol.getBytes(StandardCharsets.US_ASCII);
-            RetainableByteBuffer.DynamicCapacity accumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-            int length = generator.generate(accumulator, handshake.transportParameters());
-            byte[] transportParameters = new byte[length];
-            accumulator.get(transportParameters, 0, length);
+            byte[] protocol = appProtocol == null ? BufferUtil.EMPTY_BYTES : appProtocol.getBytes(UTF_8);
+            TransportParameters parameters = handshake.transportParameters();
+            int parametersLength = TransportParametersGenerator.length(parameters);
+            RetainableByteBuffer.Mutable buffer = RetainableByteBuffer.Mutable.allocate(parametersLength, false);
+            generator.generate(buffer, parameters);
+            byte[] transportParameters = buffer.getArray();
             byte[] resumptionSecret = ticket.resumptionMasterSecret().getEncoded();
             int capacity = 8 + 4 + 4 +
                 1 + configuration.nonce().length +
@@ -197,36 +199,36 @@ public class DefaultSessionTicketFactory implements SessionTicket.Factory
         if (decrypted == null)
             return null;
 
-        ByteBuffer byteBuffer = ByteBuffer.wrap(decrypted);
+        RetainableByteBuffer buffer = RetainableByteBuffer.wrap(decrypted);
 
-        long epochMillis = byteBuffer.getLong();
-        int lifetime = byteBuffer.getInt();
+        long epochMillis = buffer.getLong();
+        int lifetime = buffer.getInt();
         if (Instant.ofEpochMilli(epochMillis).plusMillis(lifetime).isBefore(Instant.now()))
             return null;
 
-        int ageAdd = byteBuffer.getInt();
-        int nonceLength = byteBuffer.get() & 0xFF;
+        int ageAdd = buffer.getInt();
+        int nonceLength = buffer.getByteAsInt();
         byte[] nonce = new byte[nonceLength];
-        byteBuffer.get(nonce);
+        buffer.get(nonce);
         SessionTicket.Configuration configuration = new SessionTicket.Configuration(lifetime, ageAdd, nonce);
 
-        QuicVersion quicVersion = QuicVersion.from(byteBuffer.getShort() & 0xFFFF);
-        TLSVersion tlsVersion = TLSVersion.from(byteBuffer.getShort() & 0xFFFF);
-        CipherSuite cipherSuite = CipherSuite.from(byteBuffer.getShort() & 0xFFFF);
-        int serverNameLength = byteBuffer.get() & 0xFF;
+        QuicVersion quicVersion = QuicVersion.from(buffer.getShortAsInt());
+        TLSVersion tlsVersion = TLSVersion.from(buffer.getShortAsInt());
+        CipherSuite cipherSuite = CipherSuite.from(buffer.getShortAsInt());
+        int serverNameLength = buffer.getByteAsInt();
         byte[] serverNameBytes = new byte[serverNameLength];
-        byteBuffer.get(serverNameBytes);
-        String serverName = new String(serverNameBytes, StandardCharsets.UTF_8);
-        int protocolLength = byteBuffer.get() & 0xFF;
+        buffer.get(serverNameBytes);
+        String serverName = new String(serverNameBytes, UTF_8);
+        int protocolLength = buffer.getByteAsInt();
         byte[] protocolBytes = new byte[protocolLength];
-        byteBuffer.get(protocolBytes);
-        String protocol = new String(protocolBytes, StandardCharsets.US_ASCII);
-        TransportParameters transportParameters = new TransportParametersParser(new VarLenInt()).parse(byteBuffer);
+        buffer.get(protocolBytes);
+        String protocol = new String(protocolBytes, UTF_8);
+        TransportParameters transportParameters = new TransportParametersParser(new VarLenInt()).parse(buffer);
         HandshakeData handshake = new HandshakeData(quicVersion, tlsVersion, serverName, cipherSuite, protocol, transportParameters);
 
-        int resumptionSecretLength = byteBuffer.get() & 0xFF;
+        int resumptionSecretLength = buffer.get() & 0xFF;
         byte[] resumptionSecretBytes = new byte[resumptionSecretLength];
-        byteBuffer.get(resumptionSecretBytes);
+        buffer.get(resumptionSecretBytes);
         SecretKey resumptionMasterSecret = new SecretKeySpec(resumptionSecretBytes, "AES");
 
         return new SessionTicket(configuration, handshake, resumptionMasterSecret);

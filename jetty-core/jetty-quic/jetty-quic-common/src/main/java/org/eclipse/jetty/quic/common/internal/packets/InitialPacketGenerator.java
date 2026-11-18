@@ -13,19 +13,17 @@
 
 package org.eclipse.jetty.quic.common.internal.packets;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
-import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.internal.Encrypter;
 import org.eclipse.jetty.quic.common.packets.EncodedPacketNumber;
 import org.eclipse.jetty.quic.common.packets.InitialPacket;
-import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class InitialPacketGenerator implements PacketGenerator
+public class InitialPacketGenerator
 {
     private static final Logger LOG = LoggerFactory.getLogger(InitialPacketGenerator.class);
 
@@ -54,68 +52,65 @@ public class InitialPacketGenerator implements PacketGenerator
         this.payloadMinLength = payloadMinLength;
     }
 
-    @Override
-    public void generate(RetainableByteBuffer.Mutable packetAccumulator, Packet packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
-    {
-        generate(packetAccumulator, (InitialPacket)packet, framesAccumulator);
-    }
-
-    private void generate(RetainableByteBuffer.Mutable packetAccumulator, InitialPacket packet, RetainableByteBuffer.Mutable framesAccumulator) throws Exception
+    public void generate(InitialPacket packet, RetainableByteBuffer framesBuffer, RetainableByteBuffer.Mutable packetBuffer) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("generating {}", packet);
 
-        long framesLength = framesAccumulator.size();
+        long framesLength = framesBuffer.remaining();
         int payloadMinLength = getPayloadMinimumLength();
         if (framesLength < payloadMinLength)
         {
             // A PADDING frame is just the byte 0x00.
-            long paddingLength = payloadMinLength - framesLength;
-            byte[] padding = new byte[Math.toIntExact(paddingLength)];
-            framesAccumulator.put(padding);
+            int paddingLength = payloadMinLength - (int)framesLength;
+            try (RetainableByteBuffer paddingBuffer = RetainableByteBuffer.allocate(paddingLength, false))
+            {
+                framesBuffer = RetainableByteBuffer.merge(framesBuffer, paddingBuffer);
+            }
             if (LOG.isDebugEnabled())
                 LOG.debug("generated {} padding bytes for {}", paddingLength, packet);
         }
+        else
+        {
+            framesBuffer.retain();
+        }
 
-        RetainableByteBuffer.Mutable headerAccumulator = new RetainableByteBuffer.DynamicCapacity(null, true, -1, 0, 0);
-        int form = 0b11000000;
-        int type = packet.packetType().type(packet.quicVersion()) << 4;
-        long packetNumber = packet.packetNumber();
-        EncodedPacketNumber encodedPacketNumber = packetNumbers.encode(EncryptionLevel.INITIAL, packetNumber);
-        int msb = form | type | (encodedPacketNumber.length() - 1);
-        headerAccumulator.put((byte)msb);
+        try (RetainableByteBuffer _ = framesBuffer)
+        {
+            int form = 0b11000000;
+            int type = packet.packetType().type(packet.quicVersion()) << 4;
+            long packetNumber = packet.packetNumber();
+            EncodedPacketNumber encodedPacketNumber = packetNumbers.encode(EncryptionLevel.INITIAL, packetNumber);
+            int firstByte = form | type | (encodedPacketNumber.length() - 1);
+            packetBuffer.put((byte)firstByte);
 
-        headerAccumulator.putInt(packet.quicVersion().code());
+            packetBuffer.putInt(packet.quicVersion().code());
 
-        byte[] dstConnectionId = packet.destinationConnectionId();
-        headerAccumulator.put((byte)dstConnectionId.length);
-        headerAccumulator.put(dstConnectionId);
+            byte[] dstConnectionId = packet.destinationConnectionId();
+            packetBuffer.put((byte)dstConnectionId.length);
+            packetBuffer.put(dstConnectionId);
 
-        byte[] srcConnectionId = packet.sourceConnectionId();
-        headerAccumulator.put((byte)srcConnectionId.length);
-        headerAccumulator.put(srcConnectionId);
+            byte[] srcConnectionId = packet.sourceConnectionId();
+            packetBuffer.put((byte)srcConnectionId.length);
+            packetBuffer.put(srcConnectionId);
 
-        byte[] token = packet.token();
-        VarLenInt.encode(headerAccumulator, token == null ? 0 : token.length);
-        if (token != null)
-            headerAccumulator.put(token);
+            byte[] token = packet.token();
+            VarLenInt.encode(packetBuffer, token == null ? 0 : token.length);
+            if (token != null)
+                packetBuffer.put(token);
 
-        // AEAD encryption produces 16 additional bytes.
-        long encryptedFramesLength = framesAccumulator.size() + 16;
-        long packetLength = encodedPacketNumber.length() + encryptedFramesLength;
+            // AEAD encryption produces 16 additional bytes.
+            long encryptedFramesLength = framesBuffer.remaining() + 16;
+            long packetLength = encodedPacketNumber.length() + encryptedFramesLength;
 
-        VarLenInt.encode(headerAccumulator, packetLength);
+            VarLenInt.encode(packetBuffer, packetLength);
 
-        encodedPacketNumber.putTo(headerAccumulator);
+            encodedPacketNumber.putTo(packetBuffer);
 
-        PacketBuffers packetBuffers = encrypter.encrypt(EncryptionLevel.INITIAL, packetNumber, headerAccumulator, framesAccumulator);
+            encrypter.encrypt(EncryptionLevel.INITIAL, packetNumber, framesBuffer, packetBuffer);
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("encrypted {} {}", packet, packetBuffers);
-
-        headerAccumulator.release();
-
-        packetAccumulator.add(packetBuffers.header());
-        packetAccumulator.add(packetBuffers.payload());
+            if (LOG.isDebugEnabled())
+                LOG.debug("encrypted {} {}", packet, packetBuffer);
+        }
     }
 }

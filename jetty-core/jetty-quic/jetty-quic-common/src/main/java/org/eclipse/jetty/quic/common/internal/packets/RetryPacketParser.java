@@ -13,13 +13,10 @@
 
 package org.eclipse.jetty.quic.common.internal.packets;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.RetryPacket;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,35 +28,34 @@ public class RetryPacketParser implements PacketParser
     public Packet parse(RetainableByteBuffer buffer) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("parsing RetryPacket {}", BufferUtil.toDetailString(buffer.getByteBuffer()));
+            LOG.debug("parsing RetryPacket {}", buffer);
 
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        long packetLength = byteBuffer.remaining();
+        long packetLength = buffer.remaining();
 
-        // Skip the form byte.
-        byteBuffer.get();
+        // Skip the first byte.
+        buffer.get();
 
-        int versionCode = byteBuffer.getInt();
+        int versionCode = buffer.getInt();
         QuicVersion quicVersion = QuicVersion.from(versionCode);
 
-        int length = byteBuffer.get() & 0xFF;
+        int length = buffer.getByteAsInt();
         byte[] dstConnectionId = new byte[length];
-        byteBuffer.get(dstConnectionId);
+        buffer.get(dstConnectionId);
 
-        length = byteBuffer.get() & 0xFF;
+        length = buffer.getByteAsInt();
         byte[] srcConnectionId = new byte[length];
-        byteBuffer.get(srcConnectionId);
+        buffer.get(srcConnectionId);
 
         // The token length is implicit, as the integrity is 16 bytes.
-        length = buffer.remaining() - 16;
+        length = (int)buffer.remaining() - 16;
 
         byte[] token = new byte[length];
-        byteBuffer.get(token);
+        buffer.get(token);
 
         byte[] integrity = new byte[16];
-        byteBuffer.get(integrity);
+        buffer.get(integrity);
 
-        assert byteBuffer.remaining() == 0;
+        assert !buffer.hasRemaining();
 
         RetryPacket packet = new RetryPacket(packetLength, quicVersion, dstConnectionId, srcConnectionId, token, integrity);
 

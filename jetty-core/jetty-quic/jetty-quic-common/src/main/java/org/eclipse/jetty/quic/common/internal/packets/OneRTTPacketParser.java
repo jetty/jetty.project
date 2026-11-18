@@ -13,19 +13,16 @@
 
 package org.eclipse.jetty.quic.common.internal.packets;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.common.EncryptionLevel;
-import org.eclipse.jetty.quic.common.PacketBuffers;
 import org.eclipse.jetty.quic.common.frames.FramesParser;
 import org.eclipse.jetty.quic.common.internal.Decrypter;
 import org.eclipse.jetty.quic.common.packets.OneRTTPacket;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.common.packets.PacketNumbers;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,61 +51,57 @@ public class OneRTTPacketParser implements PacketParser
     public Packet parse(RetainableByteBuffer buffer) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("parsing OneRTTPacket {}", BufferUtil.toDetailString(buffer.getByteBuffer()));
+            LOG.debug("parsing OneRTTPacket {}", buffer);
 
-        long remaining = buffer.size();
-        PacketBuffers packetBuffers = decrypter.decryptShortHeaderPacket(dstConnectionId, buffer);
-        long packetLength = remaining - buffer.size();
+        long remaining = buffer.remaining();
+        RetainableByteBuffer packetBuffer = decrypter.decryptShortHeaderPacket(dstConnectionId, buffer);
+        long packetLength = remaining - buffer.remaining();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("decrypted OneRTTPacket {}", packetBuffers);
+            LOG.debug("decrypted OneRTTPacket {}", packetBuffer);
 
-        if (packetBuffers == null)
+        try (packetBuffer)
         {
-            buffer.skip(buffer.size());
-            return Packet.DISCARD;
+            if (packetBuffer == null)
+            {
+                buffer.consume(buffer.remaining());
+                return Packet.DISCARD;
+            }
+
+            // TODO: we can introduce a listener to invoke here:
+            //  listener.onPacketBuffer(packetBuffer, Promise<Boolean> promise);
+            //  The promise boolean indicates whether to continue processing.
+            //  In this way, we can write a buffer-level proxy for plaintext QUIC.
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("parsing OneRTTPacket header {}", packetBuffer);
+
+            byte firstByte = packetBuffer.get();
+            boolean spin = (firstByte & 0b00100000) != 0;
+            boolean keyPhase = (firstByte & 0b00000100) != 0;
+            int encodedPacketNumberLength = (firstByte & 0b0000011) + 1;
+
+            byte[] dcid = new byte[dstConnectionId.length];
+            packetBuffer.get(dcid);
+
+            byte[] encodedPacketNumber = new byte[encodedPacketNumberLength];
+            packetBuffer.get(encodedPacketNumber);
+            long packetNumber = packetNumbers.decode(EncryptionLevel.ONE_RTT, encodedPacketNumber);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("parsed OneRTTPacket header, packetNumber={}", packetNumber);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("parsing OneRTTPacket payload {}", packetBuffer);
+
+            List<Frame> frames = framesParser.consume(packetBuffer);
+
+            OneRTTPacket packet = new OneRTTPacket(packetLength, packetNumber, dcid, spin, keyPhase, frames);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("parsed {}", packet);
+
+            return packet;
         }
-
-        // TODO: we can introduce a PacketBuffers.Listener to invoke here:
-        //  listener.onPacketBuffers(packetBuffers, Promise<Boolean> promise);
-        //  The promise boolean indicates whether to continue processing.
-        //  In this way, we can write a buffer-level proxy for plaintext QUIC.
-
-        RetainableByteBuffer header = packetBuffers.header();
-        ByteBuffer byteBuffer = header.getByteBuffer();
-        if (LOG.isDebugEnabled())
-            LOG.debug("parsing OneRTTPacket header {}", BufferUtil.toDetailString(byteBuffer));
-
-        byte form = byteBuffer.get();
-        boolean spin = (form & 0b00100000) != 0;
-        boolean keyPhase = (form & 0b00000100) != 0;
-        int encodedPacketNumberLength = (form & 0b0000011) + 1;
-
-        byte[] dcid = new byte[dstConnectionId.length];
-        byteBuffer.get(dcid);
-
-        byte[] encodedPacketNumber = new byte[encodedPacketNumberLength];
-        byteBuffer.get(encodedPacketNumber);
-        long packetNumber = packetNumbers.decode(EncryptionLevel.ONE_RTT, encodedPacketNumber);
-
-        assert byteBuffer.remaining() == 0;
-        header.release();
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("parsed OneRTTPacket header, packetNumber={}", packetNumber);
-
-        RetainableByteBuffer payload = packetBuffers.payload();
-        if (LOG.isDebugEnabled())
-            LOG.debug("parsing OneRTTPacket payload {}", BufferUtil.toDetailString(payload.getByteBuffer()));
-
-        List<Frame> frames = framesParser.consume(payload);
-        payload.release();
-
-        OneRTTPacket packet = new OneRTTPacket(packetLength, packetNumber, dcid, spin, keyPhase, frames);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("parsed {}", packet);
-
-        return packet;
     }
 }

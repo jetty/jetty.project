@@ -13,31 +13,28 @@
 
 package org.eclipse.jetty.quic.common.internal.frames;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.NewConnectionIdFrame;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class NewConnectionIdFrameParser implements FrameParser
 {
     @Override
     public Frame parse(RetainableByteBuffer buffer)
     {
-        ByteBuffer byteBuffer = buffer.getByteBuffer();
-        long type = VarLenInt.decodeLong(byteBuffer);
-        long sequenceNumber = VarLenInt.decodeLong(byteBuffer);
-        long retirePriorTo = VarLenInt.decodeLong(byteBuffer);
-        int length = byteBuffer.get() & 0xFF;
+        long type = VarLenInt.decodeLong(buffer);
+        long sequenceNumber = VarLenInt.decodeLong(buffer);
+        long retirePriorTo = VarLenInt.decodeLong(buffer);
+        int length = buffer.getByteAsInt();
         if (length < 1 || length > 20)
             throw new QuicException(ErrorCode.FRAME_ENCODING_ERROR, "invalid_connection_id", type);
         byte[] connectionId = new byte[length];
-        byteBuffer.get(connectionId);
+        buffer.get(connectionId);
         byte[] statelessResetToken = new byte[16];
-        byteBuffer.get(statelessResetToken);
+        buffer.get(statelessResetToken);
         return new NewConnectionIdFrame(sequenceNumber, retirePriorTo, connectionId, statelessResetToken);
     }
 }

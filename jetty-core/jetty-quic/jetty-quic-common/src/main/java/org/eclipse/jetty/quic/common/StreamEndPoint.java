@@ -15,11 +15,10 @@ package org.eclipse.jetty.quic.common;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.security.cert.X509Certificate;
-import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -27,14 +26,13 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.util.ErrorCode;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -214,7 +212,7 @@ public class StreamEndPoint implements EndPoint
     }
 
     @Override
-    public int fill(ByteBuffer sink) throws IOException
+    public int fill(RetainableByteBuffer.Mutable buffer) throws IOException
     {
         Content.Chunk current;
         try (AutoLock ignored = lock.lock())
@@ -229,67 +227,63 @@ public class StreamEndPoint implements EndPoint
         {
             if (current != null)
             {
-                ByteBuffer source = current.getByteBuffer();
-                if (source.hasRemaining())
+                try (Content.Chunk _ = current)
                 {
-                    int filled = copy(current, sink);
-
-                    boolean release = true;
-                    if (source.hasRemaining())
+                    if (current.hasRemaining())
                     {
-                        try (AutoLock ignored = lock.lock())
+                        int filled = copy(current, buffer);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("filled {} bytes on {}", filled, this);
+
+                        if (current.hasRemaining())
                         {
-                            // Do not overwrite concurrent failures.
-                            if (chunk == null)
+                            try (AutoLock ignored = lock.lock())
                             {
-                                chunk = current;
-                                release = false;
+                                // Do not overwrite concurrent failures.
+                                if (chunk == null)
+                                {
+                                    current.retain();
+                                    chunk = current;
+                                }
                             }
                         }
-                    }
-                    else
-                    {
-                        try (AutoLock ignored = lock.lock())
+                        else
                         {
-                            // Do not overwrite concurrent failures.
-                            if (chunk == null && current.isLast())
-                                chunk = Content.Chunk.EOF;
+                            try (AutoLock _ = lock.lock())
+                            {
+                                // Do not overwrite concurrent failures.
+                                if (chunk == null && current.isLast())
+                                    chunk = Content.Chunk.EOF;
+                            }
                         }
+
+                        return filled;
                     }
 
-                    if (release)
-                        current.release();
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("filled {} bytes on {}", filled, this);
-
-                    return filled;
-                }
-
-                if (Content.Chunk.isFailure(current))
-                {
-                    try (AutoLock ignored = lock.lock())
-                    {
-                        // Do not overwrite concurrent failures.
-                        if (chunk == null)
-                            chunk = current;
-                    }
-                    throw IO.rethrow(current.getFailure());
-                }
-
-                if (current.isLast())
-                {
-                    if (current != Content.Chunk.EOF)
+                    if (Content.Chunk.isFailure(current))
                     {
                         try (AutoLock ignored = lock.lock())
                         {
                             // Do not overwrite concurrent failures.
                             if (chunk == null)
-                                chunk = Content.Chunk.EOF;
+                                chunk = current;
                         }
-                        current.release();
+                        throw IO.rethrow(current.getFailure());
                     }
-                    return -1;
+
+                    if (current.isLast())
+                    {
+                        if (current != Content.Chunk.EOF)
+                        {
+                            try (AutoLock ignored = lock.lock())
+                            {
+                                // Do not overwrite concurrent failures.
+                                if (chunk == null)
+                                    chunk = Content.Chunk.EOF;
+                            }
+                        }
+                        return -1;
+                    }
                 }
             }
 
@@ -305,7 +299,7 @@ public class StreamEndPoint implements EndPoint
 
     /**
      * <p>Fills from this {@code StreamEndPoint}.</p>
-     * <p>This method should be used in alternative to {@link #fill(ByteBuffer)},
+     * <p>This method should be used in alternative to {@link #fill(RetainableByteBuffer.Mutable)},
      * when the {@link Connection} installed on top of this {@code StreamEndPoint}
      * needs to know both the bytes and whether the QUIC data is the last in the
      * stream, for example in HTTP/3.</p>
@@ -329,30 +323,23 @@ public class StreamEndPoint implements EndPoint
         return current;
     }
 
-    private int copy(Content.Chunk chunk, ByteBuffer sink)
+    private int copy(Content.Chunk chunk, RetainableByteBuffer.Mutable sink)
     {
-        int length = 0;
-        ByteBuffer source = chunk.getByteBuffer();
-        if (source.hasRemaining())
+        if (!chunk.hasRemaining())
+            return 0;
+        try (RetainableByteBuffer buffer = chunk.acquire())
         {
-            int sinkPosition = BufferUtil.flipToFill(sink);
-            int sourceLength = source.remaining();
-            length = Math.min(sourceLength, sink.remaining());
-            int sourceLimit = source.limit();
-            source.limit(source.position() + length);
-            sink.put(source);
-            source.limit(sourceLimit);
-            BufferUtil.flipToFlush(sink, sinkPosition);
+            return (int)sink.append(buffer);
         }
-        return length;
     }
 
     @Override
-    public boolean flush(ByteBuffer... buffers) throws IOException
+    public boolean flush(RetainableByteBuffer buffer) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("flushing {} on {}", BufferUtil.toDetailString(buffers), this);
-        if (buffers == null || buffers.length == 0 || BufferUtil.remaining(buffers) == 0)
+            LOG.debug("flushing {} on {}", buffer, this);
+
+        if (buffer == null || !buffer.hasRemaining())
             return true;
 
         // Differently from other EndPoint implementations, where write() calls
@@ -374,29 +361,27 @@ public class StreamEndPoint implements EndPoint
     }
 
     @Override
-    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
-    {
-        write(false, List.of(buffers), callback);
-    }
-
-    @Override
-    public void write(boolean last, ByteBuffer byteBuffer, Callback callback)
-    {
-        write(last, List.of(byteBuffer), callback);
-    }
-
-    @Override
     public Callback cancelWrite(Throwable cause)
     {
         // TODO
         throw new UnsupportedOperationException();
     }
 
-    public void write(boolean last, List<ByteBuffer> buffers, Callback callback)
+    @Override
+    public void write(RetainableByteBuffer buffer, Callback callback) throws WritePendingException
+    {
+        write(false, buffer, callback);
+    }
+
+    @Override
+    public void write(boolean last, RetainableByteBuffer buffer, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("writing last={} {} on {}", last, BufferUtil.toDetailString(buffers.toArray(ByteBuffer[]::new)), this);
-        if (last || remaining(buffers) > 0)
+            LOG.debug("writing last={} {} on {}", last, buffer, this);
+
+        buffer = Objects.requireNonNullElse(buffer, RetainableByteBuffer.empty());
+
+        if (last || buffer.hasRemaining())
         {
             while (true)
             {
@@ -408,21 +393,17 @@ public class StreamEndPoint implements EndPoint
                         if (!writeState.compareAndSet(current, WriteState.PENDING))
                             continue;
 
-                        RetainableByteBuffer.Mutable buffer = new RetainableByteBuffer.DynamicCapacity(protocolSession.getByteBufferPool(), true, -1, 0, 0);
-                        buffers.forEach(buffer::add);
                         stream.data(last, buffer, new Callback()
                         {
                             @Override
                             public void succeeded()
                             {
-                                buffer.release();
                                 writeSuccess(callback);
                             }
 
                             @Override
                             public void failed(Throwable x)
                             {
-                                buffer.release();
                                 writeFailure(x, callback);
                             }
 
@@ -445,16 +426,6 @@ public class StreamEndPoint implements EndPoint
         {
             callback.succeeded();
         }
-    }
-
-    private long remaining(List<ByteBuffer> buffers)
-    {
-        long remaining = 0;
-        for (ByteBuffer buffer : buffers)
-        {
-            remaining += buffer.remaining();
-        }
-        return remaining;
     }
 
     private void writeSuccess(Callback callback)
@@ -587,26 +558,29 @@ public class StreamEndPoint implements EndPoint
     {
         Connection oldConnection = getConnection();
 
-        ByteBuffer byteBuffer = null;
+        RetainableByteBuffer.Mutable buffer = null;
         if (oldConnection instanceof Connection.UpgradeFrom from)
-            byteBuffer = from.onUpgradeFrom();
+            buffer = from.onUpgradeFrom();
 
-        oldConnection.onClose(null);
-        setConnection(newConnection);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} upgrading from {} to {} with {}",
-                this, oldConnection, newConnection, BufferUtil.toDetailString(byteBuffer));
-
-        if (BufferUtil.hasContent(byteBuffer))
+        try (RetainableByteBuffer _ = buffer)
         {
-            if (newConnection instanceof Connection.UpgradeTo to)
-                to.onUpgradeTo(byteBuffer);
-            else
-                throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
-        }
+            oldConnection.onClose(null);
+            setConnection(newConnection);
 
-        newConnection.onOpen();
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} upgrading from {} to {} with {}",
+                    this, oldConnection, newConnection, buffer);
+
+            if (buffer != null && buffer.hasRemaining())
+            {
+                if (newConnection instanceof Connection.UpgradeTo to)
+                    to.onUpgradeTo(buffer);
+                else
+                    throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
+            }
+
+            newConnection.onOpen();
+        }
     }
 
     @Override

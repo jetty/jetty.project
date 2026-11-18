@@ -20,7 +20,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.Frame;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.quic.common.RTTData;
 import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,15 +90,16 @@ public class CongestionTest extends AbstractTest
                     {
                         while (true)
                         {
-                            Content.Chunk chunk = stream.read();
-                            if (chunk == null)
+                            try (Content.Chunk chunk = stream.read())
                             {
-                                stream.demand();
-                                return;
+                                if (chunk == null)
+                                {
+                                    stream.demand();
+                                    return;
+                                }
+                                if (chunk.isLast())
+                                    break;
                             }
-                            chunk.release();
-                            if (chunk.isLast())
-                                break;
                         }
                         stream.data(true, RetainableByteBuffer.wrap(ByteBuffer.wrap(data)), Callback.NOOP);
                     }
@@ -159,21 +160,25 @@ public class CongestionTest extends AbstractTest
             {
                 while (true)
                 {
-                    Content.Chunk chunk = stream.read();
-                    if (chunk == null)
+                    try (Content.Chunk chunk = stream.read())
                     {
-                        stream.demand();
-                        return;
+                        if (chunk == null)
+                        {
+                            stream.demand();
+                            return;
+                        }
+                        try (RetainableByteBuffer buffer = chunk.acquire())
+                        {
+                            buffer.putTo(received);
+                            if (chunk.isLast())
+                                break;
+                        }
                     }
-                    received.put(chunk.getByteBuffer());
-                    chunk.release();
-                    if (chunk.isLast())
-                        break;
                 }
                 clientDataLatch.countDown();
             }
         });
-        clientStream.data(true, RetainableByteBuffer.EMPTY, Callback.NOOP);
+        clientStream.data(true, RetainableByteBuffer.empty(), Callback.NOOP);
         clientStream.demand();
 
         assertTrue(clientDataLatch.await(5, SECONDS));

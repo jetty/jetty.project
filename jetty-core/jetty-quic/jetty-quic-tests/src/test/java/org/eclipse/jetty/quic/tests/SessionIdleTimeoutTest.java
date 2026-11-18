@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.Content;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.Session;
 import org.eclipse.jetty.quic.api.Stream;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.quic.common.packets.Packet;
 import org.eclipse.jetty.quic.server.internal.ServerQuicConnection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -383,7 +383,7 @@ public class SessionIdleTimeoutTest extends AbstractTest
             }
         });
         Consumer<Throwable> throwableConsumer = _ -> clientStream1.demand();
-        clientStream1.data(true, RetainableByteBuffer.EMPTY, Callback.from(NON_BLOCKING, throwableConsumer));
+        clientStream1.data(true, RetainableByteBuffer.empty(), Callback.from(NON_BLOCKING, throwableConsumer));
         long streamId2 = clientSession.newStreamId(true);
         Stream clientStream2 = clientSession.newStream(streamId2, new Stream.Listener()
         {
@@ -401,7 +401,7 @@ public class SessionIdleTimeoutTest extends AbstractTest
                 clientStreamTerminatedLatch.countDown();
             }
         });
-        clientStream2.data(true, RetainableByteBuffer.EMPTY, Callback.from(NON_BLOCKING, _ -> clientStream2.demand()));
+        clientStream2.data(true, RetainableByteBuffer.empty(), Callback.from(NON_BLOCKING, _ -> clientStream2.demand()));
 
         Session serverSession = await().atMost(5, SECONDS).until(serverSessionRef::get, notNullValue());
         await().atMost(5, SECONDS).until(serverSession::getStreams, hasSize(2));

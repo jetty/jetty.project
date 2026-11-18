@@ -14,12 +14,11 @@
 package org.eclipse.jetty.quic.common.internal.frames;
 
 import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 public class CryptoFrameParser implements FrameParser
 {
@@ -38,25 +37,24 @@ public class CryptoFrameParser implements FrameParser
     {
         while (true)
         {
-            int remaining = buffer.remaining();
+            long remaining = buffer.remaining();
             if (remaining == 0)
                 return null;
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
             switch (state)
             {
                 case FRAME_TYPE ->
                 {
-                    byteBuffer.get();
+                    buffer.get();
                     state = State.OFFSET;
                 }
                 case OFFSET ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, offset -> this.offset = offset))
+                    if (varLenInt.tryDecode(buffer, offset -> this.offset = offset))
                         state = State.LENGTH;
                 }
                 case LENGTH ->
                 {
-                    if (varLenInt.tryDecode(byteBuffer, length -> this.length = length))
+                    if (varLenInt.tryDecode(buffer, length -> this.length = length))
                         state = State.DATA;
                 }
                 case DATA ->
@@ -68,13 +66,14 @@ public class CryptoFrameParser implements FrameParser
                     }
                     else
                     {
-                        RetainableByteBuffer slice = buffer.slice(length);
-                        byteBuffer.position(byteBuffer.position() + (int)length);
-                        CryptoFrame frame = new CryptoFrame(offset, slice);
-                        state = State.FRAME_TYPE;
-                        offset = 0;
-                        length = 0;
-                        return frame;
+                        try (RetainableByteBuffer slice = buffer.sliceAndConsume(length))
+                        {
+                            CryptoFrame frame = new CryptoFrame(offset, slice);
+                            state = State.FRAME_TYPE;
+                            offset = 0;
+                            length = 0;
+                            return frame;
+                        }
                     }
                 }
             }

@@ -16,7 +16,6 @@ package org.eclipse.jetty.quic.server.internal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,9 +54,9 @@ import org.eclipse.jetty.quic.util.QuicException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.util.Blocker;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Invocable.Task;
@@ -145,26 +144,22 @@ public class ServerQuicConnection extends QuicConnection
     @Override
     protected Runnable doProduce()
     {
-        RetainableByteBuffer buffer = getByteBufferPool().acquire(getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers());
-        try
+        try (RetainableByteBuffer.Mutable buffer = getByteBufferPool().acquire(getInputBufferSize(), quicConfiguration.isUseInputDirectByteBuffers()))
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
             while (true)
             {
-                SocketAddress address = getEndPoint().receive(byteBuffer);
-                int filled = address == EndPoint.EOF ? -1 : buffer.remaining();
+                SocketAddress address = getEndPoint().receive(buffer);
+                long filled = address == EndPoint.EOF ? -1 : buffer.remaining();
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled {} bytes from {} on {}", filled, address, this);
 
                 if (filled < 0)
                 {
-                    buffer.release();
                     getEndPoint().shutdownOutput();
                     return null;
                 }
                 if (filled == 0)
                 {
-                    buffer.release();
                     fillInterested();
                     return null;
                 }
@@ -172,21 +167,21 @@ public class ServerQuicConnection extends QuicConnection
                 bytesIn.addAndGet(filled);
 
                 // Retrieve the destination connection id from the packet.
-                int position = byteBuffer.position();
+                long position = buffer.readPosition();
                 byte[] bytes;
-                if (Packet.isLongHeader(byteBuffer.get(position)))
+                if (Packet.isLongHeader(buffer.get(position)))
                 {
                     // Skip form and version bytes.
-                    int offset = position + 1 + 4;
-                    bytes = new byte[byteBuffer.get(offset) & 0xFF];
-                    byteBuffer.get(offset + 1, bytes);
+                    long offset = position + 1 + 4;
+                    bytes = new byte[buffer.getByteAsInt(offset)];
+                    buffer.get(offset + 1, bytes);
                 }
                 else
                 {
                     // Skip the form byte.
-                    int offset = position + 1;
+                    long offset = position + 1;
                     bytes = new byte[getDestinationConnectionIdLength()];
-                    byteBuffer.get(offset, bytes);
+                    buffer.get(offset, bytes);
                 }
                 ConnectionId dstConnectionId = new ConnectionId(bytes);
 
@@ -201,7 +196,6 @@ public class ServerQuicConnection extends QuicConnection
                 if (task == null)
                     continue;
 
-                buffer.release();
                 return task;
             }
         }
@@ -209,7 +203,6 @@ public class ServerQuicConnection extends QuicConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failed to produce on {}", this, x);
-            buffer.release();
             fail(x);
             return null;
         }
@@ -220,15 +213,14 @@ public class ServerQuicConnection extends QuicConnection
         ServerQuicSession session = sessions.get(dstConnectionId);
         if (session == null)
         {
-            ByteBuffer byteBuffer = buffer.getByteBuffer();
-            int position = byteBuffer.position();
+            long position = buffer.readPosition();
 
-            if (!Packet.isLongHeader(byteBuffer.get(position)))
+            if (!Packet.isLongHeader(buffer.get(position)))
             {
                 // No session, cannot decrypt (no keys), just drop it.
                 if (LOG.isDebugEnabled())
-                    LOG.debug("dropping datagram {} on {}", BufferUtil.toDetailString(byteBuffer), this);
-                BufferUtil.clear(byteBuffer);
+                    LOG.debug("dropping datagram {} on {}", buffer, this);
+                buffer.consume(buffer.remaining());
                 return;
             }
 
@@ -236,24 +228,24 @@ public class ServerQuicConnection extends QuicConnection
             session = newSession();
 
             // RFC-9000 #17.2.1: version negotiation.
-            int quicVersionCode = byteBuffer.getInt(position + 1);
+            int quicVersionCode = buffer.getInt(position + 1);
             QuicVersion quicVersion = QuicVersion.from(quicVersionCode);
             List<QuicVersion> quicVersions = getServerQuicConfiguration().getQuicVersions();
             if (quicVersion == null || !quicVersions.contains(quicVersion))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("unsupported quic version 0x{} on {}", Integer.toHexString(quicVersionCode), this);
+                    LOG.debug("unsupported QUIC version 0x{} on {}", Integer.toHexString(quicVersionCode), this);
                 // RFC-9000 #17.2.1: echo scid and dcid.
                 byte[] dcid = dstConnectionId.bytes();
-                int offset = position + 1 + 4 + 1 + dcid.length;
-                int scidLength = byteBuffer.get(offset) & 0xFF;
+                long offset = position + 1 + 4 + 1 + dcid.length;
+                int scidLength = buffer.getByteAsInt(offset);
                 byte[] scid = new byte[scidLength];
-                byteBuffer.get(offset + 1, scid);
+                buffer.getArray(offset + 1, scid);
                 VersionNegotiationPacket versionNegotiationPacket = new VersionNegotiationPacket(scid, dcid, quicVersions);
                 // Use the un-initialized session to send the version
                 // negotiation packet and then throw the session away.
                 session.packet(versionNegotiationPacket, Callback.from(session::dispose));
-                BufferUtil.clear(byteBuffer);
+                buffer.consume(buffer.remaining());
                 return;
             }
 

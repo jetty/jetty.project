@@ -16,9 +16,6 @@ package org.eclipse.jetty.quic.common.packets;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.QuicVersion;
 import org.eclipse.jetty.quic.api.frames.AckFrame;
 import org.eclipse.jetty.quic.api.frames.CryptoFrame;
@@ -31,6 +28,10 @@ import org.eclipse.jetty.quic.common.internal.packets.InitialPacketParser;
 import org.eclipse.jetty.tls.common.TranscriptHash;
 import org.eclipse.jetty.tls.common.generator.MessagesGenerator;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.buffer.ArrayByteBufferPool;
+import org.eclipse.jetty.util.buffer.BufferAccumulator;
+import org.eclipse.jetty.util.buffer.ByteBufferPool;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -71,23 +72,20 @@ public class PacketGeneratorParserTest
                 return new EncodedPacketNumber((int)packetNumber, 4);
             }
         };
-        TranscriptHash transcriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
+        TranscriptHash transcriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false, false), new MessagesGenerator(byteBufferPool, false, true));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, true);
         protector.generateInitialKeys(QuicVersion.V1, destination);
 
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
-        RetainableByteBuffer.Mutable framesAccumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
+        BufferAccumulator framesAccumulator = new BufferAccumulator();
         framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, 0, 1500);
 
         InitialPacketGenerator packetGenerator = new InitialPacketGenerator(packetNumbers, protector);
         // Unclear why the RFC uses 1162 as the InitialPacket payload length, but that's what it uses.
         packetGenerator.setPayloadMinimumLength(1162);
 
-        RetainableByteBuffer.Mutable packetAccumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
-        packetGenerator.generate(packetAccumulator, initialPacket, framesAccumulator);
-        framesAccumulator.release();
-
-        ByteBuffer byteBuffer = packetAccumulator.getByteBuffer();
+        RetainableByteBuffer.Mutable packetBuffer = RetainableByteBuffer.Mutable.allocate(2048, false);
+        packetGenerator.generate(initialPacket, framesAccumulator.take(), packetBuffer);
 
         String expected = """
             c000000001088394c8f03e5157080000 449e7b9aec34d1b1c98dd7689fb8ec11
@@ -129,9 +127,7 @@ public class PacketGeneratorParserTest
             7e78bfe706ca4cf5e9c5453e9f7cfd2b 8b4c8d169a44e55c88d4a9a7f9474241
             e221af44860018ab0856972e194cd934
             """.replaceAll("[\n ]", "");
-        assertThat(StringUtil.toHexString(byteBuffer), equalToIgnoringCase(expected));
-
-        packetAccumulator.release();
+        assertThat(StringUtil.toHexString(packetBuffer), equalToIgnoringCase(expected));
     }
 
     @Test
@@ -161,23 +157,20 @@ public class PacketGeneratorParserTest
                 return new EncodedPacketNumber((int)packetNumber, 2);
             }
         };
-        TranscriptHash transcriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
+        TranscriptHash transcriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false, false), new MessagesGenerator(byteBufferPool, false, true));
         PacketProtector protector = new PacketProtector(byteBufferPool, packetNumbers, transcriptHash, false);
         protector.generateInitialKeys(QuicVersion.V1, StringUtil.fromHexString("8394c8f03e515708"));
 
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
-        RetainableByteBuffer.Mutable framesAccumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
+        BufferAccumulator framesAccumulator = new BufferAccumulator();
         framesGenerator.generateFrame(framesAccumulator, ackFrame, 1500);
         framesGenerator.generateCryptoFrame(framesAccumulator, cryptoFrame, 0, 1500);
 
         InitialPacketGenerator packetGenerator = new InitialPacketGenerator(packetNumbers, protector);
         packetGenerator.setPayloadMinimumLength(0);
 
-        RetainableByteBuffer.Mutable packetAccumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
-        packetGenerator.generate(packetAccumulator, initialPacket, framesAccumulator);
-        framesAccumulator.release();
-
-        ByteBuffer byteBuffer = packetAccumulator.getByteBuffer();
+        RetainableByteBuffer.Mutable packetBuffer = RetainableByteBuffer.Mutable.allocate(2048, false);
+        packetGenerator.generate(initialPacket, framesAccumulator.take(), packetBuffer);
 
         String expected = """
             cf000000010008f067a5502a4262b500 4075c0d95a482cd0991cd25b0aac406a
@@ -186,9 +179,7 @@ public class PacketGeneratorParserTest
             022f8ef4cdd93795d77d06edbb7aaf2f 58891850abbdca3d20398c276456cbc4
             2158407dd074ee
             """.replaceAll("[\n ]", "");;
-        assertThat(StringUtil.toHexString(byteBuffer), equalToIgnoringCase(expected));
-        
-        packetAccumulator.release();
+        assertThat(StringUtil.toHexString(packetBuffer), equalToIgnoringCase(expected));
     }
 
     @Test
@@ -213,28 +204,26 @@ public class PacketGeneratorParserTest
 
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers clientPacketNumbers = new PacketNumbers();
-        TranscriptHash clientTranscriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
+        TranscriptHash clientTranscriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false, false), new MessagesGenerator(byteBufferPool, false, true));
         PacketProtector clientProtector = new PacketProtector(byteBufferPool, clientPacketNumbers, clientTranscriptHash, true);
         clientProtector.generateInitialKeys(QuicVersion.V1, destination);
 
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
-        RetainableByteBuffer.Mutable framesAccumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
+        BufferAccumulator framesAccumulator = new BufferAccumulator();
         framesGenerator.generateCryptoFrame(framesAccumulator, generatedCryptoFrame, 0, 1500);
 
         InitialPacketGenerator packetGenerator = new InitialPacketGenerator(clientPacketNumbers, clientProtector);
 
-        RetainableByteBuffer.Mutable packetAccumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
-        packetGenerator.generate(packetAccumulator, generated, framesAccumulator);
-        framesAccumulator.release();
+        RetainableByteBuffer.Mutable packetBuffer = RetainableByteBuffer.Mutable.allocate(2048, false);
+        packetGenerator.generate(generated, framesAccumulator.take(), packetBuffer);
 
         PacketNumbers serverPacketNumbers = new PacketNumbers();
-        TranscriptHash serverTranscriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, true), new MessagesGenerator(byteBufferPool, false));
+        TranscriptHash serverTranscriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false, true), new MessagesGenerator(byteBufferPool, false, false));
         PacketProtector serverProtector = new PacketProtector(byteBufferPool, serverPacketNumbers, serverTranscriptHash, false);
         serverProtector.generateInitialKeys(QuicVersion.V1, destination);
         FramesParser framesParser = new FramesParser();
         InitialPacketParser parser = new InitialPacketParser(serverProtector, serverPacketNumbers, framesParser);
-        Packet packet = parser.parse(packetAccumulator);
-        packetAccumulator.release();
+        Packet packet = parser.parse(packetBuffer);
 
         assertInstanceOf(InitialPacket.class, packet);
         InitialPacket parsed = (InitialPacket)packet;
@@ -246,7 +235,10 @@ public class PacketGeneratorParserTest
         CryptoFrame parsedCryptoFrame = (CryptoFrame)parsed.frames().getFirst();
         assertEquals(generatedCryptoFrame.offset(), parsedCryptoFrame.offset());
         assertEquals(generatedCryptoFrame.length(), parsedCryptoFrame.length());
-        parsedCryptoFrame.accept(data -> assertArrayEquals(clientHello, data.takeByteArray()));
+        try (RetainableByteBuffer data = parsedCryptoFrame.acquire())
+        {
+            assertArrayEquals(clientHello, data.getArray());
+        }
     }
 
     // TODO: RetryPacket from the RFC + RetryPacketGenerateParse
@@ -263,33 +255,31 @@ public class PacketGeneratorParserTest
 
         ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
         PacketNumbers clientPacketNumbers = new PacketNumbers();
-        TranscriptHash clientTranscriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false), new MessagesGenerator(byteBufferPool, true));
+        TranscriptHash clientTranscriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false, false), new MessagesGenerator(byteBufferPool, false, true));
         PacketProtector clientProtector = new PacketProtector(byteBufferPool, clientPacketNumbers, clientTranscriptHash, true);
         clientProtector.generateInitialKeys(QuicVersion.V1, destination);
 
         FramesGenerator framesGenerator = new FramesGenerator(byteBufferPool);
-        RetainableByteBuffer.Mutable framesAccumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
+        BufferAccumulator framesAccumulator = new BufferAccumulator();
         framesGenerator.generateFrame(framesAccumulator, frame, 1500);
-        assertEquals(1, framesAccumulator.size());
+        assertEquals(1, framesAccumulator.remaining());
         // Add padding to ensure proper encryption.
-        framesAccumulator.putInt(0);
+        framesAccumulator.addRetained(RetainableByteBuffer.wrap(new byte[4]));
 
         InitialPacketGenerator packetGenerator = new InitialPacketGenerator(clientPacketNumbers, clientProtector);
         // No padding to simulate handshake and OneRTT packets.
         packetGenerator.setPayloadMinimumLength(0);
 
-        RetainableByteBuffer.Mutable packetAccumulator = new RetainableByteBuffer.DynamicCapacity(byteBufferPool, true, -1, 0, 0);
-        packetGenerator.generate(packetAccumulator, generated, framesAccumulator);
-        framesAccumulator.release();
+        RetainableByteBuffer.Mutable packetBuffer = RetainableByteBuffer.Mutable.allocate(2048, false);
+        packetGenerator.generate(generated, framesAccumulator.take(), packetBuffer);
 
         PacketNumbers serverPacketNumbers = new PacketNumbers();
-        TranscriptHash serverTranscriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, true), new MessagesGenerator(byteBufferPool, false));
+        TranscriptHash serverTranscriptHash = new TranscriptHash(new MessagesGenerator(byteBufferPool, false, true), new MessagesGenerator(byteBufferPool, false, false));
         PacketProtector serverProtector = new PacketProtector(byteBufferPool, serverPacketNumbers, serverTranscriptHash, false);
         serverProtector.generateInitialKeys(QuicVersion.V1, destination);
         FramesParser framesParser = new FramesParser();
         InitialPacketParser parser = new InitialPacketParser(serverProtector, serverPacketNumbers, framesParser);
-        Packet packet = parser.parse(packetAccumulator);
-        packetAccumulator.release();
+        Packet packet = parser.parse(packetBuffer);
 
         assertInstanceOf(InitialPacket.class, packet);
         InitialPacket parsed = (InitialPacket)packet;
@@ -298,7 +288,6 @@ public class PacketGeneratorParserTest
         assertEquals(generated.packetNumber(), parsed.packetNumber());
         assertArrayEquals(generated.destinationConnectionId(), parsed.destinationConnectionId());
         assertEquals(1, parsed.frames().size());
-        PingFrame parsedFrame = (PingFrame)parsed.frames().getFirst();
-        System.err.println("parsedFrame = " + parsedFrame);
+        assertInstanceOf(PingFrame.class, parsed.frames().getFirst());
     }
 }

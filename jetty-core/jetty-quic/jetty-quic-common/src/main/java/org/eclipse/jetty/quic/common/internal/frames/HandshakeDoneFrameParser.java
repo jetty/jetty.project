@@ -13,10 +13,10 @@
 
 package org.eclipse.jetty.quic.common.internal.frames;
 
-import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.quic.api.frames.Frame;
 import org.eclipse.jetty.quic.api.frames.HandshakeDoneFrame;
 import org.eclipse.jetty.quic.util.VarLenInt;
+import org.eclipse.jetty.util.buffer.RetainableByteBuffer;
 
 /// A parser for QUIC HANDSHAKE_DONE frames.
 public class HandshakeDoneFrameParser implements FrameParser
@@ -26,7 +26,7 @@ public class HandshakeDoneFrameParser implements FrameParser
     @Override
     public Frame parse(RetainableByteBuffer buffer)
     {
-        VarLenInt.decodeLong(buffer.getByteBuffer());
+        VarLenInt.decodeLong(buffer);
         return HANDSHAKE_DONE_FRAME;
     }
 }
