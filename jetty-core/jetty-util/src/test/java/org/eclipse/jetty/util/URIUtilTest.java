@@ -1501,4 +1501,57 @@ public class URIUtilTest
         String actual = URIUtil.normalizeScheme(input);
         assertThat(actual, is(expected));
     }
+
+    // "swedish-å.txt" with the 'å' precomposed (NFC: U+00E5 == %C3%A5).
+    private static final URI NFC_URI = URI.create("file:///tmp/dir/swedish-%C3%A5.txt");
+    // The same name decomposed (NFD: 'a' + combining ring U+030A == a%CC%8A).
+    private static final URI NFD_URI = URI.create("file:///tmp/dir/swedish-a%CC%8A.txt");
+
+    @Test
+    public void testToNfcUriDecomposedNameComposesToNfc()
+    {
+        // The NFD form (base letter plus a separately-encoded combining mark) is rewritten to the
+        // single precomposed NFC character, even though the base letter is literal ASCII in the URI.
+        assertThat(URIUtil.toNfcUri(NFD_URI).toASCIIString(), is(NFC_URI.toASCIIString()));
+    }
+
+    @Test
+    public void testToNfcUriComposedNameIsLeftUnchanged()
+    {
+        assertThat(URIUtil.toNfcUri(NFC_URI).toASCIIString(), is(NFC_URI.toASCIIString()));
+    }
+
+    @Test
+    public void testToNfcUriNfcAndNfdFoldToTheSameUri()
+    {
+        // The property alias detection relies on: two URIs differing only in normalization form are
+        // equal after folding.
+        assertThat(URIUtil.toNfcUri(NFD_URI), is(URIUtil.toNfcUri(NFC_URI)));
+    }
+
+    @Test
+    public void testToNfcUriAsciiPercentEscapeIsPreserved()
+    {
+        // %27 is an apostrophe (an ASCII byte): it must stay encoded, not be decoded to ', so an
+        // encoding difference that is not a normalization difference still reads as distinct.
+        URI encoded = URI.create("file:///tmp/dir/foo%27s.txt");
+        URI literal = URI.create("file:///tmp/dir/foo's.txt");
+        assertThat(URIUtil.toNfcUri(encoded).toASCIIString(), is("file:///tmp/dir/foo%27s.txt"));
+        assertThat(URIUtil.toNfcUri(encoded), is(encoded));
+        assertFalse(URIUtil.toNfcUri(encoded).equals(URIUtil.toNfcUri(literal)));
+    }
+
+    @Test
+    public void testToNfcUriPlainAsciiUriIsUnchanged()
+    {
+        URI ascii = URI.create("file:///tmp/dir/plain.txt");
+        assertThat(URIUtil.toNfcUri(ascii), is(ascii));
+    }
+
+    @Test
+    public void testToNfcUriIsIdempotent()
+    {
+        URI once = URIUtil.toNfcUri(NFD_URI);
+        assertThat(URIUtil.toNfcUri(once), is(once));
+    }
 }

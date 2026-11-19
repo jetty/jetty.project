@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -25,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -2185,5 +2187,80 @@ public final class URIUtil
         if (port <= 0)
             return 0;
         return port == getDefaultPortForScheme(scheme) ? 0 : port;
+    }
+
+    /**
+     * Rewrite a URI so that any non-ASCII name is expressed in Unicode Normalization Form C.
+     *
+     * <p>
+     * Percent-escapes of non-ASCII bytes are decoded, the decoded text is normalized to NFC (so a base
+     * letter followed by a combining mark composes into a single precomposed character), and the
+     * non-ASCII characters are re-encoded as UTF-8 percent-escapes. ASCII characters and ASCII
+     * percent-escapes (for example {@code %27} for {@code '}) are left exactly as written, so only a
+     * difference in normalization form is folded away and every other difference is preserved.
+     * </p>
+     *
+     * <p>
+     * Two URIs whose names differ only in normalization form are canonically equivalent and denote the
+     * same resource, yet are not {@link URI#equals(Object) equal}, because that difference survives
+     * percent-encoding. Folding both to NFC lets them be recognized as the same. Such a split arises, for
+     * example, on filesystems (macOS, APFS) whose {@link java.nio.file.Path#toUri()} encodes a non-ASCII
+     * name in Form D while a request for the same file carries it in Form C.
+     * </p>
+     *
+     * @param uri the URI to rewrite
+     * @return the equivalent URI with any non-ASCII name in NFC
+     */
+    public static URI toNfcUri(URI uri)
+    {
+        // Decode only the non-ASCII percent-escapes to characters, keeping ASCII characters and ASCII
+        // escapes verbatim, so a base letter and any following combining mark sit together as text.
+        String ascii = uri.toASCIIString();
+        StringBuilder decoded = new StringBuilder(ascii.length());
+        int i = 0;
+        while (i < ascii.length())
+        {
+            if (!isEncodedNonAscii(ascii, i))
+            {
+                decoded.append(ascii.charAt(i++));
+                continue;
+            }
+
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            while (isEncodedNonAscii(ascii, i))
+            {
+                bytes.write((TypeUtil.convertHexDigit(ascii.charAt(i + 1)) << 4) | TypeUtil.convertHexDigit(ascii.charAt(i + 2)));
+                i += 3;
+            }
+            decoded.append(bytes.toString(StandardCharsets.UTF_8));
+        }
+
+        // Normalize the whole string so a base letter and a combining mark compose across the boundary
+        // between literal ASCII and the decoded name, then re-encode every non-ASCII byte as a UTF-8
+        // percent-escape, leaving ASCII (including any ASCII escapes) as written.
+        String nfc = Normalizer.normalize(decoded, Normalizer.Form.NFC);
+        StringBuilder out = new StringBuilder(nfc.length());
+        for (byte b : nfc.getBytes(StandardCharsets.UTF_8))
+        {
+            int unsigned = b & 0xff;
+            if (unsigned < 0x80)
+                out.append((char)unsigned);
+            else
+                out.append('%')
+                    .append(Character.toUpperCase(Character.forDigit(unsigned >> 4, 16)))
+                    .append(Character.toUpperCase(Character.forDigit(unsigned & 0xf, 16)));
+        }
+        return URI.create(out.toString());
+    }
+
+    /**
+     * @return true if a {@code %XX} escape for a non-ASCII byte (high nibble {@code >= 0x8}) begins at
+     *     {@code index}
+     */
+    private static boolean isEncodedNonAscii(String value, int index)
+    {
+        return index + 2 < value.length() &&
+            value.charAt(index) == '%' &&
+            TypeUtil.convertHexDigit(value.charAt(index + 1)) >= 0x8;
     }
 }

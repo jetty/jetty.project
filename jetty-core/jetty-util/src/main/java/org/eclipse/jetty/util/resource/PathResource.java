@@ -540,8 +540,39 @@ public class PathResource extends Resource
              *  child.getPath().toUri()       == "file:///C:/temp/aa/foo.txt"
              *  child.getRealURI()            == "file:///C:/temp/aa/foo.txt"
              */
-            alias = !isSameName(path, realPath) || !Objects.equals(uri, toUri(realPath));
+            alias = aliasCompare(path, realPath);
         }
+    }
+
+    private boolean aliasCompare(Path requestedPath, Path realPath)
+    {
+        // Step 1: the real path must be reached by the same name that was requested. A different name
+        // element (a case-folded name on a case-insensitive filesystem, an alternate or short name, an
+        // added or dropped path segment, etc.) means the real file is reached by a different name, which
+        // is an alias.
+        if (!isSameName(requestedPath, realPath))
+            return true;
+
+        // Step 2: the names match, so compare the full URIs. The as-requested URI (the 'uri' field) is
+        // used rather than requestedPath.toUri(), because it preserves exactly how this resource was
+        // requested, which isSameName() cannot see. For example on Windows a trailing '.' is stripped
+        // from a directory reference, so "aa./foo.txt" and "aa/foo.txt" share a name but differ by URI.
+        URI realUri = toUri(realPath);
+        if (Objects.equals(uri, realUri))
+            return false;
+
+        // Step 3: the URIs differ, but a non-ASCII name may differ only by Unicode normalization form.
+        // Some filesystems (e.g. macOS/APFS) return a real path whose URI encodes the name in Form D,
+        // while the as-requested URI uses Form C; these are canonically equivalent and denote the same
+        // file. Fold both URIs to NFC and compare again. Any other difference (including ASCII
+        // percent-encoding such as %27 versus ') is left intact and remains an alias.
+        URI nfcUri = URIUtil.toNfcUri(uri);
+        URI nfcRealUri = URIUtil.toNfcUri(realUri);
+        if (Objects.equals(nfcUri, nfcRealUri))
+            return false;
+
+        // The names match but the URIs genuinely differ: this is an alias.
+        return true;
     }
 
     /**
