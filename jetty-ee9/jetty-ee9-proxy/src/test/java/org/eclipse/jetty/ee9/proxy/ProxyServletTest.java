@@ -1823,6 +1823,62 @@ public class ProxyServletTest
         assertEquals(List.of("resp1", "resp2"), responseValues);
     }
 
+    @ParameterizedTest
+    @MethodSource("impls")
+    public void testContentDispositionHeaderIsRelayedVerbatim(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    {
+        // A Content-Disposition value is not an RFC 9110 comma-separated list: the quoted comma in
+        // the filename and the whitespace after ';' must survive the proxy unchanged.
+        String contentDisposition = "attachment; filename=\"sample,document.doc\"";
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            {
+                resp.setHeader(HttpHeader.CONTENT_DISPOSITION.asString(), contentDisposition);
+            }
+        });
+        startProxy(proxyServletClass);
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        assertEquals(contentDisposition, response.getHeaders().get(HttpHeader.CONTENT_DISPOSITION));
+    }
+
+    @ParameterizedTest
+    @MethodSource("impls")
+    public void testStructuredFieldValueDoesNotTruncateResponseHeaders(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    {
+        // An RFC 9651 structured-field value (a quoted string inside a token) must be relayed as-is
+        // and must not abort the header-copy loop, which would silently drop every following header.
+        String permissionsPolicy = "payment=(self \"https://example.com\")";
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            {
+                resp.setHeader("Permissions-Policy", permissionsPolicy);
+                resp.setHeader("X-After", "1");
+            }
+        });
+        startProxy(proxyServletClass);
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertEquals(200, response.getStatus());
+        assertEquals(permissionsPolicy, response.getHeaders().get("Permissions-Policy"));
+        // The header after the structured-field header must still be present: the copy loop
+        // must not have been aborted by a parse exception.
+        assertEquals("1", response.getHeaders().get("X-After"));
+    }
+
     @Test
     public void testFilterServerResponseHeaderReplacesAndDrops() throws Exception
     {

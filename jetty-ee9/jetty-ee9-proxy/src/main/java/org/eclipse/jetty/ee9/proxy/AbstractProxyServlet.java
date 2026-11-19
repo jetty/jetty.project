@@ -697,7 +697,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
             if (newHttpField == null)
                 continue;
 
-            String newHeaderValue = String.join(", ", newHttpField.getValueList());
+            String newHeaderValue = newHttpField.getValue();
             // Replace any container-generated header (e.g. Server, Date) on the first
             // occurrence, then add to preserve genuinely repeated response headers.
             if (seenResponseHeaders.add(lowerHeaderName))
