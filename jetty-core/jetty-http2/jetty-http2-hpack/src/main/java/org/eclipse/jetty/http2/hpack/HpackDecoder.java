@@ -345,7 +345,7 @@ public class HpackDecoder
         CharsetStringBuilder.Iso88591StringBuilder builder = new CharsetStringBuilder.Iso88591StringBuilder();
         for (int i = 0; i < length; ++i)
         {
-            builder.append((char)buffer.get());
+            builder.append(buffer.get());
         }
         return builder.build();
     }
