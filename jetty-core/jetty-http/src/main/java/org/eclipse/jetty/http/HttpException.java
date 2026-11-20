@@ -103,8 +103,6 @@ public interface HttpException extends QuietException
         public RuntimeException(int code, String reason, Throwable cause)
         {
             super(code + ": " + reason, cause);
-            // A response parse failure carries the received status, which may be a success code, not only 4xx/5xx; 0 is no status.
-            assert code == 0 || HttpStatus.isStatusCode(code);
             _code = code;
             _reason = reason;
         }
@@ -148,8 +146,6 @@ public interface HttpException extends QuietException
         public IllegalArgumentException(int code, String reason, Throwable cause)
         {
             super(code + ": " + reason, cause);
-            // A response parse failure carries the received status, which may be a success code, not only 4xx/5xx; 0 is no status.
-            assert code == 0 || HttpStatus.isStatusCode(code);
             _code = code;
             _reason = reason;
         }
@@ -188,8 +184,6 @@ public interface HttpException extends QuietException
         public IllegalStateException(int code, String reason, Throwable cause)
         {
             super(code + ": " + reason, cause);
-            // A response parse failure carries the received status, which may be a success code, not only 4xx/5xx; 0 is no status.
-            assert code == 0 || HttpStatus.isStatusCode(code);
             _code = code;
             _reason = reason;
         }

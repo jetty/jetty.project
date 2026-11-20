@@ -1318,8 +1318,8 @@ public class HttpChannelState implements HttpChannel, Components
         @Override
         public void setStatus(int code)
         {
-            if (code < 100 || code > 999)
-                throw new IllegalArgumentException();
+            if (!HttpStatus.isStatusCode(code))
+                throw new IllegalArgumentException("Invalid Status Code: " + code);
             if (!isCommitted())
                 _status = code;
         }

@@ -57,6 +57,8 @@ public class InvalidURIRule extends Rule
      */
     public void setCode(int code)
     {
+        if (!HttpStatus.isStatusCode(code))
+            throw new IllegalArgumentException("Invalid Status Code: " + code);
         _code = code;
     }
 
