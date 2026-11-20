@@ -1543,10 +1543,17 @@ public final class URIUtil
         {
             Utf8StringBuilder builder = null;
             int end = offset + length;
-            for (int i = offset; i < end; i++)
+            int i = offset;
+            while (i < end)
             {
-                char c = path.charAt(i);
-                if (c == '%')
+                // Advance by a whole codepoint (one or two chars) or, in the percent branch
+                // below, by a whole escape. A supplementary character (e.g. an emoji) is thus
+                // read and encoded as one UTF-8 sequence rather than its two surrogate halves,
+                // each of which would otherwise encode to '?' (0x3F).
+                int codepoint = path.codePointAt(i);
+                int consumed = Character.charCount(codepoint);
+
+                if (codepoint == '%')
                 {
                     if (builder == null)
                     {
@@ -1561,9 +1568,9 @@ public final class URIUtil
                             if (TypeUtil.isHex(path, i + 2, 4))
                             {
                                 // Always decode percent-u encoding to UTF-8
-                                int codepoint = (0xffff & TypeUtil.parseInt(path, i + 2, 4, 16));
-                                encodeCodepoint(codepoint, builder);
-                                i += 5;
+                                int cp = (0xffff & TypeUtil.parseInt(path, i + 2, 4, 16));
+                                encodeCodepoint(cp, builder);
+                                consumed = 6;
                             }
                             else
                             {
@@ -1587,7 +1594,7 @@ public final class URIUtil
                                     // safe to decode
                                     builder.append(b);
                                 }
-                                i += 2;
+                                consumed = 3;
                             }
                             else
                             {
@@ -1602,23 +1609,23 @@ public final class URIUtil
                         builder.append("%25");
                     }
                 }
-                else
+                else if (mustBeEncoded(codepoint))
                 {
-                    if (mustBeEncoded(c))
+                    if (builder == null)
                     {
-                        if (builder == null)
-                        {
-                            builder = new Utf8StringBuilder(path.length());
-                            builder.append(path, offset, i - offset);
-                        }
-                        encodeCodepoint(c, builder);
+                        builder = new Utf8StringBuilder(path.length());
+                        builder.append(path, offset, i - offset);
                     }
-                    else
-                    {
-                        if (builder != null)
-                            builder.append(c);
-                    }
+                    encodeCodepoint(codepoint, builder);
                 }
+                else if (builder != null)
+                {
+                    // A codepoint that need not be encoded is necessarily <= 0x7F (anything
+                    // larger mustBeEncoded), so it is always a single char here.
+                    builder.append((char)codepoint);
+                }
+
+                i += consumed;
             }
 
             if (builder != null)
