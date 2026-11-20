@@ -468,7 +468,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 super(endp, connector.getExecutor());
                 _connector = connector;
                 _next = next;
-                _buffer = _connector.getByteBufferPool().acquire(getInputBufferSize(), true);
+                // The whole PROXY v2 header must fit in the buffer, as it is parsed in one go.
+                int bufferSize = Math.max(getInputBufferSize(), HEADER_LENGTH + getMaxProxyHeader());
+                _buffer = _connector.getByteBufferPool().acquire(bufferSize, true);
             }
 
             @Override
