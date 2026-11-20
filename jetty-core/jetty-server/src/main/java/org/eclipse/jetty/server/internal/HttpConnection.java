@@ -809,7 +809,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public InvocationType getInvocationType()
         {
-            return _callback.getInvocationType();
+            return Invocable.getInvocationType(_callback);
         }
 
         private boolean reset(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
