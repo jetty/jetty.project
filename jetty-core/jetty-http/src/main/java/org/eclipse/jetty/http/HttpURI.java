@@ -18,7 +18,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -369,7 +368,7 @@ public interface HttpURI
             _fragment = builder._fragment;
             _uri = builder._uri;
             _canonicalPath = builder._canonicalPath;
-            if (builder._violations != null)
+            if (builder._violations != null && !builder._violations.isEmpty())
                 _violations = Collections.unmodifiableSet(EnumSet.copyOf(builder._violations));
         }
 
@@ -1221,8 +1220,10 @@ public interface HttpURI
          */
         public Mutable addViolations(Collection<Violation> violations)
         {
+            if (violations == null || violations.isEmpty())
+                return this;
             if (_violations == null)
-                _violations = new HashSet<>(violations);
+                _violations = EnumSet.copyOf(violations);
             else
                 _violations.addAll(violations);
             return this;
