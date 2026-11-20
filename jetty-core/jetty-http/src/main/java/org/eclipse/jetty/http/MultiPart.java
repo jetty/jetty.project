@@ -82,7 +82,9 @@ public class MultiPart
         .allowEscapeOnlyForQuotes()
         .build();
     private static final int MAX_BOUNDARY_LENGTH = 70;
-    private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\x20-\\x7E]");
+    // The fallback "filename" parameter is a quoted-string, so only the characters RFC9110
+    // allows unescaped in qdtext are kept: SP, %x21, %x23-5B and %x5D-7E (no HTAB, no obs-text).
+    private static final Pattern NON_QDTEXT_PATTERN = Pattern.compile("[^\\x20-\\x21\\x23-\\x5B\\x5D-\\x7E]");
     private static final Pattern WINDOWS_FILENAME = Pattern.compile(".??[a-zA-Z]:\\\\[^\\\\].*");
 
     private MultiPart()
@@ -112,7 +114,7 @@ public class MultiPart
             return "filename=\"" + fileName + "\"";
 
         encodedFileName = encodedFileName.replace("+", "%20");
-        String asciiFilename = NON_ASCII_PATTERN.matcher(fileName).replaceAll("_");
+        String asciiFilename = NON_QDTEXT_PATTERN.matcher(fileName).replaceAll("_");
         return String.format("filename=\"%s\"; filename*=%s''%s", asciiFilename, charset.name(), encodedFileName);
     }
 
