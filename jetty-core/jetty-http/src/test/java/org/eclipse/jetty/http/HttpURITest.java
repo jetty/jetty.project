@@ -730,6 +730,9 @@ public class HttpURITest
             // encoded backslash inside a path parameter
             Arguments.of("/foo;%5c/bar"),
             Arguments.of("/foo;%5C"),
+            // unencoded backslash inside a path parameter
+            Arguments.of("/foo;\\/bar"),
+            Arguments.of("/foo;a\\b/bar"),
             // TAB
             Arguments.of("/%09b"),
             Arguments.of("/a\tb"),
@@ -781,6 +784,9 @@ public class HttpURITest
             Arguments.of("/a b"),
             // double-quotes
             Arguments.of("/a\"b"),
+            // unencoded illegal characters inside a path parameter
+            Arguments.of("/foo;\\/bar"),
+            Arguments.of("/foo;\"/bar"),
             // first non-ASCII code point, index equal to the __pathCharacters table length
             Arguments.of("/a\u0080b"),
             // higher non-ASCII code point, index beyond the __pathCharacters table length
@@ -820,6 +826,54 @@ public class HttpURITest
         HttpURI uri = HttpURI.from(input);
         assertThat(uri.hasViolations(), is(true));
         assertThat(uri.hasViolation(Violation.ILLEGAL_PATH_CHARACTERS), is(true));
+    }
+
+    public static Stream<Arguments> pathParameterViolationData()
+    {
+        // A path parameter is part of its segment, so each of these produces the same violation (or
+        // rejection) as its PATH equivalent: the same octet or raw character outside a parameter. These
+        // were reported as inconsistencies on PR #16163. A null expected set means the URI is rejected.
+        return Stream.of(
+            // a truncated % encoding at the end of a parameter is rejected, as "/path%" and "/path%2" are
+            Arguments.of("/path;a%", null),
+            Arguments.of("/path;a%2", null),
+            // an encoded NUL in a parameter is rejected, as "/path%00" is
+            Arguments.of("/path;%00/info", null),
+
+            // a malformed or incomplete UTF-8 octet is flagged, as "/path%ff" and "/path%c3" are
+            Arguments.of("/path;%ff/info", EnumSet.of(Violation.BAD_UTF8_ENCODING)),
+            Arguments.of("/path;%c3/info", EnumSet.of(Violation.BAD_UTF8_ENCODING)),
+            // a valid multi-byte UTF-8 octet in a parameter stays clean
+            Arguments.of("/path;%c3%a9/info", EnumSet.noneOf(Violation.class)),
+
+            // raw characters that are both suspicious and illegal in the path are flagged in a parameter too
+            Arguments.of("/path;\\/info", EnumSet.of(Violation.SUSPICIOUS_PATH_CHARACTERS, Violation.ILLEGAL_PATH_CHARACTERS)),
+            Arguments.of("/path;a\\b/info", EnumSet.of(Violation.SUSPICIOUS_PATH_CHARACTERS, Violation.ILLEGAL_PATH_CHARACTERS)),
+            Arguments.of("/path;\u007f/info", EnumSet.of(Violation.SUSPICIOUS_PATH_CHARACTERS, Violation.ILLEGAL_PATH_CHARACTERS)),
+            Arguments.of("/path;\t/info", EnumSet.of(Violation.SUSPICIOUS_PATH_CHARACTERS, Violation.ILLEGAL_PATH_CHARACTERS)),
+            // a raw character that is only illegal (not suspicious) in the path, likewise
+            Arguments.of("/path;\"/info", EnumSet.of(Violation.ILLEGAL_PATH_CHARACTERS)),
+
+            // an ordinary parameter with no suspicious octets or characters stays clean
+            Arguments.of("/path;jsessionid=12345/info", EnumSet.noneOf(Violation.class))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("pathParameterViolationData")
+    public void testPathParameterViolations(String input, EnumSet<Violation> expected)
+    {
+        if (expected == null)
+        {
+            assertThrows(IllegalArgumentException.class, () -> HttpURI.from(input));
+            return;
+        }
+
+        HttpURI uri = HttpURI.from(input);
+        assertThat(input, uri.getViolations(), is(expected));
+        // Classifying a parameter octet only records a violation; the parameter is still stripped
+        // at the next literal '/', so the canonical path is unchanged.
+        assertThat(input, uri.getCanonicalPath(), is("/path/info"));
     }
 
     public static Stream<Arguments> parseData()

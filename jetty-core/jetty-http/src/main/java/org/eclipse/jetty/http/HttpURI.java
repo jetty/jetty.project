@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 
 /**
  * <p>Representation of HTTP URIs.</p>
@@ -1336,6 +1337,7 @@ public interface HttpURI
             boolean encodedUtf16 = false; // Is the current encoding for UTF16?
             int encodedCharacters = 0; // partial state of parsing a % encoded character<x>
             int encodedValue = 0; // the partial encoded value
+            Utf8StringBuilder paramUtf8 = null; // decoded octets of the current path parameter, for UTF-8 validation
             boolean dot = false; // set to true if the path contains . or .. segments
             int end = uri.length();
             _emptySegment = false;
@@ -1731,10 +1733,10 @@ public interface HttpURI
                     }
                     case PARAM:
                     {
-                        // A path parameter is part of its segment, so its encoded octets must answer
-                        // to the same ambiguity and legality checks as the rest of the path. The
-                        // parameter is still delimited by the next literal '/', so classifying an
-                        // encoded octet records a violation without ending the parameter.
+                        // A path parameter is part of its segment, so its characters must answer to the
+                        // same ambiguity, legality and UTF-8 checks as the rest of the path. The parameter
+                        // is still delimited by the next literal '/', so these checks only record violations
+                        // (or reject); they never end the parameter and the canonical path is unchanged.
                         if (encodedCharacters > 0)
                         {
                             if (encodedCharacters == 2 && c == 'u' && !encodedUtf16)
@@ -1747,19 +1749,31 @@ public interface HttpURI
                             encodedValue = (encodedValue << 4) + TypeUtil.convertHexDigit(c);
 
                             if (--encodedCharacters == 0)
+                            {
                                 classifyEncodedPathCharacter(encodedValue);
+                                // The decoded octets are also validated as UTF-8, as unlike the path
+                                // the parameter is stripped before canonicalPath() would see it.
+                                if (encodedUtf16)
+                                    paramUtf8.append((char)encodedValue);
+                                else
+                                    paramUtf8.append((byte)encodedValue);
+                            }
                         }
                         else
                         {
                             switch (c)
                             {
                                 case '?':
+                                    checkParameterUtf8(paramUtf8);
+                                    paramUtf8 = null;
                                     _path = uri.substring(pathMark, i);
                                     _param = uri.substring(mark, i);
                                     mark = i + 1;
                                     state = State.QUERY;
                                     break;
                                 case '#':
+                                    checkParameterUtf8(paramUtf8);
+                                    paramUtf8 = null;
                                     _path = uri.substring(pathMark, i);
                                     _param = uri.substring(mark, i);
                                     mark = i + 1;
@@ -1767,20 +1781,33 @@ public interface HttpURI
                                     state = State.FRAGMENT;
                                     break;
                                 case '/':
+                                    checkParameterUtf8(paramUtf8);
+                                    paramUtf8 = null;
                                     encoded = true;
                                     segment = i + 1;
                                     state = State.PATH;
                                     break;
                                 case ';':
                                     // multiple parameters
+                                    if (paramUtf8 != null)
+                                        paramUtf8.append(c);
                                     break;
                                 case '%':
                                     encoded = true;
                                     encodedUtf16 = false;
                                     encodedCharacters = 2;
                                     encodedValue = 0;
+                                    if (paramUtf8 == null)
+                                        paramUtf8 = new Utf8StringBuilder();
                                     break;
                                 default:
+                                    // A path parameter is pchar, so the same unencoded characters are illegal.
+                                    if (c >= __pathCharacters.length || !__pathCharacters[c])
+                                        addViolation(Violation.ILLEGAL_PATH_CHARACTERS);
+                                    if (c < __suspiciousPathCharacters.length && __suspiciousPathCharacters[c])
+                                        addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
+                                    if (paramUtf8 != null)
+                                        paramUtf8.append(c);
                                     break;
                             }
                         }
@@ -1849,6 +1876,10 @@ public interface HttpURI
                     _path = "";
                     break;
                 case PARAM:
+                    // A truncated encoding at the end of a parameter is rejected, as it is in the path.
+                    if (encodedCharacters > 0)
+                        throw new IllegalArgumentException("Bad URI % encoding");
+                    checkParameterUtf8(paramUtf8);
                     _path = uri.substring(pathMark, end);
                     _param = uri.substring(mark, end);
                     break;
@@ -1930,6 +1961,22 @@ public interface HttpURI
                         addViolation(Violation.SUSPICIOUS_PATH_CHARACTERS);
                     break;
             }
+        }
+
+        /**
+         * Validate the decoded octets of a path parameter as UTF-8 and record {@link Violation#BAD_UTF8_ENCODING}
+         * on a malformed or incomplete sequence.
+         *
+         * The path itself is validated when {@link URIUtil#canonicalPath(String, java.util.function.Supplier)}
+         * decodes it, but that strips path parameters before decoding, so the parameter octets are validated here
+         * instead to keep the two consistent.
+         *
+         * @param paramUtf8 the accumulated decoded octets of the parameter, or {@code null} if it had no encoded octets
+         */
+        private void checkParameterUtf8(Utf8StringBuilder paramUtf8)
+        {
+            if (paramUtf8 != null && (paramUtf8.hasCodingErrors() || !paramUtf8.isComplete()))
+                addViolation(Violation.BAD_UTF8_ENCODING);
         }
 
         /**
