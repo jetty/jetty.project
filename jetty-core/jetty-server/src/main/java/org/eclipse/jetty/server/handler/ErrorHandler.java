@@ -134,7 +134,7 @@ public class ErrorHandler implements Request.Handler
         Throwable cause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
         if (cause instanceof HttpException httpException)
         {
-            code = httpException.getCode();
+            code = HttpStatus.asErrorStatus(httpException.getCode());
             response.setStatus(code);
             if (message == null)
                 message = httpException.getReason();

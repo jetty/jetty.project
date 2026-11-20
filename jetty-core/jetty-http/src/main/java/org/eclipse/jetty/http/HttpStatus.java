@@ -408,6 +408,22 @@ public class HttpStatus
     }
 
     /**
+     * <p>Normalizes a status code into one suitable for an error response.</p>
+     * <p>Returns the given code when it is a well-formed {@link #isError(int) error}
+     * status, otherwise substitutes {@link #INTERNAL_SERVER_ERROR_500}. This is used
+     * where a code of untrusted provenance (for example one carried by an
+     * {@link HttpException}) is about to be written as an error response status, so a
+     * structurally invalid or non-error code cannot reach the wire.</p>
+     *
+     * @param code the code to normalize.
+     * @return the code if it is an error status, otherwise {@code 500}.
+     */
+    public static int asErrorStatus(int code)
+    {
+        return isError(code) ? code : INTERNAL_SERVER_ERROR_500;
+    }
+
+    /**
      * Tests whether the status code is of the
      * {@code Client Error} message category as defined in
      * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
