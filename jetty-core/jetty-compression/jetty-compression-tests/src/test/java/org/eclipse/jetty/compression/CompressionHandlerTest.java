@@ -28,6 +28,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
@@ -48,6 +49,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -1251,6 +1253,99 @@ public class CompressionHandlerTest extends AbstractCompressionTest
         assertTrue(writeFailedLatch.await(5, TimeUnit.SECONDS));
         await().atMost(5, TimeUnit.SECONDS).until(() -> gzipCompression.getDeflaterPool().getPool().getInUseCount(), is(0));
         await().atMost(5, TimeUnit.SECONDS).until(() -> pool.getLeaks().size(), is(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("compressions")
+    public void testHandlerSucceedsCallbackWithoutLastWrite(Class<Compression> compressionClass) throws Exception
+    {
+        newCompression(compressionClass);
+        String message = "Hello Jetty!\n".repeat(1000);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(compression);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                FutureCallback writeCallback = new FutureCallback();
+                response.write(false, BufferUtil.toBuffer(message, UTF_8), writeCallback);
+                writeCallback.get();
+                // Complete the response without a last write.
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        ContentResponse response = client.newRequest(serverURI.getHost(), serverURI.getPort())
+            .headers(headers -> headers.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName()))
+            .path("/hello")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getHeaders().get(HttpHeader.CONTENT_ENCODING), is(compression.getEncodingName()));
+        assertThat(new String(decompress(response.getContent()), UTF_8), is(message));
+        if (compression instanceof GzipCompression gzipCompression)
+            await().atMost(5, TimeUnit.SECONDS).until(() -> gzipCompression.getDeflaterPool().getPool().getInUseCount(), is(0));
+        // Buffer leaks are checked after the server is stopped.
+    }
+
+    @ParameterizedTest
+    @MethodSource("compressions")
+    public void testHandlerFailsCallbackAfterWriteReleasesEncoder(Class<Compression> compressionClass) throws Exception
+    {
+        newCompression(compressionClass);
+        String message = "Hello Jetty!\n".repeat(1000);
+
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(compression);
+        CountDownLatch failedLatch = new CountDownLatch(1);
+        compressionHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback) throws Exception
+            {
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/plain;charset=utf-8");
+                FutureCallback writeCallback = new FutureCallback();
+                response.write(false, BufferUtil.toBuffer(message, UTF_8), writeCallback);
+                writeCallback.get();
+                // Fail the response without a failed write.
+                callback.failed(new QuietException.Exception("test failure"));
+                failedLatch.countDown();
+                return true;
+            }
+        });
+
+        startServer(compressionHandler);
+
+        URI serverURI = server.getURI();
+        client.getContentDecoderFactories().clear();
+
+        // The response is either aborted or an error response, depending on whether it was committed.
+        try
+        {
+            client.newRequest(serverURI.getHost(), serverURI.getPort())
+                .headers(headers -> headers.put(HttpHeader.ACCEPT_ENCODING, compression.getEncodingName()))
+                .path("/hello")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        }
+        catch (ExecutionException ignored)
+        {
+        }
+
+        assertTrue(failedLatch.await(5, TimeUnit.SECONDS));
+        if (compression instanceof GzipCompression gzipCompression)
+            await().atMost(5, TimeUnit.SECONDS).until(() -> gzipCompression.getDeflaterPool().getPool().getInUseCount(), is(0));
+        // Buffer leaks are checked after the server is stopped.
     }
 
     /**

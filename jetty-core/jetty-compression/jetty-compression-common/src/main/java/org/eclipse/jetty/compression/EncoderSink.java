@@ -15,6 +15,7 @@ package org.eclipse.jetty.compression;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
@@ -51,6 +52,25 @@ public abstract class EncoderSink implements Content.Sink
     }
 
     /**
+     * <p>Aborts this sink, typically because the response it writes to has failed.</p>
+     * <p>If a write is in progress, its callback is failed once it completes; otherwise,
+     * this sink is {@link #release() released} immediately.
+     * Any further {@link #write(boolean, ByteBuffer, Callback) write attempt} fails.</p>
+     * <p>This method has no effect if this sink has already been released.</p>
+     * <p>This method must not be called concurrently with {@link #write(boolean, ByteBuffer, Callback)}.</p>
+     *
+     * @param failure the cause of the abort
+     */
+    public void abort(Throwable failure)
+    {
+        // If a write is in progress, abort() returns true, and onCompleteFailure() releases once it is complete.
+        // If no write was ever attempted, abort() returns true, and onCompleteFailure() releases immediately.
+        // Otherwise the callback is either between writes, or closed, so it must be released here.
+        if (!encodeBufferCallback.abort(failure))
+            encodeBufferCallback.closeAndRelease();
+    }
+
+    /**
      * Creates a {@link WriteRecord} with the given {@code last} flag and {@code content} buffer.
      * @param last the {@code last} flag to eventually pass to {@link org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)}.
      * @param content the buffer to eventually pass to {@link org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)}.
@@ -60,7 +80,8 @@ public abstract class EncoderSink implements Content.Sink
 
     /**
      * <p>Release all resources held by this instance.</p>
-     * <p>This method is called either after the last write succeeded or after any write failed.
+     * <p>This method is called either after the last write succeeded, after any write failed,
+     * or when this sink is {@link #abort(Throwable) aborted}.
      * Any further {@link #write(boolean, ByteBuffer, Callback) write attempt} fails without calling
      * {@link #encode(boolean, ByteBuffer)} once this method has been called.</p>
      * <p>Implementation must be idempotent.</p>
@@ -87,6 +108,7 @@ public abstract class EncoderSink implements Content.Sink
 
         private static final Logger LOG = LoggerFactory.getLogger(EncodeBufferCallback.class);
         private final AtomicReference<State> state = new AtomicReference<>(State.INITIAL);
+        private final AtomicBoolean released = new AtomicBoolean();
         private ByteBuffer content;
         private boolean last;
         private Callback callback;
@@ -109,7 +131,8 @@ public abstract class EncoderSink implements Content.Sink
         @Override
         public InvocationType getInvocationType()
         {
-            return callback.getInvocationType();
+            Callback callback = this.callback;
+            return callback == null ? InvocationType.NON_BLOCKING : callback.getInvocationType();
         }
 
         @Override
@@ -166,7 +189,8 @@ public abstract class EncoderSink implements Content.Sink
             // Closing forbids any further reset(), so no write
             // can encode() or release() once released.
             close();
-            release();
+            if (released.compareAndSet(false, true))
+                release();
         }
 
         @Override
@@ -186,7 +210,9 @@ public abstract class EncoderSink implements Content.Sink
             // callback so that no further write can race with the release.
             Callback callback = takeCallbackAndReset();
             closeAndRelease();
-            callback.failed(cause);
+            // The callback is null if abort() was called before any write.
+            if (callback != null)
+                callback.failed(cause);
         }
 
         @Override
