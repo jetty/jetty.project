@@ -333,9 +333,13 @@ public class CompressionHandler extends Handler.Wrapper
         if (config.isCompressMethodSupported(request.getMethod()))
             response.getHeaders().ensureField(varyAcceptEncoding);
 
-        // Wrap the response if we can compress.
+        // Wrap the response and the callback if we can compress.
         if (compressEncoding != null)
+        {
             response = newCompressionResponse(request, response, compressEncoding, config, originalEtag);
+            if (response instanceof CompressionResponse compressionResponse)
+                callback = compressionResponse.newCallback(callback);
+        }
 
         if (LOG.isDebugEnabled())
             LOG.debug("handle {} {} {}", request, response, this);
