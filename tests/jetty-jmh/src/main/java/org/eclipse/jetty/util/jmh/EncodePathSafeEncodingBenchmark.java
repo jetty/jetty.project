@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -98,7 +99,7 @@ public class EncodePathSafeEncodingBenchmark
     @Benchmark
     public void codepoint(Blackhole blackhole)
     {
-        blackhole.consume(encodePathSafeEncodingCodepoint(input));
+        blackhole.consume(URIUtil.encodePathSafeEncoding(input));
     }
 
     // ------------------------------------------------------------------
@@ -183,105 +184,6 @@ public class EncodePathSafeEncodingBenchmark
                             builder.append(c);
                     }
                 }
-            }
-
-            if (builder != null)
-                return builder.toCompleteString();
-            return path;
-        }
-        catch (IllegalArgumentException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new IllegalArgumentException("cannot decode URI", e);
-        }
-    }
-
-    // ------------------------------------------------------------------
-    // Current implementation: per-codepoint while loop (post-fix).
-    // ------------------------------------------------------------------
-    private static String encodePathSafeEncodingCodepoint(String path)
-    {
-        if (path == null)
-            return null;
-        if (path.isEmpty() || "/".equals(path))
-            return path;
-
-        int offset = 0;
-        int length = path.length();
-
-        try
-        {
-            Utf8StringBuilder builder = null;
-            int end = offset + length;
-            int i = offset;
-            while (i < end)
-            {
-                int codepoint = path.codePointAt(i);
-                int consumed = Character.charCount(codepoint);
-
-                if (codepoint == '%')
-                {
-                    if (builder == null)
-                    {
-                        builder = new Utf8StringBuilder(path.length());
-                        builder.append(path, offset, i - offset);
-                    }
-                    if ((i + 2) < end)
-                    {
-                        char u = path.charAt(i + 1);
-                        if (u == 'u')
-                        {
-                            if (TypeUtil.isHex(path, i + 2, 4))
-                            {
-                                int cp = (0xffff & TypeUtil.parseInt(path, i + 2, 4, 16));
-                                encodeCodepoint(cp, builder);
-                                consumed = 6;
-                            }
-                            else
-                            {
-                                builder.append("%25");
-                            }
-                        }
-                        else
-                        {
-                            if (TypeUtil.isHex(path, i + 1, 2))
-                            {
-                                byte b = (byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2))));
-                                if (mustBeEncoded(b) || b == 0x2F)
-                                    encodeCodepoint(b, builder);
-                                else
-                                    builder.append(b);
-                                consumed = 3;
-                            }
-                            else
-                            {
-                                builder.append("%25");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        builder.append("%25");
-                    }
-                }
-                else if (mustBeEncoded(codepoint))
-                {
-                    if (builder == null)
-                    {
-                        builder = new Utf8StringBuilder(path.length());
-                        builder.append(path, offset, i - offset);
-                    }
-                    encodeCodepoint(codepoint, builder);
-                }
-                else if (builder != null)
-                {
-                    builder.append((char)codepoint);
-                }
-
-                i += consumed;
             }
 
             if (builder != null)
