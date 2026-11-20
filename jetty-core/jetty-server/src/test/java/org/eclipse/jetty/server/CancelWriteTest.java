@@ -21,6 +21,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -30,6 +31,7 @@ import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,7 +41,9 @@ import org.junit.jupiter.api.condition.OS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -313,5 +317,148 @@ public class CancelWriteTest
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(client));
             assertThat(response.getStatus(), is(200));
         }
+    }
+
+    @Test
+    public void testGetInvocationTypeWhileCancellingCongestedWrite() throws Exception
+    {
+        long idleTimeout = 1000;
+        CountDownLatch cancelWriteLatch = new CountDownLatch(1);
+        AtomicReference<Object> invocationTypeRef = new AtomicReference<>();
+        CountDownLatch serverWriteFailureLatch = new CountDownLatch(1);
+
+        ServerConnector connector = new ServerConnector(server, 1, 1)
+        {
+            @Override
+            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+            {
+                SocketChannelEndPoint endpoint = new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
+                {
+                    @Override
+                    public Callback cancelWrite(Throwable cause)
+                    {
+                        // Simulate the selector thread that, having seen the endpoint
+                        // writable, asks for the invocation type of the pending write
+                        // after the SendCallback has been aborted, but before the
+                        // write has been cancelled in the WriteFlusher.
+                        try
+                        {
+                            invocationTypeRef.set(getWriteFlusher().getCallbackInvocationType());
+                        }
+                        catch (Throwable x)
+                        {
+                            invocationTypeRef.set(x);
+                        }
+                        cancelWriteLatch.countDown();
+                        return super.cancelWrite(cause);
+                    }
+                };
+                endpoint.setIdleTimeout(getIdleTimeout());
+                return endpoint;
+            }
+        };
+        connector.setIdleTimeout(idleTimeout);
+        server.addConnector(connector);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Large write, it blocks due to TCP congestion.
+                RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(128 * 1024 * 1024, true);
+                ByteBuffer byteBuffer = buffer.getByteBuffer();
+                byteBuffer.clear();
+                response.write(true, byteBuffer, Callback.from(callback::succeeded, x ->
+                {
+                    serverWriteFailureLatch.countDown();
+                    buffer.release();
+                    callback.failed(x);
+                }));
+                return true;
+            }
+        });
+        server.start();
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            HttpTester.Request request = new HttpTester.Request();
+            request.setMethod("GET");
+            request.setHeader("Host", "localhost");
+            request.setURI("/");
+            client.write(request.generate());
+
+            // The idle timeout cancels the congested write.
+            assertTrue(cancelWriteLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+            assertTrue(serverWriteFailureLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
+            assertThat(invocationTypeRef.get(), instanceOf(Invocable.InvocationType.class));
+        }
+    }
+
+    @Test
+    public void testGetInvocationTypeAfterCongestedWriteFailed() throws Exception
+    {
+        AtomicReference<Callback> writeCallbackRef = new AtomicReference<>();
+        CountDownLatch serverWriteFailureLatch = new CountDownLatch(1);
+
+        ServerConnector connector = new ServerConnector(server, 1, 1)
+        {
+            @Override
+            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
+            {
+                SocketChannelEndPoint endpoint = new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
+                {
+                    @Override
+                    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+                    {
+                        writeCallbackRef.set(callback);
+                        super.write(callback, buffers);
+                    }
+                };
+                endpoint.setIdleTimeout(getIdleTimeout());
+                return endpoint;
+            }
+        };
+        server.addConnector(connector);
+        server.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                // Large write, it blocks due to TCP congestion.
+                RetainableByteBuffer.Mutable buffer = server.getByteBufferPool().acquire(128 * 1024 * 1024, true);
+                ByteBuffer byteBuffer = buffer.getByteBuffer();
+                byteBuffer.clear();
+                response.write(true, byteBuffer, Callback.from(callback::succeeded, x ->
+                {
+                    serverWriteFailureLatch.countDown();
+                    buffer.release();
+                    callback.failed(x);
+                }));
+                return true;
+            }
+        });
+        server.start();
+
+        try (SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", connector.getLocalPort())))
+        {
+            HttpTester.Request request = new HttpTester.Request();
+            request.setMethod("GET");
+            request.setHeader("Host", "localhost");
+            request.setURI("/");
+            client.write(request.generate());
+
+            await().atMost(5, TimeUnit.SECONDS).until(() -> writeCallbackRef.get() != null);
+
+            // Reset the connection to fail the congested write.
+            client.socket().setSoLinger(true, 0);
+            client.close();
+
+            assertTrue(serverWriteFailureLatch.await(5, TimeUnit.SECONDS));
+        }
+
+        // A selector thread that read the WriteFlusher pending state
+        // before the write failed may ask the invocation type of the
+        // write callback after the write failed.
+        assertThat(Invocable.getInvocationType(writeCallbackRef.get()), notNullValue());
     }
 }
