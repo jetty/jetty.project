@@ -1501,4 +1501,29 @@ public class URIUtilTest
         String actual = URIUtil.normalizeScheme(input);
         assertThat(actual, is(expected));
     }
+
+    public static Stream<Arguments> normalizeNonAsciiEscapesCases()
+    {
+        return Stream.of(
+            // NFD escapes become NFC escapes
+            Arguments.of("file:///tmp/dir/swedish-a%CC%8A.txt", "file:///tmp/dir/swedish-%C3%A5.txt"),
+            // NFC escapes are unchanged
+            Arguments.of("file:///tmp/dir/swedish-%C3%A5.txt", "file:///tmp/dir/swedish-%C3%A5.txt"),
+            // raw non-ASCII characters are encoded in NFC
+            Arguments.of("file:///tmp/dir/swedish-a\u030A.txt", "file:///tmp/dir/swedish-%C3%A5.txt"),
+            // percent-encoded ASCII characters are kept as they are
+            Arguments.of("file:///tmp/a%2Fb%20c/e%CC%81.txt", "file:///tmp/a%2Fb%20c/%C3%A9.txt"),
+            // nothing to normalize
+            Arguments.of("file:///tmp/plain.txt", "file:///tmp/plain.txt"),
+            // a trailing percent sign is not an escape
+            Arguments.of("file:///tmp/50%", "file:///tmp/50%")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("normalizeNonAsciiEscapesCases")
+    public void testNormalizeNonAsciiEscapes(String input, String expected)
+    {
+        assertThat(URIUtil.normalizeNonAsciiEscapes(input), is(expected));
+    }
 }
