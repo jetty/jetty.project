@@ -212,6 +212,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTest
         testWildcardVirtualHost(true, List.of("*.sub.foo.com"), List.of("vhost.sub.foo.com", ".sub.foo.com"));
         testWildcardVirtualHost(false, List.of("*.sub.foo.com"), List.of(".foo.com", "sub.foo.com", "vhost.foo.com"));
         testWildcardVirtualHost(false, List.of("foo.*.com", "foo.com.*"), List.of("foo.vhost.com", "foo.com.vhost", "foo.com"));
+        testWildcardVirtualHost(false, List.of("*.foo.com"), List.of("vhost.foo.com.evil.com", "vhost.foo.comevil.com"));
     }
 
     private void testWildcardVirtualHost(boolean succeed, List<String> ruleHosts, List<String> requestHosts) throws Exception
