@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.util;
 
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.slf4j.Logger;
@@ -290,9 +292,12 @@ public class HostPort
     }
 
     /**
-     * Normalizes IPv6 address as per <a href="https://tools.ietf.org/html/rfc2732">RFC 2732</a>
+     * <p>Normalizes IPv6 address as per <a href="https://tools.ietf.org/html/rfc2732">RFC 2732</a>
      * and <a href="https://tools.ietf.org/html/rfc6874">RFC 6874</a>,
-     * surrounding with square brackets if they are absent.
+     * surrounding with square brackets if they are absent.</p>
+     * <p>An IPv4-mapped IPv6 address (eg: {@code ::ffff:192.168.1.2}), as defined in
+     * <a href="https://tools.ietf.org/html/rfc4291#section-2.5.5.2">RFC 4291 section 2.5.5.2</a>,
+     * represents an IPv4 node and is normalized to the IPv4 address it represents (eg: {@code 192.168.1.2}).</p>
      *
      * @param host a host name, IPv4 address, IPv6 address or IPv6 literal
      * @return a host name or an IPv4 address or an IPv6 literal (not an IPv6 address)
@@ -302,12 +307,39 @@ public class HostPort
         if (host == null)
             return null;
 
-        // if it is normalized IPv6 or could not be IPv6, return
-        if (host.isEmpty() || host.charAt(0) == '[' || host.indexOf(':') < 0)
+        // if it could not be IPv6, return
+        if (host.isEmpty() || host.indexOf(':') < 0)
             return host;
 
         // normalize with [ ]
-        return "[" + host + "]";
+        String ipv6Literal = host.charAt(0) == '[' ? host : "[" + host + "]";
+
+        String ipv4Address = toIPv4AddressIfMapped(ipv6Literal);
+        return ipv4Address != null ? ipv4Address : ipv6Literal;
+    }
+
+    /**
+     * Converts an IPv4-mapped IPv6 literal to the IPv4 address it represents.
+     *
+     * @param ipv6Literal an IPv6 literal (surrounded by square brackets)
+     * @return the IPv4 address represented by the literal, or {@code null}
+     * if the literal is not a valid IPv4-mapped IPv6 address
+     */
+    private static String toIPv4AddressIfMapped(String ipv6Literal)
+    {
+        try
+        {
+            // An IPv6 literal is only parsed (never resolved) by InetAddress,
+            // and an IPv4-mapped IPv6 address is parsed as an Inet4Address.
+            InetAddress address = InetAddress.getByName(ipv6Literal);
+            if (address instanceof Inet4Address)
+                return address.getHostAddress();
+        }
+        catch (UnknownHostException ignored)
+        {
+            // Not a valid IPv6 literal, so it cannot be an IPv4-mapped IPv6 address.
+        }
+        return null;
     }
 
     /**
