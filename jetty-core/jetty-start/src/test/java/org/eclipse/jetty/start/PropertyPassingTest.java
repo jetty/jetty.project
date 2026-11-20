@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
@@ -32,6 +33,8 @@ import org.eclipse.jetty.toolchain.test.MavenPaths;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -291,6 +294,187 @@ public class PropertyPassingTest
         // The property is defined as `test.config=${jetty.base}/etc/config.ini`
         // so we must maintain the slashes for the `/etc/config.ini` portion (even if it is running on windows)
         assertThat(output, containsString("test.config=%s/etc/config.ini".formatted(base)));
+    }
+
+    // café-€-naïve : a value with non-ASCII code points whose encoding matters.
+    private static final String MARKER_VALUE = "café-€-naïve";
+
+    // 中文密码 ("Chinese password") : non-ASCII code points well outside Latin-1 (a keystore password
+    // is a realistic carrier of such a value).
+    private static final String CHINESE_VALUE = "中文密码";
+
+    /**
+     * When the JVM that generates the arguments file and the JVM that runs {@code java @file}
+     * share a native encoding (both UTF-8 here), a non-ASCII property value round-trips.
+     */
+    @Test
+    @EnabledOnOs(OS.LINUX)
+    public void testArgFileSurvivesMatchingNativeEncoding() throws Exception
+    {
+        Path argFile = workDir.getEmptyPathDir().resolve("same.args");
+        generateArgFile(argFile, "C.UTF-8", "test.marker=" + MARKER_VALUE);
+        byte[] output = runPropertyDump(argFile, "C.UTF-8");
+
+        byte[] needle = ("test.marker=" + MARKER_VALUE).getBytes(UTF_8);
+        assertThat("value preserved under matching native encoding", containsSequence(output, needle), is(true));
+    }
+
+    /**
+     * Pins the documented portability caveat: generating under UTF-8 and then running
+     * {@code java @file} under an ASCII native encoding (LANG=C) misreads the non-ASCII bytes,
+     * so the original value no longer appears.
+     */
+    @Test
+    @EnabledOnOs(OS.LINUX)
+    public void testArgFileCorruptedByMismatchedNativeEncoding() throws Exception
+    {
+        Path argFile = workDir.getEmptyPathDir().resolve("mismatch.args");
+        generateArgFile(argFile, "C.UTF-8", "test.marker=" + MARKER_VALUE);
+        byte[] output = runPropertyDump(argFile, "C");
+
+        byte[] needle = ("test.marker=" + MARKER_VALUE).getBytes(UTF_8);
+        assertThat("value corrupted under mismatched native encoding", containsSequence(output, needle), is(false));
+    }
+
+    /**
+     * As {@link #testArgFileSurvivesMatchingNativeEncoding()} but with Chinese characters (well
+     * outside Latin-1): a non-ASCII property value such as a keystore password round-trips when the
+     * generating and running JVMs share a UTF-8 native encoding.
+     */
+    @Test
+    @EnabledOnOs(OS.LINUX)
+    public void testArgFileSurvivesMatchingNativeEncodingChinese() throws Exception
+    {
+        Path argFile = workDir.getEmptyPathDir().resolve("same-cjk.args");
+        generateArgFile(argFile, "C.UTF-8", "test.marker=" + CHINESE_VALUE);
+        byte[] output = runPropertyDump(argFile, "C.UTF-8");
+
+        byte[] needle = ("test.marker=" + CHINESE_VALUE).getBytes(UTF_8);
+        assertThat("Chinese value preserved under matching native encoding", containsSequence(output, needle), is(true));
+    }
+
+    /**
+     * As {@link #testArgFileCorruptedByMismatchedNativeEncoding()} but with Chinese characters:
+     * generating under UTF-8 and running {@code java @file} under an ASCII native encoding
+     * ({@code LANG=C}) misreads the bytes, so the original value no longer appears.
+     */
+    @Test
+    @EnabledOnOs(OS.LINUX)
+    public void testArgFileCorruptedByMismatchedNativeEncodingChinese() throws Exception
+    {
+        Path argFile = workDir.getEmptyPathDir().resolve("mismatch-cjk.args");
+        generateArgFile(argFile, "C.UTF-8", "test.marker=" + CHINESE_VALUE);
+        byte[] output = runPropertyDump(argFile, "C");
+
+        byte[] needle = ("test.marker=" + CHINESE_VALUE).getBytes(UTF_8);
+        assertThat("Chinese value corrupted under mismatched native encoding", containsSequence(output, needle), is(false));
+    }
+
+    /**
+     * An empty argument is written to the arguments file as {@code ""} on its own line; verify that a
+     * real {@code java @file} launch expands it back to an empty {@code argv} element rather than
+     * dropping it or merging it with a neighbor.
+     */
+    @Test
+    public void testEmptyArgTokenRoundTripsThroughLauncher() throws Exception
+    {
+        CommandLineBuilder cmd = new CommandLineBuilder();
+        cmd.addArg(PropertyDump.class.getName()); // main class, in launcher position
+        cmd.addArg("");                           // the empty token under test
+        cmd.addArg("test.marker=present");        // a following non-empty token
+
+        Path argFile = workDir.getEmptyPathDir().resolve("empty-token.args");
+        try (PrintStream out = new PrintStream(Files.newOutputStream(argFile), true, UTF_8))
+        {
+            cmd.writeArgFile(out);
+        }
+
+        List<String> commands = new ArrayList<>();
+        commands.add(getJavaBin());
+        commands.add("-cp");
+        commands.add(getClassPath());
+        commands.add("@" + argFile.toAbsolutePath());
+
+        // PropertyDump prints one "Arg [<value>]" line per argv element.
+        String output = collectRunOutput(commands);
+        assertThat("empty token survives the launcher", output, containsString("Arg []"));
+        assertThat("following token survives", output, containsString("Arg [test.marker=present]"));
+    }
+
+    private void generateArgFile(Path argFile, String lang, String... properties) throws Exception
+    {
+        List<String> commands = new ArrayList<>();
+        commands.add(getJavaBin());
+        commands.add("-Dmain.class=" + PropertyDump.class.getName());
+        commands.add("-cp");
+        commands.add(getClassPath());
+        commands.add(getStartJarBin());
+        // Include the "main" part so the file itself names the main class: the launcher only
+        // expands @file in launcher position (before the main class), not as an application arg.
+        commands.add("--argfile=main,args");
+        commands.addAll(List.of(properties));
+
+        ProcessBuilder builder = new ProcessBuilder(commands);
+        builder.directory(MavenPaths.findTestResourceDir("empty.home").toFile());
+        builder.environment().put("LANG", lang);
+        builder.environment().put("LC_ALL", lang);
+        // Capture the raw native-encoded bytes on disk (not a String-decoded copy).
+        builder.redirectOutput(argFile.toFile());
+        builder.redirectError(ProcessBuilder.Redirect.INHERIT);
+        int exit = builder.start().waitFor();
+        assertThat("generate (--argfile) exit code", exit, is(0));
+    }
+
+    private byte[] runPropertyDump(Path argFile, String lang) throws Exception
+    {
+        // "java -cp <cp> @file": the @file is in launcher position, so it expands to the main
+        // class (PropertyDump, from the "main" part) plus the inlined property args. The test
+        // classpath is supplied explicitly, avoiding reliance on a start.jar-computed classpath.
+        List<String> commands = new ArrayList<>();
+        commands.add(getJavaBin());
+        commands.add("-cp");
+        commands.add(getClassPath());
+        commands.add("@" + argFile.toAbsolutePath());
+
+        ProcessBuilder builder = new ProcessBuilder(commands);
+        builder.directory(MavenPaths.findTestResourceDir("empty.home").toFile());
+        builder.environment().put("LANG", lang);
+        builder.environment().put("LC_ALL", lang);
+        builder.redirectError(ProcessBuilder.Redirect.INHERIT);
+        Process pid = builder.start();
+        byte[] out = pid.getInputStream().readAllBytes();
+        pid.waitFor();
+        return out;
+    }
+
+    /**
+     * @return whether the byte sequence {@code needle} occurs anywhere within {@code haystack}.
+     * <p>
+     * The encoding tests compare the child's raw stdout <em>bytes</em> against the UTF-8 bytes
+     * of the expected value on purpose. Decoding the child's output into a {@code String} first
+     * (and using {@link String#contains}) would introduce yet another charset step -- the one
+     * used to read the child's stdout -- which is the very variable under test, so a mismatch
+     * there could mask or fake a result. Working at the byte level keeps the assertion about the
+     * exact bytes the child emitted and nothing else.
+     * <p>
+     * jetty-util's {@code SearchPattern} is deliberately not used: its documented contract is
+     * that the pattern is {@link java.nio.charset.StandardCharsets#US_ASCII} encoded, but the
+     * needle here is non-ASCII UTF-8 bytes - precisely what this test exercises - so relying on
+     * it would be leaning on an off-contract behavior for the one thing under test.
+     */
+    private static boolean containsSequence(byte[] haystack, byte[] needle)
+    {
+        outer:
+        for (int i = 0; i <= haystack.length - needle.length; i++)
+        {
+            for (int j = 0; j < needle.length; j++)
+            {
+                if (haystack[i + j] != needle[j])
+                    continue outer;
+            }
+            return true;
+        }
+        return false;
     }
 
     private String getClassPath()

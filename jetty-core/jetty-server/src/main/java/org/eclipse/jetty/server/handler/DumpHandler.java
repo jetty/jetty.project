@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
@@ -57,8 +58,9 @@ public class DumpHandler extends Handler.Abstract
     private static final Logger LOG = LoggerFactory.getLogger(DumpHandler.class);
 
     private final Blocker.Shared _blocker = new Blocker.Shared();
-    private final String _label;
     private final CounterStatistic _handled = new CounterStatistic();
+    private String _label;
+    private Charset _responseEncoding = StandardCharsets.ISO_8859_1;
 
     public DumpHandler()
     {
@@ -74,6 +76,26 @@ public class DumpHandler extends Handler.Abstract
     public CounterStatistic getHandledCounter()
     {
         return _handled;
+    }
+
+    public Charset getResponseEncoding()
+    {
+        return _responseEncoding;
+    }
+
+    public void setResponseEncoding(Charset responseEncoding)
+    {
+        this._responseEncoding = responseEncoding;
+    }
+
+    public void setLabel(String label)
+    {
+        this._label = label;
+    }
+
+    public String getLabel()
+    {
+        return _label;
     }
 
     @Override
@@ -168,7 +190,7 @@ public class DumpHandler extends Handler.Abstract
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML.asString());
 
             ByteArrayOutputStream buf = new ByteArrayOutputStream(2048);
-            Writer writer = new OutputStreamWriter(buf, StandardCharsets.ISO_8859_1);
+            Writer writer = new OutputStreamWriter(buf, _responseEncoding);
             writer.write("<html><h1>" + _label + "</h1>\n");
             writer.write("<pre>httpURI=" + httpURI + "</pre><br/>\n");
             writer.write("<pre>httpURI.path=" + httpURI.getPath() + "</pre><br/>\n");

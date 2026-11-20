@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.start.usecases;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -22,7 +24,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jetty.start.CommandLineBuilder;
 import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.StartArgs;
 import org.eclipse.jetty.start.UsageException;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
@@ -35,8 +39,12 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -355,6 +363,177 @@ public class BasicTest extends AbstractUseCase
 
         // === Validate Specific Jetty Base Files/Dirs Exist
         assertThat("Required Directory: maindir/", results.baseHome.getPath("maindir/"), isDirectory());
+    }
+
+    @Test
+    public void testArgFile() throws Exception
+    {
+        setupDistHome();
+
+        Files.writeString(baseDir.resolve("start.ini"),
+            """
+            --modules=main
+            """, UTF_8);
+
+        List<String> runArgs = new ArrayList<>();
+        runArgs.add("--create-files");
+        runArgs.add("java.version=21.0.1");
+        runArgs.add("--modules=optional,extra");
+        runArgs.add("--argfile");
+
+        ExecResults results = exec(runArgs, true);
+        assertThat("No exception", results.exception, is(nullValue()));
+        assertThat("DryRun mode", results.startArgs.getDryRun(), is(StartArgs.DryRun.ARGFILE));
+        // "java" is not compatible with a java @argument-file and must be excluded
+        assertThat("argfile parts", results.startArgs.getDryRunParts(), not(hasItem("java")));
+
+        String rendered = renderArgFile(results);
+        List<String> lines = rendered.lines().toList();
+
+        // The java binary must NOT be present (it is the thing that reads the @argfile)
+        assertThat("no java binary line", lines, not(hasItem(endsWith(File.separator + "java"))));
+        assertThat("no java.exe binary line", lines, not(hasItem(endsWith(File.separator + "java.exe"))));
+        // The main class must be present
+        assertThat("main class line", lines, hasItem(containsString(results.startArgs.getMainClassname())));
+        // Every non-empty line is a single token (no unquoted whitespace that would re-split)
+        for (String line : lines)
+            assertThat("single token per line: [" + line + "]", isSingleArgFileToken(line), is(true));
+    }
+
+    @Test
+    public void testArgFileParts() throws Exception
+    {
+        setupDistHome();
+
+        Files.writeString(baseDir.resolve("start.ini"),
+            """
+            --modules=main
+            """, UTF_8);
+
+        List<String> runArgs = new ArrayList<>();
+        runArgs.add("--create-files");
+        runArgs.add("java.version=21.0.1");
+        runArgs.add("--modules=optional,extra");
+        runArgs.add("--argfile=path,main");
+
+        ExecResults results = exec(runArgs, true);
+        assertThat("No exception", results.exception, is(nullValue()));
+        assertThat("argfile parts", results.startArgs.getDryRunParts(), containsInAnyOrder("path", "main"));
+
+        String rendered = renderArgFile(results);
+        // "main" part present
+        assertThat(rendered, containsString(results.startArgs.getMainClassname()));
+        // "opts" part excluded, so no -D system properties
+        assertThat(rendered, not(containsString("-Djetty.home")));
+    }
+
+    @Test
+    public void testArgFileJavaPartRejected() throws Exception
+    {
+        setupDistHome();
+
+        List<String> runArgs = new ArrayList<>();
+        runArgs.add("--argfile=java");
+
+        ExecResults results = exec(runArgs, false);
+        assertThat("UsageException expected", results.exception, instanceOf(UsageException.class));
+    }
+
+    @Test
+    public void testArgFileCombinedWithDryRunRejected() throws Exception
+    {
+        setupDistHome();
+
+        // --dry-run (shell format) and --argfile (java @argument-file format) share the dry-run
+        // state, so combining them must be rejected rather than silently producing one mode's
+        // output with the other's parts.
+        List<String> runArgs = new ArrayList<>();
+        runArgs.add("--dry-run");
+        runArgs.add("--argfile");
+
+        ExecResults results = exec(runArgs, false);
+        assertThat("UsageException expected", results.exception, instanceOf(UsageException.class));
+        assertThat(results.exception.getMessage(), containsString("Cannot combine"));
+    }
+
+    @Test
+    public void testArgFileBannedInIniFile() throws Exception
+    {
+        setupDistHome();
+
+        // --argfile is a command-line-only option; it must not be accepted from a start.ini.
+        Files.writeString(baseDir.resolve("start.ini"),
+            """
+            --modules=main
+            --argfile
+            """, UTF_8);
+
+        ExecResults results = exec(List.of(), false);
+        assertThat("UsageException expected", results.exception, instanceOf(UsageException.class));
+        assertThat(results.exception.getMessage(), containsString("--argfile"));
+        assertThat(results.exception.getMessage(), containsString("not allowed"));
+    }
+
+    @Test
+    public void testGetMainArgsPropertyInliningForExecArgFile() throws Exception
+    {
+        setupDistHome();
+
+        Files.writeString(baseDir.resolve("start.ini"),
+            """
+            --modules=main
+            my.secret.marker=TOPSECRET_abc
+            """, UTF_8);
+
+        List<String> runArgs = new ArrayList<>();
+        runArgs.add("--create-files");
+        runArgs.add("java.version=21.0.1");
+        runArgs.add("--modules=main");
+
+        ExecResults results = exec(runArgs, true);
+        assertThat("No exception", results.exception, is(nullValue()));
+
+        Set<String> parts = new HashSet<>(StartArgs.ALL_PARTS);
+        parts.remove("java");
+
+        // The forked JVM inlines properties into the @argument-file: the value is a token.
+        CommandLineBuilder inlined = results.startArgs.getMainArgs(parts, true);
+        assertThat("inlined property", inlined.getArgs(), hasItem("my.secret.marker=TOPSECRET_abc"));
+
+        // The in-process path keeps the properties file: the value is not a token; a
+        // .properties file path is passed instead.
+        CommandLineBuilder viaFile = results.startArgs.getMainArgs(parts, false);
+        assertThat("value not inlined", viaFile.getArgs(), not(hasItem(containsString("TOPSECRET_abc"))));
+        assertThat("properties file path", viaFile.getArgs(), hasItem(endsWith(".properties")));
+    }
+
+    /**
+     * Render the {@code java @argument-file} output using the same code path that
+     * {@link org.eclipse.jetty.start.Main} uses.
+     */
+    private String renderArgFile(ExecResults results) throws IOException
+    {
+        CommandLineBuilder cmd = results.startArgs.getMainArgs(results.startArgs.getDryRunParts());
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        try (PrintStream out = new PrintStream(bout, true, UTF_8))
+        {
+            cmd.writeArgFile(out);
+        }
+        return bout.toString(UTF_8);
+    }
+
+    /**
+     * Verify a rendered arg-file line tokenizes back to exactly one token (an empty line is allowed).
+     */
+    private static boolean isSingleArgFileToken(String line)
+    {
+        if (line.isEmpty())
+            return true;
+        // Quoted token: a line wrapped in double quotes is a single token.
+        if (line.startsWith("\"") && line.endsWith("\"") && line.length() >= 2)
+            return true;
+        // Otherwise it must contain no unquoted argfile separators.
+        return line.chars().noneMatch(c -> c == ' ' || c == '\t' || c == '\f');
     }
 
     @Test
