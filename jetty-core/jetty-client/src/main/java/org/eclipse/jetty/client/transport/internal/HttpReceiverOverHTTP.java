@@ -567,6 +567,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         else
         {
             HttpResponse response = exchange.getResponse();
+            // Report the status the server actually sent, verbatim: it may be a valid non-error (200, 302)
+            // or a malformed low value (0, 4, 20 from a truncated status line), but it is never normalized to an error here.
             response.status(failure.getCode()).reason(failure.getReason());
             failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response, (Throwable)failure));
         }

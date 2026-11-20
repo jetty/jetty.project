@@ -586,7 +586,7 @@ public interface Response extends Content.Sink
         String message = cause.toString();
         if (cause instanceof HttpException httpException)
         {
-            status = httpException.getCode();
+            status = HttpStatus.asErrorStatus(httpException.getCode());
             message = httpException.getReason();
         }
         writeError(request, response, callback, status, message, cause);
@@ -659,7 +659,7 @@ public interface Response extends Content.Sink
 
         request.consumeAvailable();
 
-        if (status <= 0)
+        if (!HttpStatus.isStatusCode(status))
             status = HttpStatus.INTERNAL_SERVER_ERROR_500;
         if (message == null)
             message = HttpStatus.getMessage(status);

@@ -315,6 +315,19 @@ public class HttpStatus
     }
 
     /**
+     * Tests whether the code is within the {@code 100} to {@code 999} range that
+     * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a> permits for a status code.
+     * This is a structural check only: a code in range need not be a registered or recognized status.
+     *
+     * @param code the code to test.
+     * @return true if the code is a well-formed HTTP status code.
+     */
+    public static boolean isStatusCode(int code)
+    {
+        return (code >= 100 && code <= 999);
+    }
+
+    /**
      * Tests whether the status code is of the
      * {@code Informational} message category as defined in
      * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
@@ -392,6 +405,22 @@ public class HttpStatus
     public static boolean isError(int code)
     {
         return isClientError(code) || isServerError(code);
+    }
+
+    /**
+     * <p>Normalizes a status code into one suitable for an error response.</p>
+     * <p>Returns the given code when it is a well-formed {@link #isError(int) error}
+     * status, otherwise substitutes {@link #INTERNAL_SERVER_ERROR_500}. This is used
+     * where a code of untrusted provenance (for example one carried by an
+     * {@link HttpException}) is about to be written as an error response status, so a
+     * structurally invalid or non-error code cannot reach the wire.</p>
+     *
+     * @param code the code to normalize.
+     * @return the code if it is an error status, otherwise {@code 500}.
+     */
+    public static int asErrorStatus(int code)
+    {
+        return isError(code) ? code : INTERNAL_SERVER_ERROR_500;
     }
 
     /**

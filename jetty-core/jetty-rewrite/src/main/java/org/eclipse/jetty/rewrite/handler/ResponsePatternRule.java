@@ -36,8 +36,8 @@ public class ResponsePatternRule extends PatternRule
     public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") int code, @Name("message") String message)
     {
         super(pattern);
-        _code = code;
-        _message = message;
+        setCode(code);
+        setMessage(message);
     }
 
     @Override
@@ -57,6 +57,8 @@ public class ResponsePatternRule extends PatternRule
      */
     public void setCode(int code)
     {
+        if (!HttpStatus.isStatusCode(code))
+            throw new IllegalArgumentException("Invalid Status Code: " + code);
         _code = code;
     }
 
@@ -78,9 +80,6 @@ public class ResponsePatternRule extends PatternRule
     @Override
     public Handler apply(Handler input) throws IOException
     {
-        if (getCode() < HttpStatus.CONTINUE_100)
-            return null;
-
         return new Handler(input)
         {
             @Override

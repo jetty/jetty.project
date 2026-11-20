@@ -2186,6 +2186,32 @@ public class HttpParserTest
         assertThat(_bad, is("Bad status"));
     }
 
+    /**
+     * Documents current behavior: a sub-100 status terminated directly by EOL (no trailing
+     * space or reason phrase) is accepted, because the STATUS/EOL branch of the parser does
+     * not apply the {@code status < 100} check that the STATUS/SPACE branch does. Compare
+     * {@link #testBadResponseStatus(String)}, where the same values are rejected when they are
+     * followed by a space. If the parser is tightened to reject these, flip this expectation.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"1", "2", "20", "50", "99"})
+    public void testShortResponseStatusTerminatedByEol(String status)
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer("""
+                HTTP/1.1 %s\r
+                Content-Length:0\r
+                \r
+                """.formatted(status), StandardCharsets.ISO_8859_1);
+
+        HttpParser.ResponseHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parser.parseNext(buffer);
+        assertNull(_bad);
+        assertEquals("HTTP/1.1", _methodOrVersion);
+        assertEquals(status, _uriOrStatus);
+        assertTrue(_messageCompleted);
+    }
+
     @ParameterizedTest
     @MethodSource("scenarios")
     public void testResponseReasonIso88591(Scenario scenario)
@@ -3239,6 +3265,25 @@ public class HttpParserTest
 
         parseAll(parser, buffer);
         assertEquals("431", _bad);
+    }
+
+    @Test
+    public void testResponseMaxHeaderBytesWithSuccessStatus()
+    {
+        // A response parse failure carries the received response status, which may be a
+        // success code. The resulting HttpException must be delivered as a bad message
+        // rather than failing the status-code assertion in the HttpException constructor.
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "X-Large: " + "x".repeat(1024) + "\r\n" +
+                "\r\n");
+
+        int maxHeaderBytes = 128;
+        HttpParser.ResponseHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, maxHeaderBytes);
+
+        parseAll(parser, buffer);
+        assertEquals("Response Header Bytes Too Large", _bad);
     }
 
     @ParameterizedTest
