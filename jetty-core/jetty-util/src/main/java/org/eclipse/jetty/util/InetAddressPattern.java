@@ -208,12 +208,15 @@ public abstract class InetAddressPattern implements Predicate<InetAddress>
         {
             super(pattern);
             _raw = address.getAddress();
+
+            if (cidr < 0)
+                throw new IllegalArgumentException("CIDR too small: " + pattern);
+            if (cidr > (_raw.length * 8))
+                throw new IllegalArgumentException("CIDR too large: " + pattern);
+
             _octets = cidr / 8;
             _mask = 0xff & (0xff << (8 - cidr % 8));
             _masked = _mask == 0 ? 0 : _raw[_octets] & _mask;
-
-            if (cidr > (_raw.length * 8))
-                throw new IllegalArgumentException("CIDR too large: " + pattern);
 
             if (_mask != 0 && (0xff & _raw[_octets]) != _masked)
                 throw new IllegalArgumentException("CIDR bits non zero: " + pattern);
@@ -277,6 +280,8 @@ public abstract class InetAddressPattern implements Predicate<InetAddress>
         @Override
         public boolean test(InetAddress address)
         {
+            if (address == null)
+                return false;
             byte[] raw = address.getAddress();
             if (raw.length != 4)
                 return false;
