@@ -16,6 +16,7 @@ package org.eclipse.jetty.docs.programming;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
@@ -121,6 +122,26 @@ public class ArchitectureDocs
         clientConnector.setExecutor(threadPool);
         HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         // end::virtualVirtual[]
+    }
+
+    public void queuedVirtualThreadFactory()
+    {
+        // tag::queuedVirtualThreadFactory[]
+        int maxThreads = 200;
+        int minThreads = 8;
+        int idleTimeout = 60000;
+        // Do not reserve threads, so that all the maxThreads slots are available to run tasks.
+        int reservedThreads = 0;
+
+        // A virtual ThreadFactory, naming the threads "qtp-vt-0", "qtp-vt-1", etc.
+        ThreadFactory virtualThreadFactory = Thread.ofVirtual().name("qtp-vt-", 0).factory();
+
+        // All the threads of this QueuedThreadPool are virtual threads,
+        // and at most maxThreads of them are created.
+        QueuedThreadPool threadPool = new QueuedThreadPool(maxThreads, minThreads, idleTimeout, reservedThreads, null, null, virtualThreadFactory);
+
+        Server server = new Server(threadPool);
+        // end::queuedVirtualThreadFactory[]
     }
 
     public static class EitherTask implements Invocable.Task
