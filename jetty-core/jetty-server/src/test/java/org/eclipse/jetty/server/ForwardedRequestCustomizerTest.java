@@ -281,6 +281,56 @@ public class ForwardedRequestCustomizerTest
                     .remoteAddr("[2001:db8:cafe::17]").remotePort(4711)
             ),
 
+            // https://tools.ietf.org/html/rfc7239#section-6.3  - obfuscated port
+            Arguments.of(new TestRequest("RFC7239: Obfuscated port")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Forwarded: for=\"192.0.2.43:_abc\""
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .secure(false)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("192.0.2.43").remotePort(0)
+            ),
+            Arguments.of(new TestRequest("RFC7239: Obfuscated port (IPv6)")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Forwarded: for=\"[2001:db8:cafe::17]:_abc\""
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .secure(false)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("[2001:db8:cafe::17]").remotePort(0)
+            ),
+            Arguments.of(new TestRequest("RFC7239: Obfuscated port of the proxy (ProxyAsAuthority==true)")
+                    .configureCustomizer((customizer) -> customizer.setProxyAsAuthority(true))
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Forwarded: by=\"192.0.2.43:_abc\""
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("192.0.2.43").serverPort(80)
+                    .secure(false)
+                    .requestURL("http://192.0.2.43/")
+            ),
+            Arguments.of(new TestRequest("RFC7239: Obfuscated port of an unknown node")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost",
+                        "Forwarded: for=\"unknown:_abc\", for=192.0.2.43"
+                    ),
+                new Expectations()
+                    .scheme("http").serverName("myhost").serverPort(80)
+                    .secure(false)
+                    .requestURL("http://myhost/")
+                    .remoteAddr("192.0.2.43").remotePort(0)
+            ),
+
             // https://tools.ietf.org/html/rfc7239#section-7  - Examples of syntax with regards to HTTP header fields
             Arguments.of(new TestRequest("RFC7239 Examples: Section 7")
                     .headers(
@@ -1216,6 +1266,12 @@ public class ForwardedRequestCustomizerTest
                     "GET / HTTP/1.1",
                     "Host: myhost",
                     "X-Proxied-Https: foo"
+                ),
+            new TestRequest("Empty RFC7239 obfuscated port")
+                .headers(
+                    "GET / HTTP/1.1",
+                    "Host: myhost",
+                    "Forwarded: for=\"192.0.2.43:_\""
                 )
         );
     }
