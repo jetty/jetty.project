@@ -13,10 +13,16 @@
 
 package org.eclipse.jetty.ee10.maven.plugin;
 
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
 
 import org.eclipse.jetty.maven.SelectiveJarResource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -27,6 +33,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -110,5 +117,37 @@ public class TestSelectiveJarResource
             assertFalse(Files.exists(unpackDir.resolve("cc/c1.html")));
             assertFalse(Files.exists(unpackDir.resolve("cc/c2.html")));
         }
+    }
+
+    @Test
+    public void testCopyToWithManifestAndMavenDescriptor(WorkDir workDir) throws Exception
+    {
+        Path base = workDir.getPath();
+        Path jar = base.resolve("overlay.jar");
+        Manifest manifest = new Manifest();
+        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        String pomEntry = "META-INF/maven/com.example/demo/pom.xml";
+        try (OutputStream output = Files.newOutputStream(jar);
+             JarOutputStream jarOutput = new JarOutputStream(output, manifest))
+        {
+            jarOutput.putNextEntry(new JarEntry(pomEntry));
+            jarOutput.write("<project/>".getBytes(StandardCharsets.UTF_8));
+            jarOutput.closeEntry();
+        }
+
+        Path unpackDir = base.resolve("unpacked");
+        Files.createDirectories(unpackDir);
+        try (ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            Resource resource = resourceFactory.newJarFileResource(jar.toUri());
+            SelectiveJarResource selectiveJarResource = new SelectiveJarResource(resource);
+            selectiveJarResource.copyTo(unpackDir);
+        }
+
+        Path manifestFile = unpackDir.resolve("META-INF/MANIFEST.MF");
+        Path pomFile = unpackDir.resolve(pomEntry);
+        assertTrue(Files.isRegularFile(manifestFile));
+        assertTrue(Files.readString(manifestFile).contains("Manifest-Version"));
+        assertEquals("<project/>", Files.readString(pomFile));
     }
 }

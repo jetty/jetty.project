@@ -269,7 +269,7 @@ public class SelectiveJarResource extends Resource
                 if (isIncluded("META-INF") && !isExcluded("META-INF"))
                 {
                     Path metaInf = directory.resolve("META-INF");
-                    Files.createDirectory(metaInf);
+                    Files.createDirectories(metaInf);
                     Path f = metaInf.resolve("MANIFEST.MF");
                     try (OutputStream fout = Files.newOutputStream(f))
                     {
