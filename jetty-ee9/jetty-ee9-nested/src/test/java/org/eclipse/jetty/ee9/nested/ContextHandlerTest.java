@@ -18,13 +18,18 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.EventListener;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextAttributeEvent;
+import jakarta.servlet.ServletContextAttributeListener;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequestListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
@@ -905,6 +910,60 @@ public class ContextHandlerTest
         assertThrows(MalformedURLException.class, () -> _contextHandler.getResource("badpath"));
         assertThat(_contextHandler.getServletContext().getResource("/../down/"), nullValue());
         assertThat(_contextHandler.getServletContext().getResource("/down/.././../"), nullValue());
+    }
+
+    @Test
+    public void testAddListenerAddsProgrammaticListenerByClassName() throws Exception
+    {
+        ServletContext servletContext = _contextHandler.getServletContext();
+
+        servletContext.addListener(TestServletRequestListener.class.getName());
+
+        EventListener listener = _contextHandler.getEventListeners().get(0);
+        assertThat(listener.getClass(), is(equalTo(TestServletRequestListener.class)));
+        assertThat(_contextHandler.isProgrammaticListener(listener), is(true));
+    }
+
+    @Test
+    public void testServletContextAttributeListener()
+    {
+        Queue<String> history = new ConcurrentLinkedQueue<>();
+        _contextHandler.addEventListener(new ServletContextAttributeListener()
+        {
+            @Override
+            public void attributeAdded(ServletContextAttributeEvent event)
+            {
+                history.add("Added " + event.getName() + "=" + event.getValue());
+            }
+
+            @Override
+            public void attributeRemoved(ServletContextAttributeEvent event)
+            {
+                history.add("Removed " + event.getName() + "=" + event.getValue());
+            }
+
+            @Override
+            public void attributeReplaced(ServletContextAttributeEvent event)
+            {
+                history.add("Replaced " + event.getName() + "=" + event.getValue());
+            }
+        });
+        ServletContext servletContext = _contextHandler.getServletContext();
+
+        assertThat(_contextHandler.setAttribute("persistent", "server"), nullValue());
+        servletContext.setAttribute("name", "one");
+        servletContext.setAttribute("name", "two");
+        servletContext.removeAttribute("name");
+
+        assertThat(servletContext.getAttribute("persistent"), is("server"));
+        assertThat(history, contains(
+            "Added name=one",
+            "Replaced name=one",
+            "Removed name=two"));
+    }
+
+    public static class TestServletRequestListener implements ServletRequestListener
+    {
     }
 
     private static class TestErrorHandler extends ErrorHandler implements ErrorHandler.ErrorPageMapper
