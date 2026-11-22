@@ -212,7 +212,7 @@ public class QoSHandler extends ConditionalHandler.Abstract
         return totalCount.get();
     }
 
-    @ManagedAttribute("The total number of resumed requests")
+    @ManagedAttribute("The total number of suspended requests")
     public long getTotalSuspendedRequestCount()
     {
         return suspendedCount.get();
