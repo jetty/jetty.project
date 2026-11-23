@@ -76,6 +76,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private State state = State.STATUS;
     private long idleTimeout;
     private boolean shutdown;
+    private boolean unexpectedBytes;
 
     public HttpConnectionOverFCGI(EndPoint endPoint, Destination destination, Promise<Connection> promise)
     {
@@ -270,6 +271,15 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
             }
             case COMPLETE ->
             {
+                if (buffer.hasRemaining())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Discarding unexpected bytes after response {} in {}", BufferUtil.toDetailString(buffer), this);
+                    BufferUtil.clear(buffer);
+                    // More unexpected bytes may follow, so the
+                    // connection must be closed, not pooled.
+                    unexpectedBytes = true;
+                }
                 // Do not call channel.responseSuccess() here to give HttpReceiverOverFCGI.read(boolean) a chance to read
                 // the chunk field before channel.responseSuccess() resets it to null.
             }
@@ -303,6 +313,11 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     boolean isShutdown()
     {
         return shutdown;
+    }
+
+    boolean hasUnexpectedBytes()
+    {
+        return unexpectedBytes;
     }
 
     @Override

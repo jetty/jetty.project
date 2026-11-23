@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.fcgi.client.transport;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -25,17 +27,21 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientTransportOverFCGITest
 {
+    private ArrayByteBufferPool.Tracking clientBufferPool;
     private ServerSocket server;
     private HttpClient client;
 
@@ -43,15 +49,25 @@ public class HttpClientTransportOverFCGITest
     public void prepare() throws Exception
     {
         server = new ServerSocket(0);
-        client = new HttpClient(new HttpClientTransportOverFCGI("/"));
+        ClientConnector clientConnector = new ClientConnector();
+        clientBufferPool = new ArrayByteBufferPool.Tracking();
+        clientConnector.setByteBufferPool(clientBufferPool);
+        client = new HttpClient(new HttpClientTransportOverFCGI(clientConnector, "/"));
         client.start();
     }
 
     @AfterEach
     public void dispose() throws Exception
     {
-        LifeCycle.stop(client);
-        server.close();
+        try
+        {
+            await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat("Client Leaks: " + clientBufferPool.dumpLeaks(), clientBufferPool.getLeaks().size(), is(0)));
+        }
+        finally
+        {
+            LifeCycle.stop(client);
+            server.close();
+        }
     }
 
     @Test
@@ -66,20 +82,7 @@ public class HttpClientTransportOverFCGITest
                 DataInputStream input = new DataInputStream(socket.getInputStream());
                 OutputStream output = socket.getOutputStream();
 
-                // Read the request records until the empty STDIN record.
-                int request;
-                while (true)
-                {
-                    byte[] header = new byte[8];
-                    input.readFully(header);
-                    int type = header[1] & 0xFF;
-                    request = ((header[2] & 0xFF) << 8) | (header[3] & 0xFF);
-                    int contentLength = ((header[4] & 0xFF) << 8) | (header[5] & 0xFF);
-                    int paddingLength = header[6] & 0xFF;
-                    input.readFully(new byte[contentLength + paddingLength]);
-                    if (type == FCGI.FrameType.STDIN.code && contentLength == 0)
-                        break;
-                }
+                int request = readRequest(input);
 
                 // Write the STDOUT record, so that it is the only
                 // record in the client's network buffer.
@@ -117,6 +120,70 @@ public class HttpClientTransportOverFCGITest
 
         client.stop();
         serverFuture.get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testExtraBytesAfterEndRequestClosesConnection() throws Exception
+    {
+        String content = "hello";
+        CompletableFuture<Void> serverFuture = CompletableFuture.runAsync(() ->
+        {
+            try (Socket socket = server.accept())
+            {
+                DataInputStream input = new DataInputStream(socket.getInputStream());
+                OutputStream output = socket.getOutputStream();
+
+                int request = readRequest(input);
+
+                // Write the whole response followed by an unexpected
+                // record, so that they are all in the same network buffer.
+                byte[] stdout = ("Content-Type: text/plain\r\n\r\n" + content).getBytes(StandardCharsets.US_ASCII);
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                bytes.write(createRecord(FCGI.FrameType.STDOUT, request, stdout));
+                bytes.write(createRecord(FCGI.FrameType.END_REQUEST, request, new byte[8]));
+                bytes.write(createRecord(FCGI.FrameType.STDOUT, request, "unexpected".getBytes(StandardCharsets.US_ASCII)));
+                output.write(bytes.toByteArray());
+                output.flush();
+
+                // The client must close the connection.
+                while (input.read() >= 0)
+                {
+                    // Discard.
+                }
+            }
+            catch (Exception x)
+            {
+                throw new RuntimeException(x);
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", server.getLocalPort())
+            .path("/index.php")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContentAsString(), is(content));
+
+        // The connection must be closed by the client, not pooled.
+        serverFuture.get(5, TimeUnit.SECONDS);
+    }
+
+    private static int readRequest(DataInputStream input) throws IOException
+    {
+        // Read the request records until the empty STDIN record.
+        while (true)
+        {
+            byte[] header = new byte[8];
+            input.readFully(header);
+            int type = header[1] & 0xFF;
+            int request = ((header[2] & 0xFF) << 8) | (header[3] & 0xFF);
+            int contentLength = ((header[4] & 0xFF) << 8) | (header[5] & 0xFF);
+            int paddingLength = header[6] & 0xFF;
+            input.readFully(new byte[contentLength + paddingLength]);
+            if (type == FCGI.FrameType.STDIN.code && contentLength == 0)
+                return request;
+        }
     }
 
     private static byte[] createRecord(FCGI.FrameType type, int request, byte[] content)

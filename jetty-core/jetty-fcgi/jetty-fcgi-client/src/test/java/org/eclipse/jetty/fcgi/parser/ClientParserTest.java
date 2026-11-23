@@ -234,6 +234,49 @@ public class ClientParserTest
         assertEquals(1, ends.get());
     }
 
+    @Test
+    public void testParseStopsAfterEndRequestWithRemainingBytes()
+    {
+        int id = 13;
+        AtomicInteger ends = new AtomicInteger();
+        AtomicInteger contents = new AtomicInteger();
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
+        {
+            @Override
+            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            {
+                contents.incrementAndGet();
+                return false;
+            }
+
+            @Override
+            public boolean onEnd(int request)
+            {
+                assertEquals(id, request);
+                ends.incrementAndGet();
+                return true;
+            }
+        });
+
+        // The whole response followed by unexpected bytes in the same buffer.
+        byte[] content = "Content-Length: 5\r\n\r\nhello".getBytes(StandardCharsets.US_ASCII);
+        ByteBuffer stdOut = createRecord(FCGI.FrameType.STDOUT, id, content);
+        ByteBuffer endRequest = createRecord(FCGI.FrameType.END_REQUEST, id, new byte[8]);
+        ByteBuffer unexpected = createRecord(FCGI.FrameType.STDOUT, id, "unexpected".getBytes(StandardCharsets.US_ASCII));
+        int unexpectedLength = unexpected.remaining();
+        ByteBuffer buffer = ByteBuffer.allocate(stdOut.remaining() + endRequest.remaining() + unexpectedLength)
+            .put(stdOut)
+            .put(endRequest)
+            .put(unexpected)
+            .flip();
+
+        // The parser must stop after END_REQUEST, without parsing the unexpected bytes.
+        assertTrue(parser.parse(buffer));
+        assertEquals(unexpectedLength, buffer.remaining());
+        assertEquals(1, contents.get());
+        assertEquals(1, ends.get());
+    }
+
     private static ByteBuffer createRecord(FCGI.FrameType type, int request, byte[] content)
     {
         // Pad to a multiple of 8 bytes, like php-fpm does.
