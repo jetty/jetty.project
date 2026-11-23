@@ -133,23 +133,31 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
             // and their certificates, keeping the alias order.
             Map<String, String> aliasMap = new LinkedHashMap<>();
             Map<String, X509> certificates = new LinkedHashMap<>();
+            Map<String, X509> sniCertificates = new LinkedHashMap<>();
             for (String keyManagerAlias : keyManagerAliases)
             {
                 String keyStoreAlias = _sslContextFactory.toKeyStoreAlias(_delegate, keyManagerAlias, aliasCerts);
                 X509 x509 = keyStoreAlias == null ? null : aliasCerts.get(keyStoreAlias);
                 if (x509 != null && aliasMap.putIfAbsent(keyStoreAlias, keyManagerAlias) == null)
+                {
                     certificates.put(keyStoreAlias, x509);
+                    // Certificates with special uses are not selectable by SNI,
+                    // but they are selectable via the configured certificate alias.
+                    if (!X509.isCertSign(x509.getCertificate()))
+                        sniCertificates.put(keyStoreAlias, x509);
+                }
             }
 
             // Delegate the decision to accept to the sniSelector.
             SniSelector sniSelector = _sslContextFactory.getSNISelector();
             if (sniSelector == null)
                 sniSelector = _sslContextFactory;
-            String keyStoreAlias = sniSelector.sniSelect(keyType, issuers, session, host, Collections.unmodifiableCollection(certificates.values()));
+            String keyStoreAlias = sniSelector.sniSelect(keyType, issuers, session, host, Collections.unmodifiableCollection(sniCertificates.values()));
 
             // Check the selected alias.
             if (keyStoreAlias == null)
                 return null;
+            Map<String, X509> acceptable = sniCertificates;
             if (keyStoreAlias == SniSelector.DELEGATE)
             {
                 // Without a configured certificate alias, let the delegate choose.
@@ -157,12 +165,14 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
                 if (certAlias == null)
                     return SniSelector.DELEGATE;
                 // Otherwise, choose only the configured certificate alias,
-                // which must be among the acceptable aliases checked below.
+                // which must be among the acceptable aliases checked below,
+                // including those with certificates with special uses.
                 keyStoreAlias = certAlias;
+                acceptable = certificates;
             }
 
             // Make sure we got back an alias from the acceptable aliases.
-            X509 x509 = certificates.get(keyStoreAlias);
+            X509 x509 = acceptable.get(keyStoreAlias);
             if (x509 == null)
             {
                 if (LOG.isDebugEnabled())

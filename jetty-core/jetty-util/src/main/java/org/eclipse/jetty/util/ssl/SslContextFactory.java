@@ -496,11 +496,7 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
                 String alias = aliases.nextElement();
                 Certificate certificate = keyStore.getCertificate(alias);
                 if (certificate instanceof X509Certificate x509)
-                {
-                    if (X509.isCertSign(x509))
-                        continue;
                     aliasCerts.put(alias, new X509(alias, x509));
-                }
             }
             return aliasCerts;
         }
@@ -542,12 +538,21 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
 
     public Set<String> getAliases()
     {
-        return Collections.unmodifiableSet(aliasCerts().keySet());
+        Set<String> aliases = new LinkedHashSet<>();
+        for (X509 x509 : aliasCerts().values())
+        {
+            // Exclude certificates with special uses.
+            if (!X509.isCertSign(x509.getCertificate()))
+                aliases.add(x509.getAlias());
+        }
+        return Collections.unmodifiableSet(aliases);
     }
 
     public X509 getX509(String alias)
     {
-        return aliasCerts().get(alias);
+        X509 x509 = aliasCerts().get(alias);
+        // Exclude certificates with special uses.
+        return x509 == null || X509.isCertSign(x509.getCertificate()) ? null : x509;
     }
 
     /**
@@ -2542,6 +2547,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
                     // this keyType; check if there is any certificate that matches this
                     // SNI, as we will likely be called again with a different keyType.
                     boolean anyMatching = aliasCerts(session).values().stream()
+                        // Exclude certificates with special uses.
+                        .filter(x509 -> !X509.isCertSign(x509.getCertificate()))
                         .filter(x509 -> !now.before(x509.getCertificate().getNotBefore()))
                         .anyMatch(x509 -> x509.matches(sniHost));
                     alias = sniRequired || anyMatching ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;

@@ -47,9 +47,11 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
@@ -865,6 +867,57 @@ public class SslContextFactoryTest
     }
 
     @ParameterizedTest
+    @CsvSource(delimiter = '|', nullValues = "null", value = {
+        "SunX509 | localhost",
+        "SunX509 | null",
+        "PKIX    | localhost",
+        "PKIX    | null"
+    })
+    public void testCertAliasWithKeyCertSign(String keyManagerFactoryAlgorithm, String sniHost) throws Exception
+    {
+        Instant now = Instant.now();
+        KeyStore.PrivateKeyEntry otherEntry = newSelfSignedPrivateKeyEntry("other.com", now.minus(Duration.ofDays(1)), now.plus(Duration.ofDays(1)));
+        // A self-signed certificate with KeyUsage keyCertSign, which is common.
+        KeyStore.PrivateKeyEntry certSignEntry = newSelfSignedPrivateKeyEntry("localhost", now.minus(Duration.ofDays(1)), now.plus(Duration.ofDays(1)), true);
+        char[] password = "storepwd".toCharArray();
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(null, password);
+        KeyStore.PasswordProtection protection = new KeyStore.PasswordProtection(password);
+        keyStore.setEntry("other", otherEntry, protection);
+        keyStore.setEntry("server", certSignEntry, protection);
+
+        SslContextFactory.Server serverTLS = new SslContextFactory.Server();
+        serverTLS.setKeyStore(keyStore);
+        serverTLS.setKeyStorePassword("storepwd");
+        serverTLS.setKeyManagerFactoryAlgorithm(keyManagerFactoryAlgorithm);
+        if ("PKIX".equals(keyManagerFactoryAlgorithm))
+            serverTLS.setAliasMapper(SslContextFactory.ALIAS_MAPPER_NULL);
+        // Not the first alias in the KeyStore, so that it is
+        // not chosen by chance when the choice is delegated.
+        serverTLS.setCertAlias("server");
+
+        try
+        {
+            serverTLS.start();
+
+            // Certificates with KeyUsage keyCertSign are still excluded from SNI selection.
+            assertThat(serverTLS.getAliases(), containsInAnyOrder("other"));
+            assertNull(serverTLS.getX509("server"));
+
+            try (SSLServerSocket serverSocket = serverTLS.newSslServerSocket(null, 0, 128))
+            {
+                // The configured alias must be served, even if its certificate has KeyUsage keyCertSign.
+                X509Certificate certificate = assertConnectEchoClose(serverSocket, sniHost);
+                assertEquals(certSignEntry.getCertificate(), certificate);
+            }
+        }
+        finally
+        {
+            serverTLS.stop();
+        }
+    }
+
+    @ParameterizedTest
     @ValueSource(booleans = {true, false})
     public void testSNIWithPKIXAndIdentityAliasMapper(boolean sniRequired) throws Exception
     {
@@ -894,17 +947,22 @@ public class SslContextFactoryTest
 
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {
-        "SunX509 | ALIAS_MAPPER_IDENTITY     | true",
-        "PKIX    | ALIAS_MAPPER_OPENJDK_PKIX | true",
-        "PKIX    | ALIAS_MAPPER_NULL         | true",
-        "PKIX    | ALIAS_MAPPER_IDENTITY     | true"
+        "SunX509 | ALIAS_MAPPER_IDENTITY     | false | true",
+        "PKIX    | ALIAS_MAPPER_OPENJDK_PKIX | false | true",
+        "PKIX    | ALIAS_MAPPER_NULL         | false | true",
+        "PKIX    | ALIAS_MAPPER_IDENTITY     | false | true",
+        // The configured alias must be used even if its certificate has KeyUsage keyCertSign.
+        "SunX509 | ALIAS_MAPPER_IDENTITY     | true  | true",
+        "PKIX    | ALIAS_MAPPER_OPENJDK_PKIX | true  | true",
+        "PKIX    | ALIAS_MAPPER_NULL         | true  | true",
+        "PKIX    | ALIAS_MAPPER_IDENTITY     | true  | true"
     })
-    public void testClientCertAlias(String keyManagerFactoryAlgorithm, String aliasMapper, boolean success) throws Exception
+    public void testClientCertAlias(String keyManagerFactoryAlgorithm, String aliasMapper, boolean certSign, boolean success) throws Exception
     {
         // Create two client certificates.
         Instant now = Instant.now();
-        KeyStore.PrivateKeyEntry client1Entry = newSelfSignedPrivateKeyEntry("client1", now.minus(Duration.ofDays(1)), now.plus(Duration.ofDays(1)));
-        KeyStore.PrivateKeyEntry client2Entry = newSelfSignedPrivateKeyEntry("client2", now.minus(Duration.ofDays(1)), now.plus(Duration.ofDays(1)));
+        KeyStore.PrivateKeyEntry client1Entry = newSelfSignedPrivateKeyEntry("client1", now.minus(Duration.ofDays(1)), now.plus(Duration.ofDays(1)), certSign);
+        KeyStore.PrivateKeyEntry client2Entry = newSelfSignedPrivateKeyEntry("client2", now.minus(Duration.ofDays(1)), now.plus(Duration.ofDays(1)), certSign);
 
         // The server requires a client certificate, and trusts both.
         KeyStore serverTrustStore = KeyStore.getInstance("PKCS12");
@@ -1026,12 +1084,22 @@ public class SslContextFactoryTest
 
     private static KeyStore.PrivateKeyEntry newSelfSignedPrivateKeyEntry(String host, Instant notBefore, Instant notAfter) throws Exception
     {
+        return newSelfSignedPrivateKeyEntry(host, notBefore, notAfter, false);
+    }
+
+    private static KeyStore.PrivateKeyEntry newSelfSignedPrivateKeyEntry(String host, Instant notBefore, Instant notAfter, boolean certSign) throws Exception
+    {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(2048);
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
         X500Name subject = new X500Name("CN=" + host);
         X509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(subject, BigInteger.ONE, Date.from(notBefore), Date.from(notAfter), subject, keyPair.getPublic())
             .addExtension(Extension.subjectAlternativeName, false, new GeneralNames(new GeneralName(GeneralName.dNSName, host)));
+        if (certSign)
+        {
+            certificateBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment | KeyUsage.keyCertSign));
+            certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
+        }
         ContentSigner signer = new JcaContentSignerBuilder("SHA256withRSA").build(keyPair.getPrivate());
         X509Certificate certificate = new JcaX509CertificateConverter().getCertificate(certificateBuilder.build(signer));
         return new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{certificate});
