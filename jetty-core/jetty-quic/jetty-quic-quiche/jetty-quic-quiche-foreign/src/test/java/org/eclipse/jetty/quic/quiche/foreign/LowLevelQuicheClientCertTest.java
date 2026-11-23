@@ -235,7 +235,7 @@ public class LowLevelQuicheClientCertTest
             protosLen += 1 + proto.getBytes(StandardCharsets.UTF_8).length;
 
         // 1st round
-        drainServerToFeedClient(entry, 451 + protosLen);
+        drainServerToFeedClient(entry, 457 + protosLen);
         assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));
         assertThat(clientQuicheConnection.isConnectionEstablished(), is(true));
 
