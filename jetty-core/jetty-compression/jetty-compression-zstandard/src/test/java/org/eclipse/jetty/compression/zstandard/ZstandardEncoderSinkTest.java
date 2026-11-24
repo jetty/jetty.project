@@ -210,7 +210,7 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
     {
         List<Arguments> cases = new ArrayList<>();
         // zstd blocks are 128 KiB, so test sizes around multiples of that.
-        for (int size : List.of(128 * 1024 - 1, 128 * 1024, 128 * 1024 + 1, 200000, 128 * 1024 * 2 , 128 * 1024 * 3))
+        for (int size : List.of(128 * 1024 - 1, 128 * 1024, 128 * 1024 + 1, 200000, 128 * 1024 * 2, 128 * 1024 * 3))
         {
             for (boolean direct : List.of(false, true))
             {
