@@ -1395,7 +1395,7 @@ public class ErrorPageTest
             assertThat(responseBody, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
             assertThat(responseBody, Matchers.containsString("ERROR_MESSAGE: Bad query"));
             assertThat(responseBody, Matchers.containsString("ERROR_CODE: 400"));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.HttpException$IllegalStateException: 400: Bad query"));
+            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.HttpException$IllegalStateException: Bad query"));
             assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.HttpException$IllegalStateException"));
             assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + appServlet.getClass().getName()));
             assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /app"));

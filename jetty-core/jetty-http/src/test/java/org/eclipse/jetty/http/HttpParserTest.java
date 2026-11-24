@@ -3219,7 +3219,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler, maxHeaderBytes);
 
         parseAll(parser, buffer);
-        assertEquals("414", _bad);
+        assertEquals("URI Too Long", _bad);
     }
 
     @ParameterizedTest
@@ -3238,7 +3238,26 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler, maxHeaderBytes);
 
         parseAll(parser, buffer);
-        assertEquals("431", _bad);
+        assertEquals("Request Header Fields Too Large", _bad);
+    }
+
+    @Test
+    public void testResponseMaxHeaderBytesWithSuccessStatus()
+    {
+        // A response parse failure carries the received response status, which may be a
+        // success code. The resulting HttpException must be delivered as a bad message
+        // rather than failing the status-code assertion in the HttpException constructor.
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "X-Large: " + "x".repeat(1024) + "\r\n" +
+                "\r\n");
+
+        int maxHeaderBytes = 128;
+        HttpParser.ResponseHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, maxHeaderBytes);
+
+        parseAll(parser, buffer);
+        assertEquals("Response Header Bytes Too Large", _bad);
     }
 
     @ParameterizedTest
