@@ -725,7 +725,8 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public InvocationType getInvocationType()
         {
-            return _callback.getInvocationType();
+            // Field _callback may be nulled-out concurrently, e.g. by idle timeout.
+            return Invocable.getInvocationType(_callback);
         }
 
         private boolean reset(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
