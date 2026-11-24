@@ -63,6 +63,7 @@ public abstract class Parser
     private final Listener listener;
     private State state = State.INITIAL;
     private int padding;
+    private boolean endRequest;
 
     protected Parser(Listener listener)
     {
@@ -122,28 +123,30 @@ public abstract class Parser
                             }
                             padding = headerParser.getPaddingLength();
                             state = State.PADDING;
+                            // END_REQUEST has been notified, so parsing must
+                            // stop after skipping the padding in the buffer.
+                            endRequest = headerParser.getFrameType() == FCGI.FrameType.END_REQUEST;
                         }
                     }
                     case PADDING ->
                     {
-                        if (buffer.remaining() >= padding)
-                        {
-                            buffer.position(buffer.position() + padding);
-                            // Only stop parsing at the end of the request,
-                            // as no event is notified for other frame types.
-                            // Bytes remaining after the end of the request
-                            // are left in the buffer for the caller to handle.
-                            boolean endRequest = headerParser.getFrameType() == FCGI.FrameType.END_REQUEST;
+                        int length = Math.min(padding, buffer.remaining());
+                        buffer.position(buffer.position() + length);
+                        padding -= length;
+                        // Stop parsing only in the same call that notified
+                        // END_REQUEST, as no event is notified for the padding
+                        // or for other frame types.
+                        // Bytes remaining after the end of the request are left
+                        // in the buffer for the caller to handle, while padding
+                        // bytes not received yet are skipped by the next call.
+                        boolean stop = endRequest;
+                        endRequest = false;
+                        if (padding == 0)
                             reset();
-                            if (endRequest)
-                                return true;
-                        }
-                        else
-                        {
-                            padding -= buffer.remaining();
-                            buffer.position(buffer.limit());
+                        if (stop)
+                            return true;
+                        if (padding > 0)
                             return false;
-                        }
                     }
                     default -> throw new IllegalStateException();
                 }
@@ -173,6 +176,7 @@ public abstract class Parser
         headerParser.reset();
         state = State.INITIAL;
         padding = 0;
+        endRequest = false;
     }
 
     public interface Listener

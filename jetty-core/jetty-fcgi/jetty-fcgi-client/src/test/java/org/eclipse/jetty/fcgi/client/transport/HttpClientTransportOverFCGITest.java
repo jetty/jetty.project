@@ -23,12 +23,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.client.Connection;
 import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.fcgi.client.transport.internal.HttpConnectionOverFCGI;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientTransportOverFCGITest
 {
+    private final AtomicInteger fillablesEntered = new AtomicInteger();
+    private final AtomicInteger fillablesExited = new AtomicInteger();
     private ArrayByteBufferPool.Tracking clientBufferPool;
     private ServerSocket server;
     private HttpClient client;
@@ -52,7 +60,30 @@ public class HttpClientTransportOverFCGITest
         ClientConnector clientConnector = new ClientConnector();
         clientBufferPool = new ArrayByteBufferPool.Tracking();
         clientConnector.setByteBufferPool(clientBufferPool);
-        client = new HttpClient(new HttpClientTransportOverFCGI(clientConnector, "/"));
+        client = new HttpClient(new HttpClientTransportOverFCGI(clientConnector, "/")
+        {
+            @Override
+            protected org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Destination destination, Promise<Connection> promise)
+            {
+                return new HttpConnectionOverFCGI(endPoint, destination, promise)
+                {
+                    @Override
+                    public void onFillable()
+                    {
+                        // Track the reads from the network.
+                        fillablesEntered.incrementAndGet();
+                        try
+                        {
+                            super.onFillable();
+                        }
+                        finally
+                        {
+                            fillablesExited.incrementAndGet();
+                        }
+                    }
+                };
+            }
+        });
         client.start();
     }
 
@@ -169,6 +200,138 @@ public class HttpClientTransportOverFCGITest
         serverFuture.get(5, TimeUnit.SECONDS);
     }
 
+    @Test
+    public void testEndRequestPaddingInSeparateNetworkRead() throws Exception
+    {
+        CountDownLatch paddingLatch = new CountDownLatch(1);
+        CompletableFuture<Void> serverFuture = CompletableFuture.runAsync(() ->
+        {
+            try (Socket socket = server.accept())
+            {
+                DataInputStream input = new DataInputStream(socket.getInputStream());
+                OutputStream output = socket.getOutputStream();
+
+                // Write the first response, with the END_REQUEST
+                // padding missing, so that it is read separately.
+                int request = readRequest(input);
+                byte[] response = createResponse(request, "first", 8);
+                output.write(response, 0, response.length - 8);
+                output.flush();
+
+                // Write the END_REQUEST padding alone.
+                assertTrue(paddingLatch.await(5, TimeUnit.SECONDS));
+                output.write(new byte[8]);
+                output.flush();
+
+                // The second request must be sent on the same connection.
+                request = readRequest(input);
+                output.write(createResponse(request, "second", 0));
+                output.flush();
+
+                // Wait for the client to close the connection.
+                while (input.read() >= 0)
+                {
+                    // Discard.
+                }
+            }
+            catch (Exception x)
+            {
+                throw new RuntimeException(x);
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", server.getLocalPort())
+            .path("/index.php")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContentAsString(), is("first"));
+
+        // Wait for the client to read the END_REQUEST padding alone.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> fillablesEntered.get() == fillablesExited.get());
+        int fillables = fillablesExited.get();
+        paddingLatch.countDown();
+        await().atMost(5, TimeUnit.SECONDS).until(() -> fillablesExited.get() > fillables);
+
+        response = client.newRequest("localhost", server.getLocalPort())
+            .path("/index.php")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContentAsString(), is("second"));
+
+        client.stop();
+        serverFuture.get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testEndRequestPaddingWithNextResponse() throws Exception
+    {
+        CompletableFuture<Void> serverFuture = CompletableFuture.runAsync(() ->
+        {
+            try (Socket socket = server.accept())
+            {
+                DataInputStream input = new DataInputStream(socket.getInputStream());
+                OutputStream output = socket.getOutputStream();
+
+                // Write the first response, with the END_REQUEST padding missing.
+                int request = readRequest(input);
+                byte[] response = createResponse(request, "first", 8);
+                output.write(response, 0, response.length - 8);
+                output.flush();
+
+                // The second request must be sent on the same connection.
+                request = readRequest(input);
+
+                // Write the END_REQUEST padding of the first response
+                // together with the second response, in the same write.
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                bytes.write(new byte[8]);
+                bytes.write(createResponse(request, "second", 0));
+                output.write(bytes.toByteArray());
+                output.flush();
+
+                // Wait for the client to close the connection.
+                while (input.read() >= 0)
+                {
+                    // Discard.
+                }
+            }
+            catch (Exception x)
+            {
+                throw new RuntimeException(x);
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", server.getLocalPort())
+            .path("/index.php")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContentAsString(), is("first"));
+
+        response = client.newRequest("localhost", server.getLocalPort())
+            .path("/index.php")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getContentAsString(), is("second"));
+
+        client.stop();
+        serverFuture.get(5, TimeUnit.SECONDS);
+    }
+
+    private static byte[] createResponse(int request, String content, int endRequestPadding) throws IOException
+    {
+        // A STDOUT record with the headers and the content, then an END_REQUEST record
+        // (appStatus=0, protocolStatus=REQUEST_COMPLETE) with the given padding.
+        byte[] stdout = ("Content-Type: text/plain\r\n\r\n" + content).getBytes(StandardCharsets.US_ASCII);
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        bytes.write(createRecord(FCGI.FrameType.STDOUT, request, stdout));
+        bytes.write(createRecord(FCGI.FrameType.END_REQUEST, request, new byte[8], endRequestPadding));
+        return bytes.toByteArray();
+    }
+
     private static int readRequest(DataInputStream input) throws IOException
     {
         // Read the request records until the empty STDIN record.
@@ -189,7 +352,11 @@ public class HttpClientTransportOverFCGITest
     private static byte[] createRecord(FCGI.FrameType type, int request, byte[] content)
     {
         // Pad to a multiple of 8 bytes, like php-fpm does.
-        int padding = (8 - content.length % 8) % 8;
+        return createRecord(type, request, content, (8 - content.length % 8) % 8);
+    }
+
+    private static byte[] createRecord(FCGI.FrameType type, int request, byte[] content, int padding)
+    {
         byte[] record = new byte[8 + content.length + padding];
         record[0] = 1;
         record[1] = (byte)type.code;

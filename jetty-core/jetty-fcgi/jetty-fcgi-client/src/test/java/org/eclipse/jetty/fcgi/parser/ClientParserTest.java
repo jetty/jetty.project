@@ -277,10 +277,102 @@ public class ClientParserTest
         assertEquals(1, ends.get());
     }
 
+    @Test
+    public void testParseEndRequestWithPaddingInSeparateBuffer()
+    {
+        int id = 13;
+        AtomicInteger ends = new AtomicInteger();
+        AtomicInteger headers = new AtomicInteger();
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
+        {
+            @Override
+            public boolean onHeaders(int request)
+            {
+                headers.incrementAndGet();
+                return true;
+            }
+
+            @Override
+            public boolean onEnd(int request)
+            {
+                assertEquals(id, request);
+                ends.incrementAndGet();
+                return true;
+            }
+        });
+
+        // An END_REQUEST record with padding, split between its content and its padding.
+        ByteBuffer endRequest = createRecord(FCGI.FrameType.END_REQUEST, id, new byte[8], 8);
+        ByteBuffer endRequestContent = endRequest.slice(0, endRequest.remaining() - 8);
+        ByteBuffer endRequestPadding = endRequest.slice(endRequest.remaining() - 8, 8);
+
+        // The parser must stop when END_REQUEST is notified, even if the padding is missing.
+        assertTrue(parser.parse(endRequestContent));
+        assertFalse(endRequestContent.hasRemaining());
+        assertEquals(1, ends.get());
+
+        // The padding alone notifies no event, so the parser must not stop.
+        assertFalse(parser.parse(endRequestPadding));
+        assertFalse(endRequestPadding.hasRemaining());
+        assertEquals(1, ends.get());
+
+        // The next response must be parsed normally.
+        byte[] content = "Content-Length: 0\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
+        ByteBuffer stdOut = createRecord(FCGI.FrameType.STDOUT, id, content);
+        assertTrue(parser.parse(stdOut));
+        assertEquals(1, headers.get());
+    }
+
+    @Test
+    public void testParseEndRequestPaddingWithNextResponse()
+    {
+        int id = 13;
+        AtomicInteger ends = new AtomicInteger();
+        AtomicInteger headers = new AtomicInteger();
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
+        {
+            @Override
+            public boolean onHeaders(int request)
+            {
+                headers.incrementAndGet();
+                return true;
+            }
+
+            @Override
+            public boolean onEnd(int request)
+            {
+                assertEquals(id, request);
+                ends.incrementAndGet();
+                return true;
+            }
+        });
+
+        // An END_REQUEST record with padding, split between its content and its padding.
+        ByteBuffer endRequest = createRecord(FCGI.FrameType.END_REQUEST, id, new byte[8], 8);
+        ByteBuffer endRequestContent = endRequest.slice(0, endRequest.remaining() - 8);
+        assertTrue(parser.parse(endRequestContent));
+        assertEquals(1, ends.get());
+
+        // The padding arrives together with the next response, which must be parsed normally.
+        byte[] content = "Content-Length: 0\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
+        ByteBuffer stdOut = createRecord(FCGI.FrameType.STDOUT, id, content);
+        ByteBuffer buffer = ByteBuffer.allocate(8 + stdOut.remaining())
+            .put(new byte[8])
+            .put(stdOut)
+            .flip();
+        assertTrue(parser.parse(buffer));
+        assertEquals(1, headers.get());
+        assertEquals(1, ends.get());
+    }
+
     private static ByteBuffer createRecord(FCGI.FrameType type, int request, byte[] content)
     {
         // Pad to a multiple of 8 bytes, like php-fpm does.
-        int padding = (8 - content.length % 8) % 8;
+        return createRecord(type, request, content, (8 - content.length % 8) % 8);
+    }
+
+    private static ByteBuffer createRecord(FCGI.FrameType type, int request, byte[] content, int padding)
+    {
         ByteBuffer buffer = ByteBuffer.allocate(8 + content.length + padding);
         buffer.put((byte)1)
             .put((byte)type.code)
