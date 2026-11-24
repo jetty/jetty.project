@@ -294,7 +294,7 @@ public class ResourceTest
         assertThat("Content: " + data.test, c, startsWith(data.content));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "[{index}]") // reliable alternative for WorkDir (don't rely on Scenario.toString() behavior here)
     @MethodSource("scenarios")
     public void testResourceCopyToDirectory(Scenario data)
         throws Exception
