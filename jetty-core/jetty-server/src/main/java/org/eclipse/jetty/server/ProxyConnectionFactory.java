@@ -157,9 +157,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
             private final Connector _connector;
             private final ConnectionFactory _next;
-            private RetainableByteBuffer _buffer;
             private final StringBuilder _builder = new StringBuilder();
             private final String[] _fields = new String[6];
+            private RetainableByteBuffer _buffer;
             private int _index;
             private int _length;
 
