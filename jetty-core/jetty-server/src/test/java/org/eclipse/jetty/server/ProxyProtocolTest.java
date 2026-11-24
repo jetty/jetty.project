@@ -373,4 +373,60 @@ public class ProxyProtocolTest
             assertThat(response, startsWith("HTTP/1.1 200 "));
         }
     }
+
+    @Test
+    public void testProxyProtocolV2TooLargeHeader() throws Exception
+    {
+        int maxProxyHeader = 24;
+        ProxyConnectionFactory proxyConnectionFactory = new ProxyConnectionFactory();
+        proxyConnectionFactory.setMaxProxyHeader(maxProxyHeader);
+        start(proxyConnectionFactory, new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        // Address block (12 bytes) followed by a single NOOP TLV (3 bytes + value) padding the header to the desired length.
+        int noopValueLength = (maxProxyHeader + 1) - 12 - 3;
+        ByteBuffer proxy = ByteBuffer.allocate(16 + maxProxyHeader + 1);
+        proxy.put(StringUtil.fromHexString(
+            // Preamble
+            "0D0A0D0A000D0A515549540A" +
+                // V2, PROXY
+                "21" +
+                // 0x1 : AF_INET    0x1 : STREAM.
+                "11"));
+        proxy.putChar((char)(maxProxyHeader + 1));
+        proxy.put(StringUtil.fromHexString(
+            // uint32_t src_addr; uint32_t dst_addr; uint16_t src_port; uint16_t dst_port;
+            "C0A80001" +
+                "7f000001" +
+                "3039" +
+                "1F90"));
+        // NOOP TLV.
+        proxy.put((byte)0x04);
+        proxy.putChar((char)noopValueLength);
+        proxy.put(new byte[noopValueLength]);
+        assertThat(proxy.remaining(), is(0));
+
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            socket.setSoTimeout(5000);
+            String request =
+                "GET / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
+            OutputStream output = socket.getOutputStream();
+            output.write(proxy.array());
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            assertThat(socket.getInputStream().read(), is(-1));
+        }
+    }
 }

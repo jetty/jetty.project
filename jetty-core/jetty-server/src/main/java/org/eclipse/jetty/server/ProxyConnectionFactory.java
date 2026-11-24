@@ -442,6 +442,8 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
         public void setMaxProxyHeader(int maxProxyHeader)
         {
+            if (maxProxyHeader < ProxyProtocolV2Connection.HEADER_LENGTH)
+                throw new IllegalArgumentException("Max proxy header must be >= " + ProxyProtocolV2Connection.HEADER_LENGTH);
             _maxProxyHeader = maxProxyHeader;
         }
 
