@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -179,6 +180,26 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
             result = result + '?' + query;
 
         assertThat(result, is(expectedResult));
+    }
+
+    @Test
+    public void testPreserveViolationsWithCleanURI() throws Exception
+    {
+        // A clean request (no URI violations) matched while preserveViolations is true must still
+        // rewrite and respond, not fail rebuilding the HttpURI from an empty violation set.
+        RewriteRegexRule rule = new RewriteRegexRule("/foo/(.*)", "/replace/$1");
+        rule.setPreserveViolations(true);
+        start(rule);
+
+        String request = """
+            GET /foo/bar HTTP/1.1
+            Host: localhost
+
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus(), "Response status code");
+        assertEquals("/replace/bar", response.get("X-Path"), "Response X-Path header value");
     }
 
     public record Scenario(String pathQuery, String regex, String replacement, String expectedPath, String expectedQuery)
