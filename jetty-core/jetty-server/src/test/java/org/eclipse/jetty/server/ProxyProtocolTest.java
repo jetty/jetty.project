@@ -23,22 +23,29 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyProtocolTest
 {
+    private ArrayByteBufferPool.Tracking bufferPool;
     private Server server;
     private ServerConnector connector;
 
@@ -49,7 +56,8 @@ public class ProxyProtocolTest
 
     private void start(ProxyConnectionFactory proxyConnectionFactory, Handler handler) throws Exception
     {
-        server = new Server();
+        bufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(null, null, bufferPool);
         connector = new ServerConnector(server, proxyConnectionFactory, new HttpConnectionFactory());
         server.addConnector(connector);
         server.setHandler(handler);
@@ -59,8 +67,15 @@ public class ProxyProtocolTest
     @AfterEach
     public void destroy() throws Exception
     {
-        if (server != null)
-            server.stop();
+        try
+        {
+            if (bufferPool != null)
+                await().atMost(5, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks(), empty());
+        }
+        finally
+        {
+            LifeCycle.stop(server);
+        }
     }
 
     @Test
@@ -372,6 +387,7 @@ public class ProxyProtocolTest
             String response = reader.readLine();
             assertThat(response, startsWith("HTTP/1.1 200 "));
         }
+        await().atMost(5, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks(), empty());
     }
 
     @Test
@@ -416,17 +432,106 @@ public class ProxyProtocolTest
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             socket.setSoTimeout(5000);
-            String request =
-                "GET / HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+            // Only send the PROXY bytes: any unread byte left when the server
+            // closes the connection would make it send a RST instead of a FIN.
             OutputStream output = socket.getOutputStream();
             output.write(proxy.array());
-            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             assertThat(socket.getInputStream().read(), is(-1));
+        }
+        await().atMost(5, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks(), empty());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 65536, Integer.MAX_VALUE})
+    public void testInvalidMaxProxyHeader(int maxProxyHeader)
+    {
+        ProxyConnectionFactory proxyConnectionFactory = new ProxyConnectionFactory();
+        assertThrows(IllegalArgumentException.class, () -> proxyConnectionFactory.setMaxProxyHeader(maxProxyHeader));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 65535})
+    public void testValidMaxProxyHeader(int maxProxyHeader)
+    {
+        ProxyConnectionFactory proxyConnectionFactory = new ProxyConnectionFactory();
+        proxyConnectionFactory.setMaxProxyHeader(maxProxyHeader);
+        assertThat(proxyConnectionFactory.getMaxProxyHeader(), is(maxProxyHeader));
+    }
+
+    @Test
+    public void testProxyProtocolV1IdleTimeoutReleasesBuffer() throws Exception
+    {
+        start(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+        connector.setIdleTimeout(500);
+
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            socket.setSoTimeout(5000);
+            // Incomplete PROXY v1 line, so the server waits for more bytes until the idle timeout.
+            OutputStream output = socket.getOutputStream();
+            output.write("PROXY TCP4 192.168.0.1 ".getBytes(StandardCharsets.US_ASCII));
+            output.flush();
+
+            // The idle timeout first shuts the output down.
+            assertThat(socket.getInputStream().read(), is(-1));
+            // Keep the socket open so the server does not read an EOF: the
+            // next idle timeout closes the connection without filling again.
+            await().atMost(5, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks(), empty());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 12})
+    public void testProxyProtocolV2IdleTimeoutReleasesBuffer(int sentBodyBytes) throws Exception
+    {
+        start(new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+        connector.setIdleTimeout(500);
+
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            socket.setSoTimeout(5000);
+            // Announce a 24 bytes body but send less, so the server waits for more bytes until the idle timeout.
+            byte[] proxy = StringUtil.fromHexString(
+                // Preamble
+                "0D0A0D0A000D0A515549540A" +
+                    // V2, PROXY
+                    "21" +
+                    // 0x1 : AF_INET    0x1 : STREAM.
+                    "11" +
+                    // Length.
+                    "0018" +
+                    // uint32_t src_addr; uint32_t dst_addr; uint16_t src_port; uint16_t dst_port;
+                    "C0A80001" +
+                    "7f000001" +
+                    "3039" +
+                    "1F90");
+            OutputStream output = socket.getOutputStream();
+            output.write(proxy, 0, 16 + sentBodyBytes);
+            output.flush();
+
+            // The idle timeout first shuts the output down.
+            assertThat(socket.getInputStream().read(), is(-1));
+            // Keep the socket open so the server does not read an EOF: the
+            // next idle timeout closes the connection without filling again.
+            await().atMost(5, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks(), empty());
         }
     }
 }
