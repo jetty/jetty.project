@@ -754,8 +754,8 @@ public class Response implements HttpServletResponse
     @Override
     public void setStatus(int sc)
     {
-        if (sc < 100 || sc > 999)
-            throw new IllegalArgumentException();
+        if (!HttpStatus.isStatusCode(sc))
+            throw new IllegalArgumentException("Invalid Status Code: " + sc);
         if (isMutable())
         {
             // Null the reason only if the status is different. This allows
@@ -775,8 +775,8 @@ public class Response implements HttpServletResponse
 
     public void setStatusWithReason(int sc, String message)
     {
-        if (sc < 100 || sc > 999)
-            throw new IllegalArgumentException();
+        if (!HttpStatus.isStatusCode(sc))
+            throw new IllegalArgumentException("Invalid Status Code: " + sc);
         if (isMutable())
         {
             _status = sc;

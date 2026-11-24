@@ -98,8 +98,8 @@ public class ResponseCookieValueRegexRule extends Rule
      */
     public void setCode(int code)
     {
-        if (code < HttpStatus.CONTINUE_100)
-            throw new IllegalArgumentException("invalid http status code");
+        if (!HttpStatus.isStatusCode(code))
+            throw new IllegalArgumentException("Invalid Status Code: " + code);
 
         _code = code;
     }

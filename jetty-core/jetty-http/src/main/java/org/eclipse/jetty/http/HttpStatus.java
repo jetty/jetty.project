@@ -315,6 +315,19 @@ public class HttpStatus
     }
 
     /**
+     * Tests whether the code is within the {@code 100} to {@code 999} range that
+     * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a> permits for a status code.
+     * This is a structural check only: a code in range need not be a registered or recognized status.
+     *
+     * @param code the code to test.
+     * @return true if the code is a well-formed HTTP status code.
+     */
+    public static boolean isStatusCode(int code)
+    {
+        return (code >= 100 && code <= 999);
+    }
+
+    /**
      * Tests whether the status code is of the
      * {@code Informational} message category as defined in
      * <a href="https://www.rfc-editor.org/rfc/rfc9110.html">RFC 9110</a>.
