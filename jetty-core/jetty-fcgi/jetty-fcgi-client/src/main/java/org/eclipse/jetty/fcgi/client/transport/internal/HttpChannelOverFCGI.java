@@ -161,7 +161,7 @@ public class HttpChannelOverFCGI extends HttpChannel
         HttpFields responseHeaders = result.getResponse().getHeaders();
         if (result.isFailed())
             connection.close(result.getFailure());
-        else if (connection.isShutdown() || connection.isCloseByHTTP(responseHeaders))
+        else if (connection.isShutdown() || connection.hasUnexpectedBytes() || connection.isCloseByHTTP(responseHeaders))
             connection.close();
         else
             release();

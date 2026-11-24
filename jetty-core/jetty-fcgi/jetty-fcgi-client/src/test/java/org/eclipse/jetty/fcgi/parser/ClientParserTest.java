@@ -14,6 +14,7 @@
 package org.eclipse.jetty.fcgi.parser;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -199,6 +200,189 @@ public class ClientParserTest
         assertEquals(5, verifier.get());
 
         accumulator.release();
+    }
+
+    @Test
+    public void testParseStopsOnlyAfterEndRequest()
+    {
+        int id = 13;
+        AtomicInteger ends = new AtomicInteger();
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
+        {
+            @Override
+            public boolean onEnd(int request)
+            {
+                assertEquals(id, request);
+                ends.incrementAndGet();
+                return true;
+            }
+        });
+
+        // A padded STDOUT record that ends exactly at the end of the buffer,
+        // as if it was read from the network separately from END_REQUEST:
+        // the parser must not ask to stop parsing, since no event was notified.
+        byte[] content = "Content-Length: 5\r\n\r\nhello".getBytes(StandardCharsets.US_ASCII);
+        ByteBuffer stdOut = createRecord(FCGI.FrameType.STDOUT, id, content);
+        assertFalse(parser.parse(stdOut));
+        assertFalse(stdOut.hasRemaining());
+        assertEquals(0, ends.get());
+
+        // The END_REQUEST record must make the parser stop parsing.
+        ByteBuffer endRequest = createRecord(FCGI.FrameType.END_REQUEST, id, new byte[8]);
+        assertTrue(parser.parse(endRequest));
+        assertFalse(endRequest.hasRemaining());
+        assertEquals(1, ends.get());
+    }
+
+    @Test
+    public void testParseStopsAfterEndRequestWithRemainingBytes()
+    {
+        int id = 13;
+        AtomicInteger ends = new AtomicInteger();
+        AtomicInteger contents = new AtomicInteger();
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
+        {
+            @Override
+            public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer)
+            {
+                contents.incrementAndGet();
+                return false;
+            }
+
+            @Override
+            public boolean onEnd(int request)
+            {
+                assertEquals(id, request);
+                ends.incrementAndGet();
+                return true;
+            }
+        });
+
+        // The whole response followed by unexpected bytes in the same buffer.
+        byte[] content = "Content-Length: 5\r\n\r\nhello".getBytes(StandardCharsets.US_ASCII);
+        ByteBuffer stdOut = createRecord(FCGI.FrameType.STDOUT, id, content);
+        ByteBuffer endRequest = createRecord(FCGI.FrameType.END_REQUEST, id, new byte[8]);
+        ByteBuffer unexpected = createRecord(FCGI.FrameType.STDOUT, id, "unexpected".getBytes(StandardCharsets.US_ASCII));
+        int unexpectedLength = unexpected.remaining();
+        ByteBuffer buffer = ByteBuffer.allocate(stdOut.remaining() + endRequest.remaining() + unexpectedLength)
+            .put(stdOut)
+            .put(endRequest)
+            .put(unexpected)
+            .flip();
+
+        // The parser must stop after END_REQUEST, without parsing the unexpected bytes.
+        assertTrue(parser.parse(buffer));
+        assertEquals(unexpectedLength, buffer.remaining());
+        assertEquals(1, contents.get());
+        assertEquals(1, ends.get());
+    }
+
+    @Test
+    public void testParseEndRequestWithPaddingInSeparateBuffer()
+    {
+        int id = 13;
+        AtomicInteger ends = new AtomicInteger();
+        AtomicInteger headers = new AtomicInteger();
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
+        {
+            @Override
+            public boolean onHeaders(int request)
+            {
+                headers.incrementAndGet();
+                return true;
+            }
+
+            @Override
+            public boolean onEnd(int request)
+            {
+                assertEquals(id, request);
+                ends.incrementAndGet();
+                return true;
+            }
+        });
+
+        // An END_REQUEST record with padding, split between its content and its padding.
+        ByteBuffer endRequest = createRecord(FCGI.FrameType.END_REQUEST, id, new byte[8], 8);
+        ByteBuffer endRequestContent = endRequest.slice(0, endRequest.remaining() - 8);
+        ByteBuffer endRequestPadding = endRequest.slice(endRequest.remaining() - 8, 8);
+
+        // The parser must stop when END_REQUEST is notified, even if the padding is missing.
+        assertTrue(parser.parse(endRequestContent));
+        assertFalse(endRequestContent.hasRemaining());
+        assertEquals(1, ends.get());
+
+        // The padding alone notifies no event, so the parser must not stop.
+        assertFalse(parser.parse(endRequestPadding));
+        assertFalse(endRequestPadding.hasRemaining());
+        assertEquals(1, ends.get());
+
+        // The next response must be parsed normally.
+        byte[] content = "Content-Length: 0\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
+        ByteBuffer stdOut = createRecord(FCGI.FrameType.STDOUT, id, content);
+        assertTrue(parser.parse(stdOut));
+        assertEquals(1, headers.get());
+    }
+
+    @Test
+    public void testParseEndRequestPaddingWithNextResponse()
+    {
+        int id = 13;
+        AtomicInteger ends = new AtomicInteger();
+        AtomicInteger headers = new AtomicInteger();
+        ClientParser parser = new ClientParser(new ClientParser.Listener()
+        {
+            @Override
+            public boolean onHeaders(int request)
+            {
+                headers.incrementAndGet();
+                return true;
+            }
+
+            @Override
+            public boolean onEnd(int request)
+            {
+                assertEquals(id, request);
+                ends.incrementAndGet();
+                return true;
+            }
+        });
+
+        // An END_REQUEST record with padding, split between its content and its padding.
+        ByteBuffer endRequest = createRecord(FCGI.FrameType.END_REQUEST, id, new byte[8], 8);
+        ByteBuffer endRequestContent = endRequest.slice(0, endRequest.remaining() - 8);
+        assertTrue(parser.parse(endRequestContent));
+        assertEquals(1, ends.get());
+
+        // The padding arrives together with the next response, which must be parsed normally.
+        byte[] content = "Content-Length: 0\r\n\r\n".getBytes(StandardCharsets.US_ASCII);
+        ByteBuffer stdOut = createRecord(FCGI.FrameType.STDOUT, id, content);
+        ByteBuffer buffer = ByteBuffer.allocate(8 + stdOut.remaining())
+            .put(new byte[8])
+            .put(stdOut)
+            .flip();
+        assertTrue(parser.parse(buffer));
+        assertEquals(1, headers.get());
+        assertEquals(1, ends.get());
+    }
+
+    private static ByteBuffer createRecord(FCGI.FrameType type, int request, byte[] content)
+    {
+        // Pad to a multiple of 8 bytes, like php-fpm does.
+        return createRecord(type, request, content, (8 - content.length % 8) % 8);
+    }
+
+    private static ByteBuffer createRecord(FCGI.FrameType type, int request, byte[] content, int padding)
+    {
+        ByteBuffer buffer = ByteBuffer.allocate(8 + content.length + padding);
+        buffer.put((byte)1)
+            .put((byte)type.code)
+            .putShort((short)request)
+            .putShort((short)content.length)
+            .put((byte)padding)
+            .put((byte)0)
+            .put(content)
+            .put(new byte[padding]);
+        return buffer.flip();
     }
 
     @Test
