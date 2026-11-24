@@ -809,6 +809,7 @@ public class HttpConnection extends AbstractMetaDataConnection implements Runnab
         @Override
         public InvocationType getInvocationType()
         {
+            // Field _callback may be nulled-out concurrently, e.g. by idle timeout.
             return Invocable.getInvocationType(_callback);
         }
 
