@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -29,6 +30,7 @@ import com.github.luben.zstd.ZstdCompressCtx;
 import org.eclipse.jetty.compression.zstandard.internal.ZstandardCompressCtxPool;
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.toolchain.test.MavenPaths;
+import org.eclipse.jetty.util.Blocker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Pool;
 import org.junit.jupiter.api.Test;
@@ -202,6 +204,86 @@ public class ZstandardEncoderSinkTest extends AbstractZstdTest
 
         byte[] decompressed = decompress(compressed);
         assertArrayEquals(originalData, decompressed);
+    }
+
+    public static Stream<Arguments> blockBoundaryCases()
+    {
+        List<Arguments> cases = new ArrayList<>();
+        // zstd blocks are 128 KiB, so test sizes around multiples of that.
+        for (int size : List.of(128 * 1024 - 1, 128 * 1024, 128 * 1024 + 1, 200000, 128 * 1024 * 2 , 128 * 1024 * 3))
+        {
+            for (boolean direct : List.of(false, true))
+            {
+                cases.add(Arguments.of(size, direct));
+            }
+        }
+        return cases.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("blockBoundaryCases")
+    public void testFrameEndAtBlockBoundaryOneWrite(int size, boolean direct) throws Exception
+    {
+        startZstd();
+        byte[] data = new byte[size];
+        new Random(1).nextBytes(data);
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink encoderSink = zstd.newEncoderSink(Content.Sink.from(baos));
+            write(encoderSink, true, toBuffer(data, 0, size, direct));
+            assertArrayEquals(data, decompress(baos.toByteArray()));
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("blockBoundaryCases")
+    public void testFrameEndAtBlockBoundaryTwoWrites(int size, boolean direct) throws Exception
+    {
+        startZstd();
+        byte[] data = new byte[size];
+        new Random(1).nextBytes(data);
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink encoderSink = zstd.newEncoderSink(Content.Sink.from(baos));
+            write(encoderSink, false, toBuffer(data, 0, size / 2, direct));
+            write(encoderSink, true, toBuffer(data, size / 2, size - size / 2, direct));
+            assertArrayEquals(data, decompress(baos.toByteArray()));
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("blockBoundaryCases")
+    public void testFrameEndAtBlockBoundaryEmptyLastWrite(int size, boolean direct) throws Exception
+    {
+        startZstd();
+        byte[] data = new byte[size];
+        new Random(1).nextBytes(data);
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Content.Sink encoderSink = zstd.newEncoderSink(Content.Sink.from(baos));
+            write(encoderSink, false, toBuffer(data, 0, size, direct));
+            write(encoderSink, true, toBuffer(data, 0, 0, direct));
+            assertArrayEquals(data, decompress(baos.toByteArray()));
+        }
+    }
+
+    private static ByteBuffer toBuffer(byte[] data, int offset, int length, boolean direct)
+    {
+        ByteBuffer buffer = direct ? ByteBuffer.allocateDirect(length) : ByteBuffer.allocate(length);
+        buffer.put(data, offset, length).flip();
+        return buffer;
+    }
+
+    private static void write(Content.Sink sink, boolean last, ByteBuffer buffer) throws Exception
+    {
+        try (Blocker.Callback callback = Blocker.callback())
+        {
+            sink.write(last, buffer, callback);
+            callback.block();
+        }
     }
 
     @Test
