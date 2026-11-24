@@ -67,9 +67,12 @@ public class EncodePathSafeEncodingBenchmark
      *     <li>{@code preencoded} - already percent-encoded octets to be normalized/kept.</li>
      *     <li>{@code mixed} - raw emoji + a pre-encoded {@code %2f} + a raw BMP character.</li>
      *     <li>{@code long} - a longer, mostly-ASCII path with a couple of emoji segments.</li>
+     *     <li>{@code pctubmp} - a percent-u encoded BMP codepoint ({@code %u20AC}).</li>
+     *     <li>{@code pctuemoji} - a percent-u encoded surrogate pair ({@code %uD83D%uDE00}); the
+     *     codepoint impl combines the two halves into one UTF-8 sequence.</li>
      * </ul>
      */
-    @Param({"ascii", "bmp", "emoji", "preencoded", "mixed", "long"})
+    @Param({"ascii", "bmp", "emoji", "preencoded", "mixed", "long", "pctubmp", "pctuemoji"})
     String variant;
 
     String input;
@@ -86,6 +89,8 @@ public class EncodePathSafeEncodingBenchmark
             case "mixed" -> "/😀%2f€/foo.txt";
             case "long" -> "/very/long/context/path/with/many/safe/segments/" +
                 "😀/and/a/few/more/😃/segments/to/walk/index.html";
+            case "pctubmp" -> "/%u20AC/index.html";
+            case "pctuemoji" -> "/%uD83D%uDE00/index.html";
             default -> throw new IllegalArgumentException("Unknown variant: " + variant);
         };
     }

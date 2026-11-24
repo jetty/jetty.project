@@ -1565,12 +1565,40 @@ public final class URIUtil
                         char u = path.charAt(i + 1);
                         if (u == 'u')
                         {
+                            // Javascript pct-u-encoding
                             if (TypeUtil.isHex(path, i + 2, 4))
                             {
                                 // Always decode percent-u encoding to UTF-8
                                 int cp = (0xffff & TypeUtil.parseInt(path, i + 2, 4, 16));
-                                encodeCodepoint(cp, builder);
-                                consumed = 6;
+                                if (Character.isHighSurrogate((char)cp))
+                                {
+                                    // A high surrogate must be followed by a low surrogate, also
+                                    // percent-u encoded, so the pair encodes as one UTF-8 sequence
+                                    // rather than two lone surrogates (each of which would encode
+                                    // to '?', 0x3F). A high surrogate on its own is invalid.
+                                    if (TypeUtil.isHex(path, i + 8, 4) && path.charAt(i + 6) == '%' && path.charAt(i + 7) == 'u')
+                                    {
+                                        int lo = (0xffff & TypeUtil.parseInt(path, i + 8, 4, 16));
+                                        if (!Character.isLowSurrogate((char)lo))
+                                            throw new IllegalArgumentException("Invalid high surrogate in percent-u encoding: " + path);
+                                        encodeCodepoint(Character.toCodePoint((char)cp, (char)lo), builder);
+                                        consumed = 12;
+                                    }
+                                    else
+                                    {
+                                        throw new IllegalArgumentException("Unpaired high surrogate in percent-u encoding: " + path);
+                                    }
+                                }
+                                else if (Character.isLowSurrogate((char)cp))
+                                {
+                                    // A low surrogate not preceded by a high surrogate is invalid.
+                                    throw new IllegalArgumentException("Unpaired low surrogate in percent-u encoding: " + path);
+                                }
+                                else
+                                {
+                                    encodeCodepoint(cp, builder);
+                                    consumed = 6;
+                                }
                             }
                             else
                             {
@@ -1580,6 +1608,7 @@ public final class URIUtil
                         }
                         else
                         {
+                            // Normal pct-encoding
                             if (TypeUtil.isHex(path, i + 1, 2))
                             {
                                 // valid Hex, attempt to decode it
