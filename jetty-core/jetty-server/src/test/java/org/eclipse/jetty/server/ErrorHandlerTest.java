@@ -533,7 +533,7 @@ public class ErrorHandlerTest
         assertThat("Response status code", response.getStatus(), is(444));
         assertThat("Response Content-Length", response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
         assertThat(response.getContent(), not(containsString("<th>CAUSED BY:</th>")));
-        assertThat(response.getContent(), not(containsString("<td>org.eclipse.jetty.http.BadMessageException: 444</td>")));
+        assertThat(response.getContent(), not(containsString("<td>org.eclipse.jetty.http.HttpException$RuntimeException: 444</td>")));
     }
 
     @Test

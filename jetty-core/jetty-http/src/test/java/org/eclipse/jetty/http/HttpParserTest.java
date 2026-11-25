@@ -3244,9 +3244,9 @@ public class HttpParserTest
     @Test
     public void testResponseMaxHeaderBytesWithSuccessStatus()
     {
-        // A response parse failure carries the received response status, which may be a
-        // success code. The resulting HttpException must be delivered as a bad message
-        // rather than failing the status-code assertion in the HttpException constructor.
+        // A response whose headers exceed the configured limit must be reported as a bad
+        // message even when a success status (e.g. 200) has already been parsed: that status
+        // is not carried into the HttpException, so the failure is delivered with the reason only.
         ByteBuffer buffer = BufferUtil.toBuffer(
             "HTTP/1.1 200 OK\r\n" +
                 "X-Large: " + "x".repeat(1024) + "\r\n" +
