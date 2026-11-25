@@ -21,6 +21,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -129,6 +130,38 @@ public class PathResource extends Resource
             {
                 return false;
             }
+        }
+
+        return true;
+    }
+
+    /**
+     * Like {@link #isSameName(Path, Path)}, but treats two name elements that differ only in Unicode
+     * normalization form as the same. Each segment is folded to Form C before comparison, so for example
+     * a precomposed {@code å} and a decomposed {@code å} compare equal, while every other
+     * difference (case, an alternate or short name, an added or dropped segment) is still a difference.
+     *
+     * <p>
+     * This is only reached on a filesystem that resolved the request to a real file whose name is in a
+     * different normalization form, which happens on a normalization-insensitive or normalizing
+     * filesystem (macOS APFS, ZFS mounted {@code normalization=formD}), where the two forms denote the
+     * same file. On a normalization-sensitive filesystem the two forms are different files and
+     * {@code toRealPath()} of one never yields the other, so the fold changes nothing.
+     * </p>
+     */
+    private static boolean isSameNameIgnoringNormalization(Path pathA, Path pathB)
+    {
+        int aCount = pathA.getNameCount();
+        int bCount = pathB.getNameCount();
+        if (aCount != bCount)
+            return false;
+
+        for (int i = bCount; i-- > 0; )
+        {
+            String a = Normalizer.normalize(pathA.getName(i).toString(), Normalizer.Form.NFC);
+            String b = Normalizer.normalize(pathB.getName(i).toString(), Normalizer.Form.NFC);
+            if (!a.equals(b))
+                return false;
         }
 
         return true;
@@ -549,8 +582,15 @@ public class PathResource extends Resource
         // Step 1: the real path must be reached by the same name that was requested. A different name
         // element (a case-folded name on a case-insensitive filesystem, an alternate or short name, an
         // added or dropped path segment, etc.) means the real file is reached by a different name, which
-        // is an alias.
-        if (!isSameName(requestedPath, realPath))
+        // is an alias. A difference only in Unicode normalization form is not a different name, so the
+        // comparison folds Form C and Form D.
+        //
+        // The fold here covers JDK 20 and later (JDK-8289689): on macOS the JDK no longer normalizes a
+        // decoded file name, so an NFD name on disk comes back from toRealPath() still in Form D while
+        // the request is in Form C. Without the fold, "swedish-å.txt" vs "swedish-å.txt"
+        // reads as a different name and isAlias() is wrongly true. The same shape occurs on Linux with
+        // ZFS mounted normalization=formD.
+        if (!isSameNameIgnoringNormalization(requestedPath, realPath))
             return true;
 
         // Step 2: the names match, so compare the full URIs. The as-requested URI (the 'uri' field) is
@@ -562,10 +602,13 @@ public class PathResource extends Resource
             return false;
 
         // Step 3: the URIs differ, but a non-ASCII name may differ only by Unicode normalization form.
-        // Some filesystems (e.g. macOS/APFS) return a real path whose URI encodes the name in Form D,
-        // while the as-requested URI uses Form C; these are canonically equivalent and denote the same
-        // file. Fold both URIs to NFC and compare again. Any other difference (including ASCII
-        // percent-encoding such as %27 versus ') is left intact and remains an alias.
+        // Fold both URIs to NFC and compare again. Any other difference (including ASCII percent-encoding
+        // such as %27 versus ') is left intact and remains an alias.
+        //
+        // The fold here covers JDK 19 and earlier (before JDK-8289689): on macOS the JDK decodes a
+        // native NFD name to an NFC String, so toRealPath().toString() is Form C and step 1 already
+        // matched, but toRealPath().toUri() percent-encodes the raw NFD bytes, so the real URI is
+        // "swedish-a%CC%8A.txt" while the as-requested URI is "swedish-%C3%A5.txt".
         URI nfcUri = URIUtil.toNfcUri(uri);
         URI nfcRealUri = URIUtil.toNfcUri(realUri);
         if (Objects.equals(nfcUri, nfcRealUri))

@@ -31,11 +31,16 @@ import java.util.Iterator;
  *
  * <p>
  * The backing file really exists on the default filesystem (in NFC on Linux), so {@code exists()},
- * {@code isDirectory()}, and {@code toRealPath()} all behave normally. The only difference is that the
- * path returned from {@link #toRealPath} reports its {@link #toUri()} in Normalization Form D while its
- * {@link #toString()} stays in Form C: on macOS the JDK decodes native bytes to NFC for
- * {@code toString()} but percent-encodes the raw {@code realpath(3)} bytes (NFD) for {@code toUri()}.
+ * {@code isDirectory()}, and {@code toRealPath()} all behave normally. The only difference is the form
+ * the path returned from {@link #toRealPath} reports, which depends on the fixture's
+ * {@link NfdFileSystem.Mode} (the two macOS JDK behaviors around JDK-8289689):
  * </p>
+ * <ul>
+ * <li>{@link NfdFileSystem.Mode#DECODE_TO_NFC}: {@link #toString()} is Form C but {@link #toUri()} is
+ * Form D (JDK 19 and earlier).</li>
+ * <li>{@link NfdFileSystem.Mode#RAW_NFD}: both {@link #toString()} and {@link #toUri()} are Form D
+ * (JDK 20 and later).</li>
+ * </ul>
  */
 public class NfdPath implements Path
 {
@@ -206,8 +211,24 @@ public class NfdPath implements Path
     public Path toRealPath(LinkOption... options) throws IOException
     {
         Path real = backing.toRealPath(options);
-        // Simulate realpath(3) on macOS handing back NFD native bytes: toUri() is NFD, toString() is NFC.
-        return new NfdPath(fs, real, toNfdUri(real.toUri()));
+        switch (fs.mode())
+        {
+            case DECODE_TO_NFC:
+                // JDK 19 and earlier (before JDK-8289689): the native NFD bytes are decoded to an NFC
+                // String, so toString() stays Form C (the backing name), but toUri() percent-encodes the
+                // raw NFD bytes, so it is Form D.
+                return new NfdPath(fs, real, toNfdUri(real.toUri()));
+            case RAW_NFD:
+            {
+                // JDK 20 and later (JDK-8289689): the native NFD name is left untouched, so both
+                // toString() and toUri() are Form D. Point at a sibling with the decomposed name (it need
+                // not exist on disk; only its name, toString(), and toUri() are read after this).
+                Path nfdName = real.resolveSibling(Normalizer.normalize(real.getFileName().toString(), Normalizer.Form.NFD));
+                return new NfdPath(fs, nfdName, null);
+            }
+            default:
+                throw new IllegalStateException("unhandled mode: " + fs.mode());
+        }
     }
 
     @Override

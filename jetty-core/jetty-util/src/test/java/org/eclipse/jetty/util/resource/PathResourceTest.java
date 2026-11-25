@@ -946,14 +946,20 @@ public class PathResourceTest
     }
 
     /**
-     * On macOS/APFS {@code Path.toRealPath().toUri()} returns a non-ASCII name in Unicode Normalization
-     * Form D while the as-requested URI is in Form C, which made {@link PathResource#isAlias()} wrongly
-     * report the file as an alias. A plain Linux filesystem never produces that split, so the
-     * {@link org.eclipse.jetty.util.resource.nfd NFD fixture filesystem} injects it: real files on the
-     * default filesystem, but a {@code toRealPath()} whose {@code toUri()} is NFD.
+     * A non-ASCII name that is NFD on disk, requested in Form C, made {@link PathResource#isAlias()}
+     * wrongly report the file as an alias on macOS. This covers the JDK 19 and earlier face of that bug
+     * (before JDK-8289689): the JDK decodes the native NFD name to an NFC String, so
+     * {@code toRealPath().toString()} stays Form C (so {@code isSameName()} is true) but
+     * {@code toRealPath().toUri()} is Form D, so only the URI comparison differs.
+     *
+     * <p>
+     * A plain Linux filesystem never produces that split, so the
+     * {@link org.eclipse.jetty.util.resource.nfd NFD fixture filesystem} injects it with
+     * {@link NfdFileSystem.Mode#DECODE_TO_NFC}.
+     * </p>
      */
     @Test
-    public void testNfdRealPathIsNotAlias(WorkDir workDir) throws Exception
+    public void testNfdRealPathDecodedToNfcIsNotAlias(WorkDir workDir) throws Exception
     {
         Path tmp = workDir.getEmptyPathDir();
 
@@ -964,17 +970,60 @@ public class PathResourceTest
         Path realDir = Files.createDirectories(tmp.resolve("dir"));
         Files.createFile(realDir.resolve(nfcName));
 
-        try (NfdFileSystem fs = new NfdFileSystem(new NfdFileSystemProvider(), FileSystems.getDefault()))
+        try (NfdFileSystem fs = new NfdFileSystem(new NfdFileSystemProvider(), FileSystems.getDefault(), NfdFileSystem.Mode.DECODE_TO_NFC))
         {
             Path requested = fs.getPath(tmp.toString()).resolve("dir").resolve(nfcName);
 
-            // Fixture self-check: reproduce the macOS NFC/NFD split.
+            // Fixture self-check: reproduce the JDK 19-and-earlier macOS form.
             //  - the as-requested URI is NFC (å == %C3%A5)
             //  - the real path's URI is NFD (a + combining ring == a%CC%8A)
             //  - but toString() stays NFC on both, so isSameName() is true
             assertThat("as-requested URI is NFC", requested.toUri().toASCIIString(), containsString("%C3%A5"));
             assertThat("real-path URI is NFD", requested.toRealPath().toUri().toASCIIString(), containsString("a%CC%8A"));
             assertThat("toString() is NFC on both", requested.toString(), equalTo(requested.toRealPath().toString()));
+
+            PathResource resource = new PathResource(requested);
+            assertTrue(resource.exists());
+            assertFalse(resource.isAlias(),
+                "A file whose real path differs from the request only by Unicode normalization form must not be an alias");
+        }
+    }
+
+    /**
+     * The same non-ASCII NFD-on-disk file requested in Form C, but covering the JDK 20 and later face of
+     * the bug (JDK-8289689): the JDK leaves the native name in NFD, so {@code toRealPath().toString()} is
+     * Form D and {@code isSameName()} is false, in addition to {@code toRealPath().toUri()} being Form D.
+     * The name comparison, not just the URI comparison, has to fold normalization for this one.
+     *
+     * <p>
+     * Injected with {@link NfdFileSystem.Mode#RAW_NFD}; the same shape occurs on Linux with ZFS mounted
+     * {@code normalization=formD}.
+     * </p>
+     */
+    @Test
+    public void testNfdRealPathRawNfdIsNotAlias(WorkDir workDir) throws Exception
+    {
+        Path tmp = workDir.getEmptyPathDir();
+
+        // "swedish-å.txt" with the 'å' as a single precomposed code point (NFC: U+00E5).
+        String nfcName = "swedish-å.txt";
+
+        // Create the real backing file with an NFC name on the default (Linux) filesystem.
+        Path realDir = Files.createDirectories(tmp.resolve("dir"));
+        Files.createFile(realDir.resolve(nfcName));
+
+        try (NfdFileSystem fs = new NfdFileSystem(new NfdFileSystemProvider(), FileSystems.getDefault(), NfdFileSystem.Mode.RAW_NFD))
+        {
+            Path requested = fs.getPath(tmp.toString()).resolve("dir").resolve(nfcName);
+            Path real = requested.toRealPath();
+
+            // Fixture self-check: reproduce the JDK 20-and-later macOS form.
+            //  - the as-requested URI is NFC (å == %C3%A5)
+            //  - the real path's URI is NFD (a + combining ring == a%CC%8A)
+            //  - and toString() differs too (real path name is NFD), so isSameName() is false
+            assertThat("as-requested URI is NFC", requested.toUri().toASCIIString(), containsString("%C3%A5"));
+            assertThat("real-path URI is NFD", real.toUri().toASCIIString(), containsString("a%CC%8A"));
+            assertThat("toString() differs (real path name is NFD)", requested.toString(), not(equalTo(real.toString())));
 
             PathResource resource = new PathResource(requested);
             assertTrue(resource.exists());

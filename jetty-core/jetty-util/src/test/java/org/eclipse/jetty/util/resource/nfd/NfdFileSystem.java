@@ -27,11 +27,15 @@ import java.util.List;
  * {@link NfdPath} instances so URIs can carry the macOS NFD form. See {@link NfdPath} for the why.
  *
  * <p>
- * This fixture exists to mimic the macOS/APFS behavior where {@code Path.toRealPath().toUri()} reports a
- * non-ASCII name in Unicode Normalization Form D while the as-requested URI is in Form C. That split is
- * what the alias handling in {@code PathResource} has to tolerate, and a plain Linux filesystem never
- * produces it, so without this fixture the behavior could only be tested on a Mac. It lets those tests
- * run on Linux and guards against regressions in that handling during day-to-day development on Linux.
+ * This fixture exists to mimic the macOS/APFS behavior where a non-ASCII name that is NFD on disk is
+ * requested in Form C, which the alias handling in {@code PathResource} has to tolerate. A plain Linux
+ * filesystem never produces it, so without this fixture the behavior could only be tested on a Mac. It
+ * lets those tests run on Linux and guards against regressions during day-to-day development on Linux.
+ * </p>
+ *
+ * <p>
+ * The JDK reports the real path two different ways depending on JDK-8289689, and the {@link Mode}
+ * selects which one {@link NfdPath#toRealPath} reproduces. See {@link Mode} and {@link NfdPath}.
  * </p>
  *
  * <p>
@@ -41,13 +45,41 @@ import java.util.List;
  */
 public class NfdFileSystem extends FileSystem
 {
+    /**
+     * Which macOS JDK behavior {@link NfdPath#toRealPath} reproduces for an NFD-on-disk name requested
+     * in Form C.
+     */
+    public enum Mode
+    {
+        /**
+         * JDK 19 and earlier (before JDK-8289689): the JDK decodes the native NFD name to an NFC
+         * String, so {@code toRealPath().toString()} is Form C (the name still matches the request) but
+         * {@code toRealPath().toUri()} percent-encodes the raw NFD bytes, so the real URI is Form D.
+         */
+        DECODE_TO_NFC,
+
+        /**
+         * JDK 20 and later (JDK-8289689): the JDK leaves the native name in NFD, so both
+         * {@code toRealPath().toString()} and {@code toRealPath().toUri()} are Form D, and the name no
+         * longer matches the Form C request.
+         */
+        RAW_NFD
+    }
+
     private final NfdFileSystemProvider provider;
     private final FileSystem backing;
+    private final Mode mode;
 
-    public NfdFileSystem(NfdFileSystemProvider provider, FileSystem backing)
+    public NfdFileSystem(NfdFileSystemProvider provider, FileSystem backing, Mode mode)
     {
         this.provider = provider;
         this.backing = backing;
+        this.mode = mode;
+    }
+
+    Mode mode()
+    {
+        return mode;
     }
 
     NfdPath wrap(Path p)
