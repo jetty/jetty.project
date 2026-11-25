@@ -38,7 +38,6 @@ public class ZstandardEncoderSink extends EncoderSink
     {
         CONTINUE,
         END,
-        FLUSH,
         FINISHED
     }
 
@@ -93,7 +92,6 @@ public class ZstandardEncoderSink extends EncoderSink
             {
                 case CONTINUE -> continueOp(last, content);
                 case END -> endOp(last);
-                case FLUSH -> flushOp(last);
                 case FINISHED -> null;
             };
             if (writeRecord != null)
@@ -170,41 +168,19 @@ public class ZstandardEncoderSink extends EncoderSink
         if (!last)
             throw new IllegalStateException("Directive.END not possible on non-last encode");
 
-        state.compareAndSet(State.END, State.FLUSH);
         RetainableByteBuffer outputBuf = compression.acquireByteBuffer(bufferSize);
-        // use zstd-jni END directive once.
         outputBuf.getByteBuffer().clear();
-        // only run END compress once
-        this.compressCtx.compressDirectByteBufferStream(outputBuf.getByteBuffer(), EMPTY_DIRECT_BUFFER, EndDirective.END);
+        // The END directive must be repeated until it reports that the frame is complete:
+        // zstd does not remember a previous END, and other directives do not end the frame.
+        boolean frameEnded = compressCtx.compressDirectByteBufferStream(outputBuf.getByteBuffer(), EMPTY_DIRECT_BUFFER, EndDirective.END);
         outputBuf.getByteBuffer().flip();
-        if (outputBuf.getByteBuffer().hasRemaining())
+        if (frameEnded || outputBuf.getByteBuffer().hasRemaining())
         {
+            if (frameEnded)
+                state.compareAndSet(State.END, State.FINISHED);
             Callback writeCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, outputBuf::release);
-            return new WriteRecord(false, outputBuf.getByteBuffer(), writeCallback);
+            return new WriteRecord(frameEnded, outputBuf.getByteBuffer(), writeCallback);
         }
-        outputBuf.release();
-        return null;
-    }
-
-    private WriteRecord flushOp(boolean last)
-    {
-        if (!last)
-            throw new IllegalStateException("Directive.END not possible on non-last encode");
-
-        RetainableByteBuffer outputBuf = compression.acquireByteBuffer(bufferSize);
-        // use zstd-jni FLUSH directive to flush remaining compressed bytes out
-        // of the internal zstd buffers.
-        outputBuf.getByteBuffer().clear();
-        boolean actualLast = this.compressCtx.compressDirectByteBufferStream(outputBuf.getByteBuffer(), EMPTY_DIRECT_BUFFER, EndDirective.FLUSH);
-        outputBuf.getByteBuffer().flip();
-        if (actualLast || outputBuf.getByteBuffer().hasRemaining())
-        {
-            if (actualLast)
-                state.compareAndSet(State.FLUSH, State.FINISHED);
-            Callback writeCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, outputBuf::release);
-            return new WriteRecord(actualLast, outputBuf.getByteBuffer(), writeCallback);
-        }
-
         outputBuf.release();
         return null;
     }
