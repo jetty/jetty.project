@@ -533,13 +533,6 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             }
 
             @Override
-            public void onClose(Throwable cause)
-            {
-                releaseBuffer();
-                super.onClose(cause);
-            }
-
-            @Override
             public void onUpgradeTo(ByteBuffer buffer)
             {
                 if (LOG.isDebugEnabled())
