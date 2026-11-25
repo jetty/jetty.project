@@ -32,6 +32,8 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.toolchain.test.nfd.NfdFileSystem;
+import org.eclipse.jetty.toolchain.test.nfd.NfdFileSystemProvider;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -939,6 +942,58 @@ public class PathResourceTest
                 String contents = IO.toString(in, UTF_8);
                 assertThat(contents, is(fooContents));
             }
+        }
+    }
+
+    /**
+     * Baseline for the NFC/NFD alias-checker approach (issue #15971): with {@code PathResource} left
+     * strict, a non-ASCII file whose name is NFD on disk, requested in Form C, is reported as an alias,
+     * and the as-requested URI is NFC while the real URI is NFD. This is the exact
+     * {@code getURI()}/{@code getRealURI()} contract the {@code NfdAliasChecker} relies on; it is verified
+     * here against a real {@code PathResource} because the alias-check classes live in jetty-server and
+     * cannot construct a {@code PathResource} over the fixture across the module boundary.
+     *
+     * <p>{@code DECODE_TO_NFC} reproduces the JDK 19-and-earlier macOS face (real {@code toString()} stays
+     * NFC) and {@code RAW_NFD} the JDK 20-and-later face (real {@code toString()} is NFD; same shape as
+     * Linux ZFS {@code normalization=formD}); both are aliases under strict resolution.</p>
+     */
+    @Test
+    public void testNfdRealPathIsAliasUnderStrictResolutionDecodeToNfc(WorkDir workDir) throws Exception
+    {
+        assertNfdRealPathIsStrictAlias(workDir, NfdFileSystem.Mode.DECODE_TO_NFC);
+    }
+
+    @Test
+    public void testNfdRealPathIsAliasUnderStrictResolutionRawNfd(WorkDir workDir) throws Exception
+    {
+        assertNfdRealPathIsStrictAlias(workDir, NfdFileSystem.Mode.RAW_NFD);
+    }
+
+    private void assertNfdRealPathIsStrictAlias(WorkDir workDir, NfdFileSystem.Mode mode) throws Exception
+    {
+        Path tmp = workDir.getEmptyPathDir();
+
+        // "swedish-å.txt" with the 'å' as a single precomposed code point (NFC: U+00E5), spelled with the
+        // escape so the source file's own byte encoding cannot silently decompose it.
+        String nfcName = "swedish-å.txt";
+
+        Path realDir = Files.createDirectories(tmp.resolve("dir"));
+        Files.createFile(realDir.resolve(nfcName));
+
+        try (NfdFileSystem fs = new NfdFileSystem(new NfdFileSystemProvider(), FileSystems.getDefault(), mode))
+        {
+            Path requested = fs.getPath(tmp.toString()).resolve("dir").resolve(nfcName);
+
+            PathResource resource = new PathResource(requested);
+            assertTrue(resource.exists());
+
+            // Strict resolution reports the NFC/NFD difference as an alias (the behavior the checker addresses).
+            assertTrue(resource.isAlias(),
+                "Under strict resolution an NFC request for an NFD real name is an alias");
+
+            // The input contract for NfdAliasChecker: requested URI is NFC, real URI is NFD.
+            assertThat("as-requested URI is NFC", resource.getURI().toASCIIString(), containsString("%C3%A5"));
+            assertThat("real URI is NFD", resource.getRealURI().toASCIIString(), containsString("a%CC%8A"));
         }
     }
 }
