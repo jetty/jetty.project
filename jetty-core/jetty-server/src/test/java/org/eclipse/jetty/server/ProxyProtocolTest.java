@@ -23,22 +23,29 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyProtocolTest
 {
+    private ArrayByteBufferPool.Tracking bufferPool;
     private Server server;
     private ServerConnector connector;
 
@@ -49,7 +56,8 @@ public class ProxyProtocolTest
 
     private void start(ProxyConnectionFactory proxyConnectionFactory, Handler handler) throws Exception
     {
-        server = new Server();
+        bufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(null, null, bufferPool);
         connector = new ServerConnector(server, proxyConnectionFactory, new HttpConnectionFactory());
         server.addConnector(connector);
         server.setHandler(handler);
@@ -59,8 +67,15 @@ public class ProxyProtocolTest
     @AfterEach
     public void destroy() throws Exception
     {
-        if (server != null)
-            server.stop();
+        try
+        {
+            if (bufferPool != null)
+                await().atMost(5, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks(), empty());
+        }
+        finally
+        {
+            LifeCycle.stop(server);
+        }
     }
 
     @Test
@@ -372,6 +387,7 @@ public class ProxyProtocolTest
             String response = reader.readLine();
             assertThat(response, startsWith("HTTP/1.1 200 "));
         }
+        await().atMost(5, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks(), empty());
     }
 
     @Test
@@ -416,17 +432,31 @@ public class ProxyProtocolTest
         try (Socket socket = new Socket("localhost", connector.getLocalPort()))
         {
             socket.setSoTimeout(5000);
-            String request =
-                "GET / HTTP/1.1\r\n" +
-                    "Host: localhost\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n";
+            // Only send the PROXY bytes: any unread byte left when the server
+            // closes the connection would make it send a RST instead of a FIN.
             OutputStream output = socket.getOutputStream();
             output.write(proxy.array());
-            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             assertThat(socket.getInputStream().read(), is(-1));
         }
+        await().atMost(5, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks(), empty());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 65536, Integer.MAX_VALUE})
+    public void testInvalidMaxProxyHeader(int maxProxyHeader)
+    {
+        ProxyConnectionFactory proxyConnectionFactory = new ProxyConnectionFactory();
+        assertThrows(IllegalArgumentException.class, () -> proxyConnectionFactory.setMaxProxyHeader(maxProxyHeader));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 65535})
+    public void testValidMaxProxyHeader(int maxProxyHeader)
+    {
+        ProxyConnectionFactory proxyConnectionFactory = new ProxyConnectionFactory();
+        proxyConnectionFactory.setMaxProxyHeader(maxProxyHeader);
+        assertThat(proxyConnectionFactory.getMaxProxyHeader(), is(maxProxyHeader));
     }
 }

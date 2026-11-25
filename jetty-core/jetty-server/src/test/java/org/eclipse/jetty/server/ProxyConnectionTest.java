@@ -31,7 +31,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ProxyConnectionTest
 {
@@ -277,14 +276,41 @@ public class ProxyConnectionTest
         p.customize((connector) ->
         {
             ProxyConnectionFactory factory = (ProxyConnectionFactory)connector.getConnectionFactory("[proxy]");
-            assertThrows(IllegalArgumentException.class, () -> factory.setMaxProxyHeader(11));
+            factory.setMaxProxyHeader(11); // just one byte short
         });
+        String proxy =
+            // Preamble
+            "0D0A0D0A000D0A515549540A" +
+
+                // V2, PROXY
+                "21" +
+
+                // 0x1 : AF_INET    0x1 : STREAM.
+                "11" +
+
+                // Address length is 2*4 + 2*2 = 12 bytes.
+                // length of remaining header (4+4+2+2 = 12)
+                "000C" +
+
+                // uint32_t src_addr; uint32_t dst_addr; uint16_t src_port; uint16_t dst_port;
+                "C0A80001" +
+                "7f000001" +
+                "3039" +
+                "1F90";
+        String http = "GET /path HTTP/1.1\n" +
+            "Host: server:80\n" +
+            "Connection: close\n" +
+            "\n";
+
+        String response = p.sendRequestWaitingForResponse(StringUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
+
+        assertThat(response, Matchers.is(Matchers.nullValue()));
     }
 
-    public abstract static class RequestProcessor
+    abstract static class RequestProcessor
     {
-        private final Server _server;
         protected LocalConnector _connector;
+        private Server _server;
 
         public RequestProcessor()
         {
