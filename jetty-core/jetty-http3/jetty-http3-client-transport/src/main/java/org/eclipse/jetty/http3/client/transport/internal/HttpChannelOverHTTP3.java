@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class HttpChannelOverHTTP3 extends HttpChannel
 {
-    private final Stream.Client.Listener listener = new Listener();
+    private final Listener listener = new Listener();
     private final HttpConnectionOverHTTP3 connection;
     private final HTTP3SessionClient session;
     private final HttpSenderOverHTTP3 sender;
@@ -59,6 +59,15 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     public Stream.Client.Listener getStreamListener()
     {
         return listener;
+    }
+
+    /**
+     * Aborts the exchange, serialized with other stream events so that an
+     * already-received response is delivered before the exchange is aborted.
+     */
+    void abort(Throwable failure)
+    {
+        listener.abort(failure);
     }
 
     @Override
@@ -170,6 +179,18 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         public void onFailure(Stream.Client stream, long error, Throwable failure)
         {
             Runnable task = receiver.onFailure(failure);
+            ThreadPool.executeImmediately(session.getProtocolSession().getExecutor(), invoker.offer(task));
+        }
+
+        private void abort(Throwable failure)
+        {
+            // Serialize with other stream events so an already-received response is delivered first.
+            Runnable task = () ->
+            {
+                HttpExchange exchange = getHttpExchange();
+                if (exchange != null)
+                    exchange.getRequest().abort(failure);
+            };
             ThreadPool.executeImmediately(session.getProtocolSession().getExecutor(), invoker.offer(task));
         }
     }
