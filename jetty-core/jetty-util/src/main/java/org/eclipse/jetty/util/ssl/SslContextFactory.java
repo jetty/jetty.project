@@ -337,11 +337,11 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
                         Certificate certificate = keyStore.getCertificate(alias);
                         if (certificate instanceof X509Certificate x509C)
                         {
-                            // Exclude certificates with special uses.
-                            if (X509.isCertSign(x509C))
+                            // Exclude certificates without a private key, as they cannot be used.
+                            if (!keyStore.isKeyEntry(alias))
                             {
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("Skipping {}", x509C);
+                                    LOG.debug("Skipping {} without private key", x509C);
                                 continue;
                             }
 
@@ -497,7 +497,8 @@ public abstract class SslContextFactory extends ContainerLifeCycle implements Du
                 Certificate certificate = keyStore.getCertificate(alias);
                 if (certificate instanceof X509Certificate x509)
                 {
-                    if (X509.isCertSign(x509))
+                    // Exclude certificates without a private key, as they cannot be used.
+                    if (!keyStore.isKeyEntry(alias))
                         continue;
                     aliasCerts.put(alias, new X509(alias, x509));
                 }

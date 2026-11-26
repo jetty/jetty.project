@@ -47,9 +47,11 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.asn1.x509.KeyUsage;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
@@ -64,7 +66,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -864,6 +868,223 @@ public class SslContextFactoryTest
         }
     }
 
+    public static Stream<Arguments> certAliasPrivateKey()
+    {
+        // The KeyStore aliases and whether the server can serve them.
+        List<Arguments> aliases = List.of(
+            // Certificates with a private key can be configured.
+            Arguments.of("key", true),
+            Arguments.of("key-certsign", true),
+            // Certificates without a private key cannot be configured.
+            Arguments.of("nokey", false),
+            Arguments.of("nokey-certsign", false)
+        );
+        return aliases.stream()
+            .flatMap(args -> Stream.of("SunX509", "PKIX")
+                .flatMap(keyManagerFactoryAlgorithm -> Stream.of("unknown.com", null)
+                    .map(sniHost -> Arguments.of(args.get()[0], args.get()[1], keyManagerFactoryAlgorithm, sniHost))));
+    }
+
+    @ParameterizedTest
+    @MethodSource("certAliasPrivateKey")
+    public void testCertAliasRequiresPrivateKey(String certAlias, boolean success, String keyManagerFactoryAlgorithm, String sniHost) throws Exception
+    {
+        KeyStore keyStore = newCertAliasPrivateKeyKeyStore();
+
+        SslContextFactory.Server serverTLS = new SslContextFactory.Server();
+        serverTLS.setKeyStore(keyStore);
+        serverTLS.setKeyStorePassword("storepwd");
+        serverTLS.setKeyManagerFactoryAlgorithm(keyManagerFactoryAlgorithm);
+        if ("PKIX".equals(keyManagerFactoryAlgorithm))
+            serverTLS.setAliasMapper(SslContextFactory.ALIAS_MAPPER_NULL);
+        // No certificate matches the SNI (or there is no SNI),
+        // so the choice is delegated to the configured alias.
+        serverTLS.setSniRequired(false);
+        serverTLS.setCertAlias(certAlias);
+
+        try
+        {
+            serverTLS.start();
+
+            assertCertAliasPrivateKeyAliases(serverTLS);
+
+            try (SSLServerSocket serverSocket = serverTLS.newSslServerSocket(null, 0, 128))
+            {
+                if (success)
+                {
+                    // The certificate with the configured alias must be served.
+                    X509Certificate certificate = assertConnectEchoClose(serverSocket, sniHost);
+                    assertEquals(keyStore.getCertificate(certAlias), certificate);
+                }
+                else
+                {
+                    // The configured alias cannot be served, and the
+                    // server must not fall back to another certificate.
+                    assertThrows(SSLHandshakeException.class, () -> assertConnectEchoClose(serverSocket, sniHost));
+                }
+            }
+        }
+        finally
+        {
+            serverTLS.stop();
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+        // Certificates with a private key can be configured.
+        "key            | true  | SunX509 | ALIAS_MAPPER_IDENTITY",
+        "key            | true  | PKIX    | ALIAS_MAPPER_OPENJDK_PKIX",
+        "key            | true  | PKIX    | ALIAS_MAPPER_NULL",
+        "key-certsign   | true  | SunX509 | ALIAS_MAPPER_IDENTITY",
+        "key-certsign   | true  | PKIX    | ALIAS_MAPPER_OPENJDK_PKIX",
+        "key-certsign   | true  | PKIX    | ALIAS_MAPPER_NULL",
+        // Certificates without a private key cannot be configured.
+        "nokey          | false | SunX509 | ALIAS_MAPPER_IDENTITY",
+        "nokey          | false | PKIX    | ALIAS_MAPPER_OPENJDK_PKIX",
+        "nokey          | false | PKIX    | ALIAS_MAPPER_NULL",
+        "nokey-certsign | false | SunX509 | ALIAS_MAPPER_IDENTITY",
+        "nokey-certsign | false | PKIX    | ALIAS_MAPPER_OPENJDK_PKIX",
+        "nokey-certsign | false | PKIX    | ALIAS_MAPPER_NULL"
+    })
+    public void testClientCertAliasRequiresPrivateKey(String certAlias, boolean success, String keyManagerFactoryAlgorithm, String aliasMapper) throws Exception
+    {
+        KeyStore clientKeyStore = newCertAliasPrivateKeyKeyStore();
+
+        // The server requires a client certificate, and trusts all of them.
+        KeyStore serverTrustStore = KeyStore.getInstance("PKCS12");
+        serverTrustStore.load(null, null);
+        for (String alias : Collections.list(clientKeyStore.aliases()))
+        {
+            serverTrustStore.setCertificateEntry(alias, clientKeyStore.getCertificate(alias));
+        }
+        KeyStore serverKeyStore = KeyStore.getInstance("PKCS12");
+        try (InputStream input = getClass().getResourceAsStream("/keystore_sni.p12"))
+        {
+            serverKeyStore.load(input, "storepwd".toCharArray());
+        }
+        SslContextFactory.Server serverTLS = new SslContextFactory.Server();
+        serverTLS.setKeyStore(serverKeyStore);
+        serverTLS.setKeyStorePassword("storepwd");
+        serverTLS.setTrustStore(serverTrustStore);
+        serverTLS.setNeedClientAuth(true);
+
+        // The client trusts the server certificates.
+        KeyStore clientTrustStore = KeyStore.getInstance("PKCS12");
+        clientTrustStore.load(null, null);
+        for (String alias : Collections.list(serverKeyStore.aliases()))
+        {
+            clientTrustStore.setCertificateEntry(alias, serverKeyStore.getCertificate(alias));
+        }
+
+        SslContextFactory.Client clientTLS = new SslContextFactory.Client();
+        clientTLS.setEndpointIdentificationAlgorithm(null);
+        clientTLS.setKeyStore(clientKeyStore);
+        clientTLS.setKeyStorePassword("storepwd");
+        clientTLS.setTrustStore(clientTrustStore);
+        clientTLS.setKeyManagerFactoryAlgorithm(keyManagerFactoryAlgorithm);
+        @SuppressWarnings("unchecked")
+        UnaryOperator<String> aliasMapperFn = (UnaryOperator<String>)SslContextFactory.class.getField(aliasMapper).get(clientTLS);
+        clientTLS.setAliasMapper(aliasMapperFn);
+        clientTLS.setCertAlias(certAlias);
+
+        try
+        {
+            serverTLS.start();
+            clientTLS.start();
+
+            assertCertAliasPrivateKeyAliases(clientTLS);
+
+            try (SSLServerSocket serverSocket = serverTLS.newSslServerSocket(null, 0, 128);
+                 SSLSocket clientSocket = clientTLS.newSslSocket())
+            {
+                clientSocket.connect(new InetSocketAddress("localhost", serverSocket.getLocalPort()), 5000);
+                try (SSLSocket sslSocket = (SSLSocket)serverSocket.accept())
+                {
+                    // The server handshake completes when the client certificate is received.
+                    CompletableFuture<Certificate> serverHandshake = CompletableFuture.supplyAsync(() ->
+                    {
+                        try
+                        {
+                            sslSocket.startHandshake();
+                            return sslSocket.getSession().getPeerCertificates()[0];
+                        }
+                        catch (IOException x)
+                        {
+                            throw new UncheckedIOException(x);
+                        }
+                    });
+
+                    try
+                    {
+                        clientSocket.startHandshake();
+                    }
+                    catch (IOException x)
+                    {
+                        // The client may notice the failure, depending on the TLS version.
+                        if (success)
+                            throw x;
+                    }
+
+                    if (success)
+                    {
+                        // The certificate with the configured alias must be sent.
+                        assertEquals(clientKeyStore.getCertificate(certAlias), serverHandshake.get(5, TimeUnit.SECONDS));
+                    }
+                    else
+                    {
+                        // The configured alias cannot be sent, and the client must not
+                        // fall back to another certificate, so the server fails the handshake.
+                        ExecutionException failure = assertThrows(ExecutionException.class, () -> serverHandshake.get(5, TimeUnit.SECONDS));
+                        assertInstanceOf(SSLHandshakeException.class, failure.getCause().getCause());
+                    }
+                }
+            }
+        }
+        finally
+        {
+            clientTLS.stop();
+            serverTLS.stop();
+        }
+    }
+
+    private static KeyStore newCertAliasPrivateKeyKeyStore() throws Exception
+    {
+        Instant notBefore = Instant.now().minus(Duration.ofDays(1));
+        Instant notAfter = Instant.now().plus(Duration.ofDays(1));
+        // The first alias in the KeyStore, so that it is
+        // likely chosen when the choice is delegated.
+        KeyStore.PrivateKeyEntry otherEntry = newSelfSignedPrivateKeyEntry("other.com", notBefore, notAfter);
+        KeyStore.PrivateKeyEntry keyEntry = newSelfSignedPrivateKeyEntry("key.com", notBefore, notAfter);
+        // KeyUsage keyCertSign is common for self-signed certificates.
+        KeyStore.PrivateKeyEntry keyCertSignEntry = newSelfSignedPrivateKeyEntry("key-certsign.com", notBefore, notAfter, true);
+        // Certificates without a private key, for example
+        // the CA or the intermediate certificates of a chain.
+        Certificate noKeyCertificate = newSelfSignedPrivateKeyEntry("nokey.com", notBefore, notAfter).getCertificate();
+        Certificate noKeyCertSignCertificate = newSelfSignedPrivateKeyEntry("nokey-certsign.com", notBefore, notAfter, true).getCertificate();
+
+        char[] password = "storepwd".toCharArray();
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(null, password);
+        KeyStore.PasswordProtection protection = new KeyStore.PasswordProtection(password);
+        keyStore.setEntry("other", otherEntry, protection);
+        keyStore.setEntry("key", keyEntry, protection);
+        keyStore.setEntry("key-certsign", keyCertSignEntry, protection);
+        keyStore.setCertificateEntry("nokey", noKeyCertificate);
+        keyStore.setCertificateEntry("nokey-certsign", noKeyCertSignCertificate);
+        return keyStore;
+    }
+
+    private static void assertCertAliasPrivateKeyAliases(SslContextFactory sslContextFactory)
+    {
+        // Only the certificates with a private key can be selected.
+        assertThat(sslContextFactory.getAliases(), containsInAnyOrder("other", "key", "key-certsign"));
+        assertNotNull(sslContextFactory.getX509("key"));
+        assertNotNull(sslContextFactory.getX509("key-certsign"));
+        assertNull(sslContextFactory.getX509("nokey"));
+        assertNull(sslContextFactory.getX509("nokey-certsign"));
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     public void testSNIWithPKIXAndIdentityAliasMapper(boolean sniRequired) throws Exception
@@ -1026,12 +1247,22 @@ public class SslContextFactoryTest
 
     private static KeyStore.PrivateKeyEntry newSelfSignedPrivateKeyEntry(String host, Instant notBefore, Instant notAfter) throws Exception
     {
+        return newSelfSignedPrivateKeyEntry(host, notBefore, notAfter, false);
+    }
+
+    private static KeyStore.PrivateKeyEntry newSelfSignedPrivateKeyEntry(String host, Instant notBefore, Instant notAfter, boolean certSign) throws Exception
+    {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(2048);
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
         X500Name subject = new X500Name("CN=" + host);
         X509v3CertificateBuilder certificateBuilder = new JcaX509v3CertificateBuilder(subject, BigInteger.ONE, Date.from(notBefore), Date.from(notAfter), subject, keyPair.getPublic())
             .addExtension(Extension.subjectAlternativeName, false, new GeneralNames(new GeneralName(GeneralName.dNSName, host)));
+        if (certSign)
+        {
+            certificateBuilder.addExtension(Extension.keyUsage, true, new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment | KeyUsage.keyCertSign));
+            certificateBuilder.addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
+        }
         ContentSigner signer = new JcaContentSignerBuilder("SHA256withRSA").build(keyPair.getPrivate());
         X509Certificate certificate = new JcaX509CertificateConverter().getCertificate(certificateBuilder.build(signer));
         return new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{certificate});
