@@ -20,28 +20,45 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyProtocolTest
 {
+    private ArrayByteBufferPool.Tracking bufferPool;
     private Server server;
     private ServerConnector connector;
 
     private void start(Handler handler) throws Exception
     {
-        server = new Server();
-        connector = new ServerConnector(server, new ProxyConnectionFactory(), new HttpConnectionFactory());
+        start(new ProxyConnectionFactory(), handler);
+    }
+
+    private void start(ProxyConnectionFactory proxyConnectionFactory, Handler handler) throws Exception
+    {
+        bufferPool = new ArrayByteBufferPool.Tracking();
+        server = new Server(null, null, bufferPool);
+        connector = new ServerConnector(server, proxyConnectionFactory, new HttpConnectionFactory());
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
@@ -50,8 +67,15 @@ public class ProxyProtocolTest
     @AfterEach
     public void destroy() throws Exception
     {
-        if (server != null)
-            server.stop();
+        try
+        {
+            if (bufferPool != null)
+                await().atMost(5, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks(), empty());
+        }
+        finally
+        {
+            LifeCycle.stop(server);
+        }
     }
 
     @Test
@@ -299,5 +323,140 @@ public class ProxyProtocolTest
                     break;
             }
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1500, 5000, 65535})
+    public void testProxyProtocolV2LargeHeader(int proxyHeaderLength) throws Exception
+    {
+        String remoteAddr = "192.168.0.1";
+        int remotePort = 12345;
+        ProxyConnectionFactory proxyConnectionFactory = new ProxyConnectionFactory();
+        proxyConnectionFactory.setMaxProxyHeader(65535);
+        start(proxyConnectionFactory, new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                if (remoteAddr.equals(Request.getRemoteAddr(request)) && remotePort == Request.getRemotePort(request))
+                    callback.succeeded();
+                else
+                    callback.failed(new Throwable("wrong address"));
+                return true;
+            }
+        });
+
+        // Address block (12 bytes) followed by a single NOOP TLV (3 bytes + value) padding the header to the desired length.
+        int noopValueLength = proxyHeaderLength - 12 - 3;
+        ByteBuffer proxy = ByteBuffer.allocate(16 + proxyHeaderLength);
+        proxy.put(StringUtil.fromHexString(
+            // Preamble
+            "0D0A0D0A000D0A515549540A" +
+                // V2, PROXY
+                "21" +
+                // 0x1 : AF_INET    0x1 : STREAM.
+                "11"));
+        proxy.putChar((char)proxyHeaderLength);
+        proxy.put(StringUtil.fromHexString(
+            // uint32_t src_addr; uint32_t dst_addr; uint16_t src_port; uint16_t dst_port;
+            "C0A80001" +
+                "7f000001" +
+                "3039" +
+                "1F90"));
+        // NOOP TLV.
+        proxy.put((byte)0x04);
+        proxy.putChar((char)noopValueLength);
+        proxy.put(new byte[noopValueLength]);
+        assertThat(proxy.remaining(), is(0));
+
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            socket.setSoTimeout(5000);
+            String request =
+                "GET / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
+            OutputStream output = socket.getOutputStream();
+            output.write(proxy.array());
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            InputStream input = socket.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
+            String response = reader.readLine();
+            assertThat(response, startsWith("HTTP/1.1 200 "));
+        }
+        await().atMost(5, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks(), empty());
+    }
+
+    @Test
+    public void testProxyProtocolV2TooLargeHeader() throws Exception
+    {
+        int maxProxyHeader = 24;
+        ProxyConnectionFactory proxyConnectionFactory = new ProxyConnectionFactory();
+        proxyConnectionFactory.setMaxProxyHeader(maxProxyHeader);
+        start(proxyConnectionFactory, new Handler.Abstract.NonBlocking()
+        {
+            @Override
+            public boolean handle(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+                return true;
+            }
+        });
+
+        // Address block (12 bytes) followed by a single NOOP TLV (3 bytes + value) padding the header to the desired length.
+        int noopValueLength = (maxProxyHeader + 1) - 12 - 3;
+        ByteBuffer proxy = ByteBuffer.allocate(16 + maxProxyHeader + 1);
+        proxy.put(StringUtil.fromHexString(
+            // Preamble
+            "0D0A0D0A000D0A515549540A" +
+                // V2, PROXY
+                "21" +
+                // 0x1 : AF_INET    0x1 : STREAM.
+                "11"));
+        proxy.putChar((char)(maxProxyHeader + 1));
+        proxy.put(StringUtil.fromHexString(
+            // uint32_t src_addr; uint32_t dst_addr; uint16_t src_port; uint16_t dst_port;
+            "C0A80001" +
+                "7f000001" +
+                "3039" +
+                "1F90"));
+        // NOOP TLV.
+        proxy.put((byte)0x04);
+        proxy.putChar((char)noopValueLength);
+        proxy.put(new byte[noopValueLength]);
+        assertThat(proxy.remaining(), is(0));
+
+        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        {
+            socket.setSoTimeout(5000);
+            // Only send the PROXY bytes: any unread byte left when the server
+            // closes the connection would make it send a RST instead of a FIN.
+            OutputStream output = socket.getOutputStream();
+            output.write(proxy.array());
+            output.flush();
+
+            assertThat(socket.getInputStream().read(), is(-1));
+        }
+        await().atMost(5, TimeUnit.SECONDS).until(() -> bufferPool.getLeaks(), empty());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 65536, Integer.MAX_VALUE})
+    public void testInvalidMaxProxyHeader(int maxProxyHeader)
+    {
+        ProxyConnectionFactory proxyConnectionFactory = new ProxyConnectionFactory();
+        assertThrows(IllegalArgumentException.class, () -> proxyConnectionFactory.setMaxProxyHeader(maxProxyHeader));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 65535})
+    public void testValidMaxProxyHeader(int maxProxyHeader)
+    {
+        ProxyConnectionFactory proxyConnectionFactory = new ProxyConnectionFactory();
+        proxyConnectionFactory.setMaxProxyHeader(maxProxyHeader);
+        assertThat(proxyConnectionFactory.getMaxProxyHeader(), is(maxProxyHeader));
     }
 }

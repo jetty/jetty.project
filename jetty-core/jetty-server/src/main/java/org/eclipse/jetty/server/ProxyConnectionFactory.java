@@ -76,12 +76,23 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         return connectionFactory;
     }
 
+    /**
+     * @return the max number of bytes of a PROXY v2 header that follow its 16 bytes fixed part
+     * @see #setMaxProxyHeader(int)
+     */
     public int getMaxProxyHeader()
     {
         ProxyV2ConnectionFactory v2 = getBean(ProxyV2ConnectionFactory.class);
         return v2.getMaxProxyHeader();
     }
 
+    /**
+     * <p>Sets the max number of bytes of a PROXY v2 header that follow its 16 bytes fixed part,
+     * that is the max value of its {@code len} field; PROXY v2 headers that are larger are rejected.</p>
+     *
+     * @param maxProxyHeader the max number of bytes, between 0 and 65535 inclusive
+     * @throws IllegalArgumentException if the value is out of range
+     */
     public void setMaxProxyHeader(int maxProxyHeader)
     {
         ProxyV2ConnectionFactory v2 = getBean(ProxyV2ConnectionFactory.class);
@@ -146,9 +157,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
             private final Connector _connector;
             private final ConnectionFactory _next;
-            private final RetainableByteBuffer _buffer;
             private final StringBuilder _builder = new StringBuilder();
             private final String[] _fields = new String[6];
+            private RetainableByteBuffer _buffer;
             private int _index;
             private int _length;
 
@@ -157,7 +168,26 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 super(endp, connector.getExecutor());
                 _connector = connector;
                 _next = next;
-                _buffer = _connector.getByteBufferPool().acquire(getInputBufferSize(), true);
+            }
+
+            /**
+             * <p>Acquires the buffer lazily, so that it is sized after this connection has been configured.</p>
+             *
+             * @param size the min buffer size; the buffer is at least {@link #getInputBufferSize()} bytes.
+             */
+            private void acquireBuffer(int size)
+            {
+                if (_buffer == null)
+                    _buffer = _connector.getByteBufferPool().acquire(Math.max(getInputBufferSize(), size), true);
+            }
+
+            private void releaseBuffer()
+            {
+                if (_buffer != null)
+                {
+                    _buffer.release();
+                    _buffer = null;
+                }
             }
 
             @Override
@@ -175,7 +205,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                             LOG.debug("Proxy v1 filled buffer with {} bytes", fill);
                         if (fill < 0)
                         {
-                            _buffer.release();
+                            releaseBuffer();
                             getEndPoint().shutdownOutput();
                             return;
                         }
@@ -209,6 +239,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
                 try
                 {
+                    acquireBuffer(0);
                     while (_index < LF_INDEX)
                     {
                         if (!parse())
@@ -241,10 +272,10 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     ByteBuffer unconsumed = ByteBuffer.allocateDirect(_buffer.remaining());
                     unconsumed.put(_buffer.getByteBuffer());
                     unconsumed.flip();
-                    _buffer.release();
+                    releaseBuffer();
                     return unconsumed;
                 }
-                _buffer.release();
+                releaseBuffer();
                 return null;
             }
 
@@ -253,6 +284,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v1 copying unconsumed buffer {}", BufferUtil.toDetailString(buffer));
+                acquireBuffer(buffer.remaining());
                 BufferUtil.append(_buffer.getByteBuffer(), buffer);
             }
 
@@ -311,7 +343,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v1 releasing buffer and closing");
-                _buffer.release();
+                releaseBuffer();
                 close();
             }
 
@@ -441,6 +473,9 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
         public void setMaxProxyHeader(int maxProxyHeader)
         {
+            // The PROXY v2 header len field is an uint16.
+            if (maxProxyHeader < 0 || maxProxyHeader > 65535)
+                throw new IllegalArgumentException("Invalid max proxy header " + maxProxyHeader + ", must be between 0 and 65535");
             _maxProxyHeader = maxProxyHeader;
         }
 
@@ -457,7 +492,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
             private final Connector _connector;
             private final ConnectionFactory _next;
-            private final RetainableByteBuffer _buffer;
+            private RetainableByteBuffer _buffer;
             private boolean _local;
             private Family _family;
             private int _length;
@@ -468,7 +503,26 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 super(endp, connector.getExecutor());
                 _connector = connector;
                 _next = next;
-                _buffer = _connector.getByteBufferPool().acquire(getInputBufferSize(), true);
+            }
+
+            /**
+             * <p>Acquires the buffer lazily, so that it is sized after this connection has been configured.</p>
+             *
+             * @param size the min buffer size; the buffer is at least {@link #getInputBufferSize()} bytes.
+             */
+            private void acquireBuffer(int size)
+            {
+                if (_buffer == null)
+                    _buffer = _connector.getByteBufferPool().acquire(Math.max(getInputBufferSize(), size), true);
+            }
+
+            private void releaseBuffer()
+            {
+                if (_buffer != null)
+                {
+                    _buffer.release();
+                    _buffer = null;
+                }
             }
 
             @Override
@@ -476,6 +530,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 copying unconsumed buffer {}", BufferUtil.toDetailString(buffer));
+                acquireBuffer(buffer.remaining());
                 BufferUtil.append(_buffer.getByteBuffer(), buffer);
             }
 
@@ -486,6 +541,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
 
                 try
                 {
+                    acquireBuffer(0);
                     parseHeader();
                     if (_headerParsed && _buffer.remaining() >= _length)
                     {
@@ -524,7 +580,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                             LOG.debug("Proxy v2 filled buffer with {} bytes", fill);
                         if (fill < 0)
                         {
-                            _buffer.release();
+                            releaseBuffer();
                             getEndPoint().shutdownOutput();
                             return;
                         }
@@ -548,7 +604,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                             LOG.debug("Proxy v2 filled buffer with {} bytes", fill);
                         if (fill < 0)
                         {
-                            _buffer.release();
+                            releaseBuffer();
                             getEndPoint().shutdownOutput();
                             return;
                         }
@@ -578,10 +634,10 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     ByteBuffer unconsumed = ByteBuffer.allocateDirect(_buffer.remaining());
                     unconsumed.put(_buffer.getByteBuffer());
                     unconsumed.flip();
-                    _buffer.release();
+                    releaseBuffer();
                     return unconsumed;
                 }
-                _buffer.release();
+                releaseBuffer();
                 return null;
             }
 
@@ -754,6 +810,15 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 if (_length > getMaxProxyHeader())
                     throw new IOException(String.format("Proxy v2 Unsupported PROXY mode 0x%x,0x%x,0x%x", versionAndCommand, transportAndFamily, _length));
 
+                // The whole PROXY v2 header must fit in the buffer, as it is parsed in one go.
+                if (_buffer.capacity() < _length)
+                {
+                    RetainableByteBuffer buffer = _connector.getByteBufferPool().acquire(Math.max(getInputBufferSize(), _length), true);
+                    BufferUtil.append(buffer.getByteBuffer(), _buffer.getByteBuffer());
+                    _buffer.release();
+                    _buffer = buffer;
+                }
+
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 fixed length packet part is now parsed");
                 _headerParsed = true;
@@ -763,7 +828,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 releasing buffer and closing");
-                _buffer.release();
+                releaseBuffer();
                 close();
             }
 
