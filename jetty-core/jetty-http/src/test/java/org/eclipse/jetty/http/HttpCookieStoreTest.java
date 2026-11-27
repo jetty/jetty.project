@@ -406,8 +406,8 @@ public class HttpCookieStoreTest
     {
         HttpCookieStore store = new HttpCookieStore.Default();
         URI uri = URI.create("http://example.com");
-        // A secure cookie on clear-text scheme.
-        assertTrue(store.add(uri, HttpCookie.build("n1", "v1").secure(true).build()));
+        // A secure cookie on clear-text scheme must be rejected.
+        assertFalse(store.add(uri, HttpCookie.build("n1", "v1").secure(true).build()));
 
         URI secureURI = URI.create("https://example.com");
         assertTrue(store.add(secureURI, HttpCookie.build("n2", "v2").secure(true).build()));
@@ -418,7 +418,57 @@ public class HttpCookieStoreTest
         assertEquals("n3", matches.get(0).getName());
 
         matches = store.match(secureURI);
-        assertEquals(3, matches.size());
+        assertEquals(2, matches.size());
+    }
+
+    @Test
+    public void testNonSecureCookieDoesNotOverlaySecureCookie()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        URI secureURI = URI.create("https://example.com/login");
+        assertTrue(store.add(secureURI, HttpCookie.build("n1", "v1").secure(true).path("/login").build()));
+
+        // A clear-text cookie with the same name and a path that
+        // path-matches the path of the secure cookie must be rejected.
+        URI uri = URI.create("http://example.com/login/en");
+        assertFalse(store.add(uri, HttpCookie.from("n1", "v2")));
+        assertFalse(store.add(uri, HttpCookie.build("n1", "v2").path("/login/en").build()));
+        List<HttpCookie> matches = store.match(secureURI);
+        assertEquals(1, matches.size());
+        assertEquals("v1", matches.get(0).getValue());
+
+        // The path comparison is not symmetric: a clear-text
+        // cookie for a parent path does not overlay the secure cookie.
+        assertTrue(store.add(uri, HttpCookie.build("n1", "v3").path("/").build()));
+        matches = store.match(secureURI);
+        assertEquals(2, matches.size());
+
+        // A cookie received over a secure connection replaces the secure cookie.
+        assertTrue(store.add(secureURI, HttpCookie.build("n1", "v4").path("/login").build()));
+        matches = store.match(secureURI);
+        assertEquals(2, matches.size());
+        assertTrue(matches.stream().anyMatch(cookie -> "v4".equals(cookie.getValue())));
+    }
+
+    @Test
+    public void testNonSecureCookieDoesNotOverlaySecureCookieWithDomain()
+    {
+        HttpCookieStore store = new HttpCookieStore.Default();
+        // Secure cookie for the parent domain.
+        assertTrue(store.add(URI.create("https://example.com"), HttpCookie.build("n1", "v1").secure(true).domain("example.com").build()));
+        // A clear-text host-only cookie from a sub-domain must be rejected.
+        assertFalse(store.add(URI.create("http://sub.example.com"), HttpCookie.from("n1", "v2")));
+
+        // Secure host-only cookie for a sub-domain.
+        assertTrue(store.add(URI.create("https://sub.example.com"), HttpCookie.build("n2", "v1").secure(true).build()));
+        // A clear-text cookie for the parent domain must be rejected.
+        assertFalse(store.add(URI.create("http://example.com"), HttpCookie.build("n2", "v2").domain("example.com").build()));
+        // A clear-text cookie for an unrelated domain is accepted.
+        assertTrue(store.add(URI.create("http://other.example.com"), HttpCookie.from("n2", "v3")));
+
+        List<HttpCookie> matches = store.match(URI.create("https://sub.example.com"));
+        assertEquals(2, matches.size());
+        assertTrue(matches.stream().allMatch(cookie -> "v1".equals(cookie.getValue())));
     }
 
     @Test
