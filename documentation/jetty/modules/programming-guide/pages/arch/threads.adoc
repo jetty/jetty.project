@@ -412,6 +412,39 @@ When the virtual thread runs, it attempts to acquire a permit from the `Semaphor
 This means that there may be more virtual threads than permits, but it is guaranteed that the number of concurrent tasks run by virtual threads is limited by the `Semaphore`.
 ====
 
+[[thread-pool-virtual-threads-queued-factory]]
+==== Limiting Virtual Threads Creation with `QueuedThreadPool`
+
+If you want to limit the number of virtual threads that are _created_, rather than the number of concurrent tasks, you can configure `QueuedThreadPool` with a virtual `ThreadFactory`:
+
+[,java,indent=0]
+----
+include::code:example$src/main/java/org/eclipse/jetty/docs/programming/ArchitectureDocs.java[tags=queuedVirtualThreadFactory]
+----
+
+In this configuration, all the threads of `QueuedThreadPool` are virtual threads, and `QueuedThreadPool` behaves as it does with platform threads:
+
+* At most `maxThreads` virtual threads are created; additional tasks wait in the `QueuedThreadPool` queue until a thread becomes available.
+* Virtual threads are reused to run queued tasks.
+* Idle virtual threads are evicted after `idleTimeout`, so that `QueuedThreadPool` shrinks back towards `minThreads`.
+
+This differs from <<thread-pool-virtual-threads-virtual,`VirtualThreadPool`>>, which spawns a new virtual thread for each task and only limits the number of tasks that run concurrently.
+
+[NOTE]
+====
+Configure the number of reserved threads explicitly to zero.
+
+With the default configuration, `QueuedThreadPool` may start a reserved thread, which occupies one of the `maxThreads` slots while it waits for a task.
+With virtual threads the cost of starting a thread is small, so it is typically better to use all the `maxThreads` slots to run tasks.
+====
+
+Like with platform threads, `QueuedThreadPool` leases threads to Jetty components, such as the acceptors and selectors of a `ServerConnector`, and leased threads occupy `maxThreads` slots.
+Take them into account when choosing the value of `maxThreads`, as explained in <<thread-pool-configuration,this section>>.
+
+Since the selector threads are virtual threads in this configuration, refer to <<thread-pool-virtual-threads-pinning,this section>> about virtual threads pinning.
+
+The virtual threads created by a plain `Thread.ofVirtual().factory()` have no name; use `Thread.ofVirtual().name(prefix, start).factory()` to name them, so that they can be recognized in thread dumps and logs.
+
 [[thread-pool-virtual-threads-pinning]]
 ==== Virtual Threads Pinning
 
