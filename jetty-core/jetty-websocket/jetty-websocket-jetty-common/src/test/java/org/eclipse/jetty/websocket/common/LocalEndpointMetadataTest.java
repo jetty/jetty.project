@@ -19,6 +19,7 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.DuplicateAnnotationException;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.messages.InputStreamMessageSink;
+import org.eclipse.jetty.websocket.core.messages.PublisherMessageSink;
 import org.eclipse.jetty.websocket.core.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.core.messages.StringMessageSink;
 import org.hamcrest.Matcher;
@@ -114,6 +115,40 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadAutoDemandWithReader()
     {
         assertThrows(InvalidWebSocketException.class, () -> createMetadata(EndPoints.BadAutoDemandWithReader.class));
+    }
+
+    @Test
+    public void testAnnotatedBadAutoDemandWithPublisher()
+    {
+        assertThrows(InvalidWebSocketException.class, () -> createMetadata(EndPoints.BadAutoDemandWithPublisher.class));
+    }
+
+    @Test
+    public void testAnnotatedBadPublisherItemType()
+    {
+        InvalidWebSocketException e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(EndPoints.BadPublisherItemTypeSocket.class));
+        assertThat(e.getMessage(), containsString("Flow.Publisher<ByteBuffer>"));
+    }
+
+    /**
+     * Test Case for socket for binary publisher messages
+     */
+    @Test
+    public void testAnnotatedBinaryPublisherSocket() throws Exception
+    {
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.AnnotatedBinaryPublisherSocket.class);
+
+        String classId = EndPoints.AnnotatedBinaryPublisherSocket.class.getSimpleName();
+
+        assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), EXISTS);
+        assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(PublisherMessageSink.class));
+
+        assertThat(classId + ".textHandle", metadata.getTextHandle(), nullValue());
+        assertThat(classId + ".textSink", metadata.getTextSink(), nullValue());
+
+        assertThat(classId + ".openHandle", metadata.getOpenHandle(), EXISTS);
+        assertThat(classId + ".closeHandle", metadata.getCloseHandle(), EXISTS);
+        assertThat(classId + ".errorHandle", metadata.getErrorHandle(), nullValue());
     }
 
     /**

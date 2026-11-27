@@ -16,6 +16,7 @@ package org.eclipse.jetty.websocket.common;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.util.concurrent.Flow;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Callback;
@@ -220,6 +221,31 @@ public class EndPoints
     }
 
     @WebSocket
+    public static class AnnotatedBinaryPublisherSocket
+    {
+        public EventQueue events = new EventQueue();
+
+        @OnWebSocketMessage
+        public void onBinary(Flow.Publisher<ByteBuffer> publisher)
+        {
+            assertThat("Flow.Publisher", publisher, notNullValue());
+            events.add("onBinary(%s)", publisher);
+        }
+
+        @OnWebSocketClose
+        public void onClose(int statusCode, String reason)
+        {
+            events.add("onClose(%d, %s)", statusCode, TextUtils.quote(reason));
+        }
+
+        @OnWebSocketOpen
+        public void onOpen(Session sess)
+        {
+            events.add("onOpen(%s)", sess);
+        }
+    }
+
+    @WebSocket
     public static class AnnotatedTextSocket
     {
         public EventQueue events = new EventQueue();
@@ -354,6 +380,24 @@ public class EndPoints
     {
         @OnWebSocketMessage
         public void onMessage(Reader reader)
+        {
+        }
+    }
+
+    @WebSocket(autoDemand = false)
+    public static class BadAutoDemandWithPublisher
+    {
+        @OnWebSocketMessage
+        public void onMessage(Flow.Publisher<ByteBuffer> publisher)
+        {
+        }
+    }
+
+    @WebSocket
+    public static class BadPublisherItemTypeSocket
+    {
+        @OnWebSocketMessage
+        public void onMessage(Flow.Publisher<String> publisher)
         {
         }
     }
