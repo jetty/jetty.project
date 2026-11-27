@@ -23,6 +23,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -78,6 +80,7 @@ import org.slf4j.LoggerFactory;
 public class ShutdownService
 {
     private static final Logger LOG = LoggerFactory.getLogger(ShutdownService.class);
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     protected final AutoLock lock = new AutoLock();
     // Host to listen on
     private final String host;
@@ -111,9 +114,20 @@ public class ShutdownService
         this.exitVm = exitVm;
     }
 
-    private String generateKey()
+    /**
+     * Generates a key suitable for use as the shutdown authentication secret.
+     * <p>
+     * This must use a cryptographically secure source of randomness: the generated value is not a
+     * nonce, it is the actual credential that gates a destructive remote command (see the {@code key}
+     * parameter of {@link #ShutdownService(String, int, String, boolean)}), so it must be unguessable
+     * to anyone who cannot already read it back via {@link #getKey()} or the startup log.
+     * </p>
+     */
+    private static String generateKey()
     {
-        return Long.toString((long)(Long.MAX_VALUE * Math.random() + this.hashCode() + System.currentTimeMillis()), 36);
+        byte[] bytes = new byte[20];
+        SECURE_RANDOM.nextBytes(bytes);
+        return StringUtil.toHexString(bytes);
     }
 
     public void addComponent(LifeCycle component)
@@ -312,7 +326,12 @@ public class ShutdownService
                     {
                         LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()));
                         String receivedKey = reader.readLine();
-                        if (!key.equals(receivedKey))
+                        // Compare in constant time: this key authenticates a destructive remote
+                        // command, so a comparison whose timing leaks how many leading characters
+                        // matched must be avoided (CWE-208).
+                        if (receivedKey == null || !MessageDigest.isEqual(
+                            key.getBytes(StandardCharsets.US_ASCII),
+                            receivedKey.getBytes(StandardCharsets.US_ASCII)))
                         {
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Ignoring command with incorrect key: {}", receivedKey);
