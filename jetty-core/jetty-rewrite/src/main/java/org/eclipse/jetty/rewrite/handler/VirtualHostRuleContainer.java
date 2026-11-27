@@ -67,10 +67,15 @@ public class VirtualHostRuleContainer extends RuleContainer
             if (virtualHost == null || virtualHost.equalsIgnoreCase(serverName))
                 return super.matchAndApply(input);
 
-            // Handle case-insensitive wildcard host names.
-            if (virtualHost.startsWith("*.") &&
-                virtualHost.regionMatches(true, 2, serverName, serverName.indexOf(".") + 1, virtualHost.length() - 2))
-                return super.matchAndApply(input);
+            // Handle case-insensitive wildcard host names, which match exactly one level.
+            if (virtualHost.startsWith("*.") && serverName != null)
+            {
+                int domain = serverName.indexOf('.') + 1;
+                int domainLength = serverName.length() - domain;
+                if (domain > 0 && domainLength == virtualHost.length() - 2 &&
+                    virtualHost.regionMatches(true, 2, serverName, domain, domainLength))
+                    return super.matchAndApply(input);
+            }
         }
 
         // No virtual host match, skip the other rules.
