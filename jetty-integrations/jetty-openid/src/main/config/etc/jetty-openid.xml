@@ -29,6 +29,7 @@
     <Set name="httpClient"><Ref refid="HttpClient"/></Set>
     <Set name="authenticateNewUsers" type="boolean" property="jetty.openid.authenticateNewUsers"/>
     <Set name="logoutWhenIdTokenIsExpired" type="boolean" property="jetty.openid.logoutWhenIdTokenIsExpired"/>
+    <Set name="pkce" type="boolean" property="jetty.openid.pkce"/>
     <Call name="scopes">
       <Arg>
         <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">

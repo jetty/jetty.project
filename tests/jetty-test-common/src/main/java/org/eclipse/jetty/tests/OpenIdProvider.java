@@ -15,10 +15,12 @@ package org.eclipse.jetty.tests;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -55,6 +57,11 @@ public class OpenIdProvider extends ContainerLifeCycle
     private static final String TOKEN_PATH = "/token";
     private static final String END_SESSION_PATH = "/end_session";
     private final Map<String, User> issuedAuthCodes = new HashMap<>();
+    private final Map<String, String> codeChallenges = new HashMap<>();
+    private final List<String> authorizationRequests = new ArrayList<>();
+    private final List<Fields> tokenRequests = new ArrayList<>();
+    private boolean requirePkce;
+    private boolean publicClient;
 
     protected final String clientId;
     protected final String clientSecret;
@@ -169,6 +176,57 @@ public class OpenIdProvider extends ContainerLifeCycle
     }
 
     /**
+     * @param requirePkce whether to refuse an authorization request without an {@code S256} code challenge (RFC 7636).
+     * A code issued with a challenge is always checked against its verifier at the token endpoint.
+     */
+    public void setRequirePkce(boolean requirePkce)
+    {
+        this.requirePkce = requirePkce;
+    }
+
+    /**
+     * @param publicClient whether the client is public (RFC 6749 section 2.1): the token endpoint then refuses a
+     * request carrying a client secret, and accepts one with only the {@code client_id}.
+     */
+    public void setPublicClient(boolean publicClient)
+    {
+        this.publicClient = publicClient;
+    }
+
+    /**
+     * @return the query string of every authorization request received, in order.
+     */
+    public List<String> getAuthorizationRequests()
+    {
+        return authorizationRequests;
+    }
+
+    /**
+     * @return the form parameters of every token request received, in order.
+     */
+    public List<Fields> getTokenRequests()
+    {
+        return tokenRequests;
+    }
+
+    /**
+     * @param codeVerifier a PKCE code verifier.
+     * @return its {@code S256} code challenge (RFC 7636 section 4.2).
+     */
+    public static String codeChallenge(String codeVerifier)
+    {
+        try
+        {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(codeVerifier.getBytes(StandardCharsets.US_ASCII));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+        }
+        catch (Exception e)
+        {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
      * @return the map of issued authentication codes for outstanding authentication flows,
      * usually claimed by a request from jetty to the token endpoint in exchange for an id_token.
      */
@@ -245,6 +303,19 @@ public class OpenIdProvider extends ContainerLifeCycle
             return;
         }
 
+        authorizationRequests.add(request.getHttpURI().getQuery());
+        String codeChallenge = parameters.getValue("code_challenge");
+        if (codeChallenge != null && !"S256".equals(parameters.getValue("code_challenge_method")))
+        {
+            sendError(response, callback, redirectUri, state, "invalid_request", "code_challenge_method must be S256", null);
+            return;
+        }
+        if (requirePkce && codeChallenge == null)
+        {
+            sendError(response, callback, redirectUri, state, "invalid_request", "PKCE is required", null);
+            return;
+        }
+
         if (preAuthedUser == null)
         {
             String responseContent = String.format("""
@@ -253,15 +324,16 @@ public class OpenIdProvider extends ContainerLifeCycle
                 <input type="text" autocomplete="off" placeholder="Username" name="username" required>
                 <input type="hidden" name="redirectUri" value="%s">
                 <input type="hidden" name="state" value="%s">
+                <input type="hidden" name="codeChallenge" value="%s">
                 <input type="submit">
                 </form>
-                """, AUTH_PATH, redirectUri, state);
+                """, AUTH_PATH, redirectUri, state, codeChallenge == null ? "" : codeChallenge);
             response.getHeaders().put(HttpHeader.CONTENT_TYPE, "text/html");
             response.write(true, BufferUtil.toBuffer(responseContent), callback);
         }
         else
         {
-            redirectUser(request, response, callback, preAuthedUser, redirectUri, state);
+            redirectUser(request, response, callback, preAuthedUser, redirectUri, state, codeChallenge);
         }
     }
 
@@ -290,7 +362,13 @@ public class OpenIdProvider extends ContainerLifeCycle
         }
 
         User user = new User(username);
-        redirectUser(request, response, callback, user, redirectUri, state);
+        String codeChallenge = parameters.getValue("codeChallenge");
+        if (requirePkce && StringUtil.isEmpty(codeChallenge))
+        {
+            sendError(response, callback, redirectUri, state, "invalid_request", "PKCE is required", null);
+            return;
+        }
+        redirectUser(request, response, callback, user, redirectUri, state, StringUtil.isEmpty(codeChallenge) ? null : codeChallenge);
     }
 
     public void sendError(Response response, Callback callback, String redirectUri, String state, String error)
@@ -314,8 +392,15 @@ public class OpenIdProvider extends ContainerLifeCycle
 
     public void redirectUser(Request request, Response response, Callback callback, User user, String redirectUri, String state)
     {
+        redirectUser(request, response, callback, user, redirectUri, state, null);
+    }
+
+    public void redirectUser(Request request, Response response, Callback callback, User user, String redirectUri, String state, String codeChallenge)
+    {
         String authCode = UUID.randomUUID().toString().replace("-", "");
         issuedAuthCodes.put(authCode, user);
+        if (codeChallenge != null)
+            codeChallenges.put(authCode, codeChallenge);
 
         try
         {
@@ -325,6 +410,7 @@ public class OpenIdProvider extends ContainerLifeCycle
         catch (Throwable t)
         {
             issuedAuthCodes.remove(authCode);
+            codeChallenges.remove(authCode);
             throw t;
         }
     }
@@ -337,10 +423,14 @@ public class OpenIdProvider extends ContainerLifeCycle
         response.getHeaders().put(HttpHeader.CONTENT_TYPE, "application/json");
 
         Fields parameters = Request.getParameters(request);
+        tokenRequests.add(parameters);
         String code = parameters.getValue("code");
+        boolean clientAuthenticated = publicClient
+            ? parameters.getValue("client_secret") == null && request.getHeaders().get(HttpHeader.AUTHORIZATION) == null
+            : clientSecret.equals(parameters.getValue("client_secret"));
 
         if (!clientId.equals(parameters.getValue("client_id")) ||
-            !clientSecret.equals(parameters.getValue("client_secret")) ||
+            !clientAuthenticated ||
             !redirectUris.contains(parameters.getValue("redirect_uri")) ||
             !"authorization_code".equals(parameters.getValue("grant_type")) ||
             code == null)
@@ -356,12 +446,17 @@ public class OpenIdProvider extends ContainerLifeCycle
         }
 
         User user = issuedAuthCodes.remove(code);
-        if (user == null)
+        String codeChallenge = codeChallenges.remove(code);
+        String codeVerifier = parameters.getValue("code_verifier");
+        boolean verified = codeChallenge == null
+            ? codeVerifier == null
+            : codeVerifier != null && codeChallenge.equals(codeChallenge(codeVerifier));
+        if (user == null || !verified)
         {
             response.setStatus(HttpStatus.BAD_REQUEST_400);
             String responseContent = "{" +
                 "\"error\": \"invalid_grant\"," +
-                "\"error_description\": \"bad auth code\"," +
+                "\"error_description\": \"" + (user == null ? "bad auth code" : "PKCE verification failed") + "\"" +
                 "}";
             response.write(true, BufferUtil.toBuffer(responseContent), callback);
             return;
