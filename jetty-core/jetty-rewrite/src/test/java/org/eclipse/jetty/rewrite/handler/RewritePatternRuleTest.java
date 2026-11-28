@@ -117,4 +117,25 @@ public class RewritePatternRuleTest extends AbstractRuleTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertEquals(replacementPath + "?" + query + "&" + replacementQuery, response.get("X-URI"));
     }
+
+    @Test
+    public void testPreserveViolationsWithCleanURI() throws Exception
+    {
+        // A clean request (no URI violations) matched while preserveViolations is true must still
+        // rewrite and respond, not fail rebuilding the HttpURI from an empty violation set.
+        RewritePatternRule rule = new RewritePatternRule("/foo/bar", "/replace");
+        rule.setPreserveViolations(true);
+        start(rule);
+
+        String request = """
+            GET /foo/bar HTTP/1.1
+            Host: localhost
+            Connection: close
+
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertEquals("/replace", response.get("X-URI"));
+    }
 }

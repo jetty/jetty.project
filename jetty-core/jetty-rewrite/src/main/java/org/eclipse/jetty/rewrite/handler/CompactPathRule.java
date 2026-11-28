@@ -170,7 +170,7 @@ public class CompactPathRule extends Rule
         }
         catch (IllegalArgumentException e)
         {
-            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad Path");
+            throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad Path", e);
         }
     }
 
