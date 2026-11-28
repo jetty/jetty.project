@@ -659,7 +659,7 @@ public interface Response extends Content.Sink
 
         request.consumeAvailable();
 
-        if (status <= 0)
+        if (!HttpStatus.isStatusCode(status))
             status = HttpStatus.INTERNAL_SERVER_ERROR_500;
         if (message == null)
             message = HttpStatus.getMessage(status);

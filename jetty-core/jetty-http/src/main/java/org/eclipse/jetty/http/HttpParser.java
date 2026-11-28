@@ -908,18 +908,24 @@ public class HttpParser
                     switch (t.getType())
                     {
                         case SPACE:
-                            if (_responseStatus < 100)
+                            if (!HttpStatus.isStatusCode(_responseStatus))
                                 throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad status");
                             setState(State.SPACE2);
                             break;
 
                         case DIGIT:
                             _responseStatus = _responseStatus * 10 + (t.getByte() - '0');
-                            if (_responseStatus >= 1000)
+                            // This is a partial accumulator for response status, it can be single or double-digit
+                            // during this partial phase. (not yet a complete code), so guard only
+                            // against overflowing the 3-digit range; isStatusCode() is applied once
+                            // the code is complete (at the terminal SPACE or EOL cases)
+                            if (_responseStatus > 999)
                                 throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad status");
                             break;
 
                         case EOL:
+                            if (!HttpStatus.isStatusCode(_responseStatus))
+                                throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad status");
                             _fieldCache.prepare();
                             setState(State.HEADER);
                             _responseHandler.startResponse(_version, _responseStatus, null);
