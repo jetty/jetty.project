@@ -221,6 +221,9 @@ Since the module defines an `[exec]` section, it will fork _another_ JVM when Je
 
 This means that when you start Jetty, there will be _two_ JVMs running: one created by you when you run `java -jar $JETTY_HOME/start.jar`, and another forked by the Jetty start mechanism with the JVM options you specified (that cannot be applied to an already running JVM).
 
+The forked JVM is launched via a Java _arguments file_ (`java @<file>`) rather than by expanding every argument onto its command line, so that configuration values (for example passwords from `+start.d/*.ini+`, or the stop key) stay out of the publicly visible process arguments.
+The arguments file is created with restrictive permissions in `${jetty.base}` (or in `jetty.server.tempDirectory` when that is set), and removed when the JVM exits.
+
 Again, you can <<configure-dry-run,display the JVM command line>> to verify that it is correct.
 
 [TIP]
@@ -422,12 +425,13 @@ replace=( ),$1\\\n
 
 Note how the environments configuration specifies additional class-path and Jetty XML files for every environment.
 
-The various parts of the full JVM command line can be combined to leverage the JVM arguments file feature (that is, specify the JVM options in a file rather than on the command line) that is built-in in the `java` executable:
+The various parts of the full JVM command line can be combined to leverage the JVM arguments file feature (that is, specify the JVM options in a file rather than on the command line) that is built-in in the `java` executable.
+The `--dry-run` output is formatted for a POSIX compliant shell, which is not the format expected by the `java` arguments file feature, so to generate an arguments file use the `--argfile` option instead (see <<configure-argfile,this section>>):
 
 [source,bash,subs=+quotes]
 ----
-$ java -jar $JETTY_HOME/start.jar --dry-run=##opts,path,main,args,envs## > /tmp/jvm_cmd_line.txt
-$ /some/other/java @/tmp/jvm_cmd_line.txt
+$ (umask 077; java -jar $JETTY_HOME/start.jar --argfile=##opts,path,main,args,envs## > "$JETTY_BASE/jvm_cmd_line.txt")
+$ /some/other/java @"$JETTY_BASE/jvm_cmd_line.txt"
 ----
 
 Using `--dry-run=opts,path,main,args,envs` can be used to avoid that the Jetty start mechanism forks a second JVM when using modules that require forking.
@@ -450,6 +454,40 @@ $ ENVS=$(java -jar start.jar --dry-run=##envs##)
 $ echo $OPTS -Dextra=opt $MAIN $ARGS $ENVS extraProp=value extra.xml | xargs java
 ----
 
+[[configure-argfile]]
+=== Generating a Java Arguments File
+
+The `--dry-run` option formats its output for a POSIX compliant shell, which is not the format expected by the `java` _arguments file_ feature (the `java @file` syntax, see the output of `java --help`).
+Use the `--argfile` option to generate a valid `java` arguments file: it prints one argument per line, quoted as required by the `java` launcher.
+
+Because the arguments file can contain the configuration values themselves (including secrets such as passwords), create it with a restrictive `umask` and write it to a directory that is not world-readable, rather than to a shared location such as `/tmp`:
+
+[source,bash]
+----
+$ (umask 077; java -jar $JETTY_HOME/start.jar --argfile > "$JETTY_BASE/jetty.args")
+$ java @"$JETTY_BASE/jetty.args"
+----
+
+As with `--dry-run`, the output can be limited to specific parts; the `java` part is not applicable to an arguments file and cannot be requested:
+
+[source,bash]
+----
+$ (umask 077; java -jar $JETTY_HOME/start.jar --argfile=opts,path,main,args,envs > "$JETTY_BASE/jetty.args")
+$ java -Xmx4g @"$JETTY_BASE/jetty.args"
+----
+
+TIP: Because the configuration values are written to a file rather than expanded onto the command line, using an arguments file keeps values such as passwords configured in `+start.d/*.ini+` files out of the publicly visible process arguments.
+The file itself holds those values, so protect it with file permissions (as shown above with `umask 077`) and keep it out of world-readable directories.
+
+[CAUTION]
+====
+The arguments file is written using the native character encoding of the JVM that generates it (reported as the `native.encoding` system property), and `java @file` reads it using the native encoding of the JVM that runs it.
+These match on the same host, so generating and using the file on one machine is always safe.
+If you generate the file on one machine and run it on another whose native encoding differs -- for example moving between a UTF-8 platform and a Windows system using a legacy code page -- then non-ASCII bytes in the file (non-ASCII passwords, property values, or file paths) can be misread.
+ASCII-only configuration is unaffected.
+For a portable arguments file, keep the configuration ASCII, or make the generating and running JVMs use the same native encoding (for example a UTF-8 locale on both).
+====
+
 [[start]]
 == Starting Jetty
 
@@ -465,6 +503,27 @@ In this way, a Jetty module graph can be built in memory, where the module depen
 This step produces a list of _enabled_ modules; for each enabled module all its dependencies are transitively resolved by navigating the graph built in the previous steps.
 . Processes the list of enabled (explicitly and transitively) modules, gathering the list of libraries to add to the class-path or module-path, the JPMS directives to add to the command line if necessary, the properties and XML files to add as program arguments, etc., so that a full JVM command line can be generated.
 . Executes the command line, either in-JVM or by forking a second JVM (if the `--exec` option is present or implied by other options such as `--jpms`), and waits for the JVM, or the forked JVM, to exit.
+
+[[start-character-encoding]]
+=== Character Encoding
+
+The Jetty start mechanism carries your configuration into the server: property values, filesystem paths such as `$JETTY_BASE` and `$JETTY_HOME`, class-path and module-path entries, and any `-D` system properties.
+When a second JVM is forked (see the steps above), that configuration is passed to the forked JVM as well.
+
+Non-ASCII property _values_ configured in `+*.ini+` files (for example a keystore password) are carried losslessly, whatever the operating system's character encoding.
+Filesystem paths and command-line or `-D` values are different: they are carried using the JVM's native character encoding (the `native.encoding` system property), which is UTF-8 on most modern systems, a legacy code page on a Windows system that has not enabled UTF-8, and ASCII under a `LANG=C` or `POSIX` locale.
+
+[CAUTION]
+====
+We try our best to support non-ASCII filesystem paths and configuration even when the operating system's native encoding is not UTF-8, but this is not a recommended setup.
+
+This is easy to hit unintentionally: many minimal Docker base images, and some `systemd` service units, run with `LANG=C`/`POSIX` or set `LC_ALL` to a non-UTF-8 value, so the JVM's native encoding ends up as ASCII even when your paths and configuration are UTF-8.
+
+With a non-UTF-8 native encoding, non-ASCII characters in filesystem paths (including paths given as property values) and in command-line or `-D` values can be corrupted, or cannot be represented at all, because the native encoding, not UTF-8, is what the operating system and the `java` launcher use to pass them between processes.
+
+If you use non-ASCII characters in `$JETTY_BASE`, `$JETTY_HOME`, keystore paths, or `-D` system properties, run Jetty with a UTF-8 native encoding end to end: a UTF-8 locale on Linux or Unix (for example `LANG=C.UTF-8`, or another `*.UTF-8` locale, set the same way for the account that starts Jetty), or the UTF-8 code page on Windows.
+Otherwise, keep those paths and values ASCII.
+====
 
 [[start-class-path]]
 === Server Class-Path

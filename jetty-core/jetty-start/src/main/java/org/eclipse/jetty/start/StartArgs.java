@@ -140,6 +140,12 @@ public class StartArgs
      */
     private final List<String> startModules = new ArrayList<>();
 
+    public enum DryRun
+    {
+        LEGACY,
+        ARGFILE
+    }
+
     // module inspection commands
     /**
      * --write-module-graph=[filename]
@@ -171,7 +177,7 @@ public class StartArgs
     private boolean listClasspath = false;
     private boolean listConfig = false;
     private boolean version = false;
-    private boolean dryRun = false;
+    private DryRun dryRun = null;
     private boolean multiLine = false;
     private final Set<String> dryRunParts = new HashSet<>();
     private boolean jpms = false;
@@ -492,6 +498,26 @@ public class StartArgs
 
     public CommandLineBuilder getMainArgs(Set<String> parts) throws IOException
     {
+        // By default, properties are inlined as args only when generating dry-run/argfile
+        // output; otherwise they are written to a (temp) properties file.
+        return getMainArgs(parts, dryRun != null);
+    }
+
+    /**
+     * Build the command line for the main invocation.
+     *
+     * @param parts the parts of the command line to include (see {@link #ALL_PARTS})
+     * @param inlineProperties when {@code true}, the core-environment properties are added
+     * directly as {@code key=value} args rather than written to a {@code .properties} file
+     * and referenced by path. The forked-JVM launch uses {@code true} so the properties end
+     * up inside the {@code java @argument-file} (and thus off the child's visible command
+     * line). A {@code --exec-properties=<file>} override still forces the properties-file
+     * form. Not used when {@code parts} excludes {@code "args"}.
+     * @return the assembled command line
+     * @throws IOException if a properties file is written and the write fails
+     */
+    public CommandLineBuilder getMainArgs(Set<String> parts, boolean inlineProperties) throws IOException
+    {
         if (parts.isEmpty())
             parts = ALL_PARTS;
 
@@ -592,7 +618,7 @@ public class StartArgs
         if (parts.contains("args"))
         {
             Props properties = jettyEnvironment.getProperties();
-            if (dryRun && execProperties == null)
+            if (inlineProperties && execProperties == null)
             {
                 // pass properties as args
                 for (Prop p : properties)
@@ -823,7 +849,19 @@ public class StartArgs
         return jpms;
     }
 
+    /**
+     * @return true if dry-run is active.
+     * @see #getDryRun()
+     */
     public boolean isDryRun()
+    {
+        return dryRun != null;
+    }
+
+    /**
+     * @return the dry-run mode, or null if not active.
+     */
+    public DryRun getDryRun()
     {
         return dryRun;
     }
@@ -833,9 +871,36 @@ public class StartArgs
         return dryRunParts;
     }
 
+    /**
+     * Select the dry-run mode, rejecting an attempt to combine the two families of
+     * option. {@code --dry-run*} (LEGACY) emits a shell command line, while
+     * {@code --argfile*} (ARGFILE) emits a Java {@code @argument-file}; the two share
+     * the {@link #dryRunParts} set and a single output pass, so mixing them (whether on
+     * one command line or via an ini file) would silently produce one mode's output with
+     * the other's parts. They are mutually exclusive.
+     *
+     * @param mode the requested dry-run mode
+     * @param source where the option came from (for the error message)
+     */
+    private void setDryRun(DryRun mode, String source)
+    {
+        if (dryRun != null && dryRun != mode)
+            throw new UsageException(UsageException.ERR_BAD_ARG, "Cannot combine --dry-run and --argfile in %s", source);
+        dryRun = mode;
+    }
+
     public boolean isExec()
     {
         return exec;
+    }
+
+    /**
+     * @return the {@code --exec-properties=<file>} path, or {@code null} if not set. When
+     * set, the generated properties are written to this file instead of being inlined.
+     */
+    public String getExecProperties()
+    {
+        return execProperties;
     }
 
     public boolean isLicenseCheckRequired()
@@ -1067,13 +1132,15 @@ public class StartArgs
 
         if ("--dry-run".equals(arg) || "--exec-print".equals(arg))
         {
-            dryRun = true;
+            // Leave dryRunParts empty: getMainArgs() treats an empty set as ALL_PARTS.
+            setDryRun(DryRun.LEGACY, source);
             run = false;
             return environment;
         }
 
         if (arg.startsWith("--dry-run="))
         {
+            setDryRun(DryRun.LEGACY, source);
             int colon = arg.indexOf('=');
             for (String part : arg.substring(colon + 1).split(","))
             {
@@ -1088,7 +1155,34 @@ public class StartArgs
 
                 dryRunParts.add(part);
             }
-            dryRun = true;
+            run = false;
+            return environment;
+        }
+
+        if ("--argfile".equals(arg))
+        {
+            setDryRun(DryRun.ARGFILE, source);
+            // "java" is the only part not compatible with an @argument-file (the java binary must
+            // not be a token in the argfile), so default to all parts except "java".
+            dryRunParts.addAll(ALL_PARTS);
+            dryRunParts.remove("java");
+            run = false;
+            return environment;
+        }
+
+        if (arg.startsWith("--argfile="))
+        {
+            setDryRun(DryRun.ARGFILE, source);
+            int colon = arg.indexOf('=');
+            for (String part : arg.substring(colon + 1).split(","))
+            {
+                if (!ALL_PARTS.contains(part))
+                    throw new UsageException(UsageException.ERR_BAD_ARG, "Unrecognized --argfile=\"%s\" in %s", part, source);
+                if ("java".equals(part))
+                    throw new UsageException(UsageException.ERR_BAD_ARG, "Invalid --argfile=\"java\" (not compatible with java @argument-file) in %s", source);
+
+                dryRunParts.add(part);
+            }
             run = false;
             return environment;
         }
