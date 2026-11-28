@@ -41,6 +41,7 @@ public class CompressionResponse extends Response.Wrapper
     private final String originalEtag;
     private final AtomicReference<State> state = new AtomicReference<>(State.MIGHT_COMPRESS);
     private EncoderSink encoderSink;
+    private volatile boolean lastWritten;
 
     public CompressionResponse(Request request, Response wrapped, Compression compression, CompressionConfig config, String originalEtag)
     {
@@ -179,10 +180,13 @@ public class CompressionResponse extends Response.Wrapper
                 if (LOG.isDebugEnabled())
                     LOG.debug("compressing {} {}", compression.getEncodingName(), this);
 
+                // Assign the sink before the state, so that reading
+                // the COMPRESSING state also makes the sink visible.
                 state.compareAndSet(State.MIGHT_COMPRESS, State.COMPRESSING);
                 // TODO: pass contentLength (when known) as a hint to newEncoderSink(), so that encoders
                 //  can size their resources accordingly (e.g. zstd's ZstdCompressCtx.setPledgedSrcSize()).
                 this.encoderSink = compression.newEncoderSink(getWrapped());
+                state.compareAndSet(State.MIGHT_COMPRESS, State.COMPRESSING);
 
                 // Adjust the headers.
                 headers.put(compression.getContentEncodingField());
@@ -191,9 +195,52 @@ public class CompressionResponse extends Response.Wrapper
 
                 this.write(last, content, callback);
             }
-            case COMPRESSING -> encoderSink.write(last, content, callback);
+            case COMPRESSING ->
+            {
+                if (last)
+                    lastWritten = true;
+                encoderSink.write(last, content, callback);
+            }
             case NOT_COMPRESSING -> super.write(last, content, callback);
         }
+    }
+
+    /**
+     * <p>Wraps the handler callback so that the compressed content is always completed or aborted.</p>
+     * <p>If the handler completes the response without a last write, the server completes it by
+     * writing directly to the wrapped response, so the {@link EncoderSink} would never write its
+     * final bytes, nor be released.</p>
+     *
+     * @param callback the handler callback
+     * @return a callback that completes or aborts the compressed content before completing the given callback
+     */
+    public Callback newCallback(Callback callback)
+    {
+        return new Callback.Nested(callback)
+        {
+            @Override
+            public void succeeded()
+            {
+                if (state.get() == State.COMPRESSING && !lastWritten)
+                {
+                    // Write the final compressed bytes before completing the response.
+                    lastWritten = true;
+                    encoderSink.write(true, null, Callback.from(getInvocationType(), getCallback()::succeeded, this::failed));
+                }
+                else
+                {
+                    super.succeeded();
+                }
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                if (state.get() == State.COMPRESSING)
+                    encoderSink.abort(x);
+                super.failed(x);
+            }
+        };
     }
 
     enum State

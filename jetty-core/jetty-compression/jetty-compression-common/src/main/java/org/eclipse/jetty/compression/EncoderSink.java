@@ -14,18 +14,21 @@
 package org.eclipse.jetty.compression;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.WritePendingException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingNestedCallback;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class EncoderSink implements Content.Sink
 {
     private final Content.Sink sink;
+    private final EncodeBufferCallback encodeBufferCallback = new EncodeBufferCallback();
 
     protected EncoderSink(Content.Sink sink)
     {
@@ -36,9 +39,35 @@ public abstract class EncoderSink implements Content.Sink
     public void write(boolean last, ByteBuffer content, Callback callback)
     {
         if (content != null || last)
-            new EncodeBufferCallback(last, content, last ? Callback.from(callback, this::release) : callback).iterate();
+        {
+            if (encodeBufferCallback.reset(last, content, callback))
+                encodeBufferCallback.iterate();
+            else if (encodeBufferCallback.isClosed())
+                callback.failed(new IllegalStateException("Already released"));
+            else
+                callback.failed(new WritePendingException());
+        }
         else
             callback.succeeded();
+    }
+
+    /**
+     * <p>Aborts this sink, typically because the response it writes to has failed.</p>
+     * <p>If a write is in progress, its callback is failed once it completes; otherwise,
+     * this sink is {@link #release() released} immediately.
+     * Any further {@link #write(boolean, ByteBuffer, Callback) write attempt} fails.</p>
+     * <p>This method has no effect if this sink has already been released.</p>
+     * <p>This method must not be called concurrently with {@link #write(boolean, ByteBuffer, Callback)}.</p>
+     *
+     * @param failure the cause of the abort
+     */
+    public void abort(Throwable failure)
+    {
+        // If a write is in progress, abort() returns true, and onCompleteFailure() releases once it is complete.
+        // If no write was ever attempted, abort() returns true, and onCompleteFailure() releases immediately.
+        // Otherwise the callback is either between writes, or closed, so it must be released here.
+        if (!encodeBufferCallback.abort(failure))
+            encodeBufferCallback.closeAndRelease();
     }
 
     /**
@@ -46,13 +75,15 @@ public abstract class EncoderSink implements Content.Sink
      * @param last the {@code last} flag to eventually pass to {@link org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)}.
      * @param content the buffer to eventually pass to {@link org.eclipse.jetty.io.Content.Sink#write(boolean, ByteBuffer, Callback)}.
      * @return the {@link WriteRecord}.
-     * @throws IllegalStateException if {@link #release()} has already been called.
      */
     protected abstract WriteRecord encode(boolean last, ByteBuffer content);
 
     /**
-     * <p>Release all resources held by this instance. Any further {@link #write(boolean, ByteBuffer, Callback) write attempt}
-     * fails once this method has been called.</p>
+     * <p>Release all resources held by this instance.</p>
+     * <p>This method is called either after the last write succeeded, after any write failed,
+     * or when this sink is {@link #abort(Throwable) aborted}.
+     * Any further {@link #write(boolean, ByteBuffer, Callback) write attempt} fails without calling
+     * {@link #encode(boolean, ByteBuffer)} once this method has been called.</p>
      * <p>Implementation must be idempotent.</p>
      */
     protected void release()
@@ -61,7 +92,7 @@ public abstract class EncoderSink implements Content.Sink
 
     public record WriteRecord(boolean last, ByteBuffer output, Callback callback) {}
 
-    private class EncodeBufferCallback extends IteratingNestedCallback
+    private class EncodeBufferCallback extends IteratingCallback
     {
         private enum State
         {
@@ -77,14 +108,31 @@ public abstract class EncoderSink implements Content.Sink
 
         private static final Logger LOG = LoggerFactory.getLogger(EncodeBufferCallback.class);
         private final AtomicReference<State> state = new AtomicReference<>(State.INITIAL);
-        private final ByteBuffer content;
-        private final boolean last;
+        private final AtomicBoolean released = new AtomicBoolean();
+        private ByteBuffer content;
+        private boolean last;
+        private Callback callback;
 
-        public EncodeBufferCallback(boolean last, ByteBuffer content, Callback callback)
+        private EncodeBufferCallback()
         {
-            super(callback);
+            super(true);
+        }
+
+        private boolean reset(boolean last, ByteBuffer content, Callback callback)
+        {
+            if (!reset())
+                return false;
             this.content = content == null ? BufferUtil.EMPTY_BUFFER : content;
             this.last = last;
+            this.callback = callback;
+            return true;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            Callback callback = this.callback;
+            return callback == null ? InvocationType.NON_BLOCKING : callback.getInvocationType();
         }
 
         @Override
@@ -126,6 +174,45 @@ public abstract class EncoderSink implements Content.Sink
         protected void finished()
         {
             state.set(State.FINISHED);
+        }
+
+        private Callback takeCallbackAndReset()
+        {
+            Callback callback = this.callback;
+            this.callback = null;
+            this.content = null;
+            return callback;
+        }
+
+        private void closeAndRelease()
+        {
+            // Closing forbids any further reset(), so no write
+            // can encode() or release() once released.
+            close();
+            if (released.compareAndSet(false, true))
+                release();
+        }
+
+        @Override
+        protected void onCompleteSuccess()
+        {
+            Callback callback = takeCallbackAndReset();
+            if (last)
+                closeAndRelease();
+            callback.succeeded();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            // No last write may follow a failed write (e.g. when the client closed the connection),
+            // so release now, once the scheduled write has completed and before notifying the
+            // callback so that no further write can race with the release.
+            Callback callback = takeCallbackAndReset();
+            closeAndRelease();
+            // The callback is null if abort() was called before any write.
+            if (callback != null)
+                callback.failed(cause);
         }
 
         @Override
