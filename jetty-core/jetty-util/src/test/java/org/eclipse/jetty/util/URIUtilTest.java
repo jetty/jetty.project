@@ -576,6 +576,21 @@ public class URIUtilTest
             // encode utf-8 unicode
             Arguments.of("/bãm/", "/b%C3%A3m/"),
             Arguments.of("/bä€ãm/", "/b%C3%A4%E2%82%AC%C3%A3m/"),
+            // Note: BMP is "Basic Multilingual Plane"
+            // encode a supplementary (non-BMP) codepoint as one UTF-8 sequence, not two surrogate halves
+            Arguments.of("/😀/index.html", "/%F0%9F%98%80/index.html"),
+            // an already percent-encoded supplementary codepoint is left as-is
+            Arguments.of("/%F0%9F%98%80/index.html", "/%F0%9F%98%80/index.html"),
+            // a percent-u BMP codepoint decodes to its UTF-8 sequence
+            Arguments.of("/%u20AC/index.html", "/%E2%82%AC/index.html"),
+            // a percent-u surrogate pair is combined into one codepoint, not encoded half at a time
+            Arguments.of("/%uD83D%uDE00/index.html", "/%F0%9F%98%80/index.html"),
+            // mixed: raw emoji + pre-encoded "/" (kept) + raw BMP €
+            Arguments.of("/😀%2f€/foo.txt", "/%F0%9F%98%80%2F%E2%82%AC/foo.txt"),
+            // long path with several supplementary codepoints and long safe runs after the
+            // builder is allocated (guards the safe-char append path from truncating a codepoint)
+            Arguments.of("/very/long/path/with/many/safe/segments/😀/and/a/few/more/😃/segments/index.html",
+                "/very/long/path/with/many/safe/segments/%F0%9F%98%80/and/a/few/more/%F0%9F%98%83/segments/index.html"),
             // encode naked % to %25
             Arguments.of("/abc%x", "/abc%25x"),
             // encoded characters to leave as-is
@@ -592,6 +607,25 @@ public class URIUtilTest
     public void testEncodePathSafeEncoding(String input, String expected)
     {
         assertThat(URIUtil.encodePathSafeEncoding(input), is(expected));
+    }
+
+    public static Stream<Arguments> encodePathSafeEncodingThrowsSource()
+    {
+        return Stream.of(
+            // a lone high surrogate, percent-u encoded, with no following low surrogate
+            Arguments.of("/%uD83D/x"),
+            // a high surrogate followed by something other than a low surrogate
+            Arguments.of("/%uD83D%u0041/x"),
+            // a lone low surrogate, percent-u encoded, with no preceding high surrogate
+            Arguments.of("/%uDE00/x")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("encodePathSafeEncodingThrowsSource")
+    public void testEncodePathSafeEncodingThrows(String input)
+    {
+        assertThrows(IllegalArgumentException.class, () -> URIUtil.encodePathSafeEncoding(input));
     }
 
     public static Stream<Arguments> compactPathSource()

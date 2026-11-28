@@ -1543,10 +1543,17 @@ public final class URIUtil
         {
             Utf8StringBuilder builder = null;
             int end = offset + length;
-            for (int i = offset; i < end; i++)
+            int i = offset;
+            while (i < end)
             {
-                char c = path.charAt(i);
-                if (c == '%')
+                // Advance by a whole codepoint (one or two chars) or, in the percent branch
+                // below, by a whole escape. A supplementary character (e.g. an emoji) is thus
+                // read and encoded as one UTF-8 sequence rather than its two surrogate halves,
+                // each of which would otherwise encode to '?' (0x3F).
+                int codepoint = path.codePointAt(i);
+                int consumed = Character.charCount(codepoint);
+
+                if (codepoint == '%')
                 {
                     if (builder == null)
                     {
@@ -1558,12 +1565,40 @@ public final class URIUtil
                         char u = path.charAt(i + 1);
                         if (u == 'u')
                         {
+                            // Javascript pct-u-encoding
                             if (TypeUtil.isHex(path, i + 2, 4))
                             {
                                 // Always decode percent-u encoding to UTF-8
-                                int codepoint = (0xffff & TypeUtil.parseInt(path, i + 2, 4, 16));
-                                encodeCodepoint(codepoint, builder);
-                                i += 5;
+                                int cp = (0xffff & TypeUtil.parseInt(path, i + 2, 4, 16));
+                                if (Character.isHighSurrogate((char)cp))
+                                {
+                                    // A high surrogate must be followed by a low surrogate, also
+                                    // percent-u encoded, so the pair encodes as one UTF-8 sequence
+                                    // rather than two lone surrogates (each of which would encode
+                                    // to '?', 0x3F). A high surrogate on its own is invalid.
+                                    if (TypeUtil.isHex(path, i + 8, 4) && path.charAt(i + 6) == '%' && path.charAt(i + 7) == 'u')
+                                    {
+                                        int lo = (0xffff & TypeUtil.parseInt(path, i + 8, 4, 16));
+                                        if (!Character.isLowSurrogate((char)lo))
+                                            throw new IllegalArgumentException("Invalid high surrogate in percent-u encoding: " + path);
+                                        encodeCodepoint(Character.toCodePoint((char)cp, (char)lo), builder);
+                                        consumed = 12;
+                                    }
+                                    else
+                                    {
+                                        throw new IllegalArgumentException("Unpaired high surrogate in percent-u encoding: " + path);
+                                    }
+                                }
+                                else if (Character.isLowSurrogate((char)cp))
+                                {
+                                    // A low surrogate not preceded by a high surrogate is invalid.
+                                    throw new IllegalArgumentException("Unpaired low surrogate in percent-u encoding: " + path);
+                                }
+                                else
+                                {
+                                    encodeCodepoint(cp, builder);
+                                    consumed = 6;
+                                }
                             }
                             else
                             {
@@ -1573,6 +1608,7 @@ public final class URIUtil
                         }
                         else
                         {
+                            // Normal pct-encoding
                             if (TypeUtil.isHex(path, i + 1, 2))
                             {
                                 // valid Hex, attempt to decode it
@@ -1587,7 +1623,7 @@ public final class URIUtil
                                     // safe to decode
                                     builder.append(b);
                                 }
-                                i += 2;
+                                consumed = 3;
                             }
                             else
                             {
@@ -1602,23 +1638,23 @@ public final class URIUtil
                         builder.append("%25");
                     }
                 }
-                else
+                else if (mustBeEncoded(codepoint))
                 {
-                    if (mustBeEncoded(c))
+                    if (builder == null)
                     {
-                        if (builder == null)
-                        {
-                            builder = new Utf8StringBuilder(path.length());
-                            builder.append(path, offset, i - offset);
-                        }
-                        encodeCodepoint(c, builder);
+                        builder = new Utf8StringBuilder(path.length());
+                        builder.append(path, offset, i - offset);
                     }
-                    else
-                    {
-                        if (builder != null)
-                            builder.append(c);
-                    }
+                    encodeCodepoint(codepoint, builder);
                 }
+                else if (builder != null)
+                {
+                    // A codepoint that need not be encoded is necessarily <= 0x7F (anything
+                    // larger mustBeEncoded), so it is always a single char here.
+                    builder.append((char)codepoint);
+                }
+
+                i += consumed;
             }
 
             if (builder != null)
