@@ -1390,7 +1390,7 @@ public class ErrorPageTest
             assertThat(responseBody, Matchers.containsString("ERROR_PAGE: /BadMessageException"));
             assertThat(responseBody, Matchers.containsString("ERROR_MESSAGE: Unable to parse URI query"));
             assertThat(responseBody, Matchers.containsString("ERROR_CODE: 400"));
-            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: 400: Unable to parse URI query"));
+            assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION: org.eclipse.jetty.http.BadMessageException: Unable to parse URI query"));
             assertThat(responseBody, Matchers.containsString("ERROR_EXCEPTION_TYPE: class org.eclipse.jetty.http.BadMessageException"));
             assertThat(responseBody, Matchers.containsString("ERROR_SERVLET: " + appServlet.getClass().getName()));
             assertThat(responseBody, Matchers.containsString("ERROR_REQUEST_URI: /app"));

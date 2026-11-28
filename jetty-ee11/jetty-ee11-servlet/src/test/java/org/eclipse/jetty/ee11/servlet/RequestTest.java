@@ -307,8 +307,8 @@ public class RequestTest
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("requestURI=/test/foo%2fbar"));
-        assertThat(response.getContent(), containsString("servletPath=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
-        assertThat(response.getContent(), containsString("pathInfo=org.eclipse.jetty.http.HttpException$IllegalArgumentException: 400: Ambiguous URI encoding"));
+        assertThat(response.getContent(), containsString("servletPath=org.eclipse.jetty.http.HttpException$IllegalArgumentException: Ambiguous URI encoding"));
+        assertThat(response.getContent(), containsString("pathInfo=org.eclipse.jetty.http.HttpException$IllegalArgumentException: Ambiguous URI encoding"));
         assertThat(count.get(), equalTo(1));
 
         _server.getContainedBeans(ServletHandler.class).iterator().next().setDecodeAmbiguousURIs(true);

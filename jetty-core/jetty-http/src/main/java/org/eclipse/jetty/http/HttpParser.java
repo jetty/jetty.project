@@ -571,7 +571,7 @@ public class HttpParser
                     throw new HttpException.RuntimeException(HttpStatus.URI_TOO_LONG_414);
                 if (_requestParser)
                     throw new HttpException.RuntimeException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431);
-                throw new HttpException.RuntimeException(_responseStatus, "Response Header Bytes Too Large");
+                throw new HttpException.RuntimeException(0, "Response Header Bytes Too Large");
             }
         }
     }
@@ -899,7 +899,7 @@ public class HttpParser
                             if (_requestParser)
                                 throw new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "No URI");
                             else
-                                throw new HttpException.RuntimeException(_responseStatus, "No Status");
+                                throw new HttpException.RuntimeException(0, "No Status");
                     }
                     break;
 
@@ -1828,7 +1828,7 @@ public class HttpParser
                         if (_requestParser)
                             _handler.badMessage(new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Early EOF"));
                         else
-                            _handler.badMessage(new HttpException.RuntimeException(_responseStatus, "Early EOF"));
+                            _handler.badMessage(new HttpException.RuntimeException(0, "Early EOF"));
                         break;
                 }
             }
@@ -1846,7 +1846,7 @@ public class HttpParser
                 if (_requestParser)
                     bad = new HttpException.RuntimeException(HttpStatus.BAD_REQUEST_400, "Bad Request", x);
                 else
-                    bad = new HttpException.RuntimeException(_responseStatus, "Bad Response", x);
+                    bad = new HttpException.RuntimeException(0, "Bad Response", x);
             }
             badMessage(bad);
         }

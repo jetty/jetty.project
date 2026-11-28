@@ -87,7 +87,7 @@ public interface HttpException extends QuietException
 
         public RuntimeException(int code)
         {
-            this(code, null, null);
+            this(code, HttpStatus.getMessage(code), null);
         }
 
         public RuntimeException(int code, String reason)
@@ -97,14 +97,13 @@ public interface HttpException extends QuietException
 
         public RuntimeException(int code, Throwable cause)
         {
-            this(code, null, cause);
+            this(code, HttpStatus.getMessage(code), cause);
         }
 
         public RuntimeException(int code, String reason, Throwable cause)
         {
-            super(code + ": " + reason, cause);
-            assert code == 0 || HttpStatus.isClientError(code) || HttpStatus.isServerError(code);
-            _code = code;
+            super(reason, cause);
+            _code = HttpStatus.isError(code) ? code : 0;
             _reason = reason;
         }
 
@@ -136,7 +135,7 @@ public interface HttpException extends QuietException
 
         public IllegalArgumentException(int code)
         {
-            this(code, null, null);
+            this(code, HttpStatus.getMessage(code), null);
         }
 
         public IllegalArgumentException(int code, String reason)
@@ -146,9 +145,8 @@ public interface HttpException extends QuietException
 
         public IllegalArgumentException(int code, String reason, Throwable cause)
         {
-            super(code + ": " + reason, cause);
-            assert code == 0 || HttpStatus.isClientError(code) || HttpStatus.isServerError(code);
-            _code = code;
+            super(reason, cause);
+            _code = HttpStatus.isError(code) ? code : 0;
             _reason = reason;
         }
 
@@ -175,7 +173,7 @@ public interface HttpException extends QuietException
 
         public IllegalStateException(int code)
         {
-            this(code, null, null);
+            this(code, HttpStatus.getMessage(code), null);
         }
 
         public IllegalStateException(int code, String reason)
@@ -185,9 +183,8 @@ public interface HttpException extends QuietException
 
         public IllegalStateException(int code, String reason, Throwable cause)
         {
-            super(code + ": " + reason, cause);
-            assert code == 0 || HttpStatus.isClientError(code) || HttpStatus.isServerError(code);
-            _code = code;
+            super(reason, cause);
+            _code = HttpStatus.isError(code) ? code : 0;
             _reason = reason;
         }
 

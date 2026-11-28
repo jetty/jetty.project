@@ -39,7 +39,7 @@ public class BadMessageException extends HttpException.RuntimeException
 
     public BadMessageException(int code)
     {
-        this(code, null, null);
+        this(code, HttpStatus.getMessage(code), null);
     }
 
     public BadMessageException(int code, String reason)
@@ -50,6 +50,5 @@ public class BadMessageException extends HttpException.RuntimeException
     public BadMessageException(int code, String reason, Throwable cause)
     {
         super(code, reason, cause);
-        assert HttpStatus.isClientError(code);
     }
 }
